@@ -215,7 +215,7 @@ MIDK_EXPORT
 Image_ErrorCode OH_PackingOptions_SetMimeType(OH_PackingOptions *options,
     Image_MimeType *format)
 {
-    if (options == nullptr || format->data == nullptr || format->size == 0) {
+    if (options == nullptr || format == nullptr || format->data == nullptr || format->size == 0) {
         return IMAGE_BAD_PARAMETER;
     }
     if (options->mimeType.data != nullptr) {
@@ -621,6 +621,9 @@ Image_ErrorCode OH_ImagePackerNative_PackToFileFromPicture(OH_ImagePackerNative 
 
 static bool HandlePackingOptionsForSequence(OH_PackingOptionsForSequence *options, PackOption *packOption)
 {
+    if (options == nullptr || packOption == nullptr) {
+        return false;
+    }
     packOption->format = "image/gif";
     packOption->loop = static_cast<uint16_t>(options->loopCount & MASK_16);
     for (uint32_t i = 0; i < options->delayTimeListLength; i++) {

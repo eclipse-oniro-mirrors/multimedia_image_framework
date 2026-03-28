@@ -44,10 +44,13 @@ OH_ImagePackerNative::~OH_ImagePackerNative()
 int32_t OH_ImagePackerNative::PackingFromImageSource(OHOS::Media::PackOption *option, OH_ImageSourceNative *imageSource,
     uint8_t *outData, int64_t *size)
 {
-    if (option == nullptr || imageSource == nullptr) {
+    if (option == nullptr || imageSource == nullptr || size == nullptr) {
         return IMAGE_BAD_PARAMETER;
     }
     OHOS::Media::ImagePacker *imagePacker = imagePacker_.get();
+    if (imagePacker == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
     OHOS::Media::ImageSource *imageSourcePtr = imageSource->GetInnerImageSource().get();
     int64_t packedSize = 0;
     uint32_t ret = IMAGE_SUCCESS;
@@ -75,10 +78,13 @@ int32_t OH_ImagePackerNative::PackingFromImageSource(OHOS::Media::PackOption *op
 int32_t OH_ImagePackerNative::PackingFromPixelmap(OHOS::Media::PackOption *option, OH_PixelmapNative *pixelmap,
     uint8_t *outData, int64_t *size)
 {
-    if (option == nullptr || pixelmap == nullptr) {
+    if (option == nullptr || pixelmap == nullptr || size == nullptr) {
         return IMAGE_BAD_PARAMETER;
     }
     OHOS::Media::ImagePacker *imagePacker = imagePacker_.get();
+    if (imagePacker == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
     OHOS::Media::PixelMap *pixelmapPtr = pixelmap->GetInnerPixelmap().get();
     int64_t packedSize = 0;
     uint32_t ret = IMAGE_SUCCESS;
@@ -106,10 +112,13 @@ int32_t OH_ImagePackerNative::PackingFromPixelmap(OHOS::Media::PackOption *optio
 int32_t OH_ImagePackerNative::PackToDataMultiFrames(OHOS::Media::PackOption *option,
     std::vector<OH_PixelmapNative*> &pixelmap, uint8_t *outData, int64_t *size)
 {
-    if (option == nullptr || pixelmap.empty()) {
+    if (option == nullptr || pixelmap.empty() || size == nullptr) {
         return IMAGE_BAD_PARAMETER;
     }
     OHOS::Media::ImagePacker *imagePacker = imagePacker_.get();
+    if (imagePacker == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
     int64_t packedSize = 0;
     uint32_t ret = IMAGE_SUCCESS;
     const int64_t DEFAULT_BUFFER_SIZE = 25 * 1024 * 1024;
@@ -138,10 +147,13 @@ int32_t OH_ImagePackerNative::PackToDataMultiFrames(OHOS::Media::PackOption *opt
 int32_t OH_ImagePackerNative::PackToDataFromPicture(OHOS::Media::PackOption *option, struct OH_PictureNative *picture,
     uint8_t *outData, int64_t *size)
 {
-    if (option == nullptr || picture == nullptr) {
+    if (option == nullptr || picture == nullptr || size == nullptr) {
         return IMAGE_BAD_PARAMETER;
     }
     OHOS::Media::ImagePacker *imagePacker = imagePacker_.get();
+    if (imagePacker == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
     OHOS::Media::Picture *picturePtr = picture->GetInnerPicture().get();
 
     int64_t packedSize = 0;
@@ -174,6 +186,9 @@ int32_t OH_ImagePackerNative::PackToFileFromImageSource(OHOS::Media::PackOption 
         return IMAGE_BAD_PARAMETER;
     }
     OHOS::Media::ImagePacker *imagePacker = imagePacker_.get();
+    if (imagePacker == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
     OHOS::Media::ImageSource *imageSourcePtr = imageSource->GetInnerImageSource().get();
     int64_t packedSize = 0;
     uint32_t ret = IMAGE_SUCCESS;
@@ -195,6 +210,9 @@ int32_t OH_ImagePackerNative::PackToFileFromPixelmap(OHOS::Media::PackOption *op
         return IMAGE_BAD_PARAMETER;
     }
     OHOS::Media::ImagePacker *imagePacker = imagePacker_.get();
+    if (imagePacker == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
     OHOS::Media::PixelMap *pixelmapPtr = pixelmap->GetInnerPixelmap().get();
     int64_t packedSize = 0;
     uint32_t ret = IMAGE_SUCCESS;
@@ -216,6 +234,9 @@ int32_t OH_ImagePackerNative::PackToFileMultiFrames(OHOS::Media::PackOption *opt
         return IMAGE_BAD_PARAMETER;
     }
     OHOS::Media::ImagePacker *imagePacker = imagePacker_.get();
+    if (imagePacker == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
     int64_t packedSize = 0;
     uint32_t ret = IMAGE_SUCCESS;
     ret = imagePacker->StartPacking(fd, *option);
@@ -241,6 +262,9 @@ int32_t OH_ImagePackerNative::PackToFileFromPicture(OHOS::Media::PackOption *opt
         return IMAGE_BAD_PARAMETER;
     }
     OHOS::Media::ImagePacker *imagePacker = imagePacker_.get();
+    if (imagePacker == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
     OHOS::Media::Picture *picturePtr = picture->GetInnerPicture().get();
     int64_t packedSize = 0;
     uint32_t ret = IMAGE_ENCODE_FAILED;

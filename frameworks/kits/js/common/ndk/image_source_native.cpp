@@ -1650,6 +1650,9 @@ Image_ErrorCode OH_DecodingOptionsForPicture_SetDesiredAuxiliaryPictures(OH_Deco
     }
     std::set<AuxiliaryPictureType> tmpDesireSet;
     auto innerDecodingOptionsForPicture = options->GetInnerDecodingOptForPicture().get();
+    if (innerDecodingOptionsForPicture == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
     for (size_t index = 0; index < length; index++) {
         auto auxTypeTmp = AuxTypeNativeToInner(desiredAuxiliaryPictures[index]);
         if (!OHOS::Media::ImageUtils::IsAuxiliaryPictureTypeSupported(auxTypeTmp)) {
