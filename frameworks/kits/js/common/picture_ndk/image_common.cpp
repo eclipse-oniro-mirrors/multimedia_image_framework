@@ -239,7 +239,7 @@ Image_ErrorCode OH_PictureMetadata_GetBlob(OH_PictureMetadata *metadata, uint8_t
 
 Image_ErrorCode OH_PictureMetadata_GetBlobSize(OH_PictureMetadata *metadata, size_t *blobSize)
 {
-    if (metadata == nullptr) {
+    if (metadata == nullptr || blobSize == nullptr) {
         IMAGE_LOGE("Invalid parameter: metadata is null");
         return IMAGE_BAD_PARAMETER;
     }
