@@ -5444,7 +5444,7 @@ std::unique_ptr<Picture> ImageSource::CreatePictureAtIndex(uint32_t index, uint3
     }
     return picture;
 }
-
+ 
 uint32_t ImageSource::CreatePictureAtIndexPreCheck(uint32_t index, const ImageInfo &info)
 {
     if (sourceStreamPtr_ == nullptr) {
