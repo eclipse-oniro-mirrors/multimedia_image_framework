@@ -347,11 +347,8 @@ long BufferMetadataStream::CalculateNewCapacity(long currentOffset, ssize_t size
         IMAGE_LOGE("New capacity overflow");
         return METADATA_STREAM_MAX_CAPACITY + 1;
     }
+    newCapacity = (tmpCapacity / capacityStride) * capacityStride;
 
-    if (__builtin_mul_overflow((tmpCapacity / capacityStride), capacityStride, &newCapacity)) {
-        IMAGE_LOGE("New capacity overflow");
-        return METADATA_STREAM_MAX_CAPACITY + 1;
-    }
     return newCapacity;
 }
 } // namespace Media
