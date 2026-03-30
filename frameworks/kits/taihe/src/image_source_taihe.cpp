@@ -589,20 +589,6 @@ static optional<PixelMap> CreatePixelMapUsingAllocatorSyncComplete(std::unique_p
     return optional<PixelMap>(std::nullopt);
 }
 
-static optional<PixelMap> CreatePixelMapThrowErrorComplete(std::unique_ptr<ImageSourceTaiheContext> &context)
-{
-    IMAGE_LOGD("CreatePixelMapThrowErrorComplete IN");
-    if (context->status == OHOS::Media::SUCCESS && context->rPixelMap != nullptr) {
-        auto res = PixelMapImpl::CreatePixelMap(context->rPixelMap);
-        return optional<PixelMap>(std::in_place, res);
-    }
-    for (const auto &[errorCode, errMsg] : context->errMsgArray) {
-        ImageTaiheUtils::ThrowExceptionError(errorCode, errMsg);
-    }
-    IMAGE_LOGD("CreatePixelMapThrowErrorComplete OUT");
-    return optional<PixelMap>(std::nullopt);
-}
-
 optional<PixelMap> ImageSourceImpl::CreatePixelMapUsingAllocatorPromise(optional_view<DecodingOptions> options,
     optional_view<AllocatorType> allocatorType)
 {
@@ -1542,11 +1528,6 @@ optional<Picture> ImageSourceImpl::CreatePictureAtIndexSync(int32_t index)
     return optional<Picture>(std::in_place, res);
 }
 
-static bool IsSizeInvalid(const OHOS::Media::Size &size)
-{
-    return size.width < 0 || size.height < 0;
-}
-
 static void ParseDecodeOptionsForThumbnail(optional_view<DecodingOptionsForThumbnail> options,
     OHOS::Media::DecodingOptionsForThumbnail &dOpts)
 {
@@ -1555,16 +1536,12 @@ static void ParseDecodeOptionsForThumbnail(optional_view<DecodingOptionsForThumb
         return;
     }
 
-    if (options.value().desiredSize.has_value()) {
-        dOpts.desiredSize.width = options.value().desiredSize.value().width;
-        dOpts.desiredSize.height = options.value().desiredSize.value().height;
-        if (IsSizeInvalid(dOpts.desiredSize)) {
-            IMAGE_LOGE("%{public}s: desiredSize is invalid, size: (%{public}d, %{public}d)",
-                __func__, dOpts.desiredSize.width, dOpts.desiredSize.height);
-            return;
-        }
+    if (options.value().generateThumbnailIfAbsent.has_value()) {
+        dOpts.generateThumbnailIfAbsent = options.value().generateThumbnailIfAbsent.value();
     }
-    dOpts.needGenerate = options.value().needGenerate.value_or(false);
+    if (options.value().maxGenerateSize.has_value()) {
+        dOpts.maxGenerateSize = options.value().maxGenerateSize.value();
+    }
 }
 
 static void CreateThumbnailExecute(std::unique_ptr<ImageSourceTaiheContext> &context)
@@ -1577,10 +1554,25 @@ static void CreateThumbnailExecute(std::unique_ptr<ImageSourceTaiheContext> &con
     IMAGE_LOGD("CreateThumbnailExecute OUT");
 }
 
+static optional<PixelMap> CreateThumbnailComplete(std::unique_ptr<ImageSourceTaiheContext> &context)
+{
+    IMAGE_LOGD("CreateThumbnailComplete IN");
+    CHECK_ERROR_RETURN_RET_LOG(context == nullptr, optional<PixelMap>(std::nullopt), "context is nullptr");
+    if (context->status == OHOS::Media::SUCCESS && context->rPixelMap != nullptr) {
+        auto res = PixelMapImpl::CreatePixelMap(context->rPixelMap);
+        return optional<PixelMap>(std::in_place, res);
+    }
+    for (const auto &[errorCode, errMsg] : context->errMsgArray) {
+        ImageTaiheUtils::ThrowExceptionError(errorCode, errMsg);
+    }
+    IMAGE_LOGD("CreateThumbnailComplete OUT");
+    return optional<PixelMap>(std::nullopt);
+}
+
 optional<PixelMap> ImageSourceImpl::CreateThumbnailSync(optional_view<DecodingOptionsForThumbnail> options)
 {
     if (nativeImgSrc == nullptr) {
-        ImageTaiheUtils::ThrowExceptionError("nativeImgSrc is nullptr");
+        IMAGE_LOGE("%{public}s: nativeImgSrc is nullptr", __func__);
         return optional<PixelMap>(std::nullopt);
     }
 
@@ -1589,7 +1581,7 @@ optional<PixelMap> ImageSourceImpl::CreateThumbnailSync(optional_view<DecodingOp
     ParseDecodeOptionsForThumbnail(options, taiheContext->decodingOptsForThumbnail);
 
     CreateThumbnailExecute(taiheContext);
-    return CreatePixelMapThrowErrorComplete(taiheContext);
+    return CreateThumbnailComplete(taiheContext);
 }
 #endif
 

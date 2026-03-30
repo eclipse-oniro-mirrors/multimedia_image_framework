@@ -155,7 +155,6 @@ const std::set<OHOS::Media::AuxiliaryPictureType> &ImageTaiheUtils::GetTaiheSupp
         OHOS::Media::AuxiliaryPictureType::UNREFOCUS_MAP,
         OHOS::Media::AuxiliaryPictureType::LINEAR_MAP,
         OHOS::Media::AuxiliaryPictureType::FRAGMENT_MAP,
-        OHOS::Media::AuxiliaryPictureType::THUMBNAIL,
     };
     return auxTypes;
 }

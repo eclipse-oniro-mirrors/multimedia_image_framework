@@ -49,10 +49,9 @@ public:
     NATIVEEXPORT void SetMainPixel(std::shared_ptr<PixelMap> PixelMap);
     NATIVEEXPORT std::unique_ptr<PixelMap> GetHdrComposedPixelMap();
     NATIVEEXPORT std::unique_ptr<PixelMap> GetHdrComposedPixelMap(PixelFormat format);
-    NATIVEEXPORT std::shared_ptr<PixelMap> GetAuxPicturePixelMap(const AuxiliaryPictureType &type);
     NATIVEEXPORT std::shared_ptr<PixelMap> GetGainmapPixelMap();
-    NATIVEEXPORT std::shared_ptr<PixelMap> GetThumbnailPixelMap();
-    NATIVEEXPORT bool SetThumbnailPixelMap(std::shared_ptr<PixelMap> &thumbnailPixelMap);
+    NATIVEEXPORT std::shared_ptr<PixelMap> GetAuxPicturePixelMap(const AuxiliaryPictureType &type);
+    NATIVEEXPORT void SetAuxPicturePixelMap(const AuxiliaryPictureType &type, std::shared_ptr<PixelMap> &pixelMap);
     NATIVEEXPORT std::shared_ptr<AuxiliaryPicture> GetAuxiliaryPicture(AuxiliaryPictureType type);
     NATIVEEXPORT void SetAuxiliaryPicture(std::shared_ptr<AuxiliaryPicture> &picture);
     NATIVEEXPORT bool HasAuxiliaryPicture(AuxiliaryPictureType type);

@@ -323,7 +323,6 @@ const std::set<AuxiliaryPictureType> &ImageNapiUtils::GetNapiSupportedAuxiliaryP
         AuxiliaryPictureType::UNREFOCUS_MAP,
         AuxiliaryPictureType::LINEAR_MAP,
         AuxiliaryPictureType::FRAGMENT_MAP,
-        AuxiliaryPictureType::THUMBNAIL,
     };
     return auxTypes;
 }

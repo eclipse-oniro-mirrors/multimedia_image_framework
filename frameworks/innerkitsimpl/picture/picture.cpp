@@ -549,23 +549,16 @@ std::shared_ptr<PixelMap> Picture::GetGainmapPixelMap()
     return GetAuxPicturePixelMap(AuxiliaryPictureType::GAINMAP);
 }
 
-std::shared_ptr<PixelMap> Picture::GetThumbnailPixelMap()
+void Picture::SetAuxPicturePixelMap(const AuxiliaryPictureType &type, std::shared_ptr<PixelMap> &pixelMap)
 {
-    return GetAuxPicturePixelMap(AuxiliaryPictureType::THUMBNAIL);
-}
+    CHECK_ERROR_RETURN_LOG(pixelMap == nullptr, "%{public}s set null auxiliary picture pixelmap", __func__);
 
-bool Picture::SetThumbnailPixelMap(std::shared_ptr<PixelMap> &thumbnailPixelMap)
-{
-    CHECK_ERROR_RETURN_RET_LOG(thumbnailPixelMap == nullptr, false,
-        "%{public}s set null thumbnail pixelmap", __func__);
-
-    std::shared_ptr<AuxiliaryPicture> auxPicture =
-        AuxiliaryPicture::Create(thumbnailPixelMap, AuxiliaryPictureType::THUMBNAIL);
-    CHECK_ERROR_RETURN_RET_LOG(auxPicture == nullptr || auxPicture->GetContentPixel() == nullptr, false,
+    std::shared_ptr<AuxiliaryPicture> auxPicture = AuxiliaryPicture::Create(pixelMap, type);
+    CHECK_ERROR_RETURN_LOG(auxPicture == nullptr || auxPicture->GetContentPixel() == nullptr,
         "%{public}s Failed to create auxiliary picture.", __func__);
     SetAuxiliaryPicture(auxPicture);
-    IMAGE_LOGD("%{public}s Set thumbnail pixelMap success.", __func__);
-    return true;
+    IMAGE_LOGD("%{public}s Set auxiliary picture(type:%{public}d) pixelMap success.",
+        __func__, static_cast<int32_t>(type));
 }
 
 std::shared_ptr<AuxiliaryPicture> Picture::GetAuxiliaryPicture(AuxiliaryPictureType type)

@@ -20,10 +20,13 @@
 #include "istream"
 #include "image_trace.h"
 #include "image_system_properties.h"
+#include "memory_manager.h"
 #include "media_errors.h"
 #include "securec.h"
+#include "image_utils.h"
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 #include "surface_buffer.h"
+#include "vpe_utils.h"
 #endif
 
 #undef LOG_DOMAIN
@@ -118,6 +121,59 @@ static int32_t GetUVStride(int32_t width)
 static uint32_t GetImageSize(int32_t width, int32_t height)
 {
     return width * height + ((width + 1) / NUM_2) * ((height + 1) / NUM_2) * NUM_2;
+}
+
+static uint32_t GetImageSize(int32_t width, int32_t height, PixelFormat format)
+{
+    if (format == PixelFormat::YCBCR_P010 || format == PixelFormat::YCRCB_P010) {
+        return GetImageSize(width, height) * NUM_2;
+    }
+    return GetImageSize(width, height);
+}
+
+std::unique_ptr<AbsMemory> PixelYuvUtils::CreateYuvMemory(PixelFormat pixelFormat, const std::string &memoryTag,
+    int32_t dstWidth, int32_t dstHeight, AllocatorType allocatorType, uint64_t usage, void *srcSurfaceBuffer,
+    YUVStrideInfo &dstStrides)
+{
+    uint32_t pictureSize = GetImageSize(dstWidth, dstHeight, pixelFormat);
+    int32_t dst_yStride = dstWidth;
+    int32_t dst_uvStride = (dstWidth + 1) / NUM_2 * NUM_2;
+    int32_t dst_yOffset = 0;
+    int32_t dst_uvOffset = dst_yStride * dstHeight;
+    dstStrides = {dst_yStride, dst_uvStride, dst_yOffset, dst_uvOffset};
+
+    MemoryData memoryData = {nullptr, pictureSize, memoryTag.c_str(), {dstWidth, dstHeight}, pixelFormat};
+    memoryData.usage = usage;
+    auto m = MemoryManager::CreateMemory(allocatorType, memoryData);
+    if (m == nullptr) {
+        IMAGE_LOGE("CreateYuvMemory failed");
+        return m;
+    }
+
+#if !defined(CROSS_PLATFORM)
+    if (allocatorType == AllocatorType::DMA_ALLOC) {
+        if (m->extend.data == nullptr) {
+            IMAGE_LOGE("CreateYuvMemory get surfacebuffer failed");
+            return m;
+        }
+        auto sb = reinterpret_cast<SurfaceBuffer*>(m->extend.data);
+        OH_NativeBuffer_Planes *planes = nullptr;
+        GSError retVal = sb->GetPlanesInfo(reinterpret_cast<void**>(&planes));
+        if (retVal != OHOS::GSERROR_OK || planes == nullptr) {
+            IMAGE_LOGE("CreateYuvMemory Get planesInfo failed, retVal:%{public}d", retVal);
+        } else if (planes->planeCount >= NUM_2) {
+            int32_t pixelFmt = sb->GetFormat();
+            ImageUtils::GetYUVStrideInfo(pixelFmt, planes, dstStrides);
+        }
+        if (srcSurfaceBuffer != nullptr) {
+            sptr<SurfaceBuffer> sourceSurfaceBuffer(reinterpret_cast<SurfaceBuffer*>(srcSurfaceBuffer));
+            sptr<SurfaceBuffer> dstSurfaceBuffer(reinterpret_cast<SurfaceBuffer*>(sb));
+            VpeUtils::CopySurfaceBufferInfo(sourceSurfaceBuffer, dstSurfaceBuffer);
+        }
+    }
+#endif
+
+    return m;
 }
 
 static void WriteDataNV12Convert(uint8_t *srcPixels, const Size &size, uint8_t *dstPixels,
@@ -242,9 +298,9 @@ static void FillDstFrameInfo(AVFrame *frame, uint8_t *pixels, YuvImageInfo &info
 {
     if (info.format == AVPixelFormat::AV_PIX_FMT_NV21 || info.format == AVPixelFormat::AV_PIX_FMT_NV12) {
         frame->data[0] = pixels;
-        frame->data[1] = pixels + GetYSize(info.width, info.height);
-        frame->linesize[0] = info.width;
-        frame->linesize[1] = GetUVStride(info.width);
+        frame->data[1] = pixels + GetYSize(info.yuvDataInfo.yStride, info.height);
+        frame->linesize[0] = info.yuvDataInfo.yStride;
+        frame->linesize[1] = GetUVStride(info.yuvDataInfo.uvStride);
     } else if (info.format == AVPixelFormat::AV_PIX_FMT_P010LE) {
         av_image_fill_arrays(frame->data, frame->linesize, pixels,
             info.format, info.yuvDataInfo.yStride, info.height, 1);

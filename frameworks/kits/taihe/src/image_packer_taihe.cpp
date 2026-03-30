@@ -277,6 +277,7 @@ static OHOS::Media::PackOption ParsePackOptions(PackingOption const& options)
     packOption.desiredDynamicRange = ParseDynamicRange(options);
     IMAGE_LOGI("ParsePackOptions format:[%{public}s]", packOption.format.c_str());
     packOption.needsPackProperties = ParseNeedsPackProperties(options);
+    packOption.embedThumbnailMaxSize = options.embedThumbnailMaxSize.value_or(0);
     return packOption;
 }
 

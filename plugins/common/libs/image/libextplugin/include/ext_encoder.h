@@ -102,6 +102,7 @@ private:
     uint32_t WriteJpegUncodedData(std::shared_ptr<AuxiliaryPicture>& auxPicture, SkWStream& skStream);
     void WriteJpegAuxiliarySizeAndTag(uint32_t size, std::shared_ptr<AuxiliaryPicture>& auxPicture,
         SkWStream& skStream);
+    bool ShouldGenerateThumbnail();
     uint32_t ProcessJpegThumbnail();
 #ifdef HEIF_HW_ENCODE_ENABLE
     void EncodeHeifMetadata(std::vector<HDI::Codec::Image::V2_1::ItemRef> &refs,
@@ -133,6 +134,7 @@ private:
     GSError HwSetColorSpaceData(Media::PixelMap* pixelmap, sptr<SurfaceBuffer>& buffer);
     uint32_t AssembleSdrImageItem(sptr<SurfaceBuffer>& surfaceBuffer, SkImageInfo sdrInfo,
         std::vector<HDI::Codec::Image::V2_1::ImageItem>& inputImgs);
+    uint32_t AssembleHeifThumbnail(std::vector<HDI::Codec::Image::V2_1::ImageItem>& inputImgs);
     uint32_t AssembleHeifHdrPicture(
         sptr<SurfaceBuffer>& mainSptr, bool sdrIsSRGB, std::vector<HDI::Codec::Image::V2_1::ImageItem>& inputImgs);
     uint32_t AssembleHeifAuxiliaryNoncodingMap(std::vector<HDI::Codec::Image::V2_1::ImageItem>& inputImgs,

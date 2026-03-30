@@ -140,6 +140,7 @@ public:
     static bool CheckMulOverflow(int32_t width, int32_t bytesPerPixel);
     static bool CheckMulOverflow(int32_t width, int32_t height, int32_t bytesPerPixel);
     static bool CheckFloatMulOverflow(float num1, float num2);
+    static bool CheckFloatToInt32Overflow(float value);
     static void BGRAToARGB(uint8_t* srcPixels, uint8_t* dstPixels, uint32_t byteCount);
     static void ARGBToBGRA(uint8_t* srcPixels, uint8_t* dstPixels, uint32_t byteCount);
     static int32_t SurfaceBuffer_Reference(void* buffer);
@@ -188,6 +189,9 @@ public:
     static bool IsMetadataTypeSupported(MetadataType metadataType);
     static const std::set<AuxiliaryPictureType> &GetAllAuxiliaryPictureType();
     static const std::set<MetadataType> &GetAllMetadataType();
+    static uint32_t GetThumbnailScaleTargetSize(const Size &sourceSize, const int32_t &maxPixelSize, Size &dstSize,
+        float &scale);
+    static uint32_t ScaleThumbnailWithAspectRatio(std::unique_ptr<PixelMap> &pixelMap, const int32_t &maxPixelSize);
     static size_t GetAstcBytesCount(const ImageInfo& imageInfo);
     static bool StrToUint32(const std::string& str, uint32_t& value);
     static bool IsInRange(uint32_t value, uint32_t minValue, uint32_t maxValue);
@@ -284,6 +288,7 @@ public:
         }
         return oss.str();
     }
+    static void GetYUVStrideInfo(int32_t pixelFmt, OH_NativeBuffer_Planes *planes, YUVStrideInfo &dstStrides);
 private:
     static uint32_t RegisterPluginServer();
     static uint32_t SaveDataToFile(const std::string& fileName, const char* data, const size_t& totalSize);

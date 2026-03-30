@@ -452,7 +452,7 @@ enum class AuxiliaryPictureType {
     UNREFOCUS_MAP = 3,
     LINEAR_MAP = 4,
     FRAGMENT_MAP = 5,
-    THUMBNAIL = 10,
+    THUMBNAIL = 101,
 };
 
 struct DownSamplingScaleFactor {
@@ -506,8 +506,8 @@ struct DecodingOptionsForPicture {
 };
 
 struct DecodingOptionsForThumbnail {
-    Size desiredSize;
-    bool needGenerate = false;
+    int32_t maxGenerateSize = 512;
+    bool generateThumbnailIfAbsent = true;
     PixelFormat desiredPixelFormat = PixelFormat::RGBA_8888;
     AllocatorType allocatorType = AllocatorType::DMA_ALLOC;
 };

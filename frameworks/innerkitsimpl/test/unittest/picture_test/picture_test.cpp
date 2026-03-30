@@ -1051,6 +1051,44 @@ HWTEST_F(PictureTest, GetAuxPicturePixelMapTest002, TestSize.Level1)
 }
 
 /**
+* @tc.name: SetAuxPicturePixelMapTest001
+* @tc.desc: Verify set all auxiliary picture pixel maps.
+* @tc.type: FUNC
+*/
+HWTEST_F(PictureTest, SetAuxPicturePixelMapTest001, TestSize.Level1)
+{
+    std::unique_ptr<Picture> picture = CreatePicture();
+    ASSERT_NE(picture, nullptr);
+    const auto types = ImageUtils::GetAllAuxiliaryPictureType();
+    for (const auto &type : types) {
+        std::shared_ptr<PixelMap> pixelMap = CreatePixelMap();
+        ASSERT_NE(pixelMap, nullptr);
+        picture->SetAuxPicturePixelMap(type, pixelMap);
+        auto getPixelMap = picture->GetAuxPicturePixelMap(type);
+        EXPECT_NE(getPixelMap, nullptr);
+        EXPECT_EQ(getPixelMap->GetHeight(), SIZE_HEIGHT);
+    }
+}
+
+/**
+* @tc.name: SetAuxPicturePixelMapTest002
+* @tc.desc: Verify set null auxiliary picture pixel map.
+* @tc.type: FUNC
+*/
+HWTEST_F(PictureTest, SetAuxPicturePixelMapTest002, TestSize.Level1)
+{
+    std::unique_ptr<Picture> picture = CreatePicture();
+    ASSERT_NE(picture, nullptr);
+    const auto types = ImageUtils::GetAllAuxiliaryPictureType();
+    for (const auto &type : types) {
+        std::shared_ptr<PixelMap> pixelMap = nullptr;
+        picture->SetAuxPicturePixelMap(type, pixelMap);
+        auto getPixelMap = picture->GetAuxPicturePixelMap(type);
+        EXPECT_EQ(getPixelMap, nullptr);
+    }
+}
+
+/**
 * @tc.name: GetThumbnailPixelmapTest001
 * @tc.desc: Verify get thumbnail pixel map.
 * @tc.type: FUNC
@@ -1062,7 +1100,7 @@ HWTEST_F(PictureTest, GetThumbnailPixelmapTest001, TestSize.Level1)
     std::unique_ptr<Picture> picture = CreatePicture();
     ASSERT_NE(picture, nullptr);
     picture->SetAuxiliaryPicture(thumbnailAuxPicture);
-    auto thumbnailPixelMap = picture->GetThumbnailPixelMap();
+    auto thumbnailPixelMap = picture->GetAuxPicturePixelMap(AuxiliaryPictureType::THUMBNAIL);
     EXPECT_NE(thumbnailPixelMap, nullptr);
     EXPECT_EQ(thumbnailPixelMap->GetHeight(), SIZE_HEIGHT);
 }
@@ -1079,7 +1117,7 @@ HWTEST_F(PictureTest, GetThumbnailPixelmapTest002, TestSize.Level2)
     std::unique_ptr<Picture> picture = CreatePicture();
     ASSERT_NE(picture, nullptr);
     picture->SetAuxiliaryPicture(thumbnailAuxPicture);
-    std::shared_ptr<PixelMap> desPixelMap = picture->GetThumbnailPixelMap();
+    std::shared_ptr<PixelMap> desPixelMap = picture->GetAuxPicturePixelMap(AuxiliaryPictureType::THUMBNAIL);
     EXPECT_EQ(desPixelMap, nullptr);
 }
 
@@ -1094,8 +1132,8 @@ HWTEST_F(PictureTest, SetThumbnailPixelmapTest001, TestSize.Level1)
     ASSERT_NE(thumbnailPixelMap, nullptr);
     std::unique_ptr<Picture> picture = CreatePicture();
     ASSERT_NE(picture, nullptr);
-    picture->SetThumbnailPixelMap(thumbnailPixelMap);
-    auto thumbnailPixelMapByGet = picture->GetThumbnailPixelMap();
+    picture->SetAuxPicturePixelMap(AuxiliaryPictureType::THUMBNAIL, thumbnailPixelMap);
+    auto thumbnailPixelMapByGet = picture->GetAuxPicturePixelMap(AuxiliaryPictureType::THUMBNAIL);
     EXPECT_NE(thumbnailPixelMapByGet, nullptr);
     EXPECT_EQ(thumbnailPixelMapByGet->GetHeight(), SIZE_HEIGHT);
 }

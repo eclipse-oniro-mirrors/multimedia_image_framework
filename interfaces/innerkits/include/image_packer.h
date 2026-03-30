@@ -92,6 +92,13 @@ struct PackOption {
      * Paking for edit scene.
      */
     bool isEditScene = true;
+
+    /**
+     * The maximum size of the embedded thumbnail in pixels. Default value: 0.
+     * If this value is greater than 0, a thumbnail will be attempted to be embedded in the image.
+     * Currently, this parameter is only valid for the JPEG and HEIF format of the Picture.
+     */
+    int32_t embedThumbnailMaxSize = 0;
 };
 
 class PackerStream;

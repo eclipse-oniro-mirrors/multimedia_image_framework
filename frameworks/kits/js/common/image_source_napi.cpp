@@ -59,6 +59,7 @@ namespace {
     constexpr int32_t ALLOCATOR_TYPE_INDEX_1 = 1;
     constexpr uint32_t XTSTYLE = 3;
     constexpr uint32_t RFDATAB = 4;
+    constexpr int32_t DEFAULT_MAX_GENERATE_SIZE = 512;
 }
 
 namespace OHOS {
@@ -1819,35 +1820,26 @@ static bool ParseDecodeOptions(napi_env env, napi_value root, DecodeOptions* opt
     return ParseDecodeOptions2(env, root, opts, error);
 }
 
-static bool IsSizeInvalid(const Size &size)
+static bool ParseDecodeOptionsForThumbnail(napi_env env, napi_value root, DecodingOptionsForThumbnail *opts)
 {
-    return size.width < 0 || size.height < 0;
-}
-
-static bool ParseDecodeOptionsForThumbnail(napi_env env, napi_value root, DecodingOptionsForThumbnail *opts,
-    std::string &error)
-{
-    napi_value tmpValue = nullptr;
-
     if (opts == nullptr) {
         IMAGE_LOGE("opts is nullptr");
         return false;
     }
 
-    if (!GET_NODE_BY_NAME(root, "desiredSize", tmpValue)) {
-        IMAGE_LOGD("no desiredSize");
-    } else {
-        if (!ParseSize(env, tmpValue, &(opts->desiredSize))) {
-            IMAGE_LOGD("ParseSize error");
-        }
-        if (IsSizeInvalid(opts->desiredSize)) {
-            IMAGE_LOGE("%{public}s: desiredSize is invalid, size: (%{public}d, %{public}d)",
-                __func__, opts->desiredSize.width, opts->desiredSize.height);
-            return false;
-        }
+    if (!GET_BOOL_BY_NAME(root, "generateThumbnailIfAbsent", opts->generateThumbnailIfAbsent)) {
+        IMAGE_LOGD("no generateThumbnailIfAbsent, use default value: true");
     }
-    if (!GET_BOOL_BY_NAME(root, "needGenerate", opts->needGenerate)) {
-        IMAGE_LOGD("no needGenerate");
+
+    napi_value tmpValue = nullptr;
+    if (!GET_NODE_BY_NAME(root, "maxGenerateSize", tmpValue)) {
+        opts->maxGenerateSize = DEFAULT_MAX_GENERATE_SIZE;
+        IMAGE_LOGD("no maxGenerateSize, use default value: 512");
+    } else {
+        if (!ImageNapiUtils::GetInt32ByName(env, root, "maxGenerateSize", &opts->maxGenerateSize)) {
+            opts->maxGenerateSize = DEFAULT_MAX_GENERATE_SIZE;
+            IMAGE_LOGD("maxGenerateSize get failed, use default value: 512");
+        }
     }
     return true;
 }
@@ -2356,6 +2348,21 @@ static void CreatePixelMapComplete(napi_env env, napi_status status, void *data)
     ImageSourceCallbackRoutine(env, context, result);
 }
 
+static void CreateThumbnailComplete(napi_env env, napi_status status, void *data)
+{
+    IMAGE_LOGD("[ImageSourceNapi]CreateThumbnailComplete IN");
+    napi_value result = nullptr;
+    auto context = static_cast<ImageSourceAsyncContext*>(data);
+
+    if (context->status == SUCCESS) {
+        result = PixelMapNapi::CreatePixelMap(env, context->rPixelMap);
+    } else {
+        napi_get_undefined(env, &result);
+    }
+    IMAGE_LOGD("[ImageSourceNapi]CreateThumbnailComplete OUT");
+    ImageSourceCallbackRoutine(env, context, result);
+}
+
 static napi_value CreatePixelMapCompleteSync(napi_env env, napi_status status, ImageSourceSyncContext *context)
 {
     IMAGE_LOGD("CreatePixelMapCompleteSync IN");
@@ -2381,6 +2388,24 @@ static napi_value CreatePixelMapThrowErrorCompleteSync(napi_env env, napi_status
         result = PixelMapNapi::CreatePixelMap(env, context->rPixelMap);
     } else {
         napi_get_undefined(env, &result);
+    }
+    return result;
+}
+
+static napi_value CreateThumbnailSyncComplete(napi_env env, napi_status status,
+    ImageSourceSyncContext *context)
+{
+    napi_value result = nullptr;
+    if (context->status == SUCCESS) {
+        result = PixelMapNapi::CreatePixelMap(env, context->rPixelMap);
+    } else {
+        napi_get_undefined(env, &result);
+    }
+
+    if (context->status != SUCCESS) {
+        for (const auto &[errorCode, errMsg] : context->errMsgArray) {
+            ImageNapiUtils::ThrowExceptionError(env, errorCode, errMsg);
+        }
     }
     return result;
 }
@@ -5242,20 +5267,20 @@ napi_value ImageSourceNapi::CreateThumbnail(napi_env env, napi_callback_info inf
     if (argCount > 0) {
         if (ImageNapiUtils::getType(env, argValue[DECODE_OPTS_INDEX_0]) == napi_object) {
             if (!ParseDecodeOptionsForThumbnail(env, argValue[DECODE_OPTS_INDEX_0],
-                &(asyncContext->decodingOptsForThumbnail), asyncContext->errMsg)) {
-                IMAGE_LOGE("DecodeOptions mismatch");
+                &(asyncContext->decodingOptsForThumbnail))) {
+                IMAGE_LOGE("DecodingOptionsForThumbnail mismatch");
                 return ImageNapiUtils::ThrowExceptionError(env, IMAGE_SOURCE_INVALID_PARAMETER,
-                    "DecodeOptions mismatch");
+                    "DecodingOptionsForThumbnail mismatch");
             }
         } else {
             return ImageNapiUtils::ThrowExceptionError(env, IMAGE_SOURCE_INVALID_PARAMETER,
-                "DecodeOptions type mismatch");
+                "DecodingOptionsForThumbnail type mismatch");
         }
     }
     napi_create_promise(env, &(asyncContext->deferred), &result);
     ImageNapiUtils::HicheckerReport();
     IMG_CREATE_CREATE_ASYNC_WORK_WITH_QOS(env, status, "CreateThumbnail", CreateThumbnailExecute,
-        CreatePixelMapComplete, asyncContext, asyncContext->work, napi_qos_user_initiated);
+        CreateThumbnailComplete, asyncContext, asyncContext->work, napi_qos_user_initiated);
 
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, IMAGE_LOGE("fail to create async work"));
     return result;
@@ -5282,14 +5307,14 @@ napi_value ImageSourceNapi::CreateThumbnailSync(napi_env env, napi_callback_info
     if (argCount > 0) {
         if (ImageNapiUtils::getType(env, argValue[DECODE_OPTS_INDEX_0]) == napi_object) {
             if (!ParseDecodeOptionsForThumbnail(env, argValue[DECODE_OPTS_INDEX_0],
-                &(syncContext->decodingOptsForThumbnail), syncContext->errMsg)) {
-                IMAGE_LOGE("DecodeOptions mismatch");
+                &(syncContext->decodingOptsForThumbnail))) {
+                IMAGE_LOGE("DecodingOptionsForThumbnail mismatch");
                 return ImageNapiUtils::ThrowExceptionError(env, IMAGE_SOURCE_INVALID_PARAMETER,
-                    "DecodeOptions mismatch");
+                    "DecodingOptionsForThumbnail mismatch");
             }
         } else {
             return ImageNapiUtils::ThrowExceptionError(env, IMAGE_SOURCE_INVALID_PARAMETER,
-                "DecodeOptions type mismatch");
+                "DecodingOptionsForThumbnail type mismatch");
         }
     }
     syncContext->rPixelMap = syncContext->constructor_->nativeImgSrc->CreateThumbnail(
@@ -5297,8 +5322,7 @@ napi_value ImageSourceNapi::CreateThumbnailSync(napi_env env, napi_callback_info
     if (syncContext->status != SUCCESS) {
         syncContext->errMsgArray.emplace(ImageErrorConvert::CreateThumbnailMakeErrMsg(syncContext->status));
     }
-    result = CreatePixelMapThrowErrorCompleteSync(env, status,
-        static_cast<ImageSourceSyncContext*>((syncContext).get()));
+    result = CreateThumbnailSyncComplete(env, status, static_cast<ImageSourceSyncContext*>((syncContext).get()));
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, IMAGE_LOGE("fail to create Thumbnail"));
     return result;
 }

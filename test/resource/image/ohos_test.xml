@@ -495,6 +495,7 @@
             <option name="push" value="images/heif_exif_thumbnail.heic -> /data/local/tmp/image" src="res"/>
             <option name="push" value="images/heif_box_thumbnail.heic -> /data/local/tmp/image" src="res"/>
             <option name="push" value="images/heif_no_thumbnail.heic -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/test_jpeg_100_300.jpg -> /data/local/tmp/image" src="res"/>
             <option name="push" value="images/test_dng_mock.dng -> /data/local/tmp/image" src="res"/>
         </preparer>
     </target>
