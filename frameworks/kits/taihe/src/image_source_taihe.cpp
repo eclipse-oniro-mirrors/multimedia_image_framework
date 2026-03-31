@@ -2038,14 +2038,15 @@ ImageMetadataPackage ImageSourceImpl::ReadImageMetadataPackage(optional_view<arr
         context->keyStrArray = ImageTaiheUtils::GetArrayString(propertyKeys.value());
     }
 
-    context->index = static_cast<uint32_t>(index.value_or(0));
+    int32_t idx = index.value_or(0);
     uint32_t errorCode = 0;
     uint32_t frameCount = context->rImageSource->GetFrameCount(errorCode);
-    if (context->index < 0 || errorCode != OHOS::Media::SUCCESS || context->index >= frameCount) {
+    if (idx < 0 || errorCode != OHOS::Media::SUCCESS || static_cast<uint32_t>(idx) >= frameCount) {
         ImageTaiheUtils::ThrowExceptionError(IMAGE_SOURCE_INVALID_PARAMETER, "Invalid readImageMetadata index");
         return {};
     }
-    IMAGE_LOGD("%{public}s: index is %{public}d", __func__, context->index);
+    context->index = static_cast<uint32_t>(idx);
+    IMAGE_LOGD("%{public}s: index is %{public}u", __func__, context->index);
 
     std::set<OHOS::Media::MetadataType> metadataTypesSet;
     if (context->keyStrArray.empty()) {
@@ -2077,6 +2078,7 @@ static void ParseMetadataTypes(optional_view<array<MetadataType>> src, std::set<
 static const std::map<std::string, OHOS::Media::PropertyValueType> &GetMetadataKeyMapByType(
     OHOS::Media::MetadataType type)
 {
+    static const std::map<std::string, OHOS::Media::PropertyValueType> emptyMap{};
     switch (type) {
         case OHOS::Media::MetadataType::EXIF:
             return OHOS::Media::ExifMetadata::GetExifMetadataMap();
@@ -2091,7 +2093,7 @@ static const std::map<std::string, OHOS::Media::PropertyValueType> &GetMetadataK
         case OHOS::Media::MetadataType::WEBP:
             return OHOS::Media::ExifMetadata::GetWebPMetadataMap();
         default:
-            return std::map<std::string, OHOS::Media::PropertyValueType>();
+            return emptyMap;
     }
 }
 
@@ -2144,13 +2146,15 @@ ImageMetadataPackage ImageSourceImpl::ReadImageMetadataPackageByType(optional_vi
     std::set<OHOS::Media::MetadataType> metadataTypesSet;
     ParseMetadataTypes(metadataTypes, metadataTypesSet);
 
-    context->index = static_cast<uint32_t>(index.value_or(0));
+    int32_t idx = index.value_or(0);
     uint32_t errorCode = 0;
     uint32_t frameCount = context->rImageSource->GetFrameCount(errorCode);
-    if (context->index < 0 || errorCode != OHOS::Media::SUCCESS || context->index >= frameCount) {
+    if (idx < 0 || errorCode != OHOS::Media::SUCCESS || static_cast<uint32_t>(idx) >= frameCount) {
         ImageTaiheUtils::ThrowExceptionError(IMAGE_SOURCE_INVALID_PARAMETER, "Invalid readImageMetadataByType index");
         return {};
     }
+    context->index = static_cast<uint32_t>(idx);
+    IMAGE_LOGD("%{public}s: index is %{public}u", __func__, context->index);
 
     if (NeedReadMetadataProperties(metadataTypesSet)) {
         context->keyStrArray = GetKeysByTypeSet(metadataTypesSet);
