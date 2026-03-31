@@ -62,9 +62,11 @@ struct FreeDeleter {
             for (size_t i = 0; i < g_supportedFormatSize; ++i) {
                 if (ptr[i].data != nullptr) {
                     free(ptr[i].data);
+                    ptr[i].data = nullptr;
                 }
             }
             delete[] ptr;
+            ptr = nullptr;
         }
     }
 };
@@ -738,6 +740,7 @@ Image_ErrorCode OH_ImagePackerNative_GetSupportedFormats(Image_MimeType** suppor
             IMAGE_LOGE("ImagePacker strdup failed");
             for (size_t i = 0; i < count; ++i) {
                 free(newFormats[i].data);
+                newFormats[i].data = nullptr;
             }
             newFormats.reset();
             g_supportedFormatSize = 0;
