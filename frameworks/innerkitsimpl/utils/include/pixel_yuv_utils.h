@@ -40,6 +40,8 @@ extern "C" {
 namespace OHOS {
 namespace Media {
 
+class AbsMemory;
+
 struct XYaxis {
     float xAxis = 0;
     float yAxis = 0;
@@ -112,6 +114,10 @@ public:
      * @return true if the axis is legal, false otherwise
      */
     static bool IsLegalAxis(float xAxis, float yAxis, ImageInfo &info);
+
+    static std::unique_ptr<AbsMemory> CreateYuvMemory(PixelFormat pixelFormat, const std::string &memoryTag,
+        int32_t dstWidth, int32_t dstHeight, AllocatorType allocatorType, uint64_t usage, void *srcSurfaceBuffer,
+        YUVStrideInfo &dstStrides);
 };
 } // namespace Media
 } // namespace OHOS

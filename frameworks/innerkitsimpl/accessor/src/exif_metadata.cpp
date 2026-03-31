@@ -1283,12 +1283,17 @@ bool ExifMetadata::SetThumbnail(uint8_t *data, const uint32_t &size)
     // Free old thumbnail memory if it exists
     CHECK_ERROR_RETURN_RET_LOG(!DropThumbnail(), false, "%{public}s: Drop thumbnail failed", __func__);
     // Allocate a new memory for thumbnail.
-    ExifMem* mem = exif_data_get_priv_mem(exifData_);
+    ExifMem *mem = exif_data_get_priv_mem(exifData_);
     CHECK_ERROR_RETURN_RET_LOG(mem == nullptr, false, "%{public}s: GetExif mem allocator failed", __func__);
     exifData_->data = static_cast<unsigned char *>(exif_mem_alloc(mem, size));
     CHECK_ERROR_RETURN_RET_LOG(exifData_->data == nullptr, false,
         "%{public}s: exif_mem_alloc failed, size: %{public}u", __func__, size);
-    memcpy_s(exifData_->data, size, data, size);
+
+    if (memcpy_s(exifData_->data, size, data, size) != EOK) {
+        IMAGE_LOGE("%{public}s: memcpy_s failed", __func__);
+        exif_mem_free(mem, exifData_->data);
+        return false;
+    }
     exifData_->size = size;
     IMAGE_LOGI("%{public}s success! size: %{public}u", __func__, size);
     return true;
@@ -1302,7 +1307,7 @@ bool ExifMetadata::DropThumbnail()
         IMAGE_LOGD("%{public}s: No thumbnail to drop", __func__);
         return true;
     }
-    ExifMem* mem = exif_data_get_priv_mem(exifData_);
+    ExifMem *mem = exif_data_get_priv_mem(exifData_);
     CHECK_ERROR_RETURN_RET_LOG(mem == nullptr, false, "%{public}s: GetExif mem allocator failed", __func__);
     exif_mem_free(mem, exifData_->data);
     exifData_->data = nullptr;

@@ -317,6 +317,7 @@ struct PackingOption {
   bufferSize: Optional<i32>;
   desiredDynamicRange: Optional<PackingDynamicRange>;
   needsPackProperties: Optional<bool>;
+  embedThumbnailMaxSize: Optional<i32>;
 }
 
 struct PackingOptionsForSequence {
@@ -611,8 +612,8 @@ struct DecodingOptionsForPicture {
 }
 
 struct DecodingOptionsForThumbnail {
-  desiredSize: Optional<Size>;
-  needGenerate: Optional<bool>;
+  maxGenerateSize: Optional<i32>;
+  generateThumbnailIfAbsent: Optional<bool>;
 }
 
 struct AuxiliaryPictureInfo {
@@ -872,15 +873,9 @@ interface Picture {
 
   GetGainmapPixelmap(): NullablePixelMap;
 
-  GetThumbnailPixelmap(): NullablePixelMap;
-
-  SetThumbnailPixelmap(thumbnailPixelmap: PixelMap): void;
-
   SetAuxiliaryPicture(type: AuxiliaryPictureType, auxiliaryPicture: AuxiliaryPicture): void;
 
   GetAuxiliaryPicture(type: AuxiliaryPictureType): AuxPicture;
-
-  DropAuxiliaryPicture(type: AuxiliaryPictureType): void;
 
   @promise @rename("setMetadata")
   SetMetadataSync(metadataType: MetadataType, metadata: Metadata): void;

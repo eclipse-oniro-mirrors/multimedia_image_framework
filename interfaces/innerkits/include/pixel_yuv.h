@@ -75,6 +75,8 @@ public:
         OpenSourceLibyuv::RotationMode &rotateNum);
     bool YuvRotateConvert(Size &srcSize, int32_t degrees, Size &dstSize,
                           OpenSourceLibyuv::RotationMode &rotateNum, YUVDataInfo yuvDataInfo);
+    NATIVEEXPORT static std::unique_ptr<PixelMap> CreateThumbnailPixelMap(PixelMap &source, int32_t maxPixelSize,
+        int32_t &errorCode);
 protected:
     bool CheckPixelsInput(const uint8_t *dst, const uint64_t &bufferSize, const uint32_t &offset, const Rect &region);
     void SetRowDataSizeForImageInfo(ImageInfo info);
@@ -89,6 +91,7 @@ protected:
         const OHOS::ColorManager::ColorSpace &grColorSpace);
     NATIVEEXPORT uint32_t ApplyColorSpace(const OHOS::ColorManager::ColorSpace &grColorSpace) override;
 #endif
+    static std::unique_ptr<PixelMap> CloneYuvImpl(PixelMap &source, int32_t &errorCode);
 private:
     bool IsP010Yuv();
     void GetYUVInfoForCopyPixels(YUVDataInfo &yuvDataInfo);

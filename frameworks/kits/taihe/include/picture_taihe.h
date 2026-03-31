@@ -40,8 +40,6 @@ public:
     optional<PixelMap> GetHdrComposedPixelmapSync();
     optional<PixelMap> GetHdrComposedPixelmapWithOptionsSync(optional_view<HdrComposeOptions> options);
     NullablePixelMap GetGainmapPixelmap();
-    NullablePixelMap GetThumbnailPixelmap();
-    void SetThumbnailPixelmap(PixelMap thumbnailPixelmap);
     void SetAuxiliaryPicture(AuxiliaryPictureType type, weak::AuxiliaryPicture auxiliaryPicture);
     AuxPicture GetAuxiliaryPicture(AuxiliaryPictureType type);
     void DropAuxiliaryPicture(AuxiliaryPictureType type);

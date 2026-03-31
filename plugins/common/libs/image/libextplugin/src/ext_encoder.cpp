@@ -37,6 +37,7 @@
 #include "astc_codec.h"
 #endif
 
+#include "auxiliary_picture.h"
 #include "ext_pixel_convert.h"
 #include "ext_wstream.h"
 #include "image_data_statistics.h"
@@ -1335,6 +1336,9 @@ uint32_t ExtEncoder::AssembleHeifThumbnail(std::vector<ImageItem>& inputImgs)
     sptr<SurfaceBuffer> thumbnailSptr = ConvertPixelMapToDmaBuffer(thumbnail->GetContentPixel());
     cond = thumbnailSptr == nullptr;
     CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER, "%{public}s thumbnailSptr is nullptr", __func__);
+    // Thumbnail should always be SDR, clear any HDR metadata
+    VpeUtils::SetSbColorSpaceType(thumbnailSptr, sdrIsSRGB ? CM_SRGB_FULL : CM_P3_FULL);
+    VpeUtils::SetSbMetadataType(thumbnailSptr, CM_METADATA_NONE);
     item.pixelBuffer = sptr<NativeBuffer>::MakeSptr(thumbnailSptr->GetBufferHandle());
     std::string auxTypeStr = itemInfo.itemType;
 
@@ -1923,9 +1927,13 @@ uint32_t ExtEncoder::ProcessJpegThumbnail()
     CHECK_ERROR_RETURN_RET_LOG(picture_ == nullptr, ERR_IMAGE_DATA_ABNORMAL,
         "%{public}s: picture is nullptr", __func__);
     std::shared_ptr<PixelMap> pixelMap = picture_->GetMainPixel();
-    std::shared_ptr<PixelMap> thumbnailPixelMap = picture_->GetThumbnailPixelMap();
-    CHECK_ERROR_RETURN_RET_LOG(pixelMap == nullptr || thumbnailPixelMap == nullptr, ERR_IMAGE_DATA_ABNORMAL,
-        "%{public}s: mainPixelMap or thumbnailPixelMap is nullptr, stop process jpeg thumbnail", __func__);
+    std::shared_ptr<PixelMap> thumbnailPixelMap = picture_->GetAuxPicturePixelMap(AuxiliaryPictureType::THUMBNAIL);
+    CHECK_ERROR_RETURN_RET_LOG(pixelMap == nullptr, ERR_IMAGE_DATA_ABNORMAL,
+        "%{public}s: mainPixelMap is nullptr", __func__);
+    if (thumbnailPixelMap == nullptr) {
+        IMAGE_LOGI("%{public}s: Thumbnail pixel map is nullptr, stop processing jpeg thumbnail", __func__);
+        return SUCCESS;
+    }
 
     // Encode thumbnail
     ImageTrace imageTrace("%{publics}: size:(%d, %d)", __func__,
@@ -1939,6 +1947,7 @@ uint32_t ExtEncoder::ProcessJpegThumbnail()
     ExtWStream wStream(stream.get());
     // thumbnail always use JPEG format
     ScopeRestorer<SkEncodedImageFormat> encodeFormatRestorer(encodeFormat_, SkEncodedImageFormat::kJPEG);
+    ScopeRestorer<EncodeDynamicRange> dynamicRangeRestorer(opts_.desiredDynamicRange, EncodeDynamicRange::SDR);
     ScopeRestorer<PixelMap*> pixelmapRestorer(pixelmap_, thumbnailPixelMap.get());
     errorCode = EncodeImageByPixelMap(thumbnailPixelMap.get(), false, wStream);
     if (errorCode != SUCCESS) {
@@ -1951,7 +1960,45 @@ uint32_t ExtEncoder::ProcessJpegThumbnail()
     }
 
     // Fill Exif with encoded thumbnail data
-    return FillExifThumbnail(pixelMap.get(), packedData.data(), wStream.bytesWritten());
+    errorCode = FillExifThumbnail(pixelMap.get(), packedData.data(), wStream.bytesWritten());
+    CHECK_ERROR_RETURN_RET(errorCode != SUCCESS, errorCode);
+    picture_->SetExifMetadata(pixelMap->GetExifMetadata());
+    return SUCCESS;
+}
+
+bool ExtEncoder::ShouldGenerateThumbnail()
+{
+    return opts_.needsPackProperties && opts_.embedThumbnailMaxSize > 0;
+}
+
+static bool GenerateThumbnailForPicture(Media::Picture *picture, const int32_t &embedThumbnailMaxSize)
+{
+    bool cond = picture == nullptr;
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "%{public}s: picture is nullptr", __func__);
+    cond = (embedThumbnailMaxSize <= 0);
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "%{public}s: Thumbnail generation is enabled only when "
+        "embedThumbnailMaxSize > 0.", __func__);
+
+    int32_t errorCode = static_cast<int32_t>(ERROR);
+    auto mainPixelMap = picture->GetMainPixel();
+    CHECK_ERROR_RETURN_RET_LOG(mainPixelMap == nullptr, false, "%{public}s: mainPixelMap is nullptr", __func__);
+    std::unique_ptr<PixelMap> pixelMap = nullptr;
+    if (ImageUtils::IsYuvFormat(mainPixelMap->GetPixelFormat())) {
+        pixelMap = PixelYuv::CreateThumbnailPixelMap(*mainPixelMap, embedThumbnailMaxSize, errorCode);
+    } else {
+        pixelMap = mainPixelMap->Clone(errorCode);
+        errorCode = static_cast<int32_t>(ImageUtils::ScaleThumbnailWithAspectRatio(pixelMap, embedThumbnailMaxSize));
+    }
+    CHECK_ERROR_RETURN_RET_LOG(errorCode != SUCCESS || pixelMap == nullptr, false,
+        "%{public}s: Scale thumbnail failed! errorCode: %{public}d", __func__, errorCode);
+
+    std::shared_ptr<PixelMap> sharedPixelMap = std::move(pixelMap);
+    std::shared_ptr<AuxiliaryPicture> auxThumb = AuxiliaryPicture::Create(sharedPixelMap,
+        AuxiliaryPictureType::THUMBNAIL, {sharedPixelMap->GetWidth(), sharedPixelMap->GetHeight()});
+    cond = (auxThumb == nullptr || auxThumb->GetContentPixel() == nullptr);
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "%{public}s: Create thumbnail auxiliary picture failed", __func__);
+    picture->SetAuxiliaryPicture(auxThumb);
+    return true;
 }
 
 uint32_t ExtEncoder::EncodePicture()
@@ -1959,6 +2006,9 @@ uint32_t ExtEncoder::EncodePicture()
     bool cond = (encodeFormat_ != SkEncodedImageFormat::kJPEG && encodeFormat_ != SkEncodedImageFormat::kHEIF);
     CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER,
         "%{public}s: unsupported encode format: %{public}s", __func__, opts_.format.c_str());
+    if (ShouldGenerateThumbnail() && !GenerateThumbnailForPicture(picture_, opts_.embedThumbnailMaxSize)) {
+        IMAGE_LOGW("%{public}s: Generate thumbnail for picture failed", __func__);
+    }
     if (opts_.isEditScene && encodeFormat_ == SkEncodedImageFormat::kHEIF) {
         return EncodeEditScenePicture();
     }

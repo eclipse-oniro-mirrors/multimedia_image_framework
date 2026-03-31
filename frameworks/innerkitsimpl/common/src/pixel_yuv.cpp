@@ -53,9 +53,6 @@ static const int32_t DEGREES90 = 90;
 static const int32_t DEGREES180 = 180;
 static const int32_t DEGREES270 = 270;
 static const int32_t DEGREES360 = 360;
-static const int32_t PLANE_Y = 0;
-static const int32_t PLANE_U = 1;
-static const int32_t PLANE_V = 2;
 static const float ROUND_FLOAT_NUMBER = 0.5f;
 constexpr uint8_t Y_SHIFT = 16;
 constexpr uint8_t U_SHIFT = 8;
@@ -234,37 +231,6 @@ bool PixelYuv::YuvRotateConvert(Size &srcSize, int32_t degrees, Size &dstSize,
     }
 }
 
-#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
-static void GetYUVStrideInfo(int32_t pixelFmt, OH_NativeBuffer_Planes *planes, YUVStrideInfo &dstStrides)
-{
-    if (pixelFmt == GRAPHIC_PIXEL_FMT_YCBCR_420_SP) {
-        auto yStride = planes->planes[PLANE_Y].columnStride;
-        auto uvStride = planes->planes[PLANE_U].columnStride;
-        auto yOffset = planes->planes[PLANE_Y].offset;
-        auto uvOffset = planes->planes[PLANE_U].offset;
-        dstStrides = {yStride, uvStride, yOffset, uvOffset};
-    } else if (pixelFmt == GRAPHIC_PIXEL_FMT_YCRCB_420_SP) {
-        auto yStride = planes->planes[PLANE_Y].columnStride;
-        auto uvStride = planes->planes[PLANE_V].columnStride;
-        auto yOffset = planes->planes[PLANE_Y].offset;
-        auto uvOffset = planes->planes[PLANE_V].offset;
-        dstStrides = {yStride, uvStride, yOffset, uvOffset};
-    } else if (pixelFmt == GRAPHIC_PIXEL_FMT_YCBCR_P010) {
-        auto yStride = planes->planes[PLANE_Y].columnStride / 2;
-        auto uvStride = planes->planes[PLANE_U].columnStride / 2;
-        auto yOffset = planes->planes[PLANE_Y].offset / 2;
-        auto uvOffset = planes->planes[PLANE_U].offset / 2;
-        dstStrides = {yStride, uvStride, yOffset, uvOffset};
-    } else if (pixelFmt == GRAPHIC_PIXEL_FMT_YCRCB_P010) {
-        auto yStride = planes->planes[PLANE_Y].columnStride / 2;
-        auto uvStride = planes->planes[PLANE_V].columnStride / 2;
-        auto yOffset = planes->planes[PLANE_Y].offset / 2;
-        auto uvOffset = planes->planes[PLANE_V].offset / 2;
-        dstStrides = {yStride, uvStride, yOffset, uvOffset};
-    }
-}
-#endif
-
 std::unique_ptr<AbsMemory> PixelYuv::CreateMemory(PixelFormat pixelFormat, std::string memoryTag, int32_t dstWidth,
     int32_t dstHeight, YUVStrideInfo &dstStrides)
 {
@@ -304,7 +270,7 @@ std::unique_ptr<AbsMemory> PixelYuv::CreateMemory(PixelFormat pixelFormat, std::
             IMAGE_LOGE("CreateMemory Get planesInfo failed, retVal:%{public}d", retVal);
         } else if (planes->planeCount >= NUM_2) {
             int32_t pixelFmt = sb->GetFormat();
-            GetYUVStrideInfo(pixelFmt, planes, dstStrides);
+            ImageUtils::GetYUVStrideInfo(pixelFmt, planes, dstStrides);
         }
         sptr<SurfaceBuffer> sourceSurfaceBuffer(reinterpret_cast<SurfaceBuffer*>(GetFd()));
         sptr<SurfaceBuffer> dstSurfaceBuffer(reinterpret_cast<SurfaceBuffer*>(sb));
@@ -1070,5 +1036,268 @@ uint32_t PixelYuv::ApplyColorSpace(const OHOS::ColorManager::ColorSpace &grColor
     return SetColorSpace(grColorSpace, src, format, rowStride);
 }
 #endif
+
+static bool CopyYuvPlanes(PixelMap &source, PixelMap &dstPixelMap)
+{
+    ImageInfo srcInfo;
+    ImageInfo dstInfo;
+    source.GetImageInfo(srcInfo);
+    dstPixelMap.GetImageInfo(dstInfo);
+    bool cond = !ImageUtils::IsYuvFormat(srcInfo.pixelFormat) || srcInfo.pixelFormat != dstInfo.pixelFormat;
+    CHECK_ERROR_RETURN_RET(cond, false);
+    cond = (source.GetPixels() == nullptr || dstPixelMap.GetPixels() == nullptr);
+    CHECK_ERROR_RETURN_RET(cond, false);
+    cond = (srcInfo.size.width != dstInfo.size.width || srcInfo.size.height != dstInfo.size.height);
+    CHECK_ERROR_RETURN_RET(cond, false);
+
+    YUVDataInfo srcYuv {};
+    YUVDataInfo dstYuv {};
+    source.GetImageYUVInfo(srcYuv);
+    dstPixelMap.GetImageYUVInfo(dstYuv);
+
+    const bool isP010 = (srcInfo.pixelFormat == PixelFormat::YCBCR_P010 ||
+        srcInfo.pixelFormat == PixelFormat::YCRCB_P010);
+    const uint32_t bytesPerSample = isP010 ? 2 : 1;
+
+    auto srcBase = const_cast<uint8_t *>(source.GetPixels());
+    auto dstBase = const_cast<uint8_t *>(dstPixelMap.GetPixels());
+    const uint32_t srcCapacity = source.GetCapacity();
+    const uint32_t dstCapacity = dstPixelMap.GetCapacity();
+
+    const uint64_t srcYStrideBytes = static_cast<uint64_t>(srcYuv.yStride) * bytesPerSample;
+    const uint64_t srcUvStrideBytes = static_cast<uint64_t>(srcYuv.uvStride) * bytesPerSample;
+    const uint64_t dstYStrideBytes = static_cast<uint64_t>(dstYuv.yStride) * bytesPerSample;
+    const uint64_t dstUvStrideBytes = static_cast<uint64_t>(dstYuv.uvStride) * bytesPerSample;
+    const uint64_t srcYOffsetBytes = static_cast<uint64_t>(srcYuv.yOffset) * bytesPerSample;
+    const uint64_t srcUvOffsetBytes = static_cast<uint64_t>(srcYuv.uvOffset) * bytesPerSample;
+    const uint64_t dstYOffsetBytes = static_cast<uint64_t>(dstYuv.yOffset) * bytesPerSample;
+    const uint64_t dstUvOffsetBytes = static_cast<uint64_t>(dstYuv.uvOffset) * bytesPerSample;
+
+    const uint64_t yRowBytes = static_cast<uint64_t>(srcInfo.size.width) * bytesPerSample;
+    const uint64_t uvRowBytes = static_cast<uint64_t>(srcYuv.uvWidth) * 2ULL * bytesPerSample;
+    const uint64_t yPlaneBytes = srcYStrideBytes * static_cast<uint64_t>(srcYuv.yHeight);
+    const uint64_t uvPlaneBytes = srcUvStrideBytes * static_cast<uint64_t>(srcYuv.uvHeight);
+
+    cond = (srcYOffsetBytes + yPlaneBytes > srcCapacity || srcUvOffsetBytes + uvPlaneBytes > srcCapacity);
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "CopyYuvPlanes source out of range, capacity=%{public}u", srcCapacity);
+
+    cond = (dstYOffsetBytes + dstYStrideBytes * static_cast<uint64_t>(dstYuv.yHeight) > dstCapacity ||
+        dstUvOffsetBytes + dstUvStrideBytes * static_cast<uint64_t>(dstYuv.uvHeight) > dstCapacity);
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "CopyYuvPlanes destination out of range, capacity=%{public}u", dstCapacity);
+    
+    cond = (yRowBytes > srcYStrideBytes || yRowBytes > dstYStrideBytes || uvRowBytes > srcUvStrideBytes ||
+        uvRowBytes > dstUvStrideBytes);
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "CopyYuvPlanes invalid stride for yuv copy");
+
+    for (uint32_t row = 0; row < srcYuv.yHeight; ++row) {
+        const uint8_t *srcRow = srcBase + srcYOffsetBytes + row * srcYStrideBytes;
+        uint8_t *dstRow = dstBase + dstYOffsetBytes + row * dstYStrideBytes;
+
+        cond = (memcpy_s(dstRow, static_cast<size_t>(dstYStrideBytes), srcRow, static_cast<size_t>(yRowBytes)) != EOK);
+        CHECK_ERROR_RETURN_RET_LOG(cond, false, "CopyYuvPlanes y plane copy failed");
+    }
+
+    for (uint32_t row = 0; row < srcYuv.uvHeight; ++row) {
+        const uint8_t *srcRow = srcBase + srcUvOffsetBytes + row * srcUvStrideBytes;
+        uint8_t *dstRow = dstBase + dstUvOffsetBytes + row * dstUvStrideBytes;
+        
+        cond = (memcpy_s(dstRow, static_cast<size_t>(dstUvStrideBytes), srcRow,
+            static_cast<size_t>(uvRowBytes)) != EOK);
+        CHECK_ERROR_RETURN_RET_LOG(cond, false, "CopyYuvPlanes uv plane copy failed");
+    }
+
+    ImageUtils::FlushSurfaceBuffer(&dstPixelMap);
+    return true;
+}
+
+std::unique_ptr<PixelMap> PixelYuv::CloneYuvImpl(PixelMap &source, int32_t &errorCode)
+{
+    ImageInfo imageInfo;
+    source.GetImageInfo(imageInfo);
+    if (!ImageUtils::IsYuvFormat(imageInfo.pixelFormat)) {
+        errorCode = ERR_IMAGE_READ_PIXELMAP_FAILED;
+        return nullptr;
+    }
+    if (imageInfo.size.width <= 0 || imageInfo.size.height <= 0) {
+        errorCode = ERR_IMAGE_INVALID_PARAMETER;
+        return nullptr;
+    }
+
+    InitializationOptions opts;
+    opts.srcPixelFormat = imageInfo.pixelFormat;
+    opts.pixelFormat = imageInfo.pixelFormat;
+    opts.alphaType = imageInfo.alphaType;
+    opts.size = imageInfo.size;
+    opts.editable = source.IsEditable();
+    opts.useDMA = (source.GetAllocatorType() == AllocatorType::DMA_ALLOC);
+    auto dstPixelMap = PixelMap::Create(opts);
+    if (dstPixelMap == nullptr) {
+        errorCode = ERR_IMAGE_INVALID_PARAMETER;
+        return nullptr;
+    }
+
+    if (!CopyYuvPlanes(source, *dstPixelMap.get())) {
+        errorCode = ERR_IMAGE_MALLOC_ABNORMAL;
+        return nullptr;
+    }
+
+    dstPixelMap->SetTransformered(source.IsTransformered());
+    TransformData transformData;
+    source.GetTransformData(transformData);
+    dstPixelMap->SetTransformData(transformData);
+    dstPixelMap->SetHdrType(source.GetHdrType());
+    dstPixelMap->SetHdrMetadata(source.GetHdrMetadata());
+
+#ifdef IMAGE_COLORSPACE_FLAG
+    OHOS::ColorManager::ColorSpace colorspace = source.InnerGetGrColorSpace();
+    dstPixelMap->InnerSetColorSpace(colorspace);
+#endif
+
+    errorCode = SUCCESS;
+    return dstPixelMap;
+}
+
+static void GetYuvDataInfo(PixelMap &source, YUVDataInfo &yuvDataInfo)
+{
+    // For DMA allocator, retrieve correct stride/offset from SurfaceBuffer planes.
+    // The stride/offset returned by GetImageYUVInfo may be incomplete or incorrect for DMA buffers in some scenes.
+    if (source.GetAllocatorType() == AllocatorType::DMA_ALLOC) {
+        SurfaceBuffer *sb = reinterpret_cast<SurfaceBuffer *>(source.GetFd());
+        if (sb != nullptr) {
+            OH_NativeBuffer_Planes *planes = nullptr;
+            GSError retVal = sb->GetPlanesInfo(reinterpret_cast<void**>(&planes));
+            if (retVal == OHOS::GSERROR_OK && planes != nullptr && planes->planeCount >= NUM_2) {
+                int32_t pixelFmt = sb->GetFormat();
+                YUVStrideInfo strideInfo;
+                ImageUtils::GetYUVStrideInfo(pixelFmt, planes, strideInfo);
+                if (strideInfo.yStride > 0 && strideInfo.uvStride > 0) {
+                    yuvDataInfo.yStride = strideInfo.yStride;
+                    yuvDataInfo.uvStride = strideInfo.uvStride;
+                    yuvDataInfo.yOffset = strideInfo.yOffset;
+                    yuvDataInfo.uvOffset = strideInfo.uvOffset;
+                    IMAGE_LOGD("CreateThumbnailPixelMap use DMA stride: yStride=%{public}d, uvStride=%{public}d",
+                        yuvDataInfo.yStride, yuvDataInfo.uvStride);
+                }
+            } else {
+                IMAGE_LOGE("CreateThumbnailPixelMap GetPlanesInfo failed, retVal:%{public}d", retVal);
+            }
+        }
+    }
+}
+
+static void SetDstYuvDataInfo(Size size, YUVStrideInfo dstStrides, YUVDataInfo &dstYuvDataInfo)
+{
+    dstYuvDataInfo.imageSize = {size.width, size.height};
+    dstYuvDataInfo.yWidth = static_cast<uint32_t>(size.width);
+    dstYuvDataInfo.yHeight = static_cast<uint32_t>(size.height);
+    dstYuvDataInfo.uvWidth = static_cast<uint32_t>((size.width + 1) / NUM_2);
+    dstYuvDataInfo.uvHeight = static_cast<uint32_t>(GetUVHeight(size.height));
+    dstYuvDataInfo.yStride = dstStrides.yStride;
+    dstYuvDataInfo.uvStride = dstStrides.uvStride;
+    dstYuvDataInfo.yOffset = dstStrides.yOffset;
+    dstYuvDataInfo.uvOffset = dstStrides.uvOffset;
+}
+
+std::unique_ptr<PixelMap> CreateDstPixelMap(PixelMap &source, Size targetSize, std::unique_ptr<AbsMemory> dstMemory,
+    YUVStrideInfo dstStrides, int32_t &errorCode)
+{
+    ImageInfo imageInfo;
+    source.GetImageInfo(imageInfo);
+    InitializationOptions opts;
+    opts.srcPixelFormat = imageInfo.pixelFormat;
+    opts.pixelFormat = imageInfo.pixelFormat;
+    opts.alphaType = imageInfo.alphaType;
+    opts.size = {targetSize.width, targetSize.height};
+    opts.editable = source.IsEditable();
+    opts.useDMA = (source.GetAllocatorType() == AllocatorType::DMA_ALLOC);
+    auto dstPixelMap = PixelMap::Create(opts);
+    if (dstPixelMap == nullptr) {
+        dstMemory->Release();
+        errorCode = ERR_IMAGE_INVALID_PARAMETER;
+        return nullptr;
+    }
+ 
+    dstPixelMap->SetPixelsAddr(dstMemory->data.data, dstMemory->extend.data, dstMemory->data.size,
+        dstMemory->GetType(), nullptr);
+    imageInfo.size.width = targetSize.width;
+    imageInfo.size.height = targetSize.height;
+    if (dstPixelMap->SetImageInfo(imageInfo, true) != SUCCESS) {
+        dstMemory->Release();
+        errorCode = ERR_IMAGE_DATA_ABNORMAL;
+        return nullptr;
+    }
+    dstPixelMap->UpdateYUVDataInfo(imageInfo.pixelFormat, targetSize.width, targetSize.height, dstStrides);
+    ImageUtils::FlushSurfaceBuffer(dstPixelMap.get());
+ 
+    dstPixelMap->SetTransformered(source.IsTransformered());
+    TransformData transformData;
+    source.GetTransformData(transformData);
+    dstPixelMap->SetTransformData(transformData);
+    dstPixelMap->SetHdrType(ImageHdrType::SDR);
+    dstPixelMap->SetHdrMetadata(nullptr);
+#ifdef IMAGE_COLORSPACE_FLAG
+    OHOS::ColorManager::ColorSpace colorspace = source.InnerGetGrColorSpace();
+    dstPixelMap->InnerSetColorSpace(colorspace);
+#endif
+ 
+    errorCode = SUCCESS;
+    return dstPixelMap;
+}
+
+std::unique_ptr<PixelMap> PixelYuv::CreateThumbnailPixelMap(PixelMap &source, int32_t maxPixelSize, int32_t &errorCode)
+{
+    ImageInfo imageInfo;
+    source.GetImageInfo(imageInfo);
+    if (!ImageUtils::IsYuvFormat(imageInfo.pixelFormat) || imageInfo.size.width <= 0 || imageInfo.size.height <= 0) {
+        errorCode = ERR_IMAGE_INVALID_PARAMETER;
+        return nullptr;
+    }
+    Size targetSize;
+    float scale = 1.0f;
+    errorCode = ImageUtils::GetThumbnailScaleTargetSize(imageInfo.size, maxPixelSize, targetSize, scale);
+    CHECK_ERROR_RETURN_RET(errorCode != SUCCESS, nullptr);
+    if (scale == 1.0f) {
+        return CloneYuvImpl(source, errorCode);
+    }
+    targetSize.width = targetSize.width - (targetSize.width % NUM_2);
+    targetSize.height = targetSize.height - (targetSize.height % NUM_2);
+    YUVStrideInfo dstStrides;
+    void *srcSurfaceBuffer = nullptr;
+#if !defined(CROSS_PLATFORM)
+    if (source.GetAllocatorType() == AllocatorType::DMA_ALLOC) {
+        srcSurfaceBuffer = reinterpret_cast<void *>(source.GetFd());
+    }
+#endif
+    auto dstMemory = PixelYuvUtils::CreateYuvMemory(imageInfo.pixelFormat, "thumbnail ImageData", targetSize.width,
+        targetSize.height, source.GetAllocatorType(), source.GetNoPaddingUsage(), srcSurfaceBuffer, dstStrides);
+    if (dstMemory == nullptr || dstMemory->data.data == nullptr) {
+        errorCode = ERR_IMAGE_MALLOC_ABNORMAL;
+        return nullptr;
+    }
+ 
+    YUVDataInfo yuvDataInfo;
+    source.GetImageYUVInfo(yuvDataInfo);
+#if !defined(CROSS_PLATFORM)
+    GetYuvDataInfo(source, yuvDataInfo);
+#endif
+ 
+    YUVDataInfo dstYuvDataInfo = yuvDataInfo;
+    SetDstYuvDataInfo(targetSize, dstStrides, dstYuvDataInfo);
+ 
+    YuvImageInfo srcInfo = {PixelYuvUtils::ConvertFormat(imageInfo.pixelFormat),
+        imageInfo.size.width, imageInfo.size.height, imageInfo.pixelFormat, yuvDataInfo};
+    YuvImageInfo dstInfo = {PixelYuvUtils::ConvertFormat(imageInfo.pixelFormat),
+        targetSize.width, targetSize.height, imageInfo.pixelFormat, dstYuvDataInfo};
+ 
+    uint8_t *dstData = reinterpret_cast<uint8_t *>(dstMemory->data.data);
+    int32_t ret = PixelYuvUtils::YuvScale(const_cast<uint8_t *>(source.GetPixels()), srcInfo, dstData, dstInfo,
+        PixelYuvUtils::YuvConvertOption(AntiAliasingOption::HIGH));
+    if (ret != SUCCESS) {
+        dstMemory->Release();
+        errorCode = ERR_IMAGE_DATA_ABNORMAL;
+        return nullptr;
+    }
+    return CreateDstPixelMap(source, targetSize, std::move(dstMemory), dstStrides, errorCode);
+}
 } // namespace Media
 } // namespace OHOS

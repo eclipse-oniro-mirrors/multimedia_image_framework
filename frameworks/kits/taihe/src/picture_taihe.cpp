@@ -143,38 +143,6 @@ NullablePixelMap PictureImpl::GetGainmapPixelmap()
     }
 }
 
-NullablePixelMap PictureImpl::GetThumbnailPixelmap()
-{
-    IMAGE_LOGD("GetThumbnailPixelmap");
-    if (nativePicture_ == nullptr) {
-        ImageTaiheUtils::ThrowExceptionError(IMAGE_BAD_PARAMETER, "Picture is a null pointer");
-        return NullablePixelMap::make_type_null();
-    }
-
-    auto thumbnailPixelmap = nativePicture_->GetThumbnailPixelMap();
-    if (thumbnailPixelmap == nullptr) {
-        IMAGE_LOGE("%{public}s Get thumbnail pixelmap failed, thumbnail pixelmap is nullptr", __func__);
-        return NullablePixelMap::make_type_null();
-    }
-    return NullablePixelMap::make_type_pixelMap(PixelMapImpl::CreatePixelMap(thumbnailPixelmap));
-}
-
-void PictureImpl::SetThumbnailPixelmap(PixelMap thumbnailPixelmap)
-{
-    IMAGE_LOGD("SetThumbnailPixelmap IN");
-    if (nativePicture_ == nullptr) {
-        ImageTaiheUtils::ThrowExceptionError(IMAGE_BAD_PARAMETER, "Picture is a null pointer");
-        return;
-    }
-
-    std::shared_ptr<OHOS::Media::PixelMap> nativeThumbnailPixelmap = PixelMapImpl::GetPixelMap(thumbnailPixelmap);
-    if (nativeThumbnailPixelmap == nullptr) {
-        ImageTaiheUtils::ThrowExceptionError(IMAGE_BAD_PARAMETER, "native thumbnail pixelmap is nullptr");
-        return;
-    }
-    nativePicture_->SetThumbnailPixelMap(nativeThumbnailPixelmap);
-}
-
 static OHOS::Media::AuxiliaryPictureType ParseAuxiliaryPictureType(int32_t val)
 {
     if (!ImageTaiheUtils::GetTaiheSupportedAuxTypes().count(static_cast<OHOS::Media::AuxiliaryPictureType>(val))) {
@@ -252,8 +220,9 @@ void PictureImpl::DropAuxiliaryPicture(AuxiliaryPictureType type)
     IMAGE_LOGD("DropAuxiliaryPicture IN");
     OHOS::Media::AuxiliaryPictureType auxType = ParseAuxiliaryPictureType(type.get_value());
     if (auxType == OHOS::Media::AuxiliaryPictureType::NONE) {
-        ImageTaiheUtils::ThrowExceptionError(IMAGE_BAD_PARAMETER,
+        ImageTaiheUtils::ThrowExceptionError(IMAGE_INVALID_PARAMETER,
             "The type does not match the auxiliary picture type!");
+        return;
     }
 
     if (nativePicture_ == nullptr) {

@@ -674,6 +674,12 @@ bool ImageUtils::CheckFloatMulOverflow(float num1, float num2)
     return false;
 }
 
+bool ImageUtils::CheckFloatToInt32Overflow(float value)
+{
+    return value > static_cast<float>(std::numeric_limits<int32_t>::max()) ||
+        value < static_cast<float>(std::numeric_limits<int32_t>::min());
+}
+
 static void ReversePixels(uint8_t* srcPixels, uint8_t* dstPixels, uint32_t byteCount)
 {
     if (byteCount % NUM_4 != NUM_0) {
@@ -1562,7 +1568,6 @@ const std::set<AuxiliaryPictureType> &ImageUtils::GetAllAuxiliaryPictureType()
         AuxiliaryPictureType::UNREFOCUS_MAP,
         AuxiliaryPictureType::LINEAR_MAP,
         AuxiliaryPictureType::FRAGMENT_MAP,
-        AuxiliaryPictureType::THUMBNAIL,
     };
     return auxTypes;
 }
@@ -1582,6 +1587,86 @@ const std::set<MetadataType> &ImageUtils::GetAllMetadataType()
         MetadataType::HW_MAKER_NOTE,
     };
     return metadataTypes;
+}
+
+static inline bool IsSizeValid(const Size &size)
+{
+    return (size.width > NUM_0 && size.height > NUM_0);
+}
+
+uint32_t ImageUtils::GetThumbnailScaleTargetSize(const Size &sourceSize, const int32_t &maxPixelSize, Size &dstSize,
+    float &scale)
+{
+    bool cond = (maxPixelSize <= 0);
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER, "%{public}s: invalid maxPixelSize: %{public}d",
+        __func__, maxPixelSize);
+
+    cond = !IsSizeValid(sourceSize);
+    const auto [originalWidth, originalHeight] = sourceSize;
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_DATA_ABNORMAL, "%{public}s: source size is invalid,"
+        "size: (%{public}d,%{public}d)", __func__, originalWidth, originalHeight);
+
+    /*
+        Calculate the scaling factor: take the smaller value of (maxPixelSize / original width) and
+        (maxPixelSize / original height), and ensure it does not exceed 1 (only shrinking without enlarging)
+    */
+    float scaleX = static_cast<float>(maxPixelSize) / originalWidth;
+    float scaleY = static_cast<float>(maxPixelSize) / originalHeight;
+    scale = std::min({scaleX, scaleY, 1.0f});
+    if (ImageUtils::FloatCompareZero(1.0f - scale)) {
+        dstSize.width = originalWidth;
+        dstSize.height = originalHeight;
+        return SUCCESS;
+    }
+
+    cond = ImageUtils::CheckFloatMulOverflow(originalWidth, scale);
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER, "%{public}s: originalWidth * scale overflow",
+        __func__);
+    cond = ImageUtils::CheckFloatMulOverflow(originalHeight, scale);
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER, "%{public}s: originalHeight * scale overflow",
+        __func__);
+
+    float scaledWidth = std::round(originalWidth * scale);
+    float scaledHeight = std::round(originalHeight * scale);
+    cond = ImageUtils::CheckFloatToInt32Overflow(scaledWidth);
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER, "%{public}s: scaledWidth overflow int32_t",
+        __func__);
+    cond = ImageUtils::CheckFloatToInt32Overflow(scaledHeight);
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER, "%{public}s: scaledHeight overflow int32_t",
+        __func__);
+
+    dstSize.width = static_cast<int32_t>(scaledWidth);
+    dstSize.height = static_cast<int32_t>(scaledHeight);
+    cond = (dstSize.width == 0 || dstSize.height == 0);
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER,
+        "%{public}s: scaled size has zero dimension: (%{public}d,%{public}d)", __func__, dstSize.width, dstSize.height);
+    return SUCCESS;
+}
+
+uint32_t ImageUtils::ScaleThumbnailWithAspectRatio(std::unique_ptr<PixelMap> &pixelMap, const int32_t &maxPixelSize)
+{
+    bool cond = (pixelMap == nullptr);
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_DATA_ABNORMAL, "%{public}s: pixelMap is nullptr!", __func__);
+
+    ImageInfo imageInfo;
+    pixelMap->GetImageInfo(imageInfo);
+    Size &scaledSize = imageInfo.size;
+    Size dstSize;
+    float scale = 1.0f;
+    uint32_t ret = GetThumbnailScaleTargetSize(scaledSize, maxPixelSize, dstSize, scale);
+    CHECK_ERROR_RETURN_RET_LOG(ret != SUCCESS, ret, "%{public}s: get thumbnail scale target size failed", __func__);
+
+    if (dstSize.width == scaledSize.width && dstSize.height == scaledSize.height) {
+        IMAGE_LOGI("%{public}s: no need to scale, originalSize:(%{public}d,%{public}d)",
+            __func__, scaledSize.width, scaledSize.height);
+        return SUCCESS;
+    }
+
+    pixelMap->scale(scale, scale, AntiAliasingOption::HIGH);
+    pixelMap->GetImageInfo(imageInfo);
+    IMAGE_LOGI("%{public}s: maxPixelSize: %{public}d, scaledSize: (%{public}d,%{public}d)",
+        __func__, maxPixelSize, scaledSize.width, scaledSize.height);
+    return SUCCESS;
 }
 
 size_t ImageUtils::GetAstcBytesCount(const ImageInfo& imageInfo)
@@ -2391,5 +2476,36 @@ bool ImageUtils::CalcRGBStride(PixelFormat format, uint32_t width, int &stride)
     stride = static_cast<int>(width * pixelBytes);
     return true;
 }
+
+#if !defined(CROSS_PLATFORM)
+void ImageUtils::GetYUVStrideInfo(int32_t pixelFmt, OH_NativeBuffer_Planes *planes, YUVStrideInfo &dstStrides)
+{
+    if (pixelFmt == GRAPHIC_PIXEL_FMT_YCBCR_420_SP) {
+        auto yStride = planes->planes[PLANE_Y].columnStride;
+        auto uvStride = planes->planes[PLANE_U].columnStride;
+        auto yOffset = planes->planes[PLANE_Y].offset;
+        auto uvOffset = planes->planes[PLANE_U].offset;
+        dstStrides = {yStride, uvStride, yOffset, uvOffset};
+    } else if (pixelFmt == GRAPHIC_PIXEL_FMT_YCRCB_420_SP) {
+        auto yStride = planes->planes[PLANE_Y].columnStride;
+        auto uvStride = planes->planes[PLANE_V].columnStride;
+        auto yOffset = planes->planes[PLANE_Y].offset;
+        auto uvOffset = planes->planes[PLANE_V].offset;
+        dstStrides = {yStride, uvStride, yOffset, uvOffset};
+    } else if (pixelFmt == GRAPHIC_PIXEL_FMT_YCBCR_P010) {
+        auto yStride = planes->planes[PLANE_Y].columnStride / NUM_2;
+        auto uvStride = planes->planes[PLANE_U].columnStride / NUM_2;
+        auto yOffset = planes->planes[PLANE_Y].offset / NUM_2;
+        auto uvOffset = planes->planes[PLANE_U].offset / NUM_2;
+        dstStrides = {yStride, uvStride, yOffset, uvOffset};
+    } else if (pixelFmt == GRAPHIC_PIXEL_FMT_YCRCB_P010) {
+        auto yStride = planes->planes[PLANE_Y].columnStride / NUM_2;
+        auto uvStride = planes->planes[PLANE_V].columnStride / NUM_2;
+        auto yOffset = planes->planes[PLANE_Y].offset / NUM_2;
+        auto uvOffset = planes->planes[PLANE_V].offset / NUM_2;
+        dstStrides = {yStride, uvStride, yOffset, uvOffset};
+    }
+}
+#endif
 } // namespace Media
 } // namespace OHOS

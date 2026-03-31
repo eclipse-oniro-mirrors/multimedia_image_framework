@@ -417,16 +417,15 @@ void GetImagePropertiesByFuzzTest(const uint8_t *data, size_t size)
     imageSource->ModifyImagePropertyBlob(nullAccessor, properties);
 }
 
-static std::shared_ptr<PixelMap> CreateThumbnail(const uint8_t *data, size_t size)
+static std::shared_ptr<PixelMap> CreateThumbnailTest(const uint8_t *data, size_t size)
 {
     auto imageSource = ConstructImageSourceByBuffer(data, size);
     if (!imageSource) {
         return nullptr;
     }
     DecodingOptionsForThumbnail opts;
-    opts.desiredSize.width = FDP->ConsumeIntegralInRange<uint16_t>(0, 0xfff);
-    opts.desiredSize.height = FDP->ConsumeIntegralInRange<uint16_t>(0, 0xfff);
-    opts.needGenerate = FDP->ConsumeBool();
+    opts.generateThumbnailIfAbsent = FDP->ConsumeBool();
+    opts.maxGenerateSize = FDP->ConsumeIntegralInRange<uint32_t>(0, 0xfff);
     uint32_t errorCode { NUM_0 };
     return imageSource->CreateThumbnail(opts, errorCode);
 }
@@ -443,9 +442,9 @@ void PackThumbnailFuzzTest(const uint8_t *data, size_t size)
     if (!picture) {
         return;
     }
-    std::shared_ptr<PixelMap> thumbnail = CreateThumbnail(data, size);
-    picture->SetThumbnailPixelMap(thumbnail);
-    picture->GetThumbnailPixelMap();
+    std::shared_ptr<PixelMap> thumbnail = CreateThumbnailTest(data, size);
+    picture->SetAuxPicturePixelMap(AuxiliaryPictureType::THUMBNAIL, thumbnail);
+    picture->GetAuxPicturePixelMap(AuxiliaryPictureType::THUMBNAIL);
     picture->HasAuxiliaryPicture(AuxiliaryPictureType::THUMBNAIL);
 
     std::string mimeType[] = {"image/png", "image/raw", "image/vnd.wap.wbmp", "image/bmp", "image/gif",
@@ -468,6 +467,7 @@ void PackThumbnailFuzzTest(const uint8_t *data, size_t size)
     packOption.delayTimes = delaytimes;
     uint8_t disposalsize = FDP->ConsumeIntegral<uint8_t>();
     packOption.disposalTypes = FDP->ConsumeBytes<uint8_t>(disposalsize);
+    packOption.embedThumbnailMaxSize = FDP->ConsumeIntegral<int32_t>();
     
     if (pack.StartPacking(IMAGE_DEST, packOption) != SUCCESS) {
         IMAGE_LOGE("%{public}s StartPacking failed.", __func__);
