@@ -43,19 +43,23 @@ public:
         std::string defaultValueStr;
     };
 
+    // ANI helpers
     static bool GetPropertyInt(ani_env *env, ani_object obj, const std::string &name, int32_t &value);
     static bool GetPropertyLong(ani_env *env, ani_object obj, const std::string &name, int64_t &value);
     static bool GetPropertyDouble(ani_env *env, ani_object obj, const std::string &name, double &value);
     static ani_object ToBusinessError(ani_env *env, int32_t code, const std::string &message);
-
-    static OHOS::Media::SourceOptions ParseSourceOptions(SourceOptions const& options);
-    static ImageInfo ToTaiheImageInfo(const OHOS::Media::ImageInfo &src, bool isHdr);
-    static const std::set<OHOS::Media::AuxiliaryPictureType> &GetTaiheSupportedAuxTypes();
-
-    static array<string> ToTaiheArrayString(const std::vector<std::string> &src);
-    static array<uint8_t> CreateTaiheArrayBuffer(uint8_t* src, size_t srcLen);
     static uintptr_t GetUndefinedPtr(ani_env *env);
 
+    // Taihe helpers
+    static const std::set<OHOS::Media::AuxiliaryPictureType> &GetTaiheSupportedAuxTypes();
+    static std::vector<std::string> GetArrayString(const array<string> &src);
+
+    static ImageInfo ToTaiheImageInfo(const OHOS::Media::ImageInfo &src, bool isHdr);
+    static array<string> ToTaiheArrayString(const std::vector<std::string> &src);
+    static array<uint8_t> CreateTaiheArrayBuffer(uint8_t* src, size_t srcLen, bool move = false);
+
+    // Parse parameters helpers
+    static OHOS::Media::SourceOptions ParseSourceOptions(SourceOptions const& options);
     static OHOS::MessageParcel* UnwrapMessageParcel(uintptr_t sequence);
 
     template <typename EnumType, typename ValueType>

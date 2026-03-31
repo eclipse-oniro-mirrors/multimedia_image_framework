@@ -1574,8 +1574,12 @@ const std::set<MetadataType> &ImageUtils::GetAllMetadataType()
         MetadataType::FRAGMENT,
         MetadataType::XTSTYLE,
         MetadataType::RFDATAB,
+        MetadataType::GIF,
         MetadataType::STDATA,
         MetadataType::HEIFS,
+        MetadataType::DNG,
+        MetadataType::WEBP,
+        MetadataType::HW_MAKER_NOTE,
     };
     return metadataTypes;
 }

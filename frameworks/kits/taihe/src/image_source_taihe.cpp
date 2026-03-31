@@ -13,21 +13,33 @@
  * limitations under the License.
  */
 
+#include "image_source_taihe.h"
+
 #include "ani_color_space_object_convertor.h"
 #include "image_common.h"
 #include "image_dfx.h"
 #include "image_error_convert.h"
 #include "image_log.h"
-#include "image_source_taihe.h"
 #include "image_source_taihe_ani.h"
 #include "image_taihe_utils.h"
 #include "image_trace.h"
 #include "image_type.h"
+#include "image_utils.h"
 #include "media_errors.h"
+#include "metadata_taihe.h"
 #include "picture_taihe.h"
 #include "pixel_map_taihe.h"
 #include "exif_metadata_formatter.h"
 #include "xmp_metadata_taihe.h"
+
+#include <iomanip>
+#include <sstream>
+
+#undef LOG_DOMAIN
+#define LOG_DOMAIN LOG_TAG_DOMAIN_ID_IMAGE
+
+#undef LOG_TAG
+#define LOG_TAG "ImageSourceTaihe"
 
 using namespace ANI::Image;
 using JpegYuvDecodeError = OHOS::ImagePlugin::JpegYuvDecodeError;
@@ -35,6 +47,8 @@ using JpegYuvDecodeError = OHOS::ImagePlugin::JpegYuvDecodeError;
 namespace {
     constexpr int INVALID_FD = -1;
     constexpr uint32_t NUM_0 = 0;
+    constexpr uint32_t NUM_2 = 2;
+    constexpr uint32_t NUM_3 = 3;
 }
 
 namespace ANI::Image {
@@ -45,6 +59,8 @@ thread_local void* ImageSourceImpl::fileBuffer_ = nullptr;
 thread_local size_t ImageSourceImpl::fileBufferSize_ = 0;
 
 static std::mutex imageSourceCrossThreadMutex_;
+
+using IntConverter = std::function<MetadataValueType(int32_t)>;
 
 struct ImageSourceTaiheContext {
     ImageSourceImpl *thisPtr;
@@ -77,6 +93,10 @@ struct ImageSourceTaiheContext {
     OHOS::Media::DecodingOptionsForPicture decodingOptsForPicture;
     std::shared_ptr<OHOS::Media::Picture> rPicture;
 #endif
+    std::vector<OHOS::Media::MetadataValue> kValueTypeArray;
+    std::shared_ptr<OHOS::Media::ExifMetadata> rExifMetadata;
+    std::shared_ptr<OHOS::Media::HeifsMetadata> rHeifsMetadata;
+    std::shared_ptr<OHOS::Media::WebPMetadata> rWebPMetadata;
     OHOS::Media::DecodingOptionsForThumbnail decodingOptsForThumbnail;
 };
 
@@ -146,6 +166,36 @@ static std::string GetErrorCodeMsg(Image_ErrorCode apiErrorCode)
         errMsg = iter->second;
     }
     return errMsg;
+}
+
+static std::unordered_map<std::string, std::string> CreateReverseMap(
+    const std::unordered_map<std::string, std::string> &map)
+{
+    std::unordered_map<std::string, std::string> reverse;
+    for (const auto &pair : map) {
+        reverse[pair.second] = pair.first;
+    }
+    return reverse;
+}
+
+static const auto PROPERTY_KEY_MAP_REVERSE = CreateReverseMap(OHOS::Media::ExifMetadata::GetPropertyKeyMap());
+
+static std::string MetadataToPropertyKey(const std::string &metadataKey)
+{
+    auto it = OHOS::Media::ExifMetadata::GetPropertyKeyMap().find(metadataKey);
+    if (it != OHOS::Media::ExifMetadata::GetPropertyKeyMap().end()) {
+        return it->second;
+    }
+    return "";
+}
+
+static std::string PropertyKeyToMetadata(const std::string &propertyKey)
+{
+    auto it = PROPERTY_KEY_MAP_REVERSE.find(propertyKey);
+    if (it != PROPERTY_KEY_MAP_REVERSE.end()) {
+        return it->second;
+    }
+    return "";
 }
 
 ImageSourceImpl::ImageSourceImpl() {}
@@ -1601,6 +1651,28 @@ array<string> ImageSourceImpl::GetSupportedFormats()
     return ImageTaiheUtils::ToTaiheArrayString(vec);
 }
 
+ImageRawData ImageSourceImpl::CreateImageRawData()
+{
+    if (nativeImgSrc == nullptr) {
+        ImageTaiheUtils::ThrowExceptionError("nativeImgSrc is nullptr");
+        return ImageRawData{};
+    }
+
+    std::vector<uint8_t> data;
+    uint32_t bitsPerSample = 0;
+    uint32_t errorCode = nativeImgSrc->GetImageRawData(data, bitsPerSample);
+    if (errorCode != OHOS::Media::SUCCESS) {
+        const auto &[errCode, errMsg] = OHOS::Media::ImageErrorConvert::CreateImageRawDataMakeErrMsg(errorCode);
+        ImageTaiheUtils::ThrowExceptionError(errCode, errMsg);
+        return ImageRawData{};
+    }
+    ImageRawData res = {
+        .buffer = ImageTaiheUtils::CreateTaiheArrayBuffer(data.data(), data.size(), true),
+        .bitsPerPixel = static_cast<int32_t>(bitsPerSample),
+    };
+    return res;
+}
+
 #ifdef XMP_TOOLKIT_SDK_ENABLE
 NullableXMPMetadata ImageSourceImpl::ReadXMPMetadataSync()
 {
@@ -1634,6 +1706,678 @@ void ImageSourceImpl::WriteXMPMetadataSync(XMPMetadata xmpMetadata)
     CHECK_ERROR_RETURN_LOG(errorCode != OHOS::Media::SUCCESS, "%{public}s WriteXMPMetadata failed", __func__);
 }
 #endif
+
+OHOS::Media::MetadataType GetMetadataTypeByKey(const std::string &key)
+{
+    static const std::unordered_map<std::string, OHOS::Media::MetadataType> KEY_TYPE_MAP = [] {
+        std::unordered_map<std::string, OHOS::Media::MetadataType> mapping;
+        for (const auto &[type, _] : OHOS::Media::ExifMetadata::GetExifMetadataMap()) {
+            mapping[type] = OHOS::Media::MetadataType::EXIF;
+        }
+        for (const auto &[type, _] : OHOS::Media::ExifMetadata::GetHwMetadataMap()) {
+            mapping[type] = OHOS::Media::MetadataType::HW_MAKER_NOTE;
+        }
+        for (const auto &[type, _] : OHOS::Media::ExifMetadata::GetHeifsMetadataMap()) {
+            mapping[type] = OHOS::Media::MetadataType::HEIFS;
+        }
+        for (const auto &[type, _] : OHOS::Media::ExifMetadata::GetFragmentMetadataMap()) {
+            mapping[type] = OHOS::Media::MetadataType::FRAGMENT;
+        }
+        for (const auto &[type, _] : OHOS::Media::ExifMetadata::GetGifMetadataMap()) {
+            mapping[type] = OHOS::Media::MetadataType::GIF;
+        }
+        for (const auto &[type, _] : OHOS::Media::ExifMetadata::GetDngMetadataMap()) {
+            mapping[type] = OHOS::Media::MetadataType::DNG;
+        }
+        for (const auto &[type, _] : OHOS::Media::ExifMetadata::GetWebPMetadataMap()) {
+            mapping[type] = OHOS::Media::MetadataType::WEBP;
+        }
+        return mapping;
+    }();
+    auto it = KEY_TYPE_MAP.find(key);
+    return it != KEY_TYPE_MAP.end() ? it->second : OHOS::Media::MetadataType::UNKNOWN;
+}
+
+static auto GetMetadataTypesFromKeys(std::vector<std::string> &keyStrArray)
+{
+    std::set<OHOS::Media::MetadataType> metadataTypesSet;
+    for (const auto &keyStr : keyStrArray) {
+        metadataTypesSet.emplace(GetMetadataTypeByKey(keyStr));
+    }
+    return metadataTypesSet;
+}
+
+static void ReadImageMetadataObjects(std::unique_ptr<ImageSourceTaiheContext> &context,
+    const std::set<OHOS::Media::MetadataType> &metadataTypesSet)
+{
+    CHECK_ERROR_RETURN(context == nullptr);
+
+    const auto shouldReadType = [&metadataTypesSet](OHOS::Media::MetadataType type) -> bool {
+        return metadataTypesSet.count(type);
+    };
+
+    uint32_t errorCode = OHOS::Media::ERROR;
+    if (shouldReadType(OHOS::Media::MetadataType::EXIF) ||
+        shouldReadType(OHOS::Media::MetadataType::HW_MAKER_NOTE)) {
+        context->rExifMetadata = context->rImageSource->GetExifMetadata();
+    }
+    if (shouldReadType(OHOS::Media::MetadataType::HEIFS)) {
+        context->rHeifsMetadata = context->rImageSource->GetHeifsMetadata(context->index, errorCode);
+    }
+    if (shouldReadType(OHOS::Media::MetadataType::WEBP)) {
+        context->rWebPMetadata = context->rImageSource->GetWebPMetadata(context->index, errorCode);
+    }
+}
+
+static void GetAllMetadataProperties(std::unique_ptr<ImageSourceTaiheContext> &context)
+{
+    CHECK_ERROR_RETURN(context == nullptr);
+    auto allProperties = context->rImageSource->GetAllPropertiesWithType(context->index);
+    context->kValueTypeArray = std::move(allProperties);
+
+    // Handle errorCode (As long as 1 Metadata object exists, status is considered as SUCCESS)
+
+    if (context->kValueTypeArray.empty()) {
+        IMAGE_LOGE("%{public}s Failed to get any properties", __func__);
+        context->errMsgArray.emplace(OHOS::Media::ERROR, "AllProperties");
+    }
+}
+
+static void ReadImageMetadataProperties(std::unique_ptr<ImageSourceTaiheContext> &context)
+{
+    CHECK_ERROR_RETURN(context == nullptr);
+
+    if (context->keyStrArray.empty()) {
+        GetAllMetadataProperties(context);
+    } else {
+        uint32_t status = OHOS::Media::SUCCESS;
+        for (const auto &keyStr : context->keyStrArray) {
+            OHOS::Media::MetadataValue metadataValue;
+            status = context->rImageSource->GetImagePropertyByType(context->index, keyStr, metadataValue);
+            if (status == OHOS::Media::SUCCESS) {
+                metadataValue.key = keyStr;
+                metadataValue.type = OHOS::Media::ExifMetadata::GetPropertyValueType(metadataValue.key);
+                context->kValueTypeArray.emplace_back(metadataValue);
+            } else {
+                context->errMsgArray.emplace(status, keyStr);
+                IMAGE_LOGE("%{public}s: errCode: %{public}u, exif key: %{public}s", __func__, status, keyStr.c_str());
+            }
+        }
+        context->status = (context->kValueTypeArray.size() == context->errMsgArray.size()) ?
+            OHOS::Media::ERROR : OHOS::Media::SUCCESS;
+    }
+}
+
+static void InitMetadataObjects(std::unique_ptr<ImageSourceTaiheContext> &context, ImageMetadata &imageMetadata,
+    const std::set<OHOS::Media::MetadataType> &ownedTypes)
+{
+    CHECK_ERROR_RETURN_LOG(context == nullptr, "%{public}s: context is null", __func__);
+    if (context->rExifMetadata != nullptr && ownedTypes.count(OHOS::Media::MetadataType::EXIF)) {
+        imageMetadata.exifMetadata.emplace(make_holder<ExifMetadataImpl, ExifMetadata>(context->rExifMetadata));
+    }
+    if (context->rExifMetadata != nullptr && ownedTypes.count(OHOS::Media::MetadataType::HW_MAKER_NOTE)) {
+        imageMetadata.makerNoteHuaweiMetadata.emplace(
+            make_holder<MakerNoteHuaweiMetadataImpl, MakerNoteHuaweiMetadata>(context->rExifMetadata));
+    }
+    if (context->rHeifsMetadata != nullptr && ownedTypes.count(OHOS::Media::MetadataType::HEIFS)) {
+        imageMetadata.heifsMetadata.emplace(make_holder<HeifsMetadataImpl, HeifsMetadata>(context->rHeifsMetadata));
+    }
+    if (ownedTypes.count(OHOS::Media::MetadataType::DNG)) {
+        imageMetadata.dngMetadata.emplace(make_holder<DngMetadataImpl, DngMetadata>());
+    }
+    if (context->rWebPMetadata != nullptr && ownedTypes.count(OHOS::Media::MetadataType::WEBP)) {
+        imageMetadata.webPMetadata.emplace(make_holder<WebPMetadataImpl, WebPMetadata>(context->rWebPMetadata));
+    }
+}
+
+static bool IsValidMetadataValue(const OHOS::Media::MetadataValue &metadataValue)
+{
+    return !metadataValue.stringValue.empty() ||
+           !metadataValue.intArrayValue.empty() ||
+           !metadataValue.doubleArrayValue.empty() ||
+           !metadataValue.bufferValue.empty();
+}
+
+static void CreateIntPropertyValue(const OHOS::Media::MetadataValue &metadataValue, MetadataValueType &propValue)
+{
+    if (!metadataValue.intArrayValue.empty()) {
+        int64_t value = metadataValue.intArrayValue.front();
+        if (static_cast<int32_t>(value) > std::numeric_limits<int32_t>::max()) {
+            IMAGE_LOGE("%{public}s: int value %{public}lld is out of range", __func__, value);
+            return;
+        }
+        propValue.emplace_type_int(static_cast<int32_t>(value));
+    }
+}
+
+static void CreateDoublePropertyValue(const OHOS::Media::MetadataValue &metadataValue, MetadataValueType &propValue)
+{
+    if (!metadataValue.doubleArrayValue.empty()) {
+        propValue.emplace_type_double(metadataValue.doubleArrayValue.front());
+    }
+}
+
+static void CreateStringPropertyValue(const OHOS::Media::MetadataValue &metadataValue, MetadataValueType &propValue)
+{
+    if (!metadataValue.stringValue.empty()) {
+        propValue.emplace_type_string(metadataValue.stringValue);
+    }
+}
+
+static void CreateIntArrayPropertyValue(const OHOS::Media::MetadataValue &metadataValue, MetadataValueType &propValue)
+{
+    if (!metadataValue.intArrayValue.empty()) {
+        propValue.emplace_type_int_array(taihe::array<int32_t>(taihe::move_data,
+            metadataValue.intArrayValue.data(), metadataValue.intArrayValue.size()));
+    }
+}
+
+static void CreateDoubleArrayPropertyValue(const OHOS::Media::MetadataValue &metadataValue,
+    MetadataValueType &propValue)
+{
+    if (!metadataValue.doubleArrayValue.empty()) {
+        propValue.emplace_type_double_array(taihe::array<double>(taihe::move_data,
+            metadataValue.doubleArrayValue.data(), metadataValue.doubleArrayValue.size()));
+    }
+}
+
+static void CreateBlobPropertyValue(const OHOS::Media::MetadataValue &metadataValue, MetadataValueType &propValue)
+{
+    if (!metadataValue.bufferValue.empty()) {
+        propValue.emplace_type_blob(taihe::array<uint8_t>(taihe::move_data,
+            metadataValue.bufferValue.data(), metadataValue.bufferValue.size()));
+    }
+}
+
+static MetadataType ToTaiheMetadataType(OHOS::Media::MetadataType type)
+{
+    switch (type) {
+        case OHOS::Media::MetadataType::EXIF:
+            return MetadataType::from_value(static_cast<int32_t>(OHOS::Media::MetadataType::EXIF));
+        case OHOS::Media::MetadataType::FRAGMENT:
+            return MetadataType::from_value(static_cast<int32_t>(OHOS::Media::MetadataType::FRAGMENT));
+        case OHOS::Media::MetadataType::GIF:
+            return MetadataType::from_value(static_cast<int32_t>(OHOS::Media::MetadataType::GIF));
+        case OHOS::Media::MetadataType::HEIFS:
+            return MetadataType::from_value(static_cast<int32_t>(OHOS::Media::MetadataType::HEIFS));
+        case OHOS::Media::MetadataType::DNG:
+            return MetadataType::from_value(static_cast<int32_t>(OHOS::Media::MetadataType::DNG));
+        case OHOS::Media::MetadataType::WEBP:
+            return MetadataType::from_value(static_cast<int32_t>(OHOS::Media::MetadataType::WEBP));
+        case OHOS::Media::MetadataType::HW_MAKER_NOTE:
+            return MetadataType::from_value(static_cast<int32_t>(OHOS::Media::MetadataType::HW_MAKER_NOTE));
+        default:
+            return MetadataType::from_value(static_cast<int32_t>(OHOS::Media::MetadataType::UNKNOWN));
+    }
+}
+
+static const std::unordered_map<std::string_view, IntConverter> &GetIntConverterMap()
+{
+    static const std::unordered_map<std::string_view, IntConverter> converterMap = {
+        // Bool values
+        {"HwMnoteIsXmageSupported",      [](int32_t v) { return MetadataValueType::make_type_bool(v != 0); }},
+        {"HwMnoteFrontCamera",           [](int32_t v) { return MetadataValueType::make_type_bool(v != 0); }},
+        {"HwMnoteCloudEnhancementMode",  [](int32_t v) { return MetadataValueType::make_type_bool(v != 0); }},
+        {"HwMnoteWindSnapshotMode",      [](int32_t v) { return MetadataValueType::make_type_bool(v != 0); }},
+
+        // Enum values
+        {"Orientation",                  [](int32_t v) {
+            return MetadataValueType::make_type_enum_orientation(Orientation::from_value(v));
+        }},
+        {"HwMnoteXmageColorMode",               [](int32_t v) {
+            return MetadataValueType::make_type_enum_xmageColorMode(XmageColorMode::from_value(v));
+        }},
+        {"HwMnoteFocusMode",                    [](int32_t v) {
+            return MetadataValueType::make_type_enum_focusMode(FocusMode::from_value(v));
+        }},
+    };
+    return converterMap;
+}
+
+static void AppendMetadataValue(std::vector<MetadataValue> &result, const OHOS::Media::MetadataValue &metadataValue)
+{
+    if (!IsValidMetadataValue(metadataValue)) {
+        return;
+    }
+    const auto metadataType = ToTaiheMetadataType(GetMetadataTypeByKey(metadataValue.key));
+    const std::string fieldName = PropertyKeyToMetadata(metadataValue.key);
+
+    MetadataValueType propValue = MetadataValueType::make_type_undefined();
+    switch (metadataValue.type) {
+        case OHOS::Media::PropertyValueType::INT: {
+            if (metadataValue.intArrayValue.empty()) {
+                break;
+            }
+            auto &converterMap = GetIntConverterMap();
+            auto it = converterMap.find(metadataValue.key);
+            if (it != converterMap.end()) {
+                propValue = it->second(metadataValue.intArrayValue.front());
+            } else {
+                CreateIntPropertyValue(metadataValue, propValue);
+            }
+            break;
+        }
+        case OHOS::Media::PropertyValueType::DOUBLE:
+            CreateDoublePropertyValue(metadataValue, propValue);
+            break;
+        case OHOS::Media::PropertyValueType::STRING:
+            CreateStringPropertyValue(metadataValue, propValue);
+            break;
+        case OHOS::Media::PropertyValueType::INT_ARRAY:
+            CreateIntArrayPropertyValue(metadataValue, propValue);
+            break;
+        case OHOS::Media::PropertyValueType::DOUBLE_ARRAY:
+            CreateDoubleArrayPropertyValue(metadataValue, propValue);
+            break;
+        case OHOS::Media::PropertyValueType::BLOB:
+            CreateBlobPropertyValue(metadataValue, propValue);
+            break;
+        default:
+            break;
+    }
+    result.emplace_back(MetadataValue{metadataType, fieldName, std::move(propValue)});
+}
+
+static array<MetadataValue> ToTaiheMetadataValue(std::vector<OHOS::Media::MetadataValue> &metadataValueArray)
+{
+    std::vector<MetadataValue> result;
+    result.reserve(metadataValueArray.size());
+    for (auto &metadataValue : metadataValueArray) {
+        AppendMetadataValue(result, metadataValue);
+    }
+    return array<MetadataValue>(taihe::move_data, std::make_move_iterator(result.begin()), result.size());
+}
+
+static void ThrowMetadataErrorArray(std::multimap<std::int32_t, std::string> &errMsgArray)
+{
+    for (const auto &[errorCode, errorMsg] : errMsgArray) {
+        if (errorCode == OHOS::Media::ERR_IMAGE_SOURCE_DATA) {
+            ImageTaiheUtils::ThrowExceptionError(IMAGE_SOURCE_UNSUPPORTED_MIMETYPE,
+                "The image source data is incorrect!");
+        } else {
+            std::string errMsg = "unsupported metadata! exif key: " + errorMsg;
+            ImageTaiheUtils::ThrowExceptionError(IMAGE_SOURCE_UNSUPPORTED_METADATA, errMsg);
+        }
+    }
+}
+
+static auto CollectMetadataTypes(const std::vector<OHOS::Media::MetadataValue> &values)
+{
+    std::set<OHOS::Media::MetadataType> types;
+    for (const auto &v : values) {
+        types.emplace(GetMetadataTypeByKey(v.key));
+    }
+    return types;
+}
+
+static ImageMetadataPackage HandleImageMetadataPackage(std::unique_ptr<ImageSourceTaiheContext> &context)
+{
+    CHECK_ERROR_RETURN_RET_LOG(context == nullptr, {}, "context is null");
+
+    ImageMetadataPackage package;
+    if (context->status == OHOS::Media::SUCCESS) {
+        InitMetadataObjects(context, package.metadata, CollectMetadataTypes(context->kValueTypeArray));
+        package.properties.emplace(ToTaiheMetadataValue(context->kValueTypeArray));
+    } else {
+        ThrowMetadataErrorArray(context->errMsgArray);
+    }
+    return package;
+}
+
+ImageMetadataPackage ImageSourceImpl::ReadImageMetadataPackage(optional_view<array<string>> propertyKeys,
+    optional_view<int32_t> index)
+{
+    if (nativeImgSrc == nullptr) {
+        ImageTaiheUtils::ThrowExceptionError(IMAGE_SOURCE_INVALID_PARAMETER, "empty native rImageSource");
+        return {};
+    }
+    std::unique_ptr<ImageSourceTaiheContext> context = std::make_unique<ImageSourceTaiheContext>();
+    context->rImageSource = nativeImgSrc;
+
+    if (propertyKeys.has_value()) {
+        context->keyStrArray = ImageTaiheUtils::GetArrayString(propertyKeys.value());
+    }
+
+    int32_t idx = index.value_or(0);
+    uint32_t errorCode = 0;
+    uint32_t frameCount = context->rImageSource->GetFrameCount(errorCode);
+    if (idx < 0 || errorCode != OHOS::Media::SUCCESS || static_cast<uint32_t>(idx) >= frameCount) {
+        ImageTaiheUtils::ThrowExceptionError(IMAGE_SOURCE_INVALID_PARAMETER, "Invalid readImageMetadata index");
+        return {};
+    }
+    context->index = static_cast<uint32_t>(idx);
+    IMAGE_LOGD("%{public}s: index is %{public}u", __func__, context->index);
+
+    std::set<OHOS::Media::MetadataType> metadataTypesSet;
+    if (context->keyStrArray.empty()) {
+        metadataTypesSet = OHOS::Media::ImageUtils::GetAllMetadataType();
+    } else {
+        metadataTypesSet = GetMetadataTypesFromKeys(context->keyStrArray);
+    }
+    ReadImageMetadataObjects(context, metadataTypesSet);
+    ReadImageMetadataProperties(context);
+    return HandleImageMetadataPackage(context);
+}
+
+static void ParseMetadataTypes(optional_view<array<MetadataType>> src, std::set<OHOS::Media::MetadataType> &dst)
+{
+    if (!src.has_value()) {
+        return;
+    }
+    auto &typeArray = src.value();
+    for (size_t i = 0; i < typeArray.size(); i++) {
+        if (!typeArray[i].is_valid()) {
+            IMAGE_LOGW("Invalid metadata type at index %{public}zu", i);
+            continue;
+        }
+        auto type = static_cast<OHOS::Media::MetadataType>(typeArray[i].get_value());
+        dst.insert(type);
+    }
+}
+
+static const std::map<std::string, OHOS::Media::PropertyValueType> &GetMetadataKeyMapByType(
+    OHOS::Media::MetadataType type)
+{
+    static const std::map<std::string, OHOS::Media::PropertyValueType> emptyMap{};
+    switch (type) {
+        case OHOS::Media::MetadataType::EXIF:
+            return OHOS::Media::ExifMetadata::GetExifMetadataMap();
+        case OHOS::Media::MetadataType::FRAGMENT:
+            return OHOS::Media::ExifMetadata::GetFragmentMetadataMap();
+        case OHOS::Media::MetadataType::GIF:
+            return OHOS::Media::ExifMetadata::GetGifMetadataMap();
+        case OHOS::Media::MetadataType::HEIFS:
+            return OHOS::Media::ExifMetadata::GetHeifsMetadataMap();
+        case OHOS::Media::MetadataType::DNG:
+            return OHOS::Media::ExifMetadata::GetDngMetadataMap();
+        case OHOS::Media::MetadataType::WEBP:
+            return OHOS::Media::ExifMetadata::GetWebPMetadataMap();
+        default:
+            return emptyMap;
+    }
+}
+
+static std::vector<std::string> GetKeysByTypeSet(const std::set<OHOS::Media::MetadataType> &typeSet)
+{
+    std::vector<std::string> result;
+
+    // calculate total size to avoid multiple allocations
+    size_t totalSize = 0;
+    for (const auto &metaType : typeSet) {
+        totalSize += GetMetadataKeyMapByType(metaType).size();
+    }
+    result.reserve(totalSize);
+
+    // collect all keys
+    for (const auto &metaType : typeSet) {
+        const auto &metaMap = GetMetadataKeyMapByType(metaType);
+        for (const auto &[key, _] : metaMap) {
+            result.emplace_back(key);
+        }
+    }
+    return result;
+}
+
+static bool NeedReadMetadataProperties(const std::set<OHOS::Media::MetadataType> &typeSet)
+{
+    if (typeSet.size() == 0) {
+        return true;
+    }
+
+    size_t nonPropertiesNum = 0;
+    for (const auto &[blobType, _] : OHOS::Media::BLOB_METADATA_TAG_MAP) {
+        if (typeSet.count(blobType) > 0) {
+            ++nonPropertiesNum;
+        }
+    }
+    return typeSet.size() > nonPropertiesNum;
+}
+
+ImageMetadataPackage ImageSourceImpl::ReadImageMetadataPackageByType(optional_view<array<MetadataType>> metadataTypes,
+    optional_view<int32_t> index)
+{
+    if (nativeImgSrc == nullptr) {
+        ImageTaiheUtils::ThrowExceptionError(IMAGE_SOURCE_INVALID_PARAMETER, "empty native rImageSource");
+        return {};
+    }
+    std::unique_ptr<ImageSourceTaiheContext> context = std::make_unique<ImageSourceTaiheContext>();
+    context->rImageSource = nativeImgSrc;
+
+    std::set<OHOS::Media::MetadataType> metadataTypesSet;
+    ParseMetadataTypes(metadataTypes, metadataTypesSet);
+
+    int32_t idx = index.value_or(0);
+    uint32_t errorCode = 0;
+    uint32_t frameCount = context->rImageSource->GetFrameCount(errorCode);
+    if (idx < 0 || errorCode != OHOS::Media::SUCCESS || static_cast<uint32_t>(idx) >= frameCount) {
+        ImageTaiheUtils::ThrowExceptionError(IMAGE_SOURCE_INVALID_PARAMETER, "Invalid readImageMetadataByType index");
+        return {};
+    }
+    context->index = static_cast<uint32_t>(idx);
+    IMAGE_LOGD("%{public}s: index is %{public}u", __func__, context->index);
+
+    if (NeedReadMetadataProperties(metadataTypesSet)) {
+        context->keyStrArray = GetKeysByTypeSet(metadataTypesSet);
+        ReadImageMetadataProperties(context);
+    }
+
+    if (metadataTypesSet.empty()) {
+        metadataTypesSet = OHOS::Media::ImageUtils::GetAllMetadataType();
+    }
+    ReadImageMetadataObjects(context, metadataTypesSet);
+    return HandleImageMetadataPackage(context);
+}
+
+static void UnwrapImageMetadataObjects(std::unique_ptr<ImageSourceTaiheContext> &context,
+    ImageMetadata const &imageMetadata)
+{
+    CHECK_ERROR_RETURN(context == nullptr);
+    // Handle Metadata Objects
+    (void)imageMetadata;
+}
+
+static std::string HandleIntArrayCase(const std::vector<int64_t> &intArray, const std::string &keyStr)
+{
+    if (keyStr != "GPSVersionID") {
+        return OHOS::Media::ImageUtils::ArrayToString(intArray);
+    }
+    std::ostringstream oss;
+    for (size_t i = 0; i < intArray.size(); ++i) {
+        oss << (i ? "." : "") << intArray[i];
+    }
+    return oss.str();
+}
+
+static std::string FormatTimePart(double value)
+{
+    double intPart;
+    double fracPart = std::modf(value, &intPart);
+    std::ostringstream oss;
+    oss << std::setfill('0') << std::setw(NUM_2) << static_cast<int>(intPart);
+    if (std::abs(fracPart) > 1e-6) {
+        std::ostringstream fracStream;
+        fracStream << std::fixed << fracPart;
+        std::string fracStr = fracStream.str();
+        size_t dotPos = fracStr.find('.');
+        if (dotPos != std::string::npos) {
+            std::string digits = fracStr.substr(dotPos + 1);
+            size_t lastNonZero = digits.find_last_not_of('0');
+            if (lastNonZero != std::string::npos) {
+                digits = digits.substr(0, lastNonZero + 1);
+            } else {
+                digits.clear();
+            }
+            if (!digits.empty()) {
+                oss << "." << digits;
+            }
+        }
+    }
+    return oss.str();
+}
+
+static std::string HandleDoubleArrayCase(const std::vector<double> &doubleArray, const std::string &keyStr)
+{
+    if (keyStr != "GPSTimeStamp" || doubleArray.size() < NUM_3) {
+        return OHOS::Media::ImageUtils::ArrayToString(doubleArray);
+    }
+    return FormatTimePart(doubleArray[0]) + ":" +
+           FormatTimePart(doubleArray[1]) + ":" +
+           FormatTimePart(doubleArray[NUM_2]);
+}
+
+template<typename T>
+static bool UnwrapMetadataValue(const T &storedValue, OHOS::Media::MetadataValue &dest)
+{
+    using U = std::decay_t<T>;
+
+    if constexpr (std::is_same_v<U, taihe::array<uint8_t>>) {
+        dest.type = OHOS::Media::PropertyValueType::BLOB;
+        dest.bufferValue.assign(storedValue.begin(), storedValue.end());
+    } else {
+        std::string stringValue;
+        if constexpr (std::is_same_v<U, int32_t> || std::is_same_v<U, double>) {
+            stringValue = std::to_string(storedValue);
+        } else if constexpr (std::is_same_v<U, taihe::array<int32_t>>) {
+            std::vector<int64_t> intValueArray(storedValue.begin(), storedValue.end());
+            stringValue = HandleIntArrayCase(intValueArray, dest.key);
+        } else if constexpr (std::is_same_v<U, taihe::array<double>>) {
+            std::vector<double> doubleValueArray(storedValue.begin(), storedValue.end());
+            stringValue = HandleDoubleArrayCase(doubleValueArray, dest.key);
+        } else if constexpr (std::is_same_v<U, bool>) {
+            stringValue = storedValue ? "1" : "0";
+        } else if constexpr (std::is_same_v<U, Orientation> || std::is_same_v<U, XmageColorMode> ||
+            std::is_same_v<U, FocusMode>) {
+            stringValue = std::to_string(static_cast<int32_t>(storedValue));
+        } else {
+            IMAGE_LOGD("%{public}s: Unsupported metadataValue type, unwrap metadataValue failed", __func__);
+            return false;
+        }
+        dest.type = OHOS::Media::PropertyValueType::STRING;
+        dest.stringValue = std::move(stringValue);
+    }
+    return true;
+}
+
+static void UnwrapImageMetadataProperties(std::unique_ptr<ImageSourceTaiheContext> &context,
+    array<MetadataValue> const &properties)
+{
+    CHECK_ERROR_RETURN(context == nullptr);
+    for (auto &item : properties) {
+        OHOS::Media::MetadataValue dest;
+        dest.key = MetadataToPropertyKey(std::string{item.key});
+
+        bool status = true;
+        item.value.visit<void>([&dest, &status](auto tag, const auto &storedValue) {
+            if (!UnwrapMetadataValue(storedValue, dest)) {
+                status = false;
+            }
+        });
+
+        if (status == true) {
+            context->kValueTypeArray.emplace_back(std::move(dest));
+        }
+    }
+}
+
+static void UnwrapImageMetadataPackage(std::unique_ptr<ImageSourceTaiheContext> &context,
+    ImageMetadataPackage const &package)
+{
+    CHECK_ERROR_RETURN_LOG(context == nullptr, "context is nullptr");
+    UnwrapImageMetadataObjects(context, package.metadata);
+    if (package.properties.has_value()) {
+        UnwrapImageMetadataProperties(context, package.properties.value());
+    }
+}
+
+static void ApplyImagePropertiesUpdates(std::unique_ptr<ImageSourceTaiheContext> &context)
+{
+    CHECK_ERROR_RETURN(context == nullptr);
+    auto partition_end = std::partition(
+        context->kValueTypeArray.begin(),
+        context->kValueTypeArray.end(),
+        [](const auto& item) {
+            return OHOS::Media::ExifMetadata::GetPropertyValueType(item.key) != OHOS::Media::PropertyValueType::BLOB;
+        });
+
+    for (auto it = context->kValueTypeArray.begin(); it != partition_end; ++it) {
+        context->kVStrArray.emplace_back(std::move(it->key), std::move(it->stringValue));
+    }
+    context->kValueTypeArray.erase(context->kValueTypeArray.begin(), partition_end);
+    if (!context->kVStrArray.empty()) {
+        context->status = context->rImageSource->ModifyImagePropertiesEx(0, context->kVStrArray);
+    }
+    if (!context->kValueTypeArray.empty()) {
+        context->status = context->rImageSource->WriteImageMetadataBlob(context->kValueTypeArray);
+    }
+}
+
+// If all properties in ImageMetadata are undefined, perform the REMOVE operation
+static void RemoveAllPropertiesIfNeeded(std::unique_ptr<ImageSourceTaiheContext> &context)
+{
+    CHECK_ERROR_RETURN(context == nullptr || context->status != OHOS::Media::SUCCESS ||
+        context->rImageSource == nullptr);
+    if (context->kVStrArray.empty() && context->kValueTypeArray.empty()) {
+        context->status = context->rImageSource->RemoveAllProperties();
+    }
+}
+
+static void ApplyImageMetadataWithoutProperties(std::unique_ptr<ImageSourceTaiheContext> &context)
+{
+    CHECK_ERROR_RETURN(context == nullptr || context->status != OHOS::Media::SUCCESS ||
+        context->rImageSource == nullptr);
+    // Handle metadata without properties (such as XMPMetadata)
+}
+
+static void WriteImageMetadataPackageExecute(std::unique_ptr<ImageSourceTaiheContext> &context)
+{
+    IMAGE_LOGI("%{public}s start.", __func__);
+    CHECK_ERROR_RETURN_LOG(context == nullptr || context->rImageSource == nullptr,
+        "context or native imageSource is nullptr");
+
+    auto start = std::chrono::high_resolution_clock::now();
+    RemoveAllPropertiesIfNeeded(context);
+    ApplyImagePropertiesUpdates(context);
+    ApplyImageMetadataWithoutProperties(context);
+
+    if (context->status != OHOS::Media::SUCCESS) {
+        auto unsupportedKeys = context->rImageSource->GetModifyExifUnsupportedKeys();
+        if (!unsupportedKeys.empty()) {
+            context->errMsg = "Failed to modify unsupported keys:";
+            for (auto &key : unsupportedKeys) {
+                context->errMsg.append(" ").append(key);
+            }
+        }
+    }
+
+    auto end = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+    IMAGE_LOGI("%{public}s end, cost: %{public}llu ms", __func__, duration.count());
+}
+
+static void WriteImageMetadataPackageComplete(std::unique_ptr<ImageSourceTaiheContext> &context)
+{
+    CHECK_ERROR_RETURN_LOG(context == nullptr, "context is nullptr");
+    if (context->status != OHOS::Media::SUCCESS) {
+        const auto &[errCode, errMsg] = OHOS::Media::ImageErrorConvert::ModifyImagePropertyArrayMakeErrMsg(
+            context->status, context->errMsg);
+        ImageTaiheUtils::ThrowExceptionError(errCode, errMsg);
+    }
+    IMAGE_LOGD("%{public}s end.", __func__);
+}
+
+void ImageSourceImpl::WriteImageMetadataPackage(ImageMetadataPackage const &imageMetadataPackage)
+{
+    if (nativeImgSrc == nullptr) {
+        ImageTaiheUtils::ThrowExceptionError(IMAGE_SOURCE_INVALID_PARAMETER, "empty native rImageSource");
+        return;
+    }
+    std::unique_ptr<ImageSourceTaiheContext> context = std::make_unique<ImageSourceTaiheContext>();
+    context->rImageSource = nativeImgSrc;
+
+    UnwrapImageMetadataPackage(context, imageMetadataPackage);
+    WriteImageMetadataPackageExecute(context);
+    WriteImageMetadataPackageComplete(context);
+}
 
 static std::string FileUrlToRawPath(const std::string &path)
 {
