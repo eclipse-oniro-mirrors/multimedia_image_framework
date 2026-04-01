@@ -314,9 +314,9 @@ static BufferRequestConfig CreateDmaRequestConfig(const SkImageInfo &dstInfo, ui
     auto formatSearch = PIXELFORMAT_TOGRAPHIC_MAP.find(pixelFormat);
     requestConfig.format = (formatSearch != PIXELFORMAT_TOGRAPHIC_MAP.end()) ?
         formatSearch->second : GRAPHIC_PIXEL_FMT_RGBA_8888;
-    if (requestConfig.format == GRAPHIC_PIXEL_FMT_YCBCR_420_SP ||
-        requestConfig.format == GRAPHIC_PIXEL_FMT_YCRCB_420_SP) {
-        count = JpegDecoderYuv::GetYuvOutSize(dstInfo.width(), dstInfo.height());
+    if (ImageUtils::IsYuvFormat(pixelFormat)) {
+        uint32_t pixelByte = (pixelFormat == PixelFormat::NV12 || pixelFormat == PixelFormat::NV21) ? NUM_1 : NUM_2;
+        count = JpegDecoderYuv::GetYuvOutSize(dstInfo.width(), dstInfo.height()) * pixelByte;
     } else if (requestConfig.format == GRAPHIC_PIXEL_FMT_RGBA16_FLOAT) {
         count = (uint32_t)dstInfo.width() * (uint32_t)dstInfo.height() *
             (uint32_t)ImageUtils::GetPixelBytes(PixelFormat::RGBA_F16);
