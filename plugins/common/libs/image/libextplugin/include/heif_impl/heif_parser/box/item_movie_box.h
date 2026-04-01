@@ -100,6 +100,8 @@ public:
     HeifMdhdBox() : HeifFullBox(BOX_TYPE_MDHD) {}
 
     heif_error Write(HeifStreamWriter &writer) const override;
+
+    uint32_t GetTimescale() const { return timescale_; }
 protected:
     heif_error ParseContent(HeifStreamReader &reader) override;
 private:
@@ -177,7 +179,7 @@ public:
 
     heif_error Write(HeifStreamWriter &writer) const override;
 
-    heif_error GetDelayTime(uint32_t index, int32_t &value) const;
+    heif_error GetSampleDelta(uint32_t index, uint32_t &value) const;
 protected:
     heif_error ParseContent(HeifStreamReader &reader) override;
 private:
