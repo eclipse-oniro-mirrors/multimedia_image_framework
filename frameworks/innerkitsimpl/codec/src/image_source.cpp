@@ -5650,7 +5650,8 @@ std::unique_ptr<Picture> ImageSource::CreatePicture(const DecodingOptionsForPict
     }
     DecodeOptions dopts;
     if (!ApplyDecodingOptionsForPicture(dopts, opts, errorCode)) {
-        errorCode = ERR_IMAGE_DESIRED_PIXELFORMAT_UNSUPPORTED? errorCode : ERR_IMAGE_PICTURE_CREATE_FAILED;
+        errorCode = (errorCode == ERR_IMAGE_DESIRED_PIXELFORMAT_UNSUPPORTED) ?
+            errorCode : ERR_IMAGE_PICTURE_CREATE_FAILED;
         IMAGE_LOGE("Invalid Decoding Options for Picture");
         return nullptr;
     }
