@@ -114,7 +114,7 @@ bool PixelMapParcel::WriteToParcel(PixelMap* pixelMap, OHOS::MessageParcel& data
     if (pixelMap->GetAllocatorType() == AllocatorType::SHARE_MEM_ALLOC) {
 #if !defined(_WIN32) && !defined(_APPLE)
         int *fd = static_cast<int *>(pixelMap->GetFd());
-        if (*fd < 0) {
+        if (fd == nullptr || *fd < 0) {
             IMAGE_LOGE("write pixel map failed, fd < 0.");
             return false;
         }
@@ -333,7 +333,6 @@ bool PixelMapRecordParcel::WriteMemInfoToParcel(Parcel &parcel, const int32_t &b
         }
         if (!WriteFileDescriptor(parcel, *fd)) {
             IMAGE_LOGE("write pixel map fd:[%{public}d] to parcel failed.", *fd);
-            ::close(*fd);
             return false;
         }
     } else if (parcelInfo_.allocatorType_ == AllocatorType::DMA_ALLOC) {
@@ -948,17 +947,25 @@ uint8_t *PixelMapRecordParcel::ReadAshmemDataFromParcel(Parcel &parcel, int32_t 
     int fd = ((readSafeFdFunc != nullptr) ? readSafeFdFunc(parcel, readFdDefaultFunc) : readFdDefaultFunc(parcel));
     if (!CheckAshmemSize(fd, bufferSize)) {
         IMAGE_LOGE("ReadAshmemDataFromParcel check ashmem size failed, fd:[%{public}d].", fd);
+        if (fd >= 0) {
+            ::close(fd);
+        }
         return nullptr;
     }
     if (bufferSize <= 0 || bufferSize > PIXEL_MAP_MAX_RAM_SIZE) {
         IMAGE_LOGE("malloc parameter bufferSize:[%{public}d] error.", bufferSize);
+        if (fd >= 0) {
+            ::close(fd);
+        }
         return nullptr;
     }
 
     void *ptr = ::mmap(nullptr, bufferSize, PROT_READ, MAP_SHARED, fd, 0);
     if (ptr == MAP_FAILED) {
-        // do not close fd here. fd will be closed in FileDescriptor, ::close(fd)
         IMAGE_LOGE("ReadImageData map failed, errno:%{public}d", errno);
+        if (fd >= 0) {
+            ::close(fd);
+        }
         return nullptr;
     }
 
@@ -966,6 +973,7 @@ uint8_t *PixelMapRecordParcel::ReadAshmemDataFromParcel(Parcel &parcel, int32_t 
     if (base == nullptr) {
         ::munmap(ptr, bufferSize);
         IMAGE_LOGE("alloc output pixel memory size:[%{public}d] error.", bufferSize);
+        ::close(fd);
         return nullptr;
     }
     if (memcpy_s(base, bufferSize, ptr, bufferSize) != 0) {
@@ -973,6 +981,7 @@ uint8_t *PixelMapRecordParcel::ReadAshmemDataFromParcel(Parcel &parcel, int32_t 
         free(base);
         base = nullptr;
         IMAGE_LOGE("memcpy pixel data size:[%{public}d] error.", bufferSize);
+        ::close(fd);
         return nullptr;
     }
 

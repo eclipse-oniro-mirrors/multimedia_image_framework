@@ -583,7 +583,7 @@ uint32_t PixelMap::SetMemoryName(const std::string &pixelMapName)
 
     if (allocatorType == AllocatorType::SHARE_MEM_ALLOC) {
         int *fd = static_cast<int*>(GetFd());
-        if (*fd < 0) {
+        if (fd == nullptr || *fd < 0) {
             return ERR_MEMORY_NOT_SUPPORT;
         }
         int ret = TEMP_FAILURE_RETRY(ioctl(*fd, ASHMEM_SET_NAME, pixelMapName.c_str()));
@@ -2612,7 +2612,6 @@ bool PixelMap::WriteMemInfoToParcel(Parcel &parcel, const int32_t &bufferSize) c
         }
         if (!WriteFileDescriptor(parcel, *fd)) {
             IMAGE_LOGE("write pixel map fd:[%{public}d] to parcel failed.", *fd);
-            ::close(*fd);
             return false;
         }
     } else if (allocatorType_ == AllocatorType::DMA_ALLOC) {

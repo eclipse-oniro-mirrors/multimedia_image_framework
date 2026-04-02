@@ -3952,6 +3952,7 @@ bool ProcessAstcMetadata(PixelAstc* pixelAstc, size_t astcSize, const AstcMetada
         }
         if (memcpy_s(dstMemory->data.data, astcSize, pixelAstc->GetPixels(), astcSize) != 0) {
             IMAGE_LOGE("%{public}s memcpy failed", __func__);
+            dstMemory->Release();
             return false;
         }
         pixelAstc->SetPixelsAddr(dstMemory->data.data, dstMemory->extend.data,
@@ -4069,6 +4070,7 @@ static bool ResolveExtInfo(const uint8_t *sourceFilePtr, size_t astcSize, size_t
         extInfoBuf += sizeof(uint32_t);
         leftBytes -= sizeof(uint32_t);
         if (expendInfoBytesUnSign > MAX_INT32 || static_cast<uint32_t>(leftBytes) < expendInfoBytesUnSign) {
+            ReleaseExtendInfoMemory(extInfo);
             return false;
         }
         extInfo.extendInfoLength[idx] = expendInfoBytesUnSign;
@@ -6188,15 +6190,27 @@ bool ImageSource::CompressToAstcFromPixelmap(const DecodeOptions &opts, unique_p
     CHECK_ERROR_RETURN_RET_LOG(cond, false, "CompressToAstcFromPixelmap CreateMemory failed");
 
     uint32_t ret = imagePacker.StartPacking(reinterpret_cast<uint8_t *>(dstMemory->data.data), allocMemSize, option);
-    cond = (ret != 0);
-    CHECK_ERROR_RETURN_RET_LOG(cond, false, "CompressToAstcFromPixelmap failed to start packing");
+    if (ret != 0) {
+        IMAGE_LOGE("CompressToAstcFromPixelmap failed to start packing");
+        dstMemory->Release();
+        dstMemory = nullptr;
+        return false;
+    }
     ret = imagePacker.AddImage(*(rgbaPixelmap.get()));
-    cond = (ret != 0);
-    CHECK_ERROR_RETURN_RET_LOG(cond, false, "CompressToAstcFromPixelmap failed to add image");
+    if (ret != 0) {
+        IMAGE_LOGE("CompressToAstcFromPixelmap failed to add image");
+        dstMemory->Release();
+        dstMemory = nullptr;
+        return false;
+    }
     int64_t packedSize = 0;
     ret = imagePacker.FinalizePacking(packedSize);
-    cond = (ret != 0);
-    CHECK_ERROR_RETURN_RET_LOG(cond, false, "CompressToAstcFromPixelmap failed to finalize packing");
+    if (ret != 0) {
+        IMAGE_LOGE("CompressToAstcFromPixelmap failed to finalize packing");
+        dstMemory->Release();
+        dstMemory = nullptr;
+        return false;
+    }
     return true;
 #else
     return false;
