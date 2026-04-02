@@ -670,7 +670,7 @@ static Image_ErrorCode CreatePixelMapFromSurface(const std::string &surfaceId, O
     if (pixelMapFromSurface == nullptr) {
         return IMAGE_CREATE_PIXELMAP_FAILED;
     }
-    *pixelmap = new(std::nothrow) OH_PixelmapNative(std::move(pixelMapFromSurface));
+    *pixelmap = new OH_PixelmapNative(std::move(pixelMapFromSurface));
     return IMAGE_SUCCESS;
 }
 
@@ -735,7 +735,7 @@ Image_ErrorCode OH_PixelmapNative_CreatePixelmapFromNativeBuffer(OH_NativeBuffer
     if (pixelMapFromSurface == nullptr) {
         return IMAGE_CREATE_PIXELMAP_FAILED;
     }
-    *pixelmap = new(std::nothrow) OH_PixelmapNative(std::move(pixelMapFromSurface));
+    *pixelmap = new OH_PixelmapNative(std::move(pixelMapFromSurface));
     return IMAGE_SUCCESS;
 }
 
@@ -943,7 +943,7 @@ Image_ErrorCode OH_PixelmapNative_CreateAlphaPixelmap(OH_PixelmapNative *srcPixe
     if (alphaPixelmap == nullptr) {
         return IMAGE_BAD_PARAMETER;
     }
-    *dstPixelmap = new(std::nothrow) OH_PixelmapNative(std::move(alphaPixelmap));
+    *dstPixelmap = new OH_PixelmapNative(std::move(alphaPixelmap));
     return IMAGE_SUCCESS;
 }
 
@@ -959,7 +959,7 @@ Image_ErrorCode OH_PixelmapNative_Clone(OH_PixelmapNative *srcPixelmap, OH_Pixel
     if (clonedPixelmap == nullptr) {
         return ToNewErrorCode(errorCode);
     }
-    *dstPixelmap = new(std::nothrow) OH_PixelmapNative(std::move(clonedPixelmap));
+    *dstPixelmap = new OH_PixelmapNative(std::move(clonedPixelmap));
     return IMAGE_SUCCESS;
 }
 
@@ -989,7 +989,7 @@ Image_ErrorCode OH_PixelmapNative_CreateCroppedAndScaledPixelMap(OH_PixelmapNati
         return IMAGE_BAD_PARAMETER;
     }
     clonedPixelmap->scale(scale->x, scale->y, static_cast<AntiAliasingOption>(level));
-    *dstPixelmap = new(std::nothrow) OH_PixelmapNative(std::move(clonedPixelmap));
+    *dstPixelmap = new OH_PixelmapNative(std::move(clonedPixelmap));
     return IMAGE_SUCCESS;
 }
 
@@ -1006,7 +1006,7 @@ Image_ErrorCode OH_PixelmapNative_CreateScaledPixelMap(OH_PixelmapNative *srcPix
         return IMAGE_BAD_PARAMETER;
     }
     clonePixelmap->scale(scaleX, scaleY);
-    *dstPixelmap = new(std::nothrow) OH_PixelmapNative(std::move(clonePixelmap));
+    *dstPixelmap = new OH_PixelmapNative(std::move(clonePixelmap));
     return IMAGE_SUCCESS;
 }
 
@@ -1023,7 +1023,7 @@ Image_ErrorCode OH_PixelmapNative_CreateScaledPixelMapWithAntiAliasing(OH_Pixelm
         return IMAGE_BAD_PARAMETER;
     }
     clonePixelmap->scale(scaleX, scaleY, static_cast<AntiAliasingOption>(level));
-    *dstPixelmap = new(std::nothrow) OH_PixelmapNative(std::move(clonePixelmap));
+    *dstPixelmap = new OH_PixelmapNative(std::move(clonePixelmap));
     return IMAGE_SUCCESS;
 }
 
@@ -1586,8 +1586,16 @@ Image_ErrorCode OH_PixelmapNative_AccessPixels(OH_PixelmapNative *pixelmap, void
     if (pixelmap == nullptr || pixelmap->GetInnerPixelmap() == nullptr || addr == nullptr) {
         return IMAGE_BAD_PARAMETER;
     }
-    pixelmap->GetInnerPixelmap()->SetModifiable(false);
-    *addr = pixelmap->GetInnerPixelmap()->GetWritablePixels();
+
+    auto innerPixelmap = pixelmap->GetInnerPixelmap();
+    bool origModifiability = innerPixelmap->IsModifiable();
+    innerPixelmap->SetModifiable(false);
+
+    *addr = innerPixelmap->GetWritablePixels();
+    if (*addr == nullptr) {
+        innerPixelmap->SetModifiable(origModifiability);
+        return IMAGE_BAD_PARAMETER;
+    }
     return IMAGE_SUCCESS;
 }
 

@@ -254,7 +254,7 @@ int32_t OH_PixelMap_GetImageInfo(const NativePixelMap* native, OhosPixelMapInfos
 MIDK_EXPORT
 int32_t OH_PixelMap_AccessPixels(const NativePixelMap* native, void** addr)
 {
-    if (native == nullptr || native->napi == nullptr) {
+    if (native == nullptr || native->napi == nullptr || addr == nullptr) {
         return IMAGE_RESULT_BAD_PARAMETER;
     }
     PixelMapNapiArgs args;
