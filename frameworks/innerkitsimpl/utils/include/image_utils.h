@@ -288,7 +288,9 @@ public:
         }
         return oss.str();
     }
+#if !defined(CROSS_PLATFORM)
     static void GetYUVStrideInfo(int32_t pixelFmt, OH_NativeBuffer_Planes *planes, YUVStrideInfo &dstStrides);
+#endif
 private:
     static uint32_t RegisterPluginServer();
     static uint32_t SaveDataToFile(const std::string& fileName, const char* data, const size_t& totalSize);

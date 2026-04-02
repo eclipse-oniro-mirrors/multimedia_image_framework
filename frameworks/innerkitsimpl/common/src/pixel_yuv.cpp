@@ -1159,6 +1159,7 @@ std::unique_ptr<PixelMap> PixelYuv::CloneYuvImpl(PixelMap &source, int32_t &erro
 
 static void GetYuvDataInfo(PixelMap &source, YUVDataInfo &yuvDataInfo)
 {
+#if !defined(CROSS_PLATFORM)
     // For DMA allocator, retrieve correct stride/offset from SurfaceBuffer planes.
     // The stride/offset returned by GetImageYUVInfo may be incomplete or incorrect for DMA buffers in some scenes.
     if (source.GetAllocatorType() == AllocatorType::DMA_ALLOC) {
@@ -1183,6 +1184,7 @@ static void GetYuvDataInfo(PixelMap &source, YUVDataInfo &yuvDataInfo)
             }
         }
     }
+#endif
 }
 
 static void SetDstYuvDataInfo(Size size, YUVStrideInfo dstStrides, YUVDataInfo &dstYuvDataInfo)
