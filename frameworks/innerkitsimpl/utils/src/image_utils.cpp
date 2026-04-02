@@ -2387,6 +2387,7 @@ std::unique_ptr<AbsMemory> ImageUtils::ReadData(std::vector<uint8_t> &buff, int3
 
     if (size != rowDataSize * imageInfo.size.height) {
         IMAGE_LOGE("[PixelMap] tlv read data fail: alloc memory failed");
+        dstMemory->Release();
         return nullptr;
     }
 #if !defined(CROSS_PLATFORM)
@@ -2394,11 +2395,13 @@ std::unique_ptr<AbsMemory> ImageUtils::ReadData(std::vector<uint8_t> &buff, int3
         if (dstRowStride == 0 || dstRowStride < rowDataSize ||
             static_cast<uint32_t>(size) > static_cast<SurfaceBuffer*>(dstMemory->extend.data)->GetSize()) {
                 IMAGE_LOGE("[PixelMap] tlv check dma size failed");
+                dstMemory->Release();
                 return nullptr;
         }
         for (int i = 0; i < imageInfo.size.height; i++) {
             if (memcpy_s(addr + i * dstRowStride, rowDataSize, srcAddr + i * rowDataSize, rowDataSize) != 0) {
                 IMAGE_LOGE("[PixelMap] tlv copy dma data failed");
+                dstMemory->Release();
                 return nullptr;
             }
         }
@@ -2406,10 +2409,12 @@ std::unique_ptr<AbsMemory> ImageUtils::ReadData(std::vector<uint8_t> &buff, int3
 #endif
         if (rowDataSize != dstRowStride) {
             IMAGE_LOGE("[PixelMap] tlv check heap size failed");
+            dstMemory->Release();
             return nullptr;
         }
         if (memcpy_s(addr, size, srcAddr, size) != 0) {
             IMAGE_LOGE("[PixelMap] tlv copy heap data failed");
+            dstMemory->Release();
             return nullptr;
         }
 #if !defined(CROSS_PLATFORM)

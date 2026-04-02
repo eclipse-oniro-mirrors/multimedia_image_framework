@@ -204,6 +204,7 @@ uint32_t DmaMemory::Create()
     data.data = static_cast<uint8_t*>(sb->GetVirAddr());
     if (data.data == nullptr) {
         IMAGE_LOGE("SurfaceBuffer failed to  GetVirAddr");
+        ImageUtils::SurfaceBuffer_Unreference(nativeBuffer);
         return ERR_DMA_DATA_ABNORMAL;
     }
     extend.size = data.size;
