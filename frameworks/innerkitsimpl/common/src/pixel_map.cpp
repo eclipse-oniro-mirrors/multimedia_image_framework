@@ -3197,10 +3197,10 @@ static bool CheckYuvPixelMapBufferSize(const ImageInfo& imgInfo, PixelMemInfo& p
     } else {
         uint64_t expectedBufferSize = static_cast<uint64_t>(ImageUtils::GetByteCount(imgInfo));
         cond = static_cast<uint64_t>(calcSize) > expectedBufferSize;
-        CHECK_ERROR_RETURN_RET_LOG(cond, false, "Invalid YUV buffer size:%{public}u > expect:%{public}llu",
+        CHECK_ERROR_RETURN_RET_LOG(cond, false, "Invalid YUV buffer size:%{public}u > expect:%{public}" PRIu64,
                                    calcSize, expectedBufferSize);
         if (!ImageUtils::CheckBufferSizeIsValid(memBufSizeInt, expectedBufferSize, pixelMemInfo.allocatorType)) {
-            IMAGE_LOGE("Invalid buffer size: memBufSize[%{public}d] mismatch expect[%{public}llu]",
+            IMAGE_LOGE("Invalid buffer size: memBufSize[%{public}d] mismatch expect[%{public}" PRIu64 "]",
                 memBufSizeInt, expectedBufferSize);
             return false;
         }
@@ -3237,7 +3237,7 @@ static bool CheckF16PixelMapBufferSize(const ImageInfo& imgInfo, PixelMemInfo& p
         uint64_t expectedBufferSizeAlign = static_cast<uint64_t>(imgInfo.size.height) * alignedWidth * RGBA_F16_BYTES;
         if (!ImageUtils::CheckBufferSizeIsValid(memBufSizeInt, expectedBufferSizeOrg, pixelMemInfo.allocatorType) &&
             !ImageUtils::CheckBufferSizeIsValid(memBufSizeInt, expectedBufferSizeAlign, pixelMemInfo.allocatorType)) {
-            IMAGE_LOGE("Invalid buffer size: memBufSize[%{public}d] mismatch expect[%{public}llu]/Align[%{public}llu]",
+            IMAGE_LOGE("Invalid buffer size: memBufSize[%{public}d] mismatch expect[%{public}" PRIu64 "]/Align[%{public}" PRIu64 "]",
                 memBufSizeInt, expectedBufferSizeOrg, expectedBufferSizeAlign);
             return false;
         }
