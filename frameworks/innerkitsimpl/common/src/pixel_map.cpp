@@ -15,6 +15,7 @@
 
 #include "pixel_map.h"
 
+#include <inttypes.h>
 #ifdef EXT_PIXEL
 #include "pixel_yuv_ext.h"
 #endif
