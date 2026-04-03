@@ -1169,6 +1169,7 @@ static unique_ptr<PixelMap> CloneAstc(PixelMap *srcAstc, int32_t &errorCode)
         return nullptr;
     }
     if (memcpy_s(dstMemory->data.data, astcSize, srcAstc->GetPixels(), astcSize) != 0) {
+        dstMemory->Release();
         IMAGE_LOGE("CloneAstc source memory size %{public}u", astcSize);
         return nullptr;
     }
@@ -1539,7 +1540,7 @@ bool PixelMap::RGB565ToARGB(const uint8_t *in, uint32_t inCount, uint32_t *out, 
         IMAGE_LOGE("RGB565ToARGB invalid input parameter: in or out is null");
         return false;
     }
-    if (((inCount / RGB_565_BYTES) != outCount) && ((inCount % RGB_565_BYTES) != 0)) {
+    if (((inCount / RGB_565_BYTES) != outCount) || ((inCount % RGB_565_BYTES) != 0)) {
         IMAGE_LOGE("input count:%{public}u is not match to output count:%{public}u.", inCount, outCount);
         return false;
     }
@@ -1614,7 +1615,7 @@ bool PixelMap::RGB888ToARGB(const uint8_t *in, uint32_t inCount, uint32_t *out, 
         IMAGE_LOGE("RGB888ToARGB invalid input parameter: in or out is null");
         return false;
     }
-    if (((inCount / RGB_888_BYTES) != outCount) && ((inCount % RGB_888_BYTES) != 0)) {
+    if (((inCount / RGB_888_BYTES) != outCount) || ((inCount % RGB_888_BYTES) != 0)) {
         IMAGE_LOGE("input count:%{public}u is not match to output count:%{public}u.", inCount, outCount);
         return false;
     }
