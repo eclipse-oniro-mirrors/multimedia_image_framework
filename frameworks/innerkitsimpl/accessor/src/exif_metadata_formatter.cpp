@@ -248,6 +248,7 @@ const static std::set<std::string> SYSTEM_ONLY_KEYS = {
     "HwMnoteFaceBeautyLux",
     "HwMnoteFaceBeautyExposureTime",
     "HwMnoteFaceBeautyISO",
+    "HwMnoteWatermarkInfo",
 };
 
 // Orientation, tag 0x0112
