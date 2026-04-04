@@ -2596,6 +2596,7 @@ bool PixelMap::WritePropertiesToParcel(Parcel &parcel) const
 
 static bool WriteRecoveredAshMemToParcel(Parcel &parcel, const uint8_t *src, int32_t bufferSize)
 {
+#ifndef CROSS_PLATFORM
     if (src == nullptr || bufferSize <= 0) {
         IMAGE_LOGE("[PixelMap] WriteRecoveredAshMemToParcel invalid params, src=%{public}p, bufferSize=%{public}d",
             src, bufferSize);
@@ -2633,6 +2634,9 @@ static bool WriteRecoveredAshMemToParcel(Parcel &parcel, const uint8_t *src, int
         return false;
     }
     return true;
+#else
+    return false;
+#endif
 }
 
 bool PixelMap::WriteMemInfoToParcel(Parcel &parcel, const int32_t &bufferSize) const
