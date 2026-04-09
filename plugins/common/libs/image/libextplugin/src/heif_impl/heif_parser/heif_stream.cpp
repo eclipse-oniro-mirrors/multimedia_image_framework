@@ -18,6 +18,7 @@
 #include "securec.h"
 
 #include <sstream>
+#include <limits>
 
 const uint8_t BUFFER_INDEX_FOUR = 4;
 const uint8_t BUFFER_INDEX_FIVE = 5;

@@ -29,6 +29,7 @@
 #include "nocopyable.h"
 #include "plugin_class_base.h"
 #include "jpeg_yuv_decoder/jpeg_decoder_yuv.h"
+#include "heif_type.h"
 
 namespace OHOS {
     struct BufferRequestConfig;
@@ -170,6 +171,7 @@ private:
 
     bool IsHeifsDecode(DecodeContext &context);
     uint32_t DoHeifsDecode(OHOS::ImagePlugin::DecodeContext &context);
+    uint32_t AvifDecode(uint32_t index, DecodeContext &context, uint64_t rowStride, uint64_t byteCount);
 
     ImagePlugin::InputDataStream *stream_ = nullptr;
     std::unique_ptr<InputDataStream> previewStream_ = nullptr;

@@ -35,7 +35,7 @@ const auto HEIF_METADATA_NAME_XTSTYLE = "urn:com:huawei:photo:5:1:0:meta:xtstyle
 const auto HEIF_METADATA_NAME_RFDATAB = "RfDataB\0";
 const auto HEIF_METADATA_NAME_STDATA = "STData\0";
 const std::set<std::string> INFE_ITEM_TYPE = {
-    "hvc1", "grid", "tmap", "iden", "mime"
+    "hvc1", "grid", "tmap", "iden", "mime", "av01"
 };
 const static uint32_t HEIF_MAX_EXIF_SIZE = 128 * 1024;
 const static uint32_t HEIF_MAX_SAMPLE_SIZE = 20 * 1024 * 1024;
@@ -144,7 +144,7 @@ heif_error HeifParser::AssembleBoxes(HeifStreamReader &reader)
         return heif_error_no_ftyp;
     }
 
-    if (moovBox_ && ftypBox_->GetMajorBrand() == HEIF_BRAND_TYPE_MSF1) {
+    if (moovBox_ && isSequenceMajorBrand()) {
         return AssembleMovieBoxes();
     }
 
@@ -286,7 +286,6 @@ heif_error HeifParser::GetItemData(heif_item_id itemId, std::vector<uint8_t> *ou
         return heif_error_item_data_not_found;
     }
 
-    heif_error error;
     if (item_type == "hvc1") {
         auto hvcc = GetProperty<HeifHvccBox>(itemId);
         if (!hvcc) {
@@ -296,15 +295,19 @@ heif_error HeifParser::GetItemData(heif_item_id itemId, std::vector<uint8_t> *ou
             return heif_error_item_data_not_found;
         }
         if (option != heif_only_header) {
-            error = ilocBox_->ReadData(*ilocItem, inputStream_, idatBox_, out);
-        } else {
-            error = heif_error_ok;
+            return ilocBox_->ReadData(*ilocItem, inputStream_, idatBox_, out);
         }
+    } else if (item_type == "av01") {
+        auto av1c = GetProperty<HeifAv1CBox>(itemId);
+        CHECK_ERROR_RETURN_RET(!av1c, heif_error_no_av1c);
+        CHECK_ERROR_RETURN_RET(!IsSupportedAvifPixel(av1c->GetAVIFPixelFormat(), av1c->GetBitDepth()),
+                               heif_error_not_support_avif);
+        return GetAVIFItemData(ilocItem, av1c, out);
     } else {
-        error = ilocBox_->ReadData(*ilocItem, inputStream_, idatBox_, out);
+        return ilocBox_->ReadData(*ilocItem, inputStream_, idatBox_, out);
     }
 
-    return error;
+    return heif_error_ok;
 }
 
 void HeifParser::GetTileImages(heif_item_id gridItemId, std::vector<std::shared_ptr<HeifImage>> &out)
@@ -376,7 +379,7 @@ heif_error HeifParser::AssembleImages()
 heif_error HeifParser::AssembleAnimationImages()
 {
     animationImage_.reset();
-    bool isHeifs = moovBox_ && ftypBox_ && ftypBox_->GetMajorBrand() == HEIF_BRAND_TYPE_MSF1;
+    bool isHeifs = moovBox_ && isSequenceMajorBrand();
     if (isHeifs) {
         std::shared_ptr<HeifImage> image = std::make_shared<HeifImage>(0);
         if (!image) {
@@ -579,6 +582,16 @@ void HeifParser::ExtractMovieImageProperties(std::shared_ptr<HeifImage> &image)
         uint32_t height = 0;
         stsdBox_->GetSampleEntryWidthHeight(0, width, height);
         image->SetOriginalSize(width, height);
+        auto av1c = std::dynamic_pointer_cast<HeifAv1CBox>(stsdBox_->GetAv1cBox());
+        if (av1c) {
+            auto pixelFormat = av1c->GetAVIFPixelFormat();
+            image->SetDefaultPixelFormat(pixelFormat);
+            if (pixelFormat == HeifPixelFormat::MONOCHROME) {
+                image->SetDefaultColorFormat(HeifColorFormat::MONOCHROME);
+            } else {
+                image->SetDefaultColorFormat(HeifColorFormat::YCBCR);
+            }
+        }
     }
 }
 
@@ -629,6 +642,13 @@ void HeifParser::ExtractImageProperties(std::shared_ptr<HeifImage> &image)
         hvcc->ParserHvccColorRangeFlag(nalArrays);
         auto spsConfig = hvcc->GetSpsConfig();
         image->SetColorRangeFlag(static_cast<int>(spsConfig.videoRangeFlag));
+    }
+
+    auto av1c = GetProperty<HeifAv1CBox>(itemId);
+    if (av1c) {
+        auto pixelFormat = av1c->GetAVIFPixelFormat();
+        image->SetDefaultPixelFormat(pixelFormat);
+        image->SetDefaultColorFormat(HeifColorFormat::YCBCR);
     }
     ExtractDisplayData(image, itemId);
 }
@@ -1339,7 +1359,13 @@ heif_error HeifParser::GetHeifsGroupFrameInfo(uint32_t index, HeifsFrameGroup &f
     uint32_t beginFrameIndex = 0;
     uint32_t endFrameIndex = 0;
     uint32_t frameCount = 0;
-    ret = GetHeifsFrameCount(frameCount);
+    bool isHeifs = false;
+    ret = IsHeifsImage(isHeifs);
+    if (ret == heif_error_ok && isHeifs) {
+        ret = GetHeifsFrameCount(frameCount);
+    } else if (IsAvisImage()) {
+        ret = GetAvisFrameCount(frameCount);
+    }
     if (ret != heif_error_ok) {
         return ret;
     }
@@ -1378,6 +1404,83 @@ bool HeifParser::IsNeedDecodeHeifsStaticImage() const
         return false;
     }
     return static_cast<uint64_t>(stcoOffset) != ilocOffset;
+}
+
+bool HeifParser::IsAvisImage() const
+{
+    if (!ftypBox_ || ftypBox_->GetMajorBrand() != AVIF_BRAND_TYPE_AVIS) {
+        return false;
+    }
+    if (!hdlrBox_ || hdlrBox_->GetHandlerType() != HANDLER_TYPE_PICT) {
+        return false;
+    }
+    return true;
+}
+
+bool HeifParser::IsSupportedAvifPixel(HeifPixelFormat format, AvifBitDepth bitDepth) const
+{
+    if (format == HeifPixelFormat::YUV420 && (bitDepth == AvifBitDepth::Bit_8 || bitDepth == AvifBitDepth::Bit_10)) {
+        return true;
+    }
+    return false;
+}
+
+heif_error HeifParser::GetAVIFItemData(const HeifIlocBox::Item *ilocItem, std::shared_ptr<HeifAv1CBox> av1c,
+                                       std::vector<uint8_t> *out) const
+{
+    CHECK_ERROR_RETURN_RET(!ilocBox_, heif_error_no_iloc);
+    CHECK_ERROR_RETURN_RET(!av1c, heif_error_no_av1c);
+    CHECK_ERROR_RETURN_RET(!out, heif_error_eof);
+    const auto &header = av1c->GetHeaders();
+    out->insert(out->begin(), header.begin(), header.end());
+    return ilocBox_->ReadData(*ilocItem, inputStream_, idatBox_, out);
+}
+
+AvifBitDepth HeifParser::GetAvifBitDepth(bool isAnimation) const
+{
+    std::shared_ptr<HeifAv1CBox> av1c;
+    if (isAnimation) {
+        CHECK_ERROR_RETURN_RET_LOG(!stsdBox_, AvifBitDepth::UNKNOWN, "%{public}s no stsd box", __func__);
+        av1c = std::dynamic_pointer_cast<HeifAv1CBox>(stsdBox_->GetAv1cBox());
+    } else {
+        CHECK_ERROR_RETURN_RET_LOG(!primaryImage_, AvifBitDepth::UNKNOWN, "%{public}s no primary image.", __func__);
+        av1c = GetProperty<HeifAv1CBox>(primaryImage_->GetItemId());
+    }
+    CHECK_ERROR_RETURN_RET_LOG(!av1c, AvifBitDepth::UNKNOWN, "%{public}s no av1c box", __func__);
+    return av1c->GetBitDepth();
+}
+
+heif_error HeifParser::GetAvisFrameData(uint32_t index, std::vector<uint8_t> &dest)
+{
+    if (!stsdBox_) {
+        return heif_error_no_stsd;
+    }
+    auto av1c = std::dynamic_pointer_cast<HeifAv1CBox>(stsdBox_->GetAv1cBox());
+    if (!av1c) {
+        return heif_error_no_av1c;
+    }
+    return GetHeifsFrameData(index, dest);
+}
+
+bool HeifParser::isSequenceMajorBrand() const
+{
+    if (!ftypBox_) {
+        return false;
+    }
+    uint32_t majorBrand = ftypBox_->GetMajorBrand();
+    return majorBrand == HEIF_BRAND_TYPE_MSF1 || majorBrand == AVIF_BRAND_TYPE_AVIS;
+}
+
+heif_error HeifParser::GetAvisFrameCount(uint32_t &sampleCount) const
+{
+    if (!IsAvisImage()) {
+        return heif_error_not_avis;
+    }
+    if (!stszBox_) {
+        return heif_error_no_stsz;
+    }
+    sampleCount = stszBox_->GetSampleCount();
+    return heif_error_ok;
 }
 } // namespace ImagePlugin
 } // namespace OHOS

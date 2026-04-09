@@ -311,7 +311,9 @@ if (use_clang_android) {
     if (image_use_new_skia) {
       defines += [ "USE_M133_SKIA" ]
     }
-
+    if (has_dav1d) {
+      defines += [ "AVIF_DECODE_ENABLE" ]
+    }
     defines += [
       "UNIX_ENV=1",
       "XMP_StaticBuild=1",
@@ -516,6 +518,9 @@ if (use_mingw_win || use_clang_mac || use_clang_ios || use_clang_android) {
     }
     if (target_cpu == "arm64" || is_emulator) {
       defines += [ "SUT_PATH_X64" ]
+    }
+    if (has_dav1d) {
+      defines += [ "AVIF_DECODE_ENABLE" ]
     }
     subsystem_name = "multimedia"
     part_name = "image_framework"

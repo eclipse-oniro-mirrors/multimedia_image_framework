@@ -52,6 +52,7 @@
 #include "heif_impl/HeifDecoder.h"
 #include "heif_impl/HeifDecoderImpl.h"
 #endif
+#include "heif_impl/AvifDecoderImpl.h"
 #include "buffer_source_stream.h"
 #include "color_utils.h"
 #include "cr3_format_agent.h"
@@ -127,6 +128,7 @@ namespace {
     constexpr static int LUMA_10_BIT = 10;
     constexpr static int JPEG_MARKER_LENGTH = 2;
     static constexpr uint8_t JPEG_SOI_HEADER[] = { 0xFF, 0xD8 };
+    constexpr static uint64_t BIT_10_MULTIPLIER = 2;
 }
 
 namespace OHOS {
@@ -220,6 +222,7 @@ static const map<SkEncodedImageFormat, string> FORMAT_NAME = {
     { SkEncodedImageFormat::kASTC, "" },
     { SkEncodedImageFormat::kDNG, "image/raw" },
     { SkEncodedImageFormat::kHEIF, "image/heif" },
+    { SkEncodedImageFormat::kAVIF, "image/avif" },
 };
 
 static const map<piex::image_type_recognition::RawImageTypes, string> RAW_FORMAT_NAME = {
@@ -903,6 +906,13 @@ uint32_t ExtDecoder::SetDecodeOptions(uint32_t index, const PixelDecodeOptions &
         }
         if (skEncodeFormat == SkEncodedImageFormat::kHEIF && IsYuv420Format(opts.desiredPixelFormat)) {
             info.pixelFormat = opts.desiredPixelFormat;
+        }
+        if (skEncodeFormat == SkEncodedImageFormat::kAVIF) {
+            auto decoder = reinterpret_cast<AvifDecoderImpl*>(codec_->getHeifContext());
+            CHECK_ERROR_RETURN_RET_LOG(decoder == nullptr, ERR_IMAGE_DATA_UNSUPPORT, "Avif Decoder is nullptr.");
+            CHECK_ERROR_RETURN_RET_LOG(!decoder->IsSupportedPixelFormat(opts.isAnimationDecode,
+                opts.desiredPixelFormat), ERR_IMAGE_DATA_UNSUPPORT,
+                "%{public}s current AVIF desiredFormat is not support", __func__);
         }
     }
     regionDesiredSize_.width = opts.desiredSize.width;
@@ -1769,6 +1779,14 @@ uint32_t ExtDecoder::Decode(uint32_t index, DecodeContext &context)
         res = GifDecode(index, context, rowStride);
         ImageUtils::FlushContextSurfaceBuffer(context);
         return res;
+    } else if (skEncodeFormat == SkEncodedImageFormat::kAVIF) {
+        if (!context.isAnimationDecode && index > 0) {
+            context.isAnimationDecode = true;
+        }
+        context.index = index;
+        res = AvifDecode(index, context, rowStride, byteCount);
+        ImageUtils::FlushContextSurfaceBuffer(context);
+        return res;
     }
     CHECK_ERROR_RETURN_RET_LOG(codec_ == nullptr, ERR_IMAGE_DECODE_FAILED, "codec_ is nullptr");
     SkCodec::Result ret = codec_->getPixels(dstInfo_, dstBuffer, rowStride, &dstOptions_);
@@ -2359,6 +2377,14 @@ static uint32_t GetFormatName(SkEncodedImageFormat format, std::string &name, Sk
             }
         }
 #endif
+        if (format == SkEncodedImageFormat::kAVIF) {
+            CHECK_ERROR_RETURN_RET_LOG(!codec, ERR_IMAGE_DATA_UNSUPPORT, "codec is nullptr");
+            auto decoder = reinterpret_cast<AvifDecoderImpl*>(codec->getHeifContext());
+            CHECK_ERROR_RETURN_RET_LOG(!decoder, ERR_IMAGE_DATA_UNSUPPORT, "HeifDecoder is nullptr");
+            if (decoder->IsAvisImage()) {
+                name = IMAGE_AVIS_FORMAT;
+            }
+        }
         if (format == SkEncodedImageFormat::kWBMP && ImageUtils::GetAPIVersion() >= APIVERSION_20) {
             name = IMAGE_WBMP_FORMAT;
         }
@@ -2587,7 +2613,8 @@ OHOS::ColorManager::ColorSpace ExtDecoder::GetSrcColorSpace()
                 return ColorManager::ColorSpace(cName);
             }
         }
-        if (codec_->getEncodedFormat() == SkEncodedImageFormat::kHEIF) {
+        auto format = codec_->getEncodedFormat();
+        if (format == SkEncodedImageFormat::kHEIF || format == SkEncodedImageFormat::kAVIF) {
             ColorManager::ColorSpaceName cName = GetHeifNclxColor(codec_.get());
             if (cName != ColorManager::NONE) {
                 heifColorSpaceName_ = cName;
@@ -2685,6 +2712,16 @@ static uint32_t GetHeifsDelayTime(SkCodec *codec, uint32_t index, int32_t &value
 }
 #endif
 
+static uint32_t GetAvisDelayTime(SkCodec *codec, uint32_t index, int32_t &value)
+{
+    CHECK_ERROR_RETURN_RET(!codec, ERR_MEDIA_INVALID_PARAM);
+    auto decoder = reinterpret_cast<AvifDecoderImpl*>(codec->getHeifContext());
+    CHECK_ERROR_RETURN_RET(!decoder, ERR_MEDIA_INVALID_PARAM);
+    auto ret = decoder->GetAvisDelayTime(index, value);
+    IMAGE_LOGD("GetAvisDelayTime : %{public}d", value);
+    return ret;
+}
+
 static uint32_t GetDelayTime(SkCodec * codec, uint32_t index, int32_t &value)
 {
 #ifdef HEIF_HW_DECODE_ENABLE
@@ -2692,6 +2729,9 @@ static uint32_t GetDelayTime(SkCodec * codec, uint32_t index, int32_t &value)
         return GetHeifsDelayTime(codec, index, value);
     }
 #endif
+    if (codec->getEncodedFormat() == SkEncodedImageFormat::kAVIF) {
+        return GetAvisDelayTime(codec, index, value);
+    }
     if (codec->getEncodedFormat() != SkEncodedImageFormat::kGIF &&
         codec->getEncodedFormat() != SkEncodedImageFormat::kWEBP) {
         IMAGE_LOGE("[GetDelayTime] Should not get delay time in %{public}d", codec->getEncodedFormat());
@@ -3501,6 +3541,30 @@ uint32_t ExtDecoder::DoHeifsDecode(DecodeContext &context)
 OHOS::Media::Size ExtDecoder::GetAnimationImageSize()
 {
     return animationSize_;
+}
+
+uint32_t ExtDecoder::AvifDecode(uint32_t index, DecodeContext &context, uint64_t rowStride, uint64_t byteCount)
+{
+    CHECK_ERROR_RETURN_RET_LOG(codec_ == nullptr, ERR_IMAGE_DATA_UNSUPPORT, "AssignAVIFDecode falied, codec error.");
+    auto decoder = reinterpret_cast<AvifDecoderImpl*>(codec_->getHeifContext());
+    CHECK_ERROR_RETURN_RET_LOG(decoder == nullptr, ERR_IMAGE_DATA_UNSUPPORT, "Avif Decoder is nullptr.");
+    UpdateDstInfoAndOutInfo(context);
+    CHECK_ERROR_RETURN_RET_LOG(SkImageInfo::ByteSizeOverflowed(byteCount), ERR_IMAGE_TOO_LARGE,
+        "%{public}s too large byteCount: %{public}llu", __func__, static_cast<unsigned long long>(byteCount));
+    CHECK_ERROR_RETURN_RET_LOG(!decoder->IsSupportedPixelFormat(context.isAnimationDecode,
+        context.info.pixelFormat), ERR_IMAGE_DATA_UNSUPPORT,
+        "%{public}s current AVIF desiredFormat is not support", __func__);
+    decoder->setDstBuffer(reinterpret_cast<uint8_t *>(context.pixelsBuffer.buffer), rowStride, nullptr);
+    decoder->SetAllocatorType(context.allocatorType);
+    decoder->SetDesiredPixelFormat(context.info.pixelFormat);
+    decoder->SetBufferSize(context.pixelsBuffer.bufferSize);
+    bool decodeRet = false;
+    if (decoder->IsAvisImage() && context.isAnimationDecode) {
+        decodeRet = decoder->decodeSequence(context.index);
+    } else {
+        decodeRet = decoder->decode();
+    }
+    return decodeRet ? SUCCESS : ERR_IMAGE_DECODE_FAILED;
 }
 } // namespace ImagePlugin
 } // namespace OHOS

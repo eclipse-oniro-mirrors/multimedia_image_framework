@@ -75,6 +75,10 @@ enum heif_error {
     heif_error_invalid_stco = 53,
     heif_error_sample_size_too_large = 54,
     heif_error_add_overflow = 55,
+    heif_error_invalid_av1c = 56,
+    heif_error_no_av1c = 57,
+    heif_error_not_support_avif = 58,
+    heif_error_not_avis = 59,
 };
 } // namespace ImagePlugin
 } // namespace OHOS

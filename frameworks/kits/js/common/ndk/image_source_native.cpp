@@ -737,7 +737,7 @@ Image_ErrorCode OH_ImageSourceNative_CreatePixelmapList(OH_ImageSourceNative *so
     ParseDecodingOps(decOps, ops);
     ImageInfo imageInfo;
     if (source->GetInnerImageSource()->GetImageInfo(imageInfo) == SUCCESS &&
-        imageInfo.encodedFormat == IMAGE_HEIFS_FORMAT) {
+        (imageInfo.encodedFormat == IMAGE_HEIFS_FORMAT || imageInfo.encodedFormat == IMAGE_AVIS_FORMAT)) {
         decOps.isAnimationDecode = true;
     }
     auto pixelmapList = source->GetInnerImageSource()->CreatePixelMapList(decOps, errorCode);

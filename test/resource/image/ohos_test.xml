@@ -589,4 +589,12 @@
             <option name="push" value="images/output_icc_D50_XYZ.tiff -> /data/local/tmp/image" src="res"/>
         </preparer>
     </target>
+    <target name="avif_decode_test">
+        <preparer>
+            <option name="push" value="images/8bit_I420_497_323.avif -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/10bit_I010_1080_720.avif -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/bird_8bit_I420_599x359_fps10.avif -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/lizard_10bit_I010_599x338_fps24.avif -> /data/local/tmp/image" src="res"/>
+        </preparer>
+    </target>
 </configuration>

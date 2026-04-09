@@ -19,6 +19,7 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <numeric>
 #include "heif_error.h"
 
 namespace OHOS {

@@ -22,6 +22,7 @@
 #include "box/item_info_box.h"
 #include "box/item_movie_box.h"
 #include "box/item_property_box.h"
+#include "box/item_property_av1c_box.h"
 #include "box/item_property_color_box.h"
 #include "box/item_property_hvcc_box.h"
 #include "box/item_ref_box.h"
@@ -109,6 +110,14 @@ public:
     void ParseHeifsStaticImageBox();
 
     void ExtractProperties(const std::vector<heif_item_id> &allItemIds);
+
+    bool IsAvisImage() const;
+
+    AvifBitDepth GetAvifBitDepth(bool isAnimation) const;
+
+    heif_error GetAvisFrameData(uint32_t index, std::vector<uint8_t> &dest);
+
+    heif_error GetAvisFrameCount(uint32_t &sampleCount) const;
 private:
     // stream
     std::shared_ptr<HeifInputStream> inputStream_;
@@ -267,6 +276,12 @@ private:
     void ExtractSTDataMetadata(const std::vector<heif_item_id>& allItemIds);
 
     void SetTiffOffset();
+
+    bool IsSupportedAvifPixel(HeifPixelFormat format, AvifBitDepth bitDepth) const;
+
+    heif_error GetAVIFItemData(const HeifIlocBox::Item *, std::shared_ptr<HeifAv1CBox>, std::vector<uint8_t> *) const;
+
+    bool isSequenceMajorBrand() const;
 };
 } // namespace ImagePlugin
 } // namespace OHOS

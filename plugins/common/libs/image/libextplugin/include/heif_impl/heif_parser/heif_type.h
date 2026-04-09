@@ -75,6 +75,9 @@ static const uint32_t BOX_TYPE_IT35 = fourcc_to_code("it35");
 static const uint32_t BOX_TYPE_RLOC = fourcc_to_code("rloc");
 static const uint32_t BOX_TYPE_GRPL = fourcc_to_code("grpl");
 
+static const uint32_t BOX_TYPE_AV1C = fourcc_to_code("av1C");
+static const uint32_t BOX_TYPE_AV01 = fourcc_to_code("av01");
+
 static const uint32_t HANDLER_TYPE_PICT = fourcc_to_code("pict");
 
 static const uint32_t ITEM_TYPE_MIME = fourcc_to_code("mime");
@@ -84,6 +87,9 @@ static const uint32_t COLOR_TYPE_PROF = fourcc_to_code("prof");
 static const uint32_t COLOR_TYPE_RICC = fourcc_to_code("rICC");
 
 static const uint32_t HEIF_BRAND_TYPE_MSF1 = fourcc_to_code("msf1");
+
+static const uint32_t AVIF_BRAND_TYPE_AVIF = fourcc_to_code("avif");
+static const uint32_t AVIF_BRAND_TYPE_AVIS = fourcc_to_code("avis");
 
 // For Cr3 raw format
 static const uint32_t CR3_FILE_TYPE_CRX = fourcc_to_code("crx ");  // Cr3 major brand

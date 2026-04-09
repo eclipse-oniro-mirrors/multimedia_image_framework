@@ -109,4 +109,9 @@ declare_args() {
       !defined(global_parts_info.thirdparty_libtiff)) {
     has_libtiff = false
   }
+  has_dav1d = true
+  if (defined(global_parts_info) &&
+      !defined(global_parts_info.thirdparty_dav1d)) {
+    has_dav1d = false
+  }
 }

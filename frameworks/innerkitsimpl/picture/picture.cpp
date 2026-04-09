@@ -707,6 +707,8 @@ bool Picture::UnmarshalMetadata(Parcel &parcel, Picture &picture, PICTURE_ERR &e
             imagedataPtr.reset(RfDataBMetadata::Unmarshalling(parcel));
         } else if (type == MetadataType::HEIFS) {
             imagedataPtr.reset(HeifsMetadata::Unmarshalling(parcel));
+        } else if (type == MetadataType::AVIS) {
+            imagedataPtr.reset(AvisMetadata::Unmarshalling(parcel));
         } else {
             IMAGE_LOGE("Unsupported metadata type: %{public}d in picture", static_cast<int32_t>(type));
         }
@@ -933,6 +935,7 @@ bool Picture::IsValidPictureMetadataType(MetadataType metadataType)
         MetadataType::GIF,
         MetadataType::STDATA,
         MetadataType::HEIFS,
+        MetadataType::AVIS,
     };
     return pictureMetadataTypes.find(metadataType) != pictureMetadataTypes.end();
 }
