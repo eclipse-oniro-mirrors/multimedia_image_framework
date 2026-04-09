@@ -58,8 +58,23 @@ static constexpr int32_t FORMAT_9 = 9;
 static constexpr int32_t INTEGER_PART_WIDTH = 2;
 static constexpr int32_t REQUIRED_GPS_COMPONENTS = 3;
 using JpegYuvDecodeError = OHOS::ImagePlugin::JpegYuvDecodeError;
-static Image_MimeType *IMAGE_SOURCE_SUPPORTED_FORMATS = nullptr;
 static size_t g_supportedFormatSize = 0;
+struct FreeDeleter {
+    void operator()(Image_MimeType* ptr) const
+    {
+        if (ptr) {
+            for (size_t i = 0; i < g_supportedFormatSize; ++i) {
+                if (ptr[i].data != nullptr) {
+                    free(ptr[i].data);
+                    ptr[i].data = nullptr;
+                }
+            }
+            delete[] ptr;
+            ptr = nullptr;
+        }
+    }
+};
+static std::unique_ptr<Image_MimeType[], FreeDeleter> IMAGE_SOURCE_SUPPORTED_FORMATS = nullptr;
 static const size_t MAX_DOUBLE_ARRAY_SIZE = 8 * 1024;
 static const size_t MAX_INT_ARRAY_SIZE = 16 * 1024;
 static const size_t MAX_EXIF_SIZE = 64 * 1024;
@@ -1575,26 +1590,36 @@ Image_ErrorCode OH_ImageSourceNative_GetSupportedFormats(Image_MimeType** suppor
         return IMAGE_SOURCE_INVALID_PARAMETER;
     }
     if (IMAGE_SOURCE_SUPPORTED_FORMATS != nullptr || g_supportedFormatSize != 0) {
-        *supportedFormat = IMAGE_SOURCE_SUPPORTED_FORMATS;
+        *supportedFormat = IMAGE_SOURCE_SUPPORTED_FORMATS.get();
         *length = g_supportedFormatSize;
         return IMAGE_SUCCESS;
     }
     std::set<std::string> formats;
     ImageSource::GetSupportedFormats(formats);
-    *length = formats.size();
-    *supportedFormat = new Image_MimeType[*length];
+    auto newFormats = std::unique_ptr<Image_MimeType[], FreeDeleter>(
+        new Image_MimeType[formats.size()],
+        FreeDeleter{});
     size_t count = 0;
     for (const auto& str : formats) {
-        (*supportedFormat)[count].data = strdup(str.c_str());
-        if ((*supportedFormat)[count].data == nullptr) {
+        newFormats[count].data = strdup(str.c_str());
+        if (newFormats[count].data == nullptr) {
             IMAGE_LOGE("ImageSource strdup failed");
-            continue;
+            for (size_t i = 0; i < count; ++i) {
+                free(newFormats[i].data);
+                newFormats[i].data = nullptr;
+            }
+            newFormats.reset();
+            g_supportedFormatSize = 0;
+            return IMAGE_SOURCE_INVALID_PARAMETER;
         }
-        (*supportedFormat)[count].size = str.size();
+        newFormats[count].size = str.size();
         count++;
     }
-    IMAGE_SOURCE_SUPPORTED_FORMATS = *supportedFormat;
-    g_supportedFormatSize = *length;
+    IMAGE_SOURCE_SUPPORTED_FORMATS = std::move(newFormats);
+    g_supportedFormatSize = formats.size();
+
+    *supportedFormat = IMAGE_SOURCE_SUPPORTED_FORMATS.get();
+    *length = g_supportedFormatSize;
     return IMAGE_SUCCESS;
 }
 
