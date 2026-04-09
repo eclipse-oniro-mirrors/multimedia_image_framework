@@ -1857,11 +1857,6 @@ uint32_t ExtDecoder::DecodeToYuv420(uint32_t index, DecodeContext &context)
     JpegYuvFmt decodeOutFormat = GetJpegYuvOutFmt(context.info.pixelFormat);
     Size jpgSize = {static_cast<uint32_t>(info_.width()), static_cast<uint32_t>(info_.height())};
     Size desiredSize = desiredSizeYuv_;
-
-    if (cropAndScaleStrategy_ == OHOS::Media::CropAndScaleStrategy::CROP_FIRST) {
-        desiredSize.width = jpgSize.width;
-        desiredSize.height = jpgSize.height;
-    }
     bool bRet = JpegDecoderYuv::GetScaledSize(jpgSize.width, jpgSize.height, desiredSize.width, desiredSize.height);
     bool cond = !bRet || desiredSize.width == 0 || desiredSize.height == 0;
     CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER, "DecodeToYuv420 GetScaledSize failed");
