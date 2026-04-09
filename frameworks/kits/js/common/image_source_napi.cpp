@@ -2270,7 +2270,8 @@ static void CreatePixelMapExecute(napi_env env, void *data)
         context->index, context->decodeOpts, context->status);
 
     if (context->status != SUCCESS) {
-        context->errMsg = "Create PixelMap error";
+        Image_ErrorCode apiErrorCode = ConvertToErrorCode(context->status);
+        context->errMsg = GetErrorCodeMsg(apiErrorCode);
         IMAGE_LOGE("Create PixelMap error");
     }
     IMAGE_LOGD("[ImageSourceNapi]CreatePixelMapExecute OUT");
@@ -2506,7 +2507,8 @@ napi_value ImageSourceNapi::CreatePixelMapSync(napi_env env, napi_callback_info 
         syncContext->index, syncContext->decodeOpts, syncContext->status);
 
     if (syncContext->status != SUCCESS) {
-        syncContext->errMsg = "Create PixelMap error";
+        Image_ErrorCode apiErrorCode = ConvertToErrorCode(syncContext->status);
+        syncContext->errMsg = GetErrorCodeMsg(apiErrorCode);
         IMAGE_LOGE("Create PixelMap error");
     }
     result = CreatePixelMapCompleteSync(env, status, static_cast<ImageSourceSyncContext*>((syncContext).get()));

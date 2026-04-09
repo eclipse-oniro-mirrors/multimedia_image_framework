@@ -2668,6 +2668,7 @@ napi_value SendablePixelMapNapi::Rotate(napi_env env, napi_callback_info info)
             nVal.context.release();
         } else {
             NAPI_CHECK_AND_DELETE_REF(env, nVal.context->callbackRef);
+            napi_delete_async_work(env, nVal.context->work);
         }
     }
     return nVal.result;

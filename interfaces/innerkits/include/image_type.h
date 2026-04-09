@@ -430,19 +430,23 @@ enum class ScaleMode : int32_t {
 
 enum class IncrementalMode { FULL_DATA = 0, INCREMENTAL_DATA = 1 };
 
-// used in ScalePixelMapEx
+// Shared by PostProc::ScalePixelMapEx and PixelMap::scale.
+// These values represent anti-aliasing / resampling options, but the concrete scaling
+// algorithm behind the same enum value depends on the caller/backend implementation.
+// ScalePixelMapEx uses FFmpeg swscale interpolation flags, while PixelMap::scale uses
+// Skia sampling for most options and a dedicated SLR path for AntiAliasingOption::SLR.
 enum class AntiAliasingOption : int32_t {
-    NONE = 0, // SWS_POINT_NEAREST
-    LOW = 1, // SWS_BILINEAR
-    MEDIUM = 2, // SWS_BICUBIC
-    HIGH = 3, // SWS_AREA
-    FAST_BILINEAER = 4, // SWS_FAST_BILINEAER
-    BICUBLIN = 5, // SWS_AREA
-    GAUSS = 6, // SWS_GAUSS
-    SINC = 7, // SWS_SINC
-    LANCZOS = 8, // SWS_LANCZOS
-    SPLINE = 9, // SWS_SPLINE
-    SLR = 10, // SLR
+    NONE = 0, // ScalePixelMapEx: SWS_POINT; PixelMap::scale: nearest
+    LOW = 1, // ScalePixelMapEx: SWS_BILINEAR; PixelMap::scale: linear
+    MEDIUM = 2, // ScalePixelMapEx: SWS_BICUBIC; PixelMap::scale: linear + linear mipmap
+    HIGH = 3, // ScalePixelMapEx: SWS_AREA; PixelMap::scale: cubic resampler (B = 1/3, C = 1/3)
+    FAST_BILINEAER = 4, // ScalePixelMapEx: SWS_FAST_BILINEAR; PixelMap::scale: fallback to nearest
+    BICUBLIN = 5, // ScalePixelMapEx: SWS_BICUBLIN; PixelMap::scale: fallback to nearest
+    GAUSS = 6, // ScalePixelMapEx: SWS_GAUSS; PixelMap::scale: fallback to nearest
+    SINC = 7, // ScalePixelMapEx: SWS_SINC; PixelMap::scale: fallback to nearest
+    LANCZOS = 8, // ScalePixelMapEx: SWS_LANCZOS; PixelMap::scale: fallback to nearest
+    SPLINE = 9, // ScalePixelMapEx: SWS_SPLINE; PixelMap::scale: fallback to nearest
+    SLR = 10, // ScalePixelMapEx: fallback to SWS_POINT; PixelMap::scale: PostProc::ScalePixelMapWithSLR
 };
 
 enum class AuxiliaryPictureType {

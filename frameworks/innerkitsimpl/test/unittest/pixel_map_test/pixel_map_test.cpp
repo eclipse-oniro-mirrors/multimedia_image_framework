@@ -24,6 +24,11 @@
 #include "pixel_convert_adapter.h"
 #include "securec.h"
 
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+#include <fcntl.h>
+#include <unistd.h>
+#endif
+
 #define IMAGE_YUV_PATH  "/data/local/tmp/image/P010.yuv"
 
 using namespace testing::ext;
@@ -105,7 +110,7 @@ std::unique_ptr<PixelMap> ConstructPixmap(AllocatorType type)
     }
     char *ch = static_cast<char *>(buffer);
     for (unsigned int i = 0; i < bufferSize; i++) {
-        *(ch++) = (char)i;
+        *(ch++) = static_cast<char>(i);
     }
 
     pixelMap->SetPixelsAddr(buffer, nullptr, bufferSize, type, nullptr);
@@ -137,7 +142,7 @@ std::unique_ptr<PixelMap> ConstructPixmap(int32_t width, int32_t height, PixelFo
     }
     char *ch = static_cast<char *>(buffer);
     for (unsigned int i = 0; i < bufferSize; i++) {
-        *(ch++) = (char)i;
+        *(ch++) = static_cast<char>(i);
     }
 
     pixelMap->SetPixelsAddr(buffer, nullptr, bufferSize, type, nullptr);
@@ -182,7 +187,7 @@ std::unique_ptr<PixelMap> ConstructPixelMap(int32_t width, int32_t height, Pixel
     }
     char* ch = static_cast<char*>(buffer);
     for (unsigned int i = 0; i < bufferSize; i++) {
-        *(ch++) = (char)i;
+        *(ch++) = static_cast<char>(i);
     }
 
     pixelMap->SetPixelsAddr(buffer, nullptr, bufferSize, type, type != AllocatorType::CUSTOM_ALLOC ? nullptr :
@@ -1739,7 +1744,7 @@ HWTEST_F(PixelMapTest, PixelMapTest024, TestSize.Level3)
     void *buffer = malloc(bufferSize);
     char *ch = static_cast<char *>(buffer);
     for (unsigned int i = 0; i < bufferSize; i++) {
-        *(ch++) = (char)i;
+        *(ch++) = static_cast<char>(i);
     }
     // 10 means contextSize
     uint32_t contextSize = 10;
@@ -1747,7 +1752,7 @@ HWTEST_F(PixelMapTest, PixelMapTest024, TestSize.Level3)
     EXPECT_TRUE(context != nullptr);
     char *contextChar = static_cast<char *>(context);
     for (int32_t i = 0; i < contextSize; i++) {
-        *(contextChar++) = (char)i;
+        *(contextChar++) = static_cast<char>(i);
     }
     pixelMap->SetPixelsAddr(buffer, context, bufferSize, AllocatorType::HEAP_ALLOC, nullptr);
     EXPECT_TRUE(pixelMap != nullptr);
@@ -1814,7 +1819,7 @@ HWTEST_F(PixelMapTest, PixelMapTest026, TestSize.Level3)
     void *buffer = malloc(bufferSize);
     char *ch = static_cast<char *>(buffer);
     for (unsigned int i = 0; i < bufferSize; i++) {
-        *(ch++) = (char)i;
+        *(ch++) = static_cast<char>(i);
     }
     srcPixelMap.SetPixelsAddr(buffer, nullptr, bufferSize, AllocatorType::HEAP_ALLOC, nullptr);
 
@@ -1865,7 +1870,7 @@ HWTEST_F(PixelMapTest, PixelMapTest027, TestSize.Level3)
     void *buffer = malloc(bufferSize);
     char *ch = static_cast<char *>(buffer);
     for (unsigned int i = 0; i < bufferSize; i++) {
-        *(ch++) = (char)i;
+        *(ch++) = static_cast<char>(i);
     }
     srcPixelMap.SetPixelsAddr(buffer, nullptr, bufferSize, AllocatorType::HEAP_ALLOC, nullptr);
 
@@ -4122,7 +4127,7 @@ HWTEST_F(PixelMapTest, HdrPixelMapTlvTest006, TestSize.Level3)
     void *buffer = malloc(bufferSize);
     char *ch = static_cast<char *>(buffer);
     for (unsigned int i = 0; i < bufferSize; i++) {
-        *(ch++) = (char)i;
+        *(ch++) = static_cast<char>(i);
     }
     srcPixelMap.SetPixelsAddr(buffer, nullptr, bufferSize, AllocatorType::HEAP_ALLOC, nullptr);
 
@@ -4259,6 +4264,219 @@ HWTEST_F(PixelMapTest, CreatePixelMapYUVTest001, TestSize.Level3)
     std::unique_ptr<PixelMap> pixelMap = PixelMap::Create(opts);
     EXPECT_NE(pixelMap, nullptr);
     GTEST_LOG_(INFO) << "PixelMapTest: Verify YUV Format Create001 end";
+}
+
+/**
+ * @tc.name: RecoverAshMemFdClosedTest001
+ * @tc.desc: Test Marshalling when fd is closed unexpectedly, trigger WriteRecoveredAshMemToParcel success path
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, RecoverAshMemFdClosedTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelMapTest: RecoverAshMemFdClosedTest001 start";
+
+    // Create PixelMap with SHARE_MEM_ALLOC type using InitializationOptions
+    InitializationOptions opts;
+    opts.size.width = SIZE_WIDTH;
+    opts.size.height = SIZE_HEIGHT;
+    opts.pixelFormat = PixelFormat::RGBA_8888;
+    opts.alphaType = AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN;
+    opts.allocatorType = AllocatorType::SHARE_MEM_ALLOC;
+    std::unique_ptr<PixelMap> pixelMap = PixelMap::Create(opts);
+    ASSERT_NE(pixelMap, nullptr);
+    ASSERT_NE(pixelMap->data_, nullptr);
+    ASSERT_NE(pixelMap->context_, nullptr);
+
+    // Store original data for verification (data_ should not be modified by recovery)
+    int32_t bufferSize = pixelMap->GetByteCount();
+    auto originalData = std::make_unique<uint8_t[]>(bufferSize);
+    ASSERT_EQ(memcpy_s(originalData.get(), bufferSize, pixelMap->data_, bufferSize), EOK);
+
+    // Get fd and close it to simulate unexpected closure
+    // Note: Do NOT set *fd = -1 here, otherwise the fd < 0 check will
+    // return early and skip the recovery logic. We want CheckAshmemSize
+    // to detect the invalid fd and trigger WriteRecoveredAshMemToParcel.
+    int* fd = static_cast<int*>(pixelMap->context_);
+    ASSERT_NE(fd, nullptr);
+    ::close(*fd);
+
+    // Marshalling should trigger WriteRecoveredAshMemToParcel and succeed
+    Parcel parcel;
+    bool ret = pixelMap->Marshalling(parcel);
+    EXPECT_TRUE(ret);
+
+    // Verify data_ is not modified by recovery (new impl doesn't update data_)
+    EXPECT_EQ(memcmp(pixelMap->data_, originalData.get(), bufferSize), 0);
+
+    // Verify unmarshalling works correctly
+    PixelMap* newPixelMap = PixelMap::Unmarshalling(parcel);
+    ASSERT_NE(newPixelMap, nullptr);
+    EXPECT_EQ(newPixelMap->GetWidth(), SIZE_WIDTH);
+    EXPECT_EQ(newPixelMap->GetHeight(), SIZE_HEIGHT);
+
+    GTEST_LOG_(INFO) << "PixelMapTest: RecoverAshMemFdClosedTest001 end";
+}
+
+/**
+ * @tc.name: RecoverAshMemNullDataTest001
+ * @tc.desc: Test Marshalling when data_ is null with SHARE_MEM_ALLOC, should fail
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, RecoverAshMemNullDataTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelMapTest: RecoverAshMemNullDataTest001 start";
+
+    InitializationOptions opts;
+    opts.size.width = SIZE_WIDTH;
+    opts.size.height = SIZE_HEIGHT;
+    opts.pixelFormat = PixelFormat::RGBA_8888;
+    opts.alphaType = AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN;
+    opts.allocatorType = AllocatorType::SHARE_MEM_ALLOC;
+    std::unique_ptr<PixelMap> pixelMap = PixelMap::Create(opts);
+    ASSERT_NE(pixelMap, nullptr);
+
+    // Save original data pointer
+    uint8_t* originalData = pixelMap->data_;
+    pixelMap->data_ = nullptr;
+
+    // Close fd to trigger recovery attempt
+    int* fd = static_cast<int*>(pixelMap->context_);
+    if (fd != nullptr && *fd >= 0) {
+        ::close(*fd);
+        *fd = -1;
+    }
+
+    // Marshalling should fail because data_ is null
+    Parcel parcel;
+    bool ret = pixelMap->Marshalling(parcel);
+    EXPECT_FALSE(ret);
+
+    // Restore for cleanup
+    pixelMap->data_ = originalData;
+
+    GTEST_LOG_(INFO) << "PixelMapTest: RecoverAshMemNullDataTest001 end";
+}
+
+/**
+ * @tc.name: RecoverAshMemNullFdTest001
+ * @tc.desc: Test Marshalling when context_ (fd pointer) is null, should fail
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, RecoverAshMemNullFdTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelMapTest: RecoverAshMemNullFdTest001 start";
+
+    InitializationOptions opts;
+    opts.size.width = SIZE_WIDTH;
+    opts.size.height = SIZE_HEIGHT;
+    opts.pixelFormat = PixelFormat::RGBA_8888;
+    opts.alphaType = AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN;
+    opts.allocatorType = AllocatorType::SHARE_MEM_ALLOC;
+    std::unique_ptr<PixelMap> pixelMap = PixelMap::Create(opts);
+    ASSERT_NE(pixelMap, nullptr);
+
+    // Save original context
+    void* originalContext = pixelMap->context_;
+    pixelMap->context_ = nullptr;
+
+    // Marshalling should fail because fd pointer is null
+    Parcel parcel;
+    bool ret = pixelMap->Marshalling(parcel);
+    EXPECT_FALSE(ret);
+
+    // Restore for cleanup
+    pixelMap->context_ = originalContext;
+
+    GTEST_LOG_(INFO) << "PixelMapTest: RecoverAshMemNullFdTest001 end";
+}
+
+/**
+ * @tc.name: RecoverAshMemNormalTest001
+ * @tc.desc: Test normal Marshalling with valid SHARE_MEM_ALLOC, no recovery needed
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, RecoverAshMemNormalTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelMapTest: RecoverAshMemNormalTest001 start";
+
+    InitializationOptions opts;
+    opts.size.width = SIZE_WIDTH;
+    opts.size.height = SIZE_HEIGHT;
+    opts.pixelFormat = PixelFormat::RGBA_8888;
+    opts.alphaType = AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN;
+    opts.allocatorType = AllocatorType::SHARE_MEM_ALLOC;
+    std::unique_ptr<PixelMap> pixelMap = PixelMap::Create(opts);
+    ASSERT_NE(pixelMap, nullptr);
+    ASSERT_NE(pixelMap->data_, nullptr);
+    ASSERT_NE(pixelMap->context_, nullptr);
+
+    // Normal Marshalling without closing fd
+    Parcel parcel;
+    bool ret = pixelMap->Marshalling(parcel);
+    EXPECT_TRUE(ret);
+
+    // Unmarshalling and verify
+    PixelMap* newPixelMap = PixelMap::Unmarshalling(parcel);
+    ASSERT_NE(newPixelMap, nullptr);
+    EXPECT_EQ(newPixelMap->GetWidth(), SIZE_WIDTH);
+    EXPECT_EQ(newPixelMap->GetHeight(), SIZE_HEIGHT);
+
+    GTEST_LOG_(INFO) << "PixelMapTest: RecoverAshMemNormalTest001 end";
+}
+
+/**
+ * @tc.name: RecoverAshMemFdReusedTest001
+ * @tc.desc: Test Marshalling when fd is closed and potentially reused, trigger recovery
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, RecoverAshMemFdReusedTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelMapTest: RecoverAshMemFdReusedTest001 start";
+
+    InitializationOptions opts;
+    opts.size.width = SIZE_WIDTH;
+    opts.size.height = SIZE_HEIGHT;
+    opts.pixelFormat = PixelFormat::RGBA_8888;
+    opts.alphaType = AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN;
+    opts.allocatorType = AllocatorType::SHARE_MEM_ALLOC;
+    std::unique_ptr<PixelMap> pixelMap = PixelMap::Create(opts);
+    ASSERT_NE(pixelMap, nullptr);
+
+    int32_t bufferSize = pixelMap->GetByteCount();
+    auto originalData = std::make_unique<uint8_t[]>(bufferSize);
+    ASSERT_EQ(memcpy_s(originalData.get(), bufferSize, pixelMap->data_, bufferSize), EOK);
+
+    // Close fd and open another file to potentially reuse the fd number
+    int* fd = static_cast<int*>(pixelMap->context_);
+    ASSERT_NE(fd, nullptr);
+    int oldFd = *fd;
+    ::close(*fd);
+
+    // Try to force fd reuse by opening another file
+    int tmpFd = open("/dev/null", O_RDONLY);
+    if (tmpFd >= 0) {
+        // If fd was reused, tmpFd might equal oldFd
+        ::close(tmpFd);
+    }
+
+    // Set fd to old value (which is now invalid or points to different file)
+    *fd = oldFd;
+
+    // Marshalling should detect invalid ashmem and trigger WriteRecoveredAshMemToParcel
+    Parcel parcel;
+    bool ret = pixelMap->Marshalling(parcel);
+    EXPECT_TRUE(ret);
+
+    // Verify data_ is not modified by recovery
+    EXPECT_EQ(memcmp(pixelMap->data_, originalData.get(), bufferSize), 0);
+
+    // Verify unmarshalling works correctly
+    PixelMap* newPixelMap = PixelMap::Unmarshalling(parcel);
+    ASSERT_NE(newPixelMap, nullptr);
+    EXPECT_EQ(newPixelMap->GetWidth(), SIZE_WIDTH);
+    EXPECT_EQ(newPixelMap->GetHeight(), SIZE_HEIGHT);
+
+    GTEST_LOG_(INFO) << "PixelMapTest: RecoverAshMemFdReusedTest001 end";
 }
 }
 }
