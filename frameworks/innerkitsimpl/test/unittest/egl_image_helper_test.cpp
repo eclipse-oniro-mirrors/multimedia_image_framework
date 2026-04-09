@@ -86,13 +86,18 @@ HWTEST_F(EglImageHelperTest, PixelMapGlResourceValidationTest001, TestSize.Level
 {
     size_t rowBytes = 0;
     size_t contiguousSize = 0;
-    EXPECT_TRUE(PixelMapGlResource::IsValidGlTransferSize(0));
-    EXPECT_TRUE(PixelMapGlResource::IsValidGlTransferSize(PixelMapGlResource::MAX_GL_TRANSFER_SIZE));
-    EXPECT_FALSE(PixelMapGlResource::IsValidGlTransferSize(PixelMapGlResource::MAX_GL_TRANSFER_SIZE + 1));
+    EXPECT_FALSE(PixelMapGlResource::IsValidGlTransferSize(Size { 0, 1 }));
+    EXPECT_TRUE(PixelMapGlResource::IsValidGlTransferSize(
+        Size { PixelMapGlResource::MAX_GL_TRANSFER_DIMENSION, PixelMapGlResource::MAX_GL_TRANSFER_DIMENSION }));
+    EXPECT_FALSE(PixelMapGlResource::IsValidGlTransferSize(
+        Size { PixelMapGlResource::MAX_GL_TRANSFER_DIMENSION + 1, PixelMapGlResource::MAX_GL_TRANSFER_DIMENSION }));
     EXPECT_FALSE(PixelMapGlResource::ValidateTransferLayout(Size { 4, 3 }, 15, 4, rowBytes, contiguousSize));
     EXPECT_TRUE(PixelMapGlResource::ValidateTransferLayout(Size { 4, 3 }, 16, 4, rowBytes, contiguousSize));
     EXPECT_EQ(rowBytes, 16U);
     EXPECT_EQ(contiguousSize, 48U);
+    EXPECT_FALSE(PixelMapGlResource::ValidateTransferLayout(
+        Size { PixelMapGlResource::MAX_GL_TRANSFER_DIMENSION + 1, 1 },
+        (PixelMapGlResource::MAX_GL_TRANSFER_DIMENSION + 1) * 4, 4, rowBytes, contiguousSize));
 
     PixelMapGlResource::ScopedNativeWindowBuffer nativeBuffer;
     EXPECT_EQ(nativeBuffer.Get(), nullptr);

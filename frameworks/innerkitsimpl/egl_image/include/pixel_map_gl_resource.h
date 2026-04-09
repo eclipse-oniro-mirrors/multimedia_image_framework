@@ -35,7 +35,7 @@
 namespace OHOS {
 namespace Media {
 namespace PixelMapGlResource {
-constexpr size_t MAX_GL_TRANSFER_SIZE = 8192;
+constexpr int32_t MAX_GL_TRANSFER_DIMENSION = 8192;
 
 inline void DeleteTexture(GLuint &textureId)
 {
@@ -276,9 +276,10 @@ private:
     EGLImageKHR image_ = EGL_NO_IMAGE_KHR;
 };
 
-inline bool IsValidGlTransferSize(size_t size)
+inline bool IsValidGlTransferSize(const Size &size)
 {
-    return size <= MAX_GL_TRANSFER_SIZE;
+    return size.width > 0 && size.height > 0 &&
+        size.width <= MAX_GL_TRANSFER_DIMENSION && size.height <= MAX_GL_TRANSFER_DIMENSION;
 }
 
 inline bool CopyStridedToLinear(const uint8_t *src, int32_t srcStride, int32_t height, size_t rowBytes,
@@ -326,7 +327,7 @@ inline bool ValidateTransferLayout(const Size &size, int32_t stride, int32_t pix
     if (!PixelMapGlUtils::ValidateImageLayout(size, stride, pixelBytes, rowBytes, contiguousSize)) {
         return false;
     }
-    return IsValidGlTransferSize(contiguousSize);
+    return IsValidGlTransferSize(size);
 }
 } // namespace PixelMapGlResource
 } // namespace Media
