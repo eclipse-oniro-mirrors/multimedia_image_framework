@@ -412,10 +412,6 @@ bool JpegHardwareDecoder::TryNormalInBuff(ImagePlugin::InputDataStream* srcStrea
         JPEG_HW_LOGE("inputBuffer_.buffer is nullptr");
         return false;
     }
-    if (inputBuffer_.buffer == nullptr) {
-        JPEG_HW_LOGE("inputBuffer_.buffer is nullptr");
-        return false;
-    }
     BufferHandle *inputBufferHandle = inputBuffer_.buffer->GetBufferHandle();
     if (inputBufferHandle == nullptr) {
         JPEG_HW_LOGE("inputBufferHandle is nullptr");
