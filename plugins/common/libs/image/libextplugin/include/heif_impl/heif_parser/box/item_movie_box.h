@@ -166,6 +166,7 @@ public:
     heif_error Write(HeifStreamWriter &writer) const override;
     heif_error GetSampleEntryWidthHeight(uint32_t index, uint32_t &width, uint32_t &height);
     std::shared_ptr<HeifBox> GetHvccBox(uint32_t index);
+    std::shared_ptr<HeifBox> GetAv1cBox();
 protected:
     heif_error ParseContent(HeifStreamReader &reader) override;
 private:
@@ -268,6 +269,28 @@ private:
     uint32_t height_ = 0;
     std::shared_ptr<HeifBox> hvccBox_;
 };
+
+class HeifAv01Box : public HeifBox {
+public:
+    HeifAv01Box() : HeifBox(BOX_TYPE_AV01) {}
+
+    uint32_t GetWidth() const { return width_; }
+    uint32_t GetHeight() const { return height_; }
+    std::shared_ptr<HeifBox> GetAv1cBox() const { return av1cBox_; }
+protected:
+    heif_error ParseContent(HeifStreamReader &reader) override;
+private:
+    uint16_t dataRefIndex_ = 0;
+    uint32_t width_ = 0;
+    uint32_t height_ = 0;
+    uint32_t horizResolution_ = 0;
+    uint32_t vertResolution_ = 0;
+    uint16_t frameCount_ = 0;
+    std::string compressorName_ = "";
+    uint16_t depth_ = 0;
+    std::shared_ptr<HeifBox> av1cBox_;
+};
+
 } // namespace ImagePlugin
 } // namespace OHOS
 

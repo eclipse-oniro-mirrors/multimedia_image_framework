@@ -48,6 +48,8 @@ namespace Media {
 #define WEBP_METADATA_KEY_UNCLAMPED_DELAY_TIME "WebPUnclampedDelayTime"
 #define WEBP_METADATA_KEY_LOOP_COUNT "WebPLoopCount"
 
+#define AVIS_METADATA_KEY_DELAY_TIME "AvisDelayTime"
+
 // There is no definite tag name for gainmap and thumbnail
 #define AUXILIARY_TAG_GAINMAP ""
 #define AUXILIARY_TAG_DEPTH_MAP_BACK "DepthP"
@@ -492,6 +494,7 @@ enum class MetadataType {
     DNG = 16,
     WEBP = 17,
     HW_MAKER_NOTE = 18,
+    AVIS = 19,
 };
 
 static const std::map<MetadataType, std::string> BLOB_METADATA_TAG_MAP = {
@@ -590,6 +593,7 @@ enum class NapiMetadataType {
     GIF_METADATA = 5,
     DNG_METADATA = 6,
     WEBP_METADATA = 7,
+    AVIS_METADATA = 8,
 };
 
 enum class XMPTagType: int32_t {

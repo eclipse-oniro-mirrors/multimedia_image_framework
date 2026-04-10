@@ -17,6 +17,7 @@
 
 #include <algorithm>
 #include <numeric>
+#include <string>
 
 namespace {
     const uint32_t MVHD_MATRIX_OFFSET = 9;
@@ -35,10 +36,46 @@ namespace {
     const uint32_t MAX_STSC_ENTRYCOUNT = 1024 * 1024 * 256;
     const uint32_t MAX_STCO_ENTRYCOUNT = 1024 * 1024 * 1024;
     const uint32_t MAX_STSS_ENTRYCOUNT = 1024 * 1024 * 1024;
+    static constexpr uint32_t RESERVED1_SIZE = 6;
+    static constexpr uint32_t RESERVED2_SIZE = 2;
+    static constexpr uint32_t RESERVED3_SIZE = 4;
+    static constexpr uint32_t PRE_DEFINED1_SIZE = 2;
+    static constexpr uint32_t PRE_DEFINED2_SIZE = 12;
+    static constexpr uint32_t PRE_DEFINED3_SIZE = 2;
+    static constexpr uint32_t COMPRESSOR_NAME_SIZE = 31;
+
 }
 
 namespace OHOS {
 namespace ImagePlugin {
+static void SkipBytes(HeifStreamReader &reader, uint32_t skipSize)
+{
+    for (uint32_t i = 0; i < skipSize; i++) {
+        reader.Read8();
+    }
+}
+
+static std::string ReadFixedString(HeifStreamReader &reader, size_t length)
+{
+    if (length == 0) {
+        return "";
+    }
+    if (!reader.CheckSize(length)) {
+        return "";
+    }
+    std::string result;
+    result.resize(length);
+    auto stream = reader.GetStream();
+    if (!stream) {
+        return "";
+    }
+    bool res = stream->Read(&result[0], length);
+    if (!res) {
+        reader.SetError(true);
+        return "";
+    }
+    return result;
+}
 
 static bool isStrictlyIncreasing(const std::vector<uint32_t>& vec)
 {
@@ -312,12 +349,24 @@ heif_error HeifStsdBox::GetSampleEntryWidthHeight(uint32_t index, uint32_t &widt
     if (index >= entries_.size()) {
         return heif_error_invalid_index;
     }
-    if (entries_[index] && entries_[index]->GetBoxType() == BOX_TYPE_HVC1) {
-        auto hvc1Entry = std::dynamic_pointer_cast<HeifHvc1Box>(entries_[index]);
+    const auto entry = entries_[index];
+    if (entry == nullptr) {
+        return heif_error_invalid_stsd;
+    }
+
+    if (entry->GetBoxType() == BOX_TYPE_HVC1) {
+        auto hvc1Entry = std::dynamic_pointer_cast<HeifHvc1Box>(entry);
         width = hvc1Entry->GetWidth();
         height = hvc1Entry->GetHeight();
+        return heif_error_ok;
+    } else if (entry->GetBoxType() == BOX_TYPE_AV01) {
+        auto av01Entry = std::dynamic_pointer_cast<HeifAv01Box>(entry);
+        width = av01Entry->GetWidth();
+        height = av01Entry->GetHeight();
+        return heif_error_ok;
     }
-    return heif_error_ok;
+
+    return heif_error_property_not_found;
 }
 
 std::shared_ptr<HeifBox> HeifStsdBox::GetHvccBox(uint32_t index)
@@ -328,6 +377,19 @@ std::shared_ptr<HeifBox> HeifStsdBox::GetHvccBox(uint32_t index)
     if (entries_[index] && entries_[index]->GetBoxType() == BOX_TYPE_HVC1) {
         auto hvc1Entry = std::dynamic_pointer_cast<HeifHvc1Box>(entries_[index]);
         return hvc1Entry->GetHvccBox();
+    }
+    return nullptr;
+}
+
+std::shared_ptr<HeifBox> HeifStsdBox::GetAv1cBox()
+{
+    for (const auto &entry : entries_) {
+        if (entry && entry->GetBoxType() == BOX_TYPE_AV01) {
+            auto av01Entry = std::dynamic_pointer_cast<HeifAv01Box>(entry);
+            if (av01Entry) {
+                return av01Entry->GetAv1cBox();
+            }
+        }
     }
     return nullptr;
 }
@@ -553,5 +615,38 @@ heif_error HeifHvc1Box::ParseContent(HeifStreamReader &reader)
     }
     return reader.GetError();
 }
+
+heif_error HeifAv01Box::ParseContent(HeifStreamReader &reader)
+{
+    SkipBytes(reader, RESERVED1_SIZE);
+    dataRefIndex_ = reader.Read16();
+    SkipBytes(reader, PRE_DEFINED1_SIZE);
+    SkipBytes(reader, RESERVED2_SIZE);
+    SkipBytes(reader, PRE_DEFINED2_SIZE);
+    width_ = reader.Read16();
+    height_ = reader.Read16();
+    horizResolution_ = reader.Read32();
+    vertResolution_ = reader.Read32();
+    SkipBytes(reader, RESERVED3_SIZE);
+    frameCount_ = reader.Read16();
+
+    size_t nameLength = reader.Read8();
+    if (nameLength > COMPRESSOR_NAME_SIZE) {
+        return heif_error_property_not_found;
+    }
+    compressorName_ = ReadFixedString(reader, nameLength);
+    SkipBytes(reader, COMPRESSOR_NAME_SIZE - nameLength);
+
+    depth_ = reader.Read16();
+    SkipBytes(reader, PRE_DEFINED3_SIZE);
+
+    uint32_t recursionCount = 0;
+    heif_error error = HeifBox::MakeFromReader(reader, &av1cBox_, recursionCount);
+    if (error != heif_error_ok) {
+        return error;
+    }
+    return reader.GetError();
+}
+
 } // namespace ImagePlugin
 } // namespace OHOS

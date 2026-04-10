@@ -2415,12 +2415,76 @@ ohos_unittest("heifsmetadatatest") {
   ]
 }
 
+ohos_unittest("avif_decode_test") {
+  module_out_path = module_output_path
+
+  defines = []
+  sources = [
+    "unittest/avif_decode_test.cpp",
+  ]
+
+  include_dirs = [
+    "${image_subsystem}/frameworks/innerkitsimpl/test/unittest/mock/",
+    "${image_subsystem}/frameworks/innerkitsimpl/utils/include/",
+    "${image_subsystem}/plugins/common/libs/image/libextplugin/include/",
+    "${image_subsystem}/plugins/manager/include/",
+    "${image_subsystem}/plugins/manager/include/pluginbase/",
+    "${image_subsystem}/interfaces/innerkits/include/",
+    "${image_subsystem}/plugins/common/libs/image/libextplugin/include/heif_impl/",
+    "${image_subsystem}/plugins/common/libs/image/libextplugin/include/heif_impl/heif_parser/box",
+  ]
+
+  deps = [
+    "${image_subsystem}/frameworks/innerkitsimpl/utils:image_utils",
+    "${image_subsystem}/interfaces/innerkits:image_native",
+    "${image_subsystem}/plugins/common/libs/image/libextplugin:extplugin",
+    "${image_subsystem}/plugins/common/libs/image/libextplugin:heifparser",
+    "${image_subsystem}/plugins/common/libs/image/libextplugin:avifimpl",
+    "${image_subsystem}/frameworks/innerkitsimpl/pixelconverter:pixelconvertadapter",
+  ]
+
+  external_deps = [
+    "c_utils:utils",
+    "drivers_interface_codec:libimage_proxy_2.1",
+    "drivers_interface_display:libdisplay_buffer_hdi_impl",
+    "drivers_interface_display:libdisplay_buffer_proxy_1.0",
+    "drivers_interface_display:libdisplay_composer_hdi_impl_1.3",
+    "drivers_interface_display:libdisplay_composer_proxy_1.0",
+    "googletest:gtest_main",
+    "graphic_surface:surface",
+    "hdf_core:libhdf_utils",
+    "hdf_core:libhdi",
+    "hilog:libhilog",
+    "ipc:ipc_single",
+    "libjpeg-turbo:turbojpeg",
+    "libexif:libexif",
+    "skia:libjpegm133",
+    "skia:skia_canvaskit",
+    "ffmpeg:libohosffmpeg",
+    "graphic_2d:color_manager",
+    "graphic_surface:surface",
+    "hilog:libhilog",
+  ]
+
+  if (has_dav1d) {
+    external_deps += [ "dav1d:dav1d_ohos" ]
+    defines += [ "AVIF_DECODE_ENABLE" ]
+  }
+
+  resource_config_file = "$image_subsystem/test/resource/image/ohos_test.xml"
+  cflags = [
+    "-Dprivate=public",
+    "-Dprotected=public",
+  ]
+}
+
 ################################################
 group("unittest") {
   testonly = true
   deps = [
     ":attrdatatest",
     ":auxiliarypicturetest",
+    ":avif_decode_test",
     ":colorconvertertest",
     ":convertertest",
     ":creatormocktest",

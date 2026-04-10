@@ -4368,7 +4368,7 @@ STATIC_EXEC_FUNC(CreatePixelMapList)
         context->decodeOpts.invokeType = JS_INTERFACE;
         ImageInfo imageInfo;
         if (context->rImageSource->GetImageInfo(imageInfo) == SUCCESS &&
-            imageInfo.encodedFormat == IMAGE_HEIFS_FORMAT) {
+            (imageInfo.encodedFormat == IMAGE_HEIFS_FORMAT || imageInfo.encodedFormat == IMAGE_AVIS_FORMAT)) {
             context->decodeOpts.isAnimationDecode = true;
         }
         context->pixelMaps = context->rImageSource->CreatePixelMapList(context->decodeOpts, errorCode);

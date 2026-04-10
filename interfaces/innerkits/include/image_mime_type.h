@@ -36,7 +36,8 @@ static const std::string IMAGE_CR3_FORMAT = "image/x-canon-cr3";
 static const std::string IMAGE_HEIFS_FORMAT = "image/heif-sequence";
 static const std::string IMAGE_DNG_FORMAT = "image/x-adobe-dng";
 static const std::string IMAGE_TIFF_FORMAT = "image/tiff";
-
+static const std::string IMAGE_AVIF_FORMAT = "image/avif";
+static const std::string IMAGE_AVIS_FORMAT = "image/avis";
 } // namespace Media
 } // namespace OHOS
 

@@ -175,6 +175,7 @@ ohos_shared_library("extplugin") {
     public_configs = [ ":ext_public_config" ]
     defines = []
     deps = [
+      ":avifimpl",
       ":heifimpl",
       ":heifparser",
       "${image_subsystem}//frameworks/innerkitsimpl/pixelconverter:pixelconvertadapter",
@@ -246,6 +247,11 @@ ohos_shared_library("extplugin") {
       defines += [ "HEIF_HW_ENCODE_ENABLE" ]
       external_deps += [ "drivers_interface_codec:libimage_proxy_2.1" ]
     }
+
+    if (has_dav1d) {
+      external_deps += [ "dav1d:dav1d_ohos" ]
+      defines += [ "AVIF_DECODE_ENABLE" ]
+    }
   }
   if (is_ohos) {
     sources += [ "src/sk_ohoscodec.cpp" ]
@@ -304,6 +310,7 @@ if (is_arkui_x) {
       "src/heif_impl/heif_parser/box/item_info_box.cpp",
       "src/heif_impl/heif_parser/box/item_movie_box.cpp",
       "src/heif_impl/heif_parser/box/item_property_aux_box.cpp",
+      "src/heif_impl/heif_parser/box/item_property_av1c_box.cpp",
       "src/heif_impl/heif_parser/box/item_property_basic_box.cpp",
       "src/heif_impl/heif_parser/box/item_property_box.cpp",
       "src/heif_impl/heif_parser/box/item_property_color_box.cpp",
@@ -357,6 +364,7 @@ if (is_arkui_x) {
       "src/heif_impl/heif_parser/box/item_info_box.cpp",
       "src/heif_impl/heif_parser/box/item_movie_box.cpp",
       "src/heif_impl/heif_parser/box/item_property_aux_box.cpp",
+      "src/heif_impl/heif_parser/box/item_property_av1c_box.cpp",
       "src/heif_impl/heif_parser/box/item_property_basic_box.cpp",
       "src/heif_impl/heif_parser/box/item_property_box.cpp",
       "src/heif_impl/heif_parser/box/item_property_color_box.cpp",
@@ -446,6 +454,59 @@ ohos_shared_library("heifimpl") {
       "openmax:libopenmax_static",
       "qos_manager:qos",
     ]
+  }
+
+  subsystem_name = "multimedia"
+  innerapi_tags = [ "platformsdk_indirect" ]
+  part_name = "image_framework"
+}
+
+ohos_shared_library("avifimpl") {
+  if (!use_clang_android && !use_clang_ios) {
+    branch_protector_ret = "pac_ret"
+    sanitize = {
+      cfi = true
+      cfi_cross_dso = true
+      cfi_vcall_icall_only = true
+      debug = false
+    }
+  }
+
+  defines = []
+  if (build_variant == "root") {
+    defines += [ "BUILD_ENG_VERSION" ]
+  }
+
+  include_dirs = [
+    "include",
+    "include/heif_impl",
+    "include/heif_impl/heif_parser",
+    "${image_subsystem}/frameworks/innerkitsimpl/utils/include",
+    "${image_subsystem}/interfaces/innerkits/include",
+    "${image_subsystem}/frameworks/innerkitsimpl/common/include",
+    "${image_subsystem}/frameworks/innerkitsimpl/pixelconverter/include",
+  ]
+
+  sources = [
+    "src/heif_impl/AvifDecoderImpl.cpp",
+  ]
+
+  deps = [
+    ":heifparser",
+    "${image_subsystem}/frameworks/innerkitsimpl/utils:image_utils",
+    "${image_subsystem}/frameworks/innerkitsimpl/pixelconverter:pixelconvertadapter",
+  ]
+
+  external_deps = [
+    "ffmpeg:libohosffmpeg",
+    "graphic_2d:color_manager",
+    "graphic_surface:surface",
+    "hilog:libhilog",
+  ]
+
+  if (has_dav1d) {
+    external_deps += [ "dav1d:dav1d_ohos" ]
+    defines += [ "AVIF_DECODE_ENABLE" ]
   }
 
   subsystem_name = "multimedia"

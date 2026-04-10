@@ -19,6 +19,7 @@
 #include "box/item_info_box.h"
 #include "box/item_property_box.h"
 #include "box/item_property_aux_box.h"
+#include "box/item_property_av1c_box.h"
 #include "box/item_property_basic_box.h"
 #include "box/item_property_color_box.h"
 #include "box/item_property_hvcc_box.h"
@@ -216,6 +217,8 @@ std::shared_ptr<HeifBox> HeifBox::MakeBox(uint32_t boxType)
         MAKE_BOX_CASE("stco", HeifStcoBox);
         MAKE_BOX_CASE("stsz", HeifStszBox);
         MAKE_BOX_CASE("stss", HeifStssBox);
+        MAKE_BOX_CASE("av01", HeifAv01Box);
+        MAKE_BOX_CASE("av1C", HeifAv1CBox);
         default:
             box = std::make_shared<HeifBox>();
             break;

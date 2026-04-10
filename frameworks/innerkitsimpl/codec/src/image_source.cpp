@@ -352,6 +352,7 @@ const static string IMAGE_GIFLOOPCOUNT_TYPE = "GIFLoopCount";
 const static string IMAGE_HEIFS_DELAY_TIME = "HeifsDelayTime";
 const static string IMAGE_GIF_DELAY_TIME = "GifDelayTime";
 const static string IMAGE_GIF_DISPOSAL_TYPE = "GifDisposalType";
+const static string IMAGE_AVIS_DELAY_TIME = "AvisDelayTime";
 const static int32_t ZERO = 0;
 
 PluginServer &ImageSource::pluginServer_ = ImageUtils::GetPluginServer();
@@ -461,6 +462,11 @@ uint32_t ImageSource::GetSupportedFormats(set<string> &formats)
         formats.insert(ImageUtils::GetEncodedHeifFormat());
         formats.insert(ImageUtils::GetEncodedHeifsFormat());
     }
+
+#ifdef AVIF_DECODE_ENABLE
+    formats.insert(IMAGE_AVIF_FORMAT);
+    formats.insert(IMAGE_AVIS_FORMAT);
+#endif
     return SUCCESS;
 }
 
@@ -2472,7 +2478,6 @@ uint32_t ImageSource::GetImagePropertyByType(uint32_t index, const std::string &
         return GetDngImagePropertyByDngSdk(key, value);
     }
 #endif
-
     std::unique_lock<std::recursive_mutex> guard(decodingMutex_);
     std::unique_lock<std::mutex> guardFile(fileMutex_);
     return GetImagePropertyCommonByType(key, value);
@@ -5512,6 +5517,12 @@ std::unique_ptr<Picture> ImageSource::CreatePictureAtIndex(uint32_t index, uint3
             "[%{public}s] SetHeifsMetadataForPicture failed, index=%{public}u, errorCode=%{public}u",
             __func__, index, errorCode);
     }
+    if (info.encodedFormat == IMAGE_AVIS_FORMAT) {
+        errorCode = SetAvisMetadataForPicture(picture, index);
+        CHECK_ERROR_RETURN_RET_LOG(errorCode != SUCCESS, nullptr,
+            "[%{public}s] SetAvisMetadataForPicture failed, index=%{public}u, errorCode=%{public}u",
+            __func__, index, errorCode);
+    }
     return picture;
 }
  
@@ -5522,7 +5533,8 @@ uint32_t ImageSource::CreatePictureAtIndexPreCheck(uint32_t index, const ImageIn
         return ERR_IMAGE_SOURCE_DATA;
     }
 
-    if (info.encodedFormat != IMAGE_GIF_FORMAT && info.encodedFormat != IMAGE_HEIFS_FORMAT) {
+    if (info.encodedFormat != IMAGE_GIF_FORMAT && info.encodedFormat != IMAGE_HEIFS_FORMAT &&
+        info.encodedFormat != IMAGE_AVIS_FORMAT) {
         IMAGE_LOGE("[%{public}s] unsupport format: %{public}s", __func__, info.encodedFormat.c_str());
         return ERR_IMAGE_MISMATCHED_FORMAT;
     }
@@ -5593,6 +5605,30 @@ uint32_t ImageSource::SetHeifsMetadataForPicture(std::unique_ptr<Picture> &pictu
     return SUCCESS;
 }
 
+uint32_t ImageSource::SetAvisMetadataForPicture(std::unique_ptr<Picture> &picture, uint32_t index)
+{
+    CHECK_ERROR_RETURN_RET_LOG(picture == nullptr, ERR_IMAGE_PICTURE_CREATE_FAILED,
+        "[%{public}s] picture is nullptr", __func__);
+    CHECK_ERROR_RETURN_RET_LOG(mainDecoder_ == nullptr, ERR_IMAGE_DECODE_ABNORMAL,
+        "[%{public}s] mainDecoder_ is nullptr", __func__);
+
+    int32_t delayTime = 0;
+    uint32_t errorCode = mainDecoder_->GetImagePropertyInt(index, IMAGE_DELAY_TIME, delayTime);
+    CHECK_ERROR_RETURN_RET_LOG(errorCode != SUCCESS, errorCode,
+        "[%{public}s] get delay time failed", __func__);
+
+    std::shared_ptr<ImageMetadata> avisMetadata = std::make_shared<AvisMetadata>();
+    CHECK_ERROR_RETURN_RET_LOG(avisMetadata == nullptr, ERR_SHAMEM_NOT_EXIST,
+        "[%{public}s] make_shared avisMetadata failed", __func__);
+    bool result = avisMetadata->SetValue(AVIS_METADATA_KEY_DELAY_TIME, std::to_string(delayTime));
+    CHECK_ERROR_RETURN_RET_LOG(!result, ERR_IMAGE_DECODE_METADATA_FAILED,
+        "[%{public}s] set delay time failed", __func__);
+    uint32_t ret = picture->SetMetadata(MetadataType::AVIS, avisMetadata);
+    CHECK_ERROR_RETURN_RET_LOG(ret != SUCCESS, ERR_IMAGE_DECODE_METADATA_FAILED,
+        "[%{public}s] set avis metadata failed", __func__);
+    return SUCCESS;
+}
+
 void GetDownSamplingScaleFactor(DownSamplingScaleFactor& downSamplingScaleFactor, ImageInfo& info,
     const DecodingOptionsForPicture& opts)
 {
@@ -5645,7 +5681,7 @@ std::unique_ptr<Picture> ImageSource::CreatePicture(const DecodingOptionsForPict
     ImageInfo info;
     GetImageInfo(info);
     if (info.encodedFormat != IMAGE_HEIF_FORMAT && info.encodedFormat != IMAGE_JPEG_FORMAT &&
-        info.encodedFormat != IMAGE_HEIC_FORMAT) {
+        info.encodedFormat != IMAGE_HEIC_FORMAT && info.encodedFormat != IMAGE_AVIF_FORMAT) {
         IMAGE_LOGE("CreatePicture failed, unsupport format: %{public}s", info.encodedFormat.c_str());
         errorCode = ERR_IMAGE_MISMATCHED_FORMAT;
         return nullptr;

@@ -673,7 +673,7 @@ HWTEST_F(HeifsDecodeTest, GetSampleEntryWidthHeightTest001, TestSize.Level1)
 
 /**
  * @tc.name: GetSampleEntryWidthHeightTest002
- * @tc.desc: Test GetSampleEntryWidthHeight when return heif_error_ok.
+ * @tc.desc: Test GetSampleEntryWidthHeight when return error code.
  * @tc.type: FUNC
  */
 HWTEST_F(HeifsDecodeTest, GetSampleEntryWidthHeightTest002, TestSize.Level1)
@@ -684,10 +684,10 @@ HWTEST_F(HeifsDecodeTest, GetSampleEntryWidthHeightTest002, TestSize.Level1)
     uint32_t height = 0;
     std::shared_ptr<HeifBox> tmpBox;
     box.entries_.emplace_back(tmpBox);
-    ASSERT_EQ(box.GetSampleEntryWidthHeight(0, width, height), heif_error_ok);
+    ASSERT_EQ(box.GetSampleEntryWidthHeight(0, width, height), heif_error_invalid_stsd);
     box.entries_[0] = std::make_shared<HeifStsdBox>();
     ASSERT_NE(box.entries_[0], nullptr);
-    ASSERT_EQ(box.GetSampleEntryWidthHeight(0, width, height), heif_error_ok);
+    ASSERT_EQ(box.GetSampleEntryWidthHeight(0, width, height), heif_error_property_not_found);
     box.entries_[0].reset();
     GTEST_LOG_(INFO) << "HeifsDecodeTest: GetSampleEntryWidthHeightTest002 end";
 }
