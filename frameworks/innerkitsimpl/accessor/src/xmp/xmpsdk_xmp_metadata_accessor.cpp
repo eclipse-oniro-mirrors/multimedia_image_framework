@@ -18,8 +18,8 @@
 #include "image_log.h"
 #include "image_mime_type.h"
 #include "media_errors.h"
-#include "source/XMPBuffer_IO.hpp"
-#include "source/XMPFd_IO.hpp"
+#include "xmp_buffer_io.h"
+#include "xmp_fd_io.h"
 #include "xmp_metadata_impl.h"
 
 #undef LOG_DOMAIN

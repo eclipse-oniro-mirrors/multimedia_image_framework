@@ -88,12 +88,10 @@ if (use_clang_ios) {
       "src/image_type_converter.cpp",
       "src/pixel_yuv_utils.cpp",
       "src/vpe_utils.cpp",
-      "src/xmp_helper.cpp",
     ]
 
     external_deps = [ 
       "drivers_interface_display:libdisplay_commontype_proxy_1.0",
-      "xmp_toolkit_sdk:xmpsdk",
     ]
     if (use_mingw_win) {
       defines = image_decode_windows_defines
@@ -180,13 +178,6 @@ if (use_clang_ios) {
         external_deps += [ "startup:syspara" ]
       }
     }
-
-    defines += [
-      "UNIX_ENV=1",
-      "XMP_StaticBuild=1",
-      "XMP_INCLUDE_XMPFILES=1",
-      "TXMP_STRING_TYPE=std::string"
-    ]
 
     if (defined(global_parts_info) &&
         defined(global_parts_info.open_source_libyuv)) {

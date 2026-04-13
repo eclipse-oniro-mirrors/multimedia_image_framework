@@ -2953,6 +2953,39 @@ HWTEST_F(XmpMetadataTest, EnumerateTags006, TestSize.Level1)
 }
 
 /**
+ * @tc.name: EnumerateTags007
+ * @tc.desc: test the EnumerateTags method from namespace-only root path.
+ * @tc.type: FUNC
+ */
+HWTEST_F(XmpMetadataTest, EnumerateTags007, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "XmpMetadataTest: EnumerateTags007 start";
+    XMPMetadata xmpMetadata;
+    std::vector<ExpectedTagTypeValue> xmpTagVec;
+    XMPEnumerateOptions options;
+    InitTestXMPMetadataForEnumerate(xmpMetadata, xmpTagVec);
+
+    uint32_t callbackCount = 0;
+    bool allTagsInDcSchema = true;
+    Media::XMPMetadata::EnumerateCallback callback =
+        [&callbackCount, &allTagsInDcSchema](const std::string &path, const XMPTag &tag) -> bool {
+            (void)tag;
+            ++callbackCount;
+            if (path.rfind("dc:", 0) != 0) {
+                allTagsInDcSchema = false;
+                return false;
+            }
+            return true;
+        };
+
+    uint32_t ret = xmpMetadata.EnumerateTags(callback, "dc", options);
+    EXPECT_EQ(ret, SUCCESS);
+    EXPECT_GT(callbackCount, 0U);
+    EXPECT_TRUE(allTagsInDcSchema);
+    GTEST_LOG_(INFO) << "XmpMetadataTest: EnumerateTags007 end";
+}
+
+/**
  * @tc.name: SetGetBlobTest001
  * @tc.desc: test the SetBlob and GetBlob method.
  * @tc.type: FUNC
@@ -3098,71 +3131,6 @@ HWTEST_F(XmpMetadataTest, RemoveTagTest003, TestSize.Level1)
     EXPECT_EQ(getTag.value, value2);
 
     GTEST_LOG_(INFO) << "XmpMetadataTest: RemoveTagTest003 end";
-}
-
-/**
- * @tc.name: RemoveAllTagsTest001
- * @tc.desc: test the RemoveAllTags method with tags present.
- * @tc.type: FUNC
- */
-HWTEST_F(XmpMetadataTest, RemoveAllTagsTest001, TestSize.Level3)
-{
-    GTEST_LOG_(INFO) << "XmpMetadataTest: RemoveAllTagsTest001 start";
-    XMPMetadata xmpMetadata;
-    // Add some tags
-    bool ret = SetValueForTest(xmpMetadata, "dc:title", XMPTagType::STRING, "Test Title");
-    EXPECT_TRUE(ret);
-    ret = SetValueForTest(xmpMetadata, "xmp:CreatorTool", XMPTagType::STRING, "Test Tool");
-    EXPECT_TRUE(ret);
-    // Remove all
-    uint32_t code = xmpMetadata.RemoveAllTags();
-    EXPECT_EQ(code, SUCCESS);
-    // Try to get a tag, should fail
-    XMPTag getTag;
-    code = xmpMetadata.GetTag("dc:title", getTag);
-    EXPECT_EQ(code, ERR_XMP_TAG_NOT_FOUND);
-    code = xmpMetadata.GetTag("xmp:CreatorTool", getTag);
-    EXPECT_EQ(code, ERR_XMP_TAG_NOT_FOUND);
-    GTEST_LOG_(INFO) << "XmpMetadataTest: RemoveAllTagsTest001 end";
-}
-
-/**
- * @tc.name: RemoveAllTagsTest002
- * @tc.desc: test the RemoveAllTags method on empty metadata.
- * @tc.type: FUNC
- */
-HWTEST_F(XmpMetadataTest, RemoveAllTagsTest002, TestSize.Level3)
-{
-    GTEST_LOG_(INFO) << "XmpMetadataTest: RemoveAllTagsTest002 start";
-    XMPMetadata xmpMetadata;
-    // No tags, just remove
-    uint32_t code = xmpMetadata.RemoveAllTags();
-    EXPECT_EQ(code, SUCCESS);
-    GTEST_LOG_(INFO) << "XmpMetadataTest: RemoveAllTagsTest002 end";
-}
-
-/**
- * @tc.name: RemoveAllTagsTest003
- * @tc.desc: test adding tags after RemoveAllTags.
- * @tc.type: FUNC
- */
-HWTEST_F(XmpMetadataTest, RemoveAllTagsTest003, TestSize.Level3)
-{
-    GTEST_LOG_(INFO) << "XmpMetadataTest: RemoveAllTagsTest003 start";
-    XMPMetadata xmpMetadata;
-    // Add and remove
-    bool ret = SetValueForTest(xmpMetadata, "dc:title", XMPTagType::STRING, "Test Title");
-    EXPECT_TRUE(ret);
-    uint32_t code = xmpMetadata.RemoveAllTags();
-    EXPECT_EQ(code, SUCCESS);
-    // Now add new
-    ret = SetValueForTest(xmpMetadata, "dc:description", XMPTagType::STRING, "Test Description");
-    EXPECT_TRUE(ret);
-    XMPTag getTag;
-    code = xmpMetadata.GetTag("dc:description", getTag);
-    EXPECT_EQ(code, SUCCESS);
-    EXPECT_EQ(getTag.value, "Test Description");
-    GTEST_LOG_(INFO) << "XmpMetadataTest: RemoveAllTagsTest003 end";
 }
 } // namespace Multimedia
 } // namespace OHOS

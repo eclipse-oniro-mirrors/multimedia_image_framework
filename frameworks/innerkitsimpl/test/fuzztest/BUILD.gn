@@ -27,6 +27,7 @@ group("fuzztest") {
     "imagefwkimagesource3_fuzzer:ImageFwkImageSource3FuzzTest",
     "imagefwkimagesource4_fuzzer:ImageFwkImageSource4FuzzTest",
     "imagefwkimagesource5_fuzzer:ImageFwkImageSource5FuzzTest",
+    "imagefwkimagesource6_fuzzer:ImageFwkImageSource6FuzzTest",
     "imageheifbox_fuzzer:ImageHeifBoxFuzzTest",
     "imageheifimpl_fuzzer:ImageHeifImplFuzzTest",
     "imageheifimpl2_fuzzer:ImageHeifImpl2FuzzTest",
@@ -57,6 +58,10 @@ group("fuzztest") {
     "imagedngexifmetadata_fuzzer:ImageDngExifMetadataFuzzTest",
     "imagedngsdkhelper_fuzzer:ImageDngSdkHelperFuzzTest",
     "imageheifsmetadata_fuzzer:ImageHeifsMetadataFuzzTest",
+    "imagexmpbufferio_fuzzer:ImageXmpBufferIoFuzzTest",
+    "imagexmpfdio_fuzzer:ImageXmpFdIoFuzzTest",
+    "imagexmphelper_fuzzer:ImageXmpHelperFuzzTest",
+    "imagexmpmetadata_fuzzer:ImageXmpMetadataFuzzTest",
     "image_fuzzer:ImageFuzzTest",
     "imagereceiver_fuzzer:ImageReceiverFuzzTest",
   ]
