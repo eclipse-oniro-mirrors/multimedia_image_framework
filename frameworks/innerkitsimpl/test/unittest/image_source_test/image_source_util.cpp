@@ -15,6 +15,7 @@
 
 #include <fstream>
 #include <string>
+#include <cerrno>
 #include "directory_ex.h"
 #include "image_log.h"
 #include "image_packer.h"
@@ -139,7 +140,7 @@ bool ReadFileToBuffer(const std::string &filePath, uint8_t *buffer, size_t buffe
 
     FILE *fp = fopen(realPath.c_str(), "rb");
     if (fp == nullptr) {
-        IMAGE_LOGE("open file failed, real path=%{public}s.", realPath.c_str());
+        IMAGE_LOGE("open file failed, real path=%{public}s, error:%{public}d", realPath.c_str(), errno);
         return false;
     }
     fseek(fp, 0, SEEK_END);

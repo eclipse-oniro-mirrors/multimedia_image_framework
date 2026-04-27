@@ -84,7 +84,7 @@ unique_ptr<FileSourceStream> FileSourceStream::CreateSourceStream(const string &
     }
     FILE *filePtr = fopen(realPath.c_str(), "rb");
     if (filePtr == nullptr) {
-        IMAGE_LOGE("[FileSourceStream]open file fail.");
+        IMAGE_LOGE("[FileSourceStream]open file fail, error:%{public}d", errno);
         return nullptr;
     }
     int fd = fileno(filePtr);

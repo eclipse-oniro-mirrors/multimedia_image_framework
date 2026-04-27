@@ -18,7 +18,6 @@
 #include <unistd.h>
 #include <fstream>
 #include <cerrno>
-#include <cstring>
 
 #include "securec.h"
 #include "media_errors.h"
@@ -708,7 +707,7 @@ static CL_ASTC_STATUS SaveClBin(cl_program program, const std::string &clBinPath
     }
     FILE *fp = fopen(clBinPath.c_str(), "wb");
     if (fp == nullptr) {
-        IMAGE_LOGE("astc create file: %{public}s failed! error: %{public}d", clBinPath.c_str(), errno);
+        IMAGE_LOGE("astc create file: %{public}s failed! error:%{public}d", clBinPath.c_str(), errno);
         free(programBinaries);
         return CL_ASTC_ENC_FAILED;
     }
