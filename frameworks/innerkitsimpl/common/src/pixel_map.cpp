@@ -1067,19 +1067,8 @@ unique_ptr<PixelMap> PixelMap::Create(PixelMap &source, const Rect &srcRect, con
 static void SetDstPixelMapInfo(PixelMap &source, PixelMap &dstPixelMap, void* dstPixels, uint32_t dstPixelsSize,
     unique_ptr<AbsMemory>& memory)
 {
-    // "memory" is used for SHARE_MEM_ALLOC and DMA_ALLOC type, dstPixels is used for others.
-    // Convert CUSTOM_ALLOC to DMA_ALLOC if format support dma nopadding else convert to SHARE_MEM_ALLOC
-    AllocatorType sourceType = source.GetAllocatorType();
-    if (source.GetAllocatorType() == AllocatorType::CUSTOM_ALLOC) {
-        if (ImageSystemProperties::IsSupportDefaultDmaNopadding(dstImageInfo.pixelFormat)) {
-            sourceType = AllocatorType::DMA_ALLOC;
-            memoryData.usage |= BUFFER_USAGE_PREFER_NO_PADDING | BUFFER_USAGE_ALLOC_NO_IPC;
-        } else {
-            sourceType = AllocatorType::SHARE_MEM_ALLOC;
-        }
-    }
-    if (sourceType == AllocatorType::SHARE_MEM_ALLOC || sourceType == AllocatorType::DMA_ALLOC) {
-        dstPixelMap.SetPixelsAddr(dstPixels, memory->extend.data, memory->data.size, sourceType, nullptr);
+    if (memory->GetType() == AllocatorType::SHARE_MEM_ALLOC || memory->GetType() == AllocatorType::DMA_ALLOC) {
+        dstPixelMap.SetPixelsAddr(dstPixels, memory->extend.data, memory->data.size, memory->GetType(), nullptr);
         if (source.GetAllocatorType() == AllocatorType::DMA_ALLOC) {
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
             sptr<SurfaceBuffer> sourceSurfaceBuffer(static_cast<SurfaceBuffer*> (source.GetFd()));
@@ -1111,7 +1100,7 @@ bool PixelMap::SourceCropAndConvert(PixelMap &source, const ImageInfo &srcImageI
         dstImageInfo.pixelFormat, source.GetNoPaddingUsage()};
     AllocatorType sourceType = source.GetAllocatorType();
     if (source.GetAllocatorType() == AllocatorType::CUSTOM_ALLOC) {
-        if (ImageSystemProperties::IsSupportDefaultDmaNopadding(dstImageInfo.pixelFormat)) {
+        if (ImageUtils::IsSupportDefaultDmaNopadding(dstImageInfo.pixelFormat)) {
             sourceType = AllocatorType::DMA_ALLOC;
             memoryData.usage |= BUFFER_USAGE_PREFER_NO_PADDING | BUFFER_USAGE_ALLOC_NO_IPC;
         } else {
@@ -1228,18 +1217,18 @@ bool PixelMap::CopyPixelMap(PixelMap &source, PixelMap &dstPixelMap, int32_t &er
     }
     size_t uBufferSize = static_cast<size_t>(bufferSize);
     void *dstPixels = nullptr;
+    ImageInfo dstImageInfo;
+    dstPixelMap.GetImageInfo(dstImageInfo);
     unique_ptr<AbsMemory> memory;
     AllocatorType sourceType = source.GetAllocatorType();
     if (source.GetAllocatorType() == AllocatorType::CUSTOM_ALLOC) {
-        if (ImageSystemProperties::IsSupportDefaultDmaNopadding(dstImageInfo.pixelFormat)) {
+        if (ImageUtils::IsSupportDefaultDmaNopadding(dstImageInfo.pixelFormat)) {
             sourceType = AllocatorType::DMA_ALLOC;
             memoryData.usage |= BUFFER_USAGE_PREFER_NO_PADDING | BUFFER_USAGE_ALLOC_NO_IPC;
         } else {
             sourceType = AllocatorType::SHARE_MEM_ALLOC;
         }
     }
-    ImageInfo dstImageInfo;
-    dstPixelMap.GetImageInfo(dstImageInfo);
     MemoryData memoryData = {nullptr, uBufferSize, "Copy ImageData", dstImageInfo.size, dstImageInfo.pixelFormat};
     memoryData.usage = source.GetNoPaddingUsage();
     memory = MemoryManager::CreateMemory(sourceType, memoryData);
