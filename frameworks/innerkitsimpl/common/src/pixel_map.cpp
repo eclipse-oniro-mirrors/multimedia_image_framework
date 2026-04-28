@@ -1219,7 +1219,8 @@ bool PixelMap::CopyPixelMap(PixelMap &source, PixelMap &dstPixelMap, int32_t &er
     void *dstPixels = nullptr;
     ImageInfo dstImageInfo;
     dstPixelMap.GetImageInfo(dstImageInfo);
-    unique_ptr<AbsMemory> memory;
+    MemoryData memoryData = {nullptr, uBufferSize, "Copy ImageData", dstImageInfo.size, dstImageInfo.pixelFormat};
+    memoryData.usage = source.GetNoPaddingUsage();
     AllocatorType sourceType = source.GetAllocatorType();
     if (source.GetAllocatorType() == AllocatorType::CUSTOM_ALLOC) {
         if (ImageUtils::IsSupportDefaultDmaNopadding(dstImageInfo.pixelFormat)) {
@@ -1229,9 +1230,7 @@ bool PixelMap::CopyPixelMap(PixelMap &source, PixelMap &dstPixelMap, int32_t &er
             sourceType = AllocatorType::SHARE_MEM_ALLOC;
         }
     }
-    MemoryData memoryData = {nullptr, uBufferSize, "Copy ImageData", dstImageInfo.size, dstImageInfo.pixelFormat};
-    memoryData.usage = source.GetNoPaddingUsage();
-    memory = MemoryManager::CreateMemory(sourceType, memoryData);
+    unique_ptr<AbsMemory> memory = MemoryManager::CreateMemory(sourceType, memoryData);
     if (memory == nullptr) {
         return false;
     }
