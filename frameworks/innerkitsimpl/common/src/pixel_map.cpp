@@ -556,8 +556,8 @@ static int AllocPixelMapMemory(std::unique_ptr<AbsMemory> &dstMemory, int32_t &d
     MemoryData memoryData = {nullptr, static_cast<size_t>(bufferSize), "Create PixelMap", dstImageInfo.size,
         dstImageInfo.pixelFormat};
     AllocatorType allocType = opts.allocatorType == AllocatorType::DEFAULT ?
-        ImageUtils::GetPixelMapAllocatorType(dstImageInfo.size, dstImageInfo.pixelFormat, opts.useDMA) :
-        opts.allocatorType;
+        ImageUtils::GetPixelMapAllocatorType(dstImageInfo.size, dstImageInfo.pixelFormat, opts.useDMA, 
+            memoryData.usage) : opts.allocatorType;
     dstMemory = MemoryManager::CreateMemory(allocType, memoryData);
     if (dstMemory == nullptr) {
         IMAGE_LOGE("[PixelMap]Create: allocate memory failed");
@@ -1085,6 +1085,31 @@ unique_ptr<PixelMap> PixelMap::Create(PixelMap &source, const Rect &srcRect, con
     return dstPixelMap;
 }
 
+static void SetDstPixelMapInfo(PixelMap &source, PixelMap &dstPixelMap, void* dstPixels, uint32_t dstPixelsSize,
+    unique_ptr<AbsMemory>& memory)
+{
+    // "memory" is used for SHARE_MEM_ALLOC and DMA_ALLOC type, dstPixels is used for others.
+    // Convert CUSTOM_ALLOC to SHARE_MEM_ALLOC
+    AllocatorType sourceType = source.GetAllocatorType() == AllocatorType::CUSTOM_ALLOC ?
+        AllocatorType::SHARE_MEM_ALLOC : source.GetAllocatorType();
+    if (sourceType == AllocatorType::SHARE_MEM_ALLOC || sourceType == AllocatorType::DMA_ALLOC) {
+        dstPixelMap.SetPixelsAddr(dstPixels, memory->extend.data, memory->data.size, sourceType, nullptr);
+        if (source.GetAllocatorType() == AllocatorType::DMA_ALLOC) {
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+            sptr<SurfaceBuffer> sourceSurfaceBuffer(static_cast<SurfaceBuffer*> (source.GetFd()));
+            sptr<SurfaceBuffer> dstSurfaceBuffer(static_cast<SurfaceBuffer*> (dstPixelMap.GetFd()));
+            VpeUtils::CopySurfaceBufferInfo(sourceSurfaceBuffer, dstSurfaceBuffer);
+#endif
+        }
+    } else {
+        dstPixelMap.SetPixelsAddr(dstPixels, nullptr, dstPixelsSize, AllocatorType::HEAP_ALLOC, nullptr);
+    }
+#ifdef IMAGE_COLORSPACE_FLAG
+    OHOS::ColorManager::ColorSpace colorspace = source.InnerGetGrColorSpace();
+    dstPixelMap.InnerSetColorSpace(colorspace);
+#endif
+}
+
 bool PixelMap::SourceCropAndConvert(PixelMap &source, const ImageInfo &srcImageInfo, const ImageInfo &dstImageInfo,
     const Rect &srcRect, PixelMap &dstPixelMap)
 {
@@ -1095,13 +1120,18 @@ bool PixelMap::SourceCropAndConvert(PixelMap &source, const ImageInfo &srcImageI
         return false;
     }
     size_t uBufferSize = static_cast<size_t>(bufferSize);
-    int fd = -1;
     void *dstPixels = nullptr;
-    if (source.GetAllocatorType() == AllocatorType::SHARE_MEM_ALLOC) {
-        dstPixels = AllocSharedMemory(uBufferSize, fd, dstPixelMap.GetUniqueId());
-    } else {
-        dstPixels = malloc(uBufferSize);
+    // TODO source为CUSTOM_ALLOC时如何处理，当前参考CopyPixelMap？
+    AllocatorType sourceType = source.GetAllocatorType() == AllocatorType::CUSTOM_ALLOC ?
+        AllocatorType::SHARE_MEM_ALLOC : source.GetAllocatorType();
+    MemoryData memoryData = {nullptr, uBufferSize, "SourceCropAndConvert Data", dstImageInfo.size, 
+        dstImageInfo.pixelFormat, source.GetNoPaddingUsage()};
+    std::unique_ptr<AbsMemory> memory = MemoryManager::CreateMemory(sourceType, memoryData);
+    if (memory == nullptr) {
+        IMAGE_LOGE("SourceCropAndConvert create memory failed");
+        return false;
     }
+    dstPixels = memory->data.data;
     if (dstPixels == nullptr) {
         IMAGE_LOGE("source crop allocate memory fail allocatetype: %{public}d ", source.GetAllocatorType());
         return false;
@@ -1113,25 +1143,11 @@ bool PixelMap::SourceCropAndConvert(PixelMap &source, const ImageInfo &srcImageI
     if (!PixelConvertAdapter::ReadPixelsConvert(source.GetPixels(), srcPosition, source.GetRowStride(), srcImageInfo,
         dstPixels, dstPixelMap.GetRowStride(), dstImageInfo)) {
         IMAGE_LOGE("pixel convert in adapter failed.");
-        ReleaseBuffer(fd >= 0 ? AllocatorType::SHARE_MEM_ALLOC : AllocatorType::HEAP_ALLOC,
-            fd, uBufferSize, &dstPixels);
+        memory->Release();
         return false;
     }
-    if (fd < 0) {
-        dstPixelMap.SetPixelsAddr(dstPixels, nullptr, uBufferSize, AllocatorType::HEAP_ALLOC, nullptr);
-        return true;
-    }
-#ifdef IMAGE_COLORSPACE_FLAG
-    OHOS::ColorManager::ColorSpace colorspace = source.InnerGetGrColorSpace();
-    dstPixelMap.InnerSetColorSpace(colorspace);
-#endif
-#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
-    void *fdBuffer = new int32_t();
-    *static_cast<int32_t *>(fdBuffer) = fd;
-    dstPixelMap.SetPixelsAddr(dstPixels, fdBuffer, uBufferSize, AllocatorType::SHARE_MEM_ALLOC, nullptr);
-#else
-    dstPixelMap.SetPixelsAddr(dstPixels, nullptr, uBufferSize, AllocatorType::HEAP_ALLOC, nullptr);
-#endif
+
+    SetDstPixelMapInfo(source, dstPixelMap, dstPixels, uBufferSize, memory);
     return true;
 }
 
@@ -1202,31 +1218,6 @@ bool PixelMap::CopyPixelMap(PixelMap &source, PixelMap &dstPixelMap)
 {
     int32_t error;
     return CopyPixelMap(source, dstPixelMap, error);
-}
-
-static void SetDstPixelMapInfo(PixelMap &source, PixelMap &dstPixelMap, void* dstPixels, uint32_t dstPixelsSize,
-    unique_ptr<AbsMemory>& memory)
-{
-    // "memory" is used for SHARE_MEM_ALLOC and DMA_ALLOC type, dstPixels is used for others.
-    // Convert CUSTOM_ALLOC to SHARE_MEM_ALLOC
-    AllocatorType sourceType = source.GetAllocatorType() == AllocatorType::CUSTOM_ALLOC ?
-        AllocatorType::SHARE_MEM_ALLOC : source.GetAllocatorType();
-    if (sourceType == AllocatorType::SHARE_MEM_ALLOC || sourceType == AllocatorType::DMA_ALLOC) {
-        dstPixelMap.SetPixelsAddr(dstPixels, memory->extend.data, memory->data.size, sourceType, nullptr);
-        if (source.GetAllocatorType() == AllocatorType::DMA_ALLOC) {
-#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
-            sptr<SurfaceBuffer> sourceSurfaceBuffer(static_cast<SurfaceBuffer*> (source.GetFd()));
-            sptr<SurfaceBuffer> dstSurfaceBuffer(static_cast<SurfaceBuffer*> (dstPixelMap.GetFd()));
-            VpeUtils::CopySurfaceBufferInfo(sourceSurfaceBuffer, dstSurfaceBuffer);
-#endif
-        }
-    } else {
-        dstPixelMap.SetPixelsAddr(dstPixels, nullptr, dstPixelsSize, AllocatorType::HEAP_ALLOC, nullptr);
-    }
-#ifdef IMAGE_COLORSPACE_FLAG
-    OHOS::ColorManager::ColorSpace colorspace = source.InnerGetGrColorSpace();
-    dstPixelMap.InnerSetColorSpace(colorspace);
-#endif
 }
 
 bool PixelMap::CopyPixelMap(PixelMap &source, PixelMap &dstPixelMap, int32_t &error)
@@ -3682,7 +3673,8 @@ static bool CheckTlvImageInfo(const ImageInfo &info, std::unique_ptr<AbsMemory>&
     if (info.size.width <= 0 || info.size.height <= 0 || dstMemory == nullptr || dstMemory->data.data == nullptr) {
         return false;
     }
-    if (!isHdr && csm == -1 && dstMemory->GetType() == AllocatorType::HEAP_ALLOC) {
+    if (!isHdr && csm == -1 && (dstMemory->GetType() == AllocatorType::HEAP_ALLOC ||
+        dstMemory->GetType() == AllocatorType::DMA_ALLOC)) {
         return true;
     }
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
@@ -3717,6 +3709,7 @@ struct TlvDecodeInfo {
     HdrInfo hdrInfo;
     ImageInfo info;
     int32_t csm = -1;
+    uint64_t usage = 0;
     std::unique_ptr<AbsMemory> dstMemory = nullptr;
 };
 
@@ -3756,14 +3749,15 @@ static std::map<uint8_t, std::function<bool(TlvDecodeInfo&, vector<uint8_t>&, in
                 IMAGE_LOGE("[PixelMap] tlv decode invalid allocatorType: %{public}d", decodeInfo.allocType);
                 return false;
             }
-            if (decodeInfo.isHdr == NUM_1) {
-                decodeInfo.allocType = static_cast<int32_t>(AllocatorType::DMA_ALLOC);
+            decodeInfo.allocType = static_cast<int32_t>(AllocatorType::DMA_ALLOC);
+            if (decodeInfo.isHdr != NUM_1) {
+                decodeInfo.usage = BUFFER_USAGE_PREFER_NO_PADDING | BUFFER_USAGE_ALLOC_NO_IPC;
             }
             return true;
         }},
         {TLV_IMAGE_DATA, [](TlvDecodeInfo& decodeInfo, vector<uint8_t>& buff, int32_t& cursor, int32_t len) {
             decodeInfo.dstMemory = ImageUtils::ReadData(buff, len, cursor,
-                static_cast<AllocatorType>(decodeInfo.allocType), decodeInfo.info);
+                static_cast<AllocatorType>(decodeInfo.allocType), decodeInfo.info, decodeInfo.usage);
             cursor += len; // skip data
             if (decodeInfo.dstMemory == nullptr) {
                 return false;

@@ -128,13 +128,15 @@ public:
     static bool PathToRealPath(const std::string &path, std::string &realPath);
     static bool FloatCompareZero(float src);
     static AlphaType GetValidAlphaTypeByFormat(const AlphaType &dstType, const PixelFormat &format);
-    static AllocatorType GetPixelMapAllocatorType(const Size &size, const PixelFormat &format, bool preferDma);
+    static AllocatorType GetPixelMapAllocatorType(const Size &size, const PixelFormat &format, bool preferDma,
+        uint64_t &usage);
     static bool IsValidImageInfo(const ImageInfo &info);
     static bool IsValidAuxiliaryInfo(const std::shared_ptr<PixelMap> &pixelMap, const AuxiliaryPictureInfo &info);
     static bool IsAstc(PixelFormat format);
     static bool IsWidthAligned(const int32_t &width);
     static bool IsSizeSupportDma(const Size &size);
     static bool IsFormatSupportDma(const PixelFormat &format);
+    static bool IsFormatSupportDmaNopadding(const PixelFormat &format);
     static bool Is10Bit(const PixelFormat &format);
     static MultimediaPlugin::PluginServer& GetPluginServer();
     static bool CheckMulOverflow(int32_t width, int32_t bytesPerPixel);
@@ -272,9 +274,9 @@ public:
     static bool FloatEqual(float a, float b);
     static int32_t ReadVarint(std::vector<uint8_t> &buff, int32_t &cursor);
     static std::unique_ptr<AbsMemory> ReadData(std::vector<uint8_t> &buff, int32_t size, int32_t &cursor,
-        AllocatorType allocType, ImageInfo imageInfo);
+        AllocatorType allocType, ImageInfo imageInfo, uint64_t usage);
     static int32_t AllocPixelMapMemory(std::unique_ptr<AbsMemory> &dstMemory, int32_t &dstRowStride,
-        const ImageInfo &dstImageInfo, const InitializationOptions &opts);
+        const ImageInfo &dstImageInfo, const InitializationOptions &opts, uint64_t usage);
     static void TlvWriteSurfaceInfo(const PixelMap* pixelMap, std::vector<uint8_t>& buff);
     static uint8_t GetVarintLen(int32_t value);
     static void WriteVarint(std::vector<uint8_t> &buff, int32_t value);
