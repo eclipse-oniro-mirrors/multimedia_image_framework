@@ -239,7 +239,7 @@ bool ImageSystemProperties::GetNoPaddingEnabled()
 bool ImageSystemProperties::GetDefaultDmaNoPaddingEnabled()
 {
 #if !defined(CROSS_PLATFORM)
-    static bool ret = system::GetBoolParameter("persist.gralloc.defaultDmaNopadding.enabled", false);
+    static bool ret = system::GetBoolParameter("persist.multimedia.defaultDmaNopadding.enabled", true);
     return ret;
 #else
     return false;

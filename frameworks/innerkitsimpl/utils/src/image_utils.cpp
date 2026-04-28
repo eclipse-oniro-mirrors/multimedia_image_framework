@@ -523,8 +523,7 @@ AllocatorType ImageUtils::GetPixelMapAllocatorType(const Size &size, const Pixel
     if (IsSizeSupportDma(size) && (preferDma || (IsWidthAligned(size.width) && IsFormatSupportDma(format))) &&
         (format == PixelFormat::RGBA_8888 || format == PixelFormat::ALPHA_F16|| Is10Bit(format))) {
         return AllocatorType::DMA_ALLOC;
-    } else if (ImageSystemProperties::GetDefaultDmaNoPaddingEnabled() && ImageSystemProperties::GetNoPaddingEnabled() && 
-        IsFormatSupportDmaNopadding(format)) {
+    } else if (IsSupportDefaultDmaNopadding(format)) {
         usage |= BUFFER_USAGE_PREFER_NO_PADDING | BUFFER_USAGE_ALLOC_NO_IPC;
         return AllocatorType::DMA_ALLOC;
     } else {
@@ -651,9 +650,13 @@ bool ImageUtils::IsFormatSupportDma(const PixelFormat &format)
     return format == PixelFormat::UNKNOWN || format == PixelFormat::RGBA_8888 || format == PixelFormat::ALPHA_F16;
 }
 
-bool ImageUtils::IsFormatSupportDmaNopadding(const PixelFormat &format)
+bool ImageUtils::IsSupportDefaultDmaNopadding(const PixelFormat &format)
 {
-    return format == PixelFormat::BGRA_8888 || format == PixelFormat::RGBA_8888;
+    if (ImageSystemProperties::GetDefaultDmaNoPaddingEnabled() && ImageSystemProperties::getNoPaddingEnabled() &&
+        (format == PixelFormat::BGRA_8888 || format == PixelFormat::RGBA_8888)) {
+        return true;
+    }
+    return false;
 }
 
 bool ImageUtils::Is10Bit(const PixelFormat &format)
@@ -2405,7 +2408,7 @@ int32_t ImageUtils::ReadVarint(std::vector<uint8_t> &buff, int32_t &cursor)
 }
 
 int32_t ImageUtils::AllocPixelMapMemory(std::unique_ptr<AbsMemory> &dstMemory, int32_t &dstRowStride,
-    const ImageInfo &dstImageInfo, const InitializationOptions &opts, uint64_t usage)
+    const ImageInfo &dstImageInfo, const InitializationOptions &opts)
 {
     int64_t rowDataSize = ImageUtils::GetRowDataSizeByPixelFormat(dstImageInfo.size.width, dstImageInfo.pixelFormat);
     if (rowDataSize <= 0) {
@@ -2422,7 +2425,7 @@ int32_t ImageUtils::AllocPixelMapMemory(std::unique_ptr<AbsMemory> &dstMemory, i
         bufferSize = GetYUVByteCount(dstImageInfo);
     }
     MemoryData memoryData = {nullptr, static_cast<size_t>(bufferSize), "Create PixelMap", dstImageInfo.size,
-        dstImageInfo.pixelFormat, usage};
+        dstImageInfo.pixelFormat};
     AllocatorType allocType = opts.allocatorType == AllocatorType::DEFAULT ?
         ImageUtils::GetPixelMapAllocatorType(dstImageInfo.size, dstImageInfo.pixelFormat, opts.useDMA,
             memoryData.usage) :
@@ -2448,7 +2451,7 @@ int32_t ImageUtils::AllocPixelMapMemory(std::unique_ptr<AbsMemory> &dstMemory, i
 }
 
 std::unique_ptr<AbsMemory> ImageUtils::ReadData(std::vector<uint8_t> &buff, int32_t size, int32_t &cursor,
-    AllocatorType allocType, ImageInfo imageInfo, uint64_t usage)
+    AllocatorType allocType, ImageInfo imageInfo)
 {
     if (size <= 0 || static_cast<size_t>(size) > MAX_TLV_HEAP_SIZE) {
         IMAGE_LOGE("[PixelMap] tlv read data fail: invalid size[%{public}d]", size);
@@ -2462,7 +2465,7 @@ std::unique_ptr<AbsMemory> ImageUtils::ReadData(std::vector<uint8_t> &buff, int3
     int32_t dstRowStride = 0;
     InitializationOptions opts;
     opts.allocatorType = allocType;
-    int32_t errorCode = AllocPixelMapMemory(dstMemory, dstRowStride, imageInfo, opts, usage);
+    int32_t errorCode = AllocPixelMapMemory(dstMemory, dstRowStride, imageInfo, opts);
     if (dstMemory == nullptr || dstMemory->data.data == nullptr || errorCode != SUCCESS) {
         IMAGE_LOGE("[PixelMap] tlv read data fail: alloc memory failed");
         return nullptr;
