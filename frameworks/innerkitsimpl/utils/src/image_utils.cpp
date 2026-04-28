@@ -652,7 +652,7 @@ bool ImageUtils::IsFormatSupportDma(const PixelFormat &format)
 
 bool ImageUtils::IsSupportDefaultDmaNopadding(const PixelFormat &format)
 {
-    if (ImageSystemProperties::GetDefaultDmaNoPaddingEnabled() && ImageSystemProperties::getNoPaddingEnabled() &&
+    if (ImageSystemProperties::GetDefaultDmaNoPaddingEnabled() && ImageSystemProperties::GetNoPaddingEnabled() &&
         (format == PixelFormat::BGRA_8888 || format == PixelFormat::RGBA_8888)) {
         return true;
     }
