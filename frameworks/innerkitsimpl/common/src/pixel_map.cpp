@@ -3693,7 +3693,7 @@ static bool CheckTlvImageInfo(const ImageInfo &info, std::unique_ptr<AbsMemory>&
     if (info.size.width <= 0 || info.size.height <= 0 || dstMemory == nullptr || dstMemory->data.data == nullptr) {
         return false;
     }
-    if (!isHdr && csm == -1 && (dstMemory->GetType() == AllocatorType::DEFAULT)) {
+    if (!isHdr && csm == -1 && dstMemory->GetType() == AllocatorType::DEFAULT) {
         return true;
     }
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
