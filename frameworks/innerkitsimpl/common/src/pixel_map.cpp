@@ -1069,7 +1069,7 @@ static void SetDstPixelMapInfo(PixelMap &source, PixelMap &dstPixelMap, void* ds
 {
     if (memory->GetType() == AllocatorType::SHARE_MEM_ALLOC || memory->GetType() == AllocatorType::DMA_ALLOC) {
         dstPixelMap.SetPixelsAddr(dstPixels, memory->extend.data, memory->data.size, memory->GetType(), nullptr);
-        if (memory->GetType() == AllocatorType::DMA_ALLOC) {
+        if (source.GetAllocatorType() == AllocatorType::DMA_ALLOC) {
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
             sptr<SurfaceBuffer> sourceSurfaceBuffer(static_cast<SurfaceBuffer*> (source.GetFd()));
             sptr<SurfaceBuffer> dstSurfaceBuffer(static_cast<SurfaceBuffer*> (dstPixelMap.GetFd()));
@@ -3720,7 +3720,9 @@ static std::map<uint8_t, std::function<bool(TlvDecodeInfo&, vector<uint8_t>&, in
         }},
         {TLV_IMAGE_ALLOCATORTYPE, [](TlvDecodeInfo& decodeInfo, vector<uint8_t>& buff, int32_t& cursor, int32_t len) {
             decodeInfo.allocType = ImageUtils::ReadVarint(buff, cursor);
-            if (decodeInfo.allocType != static_cast<int32_t>(AllocatorType::DEFAULT)) {
+            // Heap check is for compatibility with older versions of TLV files
+            if (decodeInfo.allocType != static_cast<int32_t>(AllocatorType::DEFAULT) &&
+                decodeInfo.allocType != static_cast<int32_t>(AllocatorType::HEAP_ALLOC)) {
                 IMAGE_LOGE("[PixelMap] tlv decode invalid allocatorType: %{public}d", decodeInfo.allocType);
                 return false;
             }
