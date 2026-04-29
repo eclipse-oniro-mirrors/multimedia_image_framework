@@ -1069,7 +1069,7 @@ static void SetDstPixelMapInfo(PixelMap &source, PixelMap &dstPixelMap, void* ds
 {
     if (memory->GetType() == AllocatorType::SHARE_MEM_ALLOC || memory->GetType() == AllocatorType::DMA_ALLOC) {
         dstPixelMap.SetPixelsAddr(dstPixels, memory->extend.data, memory->data.size, memory->GetType(), nullptr);
-        if (source.GetAllocatorType() == AllocatorType::DMA_ALLOC) {
+        if (memory->GetType() == AllocatorType::DMA_ALLOC) {
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
             sptr<SurfaceBuffer> sourceSurfaceBuffer(static_cast<SurfaceBuffer*> (source.GetFd()));
             sptr<SurfaceBuffer> dstSurfaceBuffer(static_cast<SurfaceBuffer*> (dstPixelMap.GetFd()));
