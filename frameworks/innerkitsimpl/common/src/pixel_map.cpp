@@ -3617,7 +3617,7 @@ bool PixelMap::EncodeTlv(std::vector<uint8_t> &buff) const
     if (!EncodeTlvHdrInfo(buff, allocatorType_, const_cast<PixelMap*>(this))) {
         return false;
     }
-    AllocatorType tmpAllocatorType = AllocatorType::HEAP_ALLOC;
+    AllocatorType tmpAllocatorType = AllocatorType::DEFAULT;
     ImageUtils::WriteUint8(buff, TLV_IMAGE_ALLOCATORTYPE);
     ImageUtils::WriteVarint(buff, ImageUtils::GetVarintLen(static_cast<int32_t>(tmpAllocatorType)));
     ImageUtils::WriteVarint(buff, static_cast<int32_t>(tmpAllocatorType));
@@ -3650,7 +3650,7 @@ static bool CheckTlvImageInfo(const ImageInfo &info, std::unique_ptr<AbsMemory>&
     if (info.size.width <= 0 || info.size.height <= 0 || dstMemory == nullptr || dstMemory->data.data == nullptr) {
         return false;
     }
-    if (!isHdr && csm == -1 && dstMemory->GetType() == AllocatorType::DEFAULT) {
+    if (!isHdr && csm == -1) {
         return true;
     }
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
@@ -3719,7 +3719,11 @@ static std::map<uint8_t, std::function<bool(TlvDecodeInfo&, vector<uint8_t>&, in
             return true;
         }},
         {TLV_IMAGE_ALLOCATORTYPE, [](TlvDecodeInfo& decodeInfo, vector<uint8_t>& buff, int32_t& cursor, int32_t len) {
-            decodeInfo.allocType = static_cast<int32_t>(AllocatorType::DEFAULT);
+            decodeInfo.allocType = ImageUtils::ReadVarint(buff, cursor);
+            if (decodeInfo.allocType != static_cast<int32_t>(AllocatorType::DEFAULT)) {
+                IMAGE_LOGE("[PixelMap] tlv decode invalid allocatorType: %{public}d", decodeInfo.allocType);
+                return false;
+            }
             if (decodeInfo.isHdr == NUM_1) {
                 decodeInfo.allocType = static_cast<int32_t>(AllocatorType::DMA_ALLOC);
             }
