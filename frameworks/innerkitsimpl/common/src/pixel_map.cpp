@@ -1064,20 +1064,15 @@ unique_ptr<PixelMap> PixelMap::Create(PixelMap &source, const Rect &srcRect, con
     return dstPixelMap;
 }
 
-static void SetDstPixelMapInfo(PixelMap &source, PixelMap &dstPixelMap, void* dstPixels, uint32_t dstPixelsSize,
-    unique_ptr<AbsMemory>& memory)
+static void SetDstPixelMapInfo(PixelMap &source, PixelMap &dstPixelMap, void* dstPixels, unique_ptr<AbsMemory>& memory)
 {
-    if (memory->GetType() == AllocatorType::SHARE_MEM_ALLOC || memory->GetType() == AllocatorType::DMA_ALLOC) {
-        dstPixelMap.SetPixelsAddr(dstPixels, memory->extend.data, memory->data.size, memory->GetType(), nullptr);
-        if (source.GetAllocatorType() == AllocatorType::DMA_ALLOC) {
+    dstPixelMap.SetPixelsAddr(dstPixels, memory->extend.data, memory->data.size, memory->GetType(), nullptr);
+    if (source.GetAllocatorType() == AllocatorType::DMA_ALLOC) {
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
-            sptr<SurfaceBuffer> sourceSurfaceBuffer(static_cast<SurfaceBuffer*> (source.GetFd()));
-            sptr<SurfaceBuffer> dstSurfaceBuffer(static_cast<SurfaceBuffer*> (dstPixelMap.GetFd()));
-            VpeUtils::CopySurfaceBufferInfo(sourceSurfaceBuffer, dstSurfaceBuffer);
+        sptr<SurfaceBuffer> sourceSurfaceBuffer(static_cast<SurfaceBuffer*> (source.GetFd()));
+        sptr<SurfaceBuffer> dstSurfaceBuffer(static_cast<SurfaceBuffer*> (dstPixelMap.GetFd()));
+        VpeUtils::CopySurfaceBufferInfo(sourceSurfaceBuffer, dstSurfaceBuffer);
 #endif
-        }
-    } else {
-        dstPixelMap.SetPixelsAddr(dstPixels, nullptr, dstPixelsSize, AllocatorType::HEAP_ALLOC, nullptr);
     }
 #ifdef IMAGE_COLORSPACE_FLAG
     OHOS::ColorManager::ColorSpace colorspace = source.InnerGetGrColorSpace();
@@ -1095,40 +1090,47 @@ bool PixelMap::SourceCropAndConvert(PixelMap &source, const ImageInfo &srcImageI
         return false;
     }
     size_t uBufferSize = static_cast<size_t>(bufferSize);
-    void *dstPixels = nullptr;
     MemoryData memoryData = {nullptr, uBufferSize, "SourceCropAndConvert Data", dstImageInfo.size,
         dstImageInfo.pixelFormat, source.GetNoPaddingUsage()};
-    AllocatorType sourceType = source.GetAllocatorType();
-    if (source.GetAllocatorType() == AllocatorType::CUSTOM_ALLOC) {
-        if (ImageUtils::IsSupportDefaultDmaNopadding(dstImageInfo.pixelFormat)) {
-            sourceType = AllocatorType::DMA_ALLOC;
-            memoryData.usage |= BUFFER_USAGE_PREFER_NO_PADDING | BUFFER_USAGE_ALLOC_NO_IPC;
-        } else {
-            sourceType = AllocatorType::SHARE_MEM_ALLOC;
-        }
+    AllocatorType allocType = source.GetAllocatorType();
+    if (source.GetAllocatorType() == AllocatorType::DEFAULT ||
+        source.GetAllocatorType() == AllocatorType::CUSTOM_ALLOC) {
+        allocType = ImageUtils::GetPixelMapAllocatorType(dstImageInfo.size, dstImageInfo.pixelFormat, false,
+            memoryData.usage);
     }
-    std::unique_ptr<AbsMemory> memory = MemoryManager::CreateMemory(sourceType, memoryData);
+    std::unique_ptr<AbsMemory> memory = MemoryManager::CreateMemory(allocType, memoryData);
     if (memory == nullptr) {
-        IMAGE_LOGE("SourceCropAndConvert create memory failed");
+        IMAGE_LOGE("SourceCropAndConvert create memory failed : %{public}d", allocType);
         return false;
     }
-    dstPixels = memory->data.data;
+    void* dstPixels = memory->data.data;
     if (dstPixels == nullptr) {
-        IMAGE_LOGE("source crop allocate memory fail allocatetype: %{public}d ", source.GetAllocatorType());
+        IMAGE_LOGE("SourceCropAndConvert dstPixels is nullptr");
         return false;
     }
-    if (memset_s(dstPixels, uBufferSize, 0, uBufferSize) != EOK) {
-        IMAGE_LOGE("dstPixels memset_s failed.");
+    if (memset_s(dstPixels, memory->data.size, 0, memory->data.size) != EOK) {
+        memory->Release();
+        IMAGE_LOGE("SourceCropAndConvert dstPixels memset_s failed.");
+        return false;
+    }
+    uint64_t dstRowStride = dstPixelMap.GetRowStride();
+    if (source.GetAllocatorType() == AllocatorType::DMA_ALLOC) {
+        if (memory->extend.data == nullptr) {
+            memory->Release();
+            IMAGE_LOGE("SourceCropAndConvert get surfacebuffer failed");
+            return false;
+        }
+        SurfaceBuffer* sbBuffer = static_cast<SurfaceBuffer*>(memory->extend.data);
+        dstRowStride = static_cast<uint64_t>(sbBuffer->GetStride());
     }
     Position srcPosition { srcRect.left, srcRect.top };
     if (!PixelConvertAdapter::ReadPixelsConvert(source.GetPixels(), srcPosition, source.GetRowStride(), srcImageInfo,
-        dstPixels, dstPixelMap.GetRowStride(), dstImageInfo)) {
-        IMAGE_LOGE("pixel convert in adapter failed.");
+        dstPixels, dstRowStride, dstImageInfo)) {
+        IMAGE_LOGE("SourceCropAndConvert pixel convert in adapter failed.");
         memory->Release();
         return false;
     }
-
-    SetDstPixelMapInfo(source, dstPixelMap, dstPixels, uBufferSize, memory);
+    SetDstPixelMapInfo(source, dstPixelMap, dstPixels, memory);
     return true;
 }
 
@@ -1219,18 +1221,15 @@ bool PixelMap::CopyPixelMap(PixelMap &source, PixelMap &dstPixelMap, int32_t &er
     void *dstPixels = nullptr;
     ImageInfo dstImageInfo;
     dstPixelMap.GetImageInfo(dstImageInfo);
-    MemoryData memoryData = {nullptr, uBufferSize, "Copy ImageData", dstImageInfo.size, dstImageInfo.pixelFormat};
-    memoryData.usage = source.GetNoPaddingUsage();
-    AllocatorType sourceType = source.GetAllocatorType();
-    if (source.GetAllocatorType() == AllocatorType::CUSTOM_ALLOC) {
-        if (ImageUtils::IsSupportDefaultDmaNopadding(dstImageInfo.pixelFormat)) {
-            sourceType = AllocatorType::DMA_ALLOC;
-            memoryData.usage |= BUFFER_USAGE_PREFER_NO_PADDING | BUFFER_USAGE_ALLOC_NO_IPC;
-        } else {
-            sourceType = AllocatorType::SHARE_MEM_ALLOC;
-        }
+    MemoryData memoryData = {nullptr, uBufferSize, "Copy ImageData", dstImageInfo.size, dstImageInfo.pixelFormat,
+        source.GetNoPaddingUsage()};
+    AllocatorType allocType = source.GetAllocatorType();
+    if (source.GetAllocatorType() == AllocatorType::DEFAULT ||
+        source.GetAllocatorType() == AllocatorType::CUSTOM_ALLOC) {
+        allocType = ImageUtils::GetPixelMapAllocatorType(dstImageInfo.size, dstImageInfo.pixelFormat, false,
+            memoryData.usage);
     }
-    unique_ptr<AbsMemory> memory = MemoryManager::CreateMemory(sourceType, memoryData);
+    unique_ptr<AbsMemory> memory = MemoryManager::CreateMemory(allocType, memoryData);
     if (memory == nullptr) {
         return false;
     }
@@ -1246,7 +1245,7 @@ bool PixelMap::CopyPixelMap(PixelMap &source, PixelMap &dstPixelMap, int32_t &er
         error = IMAGE_RESULT_ERR_SHAMEM_DATA_ABNORMAL;
         return false;
     }
-    SetDstPixelMapInfo(source, dstPixelMap, dstPixels, uBufferSize, memory);
+    SetDstPixelMapInfo(source, dstPixelMap, dstPixels, memory);
     return true;
 }
 
