@@ -973,6 +973,7 @@ protected:
     bool CheckPixelsInput(const uint8_t *dst, const uint64_t &bufferSize, const uint32_t &offset,
                           const uint32_t &stride, const Rect &region);
     void ReleaseSharedMemory(void *addr, void *context, uint32_t size);
+    static void ReleaseBuffer(AllocatorType allocatorType, int fd, uint64_t dataSize, void **buffer);
     static void *AllocSharedMemory(const uint64_t bufferSize, int &fd, uint32_t uniqueId);
     bool WritePropertiesToParcel(Parcel &parcel) const;
     static bool ReadPropertiesFromParcel(Parcel& parcel, PixelMap*& pixelMap, ImageInfo& imgInfo,

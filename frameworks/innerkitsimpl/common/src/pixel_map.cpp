@@ -688,6 +688,27 @@ pair<unique_ptr<PixelMap>, int32_t> PixelMap::CreateFromPixels(const uint8_t *pi
     return {std::move(dstPixelMap), SUCCESS};
 }
 
+void PixelMap::ReleaseBuffer(AllocatorType allocatorType, int fd, uint64_t dataSize, void **buffer)
+{
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+    if (allocatorType == AllocatorType::SHARE_MEM_ALLOC) {
+        if (buffer != nullptr && *buffer != nullptr) {
+            ::munmap(*buffer, dataSize);
+            ::close(fd);
+        }
+        return;
+    }
+#endif
+
+    if (allocatorType == AllocatorType::HEAP_ALLOC) {
+        if (buffer != nullptr && *buffer != nullptr) {
+            free(*buffer);
+            *buffer = nullptr;
+        }
+        return;
+    }
+}
+
 uint32_t PixelMap::SetMemoryName(const std::string &pixelMapName)
 {
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
@@ -1064,22 +1085,6 @@ unique_ptr<PixelMap> PixelMap::Create(PixelMap &source, const Rect &srcRect, con
     return dstPixelMap;
 }
 
-static void SetDstPixelMapInfo(PixelMap &source, PixelMap &dstPixelMap, void* dstPixels, unique_ptr<AbsMemory>& memory)
-{
-    dstPixelMap.SetPixelsAddr(dstPixels, memory->extend.data, memory->data.size, memory->GetType(), nullptr);
-    if (source.GetAllocatorType() == AllocatorType::DMA_ALLOC) {
-#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
-        sptr<SurfaceBuffer> sourceSurfaceBuffer(static_cast<SurfaceBuffer*> (source.GetFd()));
-        sptr<SurfaceBuffer> dstSurfaceBuffer(static_cast<SurfaceBuffer*> (dstPixelMap.GetFd()));
-        VpeUtils::CopySurfaceBufferInfo(sourceSurfaceBuffer, dstSurfaceBuffer);
-#endif
-    }
-#ifdef IMAGE_COLORSPACE_FLAG
-    OHOS::ColorManager::ColorSpace colorspace = source.InnerGetGrColorSpace();
-    dstPixelMap.InnerSetColorSpace(colorspace);
-#endif
-}
-
 bool PixelMap::SourceCropAndConvert(PixelMap &source, const ImageInfo &srcImageInfo, const ImageInfo &dstImageInfo,
     const Rect &srcRect, PixelMap &dstPixelMap)
 {
@@ -1090,47 +1095,43 @@ bool PixelMap::SourceCropAndConvert(PixelMap &source, const ImageInfo &srcImageI
         return false;
     }
     size_t uBufferSize = static_cast<size_t>(bufferSize);
-    MemoryData memoryData = {nullptr, uBufferSize, "SourceCropAndConvert Data", dstImageInfo.size,
-        dstImageInfo.pixelFormat, source.GetNoPaddingUsage()};
-    AllocatorType allocType = source.GetAllocatorType();
-    if (source.GetAllocatorType() == AllocatorType::DEFAULT ||
-        source.GetAllocatorType() == AllocatorType::CUSTOM_ALLOC) {
-        allocType = ImageUtils::GetPixelMapAllocatorType(dstImageInfo.size, dstImageInfo.pixelFormat, false,
-            memoryData.usage);
+    int fd = -1;
+    void *dstPixels = nullptr;
+    if (source.GetAllocatorType() == AllocatorType::SHARE_MEM_ALLOC) {
+        dstPixels = AllocSharedMemory(uBufferSize, fd, dstPixelMap.GetUniqueId());
+    } else {
+        dstPixels = malloc(uBufferSize);
     }
-    std::unique_ptr<AbsMemory> memory = MemoryManager::CreateMemory(allocType, memoryData);
-    if (memory == nullptr) {
-        IMAGE_LOGE("SourceCropAndConvert create memory failed : %{public}d", allocType);
-        return false;
-    }
-    void* dstPixels = memory->data.data;
     if (dstPixels == nullptr) {
-        IMAGE_LOGE("SourceCropAndConvert dstPixels is nullptr");
+        IMAGE_LOGE("source crop allocate memory fail allocatetype: %{public}d ", source.GetAllocatorType());
         return false;
     }
-    if (memset_s(dstPixels, memory->data.size, 0, memory->data.size) != EOK) {
-        memory->Release();
-        IMAGE_LOGE("SourceCropAndConvert dstPixels memset_s failed.");
-        return false;
-    }
-    uint64_t dstRowStride = dstPixelMap.GetRowStride();
-    if (source.GetAllocatorType() == AllocatorType::DMA_ALLOC) {
-        if (memory->extend.data == nullptr) {
-            memory->Release();
-            IMAGE_LOGE("SourceCropAndConvert get surfacebuffer failed");
-            return false;
-        }
-        SurfaceBuffer* sbBuffer = static_cast<SurfaceBuffer*>(memory->extend.data);
-        dstRowStride = static_cast<uint64_t>(sbBuffer->GetStride());
+    if (memset_s(dstPixels, uBufferSize, 0, uBufferSize) != EOK) {
+        IMAGE_LOGE("dstPixels memset_s failed.");
     }
     Position srcPosition { srcRect.left, srcRect.top };
     if (!PixelConvertAdapter::ReadPixelsConvert(source.GetPixels(), srcPosition, source.GetRowStride(), srcImageInfo,
-        dstPixels, dstRowStride, dstImageInfo)) {
-        IMAGE_LOGE("SourceCropAndConvert pixel convert in adapter failed.");
-        memory->Release();
+        dstPixels, dstPixelMap.GetRowStride(), dstImageInfo)) {
+        IMAGE_LOGE("pixel convert in adapter failed.");
+        ReleaseBuffer(fd >= 0 ? AllocatorType::SHARE_MEM_ALLOC : AllocatorType::HEAP_ALLOC,
+            fd, uBufferSize, &dstPixels);
         return false;
     }
-    SetDstPixelMapInfo(source, dstPixelMap, dstPixels, memory);
+    if (fd < 0) {
+        dstPixelMap.SetPixelsAddr(dstPixels, nullptr, uBufferSize, AllocatorType::HEAP_ALLOC, nullptr);
+        return true;
+    }
+#ifdef IMAGE_COLORSPACE_FLAG
+    OHOS::ColorManager::ColorSpace colorspace = source.InnerGetGrColorSpace();
+    dstPixelMap.InnerSetColorSpace(colorspace);
+#endif
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+    void *fdBuffer = new int32_t();
+    *static_cast<int32_t *>(fdBuffer) = fd;
+    dstPixelMap.SetPixelsAddr(dstPixels, fdBuffer, uBufferSize, AllocatorType::SHARE_MEM_ALLOC, nullptr);
+#else
+    dstPixelMap.SetPixelsAddr(dstPixels, nullptr, uBufferSize, AllocatorType::HEAP_ALLOC, nullptr);
+#endif
     return true;
 }
 
@@ -1201,6 +1202,22 @@ bool PixelMap::CopyPixelMap(PixelMap &source, PixelMap &dstPixelMap)
 {
     int32_t error;
     return CopyPixelMap(source, dstPixelMap, error);
+}
+
+static void SetDstPixelMapInfo(PixelMap &source, PixelMap &dstPixelMap, void* dstPixels, unique_ptr<AbsMemory>& memory)
+{
+    dstPixelMap.SetPixelsAddr(dstPixels, memory->extend.data, memory->data.size, memory->GetType(), nullptr);
+    if (source.GetAllocatorType() == AllocatorType::DMA_ALLOC) {
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+        sptr<SurfaceBuffer> sourceSurfaceBuffer(static_cast<SurfaceBuffer*> (source.GetFd()));
+        sptr<SurfaceBuffer> dstSurfaceBuffer(static_cast<SurfaceBuffer*> (dstPixelMap.GetFd()));
+        VpeUtils::CopySurfaceBufferInfo(sourceSurfaceBuffer, dstSurfaceBuffer);
+#endif
+    }
+#ifdef IMAGE_COLORSPACE_FLAG
+    OHOS::ColorManager::ColorSpace colorspace = source.InnerGetGrColorSpace();
+    dstPixelMap.InnerSetColorSpace(colorspace);
+#endif
 }
 
 bool PixelMap::CopyPixelMap(PixelMap &source, PixelMap &dstPixelMap, int32_t &error)
