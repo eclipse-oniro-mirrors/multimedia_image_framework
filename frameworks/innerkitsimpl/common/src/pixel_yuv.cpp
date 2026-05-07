@@ -436,6 +436,11 @@ uint32_t PixelYuv::Scale(float xAxis, float yAxis, AntiAliasingOption option)
     if (!IsYuvFormat()) {
         return ERR_IMAGE_DATA_UNSUPPORT;
     }
+    if (xAxis == 0 || yAxis == 0) {
+        IMAGE_LOGE("Invalid scale ratio: 0");
+        return ERR_IMAGE_INVALID_PARAMETER;
+    }
+    
     ImageTrace imageTrace("PixelMap scale");
     if (xAxis == 1 && yAxis == 1 && option == AntiAliasingOption::NONE) {
         return SUCCESS;

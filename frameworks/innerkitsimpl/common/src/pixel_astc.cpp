@@ -88,7 +88,7 @@ void PixelAstc::scale(float xAxis, float yAxis)
 uint32_t PixelAstc::Scale(float xAxis, float yAxis, AntiAliasingOption option)
 {
     if (xAxis == 0 || yAxis == 0) {
-        IMAGE_LOGE("scale param incorrect on pixelastc");
+        IMAGE_LOGE("Invalid scale ratio: 0");
         return ERR_IMAGE_INVALID_PARAMETER;
     }
     scale(xAxis, yAxis);
