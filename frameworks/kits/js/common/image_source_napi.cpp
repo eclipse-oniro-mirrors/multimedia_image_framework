@@ -4657,6 +4657,9 @@ STATIC_EXEC_FUNC(CreatePixelMapList)
             context->decodeOpts.isAnimationDecode = true;
         }
         context->pixelMaps = context->rImageSource->CreatePixelMapList(context->decodeOpts, errorCode);
+        if (imageInfo.encodedFormat == IMAGE_AVIS_FORMAT || imageInfo.encodedFormat == IMAGE_AVIF_FORMAT) {
+            errorCode = errorCode == ERR_MEDIA_FORMAT_UNSUPPORT ? ERR_IMAGE_DATA_UNSUPPORT : errorCode;
+        }
     }
     if ((errorCode == SUCCESS) && IMG_NOT_NULL(context->pixelMaps)) {
         context->status = SUCCESS;
