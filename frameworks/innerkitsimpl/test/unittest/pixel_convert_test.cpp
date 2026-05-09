@@ -2512,7 +2512,6 @@ HWTEST_F(PixelConvertTest, GetStrideTest001, TestSize.Level3)
     }
     GTEST_LOG_(INFO) << "PixelConvertTest: GetStrideTest001 end";
 }
-}
 
 /**
  * @tc.name: AlphaTypeConvertTest001
@@ -3773,4 +3772,4 @@ HWTEST_F(PixelConvertTest, PixelsConvertAlphaF16InvalidRowStrideTest001, TestSiz
     GTEST_LOG_(INFO) << "PixelConvertTest: PixelsConvertAlphaF16InvalidRowStrideTest001 end";
 }
 }
-
+}
