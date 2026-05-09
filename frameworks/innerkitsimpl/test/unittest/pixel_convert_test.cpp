@@ -2512,6 +2512,916 @@ HWTEST_F(PixelConvertTest, GetStrideTest001, TestSize.Level3)
     }
     GTEST_LOG_(INFO) << "PixelConvertTest: GetStrideTest001 end";
 }
+}
+
+/**
+ * @tc.name: AlphaTypeConvertTest001
+ * @tc.desc: Test PREMUL_CONVERT_UNPREMUL alpha type conversion.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelConvertTest, AlphaTypeConvertTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelConvertTest: AlphaTypeConvertTest001 start";
+    ImageInfo srcImageInfo;
+    srcImageInfo.alphaType = AlphaType::IMAGE_ALPHA_TYPE_PREMUL;
+    srcImageInfo.pixelFormat = PixelFormat::RGBA_8888;
+
+    ImageInfo dstImageInfo;
+    dstImageInfo.alphaType = AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL;
+    dstImageInfo.pixelFormat = PixelFormat::ARGB_8888;
+
+    uint8_t source[8] = { 0x40, 0x80, 0x80, 0x80, 0x20, 0x40, 0x40, 0x40 };
+    uint32_t destination[3] = { 0 };
+
+    std::unique_ptr<PixelConvert> colorConverterPointer = PixelConvert::Create(srcImageInfo, dstImageInfo);
+    ASSERT_NE(colorConverterPointer, nullptr);
+    colorConverterPointer->Convert(destination, source, 2);
+    GTEST_LOG_(INFO) << "PixelConvertTest: AlphaTypeConvertTest001 end";
+}
+
+/**
+ * @tc.name: AlphaTypeConvertTest004
+ * @tc.desc: Test UNPREMUL_CONVERT_OPAQUE alpha type conversion.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelConvertTest, AlphaTypeConvertTest004, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelConvertTest: AlphaTypeConvertTest004 start";
+    ImageInfo srcImageInfo;
+    srcImageInfo.alphaType = AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL;
+    srcImageInfo.pixelFormat = PixelFormat::RGBA_8888;
+
+    ImageInfo dstImageInfo;
+    dstImageInfo.alphaType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
+    dstImageInfo.pixelFormat = PixelFormat::ARGB_8888;
+
+    uint8_t source[8] = { 0xFF, 0xFF, 0xFF, 0x80, 0x80, 0x80, 0x80, 0x40 };
+    uint32_t destination[3] = { 0 };
+
+    std::unique_ptr<PixelConvert> colorConverterPointer = PixelConvert::Create(srcImageInfo, dstImageInfo);
+    ASSERT_NE(colorConverterPointer, nullptr);
+    colorConverterPointer->Convert(destination, source, 2);
+    GTEST_LOG_(INFO) << "PixelConvertTest: AlphaTypeConvertTest004 end";
+}
+
+/**
+ * @tc.name: RGBA8888ToRGB565Test001
+ * @tc.desc: Test RGBA_8888 to RGB_565 conversion with alpha.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelConvertTest, RGBA8888ToRGB565Test001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelConvertTest: RGBA8888ToRGB565Test001 start";
+    ImageInfo srcImageInfo;
+    srcImageInfo.alphaType = AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL;
+    srcImageInfo.pixelFormat = PixelFormat::RGBA_8888;
+
+    ImageInfo dstImageInfo;
+    dstImageInfo.alphaType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
+    dstImageInfo.pixelFormat = PixelFormat::RGB_565;
+
+    uint8_t source[8] = { 0xFF, 0xFF, 0xFF, 0xFF, 0x80, 0x40, 0x20, 0x80 };
+    uint16_t destination[3] = { 0 };
+
+    std::unique_ptr<PixelConvert> colorConverterPointer = PixelConvert::Create(srcImageInfo, dstImageInfo);
+    ASSERT_NE(colorConverterPointer, nullptr);
+    colorConverterPointer->Convert(destination, source, 2);
+    GTEST_LOG_(INFO) << "PixelConvertTest: RGBA8888ToRGB565Test001 end";
+}
+
+/**
+ * @tc.name: RGB565ToRGBAF16Test001
+ * @tc.desc: Test RGB_565 to RGBA_F16 conversion.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelConvertTest, RGB565ToRGBAF16Test001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelConvertTest: RGB565ToRGBAF16Test001 start";
+    ImageInfo srcImageInfo;
+    srcImageInfo.alphaType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
+    srcImageInfo.pixelFormat = PixelFormat::RGB_565;
+
+    ImageInfo dstImageInfo;
+    dstImageInfo.alphaType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
+    dstImageInfo.pixelFormat = static_cast<PixelFormat>(RGBA_F16);
+
+    uint8_t source[4] = { 0xF8, 0x00, 0x07, 0xE0 };
+    uint8_t destination[32] = { 0 };
+
+    std::unique_ptr<PixelConvert> colorConverterPointer = PixelConvert::Create(srcImageInfo, dstImageInfo);
+    ASSERT_NE(colorConverterPointer, nullptr);
+    colorConverterPointer->Convert(destination, source, 2);
+    GTEST_LOG_(INFO) << "PixelConvertTest: RGB565ToRGBAF16Test001 end";
+}
+
+/**
+ * @tc.name: RGBAF16ToRGB565Test001
+ * @tc.desc: Test RGBA_F16 to RGB_565 conversion.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelConvertTest, RGBAF16ToRGB565Test001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelConvertTest: RGBAF16ToRGB565Test001 start";
+    ImageInfo srcImageInfo;
+    srcImageInfo.alphaType = AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL;
+    srcImageInfo.pixelFormat = static_cast<PixelFormat>(RGBA_F16);
+
+    ImageInfo dstImageInfo;
+    dstImageInfo.alphaType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
+    dstImageInfo.pixelFormat = PixelFormat::RGB_565;
+
+    uint8_t source[16] = { 0 };
+    uint16_t destination[3] = { 0 };
+
+    std::unique_ptr<PixelConvert> colorConverterPointer = PixelConvert::Create(srcImageInfo, dstImageInfo);
+    ASSERT_NE(colorConverterPointer, nullptr);
+    colorConverterPointer->Convert(destination, source, 2);
+    GTEST_LOG_(INFO) << "PixelConvertTest: RGBAF16ToRGB565Test001 end";
+}
+
+/**
+ * @tc.name: RGBAF16ToABGR8888Test001
+ * @tc.desc: Test RGBA_F16 to ABGR_8888 conversion.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelConvertTest, RGBAF16ToABGR8888Test001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelConvertTest: RGBAF16ToABGR8888Test001 start";
+    ImageInfo srcImageInfo;
+    srcImageInfo.alphaType = AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL;
+    srcImageInfo.pixelFormat = static_cast<PixelFormat>(RGBA_F16);
+
+    ImageInfo dstImageInfo;
+    dstImageInfo.alphaType = AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL;
+    dstImageInfo.pixelFormat = static_cast<PixelFormat>(ABGR_8888);
+
+    uint8_t source[16] = { 0 };
+    uint32_t destination[3] = { 0 };
+
+    std::unique_ptr<PixelConvert> colorConverterPointer = PixelConvert::Create(srcImageInfo, dstImageInfo);
+    ASSERT_NE(colorConverterPointer, nullptr);
+    colorConverterPointer->Convert(destination, source, 2);
+    GTEST_LOG_(INFO) << "PixelConvertTest: RGBAF16ToABGR8888Test001 end";
+}
+
+/**
+ * @tc.name: RGB888ToRGBAF16Test001
+ * @tc.desc: Test RGB_888 to RGBA_F16 conversion.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelConvertTest, RGB888ToRGBAF16Test001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelConvertTest: RGB888ToRGBAF16Test001 start";
+    ImageInfo srcImageInfo;
+    srcImageInfo.alphaType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
+    srcImageInfo.pixelFormat = PixelFormat::RGB_888;
+
+    ImageInfo dstImageInfo;
+    dstImageInfo.alphaType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
+    dstImageInfo.pixelFormat = static_cast<PixelFormat>(RGBA_F16);
+
+    uint8_t source[6] = { 0xFF, 0x00, 0x00, 0x00, 0xFF, 0x00 };
+    uint8_t destination[32] = { 0 };
+
+    std::unique_ptr<PixelConvert> colorConverterPointer = PixelConvert::Create(srcImageInfo, dstImageInfo);
+    ASSERT_NE(colorConverterPointer, nullptr);
+    colorConverterPointer->Convert(destination, source, 2);
+    GTEST_LOG_(INFO) << "PixelConvertTest: RGB888ToRGBAF16Test001 end";
+}
+
+/**
+ * @tc.name: BGR888ToRGBAF16Test001
+ * @tc.desc: Test BGR_888 to RGBA_F16 conversion.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelConvertTest, BGR888ToRGBAF16Test001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelConvertTest: BGR888ToRGBAF16Test001 start";
+    ImageInfo srcImageInfo;
+    srcImageInfo.alphaType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
+    srcImageInfo.pixelFormat = static_cast<PixelFormat>(BGR_888);
+
+    ImageInfo dstImageInfo;
+    dstImageInfo.alphaType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
+    dstImageInfo.pixelFormat = static_cast<PixelFormat>(RGBA_F16);
+
+    uint8_t source[6] = { 0x00, 0xFF, 0xFF, 0xFF, 0x00, 0x00 };
+    uint8_t destination[32] = { 0 };
+
+    std::unique_ptr<PixelConvert> colorConverterPointer = PixelConvert::Create(srcImageInfo, dstImageInfo);
+    ASSERT_NE(colorConverterPointer, nullptr);
+    colorConverterPointer->Convert(destination, source, 2);
+    GTEST_LOG_(INFO) << "PixelConvertTest: BGR888ToRGBAF16Test001 end";
+}
+
+/**
+ * @tc.name: ARGB8888ToRGBAF16Test001
+ * @tc.desc: Test ARGB_8888 to RGBA_F16 conversion with alpha.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelConvertTest, ARGB8888ToRGBAF16Test001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelConvertTest: ARGB8888ToRGBAF16Test001 start";
+    ImageInfo srcImageInfo;
+    srcImageInfo.alphaType = AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL;
+    srcImageInfo.pixelFormat = PixelFormat::ARGB_8888;
+
+    ImageInfo dstImageInfo;
+    dstImageInfo.alphaType = AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL;
+    dstImageInfo.pixelFormat = static_cast<PixelFormat>(RGBA_F16);
+
+    uint8_t source[8] = { 0x80, 0xFF, 0x00, 0x00, 0x40, 0x00, 0xFF, 0x00 };
+    uint8_t destination[32] = { 0 };
+
+    std::unique_ptr<PixelConvert> colorConverterPointer = PixelConvert::Create(srcImageInfo, dstImageInfo);
+    ASSERT_NE(colorConverterPointer, nullptr);
+    colorConverterPointer->Convert(destination, source, 2);
+    GTEST_LOG_(INFO) << "PixelConvertTest: ARGB8888ToRGBAF16Test001 end";
+}
+
+/**
+ * @tc.name: BGRA8888ToRGBAF16Test001
+ * @tc.desc: Test BGRA_8888 to RGBA_F16 conversion with alpha.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelConvertTest, BGRA8888ToRGBAF16Test001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelConvertTest: BGRA8888ToRGBAF16Test001 start";
+    ImageInfo srcImageInfo;
+    srcImageInfo.alphaType = AlphaType::IMAGE_ALPHA_TYPE_PREMUL;
+    srcImageInfo.pixelFormat = PixelFormat::BGRA_8888;
+
+    ImageInfo dstImageInfo;
+    dstImageInfo.alphaType = AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL;
+    dstImageInfo.pixelFormat = static_cast<PixelFormat>(RGBA_F16);
+
+    uint8_t source[8] = { 0x00, 0xFF, 0xFF, 0x80, 0xFF, 0x00, 0x00, 0x40 };
+    uint8_t destination[32] = { 0 };
+
+    std::unique_ptr<PixelConvert> colorConverterPointer = PixelConvert::Create(srcImageInfo, dstImageInfo);
+    ASSERT_NE(colorConverterPointer, nullptr);
+    colorConverterPointer->Convert(destination, source, 2);
+    GTEST_LOG_(INFO) << "PixelConvertTest: BGRA8888ToRGBAF16Test001 end";
+}
+
+/**
+ * @tc.name: RGB161616ToRGBAF16Test001
+ * @tc.desc: Test RGB_161616 to RGBA_F16 conversion.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelConvertTest, RGB161616ToRGBAF16Test001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelConvertTest: RGB161616ToRGBAF16Test001 start";
+    ImageInfo srcImageInfo;
+    srcImageInfo.alphaType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
+    srcImageInfo.pixelFormat = static_cast<PixelFormat>(RGB_161616);
+
+    ImageInfo dstImageInfo;
+    dstImageInfo.alphaType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
+    dstImageInfo.pixelFormat = static_cast<PixelFormat>(RGBA_F16);
+
+    uint8_t source[12] = { 0xFF, 0x00, 0xFF, 0x00, 0xFF, 0x00, 0x00, 0xFF, 0x00, 0xFF, 0x00, 0xFF };
+    uint8_t destination[32] = { 0 };
+
+    std::unique_ptr<PixelConvert> colorConverterPointer = PixelConvert::Create(srcImageInfo, dstImageInfo);
+    ASSERT_NE(colorConverterPointer, nullptr);
+    colorConverterPointer->Convert(destination, source, 2);
+    GTEST_LOG_(INFO) << "PixelConvertTest: RGB161616ToRGBAF16Test001 end";
+}
+
+/**
+ * @tc.name: RGBA16161616ToRGBAF16Test001
+ * @tc.desc: Test RGBA_16161616 to RGBA_F16 conversion with alpha.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelConvertTest, RGBA16161616ToRGBAF16Test001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelConvertTest: RGBA16161616ToRGBAF16Test001 start";
+    ImageInfo srcImageInfo;
+    srcImageInfo.alphaType = AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL;
+    srcImageInfo.pixelFormat = static_cast<PixelFormat>(RGBA_16161616);
+
+    ImageInfo dstImageInfo;
+    dstImageInfo.alphaType = AlphaType::IMAGE_ALPHA_TYPE_PREMUL;
+    dstImageInfo.pixelFormat = static_cast<PixelFormat>(RGBA_F16);
+
+    uint8_t source[16] = { 0xFF, 0x00, 0xFF, 0x00, 0xFF, 0x00, 0xFF, 0x00,
+                           0x80, 0x00, 0x40, 0x00, 0x20, 0x00, 0x10, 0x00 };
+    uint8_t destination[32] = { 0 };
+
+    std::unique_ptr<PixelConvert> colorConverterPointer = PixelConvert::Create(srcImageInfo, dstImageInfo);
+    ASSERT_NE(colorConverterPointer, nullptr);
+    colorConverterPointer->Convert(destination, source, 2);
+    GTEST_LOG_(INFO) << "PixelConvertTest: RGBA16161616ToRGBAF16Test001 end";
+}
+
+/**
+ * @tc.name: RGBA8888ToRGBAF16Test001
+ * @tc.desc: Test RGBA_8888 to RGBA_F16 conversion.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelConvertTest, RGBA8888ToRGBAF16Test001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelConvertTest: RGBA8888ToRGBAF16Test001 start";
+    ImageInfo srcImageInfo;
+    srcImageInfo.alphaType = AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL;
+    srcImageInfo.pixelFormat = PixelFormat::RGBA_8888;
+
+    ImageInfo dstImageInfo;
+    dstImageInfo.alphaType = AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL;
+    dstImageInfo.pixelFormat = static_cast<PixelFormat>(RGBA_F16);
+
+    uint8_t source[8] = { 0xFF, 0x00, 0x00, 0xFF, 0x00, 0xFF, 0x00, 0x80 };
+    uint8_t destination[32] = { 0 };
+
+    std::unique_ptr<PixelConvert> colorConverterPointer = PixelConvert::Create(srcImageInfo, dstImageInfo);
+    ASSERT_NE(colorConverterPointer, nullptr);
+    colorConverterPointer->Convert(destination, source, 2);
+    GTEST_LOG_(INFO) << "PixelConvertTest: RGBA8888ToRGBAF16Test001 end";
+}
+
+/**
+ * @tc.name: RGBAF16ToARGB8888Test001
+ * @tc.desc: Test RGBA_F16 to ARGB_8888 with premul to unpremul.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelConvertTest, RGBAF16ToARGB8888Test001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelConvertTest: RGBAF16ToARGB8888Test001 start";
+    ImageInfo srcImageInfo;
+    srcImageInfo.alphaType = AlphaType::IMAGE_ALPHA_TYPE_PREMUL;
+    srcImageInfo.pixelFormat = static_cast<PixelFormat>(RGBA_F16);
+
+    ImageInfo dstImageInfo;
+    dstImageInfo.alphaType = AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL;
+    dstImageInfo.pixelFormat = PixelFormat::ARGB_8888;
+
+    uint8_t source[16] = { 0 };
+    uint32_t destination[3] = { 0 };
+
+    std::unique_ptr<PixelConvert> colorConverterPointer = PixelConvert::Create(srcImageInfo, dstImageInfo);
+    ASSERT_NE(colorConverterPointer, nullptr);
+    colorConverterPointer->Convert(destination, source, 2);
+    GTEST_LOG_(INFO) << "PixelConvertTest: RGBAF16ToARGB8888Test001 end";
+}
+
+/**
+ * @tc.name: RGBAF16ToRGBA8888Test001
+ * @tc.desc: Test RGBA_F16 to RGBA_8888 with premul to opaque.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelConvertTest, RGBAF16ToRGBA8888Test001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelConvertTest: RGBAF16ToRGBA8888Test001 start";
+    ImageInfo srcImageInfo;
+    srcImageInfo.alphaType = AlphaType::IMAGE_ALPHA_TYPE_PREMUL;
+    srcImageInfo.pixelFormat = static_cast<PixelFormat>(RGBA_F16);
+
+    ImageInfo dstImageInfo;
+    dstImageInfo.alphaType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
+    dstImageInfo.pixelFormat = PixelFormat::RGBA_8888;
+
+    uint8_t source[16] = { 0 };
+    uint32_t destination[3] = { 0 };
+
+    std::unique_ptr<PixelConvert> colorConverterPointer = PixelConvert::Create(srcImageInfo, dstImageInfo);
+    ASSERT_NE(colorConverterPointer, nullptr);
+    colorConverterPointer->Convert(destination, source, 2);
+    GTEST_LOG_(INFO) << "PixelConvertTest: RGBAF16ToRGBA8888Test001 end";
+}
+
+/**
+ * @tc.name: RGBAF16ToBGRA8888Test001
+ * @tc.desc: Test RGBA_F16 to BGRA_8888 conversion.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelConvertTest, RGBAF16ToBGRA8888Test001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelConvertTest: RGBAF16ToBGRA8888Test001 start";
+    ImageInfo srcImageInfo;
+    srcImageInfo.alphaType = AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL;
+    srcImageInfo.pixelFormat = static_cast<PixelFormat>(RGBA_F16);
+
+    ImageInfo dstImageInfo;
+    dstImageInfo.alphaType = AlphaType::IMAGE_ALPHA_TYPE_PREMUL;
+    dstImageInfo.pixelFormat = PixelFormat::BGRA_8888;
+
+    uint8_t source[16] = { 0 };
+    uint32_t destination[3] = { 0 };
+
+    std::unique_ptr<PixelConvert> colorConverterPointer = PixelConvert::Create(srcImageInfo, dstImageInfo);
+    ASSERT_NE(colorConverterPointer, nullptr);
+    colorConverterPointer->Convert(destination, source, 2);
+    GTEST_LOG_(INFO) << "PixelConvertTest: RGBAF16ToBGRA8888Test001 end";
+}
+
+/**
+ * @tc.name: NoConvertTest001
+ * @tc.desc: Test same format and same alpha type (NO_CONVERT).
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelConvertTest, NoConvertTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelConvertTest: NoConvertTest001 start";
+    ImageInfo srcImageInfo;
+    srcImageInfo.alphaType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
+    srcImageInfo.pixelFormat = PixelFormat::ARGB_8888;
+
+    ImageInfo dstImageInfo;
+    dstImageInfo.alphaType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
+    dstImageInfo.pixelFormat = PixelFormat::ARGB_8888;
+
+    uint8_t source[8] = { 0xFF, 0xFF, 0x00, 0x00, 0xFF, 0x00, 0xFF, 0x00 };
+    uint32_t destination[3] = { 0 };
+
+    std::unique_ptr<PixelConvert> colorConverterPointer = PixelConvert::Create(srcImageInfo, dstImageInfo);
+    ASSERT_NE(colorConverterPointer, nullptr);
+    colorConverterPointer->Convert(destination, source, 2);
+    GTEST_LOG_(INFO) << "PixelConvertTest: NoConvertTest001 end";
+}
+
+/**
+ * @tc.name: PixelsConvertInvalidTest001
+ * @tc.desc: Test PixelsConvert with null source pixels.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelConvertTest, PixelsConvertInvalidTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelConvertTest: PixelsConvertInvalidTest001 start";
+    ImageInfo srcInfo;
+    srcInfo.size = {2, 2};
+    srcInfo.pixelFormat = PixelFormat::NV12;
+
+    ImageInfo dstInfo;
+    dstInfo.size = {2, 2};
+    dstInfo.pixelFormat = PixelFormat::ARGB_8888;
+
+    BufferInfo srcBuffer;
+    srcBuffer.pixels = nullptr;
+    srcBuffer.rowStride = 0;
+    srcBuffer.imageInfo = srcInfo;
+    srcBuffer.length = 6;
+
+    BufferInfo dstBuffer;
+    dstBuffer.pixels = reinterpret_cast<uint8_t*>(DST_DATA.data());
+    dstBuffer.rowStride = 0;
+    dstBuffer.imageInfo = dstInfo;
+    dstBuffer.length = 16;
+
+    int32_t ret = PixelConvert::PixelsConvert(srcBuffer, dstBuffer, srcBuffer.length, false);
+    ASSERT_EQ(ret, CONVERT_FAIL);
+    GTEST_LOG_(INFO) << "PixelConvertTest: PixelsConvertInvalidTest001 end";
+}
+
+/**
+ * @tc.name: PixelsConvertInvalidTest002
+ * @tc.desc: Test PixelsConvert with null destination pixels.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelConvertTest, PixelsConvertInvalidTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelConvertTest: PixelsConvertInvalidTest002 start";
+    ImageInfo srcInfo;
+    srcInfo.size = {2, 2};
+    srcInfo.pixelFormat = PixelFormat::NV12;
+
+    ImageInfo dstInfo;
+    dstInfo.size = {2, 2};
+    dstInfo.pixelFormat = PixelFormat::ARGB_8888;
+
+    BufferInfo srcBuffer;
+    srcBuffer.pixels = reinterpret_cast<uint8_t*>(SRC_DATA.data());
+    srcBuffer.rowStride = 0;
+    srcBuffer.imageInfo = srcInfo;
+    srcBuffer.length = 6;
+
+    BufferInfo dstBuffer;
+    dstBuffer.pixels = nullptr;
+    dstBuffer.rowStride = 0;
+    dstBuffer.imageInfo = dstInfo;
+    dstBuffer.length = 16;
+
+    int32_t ret = PixelConvert::PixelsConvert(srcBuffer, dstBuffer, srcBuffer.length, false);
+    ASSERT_EQ(ret, CONVERT_FAIL);
+    GTEST_LOG_(INFO) << "PixelConvertTest: PixelsConvertInvalidTest002 end";
+}
+
+/**
+ * @tc.name: PixelsConvertInvalidTest003
+ * @tc.desc: Test PixelsConvert with invalid source length.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelConvertTest, PixelsConvertInvalidTest003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelConvertTest: PixelsConvertInvalidTest003 start";
+    ImageInfo srcInfo;
+    srcInfo.size = {2, 2};
+    srcInfo.pixelFormat = PixelFormat::NV12;
+
+    ImageInfo dstInfo;
+    dstInfo.size = {2, 2};
+    dstInfo.pixelFormat = PixelFormat::ARGB_8888;
+
+    BufferInfo srcBuffer;
+    srcBuffer.pixels = reinterpret_cast<uint8_t*>(SRC_DATA.data());
+    srcBuffer.rowStride = 0;
+    srcBuffer.imageInfo = srcInfo;
+    srcBuffer.length = 0;
+
+    BufferInfo dstBuffer;
+    dstBuffer.pixels = reinterpret_cast<uint8_t*>(DST_DATA.data());
+    dstBuffer.rowStride = 0;
+    dstBuffer.imageInfo = dstInfo;
+    dstBuffer.length = 16;
+
+    int32_t ret = PixelConvert::PixelsConvert(srcBuffer, dstBuffer, srcBuffer.length, false);
+    ASSERT_EQ(ret, CONVERT_FAIL);
+    GTEST_LOG_(INFO) << "PixelConvertTest: PixelsConvertInvalidTest003 end";
+}
+
+/**
+ * @tc.name: IsValidRowStrideTest001
+ * @tc.desc: Test IsValidRowStride with P010 format and zero stride.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelConvertTest, IsValidRowStrideTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelConvertTest: IsValidRowStrideTest001 start";
+    ImageInfo srcInfo;
+    srcInfo.size = {4, 4};
+    srcInfo.pixelFormat = PixelFormat::YCBCR_P010;
+
+    ImageInfo dstInfo;
+    dstInfo.size = {4, 4};
+    dstInfo.pixelFormat = PixelFormat::ARGB_8888;
+
+    BufferInfo srcBuffer;
+    srcBuffer.pixels = reinterpret_cast<uint8_t*>(SRC_DATA.data());
+    srcBuffer.rowStride = 0;
+    srcBuffer.imageInfo = srcInfo;
+    srcBuffer.length = static_cast<int32_t>(SRC_DATA.size() * sizeof(uint16_t));
+
+    BufferInfo dstBuffer;
+    dstBuffer.pixels = reinterpret_cast<uint8_t*>(DST_DATA.data());
+    dstBuffer.rowStride = 0;
+    dstBuffer.imageInfo = dstInfo;
+    dstBuffer.length = static_cast<int32_t>(DST_DATA.size() * sizeof(uint16_t));
+
+    int32_t ret = PixelConvert::PixelsConvert(srcBuffer, dstBuffer, srcBuffer.length, false);
+    ASSERT_NE(ret, SUCCESS);
+    GTEST_LOG_(INFO) << "PixelConvertTest: IsValidRowStrideTest001 end";
+}
+
+/**
+ * @tc.name: NV12ToNV21Test001
+ * @tc.desc: Test NV12 to NV21 conversion.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelConvertTest, NV12ToNV21Test001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelConvertTest: NV12ToNV21Test001 start";
+    ImageInfo srcInfo;
+    srcInfo.size = {2, 2};
+    srcInfo.pixelFormat = PixelFormat::NV12;
+
+    ImageInfo dstInfo;
+    dstInfo.size = {2, 2};
+    dstInfo.pixelFormat = PixelFormat::NV21;
+
+    std::array<uint8_t, 6> nv12Data = {0x10, 0x20, 0x30, 0x40, 0x50, 0x60};
+    std::array<uint8_t, 6> nv21Data = {0};
+
+    BufferInfo srcBuffer;
+    srcBuffer.pixels = nv12Data.data();
+    srcBuffer.rowStride = 0;
+    srcBuffer.imageInfo = srcInfo;
+    srcBuffer.length = 6;
+
+    BufferInfo dstBuffer;
+    dstBuffer.pixels = nv21Data.data();
+    dstBuffer.rowStride = 0;
+    dstBuffer.imageInfo = dstInfo;
+    dstBuffer.length = 6;
+
+    int32_t ret = PixelConvert::PixelsConvert(srcBuffer, dstBuffer, srcBuffer.length, false);
+    ASSERT_NE(ret, CONVERT_FAIL);
+    GTEST_LOG_(INFO) << "PixelConvertTest: NV12ToNV21Test001 end";
+}
+
+/**
+ * @tc.name: NV21ToNV12Test001
+ * @tc.desc: Test NV21 to NV12 conversion.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelConvertTest, NV21ToNV12Test001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelConvertTest: NV21ToNV12Test001 start";
+    ImageInfo srcInfo;
+    srcInfo.size = {2, 2};
+    srcInfo.pixelFormat = PixelFormat::NV21;
+
+    ImageInfo dstInfo;
+    dstInfo.size = {2, 2};
+    dstInfo.pixelFormat = PixelFormat::NV12;
+
+    std::array<uint8_t, 6> nv21Data = {0x10, 0x20, 0x30, 0x40, 0x50, 0x60};
+    std::array<uint8_t, 6> nv12Data = {0};
+
+    BufferInfo srcBuffer;
+    srcBuffer.pixels = nv21Data.data();
+    srcBuffer.rowStride = 0;
+    srcBuffer.imageInfo = srcInfo;
+    srcBuffer.length = 6;
+
+    BufferInfo dstBuffer;
+    dstBuffer.pixels = nv12Data.data();
+    dstBuffer.rowStride = 0;
+    dstBuffer.imageInfo = dstInfo;
+    dstBuffer.length = 6;
+
+    int32_t ret = PixelConvert::PixelsConvert(srcBuffer, dstBuffer, srcBuffer.length, false);
+    ASSERT_NE(ret, CONVERT_FAIL);
+    GTEST_LOG_(INFO) << "PixelConvertTest: NV21ToNV12Test001 end";
+}
+
+/**
+ * @tc.name: ConvertFromYUVTest001
+ * @tc.desc: Test ConvertFromYUV with invalid src format.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelConvertTest, ConvertFromYUVTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelConvertTest: ConvertFromYUVTest001 start";
+    ImageInfo srcInfo;
+    srcInfo.size = {2, 2};
+    srcInfo.pixelFormat = PixelFormat::RGB_888;
+
+    ImageInfo dstInfo;
+    dstInfo.size = {2, 2};
+    dstInfo.pixelFormat = PixelFormat::NV21;
+
+    BufferInfo srcBuffer;
+    srcBuffer.pixels = reinterpret_cast<uint8_t*>(SRC_DATA.data());
+    srcBuffer.rowStride = 0;
+    srcBuffer.imageInfo = srcInfo;
+    srcBuffer.length = 12;
+
+    BufferInfo dstBuffer;
+    dstBuffer.pixels = reinterpret_cast<uint8_t*>(DST_DATA.data());
+    dstBuffer.rowStride = 0;
+    dstBuffer.imageInfo = dstInfo;
+    dstBuffer.length = 6;
+
+    int32_t ret = PixelConvert::PixelsConvert(srcBuffer, dstBuffer, srcBuffer.length, false);
+    ASSERT_EQ(ret, CONVERT_FAIL);
+    GTEST_LOG_(INFO) << "PixelConvertTest: ConvertFromYUVTest001 end";
+}
+
+/**
+ * @tc.name: ConvertToYUVTest002
+ * @tc.desc: Test ConvertToYUV with RGBA_1010102 to NV21.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelConvertTest, ConvertToYUVTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelConvertTest: ConvertToYUVTest002 start";
+    ImageInfo srcInfo;
+    srcInfo.size = {2, 2};
+    srcInfo.pixelFormat = PixelFormat::RGBA_1010102;
+
+    ImageInfo dstInfo;
+    dstInfo.size = {2, 2};
+    dstInfo.pixelFormat = PixelFormat::NV21;
+
+    std::array<uint8_t, 16> rgbaData = {0};
+    std::array<uint8_t, 6> yuvData = {0};
+
+    BufferInfo srcBuffer;
+    srcBuffer.pixels = rgbaData.data();
+    srcBuffer.rowStride = 0;
+    srcBuffer.imageInfo = srcInfo;
+    srcBuffer.length = 16;
+
+    BufferInfo dstBuffer;
+    dstBuffer.pixels = yuvData.data();
+    dstBuffer.rowStride = 0;
+    dstBuffer.imageInfo = dstInfo;
+    dstBuffer.length = 6;
+
+    int32_t ret = PixelConvert::PixelsConvert(srcBuffer, dstBuffer, srcBuffer.length, false);
+    ASSERT_NE(ret, SUCCESS);
+    GTEST_LOG_(INFO) << "PixelConvertTest: ConvertToYUVTest002 end";
+}
+
+/**
+ * @tc.name: YuvConversionColorSpaceTest001
+ * @tc.desc: Test YUV conversion with BT709 color space.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelConvertTest, YuvConversionColorSpaceTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelConvertTest: YuvConversionColorSpaceTest001 start";
+    ImageInfo srcInfo;
+    srcInfo.size = {2, 2};
+    srcInfo.pixelFormat = PixelFormat::NV12;
+
+    ImageInfo dstInfo;
+    dstInfo.size = {2, 2};
+    dstInfo.pixelFormat = PixelFormat::ARGB_8888;
+
+    std::array<uint8_t, 6> yuvData = {0x10, 0x20, 0x30, 0x40, 0x50, 0x60};
+    std::array<uint32_t, 4> rgbData = {0};
+
+    BufferInfo srcBuffer;
+    srcBuffer.pixels = yuvData.data();
+    srcBuffer.rowStride = 0;
+    srcBuffer.imageInfo = srcInfo;
+    srcBuffer.length = 6;
+    srcBuffer.range = 0;
+    srcBuffer.yuvConversion = YuvConversion::BT709;
+
+    BufferInfo dstBuffer;
+    dstBuffer.pixels = reinterpret_cast<uint8_t*>(rgbData.data());
+    dstBuffer.rowStride = 0;
+    dstBuffer.imageInfo = dstInfo;
+    dstBuffer.length = 16;
+    dstBuffer.range = 0;
+    dstBuffer.yuvConversion = YuvConversion::BT709;
+
+    int32_t ret = PixelConvert::PixelsConvert(srcBuffer, dstBuffer, srcBuffer.length, false);
+    ASSERT_NE(ret, CONVERT_FAIL);
+    GTEST_LOG_(INFO) << "PixelConvertTest: YuvConversionColorSpaceTest001 end";
+}
+
+/**
+ * @tc.name: YuvConversionColorSpaceTest002
+ * @tc.desc: Test YUV conversion with BT2020 color space.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelConvertTest, YuvConversionColorSpaceTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelConvertTest: YuvConversionColorSpaceTest002 start";
+    ImageInfo srcInfo;
+    srcInfo.size = {2, 2};
+    srcInfo.pixelFormat = PixelFormat::NV21;
+
+    ImageInfo dstInfo;
+    dstInfo.size = {2, 2};
+    dstInfo.pixelFormat = PixelFormat::ARGB_8888;
+
+    std::array<uint8_t, 6> yuvData = {0x10, 0x20, 0x30, 0x40, 0x50, 0x60};
+    std::array<uint32_t, 4> rgbData = {0};
+
+    BufferInfo srcBuffer;
+    srcBuffer.pixels = yuvData.data();
+    srcBuffer.rowStride = 0;
+    srcBuffer.imageInfo = srcInfo;
+    srcBuffer.length = 6;
+    srcBuffer.range = 0;
+    srcBuffer.yuvConversion = YuvConversion::BT2020;
+
+    BufferInfo dstBuffer;
+    dstBuffer.pixels = reinterpret_cast<uint8_t*>(rgbData.data());
+    dstBuffer.rowStride = 0;
+    dstBuffer.imageInfo = dstInfo;
+    dstBuffer.length = 16;
+    dstBuffer.range = 0;
+    dstBuffer.yuvConversion = YuvConversion::BT2020;
+
+    int32_t ret = PixelConvert::PixelsConvert(srcBuffer, dstBuffer, srcBuffer.length, false);
+    ASSERT_NE(ret, CONVERT_FAIL);
+    GTEST_LOG_(INFO) << "PixelConvertTest: YuvConversionColorSpaceTest002 end";
+}
+
+/**
+ * @tc.name: ConvertForFFMPEGTest001
+ * @tc.desc: Test ConvertForFFMPEG with RGB_888 format.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelConvertTest, ConvertForFFMPEGTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelConvertTest: ConvertForFFMPEGTest001 start";
+    ImageInfo srcInfo;
+    srcInfo.size = {4, 4};
+    srcInfo.pixelFormat = PixelFormat::RGB_888;
+
+    ImageInfo dstInfo;
+    dstInfo.size = {4, 4};
+    dstInfo.pixelFormat = PixelFormat::ARGB_8888;
+
+    std::array<uint8_t, 48> rgbData = {0};
+    for (int i = 0; i < 48; i++) {
+        rgbData[i] = static_cast<uint8_t>(i);
+    }
+    std::array<uint32_t, 16> argbData = {0};
+
+    BufferInfo srcBuffer;
+    srcBuffer.pixels = rgbData.data();
+    srcBuffer.rowStride = 0;
+    srcBuffer.imageInfo = srcInfo;
+    srcBuffer.length = 48;
+
+    BufferInfo dstBuffer;
+    dstBuffer.pixels = reinterpret_cast<uint8_t*>(argbData.data());
+    dstBuffer.rowStride = 0;
+    dstBuffer.imageInfo = dstInfo;
+    dstBuffer.length = 64;
+
+    int32_t ret = PixelConvert::PixelsConvert(srcBuffer, dstBuffer, srcBuffer.length, false);
+    ASSERT_NE(ret, CONVERT_FAIL);
+    GTEST_LOG_(INFO) << "PixelConvertTest: ConvertForFFMPEGTest001 end";
+}
+
+/**
+ * @tc.name: CopySrcBufferAndConvertTest001
+ * @tc.desc: Test CopySrcBufferAndConvert with odd dimensions.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelConvertTest, CopySrcBufferAndConvertTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelConvertTest: CopySrcBufferAndConvertTest001 start";
+    ImageInfo srcInfo;
+    srcInfo.size = {3, 3};
+    srcInfo.pixelFormat = PixelFormat::RGB_888;
+
+    ImageInfo dstInfo;
+    dstInfo.size = {3, 3};
+    dstInfo.pixelFormat = PixelFormat::ARGB_8888;
+
+    std::array<uint8_t, 27> rgbData = {0};
+    for (int i = 0; i < 27; i++) {
+        rgbData[i] = static_cast<uint8_t>(i);
+    }
+    std::array<uint32_t, 9> argbData = {0};
+
+    BufferInfo srcBuffer;
+    srcBuffer.pixels = rgbData.data();
+    srcBuffer.rowStride = 0;
+    srcBuffer.imageInfo = srcInfo;
+    srcBuffer.length = 27;
+
+    BufferInfo dstBuffer;
+    dstBuffer.pixels = reinterpret_cast<uint8_t*>(argbData.data());
+    dstBuffer.rowStride = 0;
+    dstBuffer.imageInfo = dstInfo;
+    dstBuffer.length = 36;
+
+    int32_t ret = PixelConvert::PixelsConvert(srcBuffer, dstBuffer, srcBuffer.length, false);
+    ASSERT_NE(ret, CONVERT_FAIL);
+    GTEST_LOG_(INFO) << "PixelConvertTest: CopySrcBufferAndConvertTest001 end";
+}
+
+/**
+ * @tc.name: GrayAlphaConvertTest001
+ * @tc.desc: Test GrayAlphaConvert with premul alpha conversion.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelConvertTest, GrayAlphaConvertTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelConvertTest: GrayAlphaConvertTest001 start";
+    ImageInfo srcImageInfo;
+    srcImageInfo.alphaType = AlphaType::IMAGE_ALPHA_TYPE_PREMUL;
+    srcImageInfo.pixelFormat = static_cast<PixelFormat>(GRAY_ALPHA);
+
+    ImageInfo dstImageInfo;
+    dstImageInfo.alphaType = AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL;
+    dstImageInfo.pixelFormat = PixelFormat::ARGB_8888;
+
+    uint8_t source[16] = { 0xFF, 0x80, 0x80, 0x40, 0x40, 0x20, 0x20, 0x10,
+                           0x10, 0x08, 0x08, 0x04, 0x04, 0x02, 0x02, 0x01 };
+    uint32_t destination[8] = { 0 };
+
+    std::unique_ptr<PixelConvert> colorConverterPointer = PixelConvert::Create(srcImageInfo, dstImageInfo);
+    ASSERT_NE(colorConverterPointer, nullptr);
+    colorConverterPointer->Convert(destination, source, 8);
+    GTEST_LOG_(INFO) << "PixelConvertTest: GrayAlphaConvertTest001 end";
+}
+
+/**
+ * @tc.name: RGBA16161616ConvertTest001
+ * @tc.desc: Test RGBA_16161616 conversion to RGBA_8888.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelConvertTest, RGBA16161616ConvertTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelConvertTest: RGBA16161616ConvertTest001 start";
+    ImageInfo srcImageInfo;
+    srcImageInfo.alphaType = AlphaType::IMAGE_ALPHA_TYPE_PREMUL;
+    srcImageInfo.pixelFormat = static_cast<PixelFormat>(RGBA_16161616);
+
+    ImageInfo dstImageInfo;
+    dstImageInfo.alphaType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
+    dstImageInfo.pixelFormat = PixelFormat::RGBA_8888;
+
+    uint8_t source[16] = { 0xFF, 0x00, 0x00, 0xFF, 0xFF, 0x00, 0xFF, 0x00,
+                           0xFF, 0xFF, 0x00, 0x00, 0x80, 0x00, 0x40, 0x00 };
+    uint32_t destination[2] = { 0 };
+
+    std::unique_ptr<PixelConvert> colorConverterPointer = PixelConvert::Create(srcImageInfo, dstImageInfo);
+    ASSERT_NE(colorConverterPointer, nullptr);
+    colorConverterPointer->Convert(destination, source, 2);
+    GTEST_LOG_(INFO) << "PixelConvertTest: RGBA16161616ConvertTest001 end";
+}
 
 /**
  * @tc.name: PixelsConvertAlphaF16Test001
@@ -2863,4 +3773,4 @@ HWTEST_F(PixelConvertTest, PixelsConvertAlphaF16InvalidRowStrideTest001, TestSiz
     GTEST_LOG_(INFO) << "PixelConvertTest: PixelsConvertAlphaF16InvalidRowStrideTest001 end";
 }
 }
-}
+
