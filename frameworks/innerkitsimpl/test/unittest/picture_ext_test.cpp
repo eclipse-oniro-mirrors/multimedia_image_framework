@@ -2619,12 +2619,12 @@ HWTEST_F(PictureExtTest, PictureEncodeControlParamsTest001, TestSize.Level3)
     };
     
     std::filesystem::remove(IMAGE_JPEG_DEST);
-    uint32_t startpc = packer.StartPacking(IMAGE_JPEG_DEST, option);
-    ASSERT_EQ(startpc, OHOS::Media::SUCCESS);
-    uint32_t retAddPicture = packer.AddPicture(*srcPicture);
-    ASSERT_EQ(retAddPicture, OHOS::Media::SUCCESS);
-    uint32_t retFinalizePacking = packer.FinalizePacking();
-    ASSERT_EQ(retFinalizePacking, OHOS::Media::SUCCESS);
+    uint32_t ret = packer.StartPacking(IMAGE_JPEG_DEST, option);
+    ASSERT_EQ(ret, OHOS::Media::SUCCESS);
+    ret = packer.AddPicture(*srcPicture);
+    ASSERT_EQ(ret, OHOS::Media::SUCCESS);
+    ret = packer.FinalizePacking();
+    ASSERT_EQ(ret, OHOS::Media::SUCCESS);
     GTEST_LOG_(INFO) << "PictureExtTest: PictureEncodeControlParamsTest001 end";
 }
 
@@ -2647,12 +2647,12 @@ HWTEST_F(PictureExtTest, PictureEncodeControlParamsTest002, TestSize.Level3)
     };
     
     std::filesystem::remove(IMAGE_JPEG_DEST);
-    uint32_t startpc = packer.StartPacking(IMAGE_JPEG_DEST, option);
-    ASSERT_EQ(startpc, OHOS::Media::SUCCESS);
-    uint32_t retAddPicture = packer.AddPicture(*srcPicture);
-    ASSERT_EQ(retAddPicture, OHOS::Media::SUCCESS);
-    uint32_t retFinalizePacking = packer.FinalizePacking();
-    ASSERT_EQ(retFinalizePacking, OHOS::Media::SUCCESS);
+    uint32_t ret = packer.StartPacking(IMAGE_JPEG_DEST, option);
+    ASSERT_EQ(ret, OHOS::Media::SUCCESS);
+    ret = packer.AddPicture(*srcPicture);
+    ASSERT_EQ(ret, OHOS::Media::SUCCESS);
+    ret = packer.FinalizePacking();
+    ASSERT_EQ(ret, OHOS::Media::SUCCESS);
     GTEST_LOG_(INFO) << "PictureExtTest: PictureEncodeControlParamsTest002 end";
 }
 
@@ -2675,12 +2675,12 @@ HWTEST_F(PictureExtTest, PictureEncodeControlParamsTest003, TestSize.Level3)
     };
     
     std::filesystem::remove(IMAGE_JPEG_DEST);
-    uint32_t startpc = packer.StartPacking(IMAGE_JPEG_DEST, option);
-    ASSERT_EQ(startpc, OHOS::Media::SUCCESS);
-    uint32_t retAddPicture = packer.AddPicture(*srcPicture);
-    ASSERT_EQ(retAddPicture, OHOS::Media::SUCCESS);
-    uint32_t retFinalizePacking = packer.FinalizePacking();
-    ASSERT_EQ(retFinalizePacking, OHOS::Media::SUCCESS);
+    uint32_t ret = packer.StartPacking(IMAGE_JPEG_DEST, option);
+    ASSERT_EQ(ret, OHOS::Media::SUCCESS);
+    ret = packer.AddPicture(*srcPicture);
+    ASSERT_EQ(ret, OHOS::Media::SUCCESS);
+    ret = packer.FinalizePacking();
+    ASSERT_EQ(ret, OHOS::Media::SUCCESS);
     GTEST_LOG_(INFO) << "PictureExtTest: PictureEncodeControlParamsTest003 end";
 }
 
@@ -2703,12 +2703,12 @@ HWTEST_F(PictureExtTest, PictureEncodeControlParamsTest004, TestSize.Level3)
     };
     
     std::filesystem::remove(IMAGE_JPEG_DEST);
-    uint32_t startpc = packer.StartPacking(IMAGE_JPEG_DEST, option);
-    ASSERT_EQ(startpc, OHOS::Media::SUCCESS);
-    uint32_t retAddPicture = packer.AddPicture(*srcPicture);
-    ASSERT_EQ(retAddPicture, OHOS::Media::SUCCESS);
-    uint32_t retFinalizePacking = packer.FinalizePacking();
-    ASSERT_EQ(retFinalizePacking, OHOS::Media::SUCCESS);
+    uint32_t ret = packer.StartPacking(IMAGE_JPEG_DEST, option);
+    ASSERT_EQ(ret, OHOS::Media::SUCCESS);
+    ret = packer.AddPicture(*srcPicture);
+    ASSERT_EQ(ret, OHOS::Media::SUCCESS);
+    ret = packer.FinalizePacking();
+    ASSERT_EQ(ret, OHOS::Media::SUCCESS);
     GTEST_LOG_(INFO) << "PictureExtTest: PictureEncodeControlParamsTest004 end";
 }
 
@@ -2731,12 +2731,12 @@ HWTEST_F(PictureExtTest, PictureEncodeControlParamsTest005, TestSize.Level3)
     };
     
     std::filesystem::remove(IMAGE_JPEG_DEST);
-    uint32_t startpc = packer.StartPacking(IMAGE_JPEG_DEST, option);
-    ASSERT_EQ(startpc, OHOS::Media::SUCCESS);
-    uint32_t retAddPicture = packer.AddPicture(*srcPicture);
-    ASSERT_EQ(retAddPicture, OHOS::Media::SUCCESS);
-    uint32_t retFinalizePacking = packer.FinalizePacking();
-    ASSERT_EQ(retFinalizePacking, OHOS::Media::SUCCESS);
+    uint32_t ret = packer.StartPacking(IMAGE_JPEG_DEST, option);
+    ASSERT_EQ(ret, OHOS::Media::SUCCESS);
+    ret = packer.AddPicture(*srcPicture);
+    ASSERT_EQ(ret, OHOS::Media::SUCCESS);
+    ret = packer.FinalizePacking();
+    ASSERT_EQ(ret, OHOS::Media::SUCCESS);
     GTEST_LOG_(INFO) << "PictureExtTest: PictureEncodeControlParamsTest005 end";
 }
 
@@ -2759,12 +2759,12 @@ HWTEST_F(PictureExtTest, PictureEncodeControlParamsTest006, TestSize.Level3)
     };
     
     std::filesystem::remove(IMAGE_JPEG_DEST);
-    uint32_t startpc = packer.StartPacking(IMAGE_JPEG_DEST, option);
-    ASSERT_EQ(startpc, OHOS::Media::SUCCESS);
-    uint32_t retAddPicture = packer.AddPicture(*srcPicture);
-    ASSERT_EQ(retAddPicture, OHOS::Media::SUCCESS);
-    uint32_t retFinalizePacking = packer.FinalizePacking();
-    ASSERT_EQ(retFinalizePacking, OHOS::Media::SUCCESS);
+    uint32_t ret = packer.StartPacking(IMAGE_JPEG_DEST, option);
+    ASSERT_EQ(ret, OHOS::Media::SUCCESS);
+    ret = packer.AddPicture(*srcPicture);
+    ASSERT_EQ(ret, OHOS::Media::SUCCESS);
+    ret = packer.FinalizePacking();
+    ASSERT_EQ(ret, OHOS::Media::SUCCESS);
     GTEST_LOG_(INFO) << "PictureExtTest: PictureEncodeControlParamsTest006 end";
 }
 
@@ -2790,12 +2790,12 @@ HWTEST_F(PictureExtTest, PictureEncodeControlParamsTest007, TestSize.Level3)
     };
     
     std::filesystem::remove(IMAGE_JPEG_DEST);
-    uint32_t startpc = packer.StartPacking(IMAGE_JPEG_DEST, option);
-    ASSERT_EQ(startpc, OHOS::Media::SUCCESS);
-    uint32_t retAddPicture = packer.AddPicture(*srcPicture);
-    ASSERT_EQ(retAddPicture, OHOS::Media::SUCCESS);
-    uint32_t retFinalizePacking = packer.FinalizePacking();
-    ASSERT_EQ(retFinalizePacking, OHOS::Media::SUCCESS);
+    uint32_t ret = packer.StartPacking(IMAGE_JPEG_DEST, option);
+    ASSERT_EQ(ret, OHOS::Media::SUCCESS);
+    ret = packer.AddPicture(*srcPicture);
+    ASSERT_EQ(ret, OHOS::Media::SUCCESS);
+    ret = packer.FinalizePacking();
+    ASSERT_EQ(ret, OHOS::Media::SUCCESS);
     GTEST_LOG_(INFO) << "PictureExtTest: PictureEncodeControlParamsTest007 end";
 }
 
@@ -2818,12 +2818,12 @@ HWTEST_F(PictureExtTest, PictureEncodeControlParamsTest008, TestSize.Level3)
     };
     
     std::filesystem::remove(IMAGE_JPEG_DEST);
-    uint32_t startpc = packer.StartPacking(IMAGE_JPEG_DEST, option);
-    ASSERT_EQ(startpc, OHOS::Media::SUCCESS);
-    uint32_t retAddPicture = packer.AddPicture(*srcPicture);
-    ASSERT_EQ(retAddPicture, OHOS::Media::SUCCESS);
-    uint32_t retFinalizePacking = packer.FinalizePacking();
-    ASSERT_EQ(retFinalizePacking, OHOS::Media::SUCCESS);
+    uint32_t ret = packer.StartPacking(IMAGE_JPEG_DEST, option);
+    ASSERT_EQ(ret, OHOS::Media::SUCCESS);
+    ret = packer.AddPicture(*srcPicture);
+    ASSERT_EQ(ret, OHOS::Media::SUCCESS);
+    ret = packer.FinalizePacking();
+    ASSERT_EQ(ret, OHOS::Media::SUCCESS);
     GTEST_LOG_(INFO) << "PictureExtTest: PictureEncodeControlParamsTest008 end";
 }
 
@@ -2846,12 +2846,12 @@ HWTEST_F(PictureExtTest, PictureEncodeControlParamsTest009, TestSize.Level3)
     };
     
     std::filesystem::remove(IMAGE_JPEG_DEST);
-    uint32_t startpc = packer.StartPacking(IMAGE_JPEG_DEST, option);
-    ASSERT_EQ(startpc, OHOS::Media::SUCCESS);
-    uint32_t retAddPicture = packer.AddPicture(*srcPicture);
-    ASSERT_EQ(retAddPicture, OHOS::Media::SUCCESS);
-    uint32_t retFinalizePacking = packer.FinalizePacking();
-    ASSERT_EQ(retFinalizePacking, OHOS::Media::SUCCESS);
+    uint32_t ret = packer.StartPacking(IMAGE_JPEG_DEST, option);
+    ASSERT_EQ(ret, OHOS::Media::SUCCESS);
+    ret = packer.AddPicture(*srcPicture);
+    ASSERT_EQ(ret, OHOS::Media::SUCCESS);
+    ret = packer.FinalizePacking();
+    ASSERT_EQ(ret, OHOS::Media::SUCCESS);
     GTEST_LOG_(INFO) << "PictureExtTest: PictureEncodeControlParamsTest009 end";
 }
 
@@ -2874,8 +2874,8 @@ HWTEST_F(PictureExtTest, PictureEncodeControlParamsTest010, TestSize.Level3)
     };
     
     std::filesystem::remove(IMAGE_HEIF_DEST);
-    uint32_t startpc = packer.StartPacking(IMAGE_HEIF_DEST, option);
-    ASSERT_EQ(startpc, OHOS::Media::SUCCESS);
+    uint32_t ret = packer.StartPacking(IMAGE_HEIF_DEST, option);
+    ASSERT_EQ(ret, OHOS::Media::SUCCESS);
     uint32_t retAddPicture = packer.AddPicture(*srcPicture);
     ASSERT_EQ(retAddPicture, OHOS::Media::SUCCESS);
     uint32_t retFinalizePacking = packer.FinalizePacking();

@@ -859,12 +859,12 @@ HWTEST_F(ImagePackerTest, EncodeControlParamsTest001, TestSize.Level3)
     option.needsPackProperties = true;
     option.needsPackGPS = true;
     
-    uint32_t startpc = pack.StartPacking(IMAGE_JPG_DEST, option);
-    ASSERT_EQ(startpc, OHOS::Media::SUCCESS);
-    uint32_t retAddImage = pack.AddImage(*imageSource);
-    ASSERT_EQ(retAddImage, OHOS::Media::SUCCESS);
-    uint32_t retFinalizePacking = pack.FinalizePacking();
-    ASSERT_EQ(retFinalizePacking, OHOS::Media::SUCCESS);
+    uint32_t ret = pack.StartPacking(IMAGE_JPG_DEST, option);
+    ASSERT_EQ(ret, OHOS::Media::SUCCESS);
+    ret = pack.AddImage(*imageSource);
+    ASSERT_EQ(ret, OHOS::Media::SUCCESS);
+    ret = pack.FinalizePacking();
+    ASSERT_EQ(ret, OHOS::Media::SUCCESS);
     GTEST_LOG_(INFO) << "ImagePackerTest: EncodeControlParamsTest001 end";
 }
 
@@ -890,12 +890,12 @@ HWTEST_F(ImagePackerTest, EncodeControlParamsTest002, TestSize.Level3)
         .backgroundColor = 0xFFFFFF,
     };
     
-    uint32_t startpc = pack.StartPacking(IMAGE_JPG_DEST, option);
-    ASSERT_EQ(startpc, OHOS::Media::SUCCESS);
-    uint32_t retAddImage = pack.AddImage(*imageSource);
-    ASSERT_EQ(retAddImage, OHOS::Media::SUCCESS);
-    uint32_t retFinalizePacking = pack.FinalizePacking();
-    ASSERT_EQ(retFinalizePacking, OHOS::Media::SUCCESS);
+    uint32_t ret = pack.StartPacking(IMAGE_JPG_DEST, option);
+    ASSERT_EQ(ret, OHOS::Media::SUCCESS);
+    ret = pack.AddImage(*imageSource);
+    ASSERT_EQ(ret, OHOS::Media::SUCCESS);
+    ret = pack.FinalizePacking();
+    ASSERT_EQ(ret, OHOS::Media::SUCCESS);
     GTEST_LOG_(INFO) << "ImagePackerTest: EncodeControlParamsTest002 end";
 }
 
@@ -921,12 +921,12 @@ HWTEST_F(ImagePackerTest, EncodeControlParamsTest003, TestSize.Level3)
         .backgroundColor = 0,
     };
     
-    uint32_t startpc = pack.StartPacking(IMAGE_JPG_DEST, option);
-    ASSERT_EQ(startpc, OHOS::Media::SUCCESS);
-    uint32_t retAddImage = pack.AddImage(*imageSource);
-    ASSERT_EQ(retAddImage, OHOS::Media::SUCCESS);
-    uint32_t retFinalizePacking = pack.FinalizePacking();
-    ASSERT_EQ(retFinalizePacking, OHOS::Media::SUCCESS);
+    uint32_t ret = pack.StartPacking(IMAGE_JPG_DEST, option);
+    ASSERT_EQ(ret, OHOS::Media::SUCCESS);
+    ret = pack.AddImage(*imageSource);
+    ASSERT_EQ(ret, OHOS::Media::SUCCESS);
+    ret = pack.FinalizePacking();
+    ASSERT_EQ(ret, OHOS::Media::SUCCESS);
     GTEST_LOG_(INFO) << "ImagePackerTest: EncodeControlParamsTest003 end";
 }
 
@@ -952,12 +952,12 @@ HWTEST_F(ImagePackerTest, EncodeControlParamsTest004, TestSize.Level3)
         .sizeLimit = {.maxSize = {0, 0}, .antiAliasingLevel = AntiAliasingOption::NONE},
     };
     
-    uint32_t startpc = pack.StartPacking(IMAGE_JPG_DEST, option);
-    ASSERT_EQ(startpc, OHOS::Media::SUCCESS);
-    uint32_t retAddImage = pack.AddImage(*imageSource);
-    ASSERT_EQ(retAddImage, OHOS::Media::SUCCESS);
-    uint32_t retFinalizePacking = pack.FinalizePacking();
-    ASSERT_EQ(retFinalizePacking, OHOS::Media::SUCCESS);
+    uint32_t ret = pack.StartPacking(IMAGE_JPG_DEST, option);
+    ASSERT_EQ(ret, OHOS::Media::SUCCESS);
+    ret = pack.AddImage(*imageSource);
+    ASSERT_EQ(ret, OHOS::Media::SUCCESS);
+    ret = pack.FinalizePacking();
+    ASSERT_EQ(ret, OHOS::Media::SUCCESS);
     GTEST_LOG_(INFO) << "ImagePackerTest: EncodeControlParamsTest004 end";
 }
 
@@ -983,12 +983,12 @@ HWTEST_F(ImagePackerTest, EncodeControlParamsTest005, TestSize.Level3)
         .sizeLimit = {.maxSize = {800, 0}, .antiAliasingLevel = AntiAliasingOption::HIGH},
     };
     
-    uint32_t startpc = pack.StartPacking(IMAGE_JPG_DEST, option);
-    ASSERT_EQ(startpc, OHOS::Media::SUCCESS);
-    uint32_t retAddImage = pack.AddImage(*imageSource);
-    ASSERT_EQ(retAddImage, OHOS::Media::SUCCESS);
-    uint32_t retFinalizePacking = pack.FinalizePacking();
-    ASSERT_EQ(retFinalizePacking, OHOS::Media::SUCCESS);
+    uint32_t ret = pack.StartPacking(IMAGE_JPG_DEST, option);
+    ASSERT_EQ(ret, OHOS::Media::SUCCESS);
+    ret = pack.AddImage(*imageSource);
+    ASSERT_EQ(ret, OHOS::Media::SUCCESS);
+    ret = pack.FinalizePacking();
+    ASSERT_EQ(ret, OHOS::Media::SUCCESS);
     GTEST_LOG_(INFO) << "ImagePackerTest: EncodeControlParamsTest005 end";
 }
 
@@ -1014,12 +1014,12 @@ HWTEST_F(ImagePackerTest, EncodeControlParamsTest006, TestSize.Level3)
         .sizeLimit = {.maxSize = {0, 600}, .antiAliasingLevel = AntiAliasingOption::HIGH},
     };
     
-    uint32_t startpc = pack.StartPacking(IMAGE_JPG_DEST, option);
-    ASSERT_EQ(startpc, OHOS::Media::SUCCESS);
-    uint32_t retAddImage = pack.AddImage(*imageSource);
-    ASSERT_EQ(retAddImage, OHOS::Media::SUCCESS);
-    uint32_t retFinalizePacking = pack.FinalizePacking();
-    ASSERT_EQ(retFinalizePacking, OHOS::Media::SUCCESS);
+    uint32_t ret = pack.StartPacking(IMAGE_JPG_DEST, option);
+    ASSERT_EQ(ret, OHOS::Media::SUCCESS);
+    ret = pack.AddImage(*imageSource);
+    ASSERT_EQ(ret, OHOS::Media::SUCCESS);
+    ret = pack.FinalizePacking();
+    ASSERT_EQ(ret, OHOS::Media::SUCCESS);
     GTEST_LOG_(INFO) << "ImagePackerTest: EncodeControlParamsTest006 end";
 }
 
@@ -1045,12 +1045,12 @@ HWTEST_F(ImagePackerTest, EncodeControlParamsTest007, TestSize.Level3)
         .sizeLimit = {.maxSize = {400, 300}, .antiAliasingLevel = AntiAliasingOption::MEDIUM},
     };
     
-    uint32_t startpc = pack.StartPacking(IMAGE_JPG_DEST, option);
-    ASSERT_EQ(startpc, OHOS::Media::SUCCESS);
-    uint32_t retAddImage = pack.AddImage(*imageSource);
-    ASSERT_EQ(retAddImage, OHOS::Media::SUCCESS);
-    uint32_t retFinalizePacking = pack.FinalizePacking();
-    ASSERT_EQ(retFinalizePacking, OHOS::Media::SUCCESS);
+    uint32_t ret = pack.StartPacking(IMAGE_JPG_DEST, option);
+    ASSERT_EQ(ret, OHOS::Media::SUCCESS);
+    ret = pack.AddImage(*imageSource);
+    ASSERT_EQ(ret, OHOS::Media::SUCCESS);
+    ret = pack.FinalizePacking();
+    ASSERT_EQ(ret, OHOS::Media::SUCCESS);
     GTEST_LOG_(INFO) << "ImagePackerTest: EncodeControlParamsTest007 end";
 }
 
@@ -1079,12 +1079,12 @@ HWTEST_F(ImagePackerTest, EncodeControlParamsTest008, TestSize.Level3)
         .sizeLimit = {.maxSize = {500, 400}, .antiAliasingLevel = AntiAliasingOption::HIGH},
     };
     
-    uint32_t startpc = pack.StartPacking(IMAGE_JPG_DEST, option);
-    ASSERT_EQ(startpc, OHOS::Media::SUCCESS);
-    uint32_t retAddImage = pack.AddImage(*imageSource);
-    ASSERT_EQ(retAddImage, OHOS::Media::SUCCESS);
-    uint32_t retFinalizePacking = pack.FinalizePacking();
-    ASSERT_EQ(retFinalizePacking, OHOS::Media::SUCCESS);
+    uint32_t ret = pack.StartPacking(IMAGE_JPG_DEST, option);
+    ASSERT_EQ(ret, OHOS::Media::SUCCESS);
+    ret = pack.AddImage(*imageSource);
+    ASSERT_EQ(ret, OHOS::Media::SUCCESS);
+    ret = pack.FinalizePacking();
+    ASSERT_EQ(ret, OHOS::Media::SUCCESS);
     GTEST_LOG_(INFO) << "ImagePackerTest: EncodeControlParamsTest008 end";
 }
 
@@ -1110,12 +1110,12 @@ HWTEST_F(ImagePackerTest, EncodeControlParamsTest009, TestSize.Level3)
         .sizeLimit = {.maxSize = {300, 200}, .antiAliasingLevel = AntiAliasingOption::NONE},
     };
     
-    uint32_t startpc = pack.StartPacking(IMAGE_JPG_DEST, option);
-    ASSERT_EQ(startpc, OHOS::Media::SUCCESS);
-    uint32_t retAddImage = pack.AddImage(*imageSource);
-    ASSERT_EQ(retAddImage, OHOS::Media::SUCCESS);
-    uint32_t retFinalizePacking = pack.FinalizePacking();
-    ASSERT_EQ(retFinalizePacking, OHOS::Media::SUCCESS);
+    uint32_t ret = pack.StartPacking(IMAGE_JPG_DEST, option);
+    ASSERT_EQ(ret, OHOS::Media::SUCCESS);
+    ret = pack.AddImage(*imageSource);
+    ASSERT_EQ(ret, OHOS::Media::SUCCESS);
+    ret = pack.FinalizePacking();
+    ASSERT_EQ(ret, OHOS::Media::SUCCESS);
     GTEST_LOG_(INFO) << "ImagePackerTest: EncodeControlParamsTest009 end";
 }
 
@@ -1141,12 +1141,12 @@ HWTEST_F(ImagePackerTest, EncodeControlParamsTest010, TestSize.Level3)
         .sizeLimit = {.maxSize = {300, 200}, .antiAliasingLevel = AntiAliasingOption::LOW},
     };
     
-    uint32_t startpc = pack.StartPacking(IMAGE_JPG_DEST, option);
-    ASSERT_EQ(startpc, OHOS::Media::SUCCESS);
-    uint32_t retAddImage = pack.AddImage(*imageSource);
-    ASSERT_EQ(retAddImage, OHOS::Media::SUCCESS);
-    uint32_t retFinalizePacking = pack.FinalizePacking();
-    ASSERT_EQ(retFinalizePacking, OHOS::Media::SUCCESS);
+    uint32_t ret = pack.StartPacking(IMAGE_JPG_DEST, option);
+    ASSERT_EQ(ret, OHOS::Media::SUCCESS);
+    ret = pack.AddImage(*imageSource);
+    ASSERT_EQ(ret, OHOS::Media::SUCCESS);
+    ret = pack.FinalizePacking();
+    ASSERT_EQ(ret, OHOS::Media::SUCCESS);
     GTEST_LOG_(INFO) << "ImagePackerTest: EncodeControlParamsTest010 end";
 }
 
@@ -1172,12 +1172,12 @@ HWTEST_F(ImagePackerTest, EncodeControlParamsTest011, TestSize.Level3)
         .backgroundColor = 0xFFFFFF,
     };
     
-    uint32_t startpc = pack.StartPacking(IMAGE_JPG_DEST, option);
-    ASSERT_EQ(startpc, OHOS::Media::SUCCESS);
-    uint32_t retAddImage = pack.AddImage(*imageSource);
-    ASSERT_EQ(retAddImage, OHOS::Media::SUCCESS);
-    uint32_t retFinalizePacking = pack.FinalizePacking();
-    ASSERT_EQ(retFinalizePacking, OHOS::Media::SUCCESS);
+    uint32_t ret = pack.StartPacking(IMAGE_JPG_DEST, option);
+    ASSERT_EQ(ret, OHOS::Media::SUCCESS);
+    ret = pack.AddImage(*imageSource);
+    ASSERT_EQ(ret, OHOS::Media::SUCCESS);
+    ret = pack.FinalizePacking();
+    ASSERT_EQ(ret, OHOS::Media::SUCCESS);
     GTEST_LOG_(INFO) << "ImagePackerTest: EncodeControlParamsTest011 end";
 }
 
@@ -1207,12 +1207,12 @@ HWTEST_F(ImagePackerTest, EncodeControlParamsTest012, TestSize.Level3)
         .needsPackGPS = false,
     };
     
-    uint32_t startpc = pack.StartPacking(IMAGE_JPG_DEST, option);
-    ASSERT_EQ(startpc, OHOS::Media::SUCCESS);
-    uint32_t retAddImage = pack.AddImage(*pixelmap);
-    ASSERT_EQ(retAddImage, OHOS::Media::SUCCESS);
-    uint32_t retFinalizePacking = pack.FinalizePacking();
-    ASSERT_EQ(retFinalizePacking, OHOS::Media::SUCCESS);
+    uint32_t ret = pack.StartPacking(IMAGE_JPG_DEST, option);
+    ASSERT_EQ(ret, OHOS::Media::SUCCESS);
+    ret = pack.AddImage(*pixelmap);
+    ASSERT_EQ(ret, OHOS::Media::SUCCESS);
+    ret = pack.FinalizePacking();
+    ASSERT_EQ(ret, OHOS::Media::SUCCESS);
     GTEST_LOG_(INFO) << "ImagePackerTest: EncodeControlParamsTest012 end";
 }
 
@@ -1241,12 +1241,12 @@ HWTEST_F(ImagePackerTest, EncodeControlParamsTest013, TestSize.Level3)
         .backgroundColor = 0xFFFFFF,
     };
     
-    uint32_t startpc = pack.StartPacking(IMAGE_JPG_DEST, option);
-    ASSERT_EQ(startpc, OHOS::Media::SUCCESS);
-    uint32_t retAddImage = pack.AddImage(*pixelmap);
-    ASSERT_EQ(retAddImage, OHOS::Media::SUCCESS);
-    uint32_t retFinalizePacking = pack.FinalizePacking();
-    ASSERT_EQ(retFinalizePacking, OHOS::Media::SUCCESS);
+    uint32_t ret = pack.StartPacking(IMAGE_JPG_DEST, option);
+    ASSERT_EQ(ret, OHOS::Media::SUCCESS);
+    ret = pack.AddImage(*pixelmap);
+    ASSERT_EQ(ret, OHOS::Media::SUCCESS);
+    ret = pack.FinalizePacking();
+    ASSERT_EQ(ret, OHOS::Media::SUCCESS);
     GTEST_LOG_(INFO) << "ImagePackerTest: EncodeControlParamsTest013 end";
 }
 
@@ -1275,12 +1275,12 @@ HWTEST_F(ImagePackerTest, EncodeControlParamsTest014, TestSize.Level3)
         .backgroundColor = 0xFFFFFF,
     };
     
-    uint32_t startpc = pack.StartPacking(IMAGE_JPG_DEST, option);
-    ASSERT_EQ(startpc, OHOS::Media::SUCCESS);
-    uint32_t retAddImage = pack.AddImage(*pixelmap);
-    ASSERT_EQ(retAddImage, OHOS::Media::SUCCESS);
-    uint32_t retFinalizePacking = pack.FinalizePacking();
-    ASSERT_EQ(retFinalizePacking, OHOS::Media::SUCCESS);
+    uint32_t ret = pack.StartPacking(IMAGE_JPG_DEST, option);
+    ASSERT_EQ(ret, OHOS::Media::SUCCESS);
+    ret = pack.AddImage(*pixelmap);
+    ASSERT_EQ(ret, OHOS::Media::SUCCESS);
+    ret = pack.FinalizePacking();
+    ASSERT_EQ(ret, OHOS::Media::SUCCESS);
     GTEST_LOG_(INFO) << "ImagePackerTest: EncodeControlParamsTest014 end";
 }
 } // namespace Multimedia
