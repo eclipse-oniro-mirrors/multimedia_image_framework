@@ -414,7 +414,7 @@ void InitColorSubdivMap(ColorSubdivMap* colorSubdivMap, int32_t colorSubdivMapSi
         colorSubdivMap[i].pixelNum = 0;
         colorSubdivMap[i].colorNum = 0;
     }
-    colorSubdivMap[0].pixelNum = ((long)width) * height;
+    colorSubdivMap[0].pixelNum = static_cast<float>(width) * height;
 }
 
 void InitForQuantize(ColorCoordinate *colorCoordinate, ColorSubdivMap* colorSubdivMap)

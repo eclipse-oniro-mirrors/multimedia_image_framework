@@ -3835,8 +3835,9 @@ char *strnstr(const char *data, const char *base64Url, size_t len)
     size_t base64UrlLen = strlen(base64Url);
     while (len >= base64UrlLen) {
         len--;
-        if (!memcmp(data, base64Url, base64UrlLen))
+        if (!memcmp(data, base64Url, base64UrlLen)) {
             return (char *)data;
+        }
         data++;
     }
     return nullptr;

@@ -750,31 +750,33 @@ static void ParseISOExtendInfoMain(uint8_t* data, uint32_t& offset, uint32_t len
     if (minGainmapDenominator == EMPTY_SIZE) {
         info.gainMapMin[index] = EMPTY_SIZE;
     } else {
-        info.gainMapMin[index] = (float)minGainmapNumerator / (float)minGainmapDenominator;
+        info.gainMapMin[index] = static_cast<float>(minGainmapNumerator) / static_cast<float>(minGainmapDenominator);
     }
 
     if (maxGainmapDenominator == EMPTY_SIZE) {
         info.gainMapMax[index] = EMPTY_SIZE;
     } else {
-        info.gainMapMax[index] = (float)maxGainmapNumerator / (float)maxGainmapDenominator;
+        info.gainMapMax[index] = static_cast<float>(maxGainmapNumerator) / static_cast<float>(maxGainmapDenominator);
     }
 
     if (gammaDenominator == EMPTY_SIZE) {
         info.gamma[index] = EMPTY_SIZE;
     } else {
-        info.gamma[index] = (float)gammaNumerator / (float)gammaDenominator;
+        info.gamma[index] = static_cast<float>(gammaNumerator) / static_cast<float>(gammaDenominator);
     }
 
     if (baseImageOffsetDenominator == EMPTY_SIZE) {
         info.baseSdrImageOffset[index] = EMPTY_SIZE;
     } else {
-        info.baseSdrImageOffset[index] = (float)baseImageOffsetNumerator / (float)baseImageOffsetDenominator;
+        info.baseSdrImageOffset[index] = static_cast<float>(baseImageOffsetNumerator) /
+            static_cast<float>(baseImageOffsetDenominator);
     }
 
     if (altImageOffsetDenominator == EMPTY_SIZE) {
         info.altHdrImageOffset[index] = EMPTY_SIZE;
     } else {
-        info.altHdrImageOffset[index] = (float)altImageOffsetNumerator / (float)altImageOffsetDenominator;
+        info.altHdrImageOffset[index] = static_cast<float>(altImageOffsetNumerator) /
+            static_cast<float>(altImageOffsetDenominator);
     }
 }
 
@@ -819,14 +821,15 @@ static bool ParseISOMetadata(uint8_t* data, uint32_t length, HdrMetadata& metada
     uint32_t altHeadroomDenominator = ImageUtils::BytesToUint32(data, dataOffset, length);
 
     if (baseHeadroomDenominator != EMPTY_SIZE) {
-        metadata.extendMeta.metaISO.baseHeadroom = (float)baseHeadroomNumerator / (float)baseHeadroomDenominator;
+        metadata.extendMeta.metaISO.baseHeadroom = static_cast<float>(baseHeadroomNumerator) /
+            static_cast<float>(baseHeadroomDenominator);
     } else {
-        metadata.extendMeta.metaISO.baseHeadroom = (float)EMPTY_SIZE;
+        metadata.extendMeta.metaISO.baseHeadroom = static_cast<float>(EMPTY_SIZE);
     }
     if (altHeadroomDenominator != EMPTY_SIZE) {
-        metadata.extendMeta.metaISO.alternateHeadroom = (float)altHeadroomNumerator / (float)altHeadroomDenominator;
+        metadata.extendMeta.metaISO.alternateHeadroom = static_cast<float>(altHeadroomNumerator) / static_cast<float>(altHeadroomDenominator);
     } else {
-        metadata.extendMeta.metaISO.alternateHeadroom = (float)EMPTY_SIZE;
+        metadata.extendMeta.metaISO.alternateHeadroom = static_cast<float>(EMPTY_SIZE);
     }
     ExtendInfoMain infoMain{};
     ParseISOExtendInfoThreeCom(data, dataOffset, length, metadata.extendMeta.metaISO.gainmapChannelNum, infoMain);

@@ -924,11 +924,13 @@ static bool PixelMapPostProcWithGL(PixelMap &sourcePixelMap, GPUTransformData &t
     GetPixelMapInfo(sourcePixelMap, sourceSize, glFormat, perPixelSize);
     ImageTrace imageTrace("PixelMapPostProcWithGL (%d, %d)=>(%d, %d) stride %d type %d transtype:%d",
         sourceSize.width, sourceSize.height, desiredSize.width, desiredSize.height,
-        sourcePixelMap.GetRowStride(), (int)sourcePixelMap.GetAllocatorType(), (int)trans.transformationType);
+        sourcePixelMap.GetRowStride(), static_cast<int>(sourcePixelMap.GetAllocatorType()),
+        static_cast<int>(trans.transformationType));
     IMAGE_LOGI("slr_gpu PixelMapPostProcWithGL uniqueId:%{public}d AllocatorType:%{public}d "
         "size (%{public}d, %{public}d)=>(%{public}d, %{public}d) stride %{public}d transtype:%{public}d",
-        sourcePixelMap.GetUniqueId(), (int)sourcePixelMap.GetAllocatorType(), sourceSize.width, sourceSize.height,
-        desiredSize.width, desiredSize.height, sourcePixelMap.GetRowStride(), (int)trans.transformationType);
+        sourcePixelMap.GetUniqueId(), static_cast<int>(sourcePixelMap.GetAllocatorType()), sourceSize.width,
+        sourceSize.height, desiredSize.width, desiredSize.height, sourcePixelMap.GetRowStride(),
+        static_cast<int>(trans.transformationType));
     AllocatorType allocType = sourcePixelMap.GetAllocatorType();
     const uint64_t noPaddingUsage = sourcePixelMap.GetNoPaddingUsage();
     const auto dmaMode = PixelMapGlUtils::ResolveDmaTransferMode(allocType, noPaddingUsage);

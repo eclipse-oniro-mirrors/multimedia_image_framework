@@ -1180,13 +1180,15 @@ static bool FFMpegConvert(const void *srcPixels, const FFMPEG_CONVERT_INFO& srcI
                 // brightness, contrast, saturation not adjusted.
                 0, 1 << BIT_SHIFT_16BITS, 1 << BIT_SHIFT_16BITS);
 
-            av_image_fill_arrays(inputFrame->data, inputFrame->linesize, (uint8_t *)srcPixels,
+            av_image_fill_arrays(inputFrame->data, inputFrame->linesize,
+                const_cast<uint8_t *>(reinterpret_cast<const uint8_t *>(srcPixels)),
                 srcInfo.format, srcInfo.width, srcInfo.height, srcInfo.alignSize);
-            av_image_fill_arrays(outputFrame->data, outputFrame->linesize, (uint8_t *)dstPixels,
+            av_image_fill_arrays(outputFrame->data, outputFrame->linesize,
+                const_cast<uint8_t *>(reinterpret_cast<const uint8_t *>(dstPixels)),
                 dstInfo.format, dstInfo.width, dstInfo.height, dstInfo.alignSize);
 
-            sws_scale(ctx, (uint8_t const **)inputFrame->data, inputFrame->linesize, 0, srcInfo.height,
-                outputFrame->data, outputFrame->linesize);
+            sws_scale(ctx, const_cast<const uint8_t **>(reinterpret_cast<uint8_t **>(inputFrame->data)),
+                inputFrame->linesize, 0, srcInfo.height, outputFrame->data, outputFrame->linesize);
             sws_freeContext(ctx);
         } else {
             IMAGE_LOGE("FFMpeg: sws_getContext failed!");
@@ -1414,7 +1416,7 @@ static int32_t YUVConvertRGB(const void *srcPixels, const ImageInfo &srcInfo,
     CHECK_ERROR_RETURN_RET_LOG(tmpPixels == nullptr, -1, "[PixelMap]Convert: alloc memory failed!");
 
     memset_s(tmpPixels, tmpPixelsLen, 0, tmpPixelsLen);
-    if (!FFMpegConvert(srcPixels, srcFFmpegInfo, (void *)tmpPixels, tmpFFmpegInfo, colorSpaceDetails)) {
+    if (!FFMpegConvert(srcPixels, srcFFmpegInfo, static_cast<void *>(tmpPixels), tmpFFmpegInfo, colorSpaceDetails)) {
         IMAGE_LOGE("[PixelMap]Convert: ffmpeg convert failed!");
         delete[] tmpPixels;
         tmpPixels = nullptr;
@@ -1506,7 +1508,8 @@ static int32_t ConvertFromP010(const void *srcPixels, const int32_t srcLength, c
     uint8_t* srcP010 = srcP010Buffer.get();
     memset_s(srcP010, srcP010Length, 0, srcP010Length);
     if (srcInfo.pixelFormat == PixelFormat::YCRCB_P010) {
-        NV12P010ToNV21P010((uint16_t *)srcPixels, srcInfo, (uint16_t *)srcP010);
+        NV12P010ToNV21P010(const_cast<uint16_t *>(reinterpret_cast<const uint16_t *>(srcPixels)), srcInfo,
+            reinterpret_cast<uint16_t *>(srcP010));
     } else {
         CHECK_ERROR_RETURN_RET(memcpy_s(srcP010, srcP010Length, srcPixels, srcLength) != 0, CONVERT_ERROR);
     }
@@ -1644,7 +1647,7 @@ static int32_t ConvertToP010(const BufferInfo &src, BufferInfo &dst)
         CHECK_ERROR_RETURN_RET(!cond, CONVERT_ERROR);
     }
     if (dstInfo.pixelFormat == PixelFormat::YCRCB_P010) {
-        NV12P010ToNV21P010((uint16_t *)dstP010, dstInfo, (uint16_t *)dstPixels);
+        NV12P010ToNV21P010(reinterpret_cast<uint16_t *>(dstP010), dstInfo, static_cast<uint16_t *>(dstPixels));
     } else {
         CHECK_ERROR_RETURN_RET(memcpy_s(dstPixels, dst.length, dstP010, dstLength) != 0, CONVERT_ERROR);
     }
@@ -1667,8 +1670,8 @@ static int32_t YUVConvert(const BufferInfo &src, const int32_t srcLength, Buffer
     }
     if (IsYUVP010Format(srcInfo.pixelFormat) && IsYUVP010Format(dstInfo.pixelFormat)) {
         if (srcInfo.size.width == dstInfo.size.width && srcInfo.size.height == dstInfo.size.height) {
-            return NV12P010ToNV21P010((uint16_t *)srcPixels, dstInfo, (uint16_t *)dstPixels) == true ?
-                srcLength : -1;
+            return NV12P010ToNV21P010(const_cast<uint16_t *>(reinterpret_cast<const uint16_t *>(srcPixels)), dstInfo,
+                reinterpret_cast<uint16_t *><uint16_t *>(dstPixels)) == true ? srcLength : -1;
         }
     }
     ImageInfo copySrcInfo = srcInfo;
