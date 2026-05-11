@@ -1190,13 +1190,12 @@ HWTEST_F(ImagePackerTest, EncodeControlParamsTest012, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ImagePackerTest: EncodeControlParamsTest012 start";
     
-    ImageInfo imageInfo;
-    imageInfo.size.width = 100;
-    imageInfo.size.height = 100;
-    imageInfo.pixelFormat = PixelFormat::RGBA_8888;
-    imageInfo.alphaType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
+    InitializationOptions initOpts;
+    initOpts.size = Size{.width = 100, .height = 100};
+    initOpts.pixelFormat = PixelFormat::RGBA_8888;
+    initOpts.alphaType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
     
-    std::unique_ptr<PixelMap> pixelmap = PixelMap::Create(imageInfo);
+    std::unique_ptr<PixelMap> pixelmap = PixelMap::Create(initOpts);
     ASSERT_NE(pixelmap, nullptr);
     
     ImagePacker pack;
@@ -1225,13 +1224,12 @@ HWTEST_F(ImagePackerTest, EncodeControlParamsTest013, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ImagePackerTest: EncodeControlParamsTest013 start";
     
-    ImageInfo imageInfo;
-    imageInfo.size.width = 100;
-    imageInfo.size.height = 100;
-    imageInfo.pixelFormat = PixelFormat::RGBA_8888;
-    imageInfo.alphaType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
+    InitializationOptions initOpts;
+    initOpts.size = Size{.width = 100, .height = 100};
+    initOpts.pixelFormat = PixelFormat::RGBA_8888;
+    initOpts.alphaType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
     
-    std::unique_ptr<PixelMap> pixelmap = PixelMap::Create(imageInfo);
+    std::unique_ptr<PixelMap> pixelmap = PixelMap::Create(initOpts);
     ASSERT_NE(pixelmap, nullptr);
     
     ImagePacker pack;
@@ -1259,13 +1257,12 @@ HWTEST_F(ImagePackerTest, EncodeControlParamsTest014, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ImagePackerTest: EncodeControlParamsTest014 start";
     
-    ImageInfo imageInfo;
-    imageInfo.size.width = 100;
-    imageInfo.size.height = 100;
-    imageInfo.pixelFormat = PixelFormat::RGB_565;
-    imageInfo.alphaType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
+    InitializationOptions initOpts;
+    initOpts.size = Size{.width = 100, .height = 100};
+    initOpts.pixelFormat = PixelFormat::RGB_565;
+    initOpts.alphaType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
     
-    std::unique_ptr<PixelMap> pixelmap = PixelMap::Create(imageInfo);
+    std::unique_ptr<PixelMap> pixelmap = PixelMap::Create(initOpts);
     ASSERT_NE(pixelmap, nullptr);
     
     ImagePacker pack;

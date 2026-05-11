@@ -2622,12 +2622,16 @@ HWTEST_F(ImageFormatConvertTest, MakeDestPixelMapUnique_001, TestSize.Level3)
 HWTEST_F(ImageFormatConvertTest, GetYuvConstantBT2020FullRange_001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ImageFormatConvertTest.GetYuvConstantBT2020FullRange_001: start";
-    YUVDataInfo yuvInfo = {TREE_ORIGINAL_WIDTH, TREE_ORIGINAL_HEIGHT};
+    YUVDataInfo yuvInfo;
+    yuvInfo.yWidth = TREE_ORIGINAL_WIDTH;
+    yuvInfo.yHeight = TREE_ORIGINAL_HEIGHT;
     yuvInfo.yStride = TREE_ORIGINAL_WIDTH;
     yuvInfo.uvStride = TREE_ORIGINAL_WIDTH;
     yuvInfo.yOffset = 0;
     yuvInfo.uvOffset = TREE_ORIGINAL_WIDTH * TREE_ORIGINAL_HEIGHT;
-    DestConvertInfo destInfo = {TREE_ORIGINAL_WIDTH, TREE_ORIGINAL_HEIGHT};
+    DestConvertInfo destInfo;
+    destInfo.width = TREE_ORIGINAL_WIDTH;
+    destInfo.height = TREE_ORIGINAL_HEIGHT;
     destInfo.format = PixelFormat::RGBA_1010102;
     destInfo.allocType = AllocatorType::HEAP_ALLOC;
     destInfo.yuvConvertCSDetails.srcYuvConversion = YuvConversion::BT2020;
@@ -2645,12 +2649,16 @@ HWTEST_F(ImageFormatConvertTest, GetYuvConstantBT2020FullRange_001, TestSize.Lev
 HWTEST_F(ImageFormatConvertTest, GetYuvConstantBT2020LimitRange_001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ImageFormatConvertTest.GetYuvConstantBT2020LimitRange_001: start";
-    YUVDataInfo yuvInfo = {TREE_ORIGINAL_WIDTH, TREE_ORIGINAL_HEIGHT};
+    YUVDataInfo yuvInfo;
+    yuvInfo.yWidth = TREE_ORIGINAL_WIDTH;
+    yuvInfo.yHeight = TREE_ORIGINAL_HEIGHT;
     yuvInfo.yStride = TREE_ORIGINAL_WIDTH;
     yuvInfo.uvStride = TREE_ORIGINAL_WIDTH;
     yuvInfo.yOffset = 0;
     yuvInfo.uvOffset = TREE_ORIGINAL_WIDTH * TREE_ORIGINAL_HEIGHT;
-    DestConvertInfo destInfo = {TREE_ORIGINAL_WIDTH, TREE_ORIGINAL_HEIGHT};
+    DestConvertInfo destInfo;
+    destInfo.width = TREE_ORIGINAL_WIDTH;
+    destInfo.height = TREE_ORIGINAL_HEIGHT;
     destInfo.format = PixelFormat::RGBA_1010102;
     destInfo.allocType = AllocatorType::HEAP_ALLOC;
     destInfo.yuvConvertCSDetails.srcYuvConversion = YuvConversion::BT2020;
@@ -2668,15 +2676,19 @@ HWTEST_F(ImageFormatConvertTest, GetYuvConstantBT2020LimitRange_001, TestSize.Le
 HWTEST_F(ImageFormatConvertTest, GetYuvConstantDefaultNotRGBA1010102_001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ImageFormatConvertTest.GetYuvConstantDefaultNotRGBA1010102_001: start";
-    YUVDataInfo yuvInfo = {TREE_ORIGINAL_WIDTH, TREE_ORIGINAL_HEIGHT};
+    YUVDataInfo yuvInfo;
+    yuvInfo.yWidth = TREE_ORIGINAL_WIDTH;
+    yuvInfo.yHeight = TREE_ORIGINAL_HEIGHT;
     yuvInfo.yStride = TREE_ORIGINAL_WIDTH;
     yuvInfo.uvStride = TREE_ORIGINAL_WIDTH;
     yuvInfo.yOffset = 0;
     yuvInfo.uvOffset = TREE_ORIGINAL_WIDTH * TREE_ORIGINAL_HEIGHT;
-    DestConvertInfo destInfo = {TREE_ORIGINAL_WIDTH, TREE_ORIGINAL_HEIGHT};
+    DestConvertInfo destInfo;
+    destInfo.width = TREE_ORIGINAL_WIDTH;
+    destInfo.height = TREE_ORIGINAL_HEIGHT;
     destInfo.format = PixelFormat::BGRA_8888;
     destInfo.allocType = AllocatorType::HEAP_ALLOC;
-    destInfo.yuvConvertCSDetails.srcYuvConversion = YuvConversion::UNKNOWN;
+    destInfo.yuvConvertCSDetails.srcYuvConversion = YuvConversion::BT_MAX;
     destInfo.yuvConvertCSDetails.srcRange = 1;
     uint32_t bufSize = TREE_ORIGINAL_WIDTH * TREE_ORIGINAL_HEIGHT * BYTES_PER_PIXEL_BGRA;
     std::vector<uint8_t> buf(bufSize, 128);
@@ -2691,15 +2703,19 @@ HWTEST_F(ImageFormatConvertTest, GetYuvConstantDefaultNotRGBA1010102_001, TestSi
 HWTEST_F(ImageFormatConvertTest, GetYuvConstantDefaultNotRGBA1010102_002, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ImageFormatConvertTest.GetYuvConstantDefaultNotRGBA1010102_002: start";
-    YUVDataInfo yuvInfo = {TREE_ORIGINAL_WIDTH, TREE_ORIGINAL_HEIGHT};
+    YUVDataInfo yuvInfo;
+    yuvInfo.yWidth = TREE_ORIGINAL_WIDTH;
+    yuvInfo.yHeight = TREE_ORIGINAL_HEIGHT;
     yuvInfo.yStride = TREE_ORIGINAL_WIDTH;
     yuvInfo.uvStride = TREE_ORIGINAL_WIDTH;
     yuvInfo.yOffset = 0;
     yuvInfo.uvOffset = TREE_ORIGINAL_WIDTH * TREE_ORIGINAL_HEIGHT;
-    DestConvertInfo destInfo = {TREE_ORIGINAL_WIDTH, TREE_ORIGINAL_HEIGHT};
+    DestConvertInfo destInfo;
+    destInfo.width = TREE_ORIGINAL_WIDTH;
+    destInfo.height = TREE_ORIGINAL_HEIGHT;
     destInfo.format = PixelFormat::BGRA_8888;
     destInfo.allocType = AllocatorType::HEAP_ALLOC;
-    destInfo.yuvConvertCSDetails.srcYuvConversion = YuvConversion::UNKNOWN;
+    destInfo.yuvConvertCSDetails.srcYuvConversion = YuvConversion::BT_MAX;
     destInfo.yuvConvertCSDetails.srcRange = 0;
     uint32_t bufSize = TREE_ORIGINAL_WIDTH * TREE_ORIGINAL_HEIGHT * BYTES_PER_PIXEL_BGRA;
     std::vector<uint8_t> buf(bufSize, 128);
@@ -2746,8 +2762,8 @@ HWTEST_F(ImageFormatConvertTest, RGBAParamBufferSizeOverflow_001, TestSize.Level
 HWTEST_F(ImageFormatConvertTest, YuvToI420ToRGBParamFailed_001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ImageFormatConvertTest.YuvToI420ToRGBParamFailed_001: start";
-    YUVDataInfo yuvInfo = {0, 0};
-    DestConvertInfo destInfo = {0, 0};
+    YUVDataInfo yuvInfo;
+    DestConvertInfo destInfo;
     destInfo.format = PixelFormat::RGBA_8888;
     destInfo.bufferSize = 0;
     uint8_t testBuffer[1] = {0};
@@ -2759,8 +2775,8 @@ HWTEST_F(ImageFormatConvertTest, YuvToI420ToRGBParamFailed_001, TestSize.Level3)
 HWTEST_F(ImageFormatConvertTest, RGBToI420ParamFailed_001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ImageFormatConvertTest.RGBToI420ParamFailed_001: start";
-    RGBDataInfo rgbInfo = {0, 0};
-    DestConvertInfo destInfo = {0, 0};
+    RGBDataInfo rgbInfo;
+    DestConvertInfo destInfo;
     destInfo.format = PixelFormat::NV12;
     destInfo.bufferSize = 0;
     uint8_t testBuffer[1] = {0};
@@ -2772,8 +2788,8 @@ HWTEST_F(ImageFormatConvertTest, RGBToI420ParamFailed_001, TestSize.Level3)
 HWTEST_F(ImageFormatConvertTest, NV12P010ToRGB565Failed_001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ImageFormatConvertTest.NV12P010ToRGB565Failed_001: start";
-    YUVDataInfo yuvInfo = {0, 0};
-    DestConvertInfo destInfo = {0, 0};
+    YUVDataInfo yuvInfo;
+    DestConvertInfo destInfo;
     destInfo.format = PixelFormat::RGB_565;
     destInfo.bufferSize = 0;
     uint8_t testBuffer[1] = {0};
@@ -2785,8 +2801,8 @@ HWTEST_F(ImageFormatConvertTest, NV12P010ToRGB565Failed_001, TestSize.Level3)
 HWTEST_F(ImageFormatConvertTest, NV12P010ToNV12Failed_001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ImageFormatConvertTest.NV12P010ToNV12Failed_001: start";
-    YUVDataInfo yuvInfo = {0, 0};
-    DestConvertInfo destInfo = {0, 0};
+    YUVDataInfo yuvInfo;
+    DestConvertInfo destInfo;
     destInfo.format = PixelFormat::NV12;
     destInfo.bufferSize = 0;
     uint8_t testBuffer[1] = {0};
@@ -2798,8 +2814,8 @@ HWTEST_F(ImageFormatConvertTest, NV12P010ToNV12Failed_001, TestSize.Level3)
 HWTEST_F(ImageFormatConvertTest, NV12ToNV12P010Failed_001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ImageFormatConvertTest.NV12ToNV12P010Failed_001: start";
-    YUVDataInfo yuvInfo = {0, 0};
-    DestConvertInfo destInfo = {0, 0};
+    YUVDataInfo yuvInfo;
+    DestConvertInfo destInfo;
     destInfo.format = PixelFormat::YCBCR_P010;
     destInfo.bufferSize = 0;
     uint8_t testBuffer[1] = {0};
@@ -2811,8 +2827,8 @@ HWTEST_F(ImageFormatConvertTest, NV12ToNV12P010Failed_001, TestSize.Level3)
 HWTEST_F(ImageFormatConvertTest, NV12P010ToRGBA1010102Failed_001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ImageFormatConvertTest.NV12P010ToRGBA1010102Failed_001: start";
-    YUVDataInfo yuvInfo = {0, 0};
-    DestConvertInfo destInfo = {0, 0};
+    YUVDataInfo yuvInfo;
+    DestConvertInfo destInfo;
     destInfo.format = PixelFormat::RGBA_1010102;
     destInfo.bufferSize = 0;
     uint8_t testBuffer[1] = {0};
@@ -2824,8 +2840,8 @@ HWTEST_F(ImageFormatConvertTest, NV12P010ToRGBA1010102Failed_001, TestSize.Level
 HWTEST_F(ImageFormatConvertTest, NV21ToRGBFailed_001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ImageFormatConvertTest.NV21ToRGBFailed_001: start";
-    YUVDataInfo yuvInfo = {0, 0};
-    DestConvertInfo destInfo = {0, 0};
+    YUVDataInfo yuvInfo;
+    DestConvertInfo destInfo;
     destInfo.format = PixelFormat::RGB_888;
     destInfo.bufferSize = 0;
     uint8_t testBuffer[1] = {0};
@@ -2837,8 +2853,8 @@ HWTEST_F(ImageFormatConvertTest, NV21ToRGBFailed_001, TestSize.Level3)
 HWTEST_F(ImageFormatConvertTest, RGBA1010102ToNV12Failed_001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ImageFormatConvertTest.RGBA1010102ToNV12Failed_001: start";
-    RGBDataInfo rgbInfo = {0, 0};
-    DestConvertInfo destInfo = {0, 0};
+    RGBDataInfo rgbInfo;
+    DestConvertInfo destInfo;
     destInfo.format = PixelFormat::NV12;
     destInfo.bufferSize = 0;
     uint8_t testBuffer[1] = {0};
@@ -2850,8 +2866,8 @@ HWTEST_F(ImageFormatConvertTest, RGBA1010102ToNV12Failed_001, TestSize.Level3)
 HWTEST_F(ImageFormatConvertTest, RGB565ToNV12P010Failed_001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ImageFormatConvertTest.RGB565ToNV12P010Failed_001: start";
-    RGBDataInfo rgbInfo = {0, 0};
-    DestConvertInfo destInfo = {0, 0};
+    RGBDataInfo rgbInfo;
+    DestConvertInfo destInfo;
     destInfo.format = PixelFormat::YCBCR_P010;
     destInfo.bufferSize = 0;
     uint8_t testBuffer[1] = {0};
@@ -2863,8 +2879,8 @@ HWTEST_F(ImageFormatConvertTest, RGB565ToNV12P010Failed_001, TestSize.Level3)
 HWTEST_F(ImageFormatConvertTest, NV21ToRGBA1010102Failed_001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ImageFormatConvertTest.NV21ToRGBA1010102Failed_001: start";
-    YUVDataInfo yuvInfo = {0, 0};
-    DestConvertInfo destInfo = {0, 0};
+    YUVDataInfo yuvInfo;
+    DestConvertInfo destInfo;
     destInfo.format = PixelFormat::RGBA_1010102;
     destInfo.bufferSize = 0;
     uint8_t testBuffer[1] = {0};
