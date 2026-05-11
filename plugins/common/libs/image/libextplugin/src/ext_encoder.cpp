@@ -556,13 +556,13 @@ uint32_t ExtEncoder::FinalizeEncode()
     }
     encodeFormat_ = iter->second;
 
+#if !defined(CROSS_PLATFORM)
     uint32_t processRet = ProcessEncodeControlParams();
     if (processRet != SUCCESS) {
         IMAGE_LOGE("ExtEncoder::FinalizeEncode ProcessEncodeControlParams failed %{public}u", processRet);
         return processRet;
     }
 
-#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     if (picture_ != nullptr) {
         return EncodePicture();
     }
@@ -845,6 +845,7 @@ bool ExtEncoder::IsFormatSupportTransparency(const std::string& format) const
     return lowerFormat == IMAGE_PNG_FORMAT || lowerFormat == IMAGE_WEBP_FORMAT || lowerFormat == IMAGE_GIF_FORMAT;
 }
 
+#if !defined(CROSS_PLATFORM)
 uint32_t ExtEncoder::ProcessEncodeControlParams()
 {
     if (picture_ != nullptr) {
@@ -1147,14 +1148,12 @@ uint32_t ExtEncoder::ProcessBackgroundColor(PixelMap* processPixelmap)
     }
 
     uint64_t rowStride = static_cast<uint64_t>(processPixelmap->GetWidth() * RGBA8888_PIXEL_BYTES);
-#if !defined(CROSS_PLATFORM)
     if (processPixelmap->GetAllocatorType() == AllocatorType::DMA_ALLOC) {
         SurfaceBuffer* sbBuffer = reinterpret_cast<SurfaceBuffer*>(processPixelmap->GetFd());
         if (sbBuffer != nullptr) {
             rowStride = static_cast<uint64_t>(sbBuffer->GetStride());
         }
     }
-#endif
 
     SkImageInfo skInfo = ToSkInfo(processPixelmap);
     SkBitmap bitmap;
@@ -1203,7 +1202,6 @@ uint32_t ExtEncoder::ProcessRemoveGpsInfo()
     return SUCCESS;
 }
 
-#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 static sptr<SurfaceBuffer> AllocSurfaceBuffer(int32_t width, int32_t height,
     uint32_t format = GRAPHIC_PIXEL_FMT_RGBA_8888)
 {
