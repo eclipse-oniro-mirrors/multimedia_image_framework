@@ -827,7 +827,8 @@ static bool ParseISOMetadata(uint8_t* data, uint32_t length, HdrMetadata& metada
         metadata.extendMeta.metaISO.baseHeadroom = static_cast<float>(EMPTY_SIZE);
     }
     if (altHeadroomDenominator != EMPTY_SIZE) {
-        metadata.extendMeta.metaISO.alternateHeadroom = static_cast<float>(altHeadroomNumerator) / static_cast<float>(altHeadroomDenominator);
+        metadata.extendMeta.metaISO.alternateHeadroom = static_cast<float>(altHeadroomNumerator) /
+            static_cast<float>(altHeadroomDenominator);
     } else {
         metadata.extendMeta.metaISO.alternateHeadroom = static_cast<float>(EMPTY_SIZE);
     }
