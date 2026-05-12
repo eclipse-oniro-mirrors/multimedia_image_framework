@@ -98,7 +98,7 @@ tmsize_t TiffEncoder::WriteProc(thandle_t handle, void *data, tmsize_t size)
     while (size > 0) {
         uint32_t chunkSize = (size > UINT32_MAX) ? UINT32_MAX : static_cast<uint32_t>(size);
         if (!stream->Write(ptr, chunkSize)) {
-            return totalWritten > 0 ? totalWritten : 0;
+            return 0;
         }
         ptr += chunkSize;
         size -= chunkSize;
