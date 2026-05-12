@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Huawei Device Co., Ltd.
+ * Copyright (C) 2022-2026 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -26,6 +26,9 @@
 #include "ostream_packer_stream.h"
 #include "plugin_server.h"
 #include "string_ex.h"
+#if defined(SUPPORT_LIBTIFF)
+#include "tiff_encoder.h"
+#endif
 #include "hdr_helper.h"
 #if defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM)
 #include "include/jpeg_encoder.h"
@@ -135,6 +138,7 @@ uint32_t ImagePacker::StartPackingImpl(const PackOption &option)
     encodeToSdr_ = ((option.desiredDynamicRange == EncodeDynamicRange::SDR) ||
         (option.format != IMAGE_JPEG_FORMAT && option.format != IMAGE_HEIF_FORMAT &&
             option.format != IMAGE_HEIC_FORMAT));
+    format_ = option.format;
     PlEncodeOptions plOpts;
     CopyOptionsToPlugin(option, plOpts);
     return DoEncodingFunc([this, &plOpts](ImagePlugin::AbsImageEncoder* encoder) {
@@ -234,6 +238,11 @@ uint32_t ImagePacker::AddImage(PixelMap &pixelMap)
 {
     ImageUtils::DumpPixelMapBeforeEncode(pixelMap);
     ImageTrace imageTrace("ImagePacker::AddImage by pixelMap");
+
+    if (pixelMap.GetPixelFormat() == PixelFormat::Y8 && format_ != IMAGE_TIFF_FORMAT) {
+        IMAGE_LOGE("Y8 format only supported via TIFF plugin.");
+        return ERR_IMAGE_INVALID_PARAMETER;
+    }
 
     return DoEncodingFunc([this, &pixelMap](ImagePlugin::AbsImageEncoder* encoder) {
         return encoder->AddImage(pixelMap);
@@ -357,6 +366,20 @@ void ImagePacker::CopyOptionsToPlugin(const PackOption &opts, PlEncodeOptions &p
     plOpts.sizeLimit.maxSize = opts.sizeLimit.maxSize;
     plOpts.sizeLimit.antiAliasingLevel = opts.sizeLimit.antiAliasingLevel;
     plOpts.needsPackGPS = opts.needsPackGPS;
+
+    if (opts.format == IMAGE_TIFF_FORMAT) {
+        CopyTiffPackingOptions(opts.tiffPackingOption, plOpts.tiffPackingOption);
+    }
+}
+
+void ImagePacker::CopyTiffPackingOptions(const PackingOptionsForTiff &src,
+                                         ImagePlugin::PlPackingOptionsForTiff &dst)
+{
+    dst.compression = src.compression;
+    dst.orientation = src.orientation;
+    dst.xResolution = src.xResolution;
+    dst.yResolution = src.yResolution;
+    dst.resolutionUnit = src.resolutionUnit;
 }
 
 void ImagePacker::FreeOldPackerStream()
@@ -399,6 +422,126 @@ uint32_t ImagePacker::DoEncodingFunc(std::function<uint32_t(ImagePlugin::AbsImag
         return SUCCESS;
     }
     return (rets.size() == SIZE_ZERO)?ERR_IMAGE_DECODE_ABNORMAL:rets.front();
+}
+
+#if defined(SUPPORT_LIBTIFF)
+uint32_t ImagePacker::ValidateBinaryImageBufferInfo(const PixelBufferInfo &bufferInfo, const char *funcName)
+{
+    if (bufferInfo.data == nullptr || bufferInfo.dataSize == 0) {
+        IMAGE_LOGE("[ImagePacker] %{public}s failed, invalid buffer data", funcName);
+        return ERR_IMAGE_INVALID_PARAMETER;
+    }
+
+    if (bufferInfo.width == 0 || bufferInfo.height == 0) {
+        IMAGE_LOGE("[ImagePacker] %{public}s failed, invalid dimensions: width or height cannot be zero", funcName);
+        return ERR_IMAGE_INVALID_PARAMETER;
+    }
+
+    // Validate data size for Y1 format (1 bit per pixel, packed into bytes)
+    uint32_t rowBytes = (bufferInfo.bytesPerRow > 0) ? bufferInfo.bytesPerRow :
+                        (bufferInfo.width + 7) / 8;
+    // Check for overflow when calculating required size
+    if (static_cast<uint64_t>(rowBytes) > std::numeric_limits<uint64_t>::max() / bufferInfo.height) {
+        IMAGE_LOGE("[ImagePacker] %{public}s failed, dimensions cause overflow: %{public}ux%{public}u",
+                   funcName, bufferInfo.width, bufferInfo.height);
+        return ERR_IMAGE_INVALID_PARAMETER;
+    }
+    uint64_t requiredSize = static_cast<uint64_t>(rowBytes) * bufferInfo.height;
+    static constexpr uint64_t maxDataSize = std::numeric_limits<uint32_t>::max();
+    if (bufferInfo.dataSize < requiredSize) {
+        IMAGE_LOGE("[ImagePacker] %{public}s failed, dataSize too small: %{public}llu < required %{public}llu",
+                   funcName,
+                   static_cast<unsigned long long>(bufferInfo.dataSize),
+                   static_cast<unsigned long long>(requiredSize));
+        return ERR_IMAGE_INVALID_PARAMETER;
+    }
+    if (bufferInfo.dataSize > maxDataSize) {
+        IMAGE_LOGE("[ImagePacker] %{public}s failed, dataSize too large: %{public}llu > max %{public}llu",
+                   funcName,
+                   static_cast<unsigned long long>(bufferInfo.dataSize),
+                   static_cast<unsigned long long>(maxDataSize));
+        return ERR_IMAGE_INVALID_PARAMETER;
+    }
+    return SUCCESS;
+}
+
+// Common helper function to encode binary image to TIFF using the provided stream
+uint32_t ImagePacker::EncodeBinaryImageToTiffStream(const PixelBufferInfo &bufferInfo,
+                                                    PackerStream &packerStream,
+                                                    const PackingOptionsForTiff &option,
+                                                    const char *funcName)
+{
+    auto tiffEncoder = std::make_unique<TiffEncoder>();
+    CHECK_ERROR_RETURN_RET_LOG((tiffEncoder == nullptr), ERR_IMAGE_ENCODE_FAILED, "make TiffEncoder failed!");
+
+    ImagePlugin::PlPackingOptionsForTiff tiffOption;
+    CopyTiffPackingOptions(option, tiffOption);
+    uint32_t ret = tiffEncoder->EncodeBinaryImageToTiff(&bufferInfo, packerStream, tiffOption);
+    if (ret != SUCCESS) {
+        IMAGE_LOGE("[ImagePacker] %{public}s failed, EncodeBinaryImageToTiff error: %{public}u", funcName, ret);
+        return ret;
+    }
+    return SUCCESS;
+}
+#endif
+
+uint32_t ImagePacker::PackBinaryImageToTiffFile(const PixelBufferInfo &bufferInfo, const int &fd,
+                                                const PackingOptionsForTiff &option)
+{
+#if defined(SUPPORT_LIBTIFF)
+    uint32_t ret = ValidateBinaryImageBufferInfo(bufferInfo, "PackBinaryImageToTiffFile");
+    if (ret != SUCCESS) {
+        return ret;
+    }
+    if (fd < 0) {
+        IMAGE_LOGE("[ImagePacker] PackBinaryImageToTiffFile failed, invalid fd: %{public}d", fd);
+        return ERR_IMAGE_INVALID_PARAMETER;
+    }
+
+    FilePackerStream *packerStream = new (std::nothrow) FilePackerStream(fd);
+    CHECK_ERROR_RETURN_RET_LOG(!packerStream, ERR_IMAGE_INVALID_PARAMETER, "make file packer stream failed");
+    ret = EncodeBinaryImageToTiffStream(bufferInfo, *packerStream, option, "PackBinaryImageToTiffFile");
+    if (ret != SUCCESS) {
+        return ret;
+    }
+
+    return SUCCESS;
+#else
+    IMAGE_LOGE("[ImagePacker] PackBinaryImageToTiffFile failed, TIFF encoding is not supported");
+    return ERR_IMAGE_ENCODE_FAILED;
+#endif
+}
+
+uint32_t ImagePacker::PackBinaryImageToTiffData(const PixelBufferInfo &bufferInfo,
+                                                const PackingOptionsForTiff &option,
+                                                uint8_t *outputData, uint32_t &outputSize)
+{
+#if defined(SUPPORT_LIBTIFF)
+    uint32_t ret = ValidateBinaryImageBufferInfo(bufferInfo, "PackBinaryImageToTiffData");
+    if (ret != SUCCESS) {
+        return ret;
+    }
+    if (outputData == nullptr || outputSize == 0) {
+        IMAGE_LOGE("[ImagePacker] PackBinaryImageToTiffData failed, invalid output buffer");
+        return ERR_IMAGE_INVALID_PARAMETER;
+    }
+
+    BufferPackerStream *packerStream = new (std::nothrow) BufferPackerStream(outputData, outputSize);
+    ret = EncodeBinaryImageToTiffStream(bufferInfo, *packerStream, option, "PackBinaryImageToTiffData");
+    if (ret != SUCCESS) {
+        return ret;
+    }
+
+    size_t actualSize = 0;
+    packerStream->GetRealWrittenSize(actualSize);
+    outputSize = static_cast<uint32_t>(actualSize);
+
+    IMAGE_LOGD("[ImagePacker] PackBinaryImageToTiffData success, outputSize: %{public}u", outputSize);
+    return SUCCESS;
+#else
+    IMAGE_LOGE("[ImagePacker] PackBinaryImageToTiffData failed, TIFF encoding is not supported");
+    return ERR_IMAGE_ENCODE_FAILED;
+#endif
 }
 
 // class reference need explicit constructor and destructor, otherwise unique_ptr<T> use unnormal

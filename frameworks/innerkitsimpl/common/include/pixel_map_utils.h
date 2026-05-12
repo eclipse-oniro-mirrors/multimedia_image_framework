@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Huawei Device Co., Ltd.
+ * Copyright (C) 2021-2026 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -32,6 +32,7 @@ namespace Media {
 // Define bytes per pixel
 constexpr int8_t ALPHA_8_BYTES = 1;
 constexpr int8_t ALPHA_F16_BYTES = 2;
+constexpr int8_t Y8_BYTES = 1;
 constexpr int8_t RGB_565_BYTES = 2;
 constexpr int8_t RGB_888_BYTES = 3;
 constexpr int8_t ARGB_8888_BYTES = 4;

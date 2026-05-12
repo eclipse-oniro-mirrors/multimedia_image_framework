@@ -1769,7 +1769,8 @@ static bool TryYUVPixelsConvert(const BufferInfo &src, BufferInfo &dst, int32_t 
     PixelFormat srcPixelFormat = src.imageInfo.pixelFormat;
     PixelFormat dstPixelFormat = dst.imageInfo.pixelFormat;
     if (IsInterYUVConvert(srcPixelFormat, dstPixelFormat) ||
-        (IsYUVP010Format(srcPixelFormat) && IsYUVP010Format(dstPixelFormat))) {
+        (IsYUVP010Format(srcPixelFormat) && IsYUVP010Format(dstPixelFormat)) ||
+        (srcPixelFormat == PixelFormat::Y8 && dstPixelFormat == PixelFormat::Y8)) {
         dstLength = YUVConvert(src, srcLength, dst);
         return true;
     }

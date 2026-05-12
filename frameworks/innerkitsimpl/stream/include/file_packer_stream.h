@@ -32,6 +32,7 @@ public:
     int64_t BytesWritten() override;
     ImagePlugin::OutputStreamType GetType() override;
     int GetFd();
+    void SetOffset(uint32_t offset) override;
 
 private:
     DISALLOW_COPY(FilePackerStream);

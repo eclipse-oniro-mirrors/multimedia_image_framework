@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Huawei Device Co., Ltd.
+ * Copyright (C) 2021-2026 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -31,6 +31,16 @@ struct PackingSizeLimit {
     AntiAliasingOption antiAliasingLevel = AntiAliasingOption::NONE;
 };
 
+struct PlPackingOptionsForTiff {
+    // For Y1 format: must be 3 (G3) or 4 (G4), required.
+    // For RGB888/Y8 format: ignored, always uses LZW
+    int32_t compression = -1;
+    int32_t orientation = 1;
+    float xResolution = 0.0f;
+    float yResolution = 0.0f;
+    int32_t resolutionUnit = 0;
+};
+
 struct PlEncodeOptions {
     std::string format;
     uint8_t quality = 100;
@@ -47,6 +57,7 @@ struct PlEncodeOptions {
     int32_t backgroundColor = 0;
     PackingSizeLimit sizeLimit;
     bool needsPackGPS = true;
+    PlPackingOptionsForTiff tiffPackingOption;
 };
 
 class AbsImageEncoder {

@@ -1,4 +1,4 @@
-# Copyright (C) 2023 Huawei Device Co., Ltd.
+# Copyright (C) 2023-2026 Huawei Device Co., Ltd.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -299,6 +299,8 @@ if (has_libtiff) {
     image_native_android_sources += [
         # tiff
         "${image_subsystem}/plugins/common/libs/image/libtiffplugin/src/tiff_decoder.cpp",
+        "${image_subsystem}/plugins/common/libs/image/libtiffplugin/src/tiff_encoder.cpp",
+        "${image_subsystem}/plugins/common/libs/image/libtiffplugin/src/tiff_utils.cpp",
         "${image_subsystem}/plugins/common/libs/image/formatagentplugin/src/tiff_format_agent.cpp",
     ]
 

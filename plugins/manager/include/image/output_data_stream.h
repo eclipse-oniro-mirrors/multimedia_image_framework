@@ -42,6 +42,8 @@ public:
         return false;
     }
 
+    virtual void GetRealWrittenSize(size_t &size) {}
+
     virtual uint8_t* GetAddr() const
     {
         return nullptr;

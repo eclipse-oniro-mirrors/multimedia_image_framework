@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Huawei Device Co., Ltd.
+ * Copyright (C) 2023-2026 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -515,6 +515,86 @@ HWTEST_F(ImagePackerNdk2Test, OH_ImagePackerNative_GetSupportedFormatTest002, Te
     EXPECT_EQ(ret, IMAGE_PACKER_INVALID_PARAMETER);
     ret = OH_ImagePackerNative_GetSupportedFormats(nullptr, nullptr);
     EXPECT_EQ(ret, IMAGE_PACKER_INVALID_PARAMETER);
+}
+
+/**
+ * @tc.name: OH_PackingOptions_BlockedFormatTest001
+ * @tc.desc: Verify that setting blocked format (image/tiff) returns IMAGE_BAD_PARAMETER
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagePackerNdk2Test, OH_PackingOptions_BlockedFormatTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePackerNdk2Test: OH_PackingOptions_BlockedFormatTest001 start";
+    OH_PackingOptions *ops = nullptr;
+    Image_ErrorCode ret = OH_PackingOptions_Create(&ops);
+    ASSERT_EQ(ret, IMAGE_SUCCESS);
+    ASSERT_NE(ops, nullptr);
+
+    // Set blocked format "image/tiff"
+    const char* tiffFormat = "image/tiff";
+    Image_MimeType mimeType;
+    mimeType.data = const_cast<char*>(tiffFormat);
+    mimeType.size = strlen(tiffFormat);
+
+    ret = OH_PackingOptions_SetMimeType(ops, &mimeType);
+    ASSERT_EQ(ret, IMAGE_SUCCESS);
+
+    // Create ImagePacker
+    OH_ImagePackerNative *imagePacker = nullptr;
+    ret = OH_ImagePackerNative_Create(&imagePacker);
+    ASSERT_EQ(ret, IMAGE_SUCCESS);
+    ASSERT_NE(imagePacker, nullptr);
+
+    // Create a valid pixelMap for testing
+    size_t dataSize = ARGB_8888_BYTES;
+    uint8_t data[] = {0x01, 0x02, 0x03, 0xFF};
+    OH_Pixelmap_InitializationOptions *createOpts;
+    OH_PixelmapInitializationOptions_Create(&createOpts);
+    OH_PixelmapInitializationOptions_SetWidth(createOpts, 1);
+    OH_PixelmapInitializationOptions_SetHeight(createOpts, 1);
+    OH_PixelmapInitializationOptions_SetPixelFormat(createOpts, PIXEL_FORMAT_BGRA_8888);
+    OH_PixelmapNative* pixelMap = nullptr;
+    ret = OH_PixelmapNative_CreatePixelmap(data, dataSize, createOpts, &pixelMap);
+    ASSERT_EQ(ret, IMAGE_SUCCESS);
+    ASSERT_NE(pixelMap, nullptr);
+
+    uint8_t outData[100];
+    size_t size = sizeof(outData);
+    ret = OH_ImagePackerNative_PackToDataFromPixelmap(imagePacker, ops, pixelMap, outData, &size);
+    EXPECT_EQ(ret, IMAGE_BAD_PARAMETER);
+
+    OH_PixelmapNative_Release(pixelMap);
+    OH_PixelmapInitializationOptions_Release(createOpts);
+    OH_PackingOptions_Release(ops);
+    OH_ImagePackerNative_Release(imagePacker);
+    GTEST_LOG_(INFO) << "ImagePackerNdk2Test: OH_PackingOptions_BlockedFormatTest001 end";
+}
+
+/**
+ * @tc.name: OH_ImagePackerNative_GetSupportedFormat_NoTiff
+ * @tc.desc: Verify GetSupportedFormats does not include blocked format image/tiff
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagePackerNdk2Test, OH_ImagePackerNative_GetSupportedFormat_NoTiff, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePackerNdk2Test: OH_ImagePackerNative_GetSupportedFormat_NoTiff start";
+    Image_MimeType* supportedFormat = nullptr;
+    size_t length = 0;
+    Image_ErrorCode ret = OH_ImagePackerNative_GetSupportedFormats(&supportedFormat, &length);
+    ASSERT_EQ(ret, IMAGE_SUCCESS);
+    ASSERT_NE(supportedFormat, nullptr);
+    ASSERT_NE(length, 0);
+
+    bool foundTiff = false;
+    for (size_t i = 0; i < length; i++) {
+        std::string formatStr(supportedFormat[i].data, supportedFormat[i].size);
+        if (formatStr == "image/tiff") {
+            foundTiff = true;
+            break;
+        }
+    }
+    EXPECT_FALSE(foundTiff);
+    GTEST_LOG_(INFO) << "ImagePackerNdk2Test: OH_ImagePackerNative_GetSupportedFormat_NoTiff end";
 }
 }
 }

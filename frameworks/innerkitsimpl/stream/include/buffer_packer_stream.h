@@ -40,12 +40,18 @@ public:
         offset_ = offset;
     }
 
+    void GetRealWrittenSize(size_t &size) override
+    {
+        size = static_cast<size_t>(realWrittenSize_);
+    }
+
     ImagePlugin::OutputStreamType GetType() override;
 private:
     DISALLOW_COPY(BufferPackerStream);
 
     uint8_t *outputData_ = nullptr;
     uint32_t maxSize_ = 0;
+    uint32_t realWrittenSize_ = 0;
     int64_t offset_ = 0;
 };
 } // namespace Media
