@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Huawei Device Co., Ltd.
+ * Copyright (C) 2021-2026 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -223,6 +223,7 @@ public:
     static bool IsYuvFormat(PixelFormat format);
     static bool IsRGBX(PixelFormat format);
     static bool IsAlpha8(PixelFormat format);
+    static bool IsGrayScale(PixelFormat format);
     static bool PixelMapCreateCheckFormat(PixelFormat format);
     static bool CheckTlvSupportedFormat(PixelFormat format);
     static uint16_t GetReusePixelRefCount(const std::shared_ptr<PixelMap> &reusePixelmap);

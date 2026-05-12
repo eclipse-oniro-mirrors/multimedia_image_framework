@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Huawei Device Co., Ltd.
+ * Copyright (C) 2021-2026 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -210,8 +210,10 @@ enum class PixelFormat : int32_t {
     YCRCB_P010 = 12, // NV21_P010
     RGBA_U16 = 13, // Interim format for ffmpeg and skia conversion
     YUV_400 = 14,
+    Y8 = 14,  // 8-bit grayscale
     ALPHA_U8 = 15, // ALPHA_8 without 4-byte alignment
     ALPHA_F16 = 16,
+    Y1 = 17,  // 1-bit black and white
     EXTERNAL_MAX,
     INTERNAL_START = 100,
     CMYK = INTERNAL_START + 1,
@@ -334,6 +336,14 @@ struct RGBDataInfo {
     int32_t width = 0;
     int32_t height = 0;
     uint32_t stride = 0;
+};
+
+struct PixelBufferInfo {
+    uint32_t width;
+    uint32_t height;
+    uint8_t* data;
+    size_t dataSize;
+    uint32_t bytesPerRow = 0;  // 0 means use default calculation
 };
 
 enum class YuvConversion : int {

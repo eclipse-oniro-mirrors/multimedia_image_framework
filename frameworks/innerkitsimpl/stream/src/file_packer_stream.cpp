@@ -128,5 +128,14 @@ int FilePackerStream::GetFd()
 {
     return fileno(file_);
 }
+
+void FilePackerStream::SetOffset(uint32_t offset)
+{
+    if (file_ != nullptr) {
+        if (fseeko(file_, static_cast<off_t>(offset), SEEK_SET) != 0) {
+            IMAGE_LOGE("[FilePackerStream]fseeko failed, offset:%{public}u, error:%{public}d", offset, errno);
+        }
+    }
+}
 } // namespace Media
 } // namespace OHOS

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Huawei Device Co., Ltd.
+ * Copyright (C) 2022-2026 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -150,6 +150,11 @@ static Image_ErrorCode CopyPackingOptions(const OH_PackingOptions *options, Pack
     if (format.empty()) {
         return IMAGE_BAD_PARAMETER;
     }
+    if (format == "image/tiff") {
+        IMAGE_LOGE("Native layer does not support format: %{public}s", format.c_str());
+        return IMAGE_BAD_PARAMETER;
+    }
+
     packOption.format = format;
     packOption.quality = options->quality;
     packOption.needsPackProperties = options->needsPackProperties;
@@ -770,6 +775,10 @@ Image_ErrorCode OH_ImagePackerNative_GetSupportedFormats(Image_MimeType** suppor
     }
     std::set<std::string> formats;
     ImagePacker::GetSupportedFormats(formats);
+    auto it = formats.find("image/tiff");
+    if (it != formats.end()) {
+        formats.erase(it);
+    }
 
     auto newFormats = std::unique_ptr<Image_MimeType[], FreeDeleter>(
         new Image_MimeType[formats.size()],

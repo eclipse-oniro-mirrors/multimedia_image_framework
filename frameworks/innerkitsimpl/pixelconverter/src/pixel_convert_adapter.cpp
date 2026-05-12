@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Huawei Device Co., Ltd.
+ * Copyright (C) 2021-2026 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -58,6 +58,7 @@ const std::map<PixelFormat, AVPixelFormat> PixelConvertAdapter::FFMPEG_PIXEL_FOR
     {PixelFormat::RGB_888, AV_PIX_FMT_RGB24},
     {PixelFormat::YCRCB_P010, AV_PIX_FMT_P010LE},
     {PixelFormat::YCBCR_P010, AV_PIX_FMT_P010LE},
+    {PixelFormat::Y8, AV_PIX_FMT_GRAY8},
 };
 
 static const map<PixelFormat, SkColorType> PIXEL_FORMAT_MAP = {
@@ -66,6 +67,7 @@ static const map<PixelFormat, SkColorType> PIXEL_FORMAT_MAP = {
     { PixelFormat::ALPHA_8, SkColorType::kAlpha_8_SkColorType},
     { PixelFormat::ALPHA_U8, SkColorType::kAlpha_8_SkColorType},
     { PixelFormat::ALPHA_F16, SkColorType::kA16_float_SkColorType},
+    { PixelFormat::Y8, SkColorType::kGray_8_SkColorType},
     { PixelFormat::RGB_565, SkColorType::kRGB_565_SkColorType},
     { PixelFormat::RGBA_F16, SkColorType::kRGBA_F16_SkColorType},
     { PixelFormat::RGBA_8888, SkColorType::kRGBA_8888_SkColorType},

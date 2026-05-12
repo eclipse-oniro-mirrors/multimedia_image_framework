@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Huawei Device Co., Ltd.
+ * Copyright (C) 2021-2026 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -105,6 +105,11 @@ struct ImagePackerAsyncContext {
     ImagePackerError error;
     bool needReturnErrorCode = true;
     uint32_t frameCount;
+    // For TIFF binary image encoding
+    PixelBufferInfo bufferInfo;
+    PackingOptionsForTiff tiffOptions;
+    // Input buffer copy to prevent JS ArrayBuffer detach during async work
+    std::unique_ptr<uint8_t[]> inputBuffer;
 };
 
 struct PackingOption {
@@ -121,8 +126,9 @@ static const std::map<uint32_t, std::string> ERROR_CODE_MESSAGE_MAP = {
     {ERR_IMAGE_TOO_LARGE, "The image data is too large. This status code is thrown when an error occurs during"
         "the process of checking size."},
     {ERR_IMAGE_UNKNOWN_FORMAT, "Unknown image format."},
-    {ERR_IMAGE_INVALID_PARAMETER, "Invalid input parameter. Possible causes: 1. Format paramter in PackingOption is"
-        "invalid; 2. Invalid fd; 3. Other parameter mismatch."},
+    {ERR_IMAGE_INVALID_PARAMETER, "Invalid input parameter. Possible causes: 1. Format parameter in PackingOption is"
+        "invalid; 2. Invalid fd; 3. Compression algorithm does not match pixel format; "
+        "4. Other parameter mismatch."},
     {ERR_IMAGE_ENCODE_FAILED, "Failed to encode the image."},
     {ERR_IMAGE_ADD_PIXEL_MAP_FAILED, "Add pixelmap out of range."},
     {ERR_IMAGE_ENCODE_ICC_FAILED, "Failed to encode icc."},
@@ -419,6 +425,8 @@ napi_value ImagePackerNapi::Init(napi_env env, napi_value exports)
         DECLARE_NAPI_FUNCTION("packingFromPixelMap", Packing),
         DECLARE_NAPI_FUNCTION("packToDataFromPixelmapSequence", PackToData),
         DECLARE_NAPI_FUNCTION("packToFileFromPixelmapSequence", PackToFile),
+        DECLARE_NAPI_FUNCTION("packBinaryImageToTiffFile", PackBinaryImageToTiffFile),
+        DECLARE_NAPI_FUNCTION("packBinaryImageToTiffData", PackBinaryImageToTiffData),
         DECLARE_NAPI_FUNCTION("release", Release),
         DECLARE_NAPI_GETTER("supportedFormats", GetSupportedFormats),
     };
@@ -782,6 +790,51 @@ static void parseSizeLimit(napi_env env, napi_value root, PackOption* opts)
     opts->sizeLimit = sizeLimit;
 }
 
+static void ParseTiffOptions(napi_env env, napi_value optionsObj, PackingOptionsForTiff &tiffOptions)
+{
+    if (optionsObj == nullptr) {
+        return;
+    }
+
+    napi_valuetype valueType;
+    napi_status status = napi_typeof(env, optionsObj, &valueType);
+    if (status != napi_ok || valueType != napi_object) {
+        return;
+    }
+
+    int32_t compression;
+    if (ImageNapiUtils::GetInt32ByName(env, optionsObj, "compression", &compression)) {
+        tiffOptions.compression = compression;
+    }
+    int32_t orientation;
+    if (ImageNapiUtils::GetInt32ByName(env, optionsObj, "orientation", &orientation)) {
+        tiffOptions.orientation = orientation;
+    }
+    double xResolution;
+    if (ImageNapiUtils::GetDoubleByName(env, optionsObj, "xResolution", &xResolution)) {
+        tiffOptions.xResolution = static_cast<float>(xResolution);
+    }
+    double yResolution;
+    if (ImageNapiUtils::GetDoubleByName(env, optionsObj, "yResolution", &yResolution)) {
+        tiffOptions.yResolution = static_cast<float>(yResolution);
+    }
+    int32_t resolutionUnit;
+    if (ImageNapiUtils::GetInt32ByName(env, optionsObj, "resolutionUnit", &resolutionUnit)) {
+        tiffOptions.resolutionUnit = resolutionUnit;
+    }
+}
+
+static void parseTiffOptions(napi_env env, napi_value root, PackOption* opts)
+{
+    napi_value tiffOpts = nullptr;
+    if (!GET_NODE_BY_NAME(root, "tiffPackingOptions", tiffOpts)) {
+        // tiffPackingOptions is optional, return true if not present
+        return;
+    }
+
+    ParseTiffOptions(env, tiffOpts, opts->tiffPackingOption);
+}
+
 static bool parsePackOptions(napi_env env, napi_value root, PackOption* opts)
 {
     napi_value tmpValue = nullptr;
@@ -834,6 +887,9 @@ static bool parsePackOptions(napi_env env, napi_value root, PackOption* opts)
     GET_INT32_BY_NAME(root, "backgroundColor", opts->backgroundColor);
     parseSizeLimit(env, root, opts);
     GET_BOOL_BY_NAME(root, "needsPackGPS", opts->needsPackGPS);
+
+    parseTiffOptions(env, root, opts);
+
     return parsePackOptionOfQuality(env, root, opts);
 }
 
@@ -1299,6 +1355,275 @@ napi_value ImagePackerNapi::GetImagePackerSupportedFormats(napi_env env, napi_ca
         napi_set_element(env, result, count, format);
         count++;
     }
+    return result;
+}
+
+static bool CopyBufferForAsyncWork(void *srcData, size_t dataLength,
+    std::unique_ptr<uint8_t[]> &destBuffer, uint8_t *&destData,
+    ImagePackerAsyncContext *context)
+{
+    if (dataLength == 0) {
+        destData = nullptr;
+        return true;
+    }
+
+    destBuffer = std::make_unique<uint8_t[]>(dataLength);
+    if (destBuffer == nullptr) {
+        IMAGE_LOGE("CopyBufferForAsyncWork: fail to allocate input buffer");
+        BuildMsgOnError(context, false, "CopyBufferForAsyncWork: fail to allocate input buffer",
+            IMAGE_PACKER_INVALID_PARAMETER);
+        return false;
+    }
+
+    if (memcpy_s(destBuffer.get(), dataLength, srcData, dataLength) != EOK) {
+        IMAGE_LOGE("CopyBufferForAsyncWork: fail to copy input data");
+        BuildMsgOnError(context, false, "CopyBufferForAsyncWork: fail to copy input data",
+            IMAGE_PACKER_INVALID_PARAMETER);
+        return false;
+    }
+
+    destData = destBuffer.get();
+    return true;
+}
+
+static bool ParseTiffBufferInfo(napi_env env, napi_value bufferInfoObj, PixelBufferInfo &bufferInfo,
+    ImagePackerAsyncContext *context, const char *funcName)
+{
+    napi_value sizeObj = nullptr;
+    napi_status status = napi_get_named_property(env, bufferInfoObj, "size", &sizeObj);
+    if (status != napi_ok || sizeObj == nullptr) {
+        IMAGE_LOGE("%{public}s: fail to get size", funcName);
+        BuildMsgOnError(context, false, std::string(funcName) + ": fail to get size", IMAGE_PACKER_INVALID_PARAMETER);
+        return false;
+    }
+
+    uint32_t width;
+    if (!ImageNapiUtils::GetUint32ByName(env, sizeObj, "width", &width)) {
+        IMAGE_LOGE("%{public}s: fail to get width", funcName);
+        BuildMsgOnError(context, false, std::string(funcName) + ": fail to get width", IMAGE_PACKER_INVALID_PARAMETER);
+        return false;
+    }
+    bufferInfo.width = width;
+
+    uint32_t height;
+    if (!ImageNapiUtils::GetUint32ByName(env, sizeObj, "height", &height)) {
+        IMAGE_LOGE("%{public}s: fail to get height", funcName);
+        BuildMsgOnError(context, false, std::string(funcName) + ": fail to get height", IMAGE_PACKER_INVALID_PARAMETER);
+        return false;
+    }
+    bufferInfo.height = height;
+
+    void *data = nullptr;
+    size_t dataLength = 0;
+    if (!ImageNapiUtils::GetBufferByName(env, bufferInfoObj, "data", &data, &dataLength)) {
+        IMAGE_LOGE("%{public}s: fail to get data", funcName);
+        BuildMsgOnError(context, false, std::string(funcName) + ": fail to get data", IMAGE_PACKER_INVALID_PARAMETER);
+        return false;
+    }
+    // Copy data to prevent JS ArrayBuffer detach during async work
+    if (!CopyBufferForAsyncWork(data, dataLength, context->inputBuffer, bufferInfo.data, context)) {
+        return false;
+    }
+    bufferInfo.dataSize = dataLength;
+
+    int32_t bytesPerRow = 0;
+    if (ImageNapiUtils::GetInt32ByName(env, bufferInfoObj, "bytesPerRow", &bytesPerRow)) {
+        if (bytesPerRow < 0) {
+            IMAGE_LOGE("%{public}s: bytesPerRow is negative", funcName);
+            BuildMsgOnError(context, false, std::string(funcName) + ": bytesPerRow is negative",
+                IMAGE_PACKER_INVALID_PARAMETER);
+            return false;
+        }
+        bufferInfo.bytesPerRow = static_cast<uint32_t>(bytesPerRow);
+    }
+
+    return true;
+}
+
+static void ParserPackBinaryImageToTiffArguments(napi_env env, napi_value *argv, size_t argc,
+    ImagePackerAsyncContext *context, bool needFd)
+{
+    if (argc < PARAM1) {
+        BuildMsgOnError(context, false, "missing bufferInfo parameter", IMAGE_PACKER_INVALID_PARAMETER);
+        return;
+    }
+    if (!ParseTiffBufferInfo(env, argv[PARAM0], context->bufferInfo, context, "PackBinaryImageToTiff")) {
+        return;
+    }
+    if (needFd) {
+        if (argc < PARAM2) {
+            BuildMsgOnError(context, false, "missing fd parameter", IMAGE_PACKER_INVALID_PARAMETER);
+            return;
+        }
+        napi_status status = napi_get_value_int32(env, argv[PARAM1], &context->fd);
+        if (status != napi_ok) {
+            BuildMsgOnError(context, false, "fail to get fd", IMAGE_PACKER_INVALID_PARAMETER);
+            return;
+        }
+        if (context->fd <= INVALID_FD) {
+            BuildMsgOnError(context, false, "invalid fd", IMAGE_PACKER_INVALID_PARAMETER);
+            return;
+        }
+        if (argc > PARAM2) {
+            ParseTiffOptions(env, argv[PARAM2], context->tiffOptions);
+        }
+    } else {
+        if (argc > PARAM1) {
+            ParseTiffOptions(env, argv[PARAM1], context->tiffOptions);
+        }
+    }
+}
+
+STATIC_EXEC_FUNC(PackBinaryImageToTiffFile)
+{
+    auto context = static_cast<ImagePackerAsyncContext*>(data);
+
+    uint32_t ret = context->rImagePacker->PackBinaryImageToTiffFile(
+        context->bufferInfo, context->fd, context->tiffOptions);
+    if (ret != SUCCESS) {
+        context->status = ERROR;
+        uint32_t napiErrorCode = (ret == ERR_IMAGE_INVALID_PARAMETER) ? IMAGE_PACKER_INVALID_PARAMETER
+                                                                        : IMAGE_ENCODE_FAILED;
+        BuildMsgOnError(context, false, "PackBinaryImageToTiffFile failed", napiErrorCode);
+    } else {
+        context->status = SUCCESS;
+    }
+}
+
+STATIC_COMPLETE_FUNC(PackBinaryImageToTiffFile)
+{
+    napi_value result = nullptr;
+    napi_get_undefined(env, &result);
+    auto context = static_cast<ImagePackerAsyncContext*>(data);
+    CommonCallbackRoutine(env, const_cast<ImagePackerAsyncContext *&>(context), result);
+}
+
+napi_value ImagePackerNapi::PackBinaryImageToTiffFile(napi_env env, napi_callback_info info)
+{
+    ImageTrace imageTrace("ImagePackerNapi::PackBinaryImageToTiffFile");
+    napi_status status;
+    napi_value result = nullptr;
+    size_t argc = ARGS_THREE;
+    napi_value argv[ARGS_THREE] = {0};
+    napi_value thisVar = nullptr;
+
+    napi_get_undefined(env, &result);
+
+    IMG_JS_ARGS(env, info, status, argc, argv, thisVar);
+    NAPI_ASSERT(env, IMG_IS_OK(status), "fail to napi_get_cb_info");
+
+    std::unique_ptr<ImagePackerAsyncContext> asyncContext = std::make_unique<ImagePackerAsyncContext>();
+    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->constructor_));
+    NAPI_ASSERT(env, IMG_IS_READY(status, asyncContext->constructor_), "fail to unwrap constructor_");
+
+    asyncContext->rImagePacker = asyncContext->constructor_->nativeImgPck;
+    ParserPackBinaryImageToTiffArguments(env, argv, argc, asyncContext.get(), true);
+    if (asyncContext->callbackRef == nullptr) {
+        napi_create_promise(env, &(asyncContext->deferred), &result);
+    }
+
+    ImageNapiUtils::HicheckerReport();
+
+    if (IsImagePackerErrorOccur(asyncContext.get())) {
+        if (PackingErrorSendEvent(env, asyncContext.get(), napi_eprio_high, "ImagePacker.packBinaryImageToTiffFile")) {
+            asyncContext.release();
+        }
+    } else {
+        IMG_CREATE_CREATE_ASYNC_WORK(env, status, "PackBinaryImageToTiffFile",
+            PackBinaryImageToTiffFileExec, PackBinaryImageToTiffFileComplete, asyncContext, asyncContext->work);
+    }
+
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status),
+        nullptr, IMAGE_LOGE("fail to create async work"));
+    return result;
+}
+
+STATIC_EXEC_FUNC(PackBinaryImageToTiffData)
+{
+    auto context = static_cast<ImagePackerAsyncContext*>(data);
+
+    uint32_t rowBytes = (context->bufferInfo.bytesPerRow > 0) ?
+                        context->bufferInfo.bytesPerRow :
+                        (context->bufferInfo.width + 7) / 8;
+    // Calculate required size with overflow check
+    uint64_t imageDataSize = static_cast<uint64_t>(rowBytes) * context->bufferInfo.height;
+    constexpr uint32_t TIFF_METADATA_MARGIN = 4096;  // Margin for TIFF header/IFD/metadata
+    if (imageDataSize > std::numeric_limits<uint32_t>::max() - TIFF_METADATA_MARGIN) {
+        IMAGE_LOGE("PackBinaryImageToTiffData: image size too large, overflow would occur");
+        context->status = ERROR;
+        BuildMsgOnError(context, false, "Image size too large", IMAGE_PACKER_INVALID_PARAMETER);
+        return;
+    }
+    uint32_t estimatedSize = static_cast<uint32_t>(imageDataSize) + TIFF_METADATA_MARGIN;
+    context->resultBuffer = std::make_unique<uint8_t[]>(estimatedSize);
+    context->resultBufferSize = estimatedSize;
+
+    uint32_t outputSize = static_cast<uint32_t>(estimatedSize);
+    uint32_t ret = context->rImagePacker->PackBinaryImageToTiffData(
+        context->bufferInfo, context->tiffOptions, context->resultBuffer.get(), outputSize);
+    if (ret != SUCCESS) {
+        context->status = ERROR;
+        uint32_t napiErrorCode = (ret == ERR_IMAGE_INVALID_PARAMETER) ? IMAGE_PACKER_INVALID_PARAMETER
+                                                                        : IMAGE_ENCODE_FAILED;
+        BuildMsgOnError(context, false, "PackBinaryImageToTiffData failed", napiErrorCode);
+        context->resultBuffer.reset();
+    } else {
+        context->status = SUCCESS;
+        context->packedSize = outputSize;
+    }
+}
+
+STATIC_COMPLETE_FUNC(PackBinaryImageToTiffData)
+{
+    napi_value result = nullptr;
+    auto context = static_cast<ImagePackerAsyncContext*>(data);
+
+    if (!ImageNapiUtils::CreateArrayBuffer(env, context->resultBuffer.get(),
+                                           context->packedSize, &result)) {
+        BuildMsgOnError(context, false, "PackBinaryImageToTiffData: fail to create arraybuffer",
+            IMAGE_ENCODE_FAILED);
+        IMAGE_LOGE("PackBinaryImageToTiffData: fail to create arraybuffer");
+    }
+    CommonCallbackRoutine(env, const_cast<ImagePackerAsyncContext *&>(context), result);
+}
+
+napi_value ImagePackerNapi::PackBinaryImageToTiffData(napi_env env, napi_callback_info info)
+{
+    ImageTrace imageTrace("ImagePackerNapi::PackBinaryImageToTiffData");
+    napi_status status;
+    napi_value result = nullptr;
+    size_t argc = ARGS_THREE;
+    napi_value argv[ARGS_THREE] = {0};
+    napi_value thisVar = nullptr;
+
+    napi_get_undefined(env, &result);
+
+    IMG_JS_ARGS(env, info, status, argc, argv, thisVar);
+    NAPI_ASSERT(env, IMG_IS_OK(status), "fail to napi_get_cb_info");
+
+    std::unique_ptr<ImagePackerAsyncContext> asyncContext = std::make_unique<ImagePackerAsyncContext>();
+    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->constructor_));
+    NAPI_ASSERT(env, IMG_IS_READY(status, asyncContext->constructor_), "fail to unwrap constructor_");
+
+    asyncContext->rImagePacker = asyncContext->constructor_->nativeImgPck;
+    ParserPackBinaryImageToTiffArguments(env, argv, argc, asyncContext.get(), false);
+    if (asyncContext->callbackRef == nullptr) {
+        napi_create_promise(env, &(asyncContext->deferred), &result);
+    }
+
+    ImageNapiUtils::HicheckerReport();
+
+    if (IsImagePackerErrorOccur(asyncContext.get())) {
+        if (PackingErrorSendEvent(env, asyncContext.get(), napi_eprio_high, "ImagePacker.packBinaryImageToTiffData")) {
+            asyncContext.release();
+        }
+    } else {
+        IMG_CREATE_CREATE_ASYNC_WORK(env, status, "PackBinaryImageToTiffData",
+            PackBinaryImageToTiffDataExec, PackBinaryImageToTiffDataComplete, asyncContext, asyncContext->work);
+    }
+
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status),
+        nullptr, IMAGE_LOGE("fail to create async work"));
     return result;
 }
 }  // namespace Media

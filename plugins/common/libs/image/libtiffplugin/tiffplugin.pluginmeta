@@ -20,6 +20,23 @@
           "value": "image/tiff"
         }
       ]
+    },
+    {
+      "className":"OHOS::ImagePlugin::TiffEncoder",
+      "services": [
+        {
+          "interfaceID":3,
+          "serviceType":0
+        }
+      ],
+      "priority":100,
+      "capabilities": [
+        {
+          "name":"encodeFormat",
+          "type":"string",
+          "value": "image/tiff"
+        }
+      ]
     }
   ]
 }

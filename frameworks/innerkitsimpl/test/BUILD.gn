@@ -1,4 +1,4 @@
-# Copyright (c) 2021-2025 Huawei Device Co., Ltd.
+# Copyright (c) 2021-2026 Huawei Device Co., Ltd.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -2419,7 +2419,10 @@ ohos_unittest("tiffplugintest") {
     "$image_subsystem/interfaces/innerkits/include",
     "$image_subsystem/frameworks/innerkitsimpl/utils/include",
   ]
-  sources = [ "$image_subsystem/frameworks/innerkitsimpl/test/unittest/plugin_test/tiff_decoder_test.cpp" ]
+  sources = [
+    "$image_subsystem/frameworks/innerkitsimpl/test/unittest/plugin_test/tiff_decoder_test.cpp",
+    "$image_subsystem/frameworks/innerkitsimpl/test/unittest/plugin_test/tiff_encoder_test.cpp",
+  ]
 
   deps = [
     "//foundation/multimedia/image_framework/interfaces/innerkits:image_native",
