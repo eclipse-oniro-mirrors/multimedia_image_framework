@@ -2619,7 +2619,7 @@ HWTEST_F(ImageFormatConvertTest, MakeDestPixelMapUnique_001, TestSize.Level3)
     GTEST_LOG_(INFO) << "ImageFormatConvertTest: MakeDestPixelMapUnique_001 end";
 }
 
-HWTEST_F(ImageFormatConvertTest, GetYuvConstantFromParam_001, TestSize.Level3)//
+HWTEST_F(ImageFormatConvertTest, GetYuvConstantFromParam_001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ImageFormatConvertTest.GetYuvConstantFromParam_001: start";
     YUVDataInfo yuvInfo;
@@ -2820,9 +2820,9 @@ HWTEST_F(ImageFormatConvertTest, P010ToRGBParamBufferSizeVaild_001, TestSize.Lev
     GTEST_LOG_(INFO) << "ImageFormatConvertTest.P010ToRGBParamBufferSizeVaild_001: end";
 }
 
-HWTEST_F(ImageFormatConvertTest, P010ToI010ToRGB10ParamBufferSizeVaild_001, TestSize.Level3)
+HWTEST_F(ImageFormatConvertTest, P010ToRGB10ParamBufferSizeVaild_001, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ImageFormatConvertTest.P010ToI010ToRGB10ParamBufferSizeVaild_001: start";
+    GTEST_LOG_(INFO) << "ImageFormatConvertTest.P010ToRGB10ParamBufferSizeVaild_001: start";
     YUVDataInfo yuvInfo;
     DestConvertInfo destInfo;
     destInfo.format = PixelFormat::RGBA_1010102;
@@ -2830,7 +2830,7 @@ HWTEST_F(ImageFormatConvertTest, P010ToI010ToRGB10ParamBufferSizeVaild_001, Test
     uint8_t testBuffer[1] = {0};
     bool result = ImageFormatConvertExtUtils::NV12P010ToRGBA1010102(testBuffer, yuvInfo, destInfo, ColorSpace::UNKNOWN);
     EXPECT_EQ(result, false);
-    GTEST_LOG_(INFO) << "ImageFormatConvertTest.P010ToI010ToRGB10ParamBufferSizeVaild_001: end";
+    GTEST_LOG_(INFO) << "ImageFormatConvertTest.P010ToRGB10ParamBufferSizeVaild_001: end";
 }
 
 } // namespace Media
