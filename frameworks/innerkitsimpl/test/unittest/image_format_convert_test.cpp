@@ -2745,16 +2745,16 @@ HWTEST_F(ImageFormatConvertTest, YuvToRGBParamBufferSizeOverflow_001, TestSize.L
 HWTEST_F(ImageFormatConvertTest, YuvToRGBParamBufferSizeOverflow_002, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ImageFormatConvertTest.YuvToRGBParamBufferSizeOverflow_002: start";
-    constexpr int32_t maxRamSize = 600 * 1024 * 1024;
+    constexpr int32_t overflowWidth = INT_MAX / 3 + 1;
     YUVDataInfo yuvInfo;
-    yuvInfo.yWidth = maxRamSize / 2 + 1;
+    yuvInfo.yWidth = overflowWidth;
     yuvInfo.yHeight = 2;
-    yuvInfo.yStride = maxRamSize / 2 + 1;
-    yuvInfo.uvStride = maxRamSize / 2 + 1;
+    yuvInfo.yStride = overflowWidth;
+    yuvInfo.uvStride = overflowWidth;
     yuvInfo.yOffset = 0;
-    yuvInfo.uvOffset = (maxRamSize / 2 + 1) * 2;
+    yuvInfo.uvOffset = overflowWidth * 2;
     DestConvertInfo destInfo;
-    destInfo.width = maxRamSize / 2 + 1;
+    destInfo.width = overflowWidth;
     destInfo.height = 2;
     destInfo.format = PixelFormat::RGB_888;
     destInfo.allocType = AllocatorType::HEAP_ALLOC;
