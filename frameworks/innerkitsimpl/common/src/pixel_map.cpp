@@ -3723,6 +3723,7 @@ struct TlvDecodeInfo {
     {
         if (dstMemory != nullptr) {
             dstMemory->Release();
+            dstMemory.reset();
         }
     }
 };
