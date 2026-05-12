@@ -280,6 +280,7 @@ bool FileMetadataStream::OpenFromPath(const char *modeStr)
     fp_ = fopen(filePath_.c_str(), modeStr);
     if (fp_ == nullptr) {
         HandleFileError("Open file", filePath_, -1, -1, -1);
+        IMAGE_LOGE("fopen file failed, error:%{public}d", errno);
         return false;
     }
     IMAGE_LOGD("File opened: %{public}s", filePath_.c_str());
