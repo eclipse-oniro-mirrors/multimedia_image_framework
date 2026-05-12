@@ -2535,6 +2535,7 @@ HWTEST_F(PixelConvertTest, AlphaTypeConvertTest001, TestSize.Level3)
     std::unique_ptr<PixelConvert> colorConverterPointer = PixelConvert::Create(srcImageInfo, dstImageInfo);
     ASSERT_NE(colorConverterPointer, nullptr);
     colorConverterPointer->Convert(destination, source, 2);
+    ASSERT_NE(destination[0], 0);
     GTEST_LOG_(INFO) << "PixelConvertTest: AlphaTypeConvertTest001 end";
 }
 
@@ -2560,6 +2561,7 @@ HWTEST_F(PixelConvertTest, AlphaTypeConvertTest002, TestSize.Level3)
     std::unique_ptr<PixelConvert> colorConverterPointer = PixelConvert::Create(srcImageInfo, dstImageInfo);
     ASSERT_NE(colorConverterPointer, nullptr);
     colorConverterPointer->Convert(destination, source, 2);
+    ASSERT_NE(destination[0], 0);
     GTEST_LOG_(INFO) << "PixelConvertTest: AlphaTypeConvertTest002 end";
 }
 
@@ -2585,6 +2587,7 @@ HWTEST_F(PixelConvertTest, RGBA8888ToRGB565Test001, TestSize.Level3)
     std::unique_ptr<PixelConvert> colorConverterPointer = PixelConvert::Create(srcImageInfo, dstImageInfo);
     ASSERT_NE(colorConverterPointer, nullptr);
     colorConverterPointer->Convert(destination, source, 2);
+    ASSERT_NE(destination[0], 0);
     GTEST_LOG_(INFO) << "PixelConvertTest: RGBA8888ToRGB565Test001 end";
 }
 
@@ -2610,6 +2613,7 @@ HWTEST_F(PixelConvertTest, RGB565ToRGBAF16ConvertTest001, TestSize.Level3)
     std::unique_ptr<PixelConvert> colorConverterPointer = PixelConvert::Create(srcImageInfo, dstImageInfo);
     ASSERT_NE(colorConverterPointer, nullptr);
     colorConverterPointer->Convert(destination, source, 2);
+    ASSERT_NE(destination[0], 0);
     GTEST_LOG_(INFO) << "PixelConvertTest: RGB565ToRGBAF16ConvertTest001 end";
 }
 
@@ -2635,6 +2639,7 @@ HWTEST_F(PixelConvertTest, RGBAF16ToRGB565ConvertTest001, TestSize.Level3)
     std::unique_ptr<PixelConvert> colorConverterPointer = PixelConvert::Create(srcImageInfo, dstImageInfo);
     ASSERT_NE(colorConverterPointer, nullptr);
     colorConverterPointer->Convert(destination, source, 2);
+    ASSERT_EQ(destination[0], 0);
     GTEST_LOG_(INFO) << "PixelConvertTest: RGBAF16ToRGB565ConvertTest001 end";
 }
 
@@ -2660,6 +2665,7 @@ HWTEST_F(PixelConvertTest, RGBAF16ToABGR8888ConvertTest001, TestSize.Level3)
     std::unique_ptr<PixelConvert> colorConverterPointer = PixelConvert::Create(srcImageInfo, dstImageInfo);
     ASSERT_NE(colorConverterPointer, nullptr);
     colorConverterPointer->Convert(destination, source, 2);
+    ASSERT_EQ(destination[0], 0);
     GTEST_LOG_(INFO) << "PixelConvertTest: RGBAF16ToABGR8888ConvertTest001 end";
 }
 
@@ -2685,6 +2691,7 @@ HWTEST_F(PixelConvertTest, RGB888ToRGBAF16ConvertTest001, TestSize.Level3)
     std::unique_ptr<PixelConvert> colorConverterPointer = PixelConvert::Create(srcImageInfo, dstImageInfo);
     ASSERT_NE(colorConverterPointer, nullptr);
     colorConverterPointer->Convert(destination, source, 2);
+    ASSERT_NE(destination[0], 0);
     GTEST_LOG_(INFO) << "PixelConvertTest: RGB888ToRGBAF16ConvertTest001 end";
 }
 
@@ -2710,6 +2717,7 @@ HWTEST_F(PixelConvertTest, BGR888ToRGBAF16ConvertTest001, TestSize.Level3)
     std::unique_ptr<PixelConvert> colorConverterPointer = PixelConvert::Create(srcImageInfo, dstImageInfo);
     ASSERT_NE(colorConverterPointer, nullptr);
     colorConverterPointer->Convert(destination, source, 2);
+    ASSERT_NE(destination[0], 0);
     GTEST_LOG_(INFO) << "PixelConvertTest: BGR888ToRGBAF16ConvertTest001 end";
 }
 
@@ -2735,6 +2743,7 @@ HWTEST_F(PixelConvertTest, ARGB8888ToRGBAF16ConvertTest001, TestSize.Level3)
     std::unique_ptr<PixelConvert> colorConverterPointer = PixelConvert::Create(srcImageInfo, dstImageInfo);
     ASSERT_NE(colorConverterPointer, nullptr);
     colorConverterPointer->Convert(destination, source, 2);
+    ASSERT_NE(destination[0], 0);
     GTEST_LOG_(INFO) << "PixelConvertTest: ARGB8888ToRGBAF16ConvertTest001 end";
 }
 
@@ -2760,6 +2769,7 @@ HWTEST_F(PixelConvertTest, BGRA8888ToRGBAF16ConvertTest001, TestSize.Level3)
     std::unique_ptr<PixelConvert> colorConverterPointer = PixelConvert::Create(srcImageInfo, dstImageInfo);
     ASSERT_NE(colorConverterPointer, nullptr);
     colorConverterPointer->Convert(destination, source, 2);
+    ASSERT_NE(destination[0], 0);
     GTEST_LOG_(INFO) << "PixelConvertTest: BGRA8888ToRGBAF16ConvertTest001 end";
 }
 
@@ -2785,6 +2795,7 @@ HWTEST_F(PixelConvertTest, RGB161616ToRGBAF16ConvertTest001, TestSize.Level3)
     std::unique_ptr<PixelConvert> colorConverterPointer = PixelConvert::Create(srcImageInfo, dstImageInfo);
     ASSERT_NE(colorConverterPointer, nullptr);
     colorConverterPointer->Convert(destination, source, 2);
+    ASSERT_NE(destination[0], 0);
     GTEST_LOG_(INFO) << "PixelConvertTest: RGB161616ToRGBAF16ConvertTest001 end";
 }
 
@@ -2811,6 +2822,7 @@ HWTEST_F(PixelConvertTest, RGBA16161616ToRGBAF16ConvertTest001, TestSize.Level3)
     std::unique_ptr<PixelConvert> colorConverterPointer = PixelConvert::Create(srcImageInfo, dstImageInfo);
     ASSERT_NE(colorConverterPointer, nullptr);
     colorConverterPointer->Convert(destination, source, 2);
+    ASSERT_NE(destination[0], 0);
     GTEST_LOG_(INFO) << "PixelConvertTest: RGBA16161616ToRGBAF16ConvertTest001 end";
 }
 
@@ -2836,6 +2848,7 @@ HWTEST_F(PixelConvertTest, RGBA8888ToRGBAF16ConvertTest001, TestSize.Level3)
     std::unique_ptr<PixelConvert> colorConverterPointer = PixelConvert::Create(srcImageInfo, dstImageInfo);
     ASSERT_NE(colorConverterPointer, nullptr);
     colorConverterPointer->Convert(destination, source, 2);
+    ASSERT_NE(destination[0], 0);
     GTEST_LOG_(INFO) << "PixelConvertTest: RGBA8888ToRGBAF16ConvertTest001 end";
 }
 
@@ -2861,6 +2874,7 @@ HWTEST_F(PixelConvertTest, RGBAF16ToARGB8888ConvertTest001, TestSize.Level3)
     std::unique_ptr<PixelConvert> colorConverterPointer = PixelConvert::Create(srcImageInfo, dstImageInfo);
     ASSERT_NE(colorConverterPointer, nullptr);
     colorConverterPointer->Convert(destination, source, 2);
+    ASSERT_EQ(destination[0], 0);
     GTEST_LOG_(INFO) << "PixelConvertTest: RGBAF16ToARGB8888ConvertTest001 end";
 }
 
@@ -2886,6 +2900,7 @@ HWTEST_F(PixelConvertTest, RGBAF16ToRGBA8888ConvertTest001, TestSize.Level3)
     std::unique_ptr<PixelConvert> colorConverterPointer = PixelConvert::Create(srcImageInfo, dstImageInfo);
     ASSERT_NE(colorConverterPointer, nullptr);
     colorConverterPointer->Convert(destination, source, 2);
+    ASSERT_EQ(destination[0], 0);
     GTEST_LOG_(INFO) << "PixelConvertTest: RGBAF16ToRGBA8888ConvertTest001 end";
 }
 
@@ -2911,6 +2926,7 @@ HWTEST_F(PixelConvertTest, RGBAF16ToBGRA8888ConvertTest001, TestSize.Level3)
     std::unique_ptr<PixelConvert> colorConverterPointer = PixelConvert::Create(srcImageInfo, dstImageInfo);
     ASSERT_NE(colorConverterPointer, nullptr);
     colorConverterPointer->Convert(destination, source, 2);
+    ASSERT_EQ(destination[0], 0);
     GTEST_LOG_(INFO) << "PixelConvertTest: RGBAF16ToBGRA8888ConvertTest001 end";
 }
 
@@ -2936,6 +2952,7 @@ HWTEST_F(PixelConvertTest, NoConvertTest001, TestSize.Level3)
     std::unique_ptr<PixelConvert> colorConverterPointer = PixelConvert::Create(srcImageInfo, dstImageInfo);
     ASSERT_NE(colorConverterPointer, nullptr);
     colorConverterPointer->Convert(destination, source, 2);
+    ASSERT_NE(destination[0], 0);
     GTEST_LOG_(INFO) << "PixelConvertTest: NoConvertTest001 end";
 }
 
@@ -3393,6 +3410,7 @@ HWTEST_F(PixelConvertTest, GrayAlphaConvertTest001, TestSize.Level3)
     std::unique_ptr<PixelConvert> colorConverterPointer = PixelConvert::Create(srcImageInfo, dstImageInfo);
     ASSERT_NE(colorConverterPointer, nullptr);
     colorConverterPointer->Convert(destination, source, 8);
+    ASSERT_NE(destination[0], 0);
     GTEST_LOG_(INFO) << "PixelConvertTest: GrayAlphaConvertTest001 end";
 }
 
@@ -3419,6 +3437,7 @@ HWTEST_F(PixelConvertTest, RGBA16161616ConvertTest001, TestSize.Level3)
     std::unique_ptr<PixelConvert> colorConverterPointer = PixelConvert::Create(srcImageInfo, dstImageInfo);
     ASSERT_NE(colorConverterPointer, nullptr);
     colorConverterPointer->Convert(destination, source, 2);
+    ASSERT_NE(destination[0], 0);
     GTEST_LOG_(INFO) << "PixelConvertTest: RGBA16161616ConvertTest001 end";
 }
 
