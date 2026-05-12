@@ -4744,6 +4744,10 @@ void PixelMap::scale(float xAxis, float yAxis, const AntiAliasingOption &option)
 
 uint32_t PixelMap::Scale(float xAxis, float yAxis, AntiAliasingOption option)
 {
+    if (xAxis == 0 || yAxis == 0) {
+        IMAGE_LOGE("Invalid scale ratio: 0");
+        return ERR_IMAGE_INVALID_PARAMETER;
+    }
     if ((static_cast<int32_t>(round(imageInfo_.size.width * xAxis)) - imageInfo_.size.width) == 0 &&
         (static_cast<int32_t>(round(imageInfo_.size.height * yAxis)) - imageInfo_.size.height) == 0) {
         return SUCCESS;

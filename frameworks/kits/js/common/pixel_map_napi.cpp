@@ -1261,7 +1261,7 @@ static void CreateEmptyPixelMapExecSync(napi_env env, void* data)
     context->rPixelMap = PixelMap::Create(context->opts);
     
     if (context->rPixelMap == nullptr) {
-        context->errCode = ERR_IMAGE_CREATE_PIXELMAP_FAILED;
+        context->errCode = ERR_MEDIA_MEMORY_ALLOC_FAILED;
         context->errMsg = "Failed to allocate memory for the empty PixelMap.";
     }
 }
