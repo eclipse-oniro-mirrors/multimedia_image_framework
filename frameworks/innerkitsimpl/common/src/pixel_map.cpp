@@ -3633,7 +3633,7 @@ bool PixelMap::EncodeTlv(std::vector<uint8_t> &buff) const
     if (!EncodeTlvHdrInfo(buff, allocatorType_, const_cast<PixelMap*>(this))) {
         return false;
     }
-    AllocatorType tmpAllocatorType = AllocatorType::DEFAULT;
+    AllocatorType tmpAllocatorType = AllocatorType::HEAP_ALLOC;
     ImageUtils::WriteUint8(buff, TLV_IMAGE_ALLOCATORTYPE);
     ImageUtils::WriteVarint(buff, ImageUtils::GetVarintLen(static_cast<int32_t>(tmpAllocatorType)));
     ImageUtils::WriteVarint(buff, static_cast<int32_t>(tmpAllocatorType));
@@ -3736,14 +3736,14 @@ static std::map<uint8_t, std::function<bool(TlvDecodeInfo&, vector<uint8_t>&, in
         }},
         {TLV_IMAGE_ALLOCATORTYPE, [](TlvDecodeInfo& decodeInfo, vector<uint8_t>& buff, int32_t& cursor, int32_t len) {
             decodeInfo.allocType = ImageUtils::ReadVarint(buff, cursor);
-            // Heap check is for compatibility with older versions of TLV files
-            if (decodeInfo.allocType != static_cast<int32_t>(AllocatorType::DEFAULT) &&
-                decodeInfo.allocType != static_cast<int32_t>(AllocatorType::HEAP_ALLOC)) {
+            if (decodeInfo.allocType != NUM_1) {
                 IMAGE_LOGE("[PixelMap] tlv decode invalid allocatorType: %{public}d", decodeInfo.allocType);
                 return false;
             }
             if (decodeInfo.isHdr == NUM_1) {
                 decodeInfo.allocType = static_cast<int32_t>(AllocatorType::DMA_ALLOC);
+            } else if (ImageUtils::IsSupportDefaultDmaNopadding(decodeInfo.info.pixelFormat)) {
+                decodeInfo.allocType = static_cast<int32_t>(AllocatorType::DEFAULT);
             }
             return true;
         }},
