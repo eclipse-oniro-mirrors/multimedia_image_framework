@@ -742,12 +742,12 @@ struct ImageBufferData {
 
 union NullableImageBufferData {
   type_imageBufferData: ImageBufferData;
-  @null type_null;
+  type_null: @null unit;
 }
 
 union NullableHdrMetadataValue {
   type_hdrMetadataValue: HdrMetadataValue;
-  @null type_null;
+  type_null: @null unit;
 }
 
 interface PixelMap {
