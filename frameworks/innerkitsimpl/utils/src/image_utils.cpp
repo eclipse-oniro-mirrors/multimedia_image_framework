@@ -2460,7 +2460,7 @@ std::unique_ptr<AbsMemory> ImageUtils::ReadData(std::vector<uint8_t> &buff, int3
         IMAGE_LOGE("[PixelMap] tlv read data fail: invalid size[%{public}d]", size);
         return nullptr;
     }
-    if (static_cast<size_t>(cursor + size) > buff.size()) {
+    if (cursor < 0 || static_cast<uint64_t>(cursor) + static_cast<uint64_t>(size) > buff.size()) {
         IMAGE_LOGE("[PixelMap] ReadData out of range");
         return nullptr;
     }
@@ -2477,7 +2477,8 @@ std::unique_ptr<AbsMemory> ImageUtils::ReadData(std::vector<uint8_t> &buff, int3
     int32_t rowDataSize = ImageUtils::GetRowDataSizeByPixelFormat(imageInfo.size.width, imageInfo.pixelFormat);
     uint8_t* srcAddr = buff.data() + cursor;
 
-    if (size != rowDataSize * imageInfo.size.height) {
+    int64_t expectedSize = static_cast<int64_t>(rowDataSize) * static_cast<int64_t>(imageInfo.size.height);
+    if (expectedSize <= 0 || expectedSize > INT32_MAX || size != expectedSize) {
         IMAGE_LOGE("[PixelMap] tlv read data fail: alloc memory failed");
         dstMemory->Release();
         return nullptr;

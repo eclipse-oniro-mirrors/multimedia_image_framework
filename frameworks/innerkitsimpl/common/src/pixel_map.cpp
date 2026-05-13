@@ -3771,6 +3771,14 @@ struct TlvDecodeInfo {
     ImageInfo info;
     int32_t csm = -1;
     std::unique_ptr<AbsMemory> dstMemory = nullptr;
+
+    ~TlvDecodeInfo()
+    {
+        if (dstMemory != nullptr) {
+            dstMemory->Release();
+            dstMemory.reset();
+        }
+    }
 };
 
 static std::map<uint8_t, std::function<bool(TlvDecodeInfo&, vector<uint8_t>&, int32_t&, int32_t)>>
