@@ -233,8 +233,6 @@ bool ProgressiveJpegDecoder::BuildRgbDecodePlan(const RgbDecodeOptions &options,
 {
     if (options.codec == nullptr || options.supportRegion || !options.ifSourceCompleted ||
         !IsRgbOutputFormatSupported(options.pixelFormat) ||
-        options.sampleSize != DEFAULT_SAMPLE_SIZE ||
-        options.softSampleSize != DEFAULT_SAMPLE_SIZE ||
         options.hasSubset ||
         options.hasReusePixelmap) {
         return false;
@@ -304,8 +302,6 @@ bool ProgressiveJpegDecoder::BuildYuvDecodePlan(const YuvDecodeOptions &options,
 {
 #if !defined(CROSS_PLATFORM)
     if (options.codec == nullptr || options.supportRegion || !options.ifSourceCompleted ||
-        options.sampleSize != DEFAULT_SAMPLE_SIZE ||
-        options.softSampleSize != DEFAULT_SAMPLE_SIZE ||
         options.hasSubset) {
         return false;
     }
