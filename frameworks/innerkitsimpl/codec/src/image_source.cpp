@@ -883,11 +883,6 @@ void ImageSource::ContextToAddrInfos(DecodeContext &context, PixelMapAddrInfos &
     addrInfos.func = context.freeFunc;
 }
 
-bool IsSupportAstcZeroCopy(const Size &size)
-{
-    return ImageSystemProperties::GetAstcEnabled() && size.width * size.height >= ASTC_SIZE;
-}
-
 bool IsSupportDma(const DecodeOptions &opts, const ImageInfo &info, bool hasDesiredSizeOptions)
 {
 #if defined(_WIN32) || defined(_APPLE) || defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM)
@@ -4429,7 +4424,7 @@ static bool ReadFileAndResoveAstc(size_t fileSize, size_t astcSize, unique_ptr<P
     ImageInfo pixelAstcInfo;
     pixelAstc->GetImageInfo(pixelAstcInfo);
     AllocatorType allocatorType = (opts.allocatorType == AllocatorType::DEFAULT) ?
-        (IsSupportAstcZeroCopy(pixelAstcInfo.size) ? AllocatorType::DMA_ALLOC : AllocatorType::SHARE_MEM_ALLOC) :
+        (ImageSystemProperties::GetAstcEnabled() ? AllocatorType::DMA_ALLOC : AllocatorType::SHARE_MEM_ALLOC) :
         opts.allocatorType;
     std::unique_ptr<AbsMemory> dstMemory = MemoryManager::CreateMemory(allocatorType, memoryData);
     if (dstMemory == nullptr) {
@@ -6493,8 +6488,11 @@ bool ImageSource::CompressToAstcFromPixelmap(const DecodeOptions &opts, unique_p
     Size desiredSize = {allocMemSize, 1};
     MemoryData memoryData = {nullptr, allocMemSize, "CompressToAstcFromPixelmap Data", desiredSize,
         opts.desiredPixelFormat};
+    if (ImageSystemProperties::GetNoPaddingEnabled()) {
+        memoryData.usage = BUFFER_USAGE_PREFER_NO_PADDING | BUFFER_USAGE_ALLOC_NO_IPC;
+    }
     AllocatorType allocatorType = (opts.allocatorType == AllocatorType::DEFAULT) ?
-        (IsSupportAstcZeroCopy(rgbaInfo.size) ? AllocatorType::DMA_ALLOC : AllocatorType::SHARE_MEM_ALLOC) :
+        (ImageSystemProperties::GetAstcEnabled() ? AllocatorType::DMA_ALLOC : AllocatorType::SHARE_MEM_ALLOC) :
         opts.allocatorType;
     dstMemory = MemoryManager::CreateMemory(allocatorType, memoryData);
     bool cond = (dstMemory == nullptr);

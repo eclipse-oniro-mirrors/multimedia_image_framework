@@ -522,12 +522,19 @@ AlphaType ImageUtils::GetValidAlphaTypeByFormat(const AlphaType &dstType, const 
     return dstType;
 }
 
-AllocatorType ImageUtils::GetPixelMapAllocatorType(const Size &size, const PixelFormat &format, bool preferDma)
+AllocatorType ImageUtils::GetPixelMapAllocatorType(const Size &size, const PixelFormat &format, bool preferDma,
+    uint64_t &usage)
 {
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
-    return IsSizeSupportDma(size) && (preferDma || (IsWidthAligned(size.width) && IsFormatSupportDma(format))) &&
-        (format == PixelFormat::RGBA_8888 || format == PixelFormat::ALPHA_F16 || Is10Bit(format)) ?
-        AllocatorType::DMA_ALLOC : AllocatorType::SHARE_MEM_ALLOC;
+    if (IsSizeSupportDma(size) && (preferDma || (IsWidthAligned(size.width) && IsFormatSupportDma(format))) &&
+        (format == PixelFormat::RGBA_8888 || format == PixelFormat::ALPHA_F16 || Is10Bit(format))) {
+        return AllocatorType::DMA_ALLOC;
+    } else if (IsSupportDefaultDmaNopadding(format)) {
+        usage |= BUFFER_USAGE_PREFER_NO_PADDING | BUFFER_USAGE_ALLOC_NO_IPC;
+        return AllocatorType::DMA_ALLOC;
+    } else {
+        return AllocatorType::SHARE_MEM_ALLOC;
+    }
 #else
     return AllocatorType::HEAP_ALLOC;
 #endif
@@ -647,6 +654,15 @@ bool ImageUtils::IsSizeSupportDma(const Size &size)
 bool ImageUtils::IsFormatSupportDma(const PixelFormat &format)
 {
     return format == PixelFormat::UNKNOWN || format == PixelFormat::RGBA_8888 || format == PixelFormat::ALPHA_F16;
+}
+
+bool ImageUtils::IsSupportDefaultDmaNopadding(const PixelFormat &format)
+{
+    if (ImageSystemProperties::GetDefaultDmaNoPaddingEnabled() && ImageSystemProperties::GetNoPaddingEnabled() &&
+        (format == PixelFormat::BGRA_8888 || format == PixelFormat::RGBA_8888)) {
+        return true;
+    }
+    return false;
 }
 
 bool ImageUtils::Is10Bit(const PixelFormat &format)
@@ -2431,7 +2447,8 @@ int32_t ImageUtils::AllocPixelMapMemory(std::unique_ptr<AbsMemory> &dstMemory, i
     MemoryData memoryData = {nullptr, static_cast<size_t>(bufferSize), "Create PixelMap", dstImageInfo.size,
         dstImageInfo.pixelFormat};
     AllocatorType allocType = opts.allocatorType == AllocatorType::DEFAULT ?
-        ImageUtils::GetPixelMapAllocatorType(dstImageInfo.size, dstImageInfo.pixelFormat, opts.useDMA) :
+        ImageUtils::GetPixelMapAllocatorType(dstImageInfo.size, dstImageInfo.pixelFormat, opts.useDMA,
+            memoryData.usage) :
         opts.allocatorType;
     dstMemory = MemoryManager::CreateMemory(allocType, memoryData);
     if (dstMemory == nullptr) {
