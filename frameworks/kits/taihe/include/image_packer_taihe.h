@@ -46,6 +46,11 @@ public:
         PackingOptionsForSequence const& options);
     void PackPictureToFileSync(weak::Picture picture, int32_t fd, PackingOption const& options);
 
+    void PackBinaryImageToTiffFileSync(BinaryBufferInfo const& bufferInfo, int32_t fd,
+        optional_view<PackingOptionsForTiff> options);
+    array<uint8_t> PackBinaryImageToTiffDataSync(BinaryBufferInfo const& bufferInfo,
+        optional_view<PackingOptionsForTiff> options);
+
     array<uint8_t> PackingPictureSync(weak::Picture picture, PackingOption const& options);
 
     array<uint8_t> PackImageSourceToDataSync(weak::ImageSource source, PackingOption const& options);

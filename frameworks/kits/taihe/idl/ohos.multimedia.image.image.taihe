@@ -33,8 +33,10 @@ enum PixelMapFormat: i32 {
   RGBA_1010102 = 10,
   YCBCR_P010 = 11,
   YCRCB_P010 = 12,
+  Y8 = 14,  // 8-bit grayscale
   ALPHA_U8 = 15,
   ALPHA_F16 = 16,
+  Y1 = 17,  // 1-bit black and white
   ASTC_4x4 = 102
 }
 
@@ -308,6 +310,20 @@ struct ImageInfo {
   isHdr: bool;
 }
 
+struct PackingOptionsForTiff {
+  compression: Optional<i32>;
+  orientation: Optional<Orientation>;
+  xResolution: Optional<f64>;
+  yResolution: Optional<f64>;
+  resolutionUnit: Optional<i32>;
+}
+
+struct BinaryBufferInfo {
+  size: Size;
+  data: @arraybuffer Array<u8>;
+  bytesPerRow: Optional<i32>;
+}
+
 enum CropAndScaleStrategy: i32 {
   SCALE_FIRST = 1,
   CROP_FIRST = 2
@@ -328,6 +344,7 @@ struct PackingOption {
   backgroundColor: Optional<i32>;
   sizeLimit: Optional<PackingSizeLimit>;
   needsPackGPS: Optional<bool>;
+  tiffPackingOption: Optional<PackingOptionsForTiff>;
 }
 
 struct PackingOptionsForSequence {
@@ -2057,6 +2074,12 @@ interface ImagePacker {
 
   @promise @rename("packToFile")
   PackPictureToFileSync(picture: Picture, fd: i32, options: PackingOption): void;
+
+  @promise @rename("packBinaryImageToTiffFile")
+  PackBinaryImageToTiffFileSync(bufferInfo: BinaryBufferInfo, fd: i32, options: Optional<PackingOptionsForTiff>): void;
+
+  @promise @rename("packBinaryImageToTiffData")
+  PackBinaryImageToTiffDataSync(bufferInfo: BinaryBufferInfo, options: Optional<PackingOptionsForTiff>): @arraybuffer Array<u8>;
 
   @promise @rename("packing")
   PackingPictureSync(picture: Picture, options: PackingOption): @arraybuffer Array<u8>;

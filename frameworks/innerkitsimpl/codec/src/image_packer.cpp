@@ -500,7 +500,9 @@ uint32_t ImagePacker::PackBinaryImageToTiffFile(const PixelBufferInfo &bufferInf
 
     FilePackerStream *packerStream = new (std::nothrow) FilePackerStream(fd);
     CHECK_ERROR_RETURN_RET_LOG(!packerStream, ERR_IMAGE_INVALID_PARAMETER, "make file packer stream failed");
-    ret = EncodeBinaryImageToTiffStream(bufferInfo, *packerStream, option, "PackBinaryImageToTiffFile");
+    FreeOldPackerStream();
+    packerStream_ = std::unique_ptr<FilePackerStream>(packerStream);
+    ret = EncodeBinaryImageToTiffStream(bufferInfo, *packerStream_, option, "PackBinaryImageToTiffFile");
     if (ret != SUCCESS) {
         return ret;
     }
@@ -527,13 +529,16 @@ uint32_t ImagePacker::PackBinaryImageToTiffData(const PixelBufferInfo &bufferInf
     }
 
     BufferPackerStream *packerStream = new (std::nothrow) BufferPackerStream(outputData, outputSize);
-    ret = EncodeBinaryImageToTiffStream(bufferInfo, *packerStream, option, "PackBinaryImageToTiffData");
+    CHECK_ERROR_RETURN_RET_LOG(!packerStream, ERR_IMAGE_INVALID_PARAMETER, "make buffer packer stream failed");
+    FreeOldPackerStream();
+    packerStream_ = std::unique_ptr<BufferPackerStream>(packerStream);
+    ret = EncodeBinaryImageToTiffStream(bufferInfo, *packerStream_, option, "PackBinaryImageToTiffData");
     if (ret != SUCCESS) {
         return ret;
     }
 
     size_t actualSize = 0;
-    packerStream->GetRealWrittenSize(actualSize);
+    packerStream_->GetRealWrittenSize(actualSize);
     outputSize = static_cast<uint32_t>(actualSize);
 
     IMAGE_LOGD("[ImagePacker] PackBinaryImageToTiffData success, outputSize: %{public}u", outputSize);
