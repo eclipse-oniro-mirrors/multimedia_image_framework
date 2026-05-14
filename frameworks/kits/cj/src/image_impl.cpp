@@ -158,7 +158,7 @@ uint32_t ImageImpl::GetComponent(int32_t componentType, CRetComponent& ret)
         return ERR_IMAGE_INIT_ABNORMAL;
     }
     memcpy_s(ret.byteBuffer, len, buffer, len);
-    ret.bufSize = len;
+    ret.bufSize = static_cast<int64_t>(len);
     return SUCCESS;
 }
 
