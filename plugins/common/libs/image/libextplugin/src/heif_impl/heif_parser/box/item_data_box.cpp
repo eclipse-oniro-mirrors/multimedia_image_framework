@@ -94,7 +94,7 @@ heif_error HeifIlocBox::ParseContent(HeifStreamReader &reader)
     // According to ISO standard
     auto isValidSize = [](int size) { return size == 0 || size == 4 || size == 8; };
     if (!isValidSize(offsetSize) || !isValidSize(lengthSize) ||
-        !isValidSize(baseOffsetSize) || isValidSize(indexSize)) {
+        !isValidSize(baseOffsetSize) || !isValidSize(indexSize)) {
         IMAGE_LOGE("HeifParser:: iloc box has invalid size field values");
         return heif_error_invalid_data;
     }
