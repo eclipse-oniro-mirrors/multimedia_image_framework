@@ -265,14 +265,14 @@ uint32_t TiffEncoder::ValidatePixelBufferInfo(const PixelBufferInfo &bufferInfo)
     // Check for overflow before multiplication
     if (rowBytes > std::numeric_limits<uint64_t>::max() / bufferInfo.height) {
         IMAGE_LOGE("[TiffEncoder] ValidatePixelBufferInfo failed, size calculation overflow: "
-                   "rowBytes=%{public}llu, height=%{public}u",
+                   "[rowBytes=%{public}" PRIu64 "], height=%{public}u",
                    rowBytes, bufferInfo.height);
         return ERR_IMAGE_INVALID_PARAMETER;
     }
     uint64_t requiredSize = static_cast<uint64_t>(rowBytes) * bufferInfo.height;
     if (bufferInfo.dataSize < requiredSize) {
         IMAGE_LOGE("[TiffEncoder] ValidatePixelBufferInfo failed, dataSize too small: "
-                   "%{public}llu < required %{public}llu",
+                   "%{public}llu < required %{public}" PRIu64,
                    static_cast<unsigned long long>(bufferInfo.dataSize), requiredSize);
         return ERR_IMAGE_INVALID_PARAMETER;
     }
@@ -402,7 +402,7 @@ uint32_t TiffEncoder::WritePixelData()
         uint64_t offset = static_cast<uint64_t>(row) * rowBytes;
         if (offset + rowBytes > dataSize) {
             IMAGE_LOGE("[TiffEncoder] WritePixelData failed, row access out of bounds: "
-                       "row=%{public}u, offset=%{public}llu, rowBytes=%{public}llu, dataSize=%{public}llu",
+                       "row=%{public}u, [offset=%{public}" PRIu64 "], [rowBytes=%{public}" PRIu64 "], dataSize=%{public}" PRIu64,
                        row, offset, rowBytes, dataSize);
             return ERR_IMAGE_ENCODE_FAILED;
         }
