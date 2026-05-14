@@ -126,7 +126,7 @@ private:
     GSError HwSetColorSpaceData(sptr<SurfaceBuffer> &buffer, GridInfo &gridInfo);
 
     bool HwDecodeImage(std::shared_ptr<HeifImage> &image, GridInfo &gridInfo,
-        sptr<SurfaceBuffer> *outBuffer, bool isPrimary);
+        sptr<SurfaceBuffer> *outBuffer, bool isPrimary, uint32_t recursionCount = 0);
 
     void PrepareInput(std::vector<std::shared_ptr<HeifImage>> tileImages,
         std::vector<std::vector<uint8_t>> &inputs, size_t gridCount);
@@ -156,7 +156,7 @@ private:
         GridInfo &gridInfo, sptr<SurfaceBuffer> &hwBuffer);
 
     bool HwDecodeIdenImage(std::shared_ptr<HeifImage> &image, GridInfo &gridInfo,
-        sptr<SurfaceBuffer> *outBuffer, bool isPrimary);
+        sptr<SurfaceBuffer> *outBuffer, bool isPrimary, uint32_t recursionCount);
 
     bool HwDecodeSingleImage(std::shared_ptr<HeifImage> &image,
         GridInfo &gridInfo, sptr<SurfaceBuffer> &hwBuffer);
@@ -164,7 +164,7 @@ private:
     bool HwDecodeMimeImage(std::shared_ptr<HeifImage> &image);
 
     bool SwDecodeImage(std::shared_ptr<HeifImage> &image, HevcSoftDecodeParam &param,
-                       GridInfo &gridInfo, bool isPrimary, uint32_t index = 0);
+                       GridInfo &gridInfo, bool isPrimary);
     bool SwDecodeAuxiliaryImage(std::shared_ptr<HeifImage> &gainmapImage,
                                 GridInfo &gainmapGridInfo, uint8_t *auxiliaryDstMemory);
     bool DoSwDecodeAuxiliaryImage(std::shared_ptr<HeifImage> &gainmapImage, GridInfo &gainmapGridInfo,

@@ -606,10 +606,12 @@ bool HeifDecoderImpl::SwDecode(bool isSharedMemory, uint32_t index, bool isAnima
     };
     if (isAnimationDecode) {
         CHECK_ERROR_RETURN_RET_LOG(!animationImage_, false, "image sequence info is nullptr.");
-        CHECK_ERROR_RETURN_RET(!SwDecodeImage(animationImage_, param, gridInfo_, false, index), false);
+        param.index = index;
+        CHECK_ERROR_RETURN_RET(!SwDecodeImage(animationImage_, param, gridInfo_, false), false);
     } else {
         bool isNoPrimaryImageHeifs = animationImage_ && animationImage_->IsPrimaryImage();
-        CHECK_ERROR_RETURN_RET(!SwDecodeImage(primaryImage_, param, gridInfo_, !isNoPrimaryImageHeifs, 0), false);
+        param.index = 0;
+        CHECK_ERROR_RETURN_RET(!SwDecodeImage(primaryImage_, param, gridInfo_, !isNoPrimaryImageHeifs), false);
         SwApplyAlphaImage(primaryImage_, dstMemory_, dstRowStride_);
     }
     if (dstHwBuffer_ && (dstHwBuffer_->GetUsage() & BUFFER_USAGE_MEM_MMZ_CACHE)) {
@@ -683,7 +685,7 @@ void HeifDecoderImpl::AllocateHwOutputBuffer(sptr<SurfaceBuffer> &hwBuffer, bool
 }
 
 bool HeifDecoderImpl::HwDecodeImage(std::shared_ptr<HeifImage> &image, GridInfo &gridInfo,
-    sptr<SurfaceBuffer> *outBuffer, bool isPrimary)
+    sptr<SurfaceBuffer> *outBuffer, bool isPrimary, uint32_t recursionCount)
 {
     bool cond = (outPixelFormat_ == PixelFormat::UNKNOWN);
     CHECK_ERROR_RETURN_RET_LOG(cond, false, "unknown pixel type: %{public}d", outPixelFormat_);
@@ -693,7 +695,7 @@ bool HeifDecoderImpl::HwDecodeImage(std::shared_ptr<HeifImage> &image, GridInfo 
 
     std::string imageType = parser_->GetItemType(image->GetItemId());
     if (imageType == "iden") {
-        bool res = HwDecodeIdenImage(image, gridInfo, outBuffer, isPrimary);
+        bool res = HwDecodeIdenImage(image, gridInfo, outBuffer, isPrimary, recursionCount);
         return res;
     }
 
@@ -860,15 +862,18 @@ bool HeifDecoderImpl::HwDecodeGrids(std::shared_ptr<HeifImage> &image,
 }
 
 bool HeifDecoderImpl::HwDecodeIdenImage(std::shared_ptr<HeifImage> &image, GridInfo &gridInfo,
-    sptr<SurfaceBuffer> *outBuffer, bool isPrimary)
+    sptr<SurfaceBuffer> *outBuffer, bool isPrimary, uint32_t recursionCount)
 {
     bool cond = !image;
     CHECK_ERROR_RETURN_RET(cond, false);
+    recursionCount++;
+    cond = recursionCount > MAX_IDEN_RECURSION_COUNT;
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "iden image recursion depth exceeds limit");
     std::shared_ptr<HeifImage> idenImage;
     parser_->GetIdenImage(image->GetItemId(), idenImage);
     cond = idenImage == nullptr || idenImage == image;
     CHECK_ERROR_RETURN_RET_LOG(cond, false, "invalid iden image");
-    return HwDecodeImage(idenImage, gridInfo, outBuffer, isPrimary);
+    return HwDecodeImage(idenImage, gridInfo, outBuffer, isPrimary, recursionCount);
 }
 
 bool HeifDecoderImpl::HwDecodeSingleImage(std::shared_ptr<HeifImage> &image,
@@ -934,7 +939,7 @@ bool HeifDecoderImpl::HwDecodeMimeImage(std::shared_ptr<HeifImage> &image)
 }
 
 bool HeifDecoderImpl::SwDecodeImage(std::shared_ptr<HeifImage> &image, HevcSoftDecodeParam &param,
-                                    GridInfo &gridInfo, bool isPrimary, uint32_t index)
+    GridInfo &gridInfo, bool isPrimary)
 {
     ImageFuncTimer imageFuncTime("HeifDecoderImpl::%s, desiredpixelformat: %d", __func__, outPixelFormat_);
     if (outPixelFormat_ == PixelFormat::UNKNOWN) {
@@ -947,7 +952,7 @@ bool HeifDecoderImpl::SwDecodeImage(std::shared_ptr<HeifImage> &image, HevcSoftD
 
     if (!isPrimary && IsHeifsImage()) {
         IMAGE_LOGI("SwDecodeImage image is heifs image.");
-        return SwDecodeHeifsImage(index, param);
+        return SwDecodeHeifsImage(param.index, param);
     }
 
     std::string imageType = parser_->GetItemType(image->GetItemId());
@@ -1043,10 +1048,13 @@ bool HeifDecoderImpl::SwDecodeGrids(std::shared_ptr<HeifImage> &image, HevcSoftD
 }
 
 bool HeifDecoderImpl::SwDecodeIdenImage(std::shared_ptr<HeifImage> &image,
-                                        HevcSoftDecodeParam &param, GridInfo &gridInfo, bool isPrimary)
+    HevcSoftDecodeParam &param, GridInfo &gridInfo, bool isPrimary)
 {
     bool cond = !image;
     CHECK_ERROR_RETURN_RET(cond, false);
+    param.recursionCount++;
+    cond = param.recursionCount > MAX_IDEN_RECURSION_COUNT;
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "iden image recursion depth exceeds limit");
     std::shared_ptr<HeifImage> idenImage;
     parser_->GetIdenImage(image->GetItemId(), idenImage);
     cond = idenImage == nullptr || idenImage == image;
@@ -1619,7 +1627,7 @@ bool HeifDecoderImpl::SwDecodeHeifsImage(uint32_t index, HevcSoftDecodeParam &pa
 {
     CHECK_ERROR_RETURN_RET(!parser_, false);
     param.gridInfo.decodeMode = DecodeMode::VIDEO;
-    if (!HasDecodedFrame(index)) {
+    if (!HasDecodedFrame(index) || params_[index].bufferSize > param.bufferSize) {
         DeleteParamsBuffer();
         if (!isFirstFrameDecoded_) {
             SwDecodeHeifsStaticImage(param);

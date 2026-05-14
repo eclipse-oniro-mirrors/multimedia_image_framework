@@ -47,6 +47,8 @@ static uint32_t HEIF_NUM_DELTA_POCS = 1;
 static uint32_t HEIF_BASE_DELTA_FlAG = 1;
 static const uint8_t MAX_NAL_ARRAY_NUM = 32;
 static const uint16_t MAX_NAL_UNIT_NUM_PER_ARRAY = 1024;
+static const uint32_t MAX_NUM_SHORT_TERM_REF_PIC_SETS = 64;
+static const uint8_t MAX_LEADING_ZEROS = 32;
 
 namespace OHOS {
 namespace ImagePlugin {
@@ -202,7 +204,7 @@ uint32_t HeifHvccBox::GetWord(const std::vector<uint8_t>& nalu, uint32_t length)
 uint32_t HeifHvccBox::GetGolombCode(const std::vector<uint8_t> &nalu)
 {
     uint32_t zeros = 0;
-    while (pos_ < boxBitLength_ && ((nalu[pos_ / ONE_BYTE_SHIFT] >>
+    while (pos_ < boxBitLength_ && zeros < MAX_LEADING_ZEROS && ((nalu[pos_ / ONE_BYTE_SHIFT] >>
            (ONE_BYTE_SHIFT - BIT_SHIFT - (pos_ % ONE_BYTE_SHIFT))) &
            0x01) == 0x00) {
         zeros++;
@@ -508,7 +510,7 @@ bool HeifHvccBox::ParseSpsSyntaxScalingList(std::vector<uint8_t> &nalUnits)
     }
     spsConfig_.numShortTermRefPicSets = GetGolombCode(nalUnits);
     IMAGE_LOGD("HeifParser:: SPS numShortTermRefPicSets : %{public}d", spsConfig_.numShortTermRefPicSets);
-    for (uint32_t i = 0; i < spsConfig_.numShortTermRefPicSets; i++) {
+    for (uint32_t i = 0; i <= MAX_NUM_SHORT_TERM_REF_PIC_SETS && i < spsConfig_.numShortTermRefPicSets; i++) {
         ParseStRefPicSet(nalUnits, i, spsConfig_.numShortTermRefPicSets);
     }
     spsConfig_.longTermRefPicsPresentFlag = GetWord(nalUnits, READ_BIT_NUM_FLAG);
