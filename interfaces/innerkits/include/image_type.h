@@ -339,10 +339,10 @@ struct RGBDataInfo {
 };
 
 struct PixelBufferInfo {
-    uint32_t width;
-    uint32_t height;
-    uint8_t* data;
-    size_t dataSize;
+    uint32_t width = 0;
+    uint32_t height = 0;
+    uint8_t* data = nullptr;
+    size_t dataSize = 0;
     uint32_t bytesPerRow = 0;  // 0 means use default calculation
 };
 

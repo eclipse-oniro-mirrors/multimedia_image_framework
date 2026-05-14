@@ -96,7 +96,8 @@ tmsize_t TiffEncoder::WriteProc(thandle_t handle, void *data, tmsize_t size)
     const uint8_t *ptr = static_cast<const uint8_t *>(data);
 
     while (size > 0) {
-        uint32_t chunkSize = (size > UINT32_MAX) ? UINT32_MAX : static_cast<uint32_t>(size);
+        tmsize_t chunkSize = (size > static_cast<tmsize_t>(UINT32_MAX))
+                             ? static_cast<tmsize_t>(UINT32_MAX) : size;
         if (!stream->Write(ptr, chunkSize)) {
             return 0;
         }
@@ -192,7 +193,7 @@ uint32_t TiffEncoder::AddImage(PixelMap &pixelMap)
     // Note: PixelMap::GetPixels() returns const void*, but PixelBufferInfo.data is uint8_t*
     // This is safe because TIFF encoder only reads the data (does not modify)
     bufferInfo.data = const_cast<uint8_t*>(static_cast<const uint8_t*>(pixelMap.GetPixels()));
-    bufferInfo.dataSize = static_cast<size_t>(rowStride) * height;
+    bufferInfo.dataSize = static_cast<size_t>(rowStride) * static_cast<size_t>(height);
     bufferInfo.bytesPerRow = static_cast<uint32_t>(rowStride);
     uint32_t ret = PrepareEncoding(bufferInfo, format);
     CHECK_ERROR_RETURN_RET_LOG(ret != SUCCESS, ret, "[TiffEncoder] AddImage failed, cannot prepare encoding");
