@@ -222,7 +222,7 @@ uint32_t ProgressiveJpegDecoder::GetJpegInputData(InputDataStream *stream, const
         return SUCCESS;
     }
 
-    jpegData.ownedBuffer = std::make_unique<uint8_t[]>(jpegData.bufferSize);
+    jpegData.ownedBuffer.reset(new (std::nothrow) uint8_t[jpegData.bufferSize]);
     CHECK_ERROR_RETURN_RET_LOG(jpegData.ownedBuffer == nullptr, ERR_IMAGE_DECODE_ABNORMAL,
         "GetJpegInputData alloc input failed");
     jpegData.buffer = jpegData.ownedBuffer.get();
