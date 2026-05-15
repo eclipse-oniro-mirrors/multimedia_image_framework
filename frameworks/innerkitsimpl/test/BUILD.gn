@@ -75,7 +75,10 @@ ohos_unittest("pixelmaptest") {
   if (memory_utils_purgeable_ashmem_enable && defined(global_parts_info) &&
       defined(global_parts_info.resourceschedule_memmgr_override)) {
     defines += [ "IMAGE_PURGEABLE_PIXELMAP" ]
-    external_deps += [ "memmgr_override:libpurgeablemem_plugin" ]
+    external_deps += [ 
+      "memmgr_override:libpurgeablemem_plugin",
+      "memory_utils:libpurgeablemem"
+    ]
   }
 
   if (defined(global_parts_info) &&
@@ -393,7 +396,10 @@ ohos_unittest("imagesourcetest") {
   if (memory_utils_purgeable_ashmem_enable && defined(global_parts_info) &&
       defined(global_parts_info.resourceschedule_memmgr_override)) {
     defines = [ "IMAGE_PURGEABLE_PIXELMAP" ]
-    external_deps += [ "memmgr_override:libpurgeablemem_plugin" ]
+    external_deps += [ 
+      "memmgr_override:libpurgeablemem_plugin",
+      "memory_utils:libpurgeablemem"
+    ]
   }
 
   if (defined(global_parts_info) &&
@@ -1520,7 +1526,10 @@ ohos_unittest("pixelastctest") {
   if (memory_utils_purgeable_ashmem_enable && defined(global_parts_info) &&
       defined(global_parts_info.resourceschedule_memmgr_override)) {
     defines = [ "IMAGE_PURGEABLE_PIXELMAP" ]
-    external_deps += [ "memmgr_override:libpurgeablemem_plugin" ]
+    external_deps += [ 
+      "memmgr_override:libpurgeablemem_plugin",
+      "memory_utils:libpurgeablemem"
+    ]
   }
 
   resource_config_file = "$image_subsystem/test/resource/image/ohos_test.xml"
