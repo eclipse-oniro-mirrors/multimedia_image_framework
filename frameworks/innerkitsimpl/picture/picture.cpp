@@ -449,8 +449,7 @@ static std::shared_ptr<PixelMap> DeepCopyPixelMap(const std::shared_ptr<PixelMap
         return nullptr;
     }
     int32_t errorCode = SUCCESS;
-    std::unique_ptr<PixelMap> tmpPixelMap;
-    tmpPixelMap = srcPixelMap->Clone(errorCode);
+    std::unique_ptr<PixelMap> tmpPixelMap = srcPixelMap->Clone(errorCode);
     if (errorCode != SUCCESS || tmpPixelMap == nullptr) {
         IMAGE_LOGE("DeepCopyPixelMap srcPixelMap->Clone fail.");
         return nullptr;
