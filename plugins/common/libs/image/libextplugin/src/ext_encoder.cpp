@@ -1074,25 +1074,18 @@ uint32_t ExtEncoder::ProcessPictureMaxSize()
     }
 
     auto mainPixelmap = picture_->GetMainPixel();
-    if (mainPixelmap == nullptr) {
-        IMAGE_LOGE("ExtEncoder::ProcessPictureMaxSize mainPixelmap is nullptr");
-        return ERR_IMAGE_INVALID_PARAMETER;
-    }
+    bool cond = mainPixelmap == nullptr;
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER, "mainPixelmap is nullptr");
 
     int32_t srcWidth = mainPixelmap->GetWidth();
     int32_t srcHeight = mainPixelmap->GetHeight();
-    if (srcWidth == 0 || srcHeight == 0) {
-        IMAGE_LOGE("ExtEncoder::ProcessPictureMaxSize invalid image size (%{public}d, %{public}d)",
-            srcWidth, srcHeight);
-        return ERR_IMAGE_INVALID_PARAMETER;
-    }
+    cond = (srcWidth == 0 || srcHeight == 0);
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER, "%{public}s invalid image size is 0", __func__);
 
     int32_t maxWidth = opts_.sizeLimit.maxSize.width > 0 ? opts_.sizeLimit.maxSize.width : srcWidth;
     int32_t maxHeight = opts_.sizeLimit.maxSize.height > 0 ? opts_.sizeLimit.maxSize.height : srcHeight;
-    if (srcWidth <= maxWidth && srcHeight <= maxHeight) {
-        IMAGE_LOGD("ExtEncoder::ProcessPictureMaxSize image size within max bounds, skip scaling");
-        return SUCCESS;
-    }
+    cond = (srcWidth <= maxWidth && srcHeight <= maxHeight);
+    CHECK_ERROR_RETURN_RET_LOG(cond, SUCCESS, "%{public}s image size within max bounds, skip scaling", __func__);
 
     float scaleX = static_cast<float>(maxWidth) / srcWidth;
     float scaleY = static_cast<float>(maxHeight) / srcHeight;
@@ -1122,7 +1115,7 @@ uint32_t ExtEncoder::ProcessPictureMaxSize()
         if (auxPixelmap != nullptr) {
             scaleRet = auxPixelmap->Scale(scale, scale, opts_.sizeLimit.antiAliasingLevel);
             if (scaleRet != SUCCESS) {
-            IMAGE_LOGE("ExtEncoder::ProcessPictureMaxSize aux scale failed, type %{public}d", auxType);
+                IMAGE_LOGE("ExtEncoder::ProcessPictureMaxSize aux scale failed, type %{public}d", auxType);
                 return ERR_IMAGE_ENCODE_FAILED;
             }
         }
