@@ -839,10 +839,10 @@ void ExtEncoder::RecycleResources()
     tmpMemoryList_.clear();
 }
 
-bool ExtEncoder::IsFormatSupportTransparency(const std::string& format) const
+bool ExtEncoder::IsFormatNotSupportTransparency(const std::string& format) const
 {
     std::string lowerFormat = LowerStr(format);
-    return lowerFormat == IMAGE_PNG_FORMAT || lowerFormat == IMAGE_WEBP_FORMAT || lowerFormat == IMAGE_GIF_FORMAT;
+    return lowerFormat == IMAGE_JPEG_FORMAT || lowerFormat == IMAGE_HEIF_FORMAT || lowerFormat == IMAGE_HEIC_FORMAT;
 }
 
 #if !defined(CROSS_PLATFORM)
@@ -905,7 +905,7 @@ bool ExtEncoder::NeedDeepCopy()
     }
 
     if ((srcPixelmap != nullptr) && (opts_.backgroundColor != 0) && !hasGainmap
-        && !IsFormatSupportTransparency(opts_.format)) {
+        && IsFormatNotSupportTransparency(opts_.format)) {
         PixelFormat pixelFormat = srcPixelmap->GetPixelFormat();
         AlphaType alphaType = srcPixelmap->GetAlphaType();
         if (pixelFormat == PixelFormat::RGBA_8888 && alphaType != AlphaType::IMAGE_ALPHA_TYPE_OPAQUE) {
@@ -1100,23 +1100,31 @@ uint32_t ExtEncoder::ProcessPictureMaxSize()
     IMAGE_LOGI("ExtEncoder::ProcessPictureMaxSize scale image from (%{public}d, %{public}d) "
         "to fit maxSize(%{public}d, %{public}d), scale=%{public}f", srcWidth, srcHeight, maxWidth, maxHeight, scale);
 
-    if (!mainPixelmap->resize(scale, scale)) {
-        IMAGE_LOGE("ExtEncoder::ProcessPictureMaxSize mainPixelmap resize failed");
+    uint32_t scaleRet = mainPixelmap->Scale(scale, scale, opts_.sizeLimit.antiAliasingLevel);
+    if (scaleRet != SUCCESS) {
+        IMAGE_LOGE("ExtEncoder::ProcessPictureMaxSize mainPixelmap scale failed");
         return ERR_IMAGE_ENCODE_FAILED;
     }
     auto gainmapPixelmap = picture_->GetGainmapPixelMap();
-    if (gainmapPixelmap != nullptr && !gainmapPixelmap->resize(scale, scale)) {
-        IMAGE_LOGE("ExtEncoder::ProcessPictureMaxSize gainmapPixelmap resize failed");
-        return ERR_IMAGE_ENCODE_FAILED;
+    if (gainmapPixelmap != nullptr) {
+        scaleRet = gainmapPixelmap->Scale(scale, scale, opts_.sizeLimit.antiAliasingLevel);
+        if (scaleRet != SUCCESS) {
+            IMAGE_LOGE("ExtEncoder::ProcessPictureMaxSize gainmapPixelmap scale failed");
+            return ERR_IMAGE_ENCODE_FAILED;
+        }
     }
+
     const auto& auxTypes = ImageUtils::GetAllAuxiliaryPictureType();
     for (const auto& auxType : auxTypes) {
         auto auxPicture = picture_->GetAuxiliaryPicture(auxType);
         if (auxPicture == nullptr) continue;
         auto auxPixelmap = auxPicture->GetContentPixel();
-        if (auxPixelmap != nullptr && !auxPixelmap->resize(scale, scale)) {
-            IMAGE_LOGE("ExtEncoder::ProcessPictureMaxSize aux resize failed, type %{public}d", auxType);
-            return ERR_IMAGE_ENCODE_FAILED;
+        if (auxPixelmap != nullptr) {
+            scaleRet = auxPixelmap->Scale(scale, scale, opts_.sizeLimit.antiAliasingLevel);
+            if (scaleRet != SUCCESS) {
+            IMAGE_LOGE("ExtEncoder::ProcessPictureMaxSize aux scale failed, type %{public}d", auxType);
+                return ERR_IMAGE_ENCODE_FAILED;
+            }
         }
     }
     return SUCCESS;
@@ -1124,7 +1132,7 @@ uint32_t ExtEncoder::ProcessPictureMaxSize()
 
 uint32_t ExtEncoder::ProcessBackgroundColor(PixelMap* processPixelmap)
 {
-    if (IsFormatSupportTransparency(opts_.format) || processPixelmap == nullptr) {
+    if (!IsFormatNotSupportTransparency(opts_.format) || processPixelmap == nullptr) {
         return SUCCESS;
     }
 

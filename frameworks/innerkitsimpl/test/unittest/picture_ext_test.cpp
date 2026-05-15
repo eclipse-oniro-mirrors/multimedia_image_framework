@@ -40,6 +40,8 @@
 #include "image_source_util.h"
 #include "webp_exif_metadata_accessor.h"
 #include "image_mime_type.h"
+#include "jpeg_exif_metadata_accessor.h"
+#include "file_metadata_stream.h"
 using namespace OHOS::Media;
 using namespace testing::ext;
 namespace OHOS {
@@ -107,6 +109,63 @@ static const std::string IMAGE_INPUT_HEIF_EXIF_THUMBNAIL = "/data/local/tmp/imag
 static const std::string IMAGE_INPUT_HEIF_BOX_THUMBNAIL = "/data/local/tmp/image/heif_box_thumbnail.heic";
 static const std::string IMAGE_INPUT_HEIF_NO_THUMBNAIL = "/data/local/tmp/image/heif_no_thumbnail.heic";
 static const std::string IMAGE_JPEG_100_300 = "/data/local/tmp/image/test_jpeg_100_300.jpg";
+static const std::string IMAGE_JPEG_EXIF_SRC = "/data/local/tmp/image/test_exif.jpg";
+
+static bool VerifyGpsInfoExists(const std::string& path)
+{
+    std::shared_ptr<MetadataStream> stream = std::make_shared<FileMetadataStream>(path);
+    if (!stream->Open(OpenMode::ReadWrite)) {
+        return false;
+    }
+    
+    JpegExifMetadataAccessor accessor(stream);
+    if (accessor.Read() != 0) {
+        return false;
+    }
+    
+    auto exifMetadata = accessor.Get();
+    if (exifMetadata == nullptr) {
+        return false;
+    }
+    
+    std::string value;
+    if (exifMetadata->GetValue("GPSLatitude", value) != 0 || value.empty()) {
+        return false;
+    }
+    if (exifMetadata->GetValue("GPSLongitude", value) != 0 || value.empty()) {
+        return false;
+    }
+    
+    return true;
+}
+
+static bool VerifyGpsInfoRemoved(const std::string& path)
+{
+    std::shared_ptr<MetadataStream> stream = std::make_shared<FileMetadataStream>(path);
+    if (!stream->Open(OpenMode::ReadWrite)) {
+        return false;
+    }
+    
+    JpegExifMetadataAccessor accessor(stream);
+    if (accessor.Read() != 0) {
+        return false;
+    }
+    
+    auto exifMetadata = accessor.Get();
+    if (exifMetadata == nullptr) {
+        return false;
+    }
+    
+    std::string value;
+    if (exifMetadata->GetValue("GPSLatitude", value) == 0 && !value.empty()) {
+        return false;
+    }
+    if (exifMetadata->GetValue("GPSLongitude", value) == 0 && !value.empty()) {
+        return false;
+    }
+    
+    return true;
+}
 
 class PictureExtTest : public testing::Test {
 public:
@@ -2607,7 +2666,7 @@ HWTEST_F(PictureExtTest, EncodeThumbnailPicture014, TestSize.Level1)
 HWTEST_F(PictureExtTest, PictureEncodeControlParamsTest001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "PictureExtTest: PictureEncodeControlParamsTest001 start";
-    auto srcPicture = CreatePictureByPixelMap(IMAGE_JPEG_FORMAT, IMAGE_JPEG_SRC);
+    auto srcPicture = CreatePictureByPixelMap(IMAGE_JPEG_FORMAT, IMAGE_JPEG_EXIF_SRC);
     ASSERT_NE(srcPicture, nullptr);
     
     ImagePacker packer;
@@ -2625,6 +2684,8 @@ HWTEST_F(PictureExtTest, PictureEncodeControlParamsTest001, TestSize.Level3)
     ASSERT_EQ(ret, OHOS::Media::SUCCESS);
     ret = packer.FinalizePacking();
     ASSERT_EQ(ret, OHOS::Media::SUCCESS);
+    
+    ASSERT_TRUE(VerifyGpsInfoExists(IMAGE_JPEG_DEST));
     GTEST_LOG_(INFO) << "PictureExtTest: PictureEncodeControlParamsTest001 end";
 }
 
@@ -2667,6 +2728,13 @@ HWTEST_F(PictureExtTest, PictureEncodeControlParamsTest003, TestSize.Level3)
     auto srcPicture = CreatePictureByPixelMap(IMAGE_JPEG_FORMAT, IMAGE_JPEG_SRC);
     ASSERT_NE(srcPicture, nullptr);
     
+    auto mainPixelmap = srcPicture->GetMainPixel();
+    ASSERT_NE(mainPixelmap, nullptr);
+    ImageInfo imageInfo;
+    mainPixelmap->GetImageInfo(imageInfo);
+    int32_t srcWidth = imageInfo.size.width;
+    int32_t srcHeight = imageInfo.size.height;
+    
     ImagePacker packer;
     PackOption option {
         .format = IMAGE_JPEG_FORMAT,
@@ -2681,6 +2749,13 @@ HWTEST_F(PictureExtTest, PictureEncodeControlParamsTest003, TestSize.Level3)
     ASSERT_EQ(ret, OHOS::Media::SUCCESS);
     ret = packer.FinalizePacking();
     ASSERT_EQ(ret, OHOS::Media::SUCCESS);
+    
+    auto packedPixelMap = CreatePixelMapInner(IMAGE_JPEG_FORMAT, IMAGE_JPEG_DEST);
+    ASSERT_NE(packedPixelMap, nullptr);
+    ImageInfo packedInfo;
+    packedPixelMap->GetImageInfo(packedInfo);
+    ASSERT_EQ(packedInfo.size.width, srcWidth);
+    ASSERT_EQ(packedInfo.size.height, srcHeight);
     GTEST_LOG_(INFO) << "PictureExtTest: PictureEncodeControlParamsTest003 end";
 }
 
@@ -2692,14 +2767,23 @@ HWTEST_F(PictureExtTest, PictureEncodeControlParamsTest003, TestSize.Level3)
 HWTEST_F(PictureExtTest, PictureEncodeControlParamsTest004, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "PictureExtTest: PictureEncodeControlParamsTest004 start";
-    auto srcPicture = CreatePictureByPixelMap(IMAGE_JPEG_FORMAT, IMAGE_JPEG_SRC);
+    auto srcPicture = CreatePictureByPixelMap(IMAGE_JPEG_FORMAT, IMAGE_JPEG_SRC, PixelFormat::RGBA_8888);
     ASSERT_NE(srcPicture, nullptr);
+    
+    auto mainPixelmap = srcPicture->GetMainPixel();
+    ASSERT_NE(mainPixelmap, nullptr);
+    ImageInfo imageInfo;
+    mainPixelmap->GetImageInfo(imageInfo);
+    int32_t srcWidth = imageInfo.size.width;
+    int32_t srcHeight = imageInfo.size.height;
+    int32_t dstWidth = srcWidth / 2;
+    int32_t dstHeight = srcHeight / 2;
     
     ImagePacker packer;
     PackOption option {
         .format = IMAGE_JPEG_FORMAT,
         .quality = DEFAULT_JPEG_QUALITY,
-        .sizeLimit = {.maxSize = {800, 0}, .antiAliasingLevel = AntiAliasingOption::HIGH},
+        .sizeLimit = {.maxSize = {dstWidth, 0}, .antiAliasingLevel = AntiAliasingOption::HIGH},
     };
     
     std::filesystem::remove(IMAGE_JPEG_DEST);
@@ -2709,6 +2793,13 @@ HWTEST_F(PictureExtTest, PictureEncodeControlParamsTest004, TestSize.Level3)
     ASSERT_EQ(ret, OHOS::Media::SUCCESS);
     ret = packer.FinalizePacking();
     ASSERT_EQ(ret, OHOS::Media::SUCCESS);
+    
+    auto packedPixelMap = CreatePixelMapInner(IMAGE_JPEG_FORMAT, IMAGE_JPEG_DEST);
+    ASSERT_NE(packedPixelMap, nullptr);
+    ImageInfo packedInfo;
+    packedPixelMap->GetImageInfo(packedInfo);
+    ASSERT_EQ(packedInfo.size.width, dstWidth);
+    ASSERT_EQ(packedInfo.size.height, dstHeight);
     GTEST_LOG_(INFO) << "PictureExtTest: PictureEncodeControlParamsTest004 end";
 }
 
@@ -2720,14 +2811,23 @@ HWTEST_F(PictureExtTest, PictureEncodeControlParamsTest004, TestSize.Level3)
 HWTEST_F(PictureExtTest, PictureEncodeControlParamsTest005, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "PictureExtTest: PictureEncodeControlParamsTest005 start";
-    auto srcPicture = CreatePictureByPixelMap(IMAGE_JPEG_FORMAT, IMAGE_JPEG_SRC);
+    auto srcPicture = CreatePictureByPixelMap(IMAGE_JPEG_FORMAT, IMAGE_JPEG_SRC, PixelFormat::RGBA_8888);
     ASSERT_NE(srcPicture, nullptr);
+    
+    auto mainPixelmap = srcPicture->GetMainPixel();
+    ASSERT_NE(mainPixelmap, nullptr);
+    ImageInfo imageInfo;
+    mainPixelmap->GetImageInfo(imageInfo);
+    int32_t srcWidth = imageInfo.size.width;
+    int32_t srcHeight = imageInfo.size.height;
+    int32_t dstWidth = srcWidth / 2;
+    int32_t dstHeight = srcHeight / 2;
     
     ImagePacker packer;
     PackOption option {
         .format = IMAGE_JPEG_FORMAT,
         .quality = DEFAULT_JPEG_QUALITY,
-        .sizeLimit = {.maxSize = {0, 600}, .antiAliasingLevel = AntiAliasingOption::HIGH},
+        .sizeLimit = {.maxSize = {0, dstHeight}, .antiAliasingLevel = AntiAliasingOption::HIGH},
     };
     
     std::filesystem::remove(IMAGE_JPEG_DEST);
@@ -2737,6 +2837,13 @@ HWTEST_F(PictureExtTest, PictureEncodeControlParamsTest005, TestSize.Level3)
     ASSERT_EQ(ret, OHOS::Media::SUCCESS);
     ret = packer.FinalizePacking();
     ASSERT_EQ(ret, OHOS::Media::SUCCESS);
+    
+    auto packedPixelMap = CreatePixelMapInner(IMAGE_JPEG_FORMAT, IMAGE_JPEG_DEST);
+    ASSERT_NE(packedPixelMap, nullptr);
+    ImageInfo packedInfo;
+    packedPixelMap->GetImageInfo(packedInfo);
+    ASSERT_EQ(packedInfo.size.width, dstWidth);
+    ASSERT_EQ(packedInfo.size.height, dstHeight);
     GTEST_LOG_(INFO) << "PictureExtTest: PictureEncodeControlParamsTest005 end";
 }
 
@@ -2748,14 +2855,23 @@ HWTEST_F(PictureExtTest, PictureEncodeControlParamsTest005, TestSize.Level3)
 HWTEST_F(PictureExtTest, PictureEncodeControlParamsTest006, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "PictureExtTest: PictureEncodeControlParamsTest006 start";
-    auto srcPicture = CreatePictureByPixelMap(IMAGE_JPEG_FORMAT, IMAGE_JPEG_SRC);
+    auto srcPicture = CreatePictureByPixelMap(IMAGE_JPEG_FORMAT, IMAGE_JPEG_SRC, PixelFormat::RGBA_8888);
     ASSERT_NE(srcPicture, nullptr);
+    
+    auto mainPixelmap = srcPicture->GetMainPixel();
+    ASSERT_NE(mainPixelmap, nullptr);
+    ImageInfo imageInfo;
+    mainPixelmap->GetImageInfo(imageInfo);
+    int32_t srcWidth = imageInfo.size.width;
+    int32_t srcHeight = imageInfo.size.height;
+    int32_t dstWidth = srcWidth / 2;
+    int32_t dstHeight = srcHeight / 2;
     
     ImagePacker packer;
     PackOption option {
         .format = IMAGE_JPEG_FORMAT,
         .quality = DEFAULT_JPEG_QUALITY,
-        .sizeLimit = {.maxSize = {400, 300}, .antiAliasingLevel = AntiAliasingOption::MEDIUM},
+        .sizeLimit = {.maxSize = {dstWidth, dstHeight}, .antiAliasingLevel = AntiAliasingOption::MEDIUM},
     };
     
     std::filesystem::remove(IMAGE_JPEG_DEST);
@@ -2765,6 +2881,13 @@ HWTEST_F(PictureExtTest, PictureEncodeControlParamsTest006, TestSize.Level3)
     ASSERT_EQ(ret, OHOS::Media::SUCCESS);
     ret = packer.FinalizePacking();
     ASSERT_EQ(ret, OHOS::Media::SUCCESS);
+    
+    auto packedPixelMap = CreatePixelMapInner(IMAGE_JPEG_FORMAT, IMAGE_JPEG_DEST);
+    ASSERT_NE(packedPixelMap, nullptr);
+    ImageInfo packedInfo;
+    packedPixelMap->GetImageInfo(packedInfo);
+    ASSERT_EQ(packedInfo.size.width, dstWidth);
+    ASSERT_EQ(packedInfo.size.height, dstHeight);
     GTEST_LOG_(INFO) << "PictureExtTest: PictureEncodeControlParamsTest006 end";
 }
 
@@ -2776,8 +2899,17 @@ HWTEST_F(PictureExtTest, PictureEncodeControlParamsTest006, TestSize.Level3)
 HWTEST_F(PictureExtTest, PictureEncodeControlParamsTest007, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "PictureExtTest: PictureEncodeControlParamsTest007 start";
-    auto srcPicture = CreatePictureByPixelMap(IMAGE_JPEG_FORMAT, IMAGE_JPEG_SRC);
+    auto srcPicture = CreatePictureByPixelMap(IMAGE_JPEG_FORMAT, IMAGE_JPEG_EXIF_SRC, PixelFormat::RGBA_8888);
     ASSERT_NE(srcPicture, nullptr);
+    
+    auto mainPixelmap = srcPicture->GetMainPixel();
+    ASSERT_NE(mainPixelmap, nullptr);
+    ImageInfo imageInfo;
+    mainPixelmap->GetImageInfo(imageInfo);
+    int32_t srcWidth = imageInfo.size.width;
+    int32_t srcHeight = imageInfo.size.height;
+    int32_t dstWidth = srcWidth / 2;
+    int32_t dstHeight = srcHeight / 2;
     
     ImagePacker packer;
     PackOption option {
@@ -2786,7 +2918,7 @@ HWTEST_F(PictureExtTest, PictureEncodeControlParamsTest007, TestSize.Level3)
         .needsPackProperties = true,
         .needsPackGPS = false,
         .backgroundColor = 0xFFFFFF,
-        .sizeLimit = {.maxSize = {500, 400}, .antiAliasingLevel = AntiAliasingOption::HIGH},
+        .sizeLimit = {.maxSize = {dstWidth, dstHeight}, .antiAliasingLevel = AntiAliasingOption::HIGH},
     };
     
     std::filesystem::remove(IMAGE_JPEG_DEST);
@@ -2796,6 +2928,14 @@ HWTEST_F(PictureExtTest, PictureEncodeControlParamsTest007, TestSize.Level3)
     ASSERT_EQ(ret, OHOS::Media::SUCCESS);
     ret = packer.FinalizePacking();
     ASSERT_EQ(ret, OHOS::Media::SUCCESS);
+    
+    ASSERT_TRUE(VerifyGpsInfoRemoved(IMAGE_JPEG_DEST));
+    auto packedPixelMap = CreatePixelMapInner(IMAGE_JPEG_FORMAT, IMAGE_JPEG_DEST);
+    ASSERT_NE(packedPixelMap, nullptr);
+    ImageInfo packedInfo;
+    packedPixelMap->GetImageInfo(packedInfo);
+    ASSERT_EQ(packedInfo.size.width, dstWidth);
+    ASSERT_EQ(packedInfo.size.height, dstHeight);
     GTEST_LOG_(INFO) << "PictureExtTest: PictureEncodeControlParamsTest007 end";
 }
 
@@ -2807,14 +2947,23 @@ HWTEST_F(PictureExtTest, PictureEncodeControlParamsTest007, TestSize.Level3)
 HWTEST_F(PictureExtTest, PictureEncodeControlParamsTest008, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "PictureExtTest: PictureEncodeControlParamsTest008 start";
-    auto srcPicture = CreatePictureByPixelMap(IMAGE_JPEG_FORMAT, IMAGE_JPEG_SRC);
+    auto srcPicture = CreatePictureByPixelMap(IMAGE_JPEG_FORMAT, IMAGE_JPEG_SRC, PixelFormat::RGBA_8888);
     ASSERT_NE(srcPicture, nullptr);
+    
+    auto mainPixelmap = srcPicture->GetMainPixel();
+    ASSERT_NE(mainPixelmap, nullptr);
+    ImageInfo imageInfo;
+    mainPixelmap->GetImageInfo(imageInfo);
+    int32_t srcWidth = imageInfo.size.width;
+    int32_t srcHeight = imageInfo.size.height;
+    int32_t dstWidth = srcWidth / 2;
+    int32_t dstHeight = srcHeight / 2;
     
     ImagePacker packer;
     PackOption option {
         .format = IMAGE_JPEG_FORMAT,
         .quality = DEFAULT_JPEG_QUALITY,
-        .sizeLimit = {.maxSize = {300, 200}, .antiAliasingLevel = AntiAliasingOption::NONE},
+        .sizeLimit = {.maxSize = {dstWidth, dstHeight}, .antiAliasingLevel = AntiAliasingOption::NONE},
     };
     
     std::filesystem::remove(IMAGE_JPEG_DEST);
@@ -2824,6 +2973,13 @@ HWTEST_F(PictureExtTest, PictureEncodeControlParamsTest008, TestSize.Level3)
     ASSERT_EQ(ret, OHOS::Media::SUCCESS);
     ret = packer.FinalizePacking();
     ASSERT_EQ(ret, OHOS::Media::SUCCESS);
+    
+    auto packedPixelMap = CreatePixelMapInner(IMAGE_JPEG_FORMAT, IMAGE_JPEG_DEST);
+    ASSERT_NE(packedPixelMap, nullptr);
+    ImageInfo packedInfo;
+    packedPixelMap->GetImageInfo(packedInfo);
+    ASSERT_EQ(packedInfo.size.width, dstWidth);
+    ASSERT_EQ(packedInfo.size.height, dstHeight);
     GTEST_LOG_(INFO) << "PictureExtTest: PictureEncodeControlParamsTest008 end";
 }
 
@@ -2835,14 +2991,23 @@ HWTEST_F(PictureExtTest, PictureEncodeControlParamsTest008, TestSize.Level3)
 HWTEST_F(PictureExtTest, PictureEncodeControlParamsTest009, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "PictureExtTest: PictureEncodeControlParamsTest009 start";
-    auto srcPicture = CreatePictureByPixelMap(IMAGE_JPEG_FORMAT, IMAGE_JPEG_SRC);
+    auto srcPicture = CreatePictureByPixelMap(IMAGE_JPEG_FORMAT, IMAGE_JPEG_SRC, PixelFormat::RGBA_8888);
     ASSERT_NE(srcPicture, nullptr);
+    
+    auto mainPixelmap = srcPicture->GetMainPixel();
+    ASSERT_NE(mainPixelmap, nullptr);
+    ImageInfo imageInfo;
+    mainPixelmap->GetImageInfo(imageInfo);
+    int32_t srcWidth = imageInfo.size.width;
+    int32_t srcHeight = imageInfo.size.height;
+    int32_t dstWidth = srcWidth / 2;
+    int32_t dstHeight = srcHeight / 2;
     
     ImagePacker packer;
     PackOption option {
         .format = IMAGE_JPEG_FORMAT,
         .quality = DEFAULT_JPEG_QUALITY,
-        .sizeLimit = {.maxSize = {300, 200}, .antiAliasingLevel = AntiAliasingOption::LOW},
+        .sizeLimit = {.maxSize = {dstWidth, dstHeight}, .antiAliasingLevel = AntiAliasingOption::LOW},
     };
     
     std::filesystem::remove(IMAGE_JPEG_DEST);
@@ -2852,6 +3017,13 @@ HWTEST_F(PictureExtTest, PictureEncodeControlParamsTest009, TestSize.Level3)
     ASSERT_EQ(ret, OHOS::Media::SUCCESS);
     ret = packer.FinalizePacking();
     ASSERT_EQ(ret, OHOS::Media::SUCCESS);
+    
+    auto packedPixelMap = CreatePixelMapInner(IMAGE_JPEG_FORMAT, IMAGE_JPEG_DEST);
+    ASSERT_NE(packedPixelMap, nullptr);
+    ImageInfo packedInfo;
+    packedPixelMap->GetImageInfo(packedInfo);
+    ASSERT_EQ(packedInfo.size.width, dstWidth);
+    ASSERT_EQ(packedInfo.size.height, dstHeight);
     GTEST_LOG_(INFO) << "PictureExtTest: PictureEncodeControlParamsTest009 end";
 }
 
@@ -2863,14 +3035,23 @@ HWTEST_F(PictureExtTest, PictureEncodeControlParamsTest009, TestSize.Level3)
 HWTEST_F(PictureExtTest, PictureEncodeControlParamsTest010, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "PictureExtTest: PictureEncodeControlParamsTest010 start";
-    auto srcPicture = CreatePictureByPixelMap(IMAGE_HEIC_FORMAT, IMAGE_HEIF_SRC);
+    auto srcPicture = CreatePictureByPixelMap(IMAGE_HEIC_FORMAT, IMAGE_HEIF_SRC, PixelFormat::RGBA_8888);
     ASSERT_NE(srcPicture, nullptr);
+    
+    auto mainPixelmap = srcPicture->GetMainPixel();
+    ASSERT_NE(mainPixelmap, nullptr);
+    ImageInfo srcImageInfo;
+    mainPixelmap->GetImageInfo(srcImageInfo);
+    int32_t srcWidth = srcImageInfo.size.width;
+    int32_t srcHeight = srcImageInfo.size.height;
+    int32_t dstWidth = srcWidth / 2;
+    int32_t dstHeight = srcHeight / 2;
     
     ImagePacker packer;
     PackOption option {
         .format = IMAGE_HEIC_FORMAT,
         .quality = DEFAULT_JPEG_QUALITY,
-        .sizeLimit = {.maxSize = {400, 300}, .antiAliasingLevel = AntiAliasingOption::HIGH},
+        .sizeLimit = {.maxSize = {dstWidth, dstHeight}, .antiAliasingLevel = AntiAliasingOption::HIGH},
     };
     
     std::filesystem::remove(IMAGE_HEIF_DEST);
@@ -2880,6 +3061,13 @@ HWTEST_F(PictureExtTest, PictureEncodeControlParamsTest010, TestSize.Level3)
     ASSERT_EQ(ret, OHOS::Media::SUCCESS);
     ret = packer.FinalizePacking();
     ASSERT_EQ(ret, OHOS::Media::SUCCESS);
+    
+    auto packedPixelMap = CreatePixelMapInner(IMAGE_HEIC_FORMAT, IMAGE_HEIF_DEST);
+    ASSERT_NE(packedPixelMap, nullptr);
+    ImageInfo packedInfo;
+    packedPixelMap->GetImageInfo(packedInfo);
+    ASSERT_EQ(packedInfo.size.width, dstWidth);
+    ASSERT_EQ(packedInfo.size.height, dstHeight);
     GTEST_LOG_(INFO) << "PictureExtTest: PictureEncodeControlParamsTest010 end";
 }
 
@@ -2919,6 +3107,102 @@ HWTEST_F(PictureExtTest, PictureEncodeControlParamsTest011, TestSize.Level3)
     ret = packer.FinalizePacking();
     ASSERT_EQ(ret, OHOS::Media::SUCCESS);
     GTEST_LOG_(INFO) << "PictureExtTest: PictureEncodeControlParamsTest011 end";
+}
+
+/**
+ * @tc.name: PictureEncodeControlParamsTest012
+ * @tc.desc: test needsPackGPS parameter with NV12 format Picture - remove GPS info
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureExtTest, PictureEncodeControlParamsTest012, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PictureExtTest: PictureEncodeControlParamsTest012 start";
+    auto srcPicture = CreatePictureByPixelMap(IMAGE_JPEG_FORMAT, IMAGE_JPEG_EXIF_SRC);
+    ASSERT_NE(srcPicture, nullptr);
+    
+    auto mainPixelmap = srcPicture->GetMainPixel();
+    ASSERT_NE(mainPixelmap, nullptr);
+    ImageInfo imageInfo;
+    mainPixelmap->GetImageInfo(imageInfo);
+    int32_t srcWidth = imageInfo.size.width;
+    int32_t srcHeight = imageInfo.size.height;
+    int32_t dstWidth = srcWidth / 2;
+    int32_t dstHeight = srcHeight / 2;
+    
+    ImagePacker packer;
+    PackOption option {
+        .format = IMAGE_JPEG_FORMAT,
+        .quality = DEFAULT_JPEG_QUALITY,
+        .needsPackProperties = true,
+        .needsPackGPS = false,
+        .backgroundColor = 0xFFFFFF,
+        .sizeLimit = {.maxSize = {dstWidth, dstHeight}, .antiAliasingLevel = AntiAliasingOption::HIGH},
+    };
+    
+    std::filesystem::remove(IMAGE_JPEG_DEST);
+    uint32_t ret = packer.StartPacking(IMAGE_JPEG_DEST, option);
+    ASSERT_EQ(ret, OHOS::Media::SUCCESS);
+    ret = packer.AddPicture(*srcPicture);
+    ASSERT_EQ(ret, OHOS::Media::SUCCESS);
+    ret = packer.FinalizePacking();
+    ASSERT_EQ(ret, OHOS::Media::SUCCESS);
+    
+    ASSERT_TRUE(VerifyGpsInfoRemoved(IMAGE_JPEG_DEST));
+    auto packedPixelMap = CreatePixelMapInner(IMAGE_JPEG_FORMAT, IMAGE_JPEG_DEST);
+    ASSERT_NE(packedPixelMap, nullptr);
+    ImageInfo packedInfo;
+    packedPixelMap->GetImageInfo(packedInfo);
+    ASSERT_EQ(packedInfo.size.width, dstWidth);
+    ASSERT_EQ(packedInfo.size.height, dstHeight);
+    GTEST_LOG_(INFO) << "PictureExtTest: PictureEncodeControlParamsTest012 end";
+}
+
+/**
+ * @tc.name: PictureEncodeControlParamsTest013
+ * @tc.desc: test all three parameters with NV12 format Picture - keep GPS info
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureExtTest, PictureEncodeControlParamsTest013, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PictureExtTest: PictureEncodeControlParamsTest013 start";
+    auto srcPicture = CreatePictureByPixelMap(IMAGE_JPEG_FORMAT, IMAGE_JPEG_EXIF_SRC);
+    ASSERT_NE(srcPicture, nullptr);
+    
+    auto mainPixelmap = srcPicture->GetMainPixel();
+    ASSERT_NE(mainPixelmap, nullptr);
+    ImageInfo imageInfo;
+    mainPixelmap->GetImageInfo(imageInfo);
+    int32_t srcWidth = imageInfo.size.width;
+    int32_t srcHeight = imageInfo.size.height;
+    int32_t dstWidth = srcWidth / 2;
+    int32_t dstHeight = srcHeight / 2;
+    
+    ImagePacker packer;
+    PackOption option {
+        .format = IMAGE_JPEG_FORMAT,
+        .quality = DEFAULT_JPEG_QUALITY,
+        .needsPackProperties = true,
+        .needsPackGPS = true,
+        .backgroundColor = 0xFFFFFF,
+        .sizeLimit = {.maxSize = {dstWidth, dstHeight}, .antiAliasingLevel = AntiAliasingOption::HIGH},
+    };
+    
+    std::filesystem::remove(IMAGE_JPEG_DEST);
+    uint32_t ret = packer.StartPacking(IMAGE_JPEG_DEST, option);
+    ASSERT_EQ(ret, OHOS::Media::SUCCESS);
+    ret = packer.AddPicture(*srcPicture);
+    ASSERT_EQ(ret, OHOS::Media::SUCCESS);
+    ret = packer.FinalizePacking();
+    ASSERT_EQ(ret, OHOS::Media::SUCCESS);
+    
+    ASSERT_TRUE(VerifyGpsInfoExists(IMAGE_JPEG_DEST));
+    auto packedPixelMap = CreatePixelMapInner(IMAGE_JPEG_FORMAT, IMAGE_JPEG_DEST);
+    ASSERT_NE(packedPixelMap, nullptr);
+    ImageInfo packedInfo;
+    packedPixelMap->GetImageInfo(packedInfo);
+    ASSERT_EQ(packedInfo.size.width, dstWidth);
+    ASSERT_EQ(packedInfo.size.height, dstHeight);
+    GTEST_LOG_(INFO) << "PictureExtTest: PictureEncodeControlParamsTest013 end";
 }
 } // namespace Multimedia
 } // namespace OHOS
