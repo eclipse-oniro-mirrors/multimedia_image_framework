@@ -50,9 +50,9 @@ private:
     static toff_t SizeProc(thandle_t handle);
 
     struct TiffEncodeParam {
-        uint16_t bitsPerSample;
-        uint16_t samplesPerPixel;
-        uint16_t photometric;
+        uint16_t bitsPerSample = 0;
+        uint16_t samplesPerPixel = 0;
+        uint16_t photometric = 0;
     };
 
     bool IsSupportedPixelMapFormat(PixelFormat format);
