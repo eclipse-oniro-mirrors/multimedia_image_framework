@@ -2678,12 +2678,12 @@ HWTEST_F(PictureExtTest, PictureEncodeControlParamsTest001, TestSize.Level3)
     };
     
     std::filesystem::remove(IMAGE_JPEG_DEST);
-    uint32_t ret = packer.StartPacking(IMAGE_JPEG_DEST, option);
-    ASSERT_EQ(ret, OHOS::Media::SUCCESS);
-    ret = packer.AddPicture(*srcPicture);
-    ASSERT_EQ(ret, OHOS::Media::SUCCESS);
-    ret = packer.FinalizePacking();
-    ASSERT_EQ(ret, OHOS::Media::SUCCESS);
+    uint32_t retPack = packer.StartPacking(IMAGE_JPEG_DEST, option);
+    ASSERT_EQ(retPack, OHOS::Media::SUCCESS);
+    retPack = packer.AddPicture(*srcPicture);
+    ASSERT_EQ(retPack, OHOS::Media::SUCCESS);
+    retPack = packer.FinalizePacking();
+    ASSERT_EQ(retPack, OHOS::Media::SUCCESS);
     
     ASSERT_TRUE(VerifyGpsInfoExists(IMAGE_JPEG_DEST));
     GTEST_LOG_(INFO) << "PictureExtTest: PictureEncodeControlParamsTest001 end";
@@ -2708,12 +2708,12 @@ HWTEST_F(PictureExtTest, PictureEncodeControlParamsTest002, TestSize.Level3)
     };
     
     std::filesystem::remove(IMAGE_JPEG_DEST);
-    uint32_t ret = packer.StartPacking(IMAGE_JPEG_DEST, option);
-    ASSERT_EQ(ret, OHOS::Media::SUCCESS);
-    ret = packer.AddPicture(*srcPicture);
-    ASSERT_EQ(ret, OHOS::Media::SUCCESS);
-    ret = packer.FinalizePacking();
-    ASSERT_EQ(ret, OHOS::Media::SUCCESS);
+    uint32_t retPack = packer.StartPacking(IMAGE_JPEG_DEST, option);
+    ASSERT_EQ(retPack, OHOS::Media::SUCCESS);
+    retPack = packer.AddPicture(*srcPicture);
+    ASSERT_EQ(retPack, OHOS::Media::SUCCESS);
+    retPack = packer.FinalizePacking();
+    ASSERT_EQ(retPack, OHOS::Media::SUCCESS);
     GTEST_LOG_(INFO) << "PictureExtTest: PictureEncodeControlParamsTest002 end";
 }
 
@@ -2743,12 +2743,12 @@ HWTEST_F(PictureExtTest, PictureEncodeControlParamsTest003, TestSize.Level3)
     };
     
     std::filesystem::remove(IMAGE_JPEG_DEST);
-    uint32_t ret = packer.StartPacking(IMAGE_JPEG_DEST, option);
-    ASSERT_EQ(ret, OHOS::Media::SUCCESS);
-    ret = packer.AddPicture(*srcPicture);
-    ASSERT_EQ(ret, OHOS::Media::SUCCESS);
-    ret = packer.FinalizePacking();
-    ASSERT_EQ(ret, OHOS::Media::SUCCESS);
+    uint32_t retPack = packer.StartPacking(IMAGE_JPEG_DEST, option);
+    ASSERT_EQ(retPack, OHOS::Media::SUCCESS);
+    retPack = packer.AddPicture(*srcPicture);
+    ASSERT_EQ(retPack, OHOS::Media::SUCCESS);
+    retPack = packer.FinalizePacking();
+    ASSERT_EQ(retPack, OHOS::Media::SUCCESS);
     
     auto packedPixelMap = CreatePixelMapInner(IMAGE_JPEG_FORMAT, IMAGE_JPEG_DEST);
     ASSERT_NE(packedPixelMap, nullptr);
@@ -2787,12 +2787,12 @@ HWTEST_F(PictureExtTest, PictureEncodeControlParamsTest004, TestSize.Level3)
     };
     
     std::filesystem::remove(IMAGE_JPEG_DEST);
-    uint32_t ret = packer.StartPacking(IMAGE_JPEG_DEST, option);
-    ASSERT_EQ(ret, OHOS::Media::SUCCESS);
-    ret = packer.AddPicture(*srcPicture);
-    ASSERT_EQ(ret, OHOS::Media::SUCCESS);
-    ret = packer.FinalizePacking();
-    ASSERT_EQ(ret, OHOS::Media::SUCCESS);
+    uint32_t retPack = packer.StartPacking(IMAGE_JPEG_DEST, option);
+    ASSERT_EQ(retPack, OHOS::Media::SUCCESS);
+    retPack = packer.AddPicture(*srcPicture);
+    ASSERT_EQ(retPack, OHOS::Media::SUCCESS);
+    retPack = packer.FinalizePacking();
+    ASSERT_EQ(retPack, OHOS::Media::SUCCESS);
     
     auto packedPixelMap = CreatePixelMapInner(IMAGE_JPEG_FORMAT, IMAGE_JPEG_DEST);
     ASSERT_NE(packedPixelMap, nullptr);
@@ -2831,12 +2831,12 @@ HWTEST_F(PictureExtTest, PictureEncodeControlParamsTest005, TestSize.Level3)
     };
     
     std::filesystem::remove(IMAGE_JPEG_DEST);
-    uint32_t ret = packer.StartPacking(IMAGE_JPEG_DEST, option);
-    ASSERT_EQ(ret, OHOS::Media::SUCCESS);
-    ret = packer.AddPicture(*srcPicture);
-    ASSERT_EQ(ret, OHOS::Media::SUCCESS);
-    ret = packer.FinalizePacking();
-    ASSERT_EQ(ret, OHOS::Media::SUCCESS);
+    uint32_t retPack = packer.StartPacking(IMAGE_JPEG_DEST, option);
+    ASSERT_EQ(retPack, OHOS::Media::SUCCESS);
+    retPack = packer.AddPicture(*srcPicture);
+    ASSERT_EQ(retPack, OHOS::Media::SUCCESS);
+    retPack = packer.FinalizePacking();
+    ASSERT_EQ(retPack, OHOS::Media::SUCCESS);
     
     auto packedPixelMap = CreatePixelMapInner(IMAGE_JPEG_FORMAT, IMAGE_JPEG_DEST);
     ASSERT_NE(packedPixelMap, nullptr);
@@ -2875,12 +2875,12 @@ HWTEST_F(PictureExtTest, PictureEncodeControlParamsTest006, TestSize.Level3)
     };
     
     std::filesystem::remove(IMAGE_JPEG_DEST);
-    uint32_t ret = packer.StartPacking(IMAGE_JPEG_DEST, option);
-    ASSERT_EQ(ret, OHOS::Media::SUCCESS);
-    ret = packer.AddPicture(*srcPicture);
-    ASSERT_EQ(ret, OHOS::Media::SUCCESS);
-    ret = packer.FinalizePacking();
-    ASSERT_EQ(ret, OHOS::Media::SUCCESS);
+    uint32_t retPack = packer.StartPacking(IMAGE_JPEG_DEST, option);
+    ASSERT_EQ(retPack, OHOS::Media::SUCCESS);
+    retPack = packer.AddPicture(*srcPicture);
+    ASSERT_EQ(retPack, OHOS::Media::SUCCESS);
+    retPack = packer.FinalizePacking();
+    ASSERT_EQ(retPack, OHOS::Media::SUCCESS);
     
     auto packedPixelMap = CreatePixelMapInner(IMAGE_JPEG_FORMAT, IMAGE_JPEG_DEST);
     ASSERT_NE(packedPixelMap, nullptr);
@@ -2922,12 +2922,12 @@ HWTEST_F(PictureExtTest, PictureEncodeControlParamsTest007, TestSize.Level3)
     };
     
     std::filesystem::remove(IMAGE_JPEG_DEST);
-    uint32_t ret = packer.StartPacking(IMAGE_JPEG_DEST, option);
-    ASSERT_EQ(ret, OHOS::Media::SUCCESS);
-    ret = packer.AddPicture(*srcPicture);
-    ASSERT_EQ(ret, OHOS::Media::SUCCESS);
-    ret = packer.FinalizePacking();
-    ASSERT_EQ(ret, OHOS::Media::SUCCESS);
+    uint32_t retPack = packer.StartPacking(IMAGE_JPEG_DEST, option);
+    ASSERT_EQ(retPack, OHOS::Media::SUCCESS);
+    retPack = packer.AddPicture(*srcPicture);
+    ASSERT_EQ(retPack, OHOS::Media::SUCCESS);
+    retPack = packer.FinalizePacking();
+    ASSERT_EQ(retPack, OHOS::Media::SUCCESS);
     
     ASSERT_TRUE(VerifyGpsInfoRemoved(IMAGE_JPEG_DEST));
     auto packedPixelMap = CreatePixelMapInner(IMAGE_JPEG_FORMAT, IMAGE_JPEG_DEST);
@@ -2967,12 +2967,12 @@ HWTEST_F(PictureExtTest, PictureEncodeControlParamsTest008, TestSize.Level3)
     };
     
     std::filesystem::remove(IMAGE_JPEG_DEST);
-    uint32_t ret = packer.StartPacking(IMAGE_JPEG_DEST, option);
-    ASSERT_EQ(ret, OHOS::Media::SUCCESS);
-    ret = packer.AddPicture(*srcPicture);
-    ASSERT_EQ(ret, OHOS::Media::SUCCESS);
-    ret = packer.FinalizePacking();
-    ASSERT_EQ(ret, OHOS::Media::SUCCESS);
+    uint32_t retPack = packer.StartPacking(IMAGE_JPEG_DEST, option);
+    ASSERT_EQ(retPack, OHOS::Media::SUCCESS);
+    retPack = packer.AddPicture(*srcPicture);
+    ASSERT_EQ(retPack, OHOS::Media::SUCCESS);
+    retPack = packer.FinalizePacking();
+    ASSERT_EQ(retPack, OHOS::Media::SUCCESS);
     
     auto packedPixelMap = CreatePixelMapInner(IMAGE_JPEG_FORMAT, IMAGE_JPEG_DEST);
     ASSERT_NE(packedPixelMap, nullptr);
@@ -3011,12 +3011,12 @@ HWTEST_F(PictureExtTest, PictureEncodeControlParamsTest009, TestSize.Level3)
     };
     
     std::filesystem::remove(IMAGE_JPEG_DEST);
-    uint32_t ret = packer.StartPacking(IMAGE_JPEG_DEST, option);
-    ASSERT_EQ(ret, OHOS::Media::SUCCESS);
-    ret = packer.AddPicture(*srcPicture);
-    ASSERT_EQ(ret, OHOS::Media::SUCCESS);
-    ret = packer.FinalizePacking();
-    ASSERT_EQ(ret, OHOS::Media::SUCCESS);
+    uint32_t retPack = packer.StartPacking(IMAGE_JPEG_DEST, option);
+    ASSERT_EQ(retPack, OHOS::Media::SUCCESS);
+    retPack = packer.AddPicture(*srcPicture);
+    ASSERT_EQ(retPack, OHOS::Media::SUCCESS);
+    retPack = packer.FinalizePacking();
+    ASSERT_EQ(retPack, OHOS::Media::SUCCESS);
     
     auto packedPixelMap = CreatePixelMapInner(IMAGE_JPEG_FORMAT, IMAGE_JPEG_DEST);
     ASSERT_NE(packedPixelMap, nullptr);
@@ -3055,12 +3055,12 @@ HWTEST_F(PictureExtTest, PictureEncodeControlParamsTest010, TestSize.Level3)
     };
     
     std::filesystem::remove(IMAGE_HEIF_DEST);
-    uint32_t ret = packer.StartPacking(IMAGE_HEIF_DEST, option);
-    ASSERT_EQ(ret, OHOS::Media::SUCCESS);
-    ret = packer.AddPicture(*srcPicture);
-    ASSERT_EQ(ret, OHOS::Media::SUCCESS);
-    ret = packer.FinalizePacking();
-    ASSERT_EQ(ret, OHOS::Media::SUCCESS);
+    uint32_t retPack = packer.StartPacking(IMAGE_HEIF_DEST, option);
+    ASSERT_EQ(retPack, OHOS::Media::SUCCESS);
+    retPack = packer.AddPicture(*srcPicture);
+    ASSERT_EQ(retPack, OHOS::Media::SUCCESS);
+    retPack = packer.FinalizePacking();
+    ASSERT_EQ(retPack, OHOS::Media::SUCCESS);
     
     auto packedPixelMap = CreatePixelMapInner(IMAGE_HEIC_FORMAT, IMAGE_HEIF_DEST);
     ASSERT_NE(packedPixelMap, nullptr);
@@ -3100,12 +3100,12 @@ HWTEST_F(PictureExtTest, PictureEncodeControlParamsTest011, TestSize.Level3)
     };
     
     std::filesystem::remove(IMAGE_JPEG_DEST);
-    uint32_t ret = packer.StartPacking(IMAGE_JPEG_DEST, option);
-    ASSERT_EQ(ret, OHOS::Media::SUCCESS);
-    ret = packer.AddPicture(*srcPicture);
-    ASSERT_EQ(ret, OHOS::Media::SUCCESS);
-    ret = packer.FinalizePacking();
-    ASSERT_EQ(ret, OHOS::Media::SUCCESS);
+    uint32_t retPack = packer.StartPacking(IMAGE_JPEG_DEST, option);
+    ASSERT_EQ(retPack, OHOS::Media::SUCCESS);
+    retPack = packer.AddPicture(*srcPicture);
+    ASSERT_EQ(retPack, OHOS::Media::SUCCESS);
+    retPack = packer.FinalizePacking();
+    ASSERT_EQ(retPack, OHOS::Media::SUCCESS);
     GTEST_LOG_(INFO) << "PictureExtTest: PictureEncodeControlParamsTest011 end";
 }
 
@@ -3140,12 +3140,12 @@ HWTEST_F(PictureExtTest, PictureEncodeControlParamsTest012, TestSize.Level3)
     };
     
     std::filesystem::remove(IMAGE_JPEG_DEST);
-    uint32_t ret = packer.StartPacking(IMAGE_JPEG_DEST, option);
-    ASSERT_EQ(ret, OHOS::Media::SUCCESS);
-    ret = packer.AddPicture(*srcPicture);
-    ASSERT_EQ(ret, OHOS::Media::SUCCESS);
-    ret = packer.FinalizePacking();
-    ASSERT_EQ(ret, OHOS::Media::SUCCESS);
+    uint32_t retPack = packer.StartPacking(IMAGE_JPEG_DEST, option);
+    ASSERT_EQ(retPack, OHOS::Media::SUCCESS);
+    retPack = packer.AddPicture(*srcPicture);
+    ASSERT_EQ(retPack, OHOS::Media::SUCCESS);
+    retPack = packer.FinalizePacking();
+    ASSERT_EQ(retPack, OHOS::Media::SUCCESS);
     
     ASSERT_TRUE(VerifyGpsInfoRemoved(IMAGE_JPEG_DEST));
     auto packedPixelMap = CreatePixelMapInner(IMAGE_JPEG_FORMAT, IMAGE_JPEG_DEST);
@@ -3188,12 +3188,12 @@ HWTEST_F(PictureExtTest, PictureEncodeControlParamsTest013, TestSize.Level3)
     };
     
     std::filesystem::remove(IMAGE_JPEG_DEST);
-    uint32_t ret = packer.StartPacking(IMAGE_JPEG_DEST, option);
-    ASSERT_EQ(ret, OHOS::Media::SUCCESS);
-    ret = packer.AddPicture(*srcPicture);
-    ASSERT_EQ(ret, OHOS::Media::SUCCESS);
-    ret = packer.FinalizePacking();
-    ASSERT_EQ(ret, OHOS::Media::SUCCESS);
+    uint32_t retPack = packer.StartPacking(IMAGE_JPEG_DEST, option);
+    ASSERT_EQ(retPack, OHOS::Media::SUCCESS);
+    retPack = packer.AddPicture(*srcPicture);
+    ASSERT_EQ(retPack, OHOS::Media::SUCCESS);
+    retPack = packer.FinalizePacking();
+    ASSERT_EQ(retPack, OHOS::Media::SUCCESS);
     
     ASSERT_TRUE(VerifyGpsInfoExists(IMAGE_JPEG_DEST));
     auto packedPixelMap = CreatePixelMapInner(IMAGE_JPEG_FORMAT, IMAGE_JPEG_DEST);

@@ -450,11 +450,7 @@ static std::shared_ptr<PixelMap> DeepCopyPixelMap(const std::shared_ptr<PixelMap
     }
     int32_t errorCode = SUCCESS;
     std::unique_ptr<PixelMap> tmpPixelMap;
-    if (ImageUtils::IsYuvFormat(srcPixelMap->GetPixelFormat())) {
-        tmpPixelMap = PixelYuv::CloneYuv(*srcPixelMap, errorCode);
-    } else {
-        tmpPixelMap = srcPixelMap->Clone(errorCode);
-    }
+    tmpPixelMap = srcPixelMap->Clone(errorCode);
     if (errorCode != SUCCESS || tmpPixelMap == nullptr) {
         IMAGE_LOGE("DeepCopyPixelMap srcPixelMap->Clone fail.");
         return nullptr;

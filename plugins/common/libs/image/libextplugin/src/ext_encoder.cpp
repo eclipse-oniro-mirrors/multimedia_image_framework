@@ -1074,18 +1074,25 @@ uint32_t ExtEncoder::ProcessPictureMaxSize()
     }
 
     auto mainPixelmap = picture_->GetMainPixel();
-    bool cond = mainPixelmap == nullptr;
-    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER, "mainPixelmap is nullptr");
+    if (mainPixelmap == nullptr) {	 
+        IMAGE_LOGE("ExtEncoder::ProcessPictureMaxSize mainPixelmap is nullptr");	 
+        return ERR_IMAGE_INVALID_PARAMETER; 
+    }
 
     int32_t srcWidth = mainPixelmap->GetWidth();
     int32_t srcHeight = mainPixelmap->GetHeight();
-    cond = (srcWidth == 0 || srcHeight == 0);
-    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER, "%{public}s invalid image size is 0", __func__);
+    if (srcWidth == 0 || srcHeight == 0) {	 
+        IMAGE_LOGE("ExtEncoder::ProcessPictureMaxSize invalid image size (%{public}d, %{public}d)",	 
+            srcWidth, srcHeight); 
+        return ERR_IMAGE_INVALID_PARAMETER; 
+    }
 
     int32_t maxWidth = opts_.sizeLimit.maxSize.width > 0 ? opts_.sizeLimit.maxSize.width : srcWidth;
     int32_t maxHeight = opts_.sizeLimit.maxSize.height > 0 ? opts_.sizeLimit.maxSize.height : srcHeight;
-    cond = (srcWidth <= maxWidth && srcHeight <= maxHeight);
-    CHECK_ERROR_RETURN_RET_LOG(cond, SUCCESS, "%{public}s image size within max bounds, skip scaling", __func__);
+    if (srcWidth <= maxWidth && srcHeight <= maxHeight) {	 
+        IMAGE_LOGD("ExtEncoder::ProcessPictureMaxSize image size within max bounds, skip scaling");	 
+        return SUCCESS; 
+    }
 
     float scaleX = static_cast<float>(maxWidth) / srcWidth;
     float scaleY = static_cast<float>(maxHeight) / srcHeight;
@@ -1093,18 +1100,14 @@ uint32_t ExtEncoder::ProcessPictureMaxSize()
     IMAGE_LOGI("ExtEncoder::ProcessPictureMaxSize scale image from (%{public}d, %{public}d) "
         "to fit maxSize(%{public}d, %{public}d), scale=%{public}f", srcWidth, srcHeight, maxWidth, maxHeight, scale);
 
-    uint32_t scaleRet = mainPixelmap->Scale(scale, scale, opts_.sizeLimit.antiAliasingLevel);
-    if (scaleRet != SUCCESS) {
+    if (!mainPixelmap->resize(scale, scale)) {	 
         IMAGE_LOGE("ExtEncoder::ProcessPictureMaxSize mainPixelmap scale failed");
         return ERR_IMAGE_ENCODE_FAILED;
     }
     auto gainmapPixelmap = picture_->GetGainmapPixelMap();
-    if (gainmapPixelmap != nullptr) {
-        scaleRet = gainmapPixelmap->Scale(scale, scale, opts_.sizeLimit.antiAliasingLevel);
-        if (scaleRet != SUCCESS) {
-            IMAGE_LOGE("ExtEncoder::ProcessPictureMaxSize gainmapPixelmap scale failed");
-            return ERR_IMAGE_ENCODE_FAILED;
-        }
+    if (gainmapPixelmap != nullptr && !gainmapPixelmap->resize(scale, scale)) {	 
+        IMAGE_LOGE("ExtEncoder::ProcessPictureMaxSize gainmapPixelmap resize failed");	 
+        return ERR_IMAGE_ENCODE_FAILED;
     }
 
     const auto& auxTypes = ImageUtils::GetAllAuxiliaryPictureType();
@@ -1112,12 +1115,9 @@ uint32_t ExtEncoder::ProcessPictureMaxSize()
         auto auxPicture = picture_->GetAuxiliaryPicture(auxType);
         if (auxPicture == nullptr) continue;
         auto auxPixelmap = auxPicture->GetContentPixel();
-        if (auxPixelmap != nullptr) {
-            scaleRet = auxPixelmap->Scale(scale, scale, opts_.sizeLimit.antiAliasingLevel);
-            if (scaleRet != SUCCESS) {
-                IMAGE_LOGE("ExtEncoder::ProcessPictureMaxSize aux scale failed, type %{public}d", auxType);
-                return ERR_IMAGE_ENCODE_FAILED;
-            }
+        if (auxPixelmap != nullptr && !auxPixelmap->resize(scale, scale)) {	 
+            IMAGE_LOGE("ExtEncoder::ProcessPictureMaxSize aux resize failed, type %{public}d", auxType);	 
+            return ERR_IMAGE_ENCODE_FAILED;
         }
     }
     return SUCCESS;
