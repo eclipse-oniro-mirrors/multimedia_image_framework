@@ -12,7 +12,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
 
 @!namespace("@ohos.multimedia.image", "image")
 @!sts_export_default
@@ -403,6 +402,10 @@ struct HdrGainmapMetadata {
   baseHeadroom: f64;
   alternateHeadroom: f64;
   channels: Array<GainmapChannel>;
+}
+
+struct GainmapParams {
+  isFullSizeGainmap: bool;
 }
 
 enum HdrMetadataKey: i32 {
@@ -2500,3 +2503,6 @@ function CreateAuxiliaryPictureUsingAllocator(auxiliaryPictureInfo: AuxiliaryPic
 
 @promise @rename("createPictureByHdrAndSdrPixelMap")
 function CreatePictureByHdrAndSdrPixelMapSync(hdrPixelMap: PixelMap, sdrPixelMap: PixelMap): Picture;
+
+@promise @rename("createPictureByHdrAndSdrPixelMap")
+function CreatePictureByHdrAndSdrPixelMapWithGainmapParamsSync(hdrPixelMap: PixelMap, sdrPixelMap: PixelMap, params: GainmapParams): Picture;
