@@ -847,26 +847,22 @@ bool ExtEncoder::IsFormatSupportTransparency(const std::string& format) const
 
 uint32_t ExtEncoder::ProcessEncodeControlParams()
 {
-    if (picture_ != nullptr) {
-        if (NeedDeepCopy()) {
-            dstPicture_ = DeepCopyPicture();
-            if (dstPicture_ == nullptr) {
-                IMAGE_LOGE("ExtEncoder::ProcessEncodeControlParams DeepCopyPicture failed");
-                return ERR_IMAGE_ENCODE_FAILED;
-            }
-            picture_ = dstPicture_.get();
+    if (picture_ != nullptr && NeedDeepCopy()) {
+        dstPicture_ = DeepCopyPicture();
+        if (dstPicture_ == nullptr) {
+            IMAGE_LOGE("ExtEncoder::ProcessEncodeControlParams DeepCopyPicture failed");
+            return ERR_IMAGE_ENCODE_FAILED;
         }
+        picture_ = dstPicture_.get();
         return ProcessPictureEncodeControlParams();
     }
-    if (pixelmap_ != nullptr) {
-        if (NeedDeepCopy()) {
-            dstPixelmap_ = DeepCopyPixelmap();
-            if (dstPixelmap_ == nullptr) {
-                IMAGE_LOGE("ExtEncoder::ProcessEncodeControlParams DeepCopyPixelmap failed");
-                return ERR_IMAGE_ENCODE_FAILED;
-            }
-            pixelmap_ = dstPixelmap_.get();
+    if (pixelmap_ != nullptr && NeedDeepCopy()) {
+        dstPixelmap_ = DeepCopyPixelmap();
+        if (dstPixelmap_ == nullptr) {
+            IMAGE_LOGE("ExtEncoder::ProcessEncodeControlParams DeepCopyPixelmap failed");
+            return ERR_IMAGE_ENCODE_FAILED;
         }
+        pixelmap_ = dstPixelmap_.get();
         return ProcessPixelmapEncodeControlParams();
     }
     IMAGE_LOGD("ExtEncoder::ProcessEncodeControlParams no pixelmap or picture for encoding, skip");
@@ -1099,23 +1095,30 @@ uint32_t ExtEncoder::ProcessPictureMaxSize()
     IMAGE_LOGI("ExtEncoder::ProcessPictureMaxSize scale image from (%{public}d, %{public}d) "
         "to fit maxSize(%{public}d, %{public}d), scale=%{public}f", srcWidth, srcHeight, maxWidth, maxHeight, scale);
 
-    if (!mainPixelmap->resize(scale, scale)) {
-        IMAGE_LOGE("ExtEncoder::ProcessPictureMaxSize mainPixelmap resize failed");
+    uint32_t scaleRet = mainPixelmap->Scale(scale, scale, opts_.sizeLimit.antiAliasingLevel);
+    if (scaleRet != SUCCESS) {
+        IMAGE_LOGE("ExtEncoder::ProcessPictureMaxSize mainPixelmap scale failed");
         return ERR_IMAGE_ENCODE_FAILED;
     }
     auto gainmapPixelmap = picture_->GetGainmapPixelMap();
-    if (gainmapPixelmap != nullptr && !gainmapPixelmap->resize(scale, scale)) {
-        IMAGE_LOGE("ExtEncoder::ProcessPictureMaxSize gainmapPixelmap resize failed");
-        return ERR_IMAGE_ENCODE_FAILED;
+    if (gainmapPixelmap != nullptr) {
+        scaleRet = gainmapPixelmap->Scale(scale, scale, opts_.sizeLimit.antiAliasingLevel);
+        if (scaleRet != SUCCESS) {
+            IMAGE_LOGE("ExtEncoder::ProcessPictureMaxSize gainmapPixelmap scale failed");
+            return ERR_IMAGE_ENCODE_FAILED;
+        }
     }
     const auto& auxTypes = ImageUtils::GetAllAuxiliaryPictureType();
     for (const auto& auxType : auxTypes) {
         auto auxPicture = picture_->GetAuxiliaryPicture(auxType);
         if (auxPicture == nullptr) continue;
         auto auxPixelmap = auxPicture->GetContentPixel();
-        if (auxPixelmap != nullptr && !auxPixelmap->resize(scale, scale)) {
-            IMAGE_LOGE("ExtEncoder::ProcessPictureMaxSize aux resize failed, type %{public}d", auxType);
-            return ERR_IMAGE_ENCODE_FAILED;
+        if (auxPixelmap != nullptr) {
+            scaleRet = auxPixelmap->Scale(scale, scale, opts_.sizeLimit.antiAliasingLevel);
+            if (scaleRet != SUCCESS) {
+                IMAGE_LOGE("ExtEncoder::ProcessPictureMaxSize aux scale failed, type %{public}d", auxType);
+                return ERR_IMAGE_ENCODE_FAILED;
+            }
         }
     }
     return SUCCESS;
