@@ -419,6 +419,7 @@ Picture CreatePictureByHdrAndSdrPixelMapWithGainmapParamsSync(
 Picture CreatePictureByHdrAndSdrPixelMapSync(weak::PixelMap hdrPixelMap, weak::PixelMap sdrPixelMap)
 {
     GainmapParams params;
+    params.isFullSizeGainmap = false;
     return CreatePictureByHdrAndSdrPixelMapWithGainmapParamsSync(hdrPixelMap, sdrPixelMap, params);
 }
 } // namespace ANI::Image
