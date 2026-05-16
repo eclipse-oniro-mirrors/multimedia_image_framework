@@ -26,7 +26,6 @@
 #include "metadata_napi.h"
 #include "image_common.h"
 
-
 #undef LOG_DOMAIN
 #define LOG_DOMAIN LOG_TAG_DOMAIN_ID_IMAGE
 
@@ -37,6 +36,7 @@ namespace {
     constexpr uint32_t NUM_0 = 0;
     constexpr uint32_t NUM_1 = 1;
     constexpr uint32_t NUM_2 = 2;
+    constexpr uint32_t NUM_3 = 3;
 }
 
 namespace OHOS {
@@ -598,7 +598,8 @@ STATIC_EXEC_FUNC(CreatePictureByHdrAndSdrPixelMap)
 {
     IMAGE_LOGD("CreatePictureByHdrAndSdrPixelMapEX IN");
     auto context = static_cast<PictureAsyncContext*>(data);
-    auto picture = Picture::CreatePictureByHdrAndSdrPixelMap(context->rHdrPixelMap, context->rPixelMap);
+    auto picture =
+        Picture::CreatePictureByHdrAndSdrPixelMap(context->rHdrPixelMap, context->rPixelMap, context->gainmapParams);
     context->rPicture = std::move(picture);
     IMAGE_LOGD("CreatePictureByHdrAndSdrPixelMapEX OUT");
     if (IMG_NOT_NULL(context->rPicture)) {
@@ -608,9 +609,56 @@ STATIC_EXEC_FUNC(CreatePictureByHdrAndSdrPixelMap)
     }
 }
 
+bool parseGainmapParams(napi_env env, napi_value root, GainmapParams *gainmapParams)
+{
+    if (root == nullptr || gainmapParams == nullptr) {
+        IMAGE_LOGE("parseGainmapParams: invalid input parameters");
+        return false;
+    }
+    // Check if root is a valid object
+    napi_valuetype valueType;
+    napi_status status = napi_typeof(env, root, &valueType);
+    if (status != napi_ok || valueType != napi_object) {
+        IMAGE_LOGD("parseGainmapParams: root is not a valid object");
+        return false;
+    }
+    // Use GET_BOOL_BY_NAME macro to get isFullSizeGainmap
+    bool isFullSizeGainmap = false;
+    bool getSuccess = GET_BOOL_BY_NAME(root, "isFullSizeGainmap", isFullSizeGainmap);
+    if (getSuccess) {
+        gainmapParams->isFullSizeGainmap = isFullSizeGainmap;
+        IMAGE_LOGD("parseGainmapParams: isFullSizeGainmap = %{public}d", isFullSizeGainmap);
+        return true;
+    }
+    // Property not found or wrong type, use default value false
+    gainmapParams->isFullSizeGainmap = false;
+    IMAGE_LOGD("parseGainmapParams: isFullSizeGainmap not found, using default false");
+    return true;
+}
+
+bool ParsePixelMapParameter(
+    napi_env env, napi_value arg, const char *paramName, std::shared_ptr<PixelMap> &outputPixelMap)
+{
+    if (ParserImageType(env, arg) != ImageType::TYPE_PIXEL_MAP) {
+        IMAGE_LOGE("ParsePixelMapParameter: Input %s image type mismatch", paramName);
+        return false;
+    }
+    outputPixelMap = PixelMapNapi::GetPixelMap(env, arg);
+    if (outputPixelMap == nullptr) {
+        IMAGE_LOGE("ParsePixelMapParameter: Get %s Pixelmap failed", paramName);
+        return false;
+    }
+    return true;
+}
+
 napi_value PictureNapi::CreatePictureByHdrAndSdrPixelMap(napi_env env, napi_callback_info info)
 {
     IMAGE_LOGD("CreatePictureByHdrAndSdrPixelMap IN");
+    if (!ImageNapiUtils::IsSystemApp()) {
+        IMAGE_LOGE("This interface can be called only by system apps");
+        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_PERMISSIONS_FAILED,
+            "This interface can be called only by system apps");
+    }
     if (sConstructor_ == nullptr) {
         napi_value exports = nullptr;
         napi_create_object(env, &exports);
@@ -621,31 +669,27 @@ napi_value PictureNapi::CreatePictureByHdrAndSdrPixelMap(napi_env env, napi_call
     napi_value constructor = nullptr;
     napi_status status;
     napi_value thisVar = nullptr;
-    napi_value argValue[NUM_2] = {0};
-    size_t argCount = NUM_2;
+    napi_value argValue[NUM_3] = {0};
+    size_t argCount = NUM_3;
     IMAGE_LOGD("CreatePictureByHdrAndSdrPixelMap IN");
     IMG_JS_ARGS(env, info, status, argCount, argValue, thisVar);
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER,
         "Invalid args"), IMAGE_LOGE("fail to napi_get_cb_info"));
-    IMG_NAPI_CHECK_RET_D(argCount == NUM_2, ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER,
-        "Invalid args count"), IMAGE_LOGE("Invalid args count %{public}zu", argCount));
+    IMG_NAPI_CHECK_RET_D(argCount >= NUM_2 && argCount <= NUM_3,
+        ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER, "Invalid args count"),
+        IMAGE_LOGE("Invalid args count %{public}zu", argCount));
     std::unique_ptr<PictureAsyncContext> asyncContext = std::make_unique<PictureAsyncContext>();
-    if (ParserImageType(env, argValue[NUM_0]) == ImageType::TYPE_PIXEL_MAP) {
-        asyncContext->rHdrPixelMap = PixelMapNapi::GetPixelMap(env, argValue[NUM_0]);
-        if (asyncContext->rHdrPixelMap == nullptr) {
-            return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER, "Get arg hdr Pixelmap failed");
-        }
-    } else {
-        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER, "Input hdr image type mismatch");
+    if (!ParsePixelMapParameter(env, argValue[NUM_0], "hdr", asyncContext->rHdrPixelMap)) {
+        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER, "Invalid hdr PixelMap parameter");
     }
-    if (ParserImageType(env, argValue[NUM_1]) == ImageType::TYPE_PIXEL_MAP) {
-        asyncContext->rPixelMap = PixelMapNapi::GetPixelMap(env, argValue[NUM_1]);
-        if (asyncContext->rPixelMap == nullptr) {
-            return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER, "Get arg sdr Pixelmap failed");
-        }
-    } else {
-        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER, "Input sdr image type mismatch");
+    if (!ParsePixelMapParameter(env, argValue[NUM_1], "sdr", asyncContext->rPixelMap)) {
+        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER, "Invalid sdr PixelMap parameter");
     }
+    GainmapParams gainmapParams;
+    if (argCount == NUM_3) {
+        parseGainmapParams(env, argValue[NUM_2], &gainmapParams);
+    }
+    asyncContext->gainmapParams = gainmapParams;
     CreatePictureByHdrAndSdrPixelMapExec(env, static_cast<void*>((asyncContext).get()));
     status = napi_get_reference_value(env, sConstructor_, &constructor);
     if (IMG_IS_OK(status)) {
