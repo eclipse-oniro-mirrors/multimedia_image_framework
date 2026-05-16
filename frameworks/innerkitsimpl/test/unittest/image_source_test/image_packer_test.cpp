@@ -52,6 +52,62 @@ static const std::string IMAGE_JPG_DEST = "/data/local/tmp/image/test_jpg2jpg_ou
 static const std::string IMAGE_PNG_SRC = "/data/local/tmp/image/test.png";
 static const std::string IMAGE_PNG2JPG_DEST = "/data/local/tmp/image/test_png2jepg_out.jpg";
 
+static bool VerifyGpsInfoExists(const std::string& path)
+{
+    std::shared_ptr<MetadataStream> stream = std::make_shared<FileMetadataStream>(path);
+    if (!stream->Open(OpenMode::ReadWrite)) {
+        return false;
+    }
+    
+    JpegExifMetadataAccessor accessor(stream);
+    if (accessor.Read() != 0) {
+        return false;
+    }
+    
+    auto exifMetadata = accessor.Get();
+    if (exifMetadata == nullptr) {
+        return false;
+    }
+    
+    std::string value;
+    if (exifMetadata->GetValue("GPSLatitude", value) != 0 || value.empty()) {
+        return false;
+    }
+    if (exifMetadata->GetValue("GPSLongitude", value) != 0 || value.empty()) {
+        return false;
+    }
+    
+    return true;
+}
+
+static bool VerifyGpsInfoRemoved(const std::string& path)
+{
+    std::shared_ptr<MetadataStream> stream = std::make_shared<FileMetadataStream>(path);
+    if (!stream->Open(OpenMode::ReadWrite)) {
+        return false;
+    }
+    
+    JpegExifMetadataAccessor accessor(stream);
+    if (accessor.Read() != 0) {
+        return false;
+    }
+    
+    auto exifMetadata = accessor.Get();
+    if (exifMetadata == nullptr) {
+        return false;
+    }
+    
+    std::string value;
+    if (exifMetadata->GetValue("GPSLatitude", value) == 0 && !value.empty()) {
+        return false;
+    }
+    if (exifMetadata->GetValue("GPSLongitude", value) == 0 && !value.empty()) {
+        return false;
+    }
+    
+    return true;
+}
+
 class ImagePackerTest : public testing::Test {
 public:
     ImagePackerTest() {}
@@ -835,6 +891,599 @@ HWTEST_F(ImagePackerTest, GetEncoderPluginTest002, TestSize.Level3)
     bool ret = packer.GetEncoderPlugin(option);
     ASSERT_EQ(ret, true);
     GTEST_LOG_(INFO) << "ImagePackerTest: GetEncoderPluginTest002 end";
+}
+
+/**
+ * @tc.name: EncodeControlParamsTest001
+ * @tc.desc: test needsPackGPS parameter - keep GPS info
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagePackerTest, EncodeControlParamsTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePackerTest: EncodeControlParamsTest001 start";
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    opts.formatHint = "image/jpeg";
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_JPG_SRC, opts, errorCode);
+    ASSERT_EQ(errorCode, OHOS::Media::SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+
+    ImagePacker pack;
+    PackOption option {
+        .format = "image/jpeg",
+        .quality = NUM_100,
+        .needsPackProperties = true,
+        .needsPackGPS = true,
+    };
+
+    uint32_t retPack = pack.StartPacking(IMAGE_JPG_DEST, option);
+    ASSERT_EQ(retPack, OHOS::Media::SUCCESS);
+    retPack = pack.AddImage(*imageSource);
+    ASSERT_EQ(retPack, OHOS::Media::SUCCESS);
+    retPack = pack.FinalizePacking();
+    ASSERT_EQ(retPack, OHOS::Media::SUCCESS);
+    
+    ASSERT_TRUE(VerifyGpsInfoExists(IMAGE_JPG_DEST));
+    GTEST_LOG_(INFO) << "ImagePackerTest: EncodeControlParamsTest001 end";
+}
+
+/**
+ * @tc.name: EncodeControlParamsTest002
+ * @tc.desc: test backgroundColor parameter with white color 0xFFFFFF
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagePackerTest, EncodeControlParamsTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePackerTest: EncodeControlParamsTest002 start";
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    opts.formatHint = "image/jpeg";
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_JPG_SRC, opts, errorCode);
+    ASSERT_EQ(errorCode, OHOS::Media::SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+
+    ImagePacker pack;
+    PackOption option {
+        .format = "image/jpeg",
+        .quality = NUM_100,
+        .backgroundColor = 0xFFFFFF,
+    };
+    
+    uint32_t retPack = pack.StartPacking(IMAGE_JPG_DEST, option);
+    ASSERT_EQ(retPack, OHOS::Media::SUCCESS);
+    retPack = pack.AddImage(*imageSource);
+    ASSERT_EQ(retPack, OHOS::Media::SUCCESS);
+    retPack = pack.FinalizePacking();
+    ASSERT_EQ(retPack, OHOS::Media::SUCCESS);
+    GTEST_LOG_(INFO) << "ImagePackerTest: EncodeControlParamsTest002 end";
+}
+
+/**
+ * @tc.name: EncodeControlParamsTest003
+ * @tc.desc: test backgroundColor parameter with default value
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagePackerTest, EncodeControlParamsTest003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePackerTest: EncodeControlParamsTest003 start";
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    opts.formatHint = "image/jpeg";
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_JPG_SRC, opts, errorCode);
+    ASSERT_EQ(errorCode, OHOS::Media::SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+
+    ImagePacker pack;
+    PackOption option {
+        .format = "image/jpeg",
+        .quality = NUM_100,
+        .backgroundColor = 0,
+    };
+    
+    uint32_t retPack = pack.StartPacking(IMAGE_JPG_DEST, option);
+    ASSERT_EQ(retPack, OHOS::Media::SUCCESS);
+    retPack = pack.AddImage(*imageSource);
+    ASSERT_EQ(retPack, OHOS::Media::SUCCESS);
+    retPack = pack.FinalizePacking();
+    ASSERT_EQ(retPack, OHOS::Media::SUCCESS);
+    GTEST_LOG_(INFO) << "ImagePackerTest: EncodeControlParamsTest003 end";
+}
+
+/**
+ * @tc.name: EncodeControlParamsTest004
+ * @tc.desc: test sizeLimit parameter with no size limit (default)
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagePackerTest, EncodeControlParamsTest004, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePackerTest: EncodeControlParamsTest004 start";
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    opts.formatHint = "image/jpeg";
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_JPG_SRC, opts, errorCode);
+    ASSERT_EQ(errorCode, OHOS::Media::SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+
+    ImageInfo imageInfo;
+    ASSERT_EQ(imageSource->GetImageInfo(0, imageInfo), OHOS::Media::SUCCESS);
+    int32_t srcWidth = imageInfo.size.width;
+    int32_t srcHeight = imageInfo.size.height;
+    
+    ImagePacker pack;
+    PackOption option {
+        .format = "image/jpeg",
+        .quality = NUM_100,
+        .sizeLimit = {.maxSize = {0, 0}, .antiAliasingLevel = AntiAliasingOption::NONE},
+    };
+    
+    uint32_t retPack = pack.StartPacking(IMAGE_JPG_DEST, option);
+    ASSERT_EQ(retPack, OHOS::Media::SUCCESS);
+    retPack = pack.AddImage(*imageSource);
+    ASSERT_EQ(retPack, OHOS::Media::SUCCESS);
+    retPack = pack.FinalizePacking();
+    ASSERT_EQ(retPack, OHOS::Media::SUCCESS);
+    
+    uint32_t decodeError = 0;
+    SourceOptions decodeOpts;
+    decodeOpts.formatHint = "image/jpeg";
+    std::unique_ptr<ImageSource> decodeSource = ImageSource::CreateImageSource(IMAGE_JPG_DEST, decodeOpts, decodeError);
+    ASSERT_EQ(decodeError, OHOS::Media::SUCCESS);
+    ASSERT_NE(decodeSource.get(), nullptr);
+    DecodeOptions decodePixelOpts;
+    std::shared_ptr<PixelMap> packedPixelMap = decodeSource->CreatePixelMap(0, decodePixelOpts, decodeError);
+    ASSERT_NE(packedPixelMap, nullptr);
+    ImageInfo packedInfo;
+    packedPixelMap->GetImageInfo(packedInfo);
+    ASSERT_EQ(packedInfo.size.width, srcWidth);
+    ASSERT_EQ(packedInfo.size.height, srcHeight);
+    GTEST_LOG_(INFO) << "ImagePackerTest: EncodeControlParamsTest004 end";
+}
+
+/**
+ * @tc.name: EncodeControlParamsTest005
+ * @tc.desc: test sizeLimit parameter with maxWidth only
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagePackerTest, EncodeControlParamsTest005, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePackerTest: EncodeControlParamsTest005 start";
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    opts.formatHint = "image/jpeg";
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_JPG_SRC, opts, errorCode);
+    ASSERT_EQ(errorCode, OHOS::Media::SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+    
+    ImageInfo imageInfo;
+    ASSERT_EQ(imageSource->GetImageInfo(0, imageInfo), OHOS::Media::SUCCESS);
+    int32_t srcWidth = imageInfo.size.width;
+    int32_t srcHeight = imageInfo.size.height;
+    int32_t dstWidth = srcWidth / 2;
+    int32_t dstHeight = srcHeight / 2;
+
+    ImagePacker pack;
+    PackOption option {
+        .format = "image/jpeg",
+        .quality = NUM_100,
+        .sizeLimit = {.maxSize = {dstWidth, 0}, .antiAliasingLevel = AntiAliasingOption::HIGH},
+    };
+    
+    uint32_t retPack = pack.StartPacking(IMAGE_JPG_DEST, option);
+    ASSERT_EQ(retPack, OHOS::Media::SUCCESS);
+    retPack = pack.AddImage(*imageSource);
+    ASSERT_EQ(retPack, OHOS::Media::SUCCESS);
+    retPack = pack.FinalizePacking();
+    ASSERT_EQ(retPack, OHOS::Media::SUCCESS);
+    
+    uint32_t decodeError = 0;
+    SourceOptions decodeOpts;
+    decodeOpts.formatHint = "image/jpeg";
+    std::unique_ptr<ImageSource> decodeSource = ImageSource::CreateImageSource(IMAGE_JPG_DEST, decodeOpts, decodeError);
+    ASSERT_EQ(decodeError, OHOS::Media::SUCCESS);
+    ASSERT_NE(decodeSource.get(), nullptr);
+    DecodeOptions decodePixelOpts;
+    std::shared_ptr<PixelMap> packedPixelMap = decodeSource->CreatePixelMap(0, decodePixelOpts, decodeError);
+    ASSERT_NE(packedPixelMap, nullptr);
+    ImageInfo packedInfo;
+    packedPixelMap->GetImageInfo(packedInfo);
+    ASSERT_EQ(packedInfo.size.width, dstWidth);
+    ASSERT_EQ(packedInfo.size.height, dstHeight);
+    GTEST_LOG_(INFO) << "ImagePackerTest: EncodeControlParamsTest005 end";
+}
+
+/**
+ * @tc.name: EncodeControlParamsTest006
+ * @tc.desc: test sizeLimit parameter with maxHeight only
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagePackerTest, EncodeControlParamsTest006, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePackerTest: EncodeControlParamsTest006 start";
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    opts.formatHint = "image/jpeg";
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_JPG_SRC, opts, errorCode);
+    ASSERT_EQ(errorCode, OHOS::Media::SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+    
+    ImageInfo imageInfo;
+    ASSERT_EQ(imageSource->GetImageInfo(0, imageInfo), OHOS::Media::SUCCESS);
+    int32_t srcWidth = imageInfo.size.width;
+    int32_t srcHeight = imageInfo.size.height;
+    int32_t dstWidth = srcWidth / 2;
+    int32_t dstHeight = srcHeight / 2;
+
+    ImagePacker pack;
+    PackOption option {
+        .format = "image/jpeg",
+        .quality = NUM_100,
+        .sizeLimit = {.maxSize = {0, dstHeight}, .antiAliasingLevel = AntiAliasingOption::HIGH},
+    };
+    
+    uint32_t retPack = pack.StartPacking(IMAGE_JPG_DEST, option);
+    ASSERT_EQ(retPack, OHOS::Media::SUCCESS);
+    retPack = pack.AddImage(*imageSource);
+    ASSERT_EQ(retPack, OHOS::Media::SUCCESS);
+    retPack = pack.FinalizePacking();
+    ASSERT_EQ(retPack, OHOS::Media::SUCCESS);
+    
+    uint32_t decodeError = 0;
+    SourceOptions decodeOpts;
+    decodeOpts.formatHint = "image/jpeg";
+    std::unique_ptr<ImageSource> decodeSource = ImageSource::CreateImageSource(IMAGE_JPG_DEST, decodeOpts, decodeError);
+    ASSERT_EQ(decodeError, OHOS::Media::SUCCESS);
+    ASSERT_NE(decodeSource.get(), nullptr);
+    DecodeOptions decodePixelOpts;
+    std::shared_ptr<PixelMap> packedPixelMap = decodeSource->CreatePixelMap(0, decodePixelOpts, decodeError);
+    ASSERT_NE(packedPixelMap, nullptr);
+    ImageInfo packedInfo;
+    packedPixelMap->GetImageInfo(packedInfo);
+    ASSERT_EQ(packedInfo.size.width, dstWidth);
+    ASSERT_EQ(packedInfo.size.height, dstHeight);
+    GTEST_LOG_(INFO) << "ImagePackerTest: EncodeControlParamsTest006 end";
+}
+
+/**
+ * @tc.name: EncodeControlParamsTest007
+ * @tc.desc: test sizeLimit parameter with both width and height limits
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagePackerTest, EncodeControlParamsTest007, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePackerTest: EncodeControlParamsTest007 start";
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    opts.formatHint = "image/jpeg";
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_JPG_SRC, opts, errorCode);
+    ASSERT_EQ(errorCode, OHOS::Media::SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+    
+    ImageInfo imageInfo;
+    ASSERT_EQ(imageSource->GetImageInfo(0, imageInfo), OHOS::Media::SUCCESS);
+    int32_t srcWidth = imageInfo.size.width;
+    int32_t srcHeight = imageInfo.size.height;
+    int32_t dstWidth = srcWidth / 2;
+    int32_t dstHeight = srcHeight / 2;
+
+    ImagePacker pack;
+    PackOption option {
+        .format = "image/jpeg",
+        .quality = NUM_100,
+        .sizeLimit = {.maxSize = {dstWidth, dstHeight}, .antiAliasingLevel = AntiAliasingOption::MEDIUM},
+    };
+    
+    uint32_t retPack = pack.StartPacking(IMAGE_JPG_DEST, option);
+    ASSERT_EQ(retPack, OHOS::Media::SUCCESS);
+    retPack = pack.AddImage(*imageSource);
+    ASSERT_EQ(retPack, OHOS::Media::SUCCESS);
+    retPack = pack.FinalizePacking();
+    ASSERT_EQ(retPack, OHOS::Media::SUCCESS);
+    
+    uint32_t decodeError = 0;
+    SourceOptions decodeOpts;
+    decodeOpts.formatHint = "image/jpeg";
+    std::unique_ptr<ImageSource> decodeSource = ImageSource::CreateImageSource(IMAGE_JPG_DEST, decodeOpts, decodeError);
+    ASSERT_EQ(decodeError, OHOS::Media::SUCCESS);
+    ASSERT_NE(decodeSource.get(), nullptr);
+    DecodeOptions decodePixelOpts;
+    std::shared_ptr<PixelMap> packedPixelMap = decodeSource->CreatePixelMap(0, decodePixelOpts, decodeError);
+    ASSERT_NE(packedPixelMap, nullptr);
+    ImageInfo packedInfo;
+    packedPixelMap->GetImageInfo(packedInfo);
+    ASSERT_EQ(packedInfo.size.width, dstWidth);
+    ASSERT_EQ(packedInfo.size.height, dstHeight);
+    GTEST_LOG_(INFO) << "ImagePackerTest: EncodeControlParamsTest007 end";
+}
+
+/**
+ * @tc.name: EncodeControlParamsTest008
+ * @tc.desc: test all three parameters combined
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagePackerTest, EncodeControlParamsTest008, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePackerTest: EncodeControlParamsTest008 start";
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    opts.formatHint = "image/jpeg";
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_JPG_SRC, opts, errorCode);
+    ASSERT_EQ(errorCode, OHOS::Media::SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+    
+    ImageInfo imageInfo;
+    ASSERT_EQ(imageSource->GetImageInfo(0, imageInfo), OHOS::Media::SUCCESS);
+    int32_t srcWidth = imageInfo.size.width;
+    int32_t srcHeight = imageInfo.size.height;
+    int32_t dstWidth = srcWidth / 2;
+    int32_t dstHeight = srcHeight / 2;
+
+    ImagePacker pack;
+    PackOption option {
+        .format = "image/jpeg",
+        .quality = NUM_100,
+        .needsPackProperties = true,
+        .needsPackGPS = false,
+        .backgroundColor = 0xFFFFFF,
+        .sizeLimit = {.maxSize = {dstWidth, dstHeight}, .antiAliasingLevel = AntiAliasingOption::HIGH},
+    };
+    
+    uint32_t retPack = pack.StartPacking(IMAGE_JPG_DEST, option);
+    ASSERT_EQ(retPack, OHOS::Media::SUCCESS);
+    retPack = pack.AddImage(*imageSource);
+    ASSERT_EQ(retPack, OHOS::Media::SUCCESS);
+    retPack = pack.FinalizePacking();
+    ASSERT_EQ(retPack, OHOS::Media::SUCCESS);
+    
+    ASSERT_TRUE(VerifyGpsInfoRemoved(IMAGE_JPG_DEST));
+    uint32_t decodeError = 0;
+    SourceOptions decodeOpts;
+    decodeOpts.formatHint = "image/jpeg";
+    std::unique_ptr<ImageSource> decodeSource = ImageSource::CreateImageSource(IMAGE_JPG_DEST, decodeOpts, decodeError);
+    ASSERT_EQ(decodeError, OHOS::Media::SUCCESS);
+    ASSERT_NE(decodeSource.get(), nullptr);
+    DecodeOptions decodePixelOpts;
+    std::shared_ptr<PixelMap> packedPixelMap = decodeSource->CreatePixelMap(0, decodePixelOpts, decodeError);
+    ASSERT_NE(packedPixelMap, nullptr);
+    ImageInfo packedInfo;
+    packedPixelMap->GetImageInfo(packedInfo);
+    ASSERT_EQ(packedInfo.size.width, dstWidth);
+    ASSERT_EQ(packedInfo.size.height, dstHeight);
+    GTEST_LOG_(INFO) << "ImagePackerTest: EncodeControlParamsTest008 end";
+}
+
+/**
+ * @tc.name: EncodeControlParamsTest009
+ * @tc.desc: test sizeLimit antiAliasingLevel NONE
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagePackerTest, EncodeControlParamsTest009, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePackerTest: EncodeControlParamsTest009 start";
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    opts.formatHint = "image/jpeg";
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_JPG_SRC, opts, errorCode);
+    ASSERT_EQ(errorCode, OHOS::Media::SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+    
+    ImageInfo imageInfo;
+    ASSERT_EQ(imageSource->GetImageInfo(0, imageInfo), OHOS::Media::SUCCESS);
+    int32_t srcWidth = imageInfo.size.width;
+    int32_t srcHeight = imageInfo.size.height;
+    int32_t dstWidth = srcWidth / 2;
+    int32_t dstHeight = srcHeight / 2;
+
+    ImagePacker pack;
+    PackOption option {
+        .format = "image/jpeg",
+        .quality = NUM_100,
+        .sizeLimit = {.maxSize = {dstWidth, dstHeight}, .antiAliasingLevel = AntiAliasingOption::NONE},
+    };
+    
+    uint32_t retPack = pack.StartPacking(IMAGE_JPG_DEST, option);
+    ASSERT_EQ(retPack, OHOS::Media::SUCCESS);
+    retPack = pack.AddImage(*imageSource);
+    ASSERT_EQ(retPack, OHOS::Media::SUCCESS);
+    retPack = pack.FinalizePacking();
+    ASSERT_EQ(retPack, OHOS::Media::SUCCESS);
+    
+    uint32_t decodeError = 0;
+    SourceOptions decodeOpts;
+    decodeOpts.formatHint = "image/jpeg";
+    std::unique_ptr<ImageSource> decodeSource = ImageSource::CreateImageSource(IMAGE_JPG_DEST, decodeOpts, decodeError);
+    ASSERT_EQ(decodeError, OHOS::Media::SUCCESS);
+    ASSERT_NE(decodeSource.get(), nullptr);
+    DecodeOptions decodePixelOpts;
+    std::shared_ptr<PixelMap> packedPixelMap = decodeSource->CreatePixelMap(0, decodePixelOpts, decodeError);
+    ASSERT_NE(packedPixelMap, nullptr);
+    ImageInfo packedInfo;
+    packedPixelMap->GetImageInfo(packedInfo);
+    ASSERT_EQ(packedInfo.size.width, dstWidth);
+    ASSERT_EQ(packedInfo.size.height, dstHeight);
+    GTEST_LOG_(INFO) << "ImagePackerTest: EncodeControlParamsTest009 end";
+}
+
+/**
+ * @tc.name: EncodeControlParamsTest010
+ * @tc.desc: test sizeLimit antiAliasingLevel LOW
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagePackerTest, EncodeControlParamsTest010, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePackerTest: EncodeControlParamsTest010 start";
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    opts.formatHint = "image/jpeg";
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_JPG_SRC, opts, errorCode);
+    ASSERT_EQ(errorCode, OHOS::Media::SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+    
+    ImageInfo imageInfo;
+    ASSERT_EQ(imageSource->GetImageInfo(0, imageInfo), OHOS::Media::SUCCESS);
+    int32_t srcWidth = imageInfo.size.width;
+    int32_t srcHeight = imageInfo.size.height;
+    int32_t dstWidth = srcWidth / 2;
+    int32_t dstHeight = srcHeight / 2;
+
+    ImagePacker pack;
+    PackOption option {
+        .format = "image/jpeg",
+        .quality = NUM_100,
+        .sizeLimit = {.maxSize = {dstWidth, dstHeight}, .antiAliasingLevel = AntiAliasingOption::LOW},
+    };
+    
+    uint32_t retPack = pack.StartPacking(IMAGE_JPG_DEST, option);
+    ASSERT_EQ(retPack, OHOS::Media::SUCCESS);
+    retPack = pack.AddImage(*imageSource);
+    ASSERT_EQ(retPack, OHOS::Media::SUCCESS);
+    retPack = pack.FinalizePacking();
+    ASSERT_EQ(retPack, OHOS::Media::SUCCESS);
+    
+    uint32_t decodeError = 0;
+    SourceOptions decodeOpts;
+    decodeOpts.formatHint = "image/jpeg";
+    std::unique_ptr<ImageSource> decodeSource = ImageSource::CreateImageSource(IMAGE_JPG_DEST, decodeOpts, decodeError);
+    ASSERT_EQ(decodeError, OHOS::Media::SUCCESS);
+    ASSERT_NE(decodeSource.get(), nullptr);
+    DecodeOptions decodePixelOpts;
+    std::shared_ptr<PixelMap> packedPixelMap = decodeSource->CreatePixelMap(0, decodePixelOpts, decodeError);
+    ASSERT_NE(packedPixelMap, nullptr);
+    ImageInfo packedInfo;
+    packedPixelMap->GetImageInfo(packedInfo);
+    ASSERT_EQ(packedInfo.size.width, dstWidth);
+    ASSERT_EQ(packedInfo.size.height, dstHeight);
+    GTEST_LOG_(INFO) << "ImagePackerTest: EncodeControlParamsTest010 end";
+}
+
+/**
+ * @tc.name: EncodeControlParamsTest011
+ * @tc.desc: test backgroundColor with PNG format - skip due to transparency support
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagePackerTest, EncodeControlParamsTest011, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePackerTest: EncodeControlParamsTest011 start";
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    opts.formatHint = "image/jpeg";
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_JPG_SRC, opts, errorCode);
+    ASSERT_EQ(errorCode, OHOS::Media::SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+
+    ImagePacker pack;
+    PackOption option {
+        .format = "image/png",
+        .quality = NUM_100,
+        .backgroundColor = 0xFFFFFF,
+    };
+    
+    uint32_t retPack = pack.StartPacking(IMAGE_JPG_DEST, option);
+    ASSERT_EQ(retPack, OHOS::Media::SUCCESS);
+    retPack = pack.AddImage(*imageSource);
+    ASSERT_EQ(retPack, OHOS::Media::SUCCESS);
+    retPack = pack.FinalizePacking();
+    ASSERT_EQ(retPack, OHOS::Media::SUCCESS);
+    GTEST_LOG_(INFO) << "ImagePackerTest: EncodeControlParamsTest011 end";
+}
+
+/**
+ * @tc.name: EncodeControlParamsTest012
+ * @tc.desc: test needsPackGPS without EXIF metadata - skip GPS removal
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagePackerTest, EncodeControlParamsTest012, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePackerTest: EncodeControlParamsTest012 start";
+    
+    InitializationOptions initOpts;
+    initOpts.size = Size{.width = 100, .height = 100};
+    initOpts.pixelFormat = PixelFormat::RGBA_8888;
+    initOpts.alphaType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
+    
+    std::unique_ptr<PixelMap> pixelmap = PixelMap::Create(initOpts);
+    ASSERT_NE(pixelmap, nullptr);
+    
+    ImagePacker pack;
+    PackOption option {
+        .format = "image/jpeg",
+        .quality = NUM_100,
+        .needsPackProperties = true,
+        .needsPackGPS = false,
+    };
+    
+    uint32_t retPack = pack.StartPacking(IMAGE_JPG_DEST, option);
+    ASSERT_EQ(retPack, OHOS::Media::SUCCESS);
+    retPack = pack.AddImage(*pixelmap);
+    ASSERT_EQ(retPack, OHOS::Media::SUCCESS);
+    retPack = pack.FinalizePacking();
+    ASSERT_EQ(retPack, OHOS::Media::SUCCESS);
+    GTEST_LOG_(INFO) << "ImagePackerTest: EncodeControlParamsTest012 end";
+}
+
+/**
+ * @tc.name: EncodeControlParamsTest013
+ * @tc.desc: test backgroundColor with OPAQUE alpha type - skip processing
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagePackerTest, EncodeControlParamsTest013, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePackerTest: EncodeControlParamsTest013 start";
+    
+    InitializationOptions initOpts;
+    initOpts.size = Size{.width = 100, .height = 100};
+    initOpts.pixelFormat = PixelFormat::RGBA_8888;
+    initOpts.alphaType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
+    
+    std::unique_ptr<PixelMap> pixelmap = PixelMap::Create(initOpts);
+    ASSERT_NE(pixelmap, nullptr);
+    
+    ImagePacker pack;
+    PackOption option {
+        .format = "image/jpeg",
+        .quality = NUM_100,
+        .backgroundColor = 0xFFFFFF,
+    };
+    
+    uint32_t retPack = pack.StartPacking(IMAGE_JPG_DEST, option);
+    ASSERT_EQ(retPack, OHOS::Media::SUCCESS);
+    retPack = pack.AddImage(*pixelmap);
+    ASSERT_EQ(retPack, OHOS::Media::SUCCESS);
+    retPack = pack.FinalizePacking();
+    ASSERT_EQ(retPack, OHOS::Media::SUCCESS);
+    GTEST_LOG_(INFO) << "ImagePackerTest: EncodeControlParamsTest013 end";
+}
+
+/**
+ * @tc.name: EncodeControlParamsTest014
+ * @tc.desc: test backgroundColor with RGB_565 format - skip processing
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagePackerTest, EncodeControlParamsTest014, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePackerTest: EncodeControlParamsTest014 start";
+    
+    InitializationOptions initOpts;
+    initOpts.size = Size{.width = 100, .height = 100};
+    initOpts.pixelFormat = PixelFormat::RGB_565;
+    initOpts.alphaType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
+    
+    std::unique_ptr<PixelMap> pixelmap = PixelMap::Create(initOpts);
+    ASSERT_NE(pixelmap, nullptr);
+    
+    ImagePacker pack;
+    PackOption option {
+        .format = "image/jpeg",
+        .quality = NUM_100,
+        .backgroundColor = 0xFFFFFF,
+    };
+    
+    uint32_t retPack = pack.StartPacking(IMAGE_JPG_DEST, option);
+    ASSERT_EQ(retPack, OHOS::Media::SUCCESS);
+    retPack = pack.AddImage(*pixelmap);
+    ASSERT_EQ(retPack, OHOS::Media::SUCCESS);
+    retPack = pack.FinalizePacking();
+    ASSERT_EQ(retPack, OHOS::Media::SUCCESS);
+    GTEST_LOG_(INFO) << "ImagePackerTest: EncodeControlParamsTest014 end";
 }
 } // namespace Multimedia
 } // namespace OHOS

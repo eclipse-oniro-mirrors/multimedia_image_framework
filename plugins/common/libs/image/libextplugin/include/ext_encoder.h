@@ -185,7 +185,7 @@ private:
     uint32_t ProcessPictureMaxSize();
     uint32_t ProcessBackgroundColor(PixelMap* processPixelmap);
     uint32_t ProcessRemoveGpsInfo();
-    bool IsFormatSupportTransparency(const std::string& format) const;
+    bool IsFormatNotSupportTransparency(const std::string& format) const;
 
     SkEncodedImageFormat encodeFormat_ = SkEncodedImageFormat::kBMP;
     OutputDataStream* output_ = nullptr;

@@ -839,10 +839,10 @@ void ExtEncoder::RecycleResources()
     tmpMemoryList_.clear();
 }
 
-bool ExtEncoder::IsFormatSupportTransparency(const std::string& format) const
+bool ExtEncoder::IsFormatNotSupportTransparency(const std::string& format) const
 {
     std::string lowerFormat = LowerStr(format);
-    return lowerFormat == IMAGE_PNG_FORMAT || lowerFormat == IMAGE_WEBP_FORMAT || lowerFormat == IMAGE_GIF_FORMAT;
+    return lowerFormat == IMAGE_JPEG_FORMAT || lowerFormat == IMAGE_HEIF_FORMAT || lowerFormat == IMAGE_HEIC_FORMAT;
 }
 
 #if !defined(CROSS_PLATFORM)
@@ -905,7 +905,7 @@ bool ExtEncoder::NeedDeepCopy()
     }
 
     if ((srcPixelmap != nullptr) && (opts_.backgroundColor != 0) && !hasGainmap
-        && !IsFormatSupportTransparency(opts_.format)) {
+        && IsFormatNotSupportTransparency(opts_.format)) {
         PixelFormat pixelFormat = srcPixelmap->GetPixelFormat();
         AlphaType alphaType = srcPixelmap->GetAlphaType();
         if (pixelFormat == PixelFormat::RGBA_8888 && alphaType != AlphaType::IMAGE_ALPHA_TYPE_OPAQUE) {
@@ -1109,6 +1109,7 @@ uint32_t ExtEncoder::ProcessPictureMaxSize()
         IMAGE_LOGE("ExtEncoder::ProcessPictureMaxSize gainmapPixelmap resize failed");
         return ERR_IMAGE_ENCODE_FAILED;
     }
+
     const auto& auxTypes = ImageUtils::GetAllAuxiliaryPictureType();
     for (const auto& auxType : auxTypes) {
         auto auxPicture = picture_->GetAuxiliaryPicture(auxType);
@@ -1124,7 +1125,7 @@ uint32_t ExtEncoder::ProcessPictureMaxSize()
 
 uint32_t ExtEncoder::ProcessBackgroundColor(PixelMap* processPixelmap)
 {
-    if (IsFormatSupportTransparency(opts_.format) || processPixelmap == nullptr) {
+    if (!IsFormatNotSupportTransparency(opts_.format) || processPixelmap == nullptr) {
         return SUCCESS;
     }
 

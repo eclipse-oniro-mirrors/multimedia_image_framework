@@ -30,6 +30,7 @@
 #include "hilog/log.h"
 #include "hilog/log_cpp.h"
 #include "image_format_convert.h"
+#include "image_format_convert_ext_utils.h"
 #include "image_format_convert_utils.h"
 #include "image_log.h"
 #include "image_source.h"
@@ -2618,5 +2619,220 @@ HWTEST_F(ImageFormatConvertTest, MakeDestPixelMapUnique_001, TestSize.Level3)
     GTEST_LOG_(INFO) << "ImageFormatConvertTest: MakeDestPixelMapUnique_001 end";
 }
 
+#ifdef EXT_PIXEL
+HWTEST_F(ImageFormatConvertTest, GetYuvConstantFromParam_001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageFormatConvertTest.GetYuvConstantFromParam_001: start";
+    YUVDataInfo yuvInfo;
+    yuvInfo.yWidth = TREE_ORIGINAL_WIDTH;
+    yuvInfo.yHeight = TREE_ORIGINAL_HEIGHT;
+    yuvInfo.yStride = TREE_ORIGINAL_WIDTH;
+    yuvInfo.uvStride = TREE_ORIGINAL_WIDTH;
+    yuvInfo.yOffset = 0;
+    yuvInfo.uvOffset = TREE_ORIGINAL_WIDTH * TREE_ORIGINAL_HEIGHT;
+    DestConvertInfo destInfo;
+    destInfo.width = TREE_ORIGINAL_WIDTH;
+    destInfo.height = TREE_ORIGINAL_HEIGHT;
+    destInfo.format = PixelFormat::RGBA_1010102;
+    destInfo.allocType = AllocatorType::HEAP_ALLOC;
+    destInfo.yuvConvertCSDetails.srcYuvConversion = YuvConversion::BT2020;
+    destInfo.yuvConvertCSDetails.srcRange = 0;
+    uint32_t bufSize = TREE_ORIGINAL_WIDTH * TREE_ORIGINAL_HEIGHT * BYTES_PER_PIXEL_RGBA;
+    std::vector<uint8_t> buf(bufSize, 128);
+    destInfo.buffer = buf.data();
+    destInfo.bufferSize = bufSize;
+    std::vector<uint8_t> srcBuf(bufSize, 128);
+    bool result = ImageFormatConvertExtUtils::NV12ToRGBA1010102(srcBuf.data(), yuvInfo, destInfo, ColorSpace::UNKNOWN);
+    EXPECT_EQ(result, true);
+    GTEST_LOG_(INFO) << "ImageFormatConvertTest.GetYuvConstantFromParam_001: end";
+}
+
+HWTEST_F(ImageFormatConvertTest, GetYuvConstantFromParam_002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageFormatConvertTest.GetYuvConstantFromParam_002: start";
+    YUVDataInfo yuvInfo;
+    yuvInfo.yWidth = TREE_ORIGINAL_WIDTH;
+    yuvInfo.yHeight = TREE_ORIGINAL_HEIGHT;
+    yuvInfo.yStride = TREE_ORIGINAL_WIDTH;
+    yuvInfo.uvStride = TREE_ORIGINAL_WIDTH;
+    yuvInfo.yOffset = 0;
+    yuvInfo.uvOffset = TREE_ORIGINAL_WIDTH * TREE_ORIGINAL_HEIGHT;
+    DestConvertInfo destInfo;
+    destInfo.width = TREE_ORIGINAL_WIDTH;
+    destInfo.height = TREE_ORIGINAL_HEIGHT;
+    destInfo.format = PixelFormat::RGBA_1010102;
+    destInfo.allocType = AllocatorType::HEAP_ALLOC;
+    destInfo.yuvConvertCSDetails.srcYuvConversion = YuvConversion::BT_MAX;
+    destInfo.yuvConvertCSDetails.srcRange = 1;
+    uint32_t bufSize = TREE_ORIGINAL_WIDTH * TREE_ORIGINAL_HEIGHT * BYTES_PER_PIXEL_RGBA;
+    std::vector<uint8_t> buf(bufSize, 128);
+    destInfo.buffer = buf.data();
+    destInfo.bufferSize = bufSize;
+    std::vector<uint8_t> srcBuf(bufSize, 128);
+    bool result = ImageFormatConvertExtUtils::NV12ToRGBA1010102(srcBuf.data(), yuvInfo, destInfo, ColorSpace::UNKNOWN);
+    EXPECT_EQ(result, true);
+    GTEST_LOG_(INFO) << "ImageFormatConvertTest.GetYuvConstantFromParam_002: end";
+}
+
+HWTEST_F(ImageFormatConvertTest, GetYuvConstantFromParam_003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageFormatConvertTest.GetYuvConstantFromParam_003: start";
+    YUVDataInfo yuvInfo;
+    yuvInfo.yWidth = TREE_ORIGINAL_WIDTH;
+    yuvInfo.yHeight = TREE_ORIGINAL_HEIGHT;
+    yuvInfo.yStride = TREE_ORIGINAL_WIDTH;
+    yuvInfo.uvStride = TREE_ORIGINAL_WIDTH;
+    yuvInfo.yOffset = 0;
+    yuvInfo.uvOffset = TREE_ORIGINAL_WIDTH * TREE_ORIGINAL_HEIGHT;
+    DestConvertInfo destInfo;
+    destInfo.width = TREE_ORIGINAL_WIDTH;
+    destInfo.height = TREE_ORIGINAL_HEIGHT;
+    destInfo.format = PixelFormat::RGBA_8888;
+    destInfo.allocType = AllocatorType::HEAP_ALLOC;
+    destInfo.yuvConvertCSDetails.srcYuvConversion = YuvConversion::BT_MAX;
+    destInfo.yuvConvertCSDetails.srcRange = 0;
+    uint32_t bufSize = TREE_ORIGINAL_WIDTH * TREE_ORIGINAL_HEIGHT * BYTES_PER_PIXEL_RGBA;
+    std::vector<uint8_t> buf(bufSize, 128);
+    destInfo.buffer = buf.data();
+    destInfo.bufferSize = bufSize;
+    std::vector<uint8_t> srcBuf(bufSize, 128);
+    bool result = ImageFormatConvertExtUtils::NV12ToRGBA1010102(srcBuf.data(), yuvInfo, destInfo, ColorSpace::UNKNOWN);
+    EXPECT_EQ(result, true);
+    GTEST_LOG_(INFO) << "ImageFormatConvertTest.GetYuvConstantFromParam_003: end";
+}
+
+HWTEST_F(ImageFormatConvertTest, RGBAParamBufferSizeOverflow_001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageFormatConvertTest.RGBAParamBufferSizeOverflow_001: start";
+    constexpr int32_t maxRamSize = 600 * 1024 * 1024;
+    RGBDataInfo rgbInfo = {maxRamSize / 4 + 1, 2};
+    DestConvertInfo destInfo = {maxRamSize / 4 + 1, 2};
+    destInfo.format = PixelFormat::NV12;
+    uint32_t bufSize = 1024;
+    std::vector<uint8_t> buf(bufSize, 0);
+    destInfo.buffer = buf.data();
+    destInfo.bufferSize = bufSize;
+    bool result = ImageFormatConvertExtUtils::RGBA1010102ToNV12(buf.data(), rgbInfo, destInfo, ColorSpace::UNKNOWN);
+    EXPECT_EQ(result, false);
+    GTEST_LOG_(INFO) << "ImageFormatConvertTest.RGBAParamBufferSizeOverflow_001: end";
+}
+
+HWTEST_F(ImageFormatConvertTest, YuvToRGBParamBufferSizeOverflow_001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageFormatConvertTest.YuvToRGBParamBufferSizeOverflow_001: start";
+    constexpr int32_t maxRamSize = 600 * 1024 * 1024;
+    YUVDataInfo yuvInfo;
+    yuvInfo.yWidth = maxRamSize / 2 + 1;
+    yuvInfo.yHeight = 2;
+    yuvInfo.yStride = maxRamSize / 2 + 1;
+    yuvInfo.uvStride = maxRamSize / 2 + 1;
+    yuvInfo.yOffset = 0;
+    yuvInfo.uvOffset = (maxRamSize / 2 + 1) * 2;
+    DestConvertInfo destInfo;
+    destInfo.width = maxRamSize / 2 + 1;
+    destInfo.height = 2;
+    destInfo.format = PixelFormat::RGBA_8888;
+    destInfo.allocType = AllocatorType::HEAP_ALLOC;
+    uint32_t bufSize = 1024;
+    std::vector<uint8_t> buf(bufSize, 0);
+    destInfo.buffer = buf.data();
+    destInfo.bufferSize = bufSize;
+    std::vector<uint8_t> srcBuf(bufSize, 0);
+    bool result = ImageFormatConvertExtUtils::NV21ToRGBA(srcBuf.data(), yuvInfo, destInfo, ColorSpace::UNKNOWN);
+    EXPECT_EQ(result, false);
+    GTEST_LOG_(INFO) << "ImageFormatConvertTest.YuvToRGBParamBufferSizeOverflow_001: end";
+}
+
+HWTEST_F(ImageFormatConvertTest, YuvToRGBParamBufferSizeOverflow_002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageFormatConvertTest.YuvToRGBParamBufferSizeOverflow_002: start";
+    constexpr int32_t overflowWidth = INT_MAX / 3 + 1;
+    YUVDataInfo yuvInfo;
+    yuvInfo.yWidth = overflowWidth;
+    yuvInfo.yHeight = 2;
+    yuvInfo.yStride = overflowWidth;
+    yuvInfo.uvStride = overflowWidth;
+    yuvInfo.yOffset = 0;
+    yuvInfo.uvOffset = overflowWidth * 2;
+    DestConvertInfo destInfo;
+    destInfo.width = overflowWidth;
+    destInfo.height = 2;
+    destInfo.format = PixelFormat::RGB_888;
+    destInfo.allocType = AllocatorType::HEAP_ALLOC;
+    uint32_t bufSize = 1024;
+    std::vector<uint8_t> buf(bufSize, 0);
+    destInfo.buffer = buf.data();
+    destInfo.bufferSize = bufSize;
+    std::vector<uint8_t> srcBuf(bufSize, 0);
+    bool result = ImageFormatConvertExtUtils::NV21ToRGB(srcBuf.data(), yuvInfo, destInfo, ColorSpace::UNKNOWN);
+    EXPECT_EQ(result, false);
+    GTEST_LOG_(INFO) << "ImageFormatConvertTest.YuvToRGBParamBufferSizeOverflow_002: end";
+}
+
+HWTEST_F(ImageFormatConvertTest, YuvToRGB10ParamBufferSizeVaild_001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageFormatConvertTest.YuvToRGB10ParamBufferSizeVaild_001: start";
+    YUVDataInfo yuvInfo;
+    DestConvertInfo destInfo;
+    destInfo.format = PixelFormat::RGBA_1010102;
+    destInfo.bufferSize = 0;
+    uint8_t testBuffer[1] = {0};
+    bool result = ImageFormatConvertExtUtils::NV21ToRGBA1010102(testBuffer, yuvInfo, destInfo, ColorSpace::UNKNOWN);
+    EXPECT_EQ(result, false);
+    GTEST_LOG_(INFO) << "ImageFormatConvertTest.YuvToRGB10ParamBufferSizeVaild_001: end";
+}
+
+HWTEST_F(ImageFormatConvertTest, I010ParamBufferSizeVaild_001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageFormatConvertTest.I010ParamBufferSizeVaild_001: start";
+    YUVDataInfo yuvInfo;
+    DestConvertInfo destInfo;
+    destInfo.format = PixelFormat::NV12;
+    destInfo.bufferSize = 0;
+    uint8_t testBuffer[1] = {0};
+    bool result = ImageFormatConvertExtUtils::NV12P010ToNV12(testBuffer, yuvInfo, destInfo, ColorSpace::UNKNOWN);
+    EXPECT_EQ(result, false);
+    GTEST_LOG_(INFO) << "ImageFormatConvertTest.I010ParamBufferSizeVaild_001: end";
+}
+
+HWTEST_F(ImageFormatConvertTest, I010ParamBufferSizeVaild_002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageFormatConvertTest.I010ParamBufferSizeVaild_002: start";
+    YUVDataInfo yuvInfo;
+    DestConvertInfo destInfo;
+    destInfo.format = PixelFormat::YCBCR_P010;
+    destInfo.bufferSize = 0;
+    uint8_t testBuffer[1] = {0};
+    bool result = ImageFormatConvertExtUtils::NV12ToNV12P010(testBuffer, yuvInfo, destInfo, ColorSpace::UNKNOWN);
+    EXPECT_EQ(result, false);
+    GTEST_LOG_(INFO) << "ImageFormatConvertTest.I010ParamBufferSizeVaild_002: end";
+}
+
+HWTEST_F(ImageFormatConvertTest, P010ToRGBParamBufferSizeVaild_001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageFormatConvertTest.P010ToRGBParamBufferSizeVaild_001: start";
+    YUVDataInfo yuvInfo;
+    DestConvertInfo destInfo;
+    destInfo.format = PixelFormat::RGB_565;
+    destInfo.bufferSize = 0;
+    uint8_t testBuffer[1] = {0};
+    bool result = ImageFormatConvertExtUtils::NV12P010ToRGB565(testBuffer, yuvInfo, destInfo, ColorSpace::UNKNOWN);
+    EXPECT_EQ(result, false);
+    GTEST_LOG_(INFO) << "ImageFormatConvertTest.P010ToRGBParamBufferSizeVaild_001: end";
+}
+
+HWTEST_F(ImageFormatConvertTest, P010ToRGB10ParamBufferSizeVaild_001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageFormatConvertTest.P010ToRGB10ParamBufferSizeVaild_001: start";
+    YUVDataInfo yuvInfo;
+    DestConvertInfo destInfo;
+    destInfo.format = PixelFormat::RGBA_1010102;
+    destInfo.bufferSize = 0;
+    uint8_t testBuffer[1] = {0};
+    bool result = ImageFormatConvertExtUtils::NV12P010ToRGBA1010102(testBuffer, yuvInfo, destInfo, ColorSpace::UNKNOWN);
+    EXPECT_EQ(result, false);
+    GTEST_LOG_(INFO) << "ImageFormatConvertTest.P010ToRGB10ParamBufferSizeVaild_001: end";
+}
+#endif
 } // namespace Media
 } // namespace OHOS
