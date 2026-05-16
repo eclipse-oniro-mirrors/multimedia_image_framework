@@ -27,6 +27,7 @@
 #include "image_type.h"
 #include <map>
 
+
 namespace OHOS {
     class SurfaceBuffer;
 }

@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 
+
 #include "auxiliary_picture_taihe.h"
 #include "image_common.h"
 #include "image_log.h"

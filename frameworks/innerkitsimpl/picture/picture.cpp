@@ -37,6 +37,7 @@
 #include "image_system_properties.h"
 #include "color_utils.h"
 
+
 namespace OHOS {
 namespace Media {
 using namespace OHOS::HDI::Display::Graphic::Common::V1_0;

@@ -26,6 +26,7 @@
 #include "metadata_napi.h"
 #include "image_common.h"
 
+
 #undef LOG_DOMAIN
 #define LOG_DOMAIN LOG_TAG_DOMAIN_ID_IMAGE
 
