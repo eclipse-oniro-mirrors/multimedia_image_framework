@@ -910,10 +910,10 @@ HWTEST_F(ImagePackerTest, EncodeControlParamsTest001, TestSize.Level3)
 
     ImagePacker pack;
     PackOption option {
-        .format = "image/jpeg";
-        .quality = NUM_100;
-        .needsPackProperties = true;
-        .needsPackGPS = true;
+        .format = "image/jpeg",
+        .quality = NUM_100,
+        .needsPackProperties = true,
+        .needsPackGPS = true,
     };
 
     uint32_t retPack = pack.StartPacking(IMAGE_JPG_DEST, option);
