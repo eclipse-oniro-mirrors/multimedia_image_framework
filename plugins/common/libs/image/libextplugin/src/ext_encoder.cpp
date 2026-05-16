@@ -921,7 +921,6 @@ std::unique_ptr<PixelMap> ExtEncoder::DeepCopyPixelmap()
     } else {
         clonedPixelmap = pixelmap_->Clone(errorCode);
     }
-
     if (errorCode != SUCCESS || clonedPixelmap == nullptr) {
         IMAGE_LOGE("ExtEncoder::DeepCopyPixelmap copy failed, errorCode=%{public}d", errorCode);
         return nullptr;
@@ -1097,29 +1096,13 @@ uint32_t ExtEncoder::ProcessPictureMaxSize()
 
     uint32_t scaleRet = mainPixelmap->Scale(scale, scale, opts_.sizeLimit.antiAliasingLevel);
     if (scaleRet != SUCCESS) {
-        IMAGE_LOGE("ExtEncoder::ProcessPictureMaxSize mainPixelmap scale failed");
-        return ERR_IMAGE_ENCODE_FAILED;
+        IMAGE_LOGE("ExtEncoder::ProcessPictureMaxSize mainPixelmap scale failed %{public}u", scaleRet);
+        return scaleRet;
     }
-    auto gainmapPixelmap = picture_->GetGainmapPixelMap();
-    if (gainmapPixelmap != nullptr) {
-        scaleRet = gainmapPixelmap->Scale(scale, scale, opts_.sizeLimit.antiAliasingLevel);
-        if (scaleRet != SUCCESS) {
-            IMAGE_LOGE("ExtEncoder::ProcessPictureMaxSize gainmapPixelmap scale failed");
-            return ERR_IMAGE_ENCODE_FAILED;
-        }
-    }
-    const auto& auxTypes = ImageUtils::GetAllAuxiliaryPictureType();
-    for (const auto& auxType : auxTypes) {
-        auto auxPicture = picture_->GetAuxiliaryPicture(auxType);
-        if (auxPicture == nullptr) continue;
-        auto auxPixelmap = auxPicture->GetContentPixel();
-        if (auxPixelmap != nullptr) {
-            scaleRet = auxPixelmap->Scale(scale, scale, opts_.sizeLimit.antiAliasingLevel);
-            if (scaleRet != SUCCESS) {
-                IMAGE_LOGE("ExtEncoder::ProcessPictureMaxSize aux scale failed, type %{public}d", auxType);
-                return ERR_IMAGE_ENCODE_FAILED;
-            }
-        }
+    scaleRet = picture_->ScaleAuxiliaryPixelMaps(scale, opts_.sizeLimit.antiAliasingLevel);
+    if (scaleRet != SUCCESS) {
+        IMAGE_LOGE("ExtEncoder::ProcessPictureMaxSize AuxiliaryPixelMaps scale failed %{public}u", scaleRet);
+        return scaleRet;
     }
     return SUCCESS;
 }

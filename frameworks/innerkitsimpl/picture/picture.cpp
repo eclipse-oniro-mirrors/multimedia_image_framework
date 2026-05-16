@@ -1209,5 +1209,31 @@ bool Picture::IsValidPictureMetadataType(MetadataType metadataType)
     }
     return ImageUtils::IsMetadataTypeSupported(metadataType);
 }
+
+uint32_t Picture::ScaleAuxiliaryPixelMaps(float scale, AntiAliasingOption option)
+{
+    auto gainmapPixelmap = GetGainmapPixelMap();
+    if (gainmapPixelmap != nullptr) {
+        uint32_t scaleRet = gainmapPixelmap->Scale(scale, scale, option);
+        if (scaleRet != SUCCESS) {
+            IMAGE_LOGE("Picture::ScaleAuxiliaryPixelMaps gainmapPixelmap scale failed");
+            return ERR_IMAGE_ENCODE_FAILED;
+        }
+    }
+    const auto& auxTypes = ImageUtils::GetAllAuxiliaryPictureType();
+    for (const auto& auxType : auxTypes) {
+        auto auxPicture = GetAuxiliaryPicture(auxType);
+        if (auxPicture == nullptr) continue;
+        auto auxPixelmap = auxPicture->GetContentPixel();
+        if (auxPixelmap != nullptr) {
+            uint32_t scaleRet = auxPixelmap->Scale(scale, scale, option);
+            if (scaleRet != SUCCESS) {
+                IMAGE_LOGE("Picture::ScaleAuxiliaryPixelMaps aux scale failed, type %{public}d", auxType);
+                return ERR_IMAGE_ENCODE_FAILED;
+            }
+        }
+    }
+    return SUCCESS;
+}
 } // namespace Media
 } // namespace OHOS
