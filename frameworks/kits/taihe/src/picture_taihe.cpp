@@ -13,7 +13,6 @@
  * limitations under the License.
  */
 
-
 #include "auxiliary_picture_taihe.h"
 #include "image_common.h"
 #include "image_log.h"
@@ -373,9 +372,16 @@ Picture CreatePictureByPtr(int64_t aniPtr)
     return make_holder<PictureImpl, Picture>(aniPtr);
 }
 
-Picture CreatePictureByHdrAndSdrPixelMapSync(weak::PixelMap hdrPixelMap, weak::PixelMap sdrPixelMap)
+Picture CreatePictureByHdrAndSdrPixelMapWithGainmapParamsSync(
+    weak::PixelMap hdrPixelMap, weak::PixelMap sdrPixelMap, const GainmapParams &params)
 {
-    IMAGE_LOGD("CreatePictureByHdrAndSdrPixelMap IN");
+    IMAGE_LOGD("CreatePictureByHdrAndSdrPixelMapWithGainmapParamsSync IN");
+    if (!ImageTaiheUtils::IsSystemApp()) {
+        IMAGE_LOGE("This interface can be called only by system apps");
+        ImageTaiheUtils::ThrowExceptionError(
+            IMAGE_PERMISSIONS_FAILED, "This interface can be called only by system apps ");
+        return make_holder<PictureImpl, Picture>();
+    }
     if (hdrPixelMap.is_error()) {
         ImageTaiheUtils::ThrowExceptionError(IMAGE_BAD_PARAMETER, "Get arg hdr Pixelmap failed");
         return make_holder<PictureImpl, Picture>();
@@ -398,13 +404,22 @@ Picture CreatePictureByHdrAndSdrPixelMapSync(weak::PixelMap hdrPixelMap, weak::P
 
     auto nativeHdrPixelMap = hdrPixelMapImpl->GetNativePtr();
     auto nativeSdrPixelMap = sdrPixelMapImpl->GetNativePtr();
-    auto picture = OHOS::Media::Picture::CreatePictureByHdrAndSdrPixelMap(nativeHdrPixelMap, nativeSdrPixelMap);
+    OHOS::Media::GainmapParams gainmapParams;
+    gainmapParams.isFullSizeGainmap = params.isFullSizeGainmap;
+    auto picture = OHOS::Media::Picture::CreatePictureByHdrAndSdrPixelMap(
+        nativeHdrPixelMap, nativeSdrPixelMap, gainmapParams);
     if (picture == nullptr) {
         IMAGE_LOGE("fail to create picture sync");
         return make_holder<PictureImpl, Picture>();
     }
-    IMAGE_LOGD("CreatePictureByHdrAndSdrPixelMap OUT");
+    IMAGE_LOGD("CreatePictureByHdrAndSdrPixelMapWithGainmapParamsSync OUT");
     return make_holder<PictureImpl, Picture>(std::move(picture));
+}
+
+Picture CreatePictureByHdrAndSdrPixelMapSync(weak::PixelMap hdrPixelMap, weak::PixelMap sdrPixelMap)
+{
+    GainmapParams params;
+    return CreatePictureByHdrAndSdrPixelMapWithGainmapParamsSync(hdrPixelMap, sdrPixelMap, params);
 }
 } // namespace ANI::Image
 
@@ -412,3 +427,5 @@ TH_EXPORT_CPP_API_CreatePictureByPixelMap(CreatePictureByPixelMap);
 TH_EXPORT_CPP_API_CreatePictureFromParcel(CreatePictureFromParcel);
 TH_EXPORT_CPP_API_CreatePictureByPtr(CreatePictureByPtr);
 TH_EXPORT_CPP_API_CreatePictureByHdrAndSdrPixelMapSync(CreatePictureByHdrAndSdrPixelMapSync);
+TH_EXPORT_CPP_API_CreatePictureByHdrAndSdrPixelMapWithGainmapParamsSync(
+    CreatePictureByHdrAndSdrPixelMapWithGainmapParamsSync);
