@@ -37,7 +37,6 @@
 #include "image_system_properties.h"
 #include "color_utils.h"
 
-
 namespace OHOS {
 namespace Media {
 using namespace OHOS::HDI::Display::Graphic::Common::V1_0;
@@ -380,16 +379,20 @@ static void TryFixGainmapHdrMetadata(sptr<SurfaceBuffer> &gainmapSptr)
     VpeUtils::SetSbDynamicMetadata(gainmapSptr, extendMetadataVec);
 }
 
-sptr<SurfaceBuffer> CreateGainmapByHdrAndSdr(std::shared_ptr<PixelMap> &hdrPixelMap,
-                                             std::shared_ptr<PixelMap> &sdrPixelMap)
+sptr<SurfaceBuffer> CreateGainmapByHdrAndSdr(
+    std::shared_ptr<PixelMap> &hdrPixelMap, std::shared_ptr<PixelMap> &sdrPixelMap, GainmapParams params)
 {
     sptr<SurfaceBuffer> gainmapSptr = SurfaceBuffer::Create();
     ImageInfo imageInfo;
     sdrPixelMap->GetImageInfo(imageInfo);
+    int halfSizeDenominator = 2;
+    if (params.isFullSizeGainmap) {
+        halfSizeDenominator = 1;
+    }
     BufferRequestConfig requestConfig = {
-        .width = imageInfo.size.width / 2,
-        .height = imageInfo.size.height / 2,
-        .strideAlignment = imageInfo.size.width / 2,
+        .width = imageInfo.size.width / halfSizeDenominator,
+        .height = imageInfo.size.height / halfSizeDenominator,
+        .strideAlignment = imageInfo.size.width / halfSizeDenominator,
         .format = GRAPHIC_PIXEL_FMT_RGBA_8888,
         .usage = BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA | BUFFER_USAGE_MEM_MMZ_CACHE,
         .timeout = 0,
@@ -424,13 +427,20 @@ sptr<SurfaceBuffer> CreateGainmapByHdrAndSdr(std::shared_ptr<PixelMap> &hdrPixel
 std::unique_ptr<Picture> Picture::CreatePictureByHdrAndSdrPixelMap(std::shared_ptr<PixelMap> &hdrPixelMap,
     std::shared_ptr<PixelMap> &sdrPixelMap)
 {
+    GainmapParams params;
+    return CreatePictureByHdrAndSdrPixelMap(hdrPixelMap, sdrPixelMap, params);
+}
+ 
+std::unique_ptr<Picture> Picture::CreatePictureByHdrAndSdrPixelMap(std::shared_ptr<PixelMap> &hdrPixelMap,
+    std::shared_ptr<PixelMap> &sdrPixelMap, GainmapParams params)
+{
     bool cond = hdrPixelMap == nullptr || sdrPixelMap == nullptr;
     CHECK_ERROR_RETURN_RET_LOG(cond, nullptr, "HDR-IMAGE do calgainmap input null error");
     cond = (hdrPixelMap->GetAllocatorType() != AllocatorType::DMA_ALLOC) ||
            (sdrPixelMap->GetAllocatorType() != AllocatorType::DMA_ALLOC);
     CHECK_ERROR_RETURN_RET_LOG(cond, nullptr, "HDR-IMAGE calgainmap input AllocatorType type error");
     std::unique_ptr<Picture> dstPicture = Create(sdrPixelMap);
-    sptr<SurfaceBuffer> gainmapSptr = CreateGainmapByHdrAndSdr(hdrPixelMap, sdrPixelMap);
+    sptr<SurfaceBuffer> gainmapSptr = CreateGainmapByHdrAndSdr(hdrPixelMap, sdrPixelMap, params);
     CHECK_ERROR_RETURN_RET_LOG(gainmapSptr == nullptr, nullptr, "HDR-IMAGE CreateGainmapByHdrAndSdr failed");
     Media::Size size = {gainmapSptr->GetWidth(), gainmapSptr->GetHeight()};
     std::unique_ptr<AuxiliaryPicture> gainmap = AuxiliaryPicture::Create(gainmapSptr,
