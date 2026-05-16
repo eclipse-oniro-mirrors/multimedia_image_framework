@@ -79,10 +79,6 @@ public:
     optional<Picture> CreatePictureAtIndexSync(int32_t index);
     optional<PixelMap> CreateThumbnailSync(optional_view<DecodingOptionsForThumbnail> options);
 #endif
-#ifdef XMP_TOOLKIT_SDK_ENABLE
-    NullableXMPMetadata ReadXMPMetadataSync();
-    void WriteXMPMetadataSync(XMPMetadata xmpMetadata);
-#endif
     ImageMetadataPackage ReadImageMetadataPackage(optional_view<array<string>> propertyKeys,
         optional_view<int32_t> index);
     ImageMetadataPackage ReadImageMetadataPackageByType(optional_view<array<MetadataType>> metadataTypes,

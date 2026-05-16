@@ -49,9 +49,13 @@ public:
     void GetImageInfo(ImageInfo& imageInfo);
     void Scale(float xAxis, float yAxis);
     void Scale(float xAxis, float yAxis, AntiAliasingOption& option);
+    uint32_t ApplyScale(float xAxis, float yAxis, AntiAliasingOption& option);
     void Flip(bool xAxis, bool yAxis);
     void Rotate(float degrees);
     void Translate(float xAxis, float yAxis);
+
+    std::shared_ptr<PixelMap> Clone(int32_t& errCode);
+    uint32_t SetMemoryName(const std::string& name);
 
     bool GetIsEditable();
     bool GetIsStrideAlignment();

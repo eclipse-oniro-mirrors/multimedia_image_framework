@@ -13,6 +13,8 @@
  * limitations under the License.
  */
 
+#include "xmp_metadata_napi.h"
+
 #include "image_common.h"
 #include "image_error_convert.h"
 #include "image_log.h"
@@ -20,7 +22,6 @@
 #include "image_type.h"
 #include "media_errors.h"
 #include "securec.h"
-#include "xmp_metadata_napi.h"
 
 #undef LOG_DOMAIN
 #define LOG_DOMAIN LOG_TAG_DOMAIN_ID_IMAGE
@@ -36,16 +37,16 @@ constexpr uint32_t NUM_3 = 3;
 
 static std::vector<struct OHOS::Media::ImageEnum> sXMPTagType = {
     {"UNKNOWN", 0, ""},
-    {"SIMPLE", 1, ""},
+    {"STRING", 1, ""},
     {"UNORDERED_ARRAY", 2, ""},
     {"ORDERED_ARRAY", 3, ""},
     {"ALTERNATE_ARRAY", 4, ""},
     {"ALTERNATE_TEXT", 5, ""},
-    {"STRUCTURE", 6, ""},
-    {"QUALIFIER", 7, ""}
+    {"STRUCTURE", 6, ""}
 };
 
 struct JsXMPTag {
+    napi_value namespaceObj;
     napi_value xmlns;
     napi_value prefix;
     napi_value name;
@@ -69,7 +70,7 @@ struct XMPMetadataAsyncContext {
     OHOS::Media::XMPTag tag;
     napi_value callbackValue = nullptr;
     std::string rootPath;
-    OHOS::Media::XMPEnumerateOption options;
+    OHOS::Media::XMPEnumerateOptions options;
     void *arrayBuffer = nullptr;
     size_t arrayBufferSize = 0;
     std::vector<std::pair<std::string, OHOS::Media::XMPTag>> tags;
@@ -103,7 +104,7 @@ XMPMetadataNapi::~XMPMetadataNapi()
 napi_status XMPMetadataNapi::DefineClassProperties(napi_env env, napi_value &constructor)
 {
     napi_property_descriptor props[] = {
-        DECLARE_NAPI_FUNCTION("registerNamespacePrefix", RegisterNamespacePrefix),
+        DECLARE_NAPI_FUNCTION("registerXMPNamespace", RegisterXMPNamespace),
         DECLARE_NAPI_FUNCTION("setValue", SetValue),
         DECLARE_NAPI_FUNCTION("getTag", GetTag),
         DECLARE_NAPI_FUNCTION("removeTag", RemoveTag),
@@ -304,22 +305,16 @@ static napi_value CreateJsXMPTag(napi_env env, const XMPTag &tag)
     napi_create_object(env, &tagObj);
 
     JsXMPTag jsTag;
-    napi_create_string_utf8(env, tag.xmlns.c_str(), tag.xmlns.length(), &jsTag.xmlns);
-    if (!tag.prefix.empty()) {
-        napi_create_string_utf8(env, tag.prefix.c_str(), tag.prefix.length(), &jsTag.prefix);
-    } else {
-        napi_get_undefined(env, &jsTag.prefix);
-    }
+    jsTag.namespaceObj = XMPMetadataNapi::CreateXMPNamespace(env, tag.xmlns, tag.prefix);
     napi_create_string_utf8(env, tag.name.c_str(), tag.name.length(), &jsTag.name);
     napi_create_int32(env, static_cast<int32_t>(tag.type), &jsTag.type);
-    if (!tag.value.empty()) {
-        napi_create_string_utf8(env, tag.value.c_str(), tag.value.length(), &jsTag.value);
-    } else {
+    if (XMPMetadata::IsContainerTagType(tag.type)) {
         napi_get_undefined(env, &jsTag.value);
+    } else {
+        napi_create_string_utf8(env, tag.value.c_str(), tag.value.length(), &jsTag.value);
     }
 
-    napi_set_named_property(env, tagObj, "xmlns", jsTag.xmlns);
-    napi_set_named_property(env, tagObj, "prefix", jsTag.prefix);
+    napi_set_named_property(env, tagObj, "xmpNamespace", jsTag.namespaceObj);
     napi_set_named_property(env, tagObj, "name", jsTag.name);
     napi_set_named_property(env, tagObj, "type", jsTag.type);
     napi_set_named_property(env, tagObj, "value", jsTag.value);
@@ -327,7 +322,22 @@ static napi_value CreateJsXMPTag(napi_env env, const XMPTag &tag)
     return tagObj;
 }
 
-static void CommonCallbackRoutine(napi_env env, XMPMetadataAsyncContext* &context, const napi_value &valueParam)
+static std::unique_ptr<XMPMetadataAsyncContext> UnwrapXMPMetadataIntoContext(napi_env env, napi_value thisVar)
+{
+    std::unique_ptr<XMPMetadataAsyncContext> asyncContext = std::make_unique<XMPMetadataAsyncContext>();
+    CHECK_ERROR_RETURN_RET_LOG(asyncContext == nullptr, nullptr, "Failed to create async context");
+
+    napi_status status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->xmpMetadataNapi));
+    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->xmpMetadataNapi), nullptr,
+        IMAGE_LOGE("Fail to unwrap context"));
+    asyncContext->rXMPMetadata = asyncContext->xmpMetadataNapi->GetNativeXMPMetadata();
+    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->rXMPMetadata), nullptr,
+        IMAGE_LOGE("Empty native XMPMetadata"));
+    return asyncContext;
+}
+
+static void CommonCallbackRoutine(napi_env env, XMPMetadataAsyncContext* &context, const napi_value &valueParam,
+    ImageErrorConvertFunc makeErrMsg = ImageErrorConvert::XMPMetadataCommonMakeErrMsg)
 {
     if (context == nullptr) {
         IMAGE_LOGE("context is nullptr");
@@ -348,8 +358,9 @@ static void CommonCallbackRoutine(napi_env env, XMPMetadataAsyncContext* &contex
     if (context->status == SUCCESS) {
         result[NUM_1] = valueParam;
     } else {
-        const auto [errorCode, errMsg] = OHOS::Media::ImageErrorConvert::XMPMetadataMakeErrMsg(context->status);
-        OHOS::Media::ImageNapiUtils::CreateErrorObj(env, result[NUM_0], errorCode, errMsg);
+        const auto [errorCode, errMsg] = makeErrMsg(context->status);
+        std::string combinedErrMsg = context->errMsg.empty() ? errMsg : (errMsg + " " + context->errMsg);
+        OHOS::Media::ImageNapiUtils::CreateErrorObj(env, result[NUM_0], errorCode, combinedErrMsg);
     }
 
     if (context->deferred) {
@@ -401,18 +412,19 @@ napi_value XMPMetadataNapi::SetValue(napi_env env, napi_callback_info info)
         return ImageNapiUtils::ThrowExceptionError(env, IMAGE_INVALID_PARAMETER, "Invalid argument count");
     }
 
-    std::unique_ptr<XMPMetadataAsyncContext> asyncContext = std::make_unique<XMPMetadataAsyncContext>();
-    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->xmpMetadataNapi));
-    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->xmpMetadataNapi), result,
-        IMAGE_LOGE("Fail to unwrap context"));
-    asyncContext->rXMPMetadata = asyncContext->xmpMetadataNapi->GetNativeXMPMetadata();
-    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->rXMPMetadata), result,
-        IMAGE_LOGE("Empty native XMPMetadata"));
+    auto asyncContext = UnwrapXMPMetadataIntoContext(env, thisVar);
+    if (asyncContext == nullptr) {
+        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_INVALID_PARAMETER, "Unwrap XMPMetadata failed");
+    }
 
     // Parse arguments
     asyncContext->path = ImageNapiUtils::GetStringArgument(env, argValue[NUM_0]);
     int32_t typeValue;
     napi_get_value_int32(env, argValue[NUM_1], &typeValue);
+    if (!XMPMetadata::IsValidTagType(static_cast<XMPTagType>(typeValue))) {
+        IMAGE_LOGE("Invalid tag type: %{public}d", typeValue);
+        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_INVALID_PARAMETER, "Invalid tag type");
+    }
     asyncContext->tagType = static_cast<XMPTagType>(typeValue);
     if (argCount == NUM_3) {
         asyncContext->tagValue = ImageNapiUtils::GetStringArgument(env, argValue[NUM_2]);
@@ -467,13 +479,10 @@ napi_value XMPMetadataNapi::GetTag(napi_env env, napi_callback_info info)
         return ImageNapiUtils::ThrowExceptionError(env, IMAGE_INVALID_PARAMETER, "Invalid argument count");
     }
 
-    std::unique_ptr<XMPMetadataAsyncContext> asyncContext = std::make_unique<XMPMetadataAsyncContext>();
-    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->xmpMetadataNapi));
-    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->xmpMetadataNapi), result,
-        IMAGE_LOGE("Fail to unwrap XMPMetadataNapi"));
-    asyncContext->rXMPMetadata = asyncContext->xmpMetadataNapi->GetNativeXMPMetadata();
-    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->rXMPMetadata), result,
-        IMAGE_LOGE("Empty native XMPMetadata instance"));
+    auto asyncContext = UnwrapXMPMetadataIntoContext(env, thisVar);
+    if (asyncContext == nullptr) {
+        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_INVALID_PARAMETER, "Unwrap XMPMetadata failed");
+    }
 
     asyncContext->path = ImageNapiUtils::GetStringArgument(env, argValue[NUM_0]);
     IMAGE_LOGD("GetTag path: %{public}s", asyncContext->path.c_str());
@@ -519,13 +528,10 @@ napi_value XMPMetadataNapi::RemoveTag(napi_env env, napi_callback_info info)
         return ImageNapiUtils::ThrowExceptionError(env, IMAGE_INVALID_PARAMETER, "Invalid argument count");
     }
 
-    std::unique_ptr<XMPMetadataAsyncContext> asyncContext = std::make_unique<XMPMetadataAsyncContext>();
-    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->xmpMetadataNapi));
-    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->xmpMetadataNapi), result,
-        IMAGE_LOGE("Fail to unwrap context"));
-    asyncContext->rXMPMetadata = asyncContext->xmpMetadataNapi->GetNativeXMPMetadata();
-    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->rXMPMetadata), result,
-        IMAGE_LOGE("Empty native XMPMetadata"));
+    auto asyncContext = UnwrapXMPMetadataIntoContext(env, thisVar);
+    if (asyncContext == nullptr) {
+        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_INVALID_PARAMETER, "Unwrap XMPMetadata failed");
+    }
 
     asyncContext->path = ImageNapiUtils::GetStringArgument(env, argValue[NUM_0]);
     IMAGE_LOGD("RemoveTag path: %{public}s", asyncContext->path.c_str());
@@ -538,63 +544,91 @@ napi_value XMPMetadataNapi::RemoveTag(napi_env env, napi_callback_info info)
     return result;
 }
 
-static void RegisterNamespacePrefixExecute(napi_env env, void *data)
+static void ParseXMPNamespace(napi_env env, napi_value root, std::string &xmlns, std::string &prefix)
 {
-    IMAGE_LOGD("RegisterNamespacePrefixExecute IN");
-    auto context = static_cast<XMPMetadataAsyncContext*>(data);
-    CHECK_ERROR_RETURN_LOG(context == nullptr, "%{public}s context is null", __func__);
-    context->status = context->rXMPMetadata->RegisterNamespacePrefix(context->xmlns, context->prefix);
+    xmlns.clear();
+    prefix.clear();
+    napi_value uriNode = nullptr;
+    napi_value prefixNode = nullptr;
+    if (!ImageNapiUtils::GetNodeByName(env, root, "uri", &uriNode) ||
+        !ImageNapiUtils::GetNodeByName(env, root, "prefix", &prefixNode)) {
+        IMAGE_LOGE("%{public}s Parse XMPNamespace.uri or XMPNamespace.prefix failed!", __func__);
+        return;
+    }
+    xmlns = ImageNapiUtils::GetStringArgument(env, uriNode);
+    prefix = ImageNapiUtils::GetStringArgument(env, prefixNode);
 }
 
-static void RegisterNamespacePrefixComplete(napi_env env, napi_status status, void *data)
+static void RegisterXMPNamespaceExecute(napi_env env, void *data)
 {
-    IMAGE_LOGD("RegisterNamespacePrefixComplete IN");
+    IMAGE_LOGD("RegisterXMPNamespaceExecute IN");
+    auto context = static_cast<XMPMetadataAsyncContext*>(data);
+    CHECK_ERROR_RETURN_LOG(context == nullptr, "%{public}s context is null", __func__);
+    context->status = context->rXMPMetadata->RegisterNamespacePrefix(context->xmlns, context->prefix,
+        context->errMsg);
+}
+
+static void RegisterXMPNamespaceComplete(napi_env env, napi_status status, void *data)
+{
+    IMAGE_LOGD("RegisterXMPNamespaceComplete IN");
     auto context = static_cast<XMPMetadataAsyncContext*>(data);
     CHECK_ERROR_RETURN_LOG(context == nullptr, "%{public}s context is null", __func__);
     napi_value result = nullptr;
-    napi_get_undefined(env, &result);
+    if (context->status == SUCCESS) {
+        result = XMPMetadataNapi::CreateXMPNamespace(env, context->xmlns, context->prefix);
+    } else {
+        napi_get_undefined(env, &result);
+    }
     CommonCallbackRoutine(env, context, result);
 }
 
-napi_value XMPMetadataNapi::RegisterNamespacePrefix(napi_env env, napi_callback_info info)
+napi_value XMPMetadataNapi::RegisterXMPNamespace(napi_env env, napi_callback_info info)
 {
     napi_value result = nullptr;
     napi_get_undefined(env, &result);
 
     napi_status status;
     napi_value thisVar = nullptr;
-    napi_value argValue[NUM_2] = {0};
-    size_t argCount = NUM_2;
+    napi_value argValue[NUM_1] = {0};
+    size_t argCount = NUM_1;
     IMG_JS_ARGS(env, info, status, argCount, argValue, thisVar);
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), result, IMAGE_LOGE("Fail to napi_get_cb_info"));
-    if (argCount != NUM_2) {
+    if (argCount != NUM_1) {
         return ImageNapiUtils::ThrowExceptionError(env, IMAGE_INVALID_PARAMETER, "Invalid argument count");
     }
 
-    std::unique_ptr<XMPMetadataAsyncContext> asyncContext = std::make_unique<XMPMetadataAsyncContext>();
-    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->xmpMetadataNapi));
-    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->xmpMetadataNapi), result,
-        IMAGE_LOGE("Fail to unwrap context"));
-    asyncContext->rXMPMetadata = asyncContext->xmpMetadataNapi->GetNativeXMPMetadata();
-    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->rXMPMetadata), result,
-        IMAGE_LOGE("Empty native XMPMetadata"));
+    auto asyncContext = UnwrapXMPMetadataIntoContext(env, thisVar);
+    if (asyncContext == nullptr) {
+        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_INVALID_PARAMETER, "Unwrap XMPMetadata failed");
+    }
 
-    asyncContext->xmlns = ImageNapiUtils::GetStringArgument(env, argValue[NUM_0]);
-    asyncContext->prefix = ImageNapiUtils::GetStringArgument(env, argValue[NUM_1]);
+    napi_valuetype type0 = ImageNapiUtils::getType(env, argValue[NUM_0]);
+    if (type0 != napi_object) {
+        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_INVALID_PARAMETER,
+            "First argument must be a XMPNamespace object");
+    }
+    ParseXMPNamespace(env, argValue[NUM_0], asyncContext->xmlns, asyncContext->prefix);
+    if (asyncContext->xmlns.empty() || asyncContext->prefix.empty()) {
+        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_INVALID_PARAMETER,
+            "XMPNamespace.uri or XMPNamespace.prefix is empty");
+    }
 
     napi_create_promise(env, &(asyncContext->deferred), &result);
 
-    IMG_CREATE_CREATE_ASYNC_WORK(env, status, "RegisterNamespacePrefix",
-        RegisterNamespacePrefixExecute, RegisterNamespacePrefixComplete,
+    IMG_CREATE_CREATE_ASYNC_WORK(env, status, "RegisterXMPNamespace",
+        RegisterXMPNamespaceExecute, RegisterXMPNamespaceComplete,
         asyncContext, asyncContext->work);
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, IMAGE_LOGE("Failed to create async work"));
     return result;
 }
 
-static void ParseEnumerateTagsOptions(napi_env env, napi_value root, XMPEnumerateOption &option)
+static void ParseEnumerateTagsOptions(napi_env env, napi_value root, XMPEnumerateOptions &option)
 {
     if (ImageNapiUtils::GetBoolByName(env, root, "isRecursive", &option.isRecursive)) {
         IMAGE_LOGD("%{public}s: isRecursive: %{public}d", __func__, option.isRecursive);
+    }
+    if (ImageNapiUtils::GetBoolByName(env, root, "onlyQualifier", &option.onlyQualifier)) {
+        IMAGE_LOGD("%{public}s: onlyQualifier: %{public}d", __func__, option.onlyQualifier);
     }
 }
 
@@ -699,11 +733,11 @@ napi_value XMPMetadataNapi::EnumerateTags(napi_env env, napi_callback_info info)
     }
 
     // Unwrap native object
-    std::unique_ptr<XMPMetadataAsyncContext> context = std::make_unique<XMPMetadataAsyncContext>();
-    CHECK_ERROR_RETURN_RET_LOG(context == nullptr, result, "Fail to create context");
-    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&context->xmpMetadataNapi));
-    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, context->xmpMetadataNapi), result, IMAGE_LOGE("Fail to unwrap context"));
-    std::shared_ptr<XMPMetadata> nativePtr = context->xmpMetadataNapi->nativeXMPMetadata_;
+    auto context = UnwrapXMPMetadataIntoContext(env, thisVar);
+    if (context == nullptr) {
+        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_INVALID_PARAMETER, "Unwrap XMPMetadata failed");
+    }
+    std::shared_ptr<XMPMetadata> nativePtr = context->rXMPMetadata;
     if (!nativePtr) {
         return ImageNapiUtils::ThrowExceptionError(env, IMAGE_INVALID_PARAMETER, "Native XMPMetadata is null");
     }
@@ -731,7 +765,7 @@ napi_value XMPMetadataNapi::EnumerateTags(napi_env env, napi_callback_info info)
     }
 
     if (!ProcessEnumerateTags(env, context, nativePtr)) {
-        const auto [errorCode, errMsg] = OHOS::Media::ImageErrorConvert::XMPMetadataMakeErrMsg(context->status);
+        const auto [errorCode, errMsg] = ImageErrorConvert::XMPMetadataCommonMakeErrMsg(context->status);
         return ImageNapiUtils::ThrowExceptionError(env, errorCode, errMsg);
     }
     IMAGE_LOGD("EnumerateTags completed successfully");
@@ -782,13 +816,10 @@ napi_value XMPMetadataNapi::GetTags(napi_env env, napi_callback_info info)
     IMG_JS_ARGS(env, info, status, argc, argv, thisVar);
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), result, IMAGE_LOGE("Fail to napi_get_cb_info"));
 
-    std::unique_ptr<XMPMetadataAsyncContext> asyncContext = std::make_unique<XMPMetadataAsyncContext>();
-    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->xmpMetadataNapi));
-    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->xmpMetadataNapi), result,
-        IMAGE_LOGE("Fail to unwrap context"));
-    asyncContext->rXMPMetadata = asyncContext->xmpMetadataNapi->GetNativeXMPMetadata();
-    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->rXMPMetadata), result,
-        IMAGE_LOGE("Empty native XMPMetadata"));
+    auto asyncContext = UnwrapXMPMetadataIntoContext(env, thisVar);
+    if (asyncContext == nullptr) {
+        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_INVALID_PARAMETER, "Unwrap XMPMetadata failed");
+    }
 
     // Parse optional arguments: rootPath and options
     if (argc >= NUM_1) {
@@ -846,13 +877,10 @@ napi_value XMPMetadataNapi::SetBlob(napi_env env, napi_callback_info info)
         return ImageNapiUtils::ThrowExceptionError(env, IMAGE_INVALID_PARAMETER, "Invalid argument count");
     }
 
-    std::unique_ptr<XMPMetadataAsyncContext> asyncContext = std::make_unique<XMPMetadataAsyncContext>();
-    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->xmpMetadataNapi));
-    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->xmpMetadataNapi), result,
-        IMAGE_LOGE("Fail to unwrap context"));
-    asyncContext->rXMPMetadata = asyncContext->xmpMetadataNapi->GetNativeXMPMetadata();
-    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->rXMPMetadata), result,
-        IMAGE_LOGE("Empty native XMPMetadata"));
+    auto asyncContext = UnwrapXMPMetadataIntoContext(env, thisVar);
+    if (asyncContext == nullptr) {
+        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_INVALID_PARAMETER, "Unwrap XMPMetadata failed");
+    }
 
     // Parse argument
     status = napi_get_arraybuffer_info(env, argValue[NUM_0],
@@ -914,7 +942,7 @@ static void GetBlobComplete(napi_env env, napi_status status, void *data)
         context->arrayBuffer = nullptr;
         context->arrayBufferSize = 0;
     }
-    CommonCallbackRoutine(env, context, result);
+    CommonCallbackRoutine(env, context, result, ImageErrorConvert::XMPMetadataGetBlobMakeErrMsg);
 }
 
 napi_value XMPMetadataNapi::GetBlob(napi_env env, napi_callback_info info)
@@ -926,13 +954,10 @@ napi_value XMPMetadataNapi::GetBlob(napi_env env, napi_callback_info info)
     IMG_JS_NO_ARGS(env, info, status, thisVar);
     IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, thisVar), result, IMAGE_LOGE("fail to get thisVar"));
 
-    std::unique_ptr<XMPMetadataAsyncContext> asyncContext = std::make_unique<XMPMetadataAsyncContext>();
-    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->xmpMetadataNapi));
-    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->xmpMetadataNapi), result,
-        IMAGE_LOGE("Fail to unwrap context"));
-    asyncContext->rXMPMetadata = asyncContext->xmpMetadataNapi->GetNativeXMPMetadata();
-    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->rXMPMetadata), result,
-        IMAGE_LOGE("Empty native XMPMetadata"));
+    auto asyncContext = UnwrapXMPMetadataIntoContext(env, thisVar);
+    if (asyncContext == nullptr) {
+        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_INVALID_PARAMETER, "Unwrap XMPMetadata failed");
+    }
 
     napi_create_promise(env, &(asyncContext->deferred), &result);
     IMG_CREATE_CREATE_ASYNC_WORK(env, status, "GetBlob",

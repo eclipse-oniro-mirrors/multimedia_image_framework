@@ -84,7 +84,7 @@ struct OH_Pixelmap_ImageInfo {
 
 static PIXEL_FORMAT ParsePixelForamt(int32_t val)
 {
-    if (val <= static_cast<int32_t>(PIXEL_FORMAT::PIXEL_FORMAT_YCRCB_P010)) {
+    if (val <= static_cast<int32_t>(PIXEL_FORMAT::PIXEL_FORMAT_ALPHA_F16)) {
         return PIXEL_FORMAT(val);
     }
 

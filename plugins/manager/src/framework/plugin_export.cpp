@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Huawei Device Co., Ltd.
+ * Copyright (C) 2023-2026 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -40,8 +40,9 @@
 #include "webp_format_agent.h"
 #include "ext_decoder.h"
 #include "ext_encoder.h"
-#if defined(SUPPORT_TIFF_DECODER)
+#if defined(SUPPORT_LIBTIFF)
 #include "tiff_decoder.h"
+#include "tiff_encoder.h"
 #include "tiff_format_agent.h"
 #endif
 
@@ -75,8 +76,9 @@ PLUGIN_EXPORT_REGISTER_CLASS(OHOS::ImagePlugin::SvgDecoder)
 PLUGIN_EXPORT_REGISTER_CLASS(OHOS::ImagePlugin::SvgFormatAgent)
 PLUGIN_EXPORT_REGISTER_CLASS(OHOS::ImagePlugin::ExtDecoder)
 PLUGIN_EXPORT_REGISTER_CLASS(OHOS::ImagePlugin::ExtEncoder)
-#if defined(SUPPORT_TIFF_DECODER)
+#if defined(SUPPORT_LIBTIFF)
 PLUGIN_EXPORT_REGISTER_CLASS(OHOS::ImagePlugin::TiffDecoder)
+PLUGIN_EXPORT_REGISTER_CLASS(OHOS::ImagePlugin::TiffEncoder)
 PLUGIN_EXPORT_REGISTER_CLASS(OHOS::ImagePlugin::TiffFormatAgent)
 #endif
 PLUGIN_EXPORT_REGISTER_CLASS_END

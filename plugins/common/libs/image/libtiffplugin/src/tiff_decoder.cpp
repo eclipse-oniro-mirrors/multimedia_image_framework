@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 Huawei Device Co., Ltd.
+ * Copyright (C) 2025-2026 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 #include "tiff_decoder.h"
+#include "tiff_utils.h"
 #include <cstring>
 #include <sstream>
 #include <thread>
@@ -28,33 +29,10 @@ namespace OHOS {
 namespace ImagePlugin {
 using namespace MultimediaPlugin;
 using namespace Media;
-constexpr static size_t LOG_BUF_SIZE = 512;
-
-static void TiffErrorHandler(const char* module, const char* fmt, va_list ap)
-{
-    char buf[LOG_BUF_SIZE];
-    int ret = vsnprintf_s(buf, sizeof(buf), sizeof(buf) - 1, fmt, ap);
-    if (ret < 0) {
-        IMAGE_LOGE("TIFF ERROR [%{public}s]: format error", module ? module : "TIFF");
-        return;
-    }
-    IMAGE_LOGE("TIFF ERROR [%{public}s]: %{public}s", module ? module : "TIFF", buf);
-}
-
-static void TiffWarningHandler(const char* module, const char* fmt, va_list ap)
-{
-    char buf[LOG_BUF_SIZE];
-    int ret = vsnprintf_s(buf, sizeof(buf), sizeof(buf) - 1, fmt, ap);
-    if (ret < 0) {
-        IMAGE_LOGW("TIFF WARNING [%{public}s]: format error", module ? module : "TIFF");
-        return;
-    }
-    IMAGE_LOGW("TIFF WARNING [%{public}s]: %{public}s", module ? module : "TIFF", buf);
-}
 
 TiffDecoder::TiffDecoder()
 {
-    RegisterTiffLogHandler();
+    TiffLogUtils::RegisterLogHandler();
 }
 
 TiffDecoder::~TiffDecoder()
@@ -63,12 +41,6 @@ TiffDecoder::~TiffDecoder()
         TIFFClose(tifCodec_);
         tifCodec_ = nullptr;
     }
-}
-
-void TiffDecoder::RegisterTiffLogHandler()
-{
-    TIFFSetErrorHandler(TiffErrorHandler);
-    TIFFSetWarningHandler(TiffWarningHandler);
 }
 
 tmsize_t TiffDecoder::ReadProc(thandle_t handle, void* data, tmsize_t size)
@@ -157,7 +129,7 @@ bool TiffDecoder::CheckTiffIndex(uint32_t index)
 {
     CHECK_ERROR_RETURN_RET_LOG(!tifCodec_, false, "tifCodec_ is nullptr");
     if (index != 0 || !TIFFSetDirectory(tifCodec_, 0)) {
-        IMAGE_LOGE("index invalid");
+        IMAGE_LOGE("[TiffDecoder] index invalid");
         return false;
     }
     return true;
@@ -173,7 +145,7 @@ bool TiffDecoder::CheckTiffSizeIsOverflow()
 uint32_t TiffDecoder::SetDecodeOptions(uint32_t index, const PixelDecodeOptions& opts, PlImageInfo& info)
 {
     if (!CheckTiffIndex(index)) {
-        IMAGE_LOGE("SetDecodeOptions failed, index invalid");
+        IMAGE_LOGE("[TiffDecoder] SetDecodeOptions failed, index invalid");
         return ERR_MEDIA_INVALID_PARAM;
     }
 
@@ -220,13 +192,14 @@ uint32_t TiffDecoder::Decode(uint32_t index, DecodeContext& context)
     }
     CHECK_ERROR_RETURN_RET_LOG(raster == nullptr, ERR_IMAGE_MALLOC_ABNORMAL, "AllocBuffer failed");
     if (!TIFFReadRGBAImageOriented(tifCodec_, tiffSize_.width, tiffSize_.height, raster, ORIENTATION_TOPLEFT, 0)) {
-        IMAGE_LOGE("TIFFReadRGBAImageOriented decode failed");
+        IMAGE_LOGE("[TiffDecoder] TIFFReadRGBAImageOriented decode failed");
         return ERR_IMAGE_DECODE_FAILED;
     }
     if (context.allocatorType == AllocatorType::DMA_ALLOC && dmaStride_ > tiffSize_.width) {
-        for (uint32_t row = 0; row < tiffSize_.height; row++) {
-            uint32_t* src = raster + row * tiffSize_.width;
-            uint8_t* dst = static_cast<uint8_t*>(context.pixelsBuffer.buffer) + row * dmaStride_;
+        for (int32_t row = 0; row < tiffSize_.height; row++) {
+            uint32_t* src = raster + static_cast<uint32_t>(row) * static_cast<uint32_t>(tiffSize_.width);
+            uint8_t* dst = static_cast<uint8_t*>(context.pixelsBuffer.buffer) +
+                       static_cast<uint32_t>(row) * static_cast<uint32_t>(dmaStride_);
             auto err = memcpy_s(dst, dmaStride_, src, tiffSize_.width * sizeof(uint32_t));
             CHECK_ERROR_RETURN_RET_LOG(err != EOK, ERR_IMAGE_DECODE_FAILED, "memcpy is failed");
         }
@@ -255,7 +228,7 @@ uint32_t TiffDecoder::GetImageSize(uint32_t index, Size& size)
 
     TIFFGetField(tifCodec_, TIFFTAG_IMAGEWIDTH, &size.width);
     TIFFGetField(tifCodec_, TIFFTAG_IMAGELENGTH, &size.height);
-    IMAGE_LOGD("tiff size is %{public}u x %{public}u", size.width, size.height);
+    IMAGE_LOGD("[TiffDecoder] tiff size is %{public}u x %{public}u", size.width, size.height);
     return SUCCESS;
 }
 
@@ -413,9 +386,9 @@ bool TiffDecoder::AllocBuffer(DecodeContext &context, uint64_t byteCount)
 #ifdef IMAGE_COLORSPACE_FLAG
 void TiffDecoder::ParseICCProfile()
 {
-    IMAGE_LOGI("tiff ParseICCProfile in.");
+    IMAGE_LOGI("[TiffDecoder] tiff ParseICCProfile in.");
     if (tifCodec_ == nullptr) {
-        IMAGE_LOGE("tifCodec_ is nullptr");
+        IMAGE_LOGE("[TiffDecoder] tifCodec_ is nullptr");
         return;
     }
     uint32_t dataLen = 0;
@@ -428,13 +401,13 @@ void TiffDecoder::ParseICCProfile()
             if (colorSpace.GetColorSpaceName() != OHOS::ColorManager::ColorSpaceName::NONE) {
                 grColorSpace_ = colorSpace;
             } else {
-                IMAGE_LOGE("ParseICCProfile colorSpace is NONE.");
+                IMAGE_LOGE("[TiffDecoder] ParseICCProfile colorSpace is NONE.");
             }
         } else {
-            IMAGE_LOGE("ParseICCProfile skcms_Parse failed.");
+            IMAGE_LOGE("[TiffDecoder] ParseICCProfile skcms_Parse failed.");
         }
     } else {
-        IMAGE_LOGI("TIFFGetField TIFFTAG_ICCPROFILE failed.");
+        IMAGE_LOGI("[TiffDecoder] TIFFGetField TIFFTAG_ICCPROFILE failed.");
     }
 }
 #endif

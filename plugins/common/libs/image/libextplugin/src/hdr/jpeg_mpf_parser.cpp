@@ -16,9 +16,11 @@
 #include "jpeg_mpf_parser.h"
 
 #include <vector>
+#include <array>
 #include "hilog/log_cpp.h"
 #include "image_log.h"
 #include "image_utils.h"
+#include "image_func_timer.h"
 #include "media_errors.h"
 #include "picture.h"
 
@@ -41,9 +43,7 @@ constexpr uint16_t TAG_TYPE_UNDEFINED = 0x07;
 constexpr uint16_t TAG_TYPE_LONG = 0x04;
 constexpr uint16_t HDR_MULTI_PICTURE_APP_LENGTH = 90;
 constexpr uint16_t FRAGMENT_METADATA_LENGTH = 20;
-constexpr uint16_t AUXILIARY_TAG_NAME_LENGTH = 8;
-constexpr uint32_t TAG_NAME_LENGTH = 8;
-const static uint32_t MAX_BLOB_METADATA_LENGTH = 20 * 1024 * 1024;
+constexpr uint16_t TAG_FIRST_BYTE_TABLE_SIZE = 256;
 
 constexpr uint8_t JPEG_MARKER_PREFIX = 0xFF;
 constexpr uint8_t JPEG_MARKER_APP2 = 0xE2;
@@ -76,14 +76,6 @@ enum MpfIFDTag : uint16_t {
     MP_ENTRY_TAG = 45058,
     IMAGE_UID_LIST_TAG = 45059,
     TOTAL_FRAMES_TAG = 45060,
-};
-
-static const std::map<std::string, AuxiliaryPictureType> AUXILIARY_TAG_TYPE_MAP = {
-    {AUXILIARY_TAG_DEPTH_MAP_BACK, AuxiliaryPictureType::DEPTH_MAP},
-    {AUXILIARY_TAG_DEPTH_MAP_FRONT, AuxiliaryPictureType::DEPTH_MAP},
-    {AUXILIARY_TAG_UNREFOCUS_MAP, AuxiliaryPictureType::UNREFOCUS_MAP},
-    {AUXILIARY_TAG_LINEAR_MAP, AuxiliaryPictureType::LINEAR_MAP},
-    {AUXILIARY_TAG_FRAGMENT_MAP, AuxiliaryPictureType::FRAGMENT_MAP}
 };
 
 static const std::map<MetadataType, std::vector<std::string>> BLOB_METADATA_DECODE_TAG_MAP = {
@@ -211,82 +203,144 @@ bool JpegMpfParser::ParsingMpEntry(uint8_t* data, uint32_t size, bool isBigEndia
     return true;
 }
 
-static bool FindAuxiliaryTags(const uint8_t* data, uint32_t size, std::string& foundTag)
+// |<------------------ Auxiliary picture/Blob Metadata structure ----------------->|
+// |<- Image data ->|<- Image size(4 Bytes) ->|<- Tag name(8 Bytes) ->|
+static void BuildKnownTagFirstByte(std::array<bool, TAG_FIRST_BYTE_TABLE_SIZE>& table)
 {
-    if (data == nullptr || size < AUXILIARY_TAG_NAME_LENGTH) {
-        return false;
-    }
-    for (const auto &[tagName, _] : AUXILIARY_TAG_TYPE_MAP) {
-        if (memcmp(data, tagName.c_str(), tagName.size()) == 0) {
-            foundTag = tagName;
-            return true;
+    table.fill(false);
+    for (const auto &kv : AUXILIARY_TAG_TYPE_MAP) {
+        if (!kv.first.empty()) {
+            unsigned char first = static_cast<unsigned char>(kv.first[0]);
+            table[first] = true;
         }
+    }
+    for (const auto &kv : BLOB_METADATA_TAG_TYPE_MAP) {
+        if (!kv.first.empty()) {
+            unsigned char first = static_cast<unsigned char>(kv.first[0]);
+            table[first] = true;
+        }
+    }
+}
+
+bool JpegMpfParser::TryMatchBlobAt(uint8_t* data, uint32_t dataSize, uint32_t tagOffset, uint32_t &nextOffset)
+{
+    const uint8_t firstByte = data[tagOffset];
+    for (const auto &kv : BLOB_METADATA_TAG_TYPE_MAP) {
+        const std::string &tagName = kv.first;
+        const MetadataType metadataType = kv.second;
+        const size_t tagLength = tagName.size();
+        if (tagLength == 0 || tagOffset + tagLength > dataSize) {
+            continue;
+        }
+        if (static_cast<uint8_t>(tagName[0]) != firstByte) {
+            continue;
+        }
+        if (memcmp(data + tagOffset, tagName.data(), tagLength) != 0) {
+            continue;
+        }
+
+        if (tagOffset < UINT32_BYTE_SIZE) {
+            return false;
+        }
+        const uint32_t sizeOffset = tagOffset - UINT32_BYTE_SIZE;
+        uint32_t tmpOffset = sizeOffset;
+        const uint32_t payloadSize = ImageUtils::BytesToUint32(data, tmpOffset, dataSize, false);
+        if (payloadSize == 0 || payloadSize > sizeOffset) {
+            return false;
+        }
+
+        const uint32_t dataStart = sizeOffset - payloadSize;
+        blobMetadatas_.push_back(SingleBlobMetadata{
+            .offset = dataStart,
+            .size = payloadSize,
+            .blobType = metadataType,
+        });
+
+        IMAGE_LOGD(
+            "[%{public}s] Blob metadata found: type=%{public}d, offset=%{public}u, size=%{public}u, tag=%{public}s",
+            __func__, metadataType, dataStart, dataSize, tagName.c_str());
+
+        nextOffset = dataStart;
+        return true;
     }
     return false;
 }
 
-// |<------------------ Auxiliary picture structure ----------------->|
-// |<- Image data ->|<- Image size(4 Bytes) ->|<- Tag name(8 Bytes) ->|
-static int32_t GetLastAuxiliaryTagOffset(const uint8_t* data, uint32_t size, std::string& foundTag)
+bool JpegMpfParser::TryMatchAuxAt(uint8_t* data, uint32_t dataSize, uint32_t tagOffset, uint32_t &nextOffset)
 {
-    if (data == nullptr || size < AUXILIARY_TAG_NAME_LENGTH) {
-        return ERR_MEDIA_INVALID_VALUE;
-    }
-    uint32_t offset = size - AUXILIARY_TAG_NAME_LENGTH;
-    while (offset > 0) {
-        if (FindAuxiliaryTags(data + offset, size - offset, foundTag)) {
-            return static_cast<int32_t>(offset);
+    const uint8_t firstByte = data[tagOffset];
+    for (const auto &kv : AUXILIARY_TAG_TYPE_MAP) {
+        const std::string &tagName = kv.first;
+        const AuxiliaryPictureType auxType = kv.second;
+        const size_t tagLength = tagName.size();
+        if (tagLength == 0 || tagOffset + tagLength > dataSize) {
+            continue;
         }
-        --offset;
+        if (static_cast<uint8_t>(tagName[0]) != firstByte) {
+            continue;
+        }
+        if (memcmp(data + tagOffset, tagName.data(), tagLength) != 0) {
+            continue;
+        }
+
+        if (tagOffset < UINT32_BYTE_SIZE) {
+            return false;
+        }
+        const uint32_t sizeOffset = tagOffset - UINT32_BYTE_SIZE;
+        uint32_t tmpOffset = sizeOffset;
+        const uint32_t imageSize = ImageUtils::BytesToUint32(data, tmpOffset, dataSize, false);
+        if (imageSize == 0 || imageSize > sizeOffset) {
+            return false;
+        }
+
+        const uint32_t dataStart = sizeOffset - imageSize;
+        images_.push_back(SingleJpegImage{
+            .offset = dataStart,
+            .size = imageSize,
+            .auxType = auxType,
+            .auxTagName = tagName,
+        });
+
+        IMAGE_LOGD(
+            "[%{public}s] Auxiliary picture found: type=%{public}d, offset=%{public}u, size=%{public}u, tag=%{public}s",
+            __func__, auxType, dataStart, imageSize, tagName.c_str());
+
+        nextOffset = dataStart;
+        return true;
     }
-    return ERR_MEDIA_INVALID_VALUE;
+    return false;
 }
 
-// Parse the following types of auxiliary pictures: DEPTH_MAP, UNREFOCUS_MAP, LINEAR_MAP, FRAGMENT_MAP
-bool JpegMpfParser::ParsingAuxiliaryPictures(uint8_t* data, uint32_t dataSize, bool isBigEndian)
+bool JpegMpfParser::ParsingExtendInfo(uint8_t* data, uint32_t dataSize, bool isBigEndian)
 {
+    ImageFuncTimer imageFuncTimer("%s enter", __func__);
     if (data == nullptr || dataSize == 0) {
         return false;
     }
 
-    uint32_t offset = dataSize;
-    while (offset > 0) {
-        std::string foundTag("");
-        int32_t matchedPos = GetLastAuxiliaryTagOffset(data, offset, foundTag);
-        if (matchedPos == ERR_MEDIA_INVALID_VALUE) {
-            IMAGE_LOGI("%{public}s no more auxiliary pictures", __func__);
-            break;
-        }
-        offset = static_cast<uint32_t>(matchedPos);
-        auto it = AUXILIARY_TAG_TYPE_MAP.find(foundTag);
-        if (it == AUXILIARY_TAG_TYPE_MAP.end()) {
-            IMAGE_LOGW("%{public}s unknown auxiliary tag: %{public}s", __func__, foundTag.c_str());
+    std::array<bool, TAG_FIRST_BYTE_TABLE_SIZE> firstByteLookup{};
+    BuildKnownTagFirstByte(firstByteLookup);
+
+    uint32_t currentOffset = (dataSize >= TAG_NAME_LENGTH) ? (dataSize - TAG_NAME_LENGTH) : 0;
+    while (currentOffset > 0) {
+        const uint8_t firstByte = data[currentOffset];
+        if (!firstByteLookup[firstByte]) {
+            --currentOffset;
             continue;
         }
 
-        if (offset < UINT32_BYTE_SIZE) {
-            IMAGE_LOGW("%{public}s invalid offset: %{public}u, auxiliary tag: %{public}s",
-                __func__, offset, foundTag.c_str());
+        uint32_t nextOffsetBlob = 0;
+        bool matchBlob = TryMatchBlobAt(data, dataSize, currentOffset, nextOffsetBlob);
+        uint32_t nextOffsetAux = 0;
+        bool matchAux = TryMatchAuxAt(data, dataSize, currentOffset, nextOffsetAux);
+        if (matchBlob && matchAux && nextOffsetBlob != nextOffsetAux) {
+            return false;
+        }
+        if (matchBlob || matchAux) {
+            currentOffset = matchBlob ? nextOffsetBlob : nextOffsetAux;
             continue;
         }
-        offset -= UINT32_BYTE_SIZE;
-        // tag and image size before this position
-        uint32_t imageSize = ImageUtils::BytesToUint32(data, offset, dataSize, isBigEndian);
-        if (offset < imageSize + UINT32_BYTE_SIZE) {
-            IMAGE_LOGW("%{public}s invalid image size: %{public}u, offset: %{public}u, auxiliary tag: %{public}s",
-                __func__, imageSize, offset, foundTag.c_str());
-            continue;
-        }
-        offset = offset - imageSize - UINT32_BYTE_SIZE;
-        SingleJpegImage auxImage = {
-            .offset = offset,
-            .size = imageSize,
-            .auxType = it->second,
-            .auxTagName = it->first,
-        };
-        images_.push_back(auxImage);
-        IMAGE_LOGD("[%{public}s] auxType=%{public}d, offset=%{public}u, size=%{public}u, tagName=%{public}s",
-            __func__, auxImage.auxType, auxImage.offset, auxImage.size, auxImage.auxTagName.c_str());
+        --currentOffset;
     }
     return true;
 }

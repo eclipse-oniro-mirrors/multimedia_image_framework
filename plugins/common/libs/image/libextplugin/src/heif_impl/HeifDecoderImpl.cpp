@@ -33,6 +33,7 @@
 #include "color_utils.h"
 
 #include "heif_impl/hevc_sw_decode_param.h"
+#include "heif_impl/heif_common.h"
 
 #include "SkImageInfo.h"
 
@@ -96,7 +97,12 @@ const std::map<AuxiliaryPictureType, std::string> HEIF_AUXTTYPE_ID_MAP = {
     {AuxiliaryPictureType::DEPTH_MAP, HEIF_AUXTTYPE_ID_DEPTH_MAP},
     {AuxiliaryPictureType::UNREFOCUS_MAP, HEIF_AUXTTYPE_ID_UNREFOCUS_MAP},
     {AuxiliaryPictureType::LINEAR_MAP, HEIF_AUXTTYPE_ID_LINEAR_MAP},
-    {AuxiliaryPictureType::FRAGMENT_MAP, HEIF_AUXTTYPE_ID_FRAGMENT_MAP}
+    {AuxiliaryPictureType::FRAGMENT_MAP, HEIF_AUXTTYPE_ID_FRAGMENT_MAP},
+    {AuxiliaryPictureType::FRAGMENT_MAP, HEIF_AUXTTYPE_ID_FRAGMENT_MAP},
+    {AuxiliaryPictureType::SNAP_MAP, HEIF_AUXTTYPE_ID_SNAP_MAP},
+    {AuxiliaryPictureType::SNAP_GAINMAP, HEIF_AUXTTYPE_ID_SNAP_GAINMAP},
+    {AuxiliaryPictureType::PAN_MAP, HEIF_AUXTTYPE_ID_PAN_MAP},
+    {AuxiliaryPictureType::PAN_GAINMAP, HEIF_AUXTTYPE_ID_PAN_GAINMAP},
 };
 
 #if !defined(CROSS_PLATFORM)
@@ -287,6 +293,10 @@ bool HeifDecoderImpl::CheckAuxiliaryMap(AuxiliaryPictureType type)
         case AuxiliaryPictureType::FRAGMENT_MAP:
             auxiliaryImage_ = parser_->GetAuxiliaryMapImage(iter->second);
             break;
+        case AuxiliaryPictureType::SNAP_MAP:
+        case AuxiliaryPictureType::SNAP_GAINMAP:
+        case AuxiliaryPictureType::PAN_MAP:
+        case AuxiliaryPictureType::PAN_GAINMAP:
         case AuxiliaryPictureType::THUMBNAIL:
             auxiliaryImage_ = this->GetThumbnailImage();
             break;
@@ -596,10 +606,12 @@ bool HeifDecoderImpl::SwDecode(bool isSharedMemory, uint32_t index, bool isAnima
     };
     if (isAnimationDecode) {
         CHECK_ERROR_RETURN_RET_LOG(!animationImage_, false, "image sequence info is nullptr.");
-        CHECK_ERROR_RETURN_RET(!SwDecodeImage(animationImage_, param, gridInfo_, false, index), false);
+        param.index = index;
+        CHECK_ERROR_RETURN_RET(!SwDecodeImage(animationImage_, param, gridInfo_, false), false);
     } else {
         bool isNoPrimaryImageHeifs = animationImage_ && animationImage_->IsPrimaryImage();
-        CHECK_ERROR_RETURN_RET(!SwDecodeImage(primaryImage_, param, gridInfo_, !isNoPrimaryImageHeifs, 0), false);
+        param.index = 0;
+        CHECK_ERROR_RETURN_RET(!SwDecodeImage(primaryImage_, param, gridInfo_, !isNoPrimaryImageHeifs), false);
         SwApplyAlphaImage(primaryImage_, dstMemory_, dstRowStride_);
     }
     if (dstHwBuffer_ && (dstHwBuffer_->GetUsage() & BUFFER_USAGE_MEM_MMZ_CACHE)) {
@@ -673,7 +685,7 @@ void HeifDecoderImpl::AllocateHwOutputBuffer(sptr<SurfaceBuffer> &hwBuffer, bool
 }
 
 bool HeifDecoderImpl::HwDecodeImage(std::shared_ptr<HeifImage> &image, GridInfo &gridInfo,
-    sptr<SurfaceBuffer> *outBuffer, bool isPrimary)
+    sptr<SurfaceBuffer> *outBuffer, bool isPrimary, uint32_t recursionCount)
 {
     bool cond = (outPixelFormat_ == PixelFormat::UNKNOWN);
     CHECK_ERROR_RETURN_RET_LOG(cond, false, "unknown pixel type: %{public}d", outPixelFormat_);
@@ -683,7 +695,7 @@ bool HeifDecoderImpl::HwDecodeImage(std::shared_ptr<HeifImage> &image, GridInfo 
 
     std::string imageType = parser_->GetItemType(image->GetItemId());
     if (imageType == "iden") {
-        bool res = HwDecodeIdenImage(image, gridInfo, outBuffer, isPrimary);
+        bool res = HwDecodeIdenImage(image, gridInfo, outBuffer, isPrimary, recursionCount);
         return res;
     }
 
@@ -850,15 +862,18 @@ bool HeifDecoderImpl::HwDecodeGrids(std::shared_ptr<HeifImage> &image,
 }
 
 bool HeifDecoderImpl::HwDecodeIdenImage(std::shared_ptr<HeifImage> &image, GridInfo &gridInfo,
-    sptr<SurfaceBuffer> *outBuffer, bool isPrimary)
+    sptr<SurfaceBuffer> *outBuffer, bool isPrimary, uint32_t recursionCount)
 {
     bool cond = !image;
     CHECK_ERROR_RETURN_RET(cond, false);
+    recursionCount++;
+    cond = recursionCount > MAX_IDEN_RECURSION_COUNT;
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "iden image recursion depth exceeds limit");
     std::shared_ptr<HeifImage> idenImage;
     parser_->GetIdenImage(image->GetItemId(), idenImage);
     cond = idenImage == nullptr || idenImage == image;
     CHECK_ERROR_RETURN_RET_LOG(cond, false, "invalid iden image");
-    return HwDecodeImage(idenImage, gridInfo, outBuffer, isPrimary);
+    return HwDecodeImage(idenImage, gridInfo, outBuffer, isPrimary, recursionCount);
 }
 
 bool HeifDecoderImpl::HwDecodeSingleImage(std::shared_ptr<HeifImage> &image,
@@ -924,7 +939,7 @@ bool HeifDecoderImpl::HwDecodeMimeImage(std::shared_ptr<HeifImage> &image)
 }
 
 bool HeifDecoderImpl::SwDecodeImage(std::shared_ptr<HeifImage> &image, HevcSoftDecodeParam &param,
-                                    GridInfo &gridInfo, bool isPrimary, uint32_t index)
+    GridInfo &gridInfo, bool isPrimary)
 {
     ImageFuncTimer imageFuncTime("HeifDecoderImpl::%s, desiredpixelformat: %d", __func__, outPixelFormat_);
     if (outPixelFormat_ == PixelFormat::UNKNOWN) {
@@ -937,7 +952,7 @@ bool HeifDecoderImpl::SwDecodeImage(std::shared_ptr<HeifImage> &image, HevcSoftD
 
     if (!isPrimary && IsHeifsImage()) {
         IMAGE_LOGI("SwDecodeImage image is heifs image.");
-        return SwDecodeHeifsImage(index, param);
+        return SwDecodeHeifsImage(param.index, param);
     }
 
     std::string imageType = parser_->GetItemType(image->GetItemId());
@@ -1033,10 +1048,13 @@ bool HeifDecoderImpl::SwDecodeGrids(std::shared_ptr<HeifImage> &image, HevcSoftD
 }
 
 bool HeifDecoderImpl::SwDecodeIdenImage(std::shared_ptr<HeifImage> &image,
-                                        HevcSoftDecodeParam &param, GridInfo &gridInfo, bool isPrimary)
+    HevcSoftDecodeParam &param, GridInfo &gridInfo, bool isPrimary)
 {
     bool cond = !image;
     CHECK_ERROR_RETURN_RET(cond, false);
+    param.recursionCount++;
+    cond = param.recursionCount > MAX_IDEN_RECURSION_COUNT;
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "iden image recursion depth exceeds limit");
     std::shared_ptr<HeifImage> idenImage;
     parser_->GetIdenImage(image->GetItemId(), idenImage);
     cond = idenImage == nullptr || idenImage == image;
@@ -1548,20 +1566,14 @@ void HeifDecoderImpl::getVividMetadata(std::vector<uint8_t>& uwaInfo, std::vecto
     lightInfo = primaryImage_->GetLightInfo();
 }
 
-void HeifDecoderImpl::GetMetadataBlob(std::vector<uint8_t>& metadata, MetadataType type)
+void HeifImage::SetBlobMetadata(HeifMetadataType type, std::vector<uint8_t>& blobMetadata)
 {
-    if (type == MetadataType::XTSTYLE) {
-        metadata = primaryImage_->GetXtStyleData();
-    } else if (type == MetadataType::RFDATAB) {
-        metadata = primaryImage_->GetRfDataBData();
-    } else if (type == MetadataType::STDATA) {
-        metadata = primaryImage_->GetSTDataMetaData();
-    }
+    blobMetadataMap_[type] = blobMetadata;
 }
-
-void HeifDecoderImpl::getISOMetadata(std::vector<uint8_t>& isoMetadata)
+ 
+std::vector<uint8_t> HeifImage::GetBlobMetadata(HeifMetadataType type)
 {
-    isoMetadata = primaryImage_->GetISOMetadata();
+    return blobMetadataMap_[type];
 }
 
 void HeifDecoderImpl::getFragmentMetadata(Media::Rect& fragmentMetadata)
@@ -1615,7 +1627,7 @@ bool HeifDecoderImpl::SwDecodeHeifsImage(uint32_t index, HevcSoftDecodeParam &pa
 {
     CHECK_ERROR_RETURN_RET(!parser_, false);
     param.gridInfo.decodeMode = DecodeMode::VIDEO;
-    if (!HasDecodedFrame(index)) {
+    if (!HasDecodedFrame(index) || params_[index].bufferSize > param.bufferSize) {
         DeleteParamsBuffer();
         if (!isFirstFrameDecoded_) {
             SwDecodeHeifsStaticImage(param);

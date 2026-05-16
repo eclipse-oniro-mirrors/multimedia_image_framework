@@ -57,6 +57,9 @@ ohos_shared_library("egl_image") {
     "hitrace:hitrace_meter",
     "ipc:ipc_single",
     "skia:skia_canvaskit",
+    "egl:libEGL",
+    "opengles:libGLES",
+    "jsoncpp:jsoncpp",
   ]
 
   innerapi_tags = [ "platformsdk" ]

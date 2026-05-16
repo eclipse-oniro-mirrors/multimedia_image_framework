@@ -57,6 +57,7 @@ bool BufferPackerStream::Write(const uint8_t *buffer, uint32_t size)
         return false;
     }
     offset_ += size;
+    realWrittenSize_ = std::max(realWrittenSize_, static_cast<uint32_t>(offset_));
     return true;
 }
 

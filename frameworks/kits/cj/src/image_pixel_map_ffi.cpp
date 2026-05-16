@@ -698,6 +698,55 @@ FFI_EXPORT int64_t FfiCreatePixelMapFromNapi(napi_env env, napi_value pixelmap)
 
     return native->GetID();
 }
+
+FFI_EXPORT uint32_t FfiImagePixelMapImplApplyScale(int64_t id, float x, float y, int32_t antiAliasing)
+{
+    IMAGE_LOGD("[PixelMap] FfiImagePixelMapImplApplyScale start");
+    auto instance = FFIData::GetData<PixelMapImpl>(id);
+    if (instance == nullptr) {
+        IMAGE_LOGE("[PixelMap] instance is nullptr");
+        return ERR_IMAGE_INIT_ABNORMAL;
+    }
+    AntiAliasingOption option = AntiAliasingOption(antiAliasing);
+    return instance->ApplyScale(x, y, option);
+}
+
+FFI_EXPORT int64_t FfiImagePixelMapImplClone(int64_t id, uint32_t* errCode)
+{
+    IMAGE_LOGD("[PixelMap] FfiImagePixelMapImplClone start");
+    auto instance = FFIData::GetData<PixelMapImpl>(id);
+    if (instance == nullptr) {
+        IMAGE_LOGE("[PixelMap] instance is nullptr");
+        *errCode = ERR_IMAGE_INIT_ABNORMAL;
+        return 0;
+    }
+    int32_t errorCode = 0;
+    auto clonePixelMap = instance->Clone(errorCode);
+    if (clonePixelMap == nullptr) {
+        *errCode = static_cast<uint32_t>(errorCode);
+        return 0;
+    }
+    auto native = FFIData::Create<PixelMapImpl>(move(clonePixelMap));
+    if (native == nullptr) {
+        IMAGE_LOGE("[PixelMap] Create ffidata failed");
+        *errCode = ERR_IMAGE_INIT_ABNORMAL;
+        return 0;
+    }
+    IMAGE_LOGD("[PixelMap] FfiImagePixelMapImplClone success");
+    return native->GetID();
+}
+
+FFI_EXPORT uint32_t FfiImagePixelMapImplSetMemoryName(int64_t id, char* name)
+{
+    IMAGE_LOGD("[PixelMap] FfiImagePixelMapImplSetMemoryName start");
+    auto instance = FFIData::GetData<PixelMapImpl>(id);
+    if (instance == nullptr) {
+        IMAGE_LOGE("[PixelMap] instance is nullptr");
+        return ERR_IMAGE_INIT_ABNORMAL;
+    }
+    std::string pixelMapName = (name != nullptr) ? name : "";
+    return instance->SetMemoryName(pixelMapName);
+}
 }
 } // namespace Media
 } // namespace OHOS

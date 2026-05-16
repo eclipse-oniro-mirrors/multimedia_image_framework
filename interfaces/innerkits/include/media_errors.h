@@ -168,6 +168,7 @@ const int32_t ERR_XMP_DECODE_FAILED = BASE_MEDIA_ERR_OFFSET + 213; // xmp decode
 const int32_t ERR_XMP_TAG_NOT_FOUND = BASE_MEDIA_ERR_OFFSET + 214; // xmp tag not found
 const int32_t ERR_XMP_NAMESPACE_NOT_REGISTERED = BASE_MEDIA_ERR_OFFSET + 215; // xmp namespace not registered
 const int32_t ERR_XMP_SDK_EXCEPTION = BASE_MEDIA_ERR_OFFSET + 216; // xmp sdk exception
+const int32_t ERR_XMP_PARENT_NOT_FOUND = BASE_MEDIA_ERR_OFFSET + 217; // xmp parent not found
 
 const int32_t ERR_RESOURCE_UNAVAILABLE = 501; // Resource Unavailable
 const int32_t COMMON_ERR_INVALID_PARAMETER = 401; // Common error，Invalid parameter

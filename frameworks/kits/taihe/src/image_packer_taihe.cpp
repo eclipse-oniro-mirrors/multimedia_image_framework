@@ -23,6 +23,7 @@
 #include "picture_taihe.h"
 #include "pixel_map_taihe.h"
 #include "media_errors.h"
+#include "securec.h"
 
 using namespace ANI::Image;
 
@@ -60,6 +61,9 @@ struct ImagePackerTaiheContext {
 #endif
     std::shared_ptr<std::vector<std::shared_ptr<OHOS::Media::PixelMap>>> rPixelMaps;
     std::unique_ptr<uint8_t[]> resultBuffer;
+    std::unique_ptr<uint8_t[]> inputBuffer;
+    OHOS::Media::PixelBufferInfo pixelBufferInfo;
+    OHOS::Media::PackingOptionsForTiff tiffOptions;
     int32_t packType = TYPE_IMAGE_SOURCE;
     int64_t resultBufferSize = 0;
     int64_t packedSize = 0;
@@ -269,6 +273,30 @@ static uint8_t ParsePackOptionOfQuality(PackingOption const& options)
     }
 }
 
+static void ParsePackOptionOfSizeLimit(PackingOption const& options, OHOS::Media::PackOption& packOption)
+{
+    if (options.sizeLimit.has_value()) {
+        packOption.sizeLimit.maxSize.width = options.sizeLimit.value().maxSize.width;
+        packOption.sizeLimit.maxSize.height = options.sizeLimit.value().maxSize.height;
+        int32_t level = static_cast<int32_t>(options.sizeLimit.value().level);
+        packOption.sizeLimit.antiAliasingLevel = OHOS::Media::AntiAliasingOption(level);
+    }
+}
+
+static OHOS::Media::PackingOptionsForTiff ParseTiffOptions(optional_view<PackingOptionsForTiff> options)
+{
+    OHOS::Media::PackingOptionsForTiff tiffOptions;
+    if (options.has_value()) {
+        const auto& opts = options.value();
+        tiffOptions.compression = opts.compression.value_or(-1);
+        tiffOptions.orientation = static_cast<uint32_t>
+            (opts.orientation.value_or(Orientation::from_value(1)).get_value());
+        tiffOptions.xResolution = static_cast<float>(opts.xResolution.value_or(0.0));
+        tiffOptions.yResolution = static_cast<float>(opts.yResolution.value_or(0.0));
+        tiffOptions.resolutionUnit = opts.resolutionUnit.value_or(0);
+    }
+    return tiffOptions;
+}
 static OHOS::Media::PackOption ParsePackOptions(PackingOption const& options)
 {
     OHOS::Media::PackOption packOption;
@@ -278,6 +306,10 @@ static OHOS::Media::PackOption ParsePackOptions(PackingOption const& options)
     IMAGE_LOGI("ParsePackOptions format:[%{public}s]", packOption.format.c_str());
     packOption.needsPackProperties = ParseNeedsPackProperties(options);
     packOption.maxEmbedThumbnailDimension = options.maxEmbedThumbnailDimension.value_or(0);
+    packOption.backgroundColor = options.backgroundColor.value_or(0);
+    ParsePackOptionOfSizeLimit(options, packOption);
+    packOption.needsPackGPS = options.needsPackGPS.value_or(true);
+    packOption.tiffPackingOption = ParseTiffOptions(options.tiffPackingOption);
     return packOption;
 }
 
@@ -560,6 +592,117 @@ void ImagePackerImpl::PackPictureToFileSync(weak::Picture picture, int32_t fd, P
     }
     PackToFile(TYPE_PICTURE, picture->GetImplPtr(), fd, options);
 #endif
+}
+
+static bool CopyBufferForTaihe(void *srcData, size_t dataLength,
+    std::unique_ptr<uint8_t[]> &destBuffer, uint8_t *&destData)
+{
+    if (dataLength == 0) {
+        destData = nullptr;
+        return true;
+    }
+
+    destBuffer = std::make_unique<uint8_t[]>(dataLength);
+    if (destBuffer == nullptr) {
+        IMAGE_LOGE("CopyBufferForTaihe: fail to allocate input buffer");
+        ImageTaiheUtils::ThrowExceptionError(IMAGE_PACKER_INVALID_PARAMETER, "fail to allocate input buffer");
+        return false;
+    }
+
+    if (memcpy_s(destBuffer.get(), dataLength, srcData, dataLength) != OHOS::Media::SUCCESS) {
+        IMAGE_LOGE("CopyBufferForTaihe: fail to copy input data");
+        ImageTaiheUtils::ThrowExceptionError(IMAGE_PACKER_INVALID_PARAMETER, "fail to copy input data");
+        return false;
+    }
+
+    destData = destBuffer.get();
+    return true;
+}
+
+static bool ParseTiffBufferInfo(BinaryBufferInfo const& bufferInfo,
+    std::unique_ptr<ImagePackerTaiheContext> &context)
+{
+    context->pixelBufferInfo.width = bufferInfo.size.width;
+    context->pixelBufferInfo.height = bufferInfo.size.height;
+    context->pixelBufferInfo.dataSize = bufferInfo.data.size();
+    if (!CopyBufferForTaihe(bufferInfo.data.data(), bufferInfo.data.size(),
+        context->inputBuffer, context->pixelBufferInfo.data)) {
+        return false;
+    }
+    if (bufferInfo.bytesPerRow.has_value()) {
+        if (bufferInfo.bytesPerRow.value() < 0) {
+            ImageTaiheUtils::ThrowExceptionError(IMAGE_PACKER_INVALID_PARAMETER, "bytesPerRow is negative");
+            return false;
+        }
+        context->pixelBufferInfo.bytesPerRow = static_cast<uint32_t>(bufferInfo.bytesPerRow.value());
+    }
+    return true;
+}
+
+void ImagePackerImpl::PackBinaryImageToTiffFileSync(BinaryBufferInfo const& bufferInfo, int32_t fd,
+    optional_view<PackingOptionsForTiff> options)
+{
+    OHOS::Media::ImageTrace imageTrace("ImagePackerTaihe::PackBinaryImageToTiffFile");
+
+    if (fd <= 0) {
+        ImageTaiheUtils::ThrowExceptionError("invalid fd");
+        return;
+    }
+
+    std::unique_ptr<ImagePackerTaiheContext> context = std::make_unique<ImagePackerTaiheContext>();
+    context->rImagePacker = nativeImagePacker_;
+    context->fd = fd;
+    context->tiffOptions = ParseTiffOptions(options);
+    if (!ParseTiffBufferInfo(bufferInfo, context)) {
+        ImageTaiheUtils::ThrowExceptionError(IMAGE_PACKER_INVALID_PARAMETER, "Parse BinaryBufferInfo failed.");
+    }
+
+    ImageTaiheUtils::HicheckerReport();
+
+    uint32_t ret = nativeImagePacker_->PackBinaryImageToTiffFile(context->pixelBufferInfo,
+        context->fd, context->tiffOptions);
+    if (ret != OHOS::Media::SUCCESS) {
+        uint32_t errorCode = (ret == OHOS::Media::ERR_IMAGE_INVALID_PARAMETER) ?
+            IMAGE_PACKER_INVALID_PARAMETER : IMAGE_ENCODE_FAILED;
+        ImageTaiheUtils::ThrowExceptionError(errorCode, "PackBinaryImageToTiffFile failed");
+        return;
+    }
+}
+
+array<uint8_t> ImagePackerImpl::PackBinaryImageToTiffDataSync(BinaryBufferInfo const& bufferInfo,
+    optional_view<PackingOptionsForTiff> options)
+{
+    OHOS::Media::ImageTrace imageTrace("ImagePackerTaihe::PackBinaryImageToTiffData");
+    std::unique_ptr<ImagePackerTaiheContext> context = std::make_unique<ImagePackerTaiheContext>();
+    context->rImagePacker = nativeImagePacker_;
+    context->tiffOptions = ParseTiffOptions(options);
+    if (!ParseTiffBufferInfo(bufferInfo, context)) {
+        ImageTaiheUtils::ThrowExceptionError(IMAGE_PACKER_INVALID_PARAMETER, "Parse BinaryBufferInfo failed.");
+    }
+    uint32_t rowBytes = (context->pixelBufferInfo.bytesPerRow > 0) ?
+                        context->pixelBufferInfo.bytesPerRow :
+                        (context->pixelBufferInfo.width + 7) / 8;
+    uint64_t imageDataSize = static_cast<uint64_t>(rowBytes) * context->pixelBufferInfo.height;
+    constexpr uint32_t TIFF_METADATA_MARGIN = 4096;  // Margin for TIFF header/IFD/metadata
+    if (imageDataSize > std::numeric_limits<uint32_t>::max() - TIFF_METADATA_MARGIN) {
+        ImageTaiheUtils::ThrowExceptionError(IMAGE_PACKER_INVALID_PARAMETER, "Image size too large.");
+    }
+    uint32_t estimatedSize = static_cast<uint32_t>(imageDataSize) + TIFF_METADATA_MARGIN;
+    context->resultBuffer = std::make_unique<uint8_t[]>(estimatedSize);
+    uint32_t outputSize = static_cast<uint32_t>(estimatedSize);
+    ImageTaiheUtils::HicheckerReport();
+
+    uint32_t ret = nativeImagePacker_->PackBinaryImageToTiffData(
+        context->pixelBufferInfo, context->tiffOptions, context->resultBuffer.get(), outputSize);
+    if (ret != OHOS::Media::SUCCESS) {
+        uint32_t errorCode = (ret == OHOS::Media::ERR_IMAGE_INVALID_PARAMETER) ?
+            IMAGE_PACKER_INVALID_PARAMETER : IMAGE_ENCODE_FAILED;
+        ImageTaiheUtils::ThrowExceptionError(errorCode, "PackBinaryImageToTiffData failed.");
+    }
+
+    array<uint8_t> result(outputSize);
+    std::copy(context->resultBuffer.get(), context->resultBuffer.get() + outputSize, result.data());
+    return result;
 }
 
 static void ThrowPackingError(std::unique_ptr<ImagePackerTaiheContext> &ctx, int32_t errorCode, const std::string msg)

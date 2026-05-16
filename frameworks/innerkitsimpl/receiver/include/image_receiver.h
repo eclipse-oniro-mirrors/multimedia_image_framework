@@ -163,6 +163,8 @@ public:
     std::shared_ptr<NativeImage> LastNativeImage();
 private:
     std::shared_ptr<IBufferProcessor> bufferProcessor_;
+    int32_t SaveBufferAsImageInner(int &fd, OHOS::sptr<OHOS::SurfaceBuffer> buffer,
+        InitializationOptions initializationOpts);
 };
 class ImageReceiverSurfaceListener : public IBufferConsumerListener {
 public:

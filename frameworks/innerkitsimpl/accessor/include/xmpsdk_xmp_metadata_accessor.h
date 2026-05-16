@@ -24,7 +24,7 @@
 #include "xmp_helper.h"
 #include "xmp_metadata_accessor.h"
 #include "xmp_metadata.h"
-#include "XMP.hpp"
+#include "public/include/XMP.hpp"
 #include "XMP.incl_cpp"
 
 class XMPBuffer_IO;

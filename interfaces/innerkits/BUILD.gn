@@ -1,4 +1,4 @@
-# Copyright (C) 2022 Huawei Device Co., Ltd.
+# Copyright (C) 2022-2026 Huawei Device Co., Ltd.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -51,6 +51,7 @@ config("image_external_config") {
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/converter/include",
     "${image_subsystem}/plugins/common/libs/image/libextplugin/include/heif_impl/heif_parser",
     "${image_subsystem}/plugins/common/libs/image/libextplugin/include/hdr",
+    "${image_subsystem}/plugins/common/libs/image/libtiffplugin/include",
   ]
   if (is_arkui_x) {
     include_dirs += [
@@ -102,7 +103,7 @@ if (use_clang_android) {
       defines += [ "USE_M133_SKIA" ]
     }
     if (has_libtiff) {
-        defines += [ "SUPPORT_TIFF_DECODER" ]
+        defines += [ "SUPPORT_LIBTIFF" ]
     }
     cflags = image_native_android_cflags
     sources = image_native_android_sources
@@ -122,7 +123,7 @@ if (use_clang_android) {
       defines += [ "USE_M133_SKIA" ]
     }
     if (has_libtiff) {
-        defines += [ "SUPPORT_TIFF_DECODER" ]
+        defines += [ "SUPPORT_LIBTIFF" ]
     }
     cflags = image_native_ios_cflags
     include_dirs = image_native_ios_include_dirs
@@ -159,6 +160,10 @@ if (use_clang_android) {
       "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/file_metadata_stream.cpp",
       "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/kv_metadata.cpp",
       "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/png_metadata_parser.cpp",
+      "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/xmp_metadata.cpp",
+      "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/xmp_metadata_accessor.cpp",
+      "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/xmpsdk_xmp_metadata_accessor.cpp",
+      "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/xmp_metadata_accessor_factory.cpp",
       "${image_subsystem}/frameworks/innerkitsimpl/common/src/memory_manager.cpp",
       "${image_subsystem}/frameworks/innerkitsimpl/common/src/native_image.cpp",
       "${image_subsystem}/frameworks/innerkitsimpl/common/src/pixel_astc.cpp",
@@ -193,6 +198,13 @@ if (use_clang_android) {
       "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/stream/src/istream_source_stream.cpp",
       "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/stream/src/ostream_packer_stream.cpp",
     ]
+
+    if (has_libtiff) {
+      sources += [
+        "${image_subsystem}/plugins/common/libs/image/libtiffplugin/src/tiff_encoder.cpp",
+        "${image_subsystem}/plugins/common/libs/image/libtiffplugin/src/tiff_utils.cpp",
+      ]
+    }
 
     if (use_mingw_win) {
       defines = image_decode_windows_defines
@@ -262,9 +274,13 @@ if (use_clang_android) {
         "libjpeg-turbo:turbojpeg",
         "libpng:libpng",
         "napi:ace_napi",
+        "xmp_toolkit_sdk:xmpsdk",
         "zlib:libz",
         "graphic_2d:GLESv3",
         "graphic_surface:sync_fence",
+        "egl:libEGL",
+        "opengles:libGLES",
+        "jsoncpp:jsoncpp",
       ]
       public_external_deps = [
         "graphic_2d:color_manager",
@@ -369,6 +385,9 @@ if (use_mingw_win || use_clang_mac || use_clang_ios || use_clang_android) {
       "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/png_metadata_parser.cpp",
       "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/tiff_parser.cpp",
       "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/webp_exif_metadata_accessor.cpp",
+      "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/xmp_metadata.cpp",
+      "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/xmpsdk_xmp_metadata_accessor.cpp",
+      "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/xmp_metadata_accessor_factory.cpp",
       "${image_subsystem}/frameworks/innerkitsimpl/common/src/pixel_astc.cpp",
       "${image_subsystem}/frameworks/innerkitsimpl/common/src/pixel_yuv.cpp",
       "${image_subsystem}/frameworks/innerkitsimpl/converter/src/image_format_convert.cpp",
@@ -498,6 +517,7 @@ if (use_mingw_win || use_clang_mac || use_clang_ios || use_clang_android) {
         "libpng:libpng",
         "napi:ace_napi",
         "graphic_2d:GLESv3",
+        "xmp_toolkit_sdk:xmpsdk",
       ]
       if (enable_libexif) {
         external_deps += [ "libexif:libexif" ]

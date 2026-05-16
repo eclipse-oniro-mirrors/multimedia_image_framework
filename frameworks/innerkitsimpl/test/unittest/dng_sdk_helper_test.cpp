@@ -173,5 +173,49 @@ HWTEST_F(DngSdkHelperTest, GetImageRawDataTest001, TestSize.Level3)
 
     GTEST_LOG_(INFO) << "DngSdkHelperTest: GetImageRawDataTest001 end";
 }
+
+/**
+ * @tc.name: GetImageRawDataTest002
+ * @tc.desc: Test GetImageRawData with null stream, expect ERR_IMAGE_GET_DATA_ABNORMAL
+ * @tc.type: FUNC
+ */
+HWTEST_F(DngSdkHelperTest, GetImageRawDataTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "DngSdkHelperTest: GetImageRawDataTest002 start";
+
+    std::vector<uint8_t> data;
+    uint32_t bitsPerSample = 0;
+    uint32_t res = DngSdkHelper::GetImageRawData(nullptr, data, bitsPerSample);
+    EXPECT_EQ(res, ERR_IMAGE_GET_DATA_ABNORMAL);
+
+    GTEST_LOG_(INFO) << "DngSdkHelperTest: GetImageRawDataTest002 end";
+}
+
+/**
+ * @tc.name: GetExifPropertyOptionsTest001
+ * @tc.desc: Test GetExifPropertyOptions returns correct option list
+ * @tc.type: FUNC
+ */
+HWTEST_F(DngSdkHelperTest, GetExifPropertyOptionsTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "GetExifPropertyOptionsTest001 start";
+
+    class MockDngSdkInfo : public DngSdkInfo {
+    public:
+        uint32_t fMainIndex = 0;
+    };
+
+    auto mockInfo = std::make_unique<MockDngSdkInfo>();
+    mockInfo->fMainIndex = 1;
+
+    MetadataValue value;
+    value.key = "Make";
+
+    std::unique_ptr<DngSdkInfo> baseInfo = std::move(mockInfo);
+    auto ret = DngSdkHelper::GetExifProperty(baseInfo, value);
+    EXPECT_EQ(ret, ERR_IMAGE_DECODE_EXIF_UNSUPPORT);
+
+    GTEST_LOG_(INFO) << "GetExifPropertyOptionsTest001 end";
+}
 } // namespace Media
 } // namespace OHOS

@@ -187,6 +187,60 @@ void PixelMapImpl::Scale(float xAxis, float yAxis, AntiAliasingOption& option)
     real_->scale(xAxis, yAxis, option);
 }
 
+uint32_t PixelMapImpl::ApplyScale(float xAxis, float yAxis, AntiAliasingOption& option)
+{
+    if (real_ == nullptr) {
+        IMAGE_LOGE("[PixelMapImpl] real_ is nullptr!");
+        return ERR_IMAGE_GET_IMAGE_DATA_FAILED;
+    }
+    if (!GetPixelMapImplEditable()) {
+        IMAGE_LOGE("[PixelMapImpl] ApplyScale pixelmap is not editable");
+        return ERR_RESOURCE_UNAVAILABLE;
+    }
+    uint32_t status = real_->Scale(xAxis, yAxis, option);
+    if (status == ERR_IMAGE_INVALID_PARAMETER) {
+        return ERR_IMAGE_INVALID_PARAM;
+    } else if (status == ERR_IMAGE_READ_PIXELMAP_FAILED) {
+        return ERR_IMAGE_READ_PIXELMAP_FAILED;
+    } else if (status != SUCCESS) {
+        IMAGE_LOGE("[PixelMapImpl] ApplyScale failed, status: %{public}u", status);
+        return ERR_IMAGE_GET_IMAGE_DATA_FAILED;
+    }
+    return SUCCESS;
+}
+
+std::shared_ptr<PixelMap> PixelMapImpl::Clone(int32_t& errCode)
+{
+    if (real_ == nullptr) {
+        IMAGE_LOGE("[PixelMapImpl] real_ is nullptr!");
+        errCode = ERR_IMAGE_INIT_ABNORMAL;
+        return nullptr;
+    }
+    if (!GetPixelMapImplEditable()) {
+        IMAGE_LOGE("[PixelMapImpl] Clone pixelmap has crossed threads");
+        errCode = ERR_RESOURCE_UNAVAILABLE;
+        return nullptr;
+    }
+    auto clonePixelMap = real_->Clone(errCode);
+    if (clonePixelMap == nullptr) {
+        IMAGE_LOGE("[PixelMapImpl] Clone failed, errCode: %{public}d", errCode);
+    }
+    return clonePixelMap;
+}
+
+uint32_t PixelMapImpl::SetMemoryName(const std::string& name)
+{
+    if (real_ == nullptr) {
+        IMAGE_LOGE("[PixelMapImpl] real_ is nullptr!");
+        return ERR_IMAGE_INIT_ABNORMAL;
+    }
+    if (!GetPixelMapImplEditable()) {
+        IMAGE_LOGE("[PixelMapImpl] SetMemoryName pixelmap has crossed threads");
+        return ERR_RESOURCE_UNAVAILABLE;
+    }
+    return real_->SetMemoryName(name);
+}
+
 uint32_t PixelMapImpl::Crop(Rect& rect)
 {
     if (real_ == nullptr) {

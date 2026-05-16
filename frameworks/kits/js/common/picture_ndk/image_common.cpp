@@ -35,16 +35,15 @@ Image_ErrorCode OH_PictureMetadata_Create(Image_MetadataType metadataType, OH_Pi
         return IMAGE_BAD_PARAMETER;
     }
     std::shared_ptr<OHOS::Media::ImageMetadata> metadataPtr = nullptr;
+    OHOS::Media::MetadataType type = static_cast<OHOS::Media::MetadataType>(metadataType);
     if (metadataType == EXIF_METADATA) {
         metadataPtr = std::make_shared<OHOS::Media::ExifMetadata>();
         auto exifMetadata = static_cast<OHOS::Media::ExifMetadata *>(metadataPtr.get());
         exifMetadata->CreateExifdata();
     } else if (metadataType == FRAGMENT_METADATA) {
         metadataPtr = std::make_shared<OHOS::Media::FragmentMetadata>();
-    } else if (metadataType == XTSTYLE_METADATA) {
-        metadataPtr = std::make_shared<OHOS::Media::XtStyleMetadata>();
-    } else if (metadataType == RFDATAB_METADATA) {
-        metadataPtr = std::make_shared<OHOS::Media::RfDataBMetadata>();
+    } else if (OHOS::Media::ImageUtils::isBlobMetadataType(type)) {
+        metadataPtr = std::make_shared<OHOS::Media::BlobMetadata>(type);
     } else if (metadataType == GIF_METADATA) {
         metadataPtr = std::make_shared<OHOS::Media::GifMetadata>();
     } else {

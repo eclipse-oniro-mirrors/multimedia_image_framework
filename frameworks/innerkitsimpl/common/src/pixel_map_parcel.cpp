@@ -397,7 +397,8 @@ bool PixelMapRecordParcel::MarshallingPixelMapForRecord(Parcel& parcel, PixelMap
 bool PixelMapRecordParcel::IsYUV(const PixelFormat &format)
 {
     return format == PixelFormat::NV12 || format == PixelFormat::NV21 ||
-        format == PixelFormat::YCBCR_P010 || format == PixelFormat::YCRCB_P010;
+        format == PixelFormat::YCBCR_P010 || format == PixelFormat::YCRCB_P010 ||
+        format == PixelFormat::Y8;
 }
 
 bool PixelMapRecordParcel::WriteTransformDataToParcel(Parcel &parcel) const

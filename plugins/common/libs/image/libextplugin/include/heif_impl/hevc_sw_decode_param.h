@@ -48,6 +48,8 @@ struct HevcSoftDecodeParam {
     bool isSharedMemory = false;
     void *Yuv400Buffer = nullptr;
     uint32_t gainmapRowStride = 0;
+    uint32_t index = 0;
+    uint32_t recursionCount = 0;
 };
 } // namespace ImagePlugin
 } // namespace OHOS

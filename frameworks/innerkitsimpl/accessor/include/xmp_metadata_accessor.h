@@ -35,7 +35,7 @@ public:
 
     virtual uint32_t Read() = 0;
     virtual uint32_t Write() = 0;
-    virtual std::shared_ptr<XMPMetadata> Get();
+    virtual std::shared_ptr<XMPMetadata> Get() const;
     virtual void Set(std::shared_ptr<XMPMetadata> &xmpMetadata);
 
     enum class IOType : uint8_t {

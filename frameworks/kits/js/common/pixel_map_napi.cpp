@@ -1086,7 +1086,7 @@ void PixelMapNapi::CreatePixelMapFromPixelsComplete(napi_env env, napi_status st
     }
 
     napi_value result = PixelMapNapi::CreatePixelMap(env, context->rPixelMap);
-    if (result == nullptr || ImageNapiUtils::getType(env, result) == napi_undefined) {
+    if (context->errCode == SUCCESS && (result == nullptr || ImageNapiUtils::getType(env, result) == napi_undefined)) {
         context->errCode = ERR_IMAGE_CREATE_PIXELMAP_FAILED;
         context->errMsg = "Internal error: Failed to create NAPI instance.";
     }
@@ -1261,7 +1261,7 @@ static void CreateEmptyPixelMapExecSync(napi_env env, void* data)
     context->rPixelMap = PixelMap::Create(context->opts);
     
     if (context->rPixelMap == nullptr) {
-        context->errCode = ERR_IMAGE_CREATE_PIXELMAP_FAILED;
+        context->errCode = ERR_MEDIA_MEMORY_ALLOC_FAILED;
         context->errMsg = "Failed to allocate memory for the empty PixelMap.";
     }
 }
@@ -1789,7 +1789,7 @@ static void ExtractAlphaPixelMapComplete(napi_env env, napi_status status, void*
     }
 
     napi_value result = PixelMapNapi::CreatePixelMap(env, context->alphaMap);
-    if (result == nullptr || ImageNapiUtils::getType(env, result) == napi_undefined) {
+    if (context->errCode == SUCCESS && (result == nullptr || ImageNapiUtils::getType(env, result) == napi_undefined)) {
         context->errCode = ERR_IMAGE_CREATE_PIXELMAP_FAILED;
         context->errMsg = "Internal error: Failed to create NAPI instance.";
     }

@@ -113,7 +113,7 @@ public:
     {
         desiredPixelFormat_ = format;
     }
-    bool IsSupportedPixelFormat(bool isAnimation, PixelFormat format);
+    uint32_t IsSupportedPixelFormat(bool isAnimation, PixelFormat format);
     AvifBitDepth GetAvifBitDepth(bool isAnimation);
     HeifPixelFormat GetAvifPixelFormat(bool isAnimation);
     void SetBufferSize(size_t dstBufferSize)

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Huawei Device Co., Ltd.
+ * Copyright (C) 2021-2026 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -91,6 +91,7 @@ using namespace HDI::Display::Graphic::Common::V1_0;
 
 constexpr int32_t ALPHA8_BYTES = 1;
 constexpr int32_t ALPHA_F16_BYTES = 2;
+constexpr int32_t Y8_BYTES = 1;
 constexpr int32_t RGB565_BYTES = 2;
 constexpr int32_t RGB888_BYTES = 3;
 constexpr int32_t ARGB8888_BYTES = 4;
@@ -150,6 +151,7 @@ const std::map<PixelFormat, AVPixelFormat> FFMPEG_PIXEL_FORMAT_MAP = {
     {PixelFormat::RGB_888, AV_PIX_FMT_RGB24},
     {PixelFormat::YCRCB_P010, AV_PIX_FMT_P010LE},
     {PixelFormat::YCBCR_P010, AV_PIX_FMT_P010LE},
+    {PixelFormat::Y8, AV_PIX_FMT_GRAY8},
 };
 
 #if !defined(CROSS_PLATFORM)
@@ -294,6 +296,9 @@ int32_t ImageUtils::GetPixelBytes(const PixelFormat &pixelFormat)
         case PixelFormat::ALPHA_8:
         case PixelFormat::ALPHA_U8:
             pixelBytes = ALPHA8_BYTES;
+            break;
+        case PixelFormat::Y8:
+            pixelBytes = Y8_BYTES;
             break;
         case PixelFormat::ALPHA_F16:
             pixelBytes = ALPHA_F16_BYTES;
@@ -492,7 +497,8 @@ AlphaType ImageUtils::GetValidAlphaTypeByFormat(const AlphaType &dstType, const 
             break;
         }
         case PixelFormat::RGB_888:
-        case PixelFormat::RGB_565: {
+        case PixelFormat::RGB_565:
+        case PixelFormat::Y8: {
             if (dstType != AlphaType::IMAGE_ALPHA_TYPE_OPAQUE) {
                 return AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
             }
@@ -516,12 +522,19 @@ AlphaType ImageUtils::GetValidAlphaTypeByFormat(const AlphaType &dstType, const 
     return dstType;
 }
 
-AllocatorType ImageUtils::GetPixelMapAllocatorType(const Size &size, const PixelFormat &format, bool preferDma)
+AllocatorType ImageUtils::GetPixelMapAllocatorType(const Size &size, const PixelFormat &format, bool preferDma,
+    uint64_t &usage)
 {
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
-    return IsSizeSupportDma(size) && (preferDma || (IsWidthAligned(size.width) && IsFormatSupportDma(format))) &&
-        (format == PixelFormat::RGBA_8888 || format == PixelFormat::ALPHA_F16 || Is10Bit(format)) ?
-        AllocatorType::DMA_ALLOC : AllocatorType::SHARE_MEM_ALLOC;
+    if (IsSizeSupportDma(size) && (preferDma || (IsWidthAligned(size.width) && IsFormatSupportDma(format))) &&
+        (format == PixelFormat::RGBA_8888 || format == PixelFormat::ALPHA_F16 || Is10Bit(format))) {
+        return AllocatorType::DMA_ALLOC;
+    } else if (IsSupportDefaultDmaNopadding(format)) {
+        usage |= BUFFER_USAGE_PREFER_NO_PADDING | BUFFER_USAGE_ALLOC_NO_IPC;
+        return AllocatorType::DMA_ALLOC;
+    } else {
+        return AllocatorType::SHARE_MEM_ALLOC;
+    }
 #else
     return AllocatorType::HEAP_ALLOC;
 #endif
@@ -570,7 +583,7 @@ bool ImageUtils::IsAstc(PixelFormat format)
 
 bool IsYUV8Bit(PixelFormat &format)
 {
-    return format == PixelFormat::NV12 || format == PixelFormat::NV21;
+    return format == PixelFormat::NV12 || format == PixelFormat::NV21 || format == PixelFormat::Y8;
 }
 
 bool IsYUV10Bit(PixelFormat &format)
@@ -641,6 +654,15 @@ bool ImageUtils::IsSizeSupportDma(const Size &size)
 bool ImageUtils::IsFormatSupportDma(const PixelFormat &format)
 {
     return format == PixelFormat::UNKNOWN || format == PixelFormat::RGBA_8888 || format == PixelFormat::ALPHA_F16;
+}
+
+bool ImageUtils::IsSupportDefaultDmaNopadding(const PixelFormat &format)
+{
+    if (ImageSystemProperties::GetDefaultDmaNoPaddingEnabled() && ImageSystemProperties::GetNoPaddingEnabled() &&
+        (format == PixelFormat::BGRA_8888 || format == PixelFormat::RGBA_8888)) {
+        return true;
+    }
+    return false;
 }
 
 bool ImageUtils::Is10Bit(const PixelFormat &format)
@@ -891,10 +913,10 @@ void ImageUtils::DumpData(const char* data, const size_t& totalSize,
     std::string fileName = FILE_DIR_IN_THE_SANDBOX + GetLocalTime() + "_imageId" + std::to_string(imageId) +
         "_data_total" + std::to_string(totalSize) + "." + fileSuffix;
     if (SUCCESS != SaveDataToFile(fileName, data, totalSize)) {
-        IMAGE_LOGI("ImageUtils::DumpDataIfDumpEnabled failed");
+        IMAGE_LOGI("ImageUtils::DumpData failed");
         return;
     }
-    IMAGE_LOGI("ImageUtils::DumpDataIfDumpEnabled success, path = %{public}s", fileName.c_str());
+    IMAGE_LOGI("ImageUtils::DumpData success, path = %{public}s", fileName.c_str());
 }
 
 void ImageUtils::DumpDataIfDumpEnabled(const char* data, const size_t& totalSize,
@@ -1599,17 +1621,25 @@ bool ImageUtils::IsAuxiliaryPictureTypeSupported(AuxiliaryPictureType type)
 bool ImageUtils::IsAuxiliaryPictureEncoded(AuxiliaryPictureType type)
 {
     return AuxiliaryPictureType::GAINMAP == type || AuxiliaryPictureType::UNREFOCUS_MAP == type ||
-        AuxiliaryPictureType::FRAGMENT_MAP == type;
+        AuxiliaryPictureType::FRAGMENT_MAP == type || AuxiliaryPictureType::SNAP_MAP == type ||
+        AuxiliaryPictureType::SNAP_GAINMAP == type || AuxiliaryPictureType::PAN_MAP== type ||
+        AuxiliaryPictureType::PAN_GAINMAP == type;
 }
 
 bool ImageUtils::IsMetadataTypeSupported(MetadataType metadataType)
 {
-    if (metadataType == MetadataType::EXIF || metadataType == MetadataType::FRAGMENT ||
-        metadataType == MetadataType::XTSTYLE || metadataType == MetadataType::RFDATAB) {
-        return true;
-    } else {
-        return false;
+    auto metaTypes = GetAllMetadataType();
+    return (metaTypes.find(metadataType) != metaTypes.end());
+}
+
+bool ImageUtils::isBlobMetadataType(MetadataType type)
+{
+    for (const auto& iter: BLOB_METADATA_TAG_MAP) {
+        if (iter.first == type) {
+            return true;
+        }
     }
+    return false;
 }
 
 const std::set<AuxiliaryPictureType> &ImageUtils::GetAllAuxiliaryPictureType()
@@ -1620,6 +1650,10 @@ const std::set<AuxiliaryPictureType> &ImageUtils::GetAllAuxiliaryPictureType()
         AuxiliaryPictureType::UNREFOCUS_MAP,
         AuxiliaryPictureType::LINEAR_MAP,
         AuxiliaryPictureType::FRAGMENT_MAP,
+        AuxiliaryPictureType::SNAP_MAP,
+        AuxiliaryPictureType::SNAP_GAINMAP,
+        AuxiliaryPictureType::PAN_MAP,
+        AuxiliaryPictureType::PAN_GAINMAP,
     };
     return auxTypes;
 }
@@ -1633,12 +1667,20 @@ const std::set<MetadataType> &ImageUtils::GetAllMetadataType()
         MetadataType::RFDATAB,
         MetadataType::GIF,
         MetadataType::STDATA,
+        MetadataType::RESMAP,
+        MetadataType::XDRAW4K,
+        MetadataType::PRIVATE,
+        MetadataType::RFDATAN,
+        MetadataType::RFDATAS,
+        MetadataType::HDRSNAP,
+        MetadataType::DFXDATA,
         MetadataType::HEIFS,
         MetadataType::DNG,
         MetadataType::WEBP,
         MetadataType::HW_MAKER_NOTE,
         MetadataType::AVIS,
         MetadataType::JFIF,
+        MetadataType::XMP,
         MetadataType::PNG,
         MetadataType::TIFF,
     };
@@ -2106,6 +2148,11 @@ bool ImageUtils::CheckSizeValid(const ImageInfo &imgInfo, const YUVDataInfo& yDa
         return false;
     }
 
+    // Y8 format has no UV plane, skip UV size check
+    if (imgInfo.pixelFormat == PixelFormat::Y8 && yDataInfo.uvWidth == 0 && yDataInfo.uvHeight == 0) {
+        return true;
+    }
+
     const uint32_t uvExpectedWidth = (yDataInfo.yWidth + NUM_1) / NUM_2;
     const uint32_t uvExpectedHeight = (yDataInfo.yHeight + NUM_1) / NUM_2;
     if (yDataInfo.uvWidth != uvExpectedWidth || yDataInfo.uvHeight != uvExpectedHeight) {
@@ -2148,6 +2195,14 @@ bool ImageUtils::CheckOffsetValid(const YUVDataInfo& yDataInfo)
     const uint64_t yPlaneSize = static_cast<uint64_t>(yDataInfo.yStride) * yDataInfo.yHeight;
     const uint64_t uvPlaneSize = static_cast<uint64_t>(yDataInfo.uvStride) * yDataInfo.uvHeight;
     const uint64_t bufferSize = yPlaneSize + uvPlaneSize;
+    // Y8 format has no UV plane, uvOffset should be 0
+    if (yDataInfo.uvOffset == 0 && yDataInfo.uvStride == 0 && yDataInfo.uvHeight == 0 && yDataInfo.uvWidth == 0) {
+        if (yPlaneSize > UINT32_MAX) {
+            IMAGE_LOGE("Invalid YUV buffer size: overflow (exceeds UINT32_MAX)");
+            return false;
+        }
+        return true;
+    }
     if (static_cast<uint64_t>(yDataInfo.uvOffset) < yPlaneSize) {
         IMAGE_LOGE("Invalid UV offset: %{public}u less than Y plane size", yDataInfo.uvOffset);
         return false;
@@ -2392,7 +2447,8 @@ int32_t ImageUtils::AllocPixelMapMemory(std::unique_ptr<AbsMemory> &dstMemory, i
     MemoryData memoryData = {nullptr, static_cast<size_t>(bufferSize), "Create PixelMap", dstImageInfo.size,
         dstImageInfo.pixelFormat};
     AllocatorType allocType = opts.allocatorType == AllocatorType::DEFAULT ?
-        ImageUtils::GetPixelMapAllocatorType(dstImageInfo.size, dstImageInfo.pixelFormat, opts.useDMA) :
+        ImageUtils::GetPixelMapAllocatorType(dstImageInfo.size, dstImageInfo.pixelFormat, opts.useDMA,
+            memoryData.usage) :
         opts.allocatorType;
     dstMemory = MemoryManager::CreateMemory(allocType, memoryData);
     if (dstMemory == nullptr) {
@@ -2421,7 +2477,7 @@ std::unique_ptr<AbsMemory> ImageUtils::ReadData(std::vector<uint8_t> &buff, int3
         IMAGE_LOGE("[PixelMap] tlv read data fail: invalid size[%{public}d]", size);
         return nullptr;
     }
-    if (static_cast<size_t>(cursor + size) > buff.size()) {
+    if (cursor < 0 || static_cast<uint64_t>(cursor) + static_cast<uint64_t>(size) > buff.size()) {
         IMAGE_LOGE("[PixelMap] ReadData out of range");
         return nullptr;
     }
@@ -2438,7 +2494,8 @@ std::unique_ptr<AbsMemory> ImageUtils::ReadData(std::vector<uint8_t> &buff, int3
     int32_t rowDataSize = ImageUtils::GetRowDataSizeByPixelFormat(imageInfo.size.width, imageInfo.pixelFormat);
     uint8_t* srcAddr = buff.data() + cursor;
 
-    if (size != rowDataSize * imageInfo.size.height) {
+    int64_t expectedSize = static_cast<int64_t>(rowDataSize) * static_cast<int64_t>(imageInfo.size.height);
+    if (expectedSize <= 0 || expectedSize > INT32_MAX || size != expectedSize) {
         IMAGE_LOGE("[PixelMap] tlv read data fail: alloc memory failed");
         dstMemory->Release();
         return nullptr;

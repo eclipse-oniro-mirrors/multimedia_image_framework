@@ -446,5 +446,203 @@ HWTEST_F(TiffDecoderTest, SeekProc_SeekFail_Test, TestSize.Level3)
     EXPECT_TRUE(stream.seekCalled_);
     EXPECT_EQ(ret, static_cast<toff_t>(-1));
 }
+
+/**
+ * @tc.name: ReadProcTest001
+ * @tc.desc: Test ReadProc with null stream
+ * @tc.type: FUNC
+ */
+HWTEST_F(TiffDecoderTest, ReadProcTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "TiffDecoderTest: ReadProcTest001 start";
+    TiffDecoder decoder;
+    uint8_t buffer[10];
+    tmsize_t ret = decoder.ReadProc(nullptr, buffer, 10);
+    EXPECT_EQ(ret, 0);
+    GTEST_LOG_(INFO) << "TiffDecoderTest: ReadProcTest001 end";
+}
+
+/**
+ * @tc.name: ReadProcTest002
+ * @tc.desc: Test ReadProc with null data buffer
+ * @tc.type: FUNC
+ */
+HWTEST_F(TiffDecoderTest, ReadProcTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "TiffDecoderTest: ReadProcTest002 start";
+    MockInputDataStream stream(MOCK_TELL, MOCK_SIZE_100);
+    TiffDecoder decoder;
+    tmsize_t ret = decoder.ReadProc(static_cast<thandle_t>(&stream), nullptr, 10);
+    EXPECT_EQ(ret, 0);
+    GTEST_LOG_(INFO) << "TiffDecoderTest: ReadProcTest002 end";
+}
+
+/**
+ * @tc.name: ReadProcTest003
+ * @tc.desc: Test ReadProc with invalid size (negative)
+ * @tc.type: FUNC
+ */
+HWTEST_F(TiffDecoderTest, ReadProcTest003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "TiffDecoderTest: ReadProcTest003 start";
+    MockInputDataStream stream(MOCK_TELL, MOCK_SIZE_100);
+    TiffDecoder decoder;
+    uint8_t buffer[10];
+    tmsize_t ret = decoder.ReadProc(static_cast<thandle_t>(&stream), buffer, -1);
+    EXPECT_EQ(ret, 0);
+    GTEST_LOG_(INFO) << "TiffDecoderTest: ReadProcTest003 end";
+}
+
+/**
+ * @tc.name: SizeProcTest001
+ * @tc.desc: Test SizeProc with null stream
+ * @tc.type: FUNC
+ */
+HWTEST_F(TiffDecoderTest, SizeProcTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "TiffDecoderTest: SizeProcTest001 start";
+    TiffDecoder decoder;
+    toff_t ret = decoder.SizeProc(nullptr);
+    EXPECT_EQ(ret, 0);
+    GTEST_LOG_(INFO) << "TiffDecoderTest: SizeProcTest001 end";
+}
+
+/**
+ * @tc.name: SizeProcTest002
+ * @tc.desc: Test SizeProc with valid stream
+ * @tc.type: FUNC
+ */
+HWTEST_F(TiffDecoderTest, SizeProcTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "TiffDecoderTest: SizeProcTest002 start";
+    MockInputDataStream stream(MOCK_TELL, MOCK_SIZE_100);
+    TiffDecoder decoder;
+    toff_t ret = decoder.SizeProc(static_cast<thandle_t>(&stream));
+    EXPECT_EQ(ret, MOCK_SIZE_100);
+    GTEST_LOG_(INFO) << "TiffDecoderTest: SizeProcTest002 end";
+}
+
+/**
+ * @tc.name: CloseProcTest001
+ * @tc.desc: Test CloseProc returns 0
+ * @tc.type: FUNC
+ */
+HWTEST_F(TiffDecoderTest, CloseProcTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "TiffDecoderTest: CloseProcTest001 start";
+    TiffDecoder decoder;
+    int ret = decoder.CloseProc(nullptr);
+    EXPECT_EQ(ret, 0);
+    GTEST_LOG_(INFO) << "TiffDecoderTest: CloseProcTest001 end";
+}
+
+/**
+ * @tc.name: HasPropertyTest001
+ * @tc.desc: Test HasProperty always returns false
+ * @tc.type: FUNC
+ */
+HWTEST_F(TiffDecoderTest, HasPropertyTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "TiffDecoderTest: HasPropertyTest001 start";
+    TiffDecoder decoder;
+    EXPECT_FALSE(decoder.HasProperty("AnyKey"));
+    EXPECT_FALSE(decoder.HasProperty(""));
+    GTEST_LOG_(INFO) << "TiffDecoderTest: HasPropertyTest001 end";
+}
+
+/**
+ * @tc.name: GetTopLevelImageNumTest001
+ * @tc.desc: Test GetTopLevelImageNum returns num = 1
+ * @tc.type: FUNC
+ */
+HWTEST_F(TiffDecoderTest, GetTopLevelImageNumTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "TiffDecoderTest: GetTopLevelImageNumTest001 start";
+    TiffDecoder decoder;
+    uint32_t num = 0;
+    uint32_t ret = decoder.GetTopLevelImageNum(num);
+    EXPECT_EQ(ret, SUCCESS);
+    EXPECT_EQ(num, 1);
+    GTEST_LOG_(INFO) << "TiffDecoderTest: GetTopLevelImageNumTest001 end";
+}
+
+/**
+ * @tc.name: PromoteIncrementalDecodeTest001
+ * @tc.desc: Test PromoteIncrementalDecode returns SUCCESS
+ * @tc.type: FUNC
+ */
+HWTEST_F(TiffDecoderTest, PromoteIncrementalDecodeTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "TiffDecoderTest: PromoteIncrementalDecodeTest001 start";
+    TiffDecoder decoder;
+    ProgDecodeContext progContext;
+    uint32_t ret = decoder.PromoteIncrementalDecode(0, progContext);
+    EXPECT_EQ(ret, SUCCESS);
+    GTEST_LOG_(INFO) << "TiffDecoderTest: PromoteIncrementalDecodeTest001 end";
+}
+
+/**
+ * @tc.name: AllocBufferTest002
+ * @tc.desc: Test AllocBuffer with pre-allocated buffer
+ * @tc.type: FUNC
+ */
+HWTEST_F(TiffDecoderTest, AllocBufferTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "TiffDecoderTest: AllocBufferTest002 start";
+    TiffDecoder decoder;
+    DecodeContext decodeContext;
+    decodeContext.pixelsBuffer.buffer = reinterpret_cast<void*>(0x1000);
+    auto ret = decoder.AllocBuffer(decodeContext, MOCK_SIZE);
+    EXPECT_FALSE(ret);
+    GTEST_LOG_(INFO) << "TiffDecoderTest: AllocBufferTest002 end";
+}
+
+/**
+ * @tc.name: AllocHeapBufferTest001
+ * @tc.desc: Test AllocHeapBuffer with large byteCount exceeds PIXEL_MAP_MAX_RAM_SIZE
+ * @tc.type: FUNC
+ */
+HWTEST_F(TiffDecoderTest, AllocHeapBufferTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "TiffDecoderTest: AllocHeapBufferTest001 start";
+    TiffDecoder decoder;
+    DecodeContext decodeContext;
+    uint64_t largeSize = PIXEL_MAP_MAX_RAM_SIZE + 1;
+    auto ret = decoder.AllocHeapBuffer(decodeContext, largeSize);
+    EXPECT_FALSE(ret);
+    GTEST_LOG_(INFO) << "TiffDecoderTest: AllocHeapBufferTest001 end";
+}
+
+/**
+ * @tc.name: AllocShareBufferTest001
+ * @tc.desc: Test AllocShareBuffer with large byteCount exceeds max size
+ * @tc.type: FUNC
+ */
+HWTEST_F(TiffDecoderTest, AllocShareBufferTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "TiffDecoderTest: AllocShareBufferTest001 start";
+    TiffDecoder decoder;
+    DecodeContext decodeContext;
+    uint64_t largeSize = PIXEL_MAP_MAX_RAM_SIZE + 1;
+    auto ret = decoder.AllocShareBuffer(decodeContext, largeSize);
+    EXPECT_FALSE(ret);
+    GTEST_LOG_(INFO) << "TiffDecoderTest: AllocShareBufferTest001 end";
+}
+
+/**
+ * @tc.name: AllocDmaBufferTest001
+ * @tc.desc: Test AllocDmaBuffer with large byteCount exceeds max size
+ * @tc.type: FUNC
+ */
+HWTEST_F(TiffDecoderTest, AllocDmaBufferTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "TiffDecoderTest: AllocDmaBufferTest001 start";
+    TiffDecoder decoder;
+    DecodeContext decodeContext;
+    uint64_t largeSize = PIXEL_MAP_MAX_RAM_SIZE + 1;
+    auto ret = decoder.AllocDmaBuffer(decodeContext, largeSize);
+    EXPECT_FALSE(ret);
+    GTEST_LOG_(INFO) << "TiffDecoderTest: AllocDmaBufferTest001 end";
+}
 } //ImagePlugin
 } //OHOS

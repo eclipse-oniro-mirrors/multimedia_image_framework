@@ -290,5 +290,325 @@ HWTEST_F(DngSdkInfoTest, ParseDoubleTagTest001, TestSize.Level3)
 
     GTEST_LOG_(INFO) << "DngSdkInfoTest: ParseDoubleTagTest001 end";
 }
+
+/**
+ * @tc.name: GetExifCopyrightTest001
+ * @tc.desc: Test GetExifCopyright with empty photographer/editor fields
+ * @tc.type: FUNC
+ */
+HWTEST_F(DngSdkInfoTest, GetExifCopyrightTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "DngSdkInfoTest: GetExifCopyrightTest001 start";
+
+    dng_exif fExif{};
+    fExif.fCopyright.Clear();
+    fExif.fCopyright2.Clear();
+    MetadataValue value{};
+    uint32_t ret = DngSdkInfo::GetExifCopyright(fExif, value);
+    EXPECT_EQ(ret, SUCCESS);
+    EXPECT_EQ(value.type, PropertyValueType::STRING);
+    EXPECT_NE(value.stringValue.find("[None]"), std::string::npos);
+
+    GTEST_LOG_(INFO) << "DngSdkInfoTest: GetExifCopyrightTest001 end";
+}
+
+/**
+ * @tc.name: GetExifCopyrightTest002
+ * @tc.desc: Test GetExifCopyright with valid photographer and editor fields
+ * @tc.type: FUNC
+ */
+HWTEST_F(DngSdkInfoTest, GetExifCopyrightTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "DngSdkInfoTest: GetExifCopyrightTest002 start";
+
+    dng_exif fExif{};
+    fExif.fCopyright.Set("Photographer Name");
+    fExif.fCopyright2.Set("Editor Name");
+    MetadataValue value{};
+    uint32_t ret = DngSdkInfo::GetExifCopyright(fExif, value);
+    EXPECT_EQ(ret, SUCCESS);
+    EXPECT_EQ(value.type, PropertyValueType::STRING);
+    EXPECT_NE(value.stringValue.find("Photographer Name"), std::string::npos);
+    EXPECT_NE(value.stringValue.find("Editor Name"), std::string::npos);
+
+    GTEST_LOG_(INFO) << "DngSdkInfoTest: GetExifCopyrightTest002 end";
+}
+
+/**
+ * @tc.name: GetExifUserCommentTest001
+ * @tc.desc: Test GetExifUserComment with empty comment
+ * @tc.type: FUNC
+ */
+HWTEST_F(DngSdkInfoTest, GetExifUserCommentTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "DngSdkInfoTest: GetExifUserCommentTest001 start";
+
+    dng_exif fExif{};
+    fExif.fUserComment.Clear();
+    MetadataValue value{};
+    uint32_t ret = DngSdkInfo::GetExifUserComment(fExif, value);
+    EXPECT_EQ(ret, SUCCESS);
+    EXPECT_EQ(value.type, PropertyValueType::STRING);
+
+    GTEST_LOG_(INFO) << "DngSdkInfoTest: GetExifUserCommentTest001 end";
+}
+
+/**
+ * @tc.name: GetExifFileSourceTest001
+ * @tc.desc: Test GetExifFileSource returns BLOB type
+ * @tc.type: FUNC
+ */
+HWTEST_F(DngSdkInfoTest, GetExifFileSourceTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "DngSdkInfoTest: GetExifFileSourceTest001 start";
+
+    dng_exif fExif{};
+    fExif.fFileSource = 3;
+    MetadataValue value{};
+    uint32_t ret = DngSdkInfo::GetExifFileSource(fExif, value);
+    EXPECT_EQ(ret, SUCCESS);
+    EXPECT_EQ(value.type, PropertyValueType::BLOB);
+    EXPECT_EQ(value.bufferValue.size(), 1U);
+    EXPECT_EQ(value.bufferValue[0], static_cast<uint8_t>(3));
+
+    GTEST_LOG_(INFO) << "DngSdkInfoTest: GetExifFileSourceTest001 end";
+}
+
+/**
+ * @tc.name: GetExifSceneTypeTest001
+ * @tc.desc: Test GetExifSceneType returns BLOB type
+ * @tc.type: FUNC
+ */
+HWTEST_F(DngSdkInfoTest, GetExifSceneTypeTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "DngSdkInfoTest: GetExifSceneTypeTest001 start";
+
+    dng_exif fExif{};
+    fExif.fSceneType = 1;
+    MetadataValue value{};
+    uint32_t ret = DngSdkInfo::GetExifSceneType(fExif, value);
+    EXPECT_EQ(ret, SUCCESS);
+    EXPECT_EQ(value.type, PropertyValueType::BLOB);
+    EXPECT_EQ(value.bufferValue.size(), 1U);
+
+    GTEST_LOG_(INFO) << "DngSdkInfoTest: GetExifSceneTypeTest001 end";
+}
+
+/**
+ * @tc.name: GetSharedDNGVersionTest001
+ * @tc.desc: Test GetSharedDNGVersion returns INT_ARRAY type with 4 elements
+ * @tc.type: FUNC
+ */
+HWTEST_F(DngSdkInfoTest, GetSharedDNGVersionTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "DngSdkInfoTest: GetSharedDNGVersionTest001 start";
+
+    dng_shared fShared{};
+    fShared.fDNGVersion = 0x01040000;
+    MetadataValue value{};
+    uint32_t ret = DngSdkInfo::GetSharedDNGVersion(fShared, value);
+    EXPECT_EQ(ret, SUCCESS);
+    EXPECT_EQ(value.type, PropertyValueType::INT_ARRAY);
+    EXPECT_EQ(value.intArrayValue.size(), 4U);
+
+    GTEST_LOG_(INFO) << "DngSdkInfoTest: GetSharedDNGVersionTest001 end";
+}
+
+/**
+ * @tc.name: GetIfdDefaultCropSizeTest001
+ * @tc.desc: Test GetIfdDefaultCropSize with denominator != 0
+ * @tc.type: FUNC
+ */
+HWTEST_F(DngSdkInfoTest, GetIfdDefaultCropSizeTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "DngSdkInfoTest: GetIfdDefaultCropSizeTest001 start";
+
+    dng_ifd fIFD{};
+    fIFD.fDefaultCropSizeH.n = 100;
+    fIFD.fDefaultCropSizeH.d = 1;
+    fIFD.fDefaultCropSizeV.n = 200;
+    fIFD.fDefaultCropSizeV.d = 1;
+    MetadataValue value{};
+    uint32_t ret = DngSdkInfo::GetIfdDefaultCropSize(fIFD, value);
+    EXPECT_EQ(ret, SUCCESS);
+    EXPECT_EQ(value.type, PropertyValueType::INT_ARRAY);
+    EXPECT_EQ(value.intArrayValue.size(), 2U);
+    EXPECT_EQ(value.intArrayValue[0], 100);
+    EXPECT_EQ(value.intArrayValue[1], 200);
+
+    GTEST_LOG_(INFO) << "DngSdkInfoTest: GetIfdDefaultCropSizeTest001 end";
+}
+
+/**
+ * @tc.name: GetIfdDefaultCropSizeTest002
+ * @tc.desc: Test GetIfdDefaultCropSize with denominator == 0 (edge case)
+ * @tc.type: FUNC
+ */
+HWTEST_F(DngSdkInfoTest, GetIfdDefaultCropSizeTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "DngSdkInfoTest: GetIfdDefaultCropSizeTest002 start";
+
+    dng_ifd fIFD{};
+    fIFD.fDefaultCropSizeH.n = 100;
+    fIFD.fDefaultCropSizeH.d = 0;
+    fIFD.fDefaultCropSizeV.n = 200;
+    fIFD.fDefaultCropSizeV.d = 0;
+    MetadataValue value{};
+    uint32_t ret = DngSdkInfo::GetIfdDefaultCropSize(fIFD, value);
+    EXPECT_EQ(ret, SUCCESS);
+    EXPECT_EQ(value.type, PropertyValueType::INT_ARRAY);
+    EXPECT_EQ(value.intArrayValue.size(), 2U);
+    EXPECT_EQ(value.intArrayValue[0], 0);
+    EXPECT_EQ(value.intArrayValue[1], 0);
+
+    GTEST_LOG_(INFO) << "DngSdkInfoTest: GetIfdDefaultCropSizeTest002 end";
+}
+
+/**
+ * @tc.name: GetIfdYCbCrCoefficientsTest001
+ * @tc.desc: Test GetIfdYCbCrCoefficients returns DOUBLE_ARRAY with 3 elements
+ * @tc.type: FUNC
+ */
+HWTEST_F(DngSdkInfoTest, GetIfdYCbCrCoefficientsTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "DngSdkInfoTest: GetIfdYCbCrCoefficientsTest001 start";
+
+    dng_ifd fIFD{};
+    fIFD.fYCbCrCoefficientR = 0.299;
+    fIFD.fYCbCrCoefficientG = 0.587;
+    fIFD.fYCbCrCoefficientB = 0.114;
+    MetadataValue value{};
+    uint32_t ret = DngSdkInfo::GetIfdYCbCrCoefficients(fIFD, value);
+    EXPECT_EQ(ret, SUCCESS);
+    EXPECT_EQ(value.type, PropertyValueType::DOUBLE_ARRAY);
+    EXPECT_EQ(value.doubleArrayValue.size(), 3U);
+
+    GTEST_LOG_(INFO) << "DngSdkInfoTest: GetIfdYCbCrCoefficientsTest001 end";
+}
+
+/**
+ * @tc.name: GetIfdYCbCrSubSamplingTest001
+ * @tc.desc: Test GetIfdYCbCrSubSampling returns INT_ARRAY with 2 elements
+ * @tc.type: FUNC
+ */
+HWTEST_F(DngSdkInfoTest, GetIfdYCbCrSubSamplingTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "DngSdkInfoTest: GetIfdYCbCrSubSamplingTest001 start";
+
+    dng_ifd fIFD{};
+    fIFD.fYCbCrSubSampleH = 2;
+    fIFD.fYCbCrSubSampleV = 1;
+    MetadataValue value{};
+    uint32_t ret = DngSdkInfo::GetIfdYCbCrSubSampling(fIFD, value);
+    EXPECT_EQ(ret, SUCCESS);
+    EXPECT_EQ(value.type, PropertyValueType::INT_ARRAY);
+    EXPECT_EQ(value.intArrayValue.size(), 2U);
+    EXPECT_EQ(value.intArrayValue[0], 2);
+    EXPECT_EQ(value.intArrayValue[1], 1);
+
+    GTEST_LOG_(INFO) << "DngSdkInfoTest: GetIfdYCbCrSubSamplingTest001 end";
+}
+
+/**
+ * @tc.name: GetIfdBlackLevelRepeatDimTest001
+ * @tc.desc: Test GetIfdBlackLevelRepeatDim returns INT_ARRAY with 2 elements
+ * @tc.type: FUNC
+ */
+HWTEST_F(DngSdkInfoTest, GetIfdBlackLevelRepeatDimTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "DngSdkInfoTest: GetIfdBlackLevelRepeatDimTest001 start";
+
+    dng_ifd fIFD{};
+    fIFD.fBlackLevelRepeatRows = 2;
+    fIFD.fBlackLevelRepeatCols = 2;
+    MetadataValue value{};
+    uint32_t ret = DngSdkInfo::GetIfdBlackLevelRepeatDim(fIFD, value);
+    EXPECT_EQ(ret, SUCCESS);
+    EXPECT_EQ(value.type, PropertyValueType::INT_ARRAY);
+    EXPECT_EQ(value.intArrayValue.size(), 2U);
+
+    GTEST_LOG_(INFO) << "DngSdkInfoTest: GetIfdBlackLevelRepeatDimTest001 end";
+}
+
+/**
+ * @tc.name: GetIfdActiveAreaTest001
+ * @tc.desc: Test GetIfdActiveArea returns INT_ARRAY with 4 elements
+ * @tc.type: FUNC
+ */
+HWTEST_F(DngSdkInfoTest, GetIfdActiveAreaTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "DngSdkInfoTest: GetIfdActiveAreaTest001 start";
+
+    dng_ifd fIFD{};
+    fIFD.fActiveArea.t = 0;
+    fIFD.fActiveArea.l = 0;
+    fIFD.fActiveArea.b = 100;
+    fIFD.fActiveArea.r = 100;
+    MetadataValue value{};
+    uint32_t ret = DngSdkInfo::GetIfdActiveArea(fIFD, value);
+    EXPECT_EQ(ret, SUCCESS);
+    EXPECT_EQ(value.type, PropertyValueType::INT_ARRAY);
+    EXPECT_EQ(value.intArrayValue.size(), 4U);
+
+    GTEST_LOG_(INFO) << "DngSdkInfoTest: GetIfdActiveAreaTest001 end";
+}
+
+/**
+ * @tc.name: GetIfdSubTileBlockSizeTest001
+ * @tc.desc: Test GetIfdSubTileBlockSize returns INT_ARRAY with 2 elements
+ * @tc.type: FUNC
+ */
+HWTEST_F(DngSdkInfoTest, GetIfdSubTileBlockSizeTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "DngSdkInfoTest: GetIfdSubTileBlockSizeTest001 start";
+
+    dng_ifd fIFD{};
+    fIFD.fSubTileBlockRows = 1;
+    fIFD.fSubTileBlockCols = 1;
+    MetadataValue value{};
+    uint32_t ret = DngSdkInfo::GetIfdSubTileBlockSize(fIFD, value);
+    EXPECT_EQ(ret, SUCCESS);
+    EXPECT_EQ(value.type, PropertyValueType::INT_ARRAY);
+    EXPECT_EQ(value.intArrayValue.size(), 2U);
+
+    GTEST_LOG_(INFO) << "DngSdkInfoTest: GetIfdSubTileBlockSizeTest001 end";
+}
+
+/**
+ * @tc.name: IsSpecialTagNameTest001
+ * @tc.desc: Test IsSpecialTagName with known special tag name
+ * @tc.type: FUNC
+ */
+HWTEST_F(DngSdkInfoTest, IsSpecialTagNameTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "DngSdkInfoTest: IsSpecialTagNameTest001 start";
+
+    DngSdkInfo sdkInfo;
+    EXPECT_TRUE(sdkInfo.IsSpecialTagName("SubfileType"));
+    EXPECT_TRUE(sdkInfo.IsSpecialTagName("ExposureTime"));
+    EXPECT_FALSE(sdkInfo.IsSpecialTagName("UnknownTag"));
+    EXPECT_FALSE(sdkInfo.IsSpecialTagName(""));
+
+    GTEST_LOG_(INFO) << "DngSdkInfoTest: IsSpecialTagNameTest001 end";
+}
+
+/**
+ * @tc.name: GetAllPropertyKeysTest001
+ * @tc.desc: Test GetAllPropertyKeys returns non-empty set
+ * @tc.type: FUNC
+ */
+HWTEST_F(DngSdkInfoTest, GetAllPropertyKeysTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "DngSdkInfoTest: GetAllPropertyKeysTest001 start";
+
+    std::set<std::string> keys = DngSdkInfo::GetAllPropertyKeys();
+    EXPECT_FALSE(keys.empty());
+    EXPECT_TRUE(keys.find("Make") != keys.end());
+    EXPECT_TRUE(keys.find("Model") != keys.end());
+    EXPECT_TRUE(keys.find("GPSLatitude") != keys.end());
+    EXPECT_TRUE(keys.find("DNGVersion") != keys.end());
+
+    GTEST_LOG_(INFO) << "DngSdkInfoTest: GetAllPropertyKeysTest001 end";
+}
 } // namespace Media
 } // namespace OHOS

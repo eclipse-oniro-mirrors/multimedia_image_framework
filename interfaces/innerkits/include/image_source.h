@@ -488,16 +488,17 @@ private:
     void SetHdrMetadataForPicture(std::unique_ptr<Picture> &picture);
     void DecodeHeifAuxiliaryPictures(const std::set<AuxiliaryPictureType> &auxTypes, std::unique_ptr<Picture> &picture,
         uint32_t &errorCode, const DownSamplingScaleFactor& downSamplingScaleFactor);
-    void DecodeJpegAuxiliaryPicture(std::set<AuxiliaryPictureType> &auxTypes, std::unique_ptr<Picture> &picture,
-        uint32_t &errorCode, const DownSamplingScaleFactor& downSamplingScaleFactor);
     bool CheckJpegSourceStream(StreamInfo &streamInfo);
     uint32_t CreatePictureAtIndexPreCheck(uint32_t index, const ImageInfo &info);
     uint32_t SetGifMetadataForPicture(std::unique_ptr<Picture> &picture, uint32_t index);
     uint32_t SetHeifsMetadataForPicture(std::unique_ptr<Picture> &picture, uint32_t index);
     uint32_t SetAvisMetadataForPicture(std::unique_ptr<Picture> &picture, uint32_t index);
     uint32_t SetJfifMetadataForPicture(std::unique_ptr<Picture> &picture);
-    void DecodeBlobMetaData(std::unique_ptr<Picture> &picture, const std::set<MetadataType> &metadataTypes,
+    void DecodeHeifBlobMetadatas(std::unique_ptr<Picture> &picture, std::set<MetadataType> &metadataTypes,
         ImageInfo &info, uint32_t &errorCode);
+    void DecodeJpegExtendInfo(std::set<AuxiliaryPictureType> &auxTypes,
+        std::set<MetadataType> &metadataTypes, std::unique_ptr<Picture> &picture, uint32_t &errorCode,
+        const DownSamplingScaleFactor& downSamplingScaleFactor);
     std::shared_ptr<ImageMetadata> FindMetadataFromMap(MetadataType type);
     std::unique_ptr<PixelMap> GenerateThumbnail(const DecodingOptionsForThumbnail &opts, uint32_t &errorCode);
     std::unique_ptr<PixelMap> DecodeExifThumbnail(const DecodingOptionsForThumbnail &opts,

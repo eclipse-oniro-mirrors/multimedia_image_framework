@@ -20,6 +20,15 @@
 
 using namespace testing::ext;
 
+namespace {
+constexpr std::string_view EMPTY_STRING = "";
+constexpr std::string_view TEST_PATH = "test:path";
+constexpr std::string_view COLON = ":";
+
+const std::pair<std::string, std::string> RESULT_PAIR = {"test", "path"};
+const std::pair<std::string, std::string> ERROR_RESULT_PAIR = {};
+}
+
 namespace OHOS {
 namespace Media {
 
@@ -30,34 +39,95 @@ protected:
 };
 
 /**
- * @tc.name: TrimTest001
- * @tc.desc: Trim function returns empty string when all characters of the input string are in the trimChars set
+ * @tc.name: SplitOnceTest001
+ * @tc.desc: test the SplitOnce method basic usage.
  * @tc.type: FUNC
  */
-HWTEST_F(XmpHelperTest, TrimTest001, TestSize.Level3)
+HWTEST_F(XmpHelperTest, SplitOnceTest001, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "XmpHelperTest: SplitOnceTest001 start";
+    auto ret = XMPHelper::SplitOnce(TEST_PATH, COLON);
+    EXPECT_EQ(ret, RESULT_PAIR);
+
+    ret = XMPHelper::SplitOnce(EMPTY_STRING, COLON);
+    EXPECT_EQ(ret, ERROR_RESULT_PAIR);
+
+    ret = XMPHelper::SplitOnce(TEST_PATH, EMPTY_STRING);
+    EXPECT_EQ(ret, ERROR_RESULT_PAIR);
+
+    std::string path = "test:test:path";
+    ret = XMPHelper::SplitOnce(path, COLON);
+    EXPECT_EQ(ret, std::make_pair(std::string("test"), std::string("test:path")));
+
+    ret = XMPHelper::SplitOnce(path, "/");
+    EXPECT_EQ(ret, ERROR_RESULT_PAIR);
+
+    path = "testpath:";
+    ret = XMPHelper::SplitOnce(path, COLON);
+    EXPECT_EQ(ret, std::make_pair(std::string("testpath"), std::string("")));
+
+    path = ":testpath";
+    ret = XMPHelper::SplitOnce(path, COLON);
+    EXPECT_EQ(ret, std::make_pair(std::string(""), std::string("testpath")));
+
+    GTEST_LOG_(INFO) << "XmpHelperTest: SplitOnceTest001 end";
+}
+
+/**
+ * @tc.name: TrimTest001
+ * @tc.desc: test the Trim method basic usage.
+ * @tc.type: FUNC
+ */
+HWTEST_F(XmpHelperTest, TrimTest001, TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "XmpHelperTest: TrimTest001 start";
-    std::string_view str = "###";
-    std::string_view trimChars = "#";
-    auto ret = XMPHelper::Trim(str, trimChars);
-    ASSERT_EQ(ret, "");
+    auto ret = XMPHelper::Trim(TEST_PATH, COLON);
+    EXPECT_EQ(ret, "test:path");
+
+    ret = XMPHelper::Trim(TEST_PATH, TEST_PATH);
+    EXPECT_EQ(ret, "");
+
+    ret = XMPHelper::Trim(TEST_PATH, ":path");
+    EXPECT_EQ(ret, "es");
+
+    ret = XMPHelper::Trim(TEST_PATH, "abc");
+    EXPECT_EQ(ret, TEST_PATH);
+
+    ret = XMPHelper::Trim(TEST_PATH, "t");
+    EXPECT_EQ(ret, "est:path");
+
     GTEST_LOG_(INFO) << "XmpHelperTest: TrimTest001 end";
 }
 
 /**
  * @tc.name: TrimTest002
- * @tc.desc: Test that Trim function correctly trims the leading and trailing trimChars and returns valid string when
- *           input string contains characters not in trimChars
+ * @tc.desc: Trim function returns empty string when all characters of the input string are in the trimChars set
  * @tc.type: FUNC
  */
 HWTEST_F(XmpHelperTest, TrimTest002, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "XmpHelperTest: TrimTest002 start";
+    std::string_view str = "###";
+    std::string_view trimChars = "#";
+    auto ret = XMPHelper::Trim(str, trimChars);
+    ASSERT_EQ(ret, "");
+    GTEST_LOG_(INFO) << "XmpHelperTest: TrimTest002 end";
+}
+
+/**
+ * @tc.name: TrimTest003
+ * @tc.desc: Test that Trim function correctly trims the leading and trailing trimChars and returns valid string when
+ *           input string contains characters not in trimChars
+ * @tc.type: FUNC
+ */
+HWTEST_F(XmpHelperTest, TrimTest003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "XmpHelperTest: TrimTest003 start";
     std::string_view str = "  abc  ";
     std::string_view trimChars = " ";
     auto ret = XMPHelper::Trim(str, trimChars);
     ASSERT_EQ(ret, "abc");
-    GTEST_LOG_(INFO) << "XmpHelperTest: TrimTest002 end";
+    GTEST_LOG_(INFO) << "XmpHelperTest: TrimTest003 end";
 }
 
 /**
@@ -203,13 +273,13 @@ HWTEST_F(XmpHelperTest, ExtractPropertyTest006, TestSize.Level3)
 
 /**
  * @tc.name: ExtractPropertyTest007
- * @tc.desc: Test ExtractProperty returns 'xml:lang' when path contains '/@xml:lang' or '/?xml:lang'
+ * @tc.desc: Test ExtractProperty returns 'xml:lang' when path contains '/?xml:lang'
  * @tc.type: FUNC
  */
 HWTEST_F(XmpHelperTest, ExtractPropertyTest007, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "XmpHelperTest: ExtractPropertyTest007 start";
-    std::string_view pathExpression = "dc:title[1]/@xml:lang";
+    std::string_view pathExpression = "dc:title[1]/?xml:lang";
     std::string result = XMPHelper::ExtractProperty(pathExpression);
     ASSERT_STREQ(result.c_str(), "xml:lang");
     GTEST_LOG_(INFO) << "XmpHelperTest: ExtractPropertyTest007 end";
@@ -313,5 +383,79 @@ HWTEST_F(XmpHelperTest, ExtractPropertyTest014, TestSize.Level3)
     GTEST_LOG_(INFO) << "XmpHelperTest: ExtractPropertyTest014 end";
 }
 
+/**
+ * @tc.name: ExtractPropertyTest015
+ * @tc.desc: Test ExtractProperty returns 'xml:lang' when path contains '/@xml:lang'
+ * @tc.type: FUNC
+ */
+HWTEST_F(XmpHelperTest, ExtractPropertyTest015, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "XmpHelperTest: ExtractPropertyTest015 start";
+    std::string_view pathExpression = "dc:title[1]/@xml:lang";
+    std::string result = XMPHelper::ExtractProperty(pathExpression);
+    ASSERT_STREQ(result.c_str(), "xml:lang");
+    GTEST_LOG_(INFO) << "XmpHelperTest: ExtractPropertyTest015 end";
+}
+
+/**
+ * @tc.name: ExtractPropertyTest016
+ * @tc.desc: test the ExtractProperty method with nested paths.
+ * @tc.type: FUNC
+ */
+HWTEST_F(XmpHelperTest, ExtractPropertyTest016, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "XmpHelperTest: ExtractPropertyTest016 start";
+
+    std::string path1 = "dc:subject/dc:title[?xml:lang='x-default']";
+    EXPECT_EQ(XMPHelper::ExtractProperty(path1), "dc:title[?xml:lang='x-default']");
+
+    std::string path2 = "dc:subject[1]/dc:title[?xml:lang='x-default']";
+    EXPECT_EQ(XMPHelper::ExtractProperty(path2), "dc:title[?xml:lang='x-default']");
+
+    std::string path3 = "exif:Flash/exif:Fired";
+    EXPECT_EQ(XMPHelper::ExtractProperty(path3), "exif:Fired");
+
+    std::string path4 = "dc:first[1]/dc:second[1]/dc:third[1]";
+    EXPECT_EQ(XMPHelper::ExtractProperty(path4), "dc:third[1]");
+
+    std::string path5 = "dc:description/dc:title[?book:lastUpdated='2023']";
+    EXPECT_EQ(XMPHelper::ExtractProperty(path5), "dc:title[?book:lastUpdated='2023']");
+
+    GTEST_LOG_(INFO) << "XmpHelperTest: ExtractPropertyTest016 end";
+}
+
+/**
+ * @tc.name: ExtractPropertyTest017
+ * @tc.desc: test the ExtractProperty method edge cases.
+ * @tc.type: FUNC
+ */
+HWTEST_F(XmpHelperTest, ExtractPropertyTest017, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "XmpHelperTest: ExtractPropertyTest017 start";
+    EXPECT_EQ(XMPHelper::ExtractProperty(""), "");
+
+    std::string path = "  test path  ";
+    EXPECT_EQ(XMPHelper::ExtractProperty(path), "test path");
+
+    EXPECT_EQ(XMPHelper::ExtractProperty("["), "[");
+    EXPECT_EQ(XMPHelper::ExtractProperty("]"), "]");
+
+    path = "testpath]";
+    EXPECT_EQ(XMPHelper::ExtractProperty(path), path);
+
+    path = "dc:title[invalid path";
+    EXPECT_EQ(XMPHelper::ExtractProperty(path), path);
+
+    path = "prop/?; rm -rf /";
+    EXPECT_EQ(XMPHelper::ExtractProperty("prop/?; rm -rf /"), "; rm -rf /");
+
+    EXPECT_EQ(XMPHelper::ExtractProperty("dc:subject/[2]"), "dc:subject[2]");
+    EXPECT_EQ(XMPHelper::ExtractProperty("dc:subject*[2]"), "dc:subject[2]");
+    EXPECT_EQ(XMPHelper::ExtractProperty("dc:subject/*[2]"), "dc:subject[2]");
+    EXPECT_EQ(XMPHelper::ExtractProperty("dc:title[1]/?xml:lang"), "xml:lang");
+    EXPECT_EQ(XMPHelper::ExtractProperty("dc:title[1]/?book:lastUpdated"), "book:lastUpdated");
+
+    GTEST_LOG_(INFO) << "XmpHelperTest: ExtractPropertyTest017 end";
+}
 } // namespace Media
 } // namespace OHOS

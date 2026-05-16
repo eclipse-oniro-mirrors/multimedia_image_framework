@@ -66,6 +66,7 @@ public:
     bool SetThumbnail(uint8_t *data, const uint32_t &size);
     bool DropThumbnail();
     bool RemoveExifThumbnail() override;
+    bool RemoveGpsInfo();
     bool ExtractXmageCoordinates(XmageCoordinateMetadata &coordMetadata) const;
     uint32_t GetBlobSize() override;
     uint32_t GetBlob(uint32_t bufferSize, uint8_t *dst) override;

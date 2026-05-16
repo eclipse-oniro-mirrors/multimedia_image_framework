@@ -27,6 +27,8 @@
 #include "src/images/SkImageEncoderFns.h"
 #endif
 #include "include/core/SkBitmap.h"
+#include "include/core/SkCanvas.h"
+#include "include/core/SkImage.h"
 #include "pixel_yuv.h"
 #include "pixel_yuv_ext.h"
 #include "pixel_yuv_utils.h"
@@ -140,40 +142,6 @@ const std::map<PixelFormat, GraphicPixelFormat> SURFACE_FORMAT_MAP = {
 #endif
 
 namespace {
-    constexpr static uint32_t PRIMARY_IMAGE_ITEM_ID = 1;
-    constexpr static uint32_t GAINMAP_IMAGE_ITEM_ID = 2;
-    constexpr static uint32_t TMAP_IMAGE_ITEM_ID = 3;
-    constexpr static uint32_t EXIF_META_ITEM_ID = 4;
-    constexpr static uint32_t DEPTH_MAP_ITEM_ID = 5;
-    constexpr static uint32_t UNREFOCUS_MAP_ITEM_ID = 6;
-    constexpr static uint32_t LINEAR_MAP_ITEM_ID = 7;
-    constexpr static uint32_t FRAGMENT_MAP_ITEM_ID = 8;
-    constexpr static uint32_t XTSTYLE_META_ITEM_ID = 9;
-    constexpr static uint32_t RFDATAB_META_ITEM_ID = 10;
-    constexpr static uint32_t STDATA_META_ITEM_ID = 11;
-    constexpr static uint32_t THUMBNAIL_ITEM_ID = 22;
-    const static std::string COMPRESS_TYPE_TMAP = "tmap";
-    const static std::string COMPRESS_TYPE_HEVC = "hevc";
-    const static std::string COMPRESS_TYPE_NONE = "none";
-    const static std::string DEFAULT_ASHMEM_TAG = "Heif Encoder Default";
-    const static std::string ICC_ASHMEM_TAG = "Heif Encoder Property";
-    const static std::string IT35_ASHMEM_TAG = "Heif Encoder IT35";
-    const static std::string OUTPUT_ASHMEM_TAG = "Heif Encoder Output";
-    const static std::string IMAGE_DATA_TAG = "Heif Encoder Image";
-    const static std::string HDR_GAINMAP_TAG = "Heif Encoder Gainmap";
-    const static std::string EXIF_ASHMEM_TAG = "Heif Encoder Exif";
-    const static std::string XTSTYLE_ASHMEM_TAG = "Heif Encoder XtStyle";
-    const static std::string RFDATAB_ASHMEM_TAG = "Heif Encoder RfDataB";
-    const static std::string STDATA_ASHMEM_TAG = "Heif Encoder STData";
-    const static std::string GAINMAP_IMAGE_ITEM_NAME = "Gain map Image";
-    const static std::string DEPTH_MAP_ITEM_NAME =  "Depth Map Image";
-    const static std::string UNREFOCUS_MAP_ITEM_NAME = "Unrefocus Map Image";
-    const static std::string LINEAR_MAP_ITEM_NAME = "Linear Map Image";
-    const static std::string FRAGMENT_MAP_ITEM_NAME = "Fragment Map Image";
-    const static std::string THUMBNAIL_ITEM_NAME = "Thumbnail Image";
-    const static std::string XTSTYLE_METADATA_ITEM_NAME = "urn:com:huawei:photo:5:1:0:meta:xtstyle";
-    const static std::string RFDATAB_METADATA_ITEM_NAME = "RfDataB\0";
-    const static std::string STDATA_METADATA_ITEM_NAME = "STData\0";
     const static size_t DEFAULT_OUTPUT_SIZE = 35 * 1024 * 1024; // 35M
     const static uint16_t STATIC_METADATA_COLOR_SCALE = 50000;
     const static uint16_t STATIC_METADATA_LUM_SCALE = 10000;
@@ -186,6 +154,7 @@ namespace {
     constexpr uint8_t GAINMAP_CHANNEL_SINGLE = 1;
     constexpr uint8_t EXIF_PRE_SIZE = 6;
     constexpr uint32_t JPEG_MARKER_TAG_SIZE = 2;
+    constexpr uint32_t BLOB_METADATA_TAG_LENGTH = 8;
     constexpr uint32_t DEPTH_MAP_BYTES = sizeof(float); // float16
     constexpr uint32_t LINEAR_MAP_BYTES = sizeof(short) * 3 / 2; // 16bit yuv420
     constexpr uint32_t PLACE_HOLDER_LENGTH = 1;
@@ -197,13 +166,6 @@ namespace {
     constexpr uint32_t HIGHEST_QUALITY = 100;
     constexpr uint32_t DEFAULT_QUALITY = 75;
 
-    const static std::map<MetadataType, std::tuple<uint32_t, std::string, std::string>>
-    HEIF_METADATA_MAPPING = {
-        {MetadataType::XTSTYLE, std::make_tuple(XTSTYLE_META_ITEM_ID, XTSTYLE_ASHMEM_TAG, XTSTYLE_METADATA_ITEM_NAME)},
-        {MetadataType::RFDATAB, std::make_tuple(RFDATAB_META_ITEM_ID, RFDATAB_ASHMEM_TAG, RFDATAB_METADATA_ITEM_NAME)},
-        {MetadataType::STDATA, std::make_tuple(STDATA_META_ITEM_ID, STDATA_ASHMEM_TAG, STDATA_METADATA_ITEM_NAME)}
-    };
-
     // exif/0/0
     constexpr uint8_t EXIF_PRE_TAG[EXIF_PRE_SIZE] = {
         0x45, 0x78, 0x69, 0x66, 0x00, 0x00
@@ -214,6 +176,29 @@ struct HeifEncodeItemInfo {
     uint32_t itemId = 0;
     std::string itemName = "";
     std::string itemType = "";
+};
+
+static const std::map<AuxiliaryPictureType, HeifEncodeItemInfo> HEIF_AUX_PIC_INFO_MAPPING = {
+#if !defined(CROSS_PLATFORM)
+    { AuxiliaryPictureType::GAINMAP,
+        { GAINMAP_IMAGE_ITEM_ID, GAINMAP_IMAGE_ITEM_NAME, HEIF_AUXTTYPE_ID_GAINMAP } },
+    { AuxiliaryPictureType::DEPTH_MAP,
+        { DEPTH_MAP_ITEM_ID, DEPTH_MAP_ITEM_NAME, HEIF_AUXTTYPE_ID_DEPTH_MAP } },
+    { AuxiliaryPictureType::UNREFOCUS_MAP,
+        { UNREFOCUS_MAP_ITEM_ID, UNREFOCUS_MAP_ITEM_NAME, HEIF_AUXTTYPE_ID_UNREFOCUS_MAP } },
+    { AuxiliaryPictureType::LINEAR_MAP,
+        { LINEAR_MAP_ITEM_ID, LINEAR_MAP_ITEM_NAME, HEIF_AUXTTYPE_ID_LINEAR_MAP } },
+    { AuxiliaryPictureType::FRAGMENT_MAP,
+        { FRAGMENT_MAP_ITEM_ID, FRAGMENT_MAP_ITEM_NAME, HEIF_AUXTTYPE_ID_FRAGMENT_MAP } },
+    { AuxiliaryPictureType::SNAP_MAP,
+        { SNAP_MAP_ITEM_ID, SNAP_MAP_ITEM_NAME, HEIF_AUXTTYPE_ID_SNAP_MAP } },
+    { AuxiliaryPictureType::SNAP_GAINMAP,
+        { SNAP_GAINMAP_ITEM_ID, SNAP_GAINMAP_ITEM_NAME, HEIF_AUXTTYPE_ID_SNAP_GAINMAP } },
+    { AuxiliaryPictureType::PAN_MAP,
+        { PAN_MAP_ITEM_ID, PAN_MAP_ITEM_NAME, HEIF_AUXTTYPE_ID_PAN_MAP } },
+    { AuxiliaryPictureType::PAN_GAINMAP,
+        { PAN_GAINMAP_ITEM_ID, PAN_GAINMAP_ITEM_NAME, HEIF_AUXTTYPE_ID_PAN_GAINMAP } },
+#endif
 };
 
 static const std::map<std::string, SkEncodedImageFormat> FORMAT_NAME = {
@@ -234,6 +219,10 @@ static const std::map<AuxiliaryPictureType, std::string> DEFAULT_AUXILIARY_TAG_M
     {AuxiliaryPictureType::UNREFOCUS_MAP, AUXILIARY_TAG_UNREFOCUS_MAP},
     {AuxiliaryPictureType::LINEAR_MAP, AUXILIARY_TAG_LINEAR_MAP},
     {AuxiliaryPictureType::FRAGMENT_MAP, AUXILIARY_TAG_FRAGMENT_MAP},
+    {AuxiliaryPictureType::SNAP_MAP, AUXILIARY_TAG_SNAP_MAP},
+    {AuxiliaryPictureType::SNAP_GAINMAP, AUXILIARY_TAG_SNAP_GAINMAP},
+    {AuxiliaryPictureType::PAN_MAP, AUXILIARY_TAG_PAN_MAP},
+    {AuxiliaryPictureType::PAN_GAINMAP, AUXILIARY_TAG_PAN_GAINMAP},
     {AuxiliaryPictureType::THUMBNAIL, AUXILIARY_TAG_THUMBNAIL},
 };
 
@@ -565,16 +554,22 @@ uint32_t ExtEncoder::FinalizeEncode()
         ReportEncodeFault(0, 0, opts_.format, "Unsupported format:" + opts_.format);
         return ERR_IMAGE_INVALID_PARAMETER;
     }
-#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+    encodeFormat_ = iter->second;
+
+#if !defined(CROSS_PLATFORM)
+    uint32_t processRet = ProcessEncodeControlParams();
+    if (processRet != SUCCESS) {
+        IMAGE_LOGE("ExtEncoder::FinalizeEncode ProcessEncodeControlParams failed %{public}u", processRet);
+        return processRet;
+    }
+
     if (picture_ != nullptr) {
-        encodeFormat_ = iter->second;
         return EncodePicture();
     }
 #endif
     ImageInfo imageInfo;
     pixelmap_->GetImageInfo(imageInfo);
-    imageDataStatistics.AddTitle(", width = %d, height =%d", imageInfo.size.width, imageInfo.size.height);
-    encodeFormat_ = iter->second;
+    imageDataStatistics.AddTitle("width = %d, height =%d", imageInfo.size.width, imageInfo.size.height);
     ExtWStream wStream(output_);
     return PixelmapEncode(wStream);
 }
@@ -844,7 +839,369 @@ void ExtEncoder::RecycleResources()
     tmpMemoryList_.clear();
 }
 
-#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+bool ExtEncoder::IsFormatSupportTransparency(const std::string& format) const
+{
+    std::string lowerFormat = LowerStr(format);
+    return lowerFormat == IMAGE_PNG_FORMAT || lowerFormat == IMAGE_WEBP_FORMAT || lowerFormat == IMAGE_GIF_FORMAT;
+}
+
+#if !defined(CROSS_PLATFORM)
+uint32_t ExtEncoder::ProcessEncodeControlParams()
+{
+    if (picture_ != nullptr) {
+        if (NeedDeepCopy()) {
+            dstPicture_ = DeepCopyPicture();
+            if (dstPicture_ == nullptr) {
+                IMAGE_LOGE("ExtEncoder::ProcessEncodeControlParams DeepCopyPicture failed");
+                return ERR_IMAGE_ENCODE_FAILED;
+            }
+            picture_ = dstPicture_.get();
+        }
+        return ProcessPictureEncodeControlParams();
+    }
+    if (pixelmap_ != nullptr) {
+        if (NeedDeepCopy()) {
+            dstPixelmap_ = DeepCopyPixelmap();
+            if (dstPixelmap_ == nullptr) {
+                IMAGE_LOGE("ExtEncoder::ProcessEncodeControlParams DeepCopyPixelmap failed");
+                return ERR_IMAGE_ENCODE_FAILED;
+            }
+            pixelmap_ = dstPixelmap_.get();
+        }
+        return ProcessPixelmapEncodeControlParams();
+    }
+    IMAGE_LOGD("ExtEncoder::ProcessEncodeControlParams no pixelmap or picture for encoding, skip");
+    return SUCCESS;
+}
+
+bool ExtEncoder::NeedDeepCopy()
+{
+    PixelMap* srcPixelmap = nullptr;
+    std::shared_ptr<ExifMetadata> exifMetadata = nullptr;
+    bool hasGainmap = false;
+
+    if (picture_ != nullptr) {
+        srcPixelmap = picture_->GetMainPixel().get();
+        exifMetadata = picture_->GetExifMetadata();
+        hasGainmap = picture_->GetGainmapPixelMap() != nullptr;
+    } else if (pixelmap_ != nullptr) {
+        srcPixelmap = pixelmap_;
+        exifMetadata = pixelmap_->GetExifMetadata();
+        hasGainmap = false;
+    }
+
+    if ((srcPixelmap != nullptr) && (opts_.sizeLimit.maxSize.width > 0 || opts_.sizeLimit.maxSize.height > 0)) {
+        int32_t srcWidth = srcPixelmap->GetWidth();
+        int32_t srcHeight = srcPixelmap->GetHeight();
+        int32_t maxWidth = opts_.sizeLimit.maxSize.width > 0 ? opts_.sizeLimit.maxSize.width : srcWidth;
+        int32_t maxHeight = opts_.sizeLimit.maxSize.height > 0 ? opts_.sizeLimit.maxSize.height : srcHeight;
+        if (srcWidth > maxWidth || srcHeight > maxHeight) {
+            return true;
+        }
+    }
+
+    if (!opts_.needsPackGPS && exifMetadata != nullptr) {
+        return true;
+    }
+
+    if ((srcPixelmap != nullptr) && (opts_.backgroundColor != 0) && !hasGainmap
+        && !IsFormatSupportTransparency(opts_.format)) {
+        PixelFormat pixelFormat = srcPixelmap->GetPixelFormat();
+        AlphaType alphaType = srcPixelmap->GetAlphaType();
+        if (pixelFormat == PixelFormat::RGBA_8888 && alphaType != AlphaType::IMAGE_ALPHA_TYPE_OPAQUE) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+std::unique_ptr<PixelMap> ExtEncoder::DeepCopyPixelmap()
+{
+    int32_t errorCode = SUCCESS;
+    std::unique_ptr<PixelMap> clonedPixelmap = nullptr;
+
+    if (ImageUtils::IsYuvFormat(pixelmap_->GetPixelFormat())) {
+        clonedPixelmap = PixelYuv::CloneYuv(*pixelmap_, errorCode);
+    } else {
+        clonedPixelmap = pixelmap_->Clone(errorCode);
+    }
+
+    if (errorCode != SUCCESS || clonedPixelmap == nullptr) {
+        IMAGE_LOGE("ExtEncoder::DeepCopyPixelmap copy failed, errorCode=%{public}d", errorCode);
+        return nullptr;
+    }
+
+    auto srcExif = pixelmap_->GetExifMetadata();
+    if (srcExif != nullptr) {
+        auto clonedExif = srcExif->Clone();
+        if (clonedExif != nullptr) {
+            clonedPixelmap->SetExifMetadata(clonedExif);
+        }
+    }
+
+    return clonedPixelmap;
+}
+
+std::unique_ptr<Picture> ExtEncoder::DeepCopyPicture()
+{
+    auto srcPicture = std::make_shared<Picture>(*picture_);
+
+    std::vector<AuxiliaryPictureType> srcAuxTypes;
+    std::vector<AuxiliaryPictureType> dstAuxTypes;
+    const auto& allAuxTypes = ImageUtils::GetAllAuxiliaryPictureType();
+    for (const auto& auxType : allAuxTypes) {
+        if (picture_->GetAuxiliaryPicture(auxType) != nullptr) {
+            srcAuxTypes.push_back(auxType);
+            dstAuxTypes.push_back(auxType);
+        }
+    }
+
+    std::vector<MetadataType> srcMetas;
+    std::vector<MetadataType> dstMetas;
+    if (picture_->GetMetadata(MetadataType::EXIF) != nullptr) {
+        srcMetas.push_back(MetadataType::EXIF);
+        dstMetas.push_back(MetadataType::EXIF);
+    }
+
+    std::unique_ptr<Picture> clonedPicture = Picture::DeepCopy(srcPicture,
+        srcAuxTypes, srcMetas, dstAuxTypes, dstMetas, AuxiliaryPictureType::NONE);
+    if (clonedPicture == nullptr) {
+        IMAGE_LOGE("ExtEncoder::DeepCopyPicture DeepCopy failed");
+        return nullptr;
+    }
+
+    return clonedPicture;
+}
+
+uint32_t ExtEncoder::ProcessPixelmapEncodeControlParams()
+{
+    uint32_t ret = ProcessPixelmapMaxSize();
+    if (ret != SUCCESS) {
+        IMAGE_LOGE("ExtEncoder::ProcessPixelmapEncodeControlParams ProcessPixelmapMaxSize failed %{public}u", ret);
+        return ret;
+    }
+
+    ret = ProcessBackgroundColor(pixelmap_);
+    if (ret != SUCCESS) {
+        IMAGE_LOGE("ExtEncoder::ProcessPixelmapEncodeControlParams ProcessBackgroundColor failed %{public}u", ret);
+        return ret;
+    }
+
+    ret = ProcessRemoveGpsInfo();
+    if (ret != SUCCESS) {
+        IMAGE_LOGE("ExtEncoder::ProcessPixelmapEncodeControlParams ProcessRemoveGpsInfo failed %{public}u", ret);
+        return ret;
+    }
+
+    return SUCCESS;
+}
+
+uint32_t ExtEncoder::ProcessPictureEncodeControlParams()
+{
+    auto mainPixelmap = picture_->GetMainPixel();
+    if (mainPixelmap == nullptr) {
+        IMAGE_LOGD("ExtEncoder::ProcessPictureEncodeControlParams mainPixelmap is nullptr");
+        return ERR_IMAGE_INVALID_PARAMETER;
+    }
+
+    uint32_t ret = ProcessPictureMaxSize();
+    if (ret != SUCCESS) {
+        IMAGE_LOGE("ExtEncoder::ProcessPictureEncodeControlParams ProcessPictureMaxSize failed %{public}u", ret);
+        return ret;
+    }
+
+    if (picture_->GetGainmapPixelMap() == nullptr) {
+        ret = ProcessBackgroundColor(mainPixelmap.get());
+        if (ret != SUCCESS) {
+            IMAGE_LOGE("ExtEncoder::ProcessPictureEncodeControlParams ProcessBackgroundColor failed %{public}u", ret);
+            return ret;
+        }
+    } else {
+        IMAGE_LOGW("ExtEncoder::ProcessPictureEncodeControlParams gainmap not supported, skip ProcessBackgroundColor");
+    }
+
+    ret = ProcessRemoveGpsInfo();
+    if (ret != SUCCESS) {
+        IMAGE_LOGE("ExtEncoder::ProcessPictureEncodeControlParams ProcessRemoveGpsInfo failed %{public}u", ret);
+        return ret;
+    }
+
+    return SUCCESS;
+}
+
+uint32_t ExtEncoder::ProcessPixelmapMaxSize()
+{
+    if (opts_.sizeLimit.maxSize.width <= 0 && opts_.sizeLimit.maxSize.height <= 0) {
+        IMAGE_LOGD("ExtEncoder::ProcessPixelmapMaxSize no maxSize limit, skip scaling");
+        return SUCCESS;
+    }
+
+    int32_t srcWidth = pixelmap_->GetWidth();
+    int32_t srcHeight = pixelmap_->GetHeight();
+    if (srcWidth == 0 || srcHeight == 0) {
+        IMAGE_LOGE("ExtEncoder::ProcessPixelmapMaxSize invalid image size (%{public}d, %{public}d)",
+            srcWidth, srcHeight);
+        return ERR_IMAGE_INVALID_PARAMETER;
+    }
+
+    int32_t maxWidth = opts_.sizeLimit.maxSize.width > 0 ? opts_.sizeLimit.maxSize.width : srcWidth;
+    int32_t maxHeight = opts_.sizeLimit.maxSize.height > 0 ? opts_.sizeLimit.maxSize.height : srcHeight;
+    if (srcWidth <= maxWidth && srcHeight <= maxHeight) {
+        IMAGE_LOGD("ExtEncoder::ProcessPixelmapMaxSize image size within max bounds, skip scaling");
+        return SUCCESS;
+    }
+
+    float scaleX = static_cast<float>(maxWidth) / srcWidth;
+    float scaleY = static_cast<float>(maxHeight) / srcHeight;
+    float scale = std::min(scaleX, scaleY);
+    IMAGE_LOGI("ExtEncoder::ProcessPixelmapMaxSize scale image from (%{public}d, %{public}d) "
+        "to fit maxSize(%{public}d, %{public}d), scale=%{public}f", srcWidth, srcHeight, maxWidth, maxHeight, scale);
+
+    uint32_t scaleRet = pixelmap_->Scale(scale, scale, opts_.sizeLimit.antiAliasingLevel);
+    if (scaleRet != SUCCESS) {
+        IMAGE_LOGE("ExtEncoder::ProcessPixelmapMaxSize scale failed %{public}u", scaleRet);
+        return scaleRet;
+    }
+    return SUCCESS;
+}
+
+uint32_t ExtEncoder::ProcessPictureMaxSize()
+{
+    if (opts_.sizeLimit.maxSize.width <= 0 && opts_.sizeLimit.maxSize.height <= 0) {
+        IMAGE_LOGD("ExtEncoder::ProcessPictureMaxSize no maxSize limit, skip scaling");
+        return SUCCESS;
+    }
+
+    auto mainPixelmap = picture_->GetMainPixel();
+    if (mainPixelmap == nullptr) {
+        IMAGE_LOGE("ExtEncoder::ProcessPictureMaxSize mainPixelmap is nullptr");
+        return ERR_IMAGE_INVALID_PARAMETER;
+    }
+
+    int32_t srcWidth = mainPixelmap->GetWidth();
+    int32_t srcHeight = mainPixelmap->GetHeight();
+    if (srcWidth == 0 || srcHeight == 0) {
+        IMAGE_LOGE("ExtEncoder::ProcessPictureMaxSize invalid image size (%{public}d, %{public}d)",
+            srcWidth, srcHeight);
+        return ERR_IMAGE_INVALID_PARAMETER;
+    }
+
+    int32_t maxWidth = opts_.sizeLimit.maxSize.width > 0 ? opts_.sizeLimit.maxSize.width : srcWidth;
+    int32_t maxHeight = opts_.sizeLimit.maxSize.height > 0 ? opts_.sizeLimit.maxSize.height : srcHeight;
+    if (srcWidth <= maxWidth && srcHeight <= maxHeight) {
+        IMAGE_LOGD("ExtEncoder::ProcessPictureMaxSize image size within max bounds, skip scaling");
+        return SUCCESS;
+    }
+
+    float scaleX = static_cast<float>(maxWidth) / srcWidth;
+    float scaleY = static_cast<float>(maxHeight) / srcHeight;
+    float scale = std::min(scaleX, scaleY);
+    IMAGE_LOGI("ExtEncoder::ProcessPictureMaxSize scale image from (%{public}d, %{public}d) "
+        "to fit maxSize(%{public}d, %{public}d), scale=%{public}f", srcWidth, srcHeight, maxWidth, maxHeight, scale);
+
+    if (!mainPixelmap->resize(scale, scale)) {
+        IMAGE_LOGE("ExtEncoder::ProcessPictureMaxSize mainPixelmap resize failed");
+        return ERR_IMAGE_ENCODE_FAILED;
+    }
+    auto gainmapPixelmap = picture_->GetGainmapPixelMap();
+    if (gainmapPixelmap != nullptr && !gainmapPixelmap->resize(scale, scale)) {
+        IMAGE_LOGE("ExtEncoder::ProcessPictureMaxSize gainmapPixelmap resize failed");
+        return ERR_IMAGE_ENCODE_FAILED;
+    }
+    const auto& auxTypes = ImageUtils::GetAllAuxiliaryPictureType();
+    for (const auto& auxType : auxTypes) {
+        auto auxPicture = picture_->GetAuxiliaryPicture(auxType);
+        if (auxPicture == nullptr) continue;
+        auto auxPixelmap = auxPicture->GetContentPixel();
+        if (auxPixelmap != nullptr && !auxPixelmap->resize(scale, scale)) {
+            IMAGE_LOGE("ExtEncoder::ProcessPictureMaxSize aux resize failed, type %{public}d", auxType);
+            return ERR_IMAGE_ENCODE_FAILED;
+        }
+    }
+    return SUCCESS;
+}
+
+uint32_t ExtEncoder::ProcessBackgroundColor(PixelMap* processPixelmap)
+{
+    if (IsFormatSupportTransparency(opts_.format) || processPixelmap == nullptr) {
+        return SUCCESS;
+    }
+
+    if (opts_.backgroundColor <= 0) {
+        IMAGE_LOGD("ExtEncoder::ProcessBackgroundColor: backgroundColor use default black, skip");
+        return SUCCESS;
+    }
+
+    PixelFormat pixelFormat = processPixelmap->GetPixelFormat();
+    AlphaType alphaType = processPixelmap->GetAlphaType();
+    if (pixelFormat != PixelFormat::RGBA_8888 || alphaType == AlphaType::IMAGE_ALPHA_TYPE_OPAQUE) {
+        IMAGE_LOGI("ExtEncoder::ProcessBackgroundColor: format %{public}d or alpha %{public}d not supported",
+            pixelFormat, alphaType);
+        return SUCCESS;
+    }
+
+    uint8_t* pixels = const_cast<uint8_t*>(processPixelmap->GetPixels());
+    if (pixels == nullptr) {
+        IMAGE_LOGE("ExtEncoder::ProcessBackgroundColor: GetPixels failed");
+        return ERR_IMAGE_DATA_ABNORMAL;
+    }
+
+    uint64_t rowStride = static_cast<uint64_t>(processPixelmap->GetWidth() * RGBA8888_PIXEL_BYTES);
+    if (processPixelmap->GetAllocatorType() == AllocatorType::DMA_ALLOC) {
+        SurfaceBuffer* sbBuffer = reinterpret_cast<SurfaceBuffer*>(processPixelmap->GetFd());
+        if (sbBuffer != nullptr) {
+            rowStride = static_cast<uint64_t>(sbBuffer->GetStride());
+        }
+    }
+
+    SkImageInfo skInfo = ToSkInfo(processPixelmap);
+    SkBitmap bitmap;
+    if (!bitmap.installPixels(skInfo, pixels, rowStride)) {
+        return ERR_IMAGE_DATA_ABNORMAL;
+    }
+
+    uint32_t bgColor = static_cast<uint32_t>(opts_.backgroundColor);
+    SkColor backgroundColor = SkColorSetRGB(SkColorGetR(bgColor), SkColorGetG(bgColor), SkColorGetB(bgColor));
+    IMAGE_LOGI("ExtEncoder::ProcessBackgroundColor: input background color 0x%{public}X", backgroundColor);
+
+    SkCanvas canvas(bitmap);
+    SkPaint paint;
+    paint.setBlendMode(SkBlendMode::kSrcOver);
+    canvas.saveLayer(nullptr, &paint);
+    canvas.drawColor(backgroundColor);
+    canvas.drawImage(SkImages::RasterFromBitmap(bitmap), 0, 0);
+    canvas.restore();
+
+    return SUCCESS;
+}
+
+uint32_t ExtEncoder::ProcessRemoveGpsInfo()
+{
+    if (opts_.needsPackGPS) {
+        IMAGE_LOGD("ExtEncoder::ProcessRemoveGpsInfo needsPackGPS is true, keep GPS info");
+        return SUCCESS;
+    }
+
+    std::shared_ptr<ExifMetadata> exifMetadata = nullptr;
+    if (picture_ != nullptr) {
+        exifMetadata = picture_->GetExifMetadata();
+    } else if (pixelmap_ != nullptr) {
+        exifMetadata = pixelmap_->GetExifMetadata();
+    }
+
+    if (exifMetadata == nullptr) {
+        IMAGE_LOGD("ExtEncoder::ProcessRemoveGpsInfo no EXIF metadata, skip");
+        return SUCCESS;
+    }
+
+    if (!exifMetadata->RemoveGpsInfo()) {
+        IMAGE_LOGE("ExtEncoder::ProcessRemoveGpsInfo RemoveGpsInfo failed");
+        return ERR_IMAGE_ENCODE_FAILED;
+    }
+    return SUCCESS;
+}
+
 static sptr<SurfaceBuffer> AllocSurfaceBuffer(int32_t width, int32_t height,
     uint32_t format = GRAPHIC_PIXEL_FMT_RGBA_8888)
 {
@@ -1376,6 +1733,21 @@ uint32_t ExtEncoder::AssembleHeifAuxiliaryPicture(std::vector<ImageItem>& inputI
         AssembleHeifFragmentMap(inputImgs) == SUCCESS) {
         AssembleAuxiliaryRefItem(AuxiliaryPictureType::FRAGMENT_MAP, refs);
     }
+    static constexpr AuxiliaryPictureType TARGET_AUX_TYPES[] = {
+        AuxiliaryPictureType::SNAP_MAP, AuxiliaryPictureType::SNAP_GAINMAP,
+        AuxiliaryPictureType::PAN_MAP, AuxiliaryPictureType::PAN_GAINMAP,
+    };
+    for (auto type : TARGET_AUX_TYPES) {
+        if (!picture_->HasAuxiliaryPicture(type)) {
+            continue;
+        }
+        if (AssembleHeifUltraPhotoMap(type, inputImgs) == SUCCESS) {
+            AssembleAuxiliaryRefItem(type, refs);
+        } else {
+            IMAGE_LOGE("%{public}s %{public}s assemble fail",
+                __func__, HEIF_AUX_PIC_INFO_MAPPING.at(type).itemName.c_str());
+        }
+    }
     if (opts_.needsPackProperties != false || (picture_->HasAuxiliaryPicture(AuxiliaryPictureType::THUMBNAIL) &&
         AssembleHeifThumbnail(inputImgs) == SUCCESS)) {
         AssembleAuxiliaryRefItem(AuxiliaryPictureType::THUMBNAIL, refs);
@@ -1401,46 +1773,6 @@ ImageItem ExtEncoder::InitAuxiliaryImageItem(uint32_t id, std::string itemName)
     return item;
 }
 
-HeifEncodeItemInfo GetHeifEncodeItemInfo(AuxiliaryPictureType auxType)
-{
-    HeifEncodeItemInfo itemInfo;
-    switch (auxType) {
-        case AuxiliaryPictureType::GAINMAP:
-            itemInfo.itemId = GAINMAP_IMAGE_ITEM_ID;
-            itemInfo.itemName = GAINMAP_IMAGE_ITEM_NAME;
-            itemInfo.itemType = HEIF_AUXTTYPE_ID_GAINMAP;
-            break;
-        case AuxiliaryPictureType::DEPTH_MAP:
-            itemInfo.itemId = DEPTH_MAP_ITEM_ID;
-            itemInfo.itemName = DEPTH_MAP_ITEM_NAME;
-            itemInfo.itemType = HEIF_AUXTTYPE_ID_DEPTH_MAP;
-            break;
-        case AuxiliaryPictureType::UNREFOCUS_MAP:
-            itemInfo.itemId = UNREFOCUS_MAP_ITEM_ID;
-            itemInfo.itemName = UNREFOCUS_MAP_ITEM_NAME;
-            itemInfo.itemType = HEIF_AUXTTYPE_ID_UNREFOCUS_MAP;
-            break;
-        case AuxiliaryPictureType::LINEAR_MAP:
-            itemInfo.itemId = LINEAR_MAP_ITEM_ID;
-            itemInfo.itemName = LINEAR_MAP_ITEM_NAME;
-            itemInfo.itemType = HEIF_AUXTTYPE_ID_LINEAR_MAP;
-            break;
-        case AuxiliaryPictureType::FRAGMENT_MAP:
-            itemInfo.itemId = FRAGMENT_MAP_ITEM_ID;
-            itemInfo.itemName = FRAGMENT_MAP_ITEM_NAME;
-            itemInfo.itemType = HEIF_AUXTTYPE_ID_FRAGMENT_MAP;
-            break;
-        case AuxiliaryPictureType::THUMBNAIL:
-            itemInfo.itemId = THUMBNAIL_ITEM_ID;
-            itemInfo.itemName = THUMBNAIL_ITEM_NAME;
-            itemInfo.itemType = HEIF_AUXTTYPE_ID_THUMBNAIL;
-            break;
-        default:
-            break;
-    }
-    return itemInfo;
-}
-
 uint32_t ExtEncoder::AssembleHeifAuxiliaryNoncodingMap(std::vector<ImageItem>& inputImgs, AuxiliaryPictureType auxType)
 {
     auto auxMap = picture_->GetAuxiliaryPicture(auxType);
@@ -1453,7 +1785,7 @@ uint32_t ExtEncoder::AssembleHeifAuxiliaryNoncodingMap(std::vector<ImageItem>& i
     bool cond = !auxMapSptr;
     CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER, "%{public}s auxMapSptr is nullptr", __func__);
 
-    HeifEncodeItemInfo itemInfo = GetHeifEncodeItemInfo(auxType);
+    HeifEncodeItemInfo itemInfo = HEIF_AUX_PIC_INFO_MAPPING.at(auxType);
     auto item = InitAuxiliaryImageItem(itemInfo.itemId, itemInfo.itemName);
     std::string auxTypeStr = itemInfo.itemType;
     Resolution resolution = {
@@ -1483,7 +1815,7 @@ uint32_t ExtEncoder::AssembleHeifUnrefocusMap(std::vector<ImageItem>& inputImgs)
     auto unrefocusMap = picture_->GetAuxiliaryPicture(AuxiliaryPictureType::UNREFOCUS_MAP);
     bool cond = !unrefocusMap || !unrefocusMap->GetContentPixel();
     CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER, "%{public}s The unrefocusMap is nullptr", __func__);
-    HeifEncodeItemInfo itemInfo = GetHeifEncodeItemInfo(AuxiliaryPictureType::UNREFOCUS_MAP);
+    HeifEncodeItemInfo itemInfo = HEIF_AUX_PIC_INFO_MAPPING.at(AuxiliaryPictureType::UNREFOCUS_MAP);
     auto item = InitAuxiliaryImageItem(itemInfo.itemId, itemInfo.itemName);
     bool sdrIsSRGB = unrefocusMap->GetContentPixel()->GetToSdrColorSpaceIsSRGB();
     SkImageInfo unrefocusInfo = GetSkInfo(unrefocusMap->GetContentPixel().get(), false, sdrIsSRGB);
@@ -1504,6 +1836,44 @@ uint32_t ExtEncoder::AssembleHeifUnrefocusMap(std::vector<ImageItem>& inputImgs)
     uint32_t litePropertiesSize =
         sizeof(PropertyType::AUX_TYPE) + UINT32_BYTES_NUM + auxTypeStr.length() + PLACE_HOLDER_LENGTH;
     litePropertiesSize += (sizeof(PropertyType::COLOR_TYPE) + sizeof(ColorType));
+    item.liteProperties.resize(litePropertiesSize);
+    size_t offset = 0;
+    cond = !FillLitePropertyItemByString(item.liteProperties, offset, PropertyType::AUX_TYPE, auxTypeStr);
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER, "%{public}s Fill auxiliary type failed", __func__);
+    ColorType colorType = ColorType::RICC;
+    cond = !FillLitePropertyItem(item.liteProperties, offset, PropertyType::COLOR_TYPE, &colorType, sizeof(ColorType));
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER, "%{public}s Fill color type failed", __func__);
+    inputImgs.push_back(item);
+    return SUCCESS;
+}
+
+uint32_t ExtEncoder::AssembleHeifUltraPhotoMap(AuxiliaryPictureType auxType, std::vector<ImageItem>& inputImgs)
+{
+    auto preMainMap = picture_->GetAuxiliaryPicture(auxType);
+    bool cond = !preMainMap || !preMainMap->GetContentPixel();
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER,
+        "%{public}s The preMainMap:%{public}d is nullptr", __func__, auxType);
+ 
+    HeifEncodeItemInfo itemInfo = HEIF_AUX_PIC_INFO_MAPPING.at(auxType);
+    auto item = InitHeifAuxiliaryImageItem(itemInfo.itemId, itemInfo.itemName);
+    bool sdrIsSRGB = preMainMap->GetContentPixel()->GetToSdrColorSpaceIsSRGB();
+    SkImageInfo ski = GetSkInfo(preMainMap->GetContentPixel().get(), false, sdrIsSRGB);
+#ifdef USE_M133_SKIA
+    sk_sp<SkData> icc = icc_from_color_space(ski, nullptr, nullptr);
+#else
+    sk_sp<SkData> icc = icc_from_color_space(ski);
+#endif
+    cond = !AssembleICCImageProperty(icc, item.sharedProperties);
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER,
+        "%{public}s AssembleICCImageProperty failed", __func__);
+    sptr<SurfaceBuffer> preMainMapSptr = ConvertPixelMapToDmaBuffer(preMainMap->GetContentPixel());
+    cond = !preMainMapSptr;
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER, "%{public}s preMainMap DMA buffer failed", __func__);
+    item.pixelBuffer = sptr<NativeBuffer>::MakeSptr(preMainMapSptr->GetBufferHandle());
+    std::string auxTypeStr = itemInfo.itemType;
+    uint32_t litePropertiesSize =
+        sizeof(PropertyType::AUX_TYPE) + UINT32_BYTES_NUM + auxTypeStr.length() + PLACE_HOLDER_LENGTH
+      + sizeof(PropertyType::COLOR_TYPE) + sizeof(ColorType);
     item.liteProperties.resize(litePropertiesSize);
     size_t offset = 0;
     cond = !FillLitePropertyItemByString(item.liteProperties, offset, PropertyType::AUX_TYPE, auxTypeStr);
@@ -1542,7 +1912,7 @@ uint32_t ExtEncoder::AssembleHeifFragmentMap(std::vector<ImageItem>& inputImgs)
     sptr<SurfaceBuffer> fragmentMapSptr = ConvertPixelMapToDmaBuffer(fragmentMap->GetContentPixel());
     cond = !fragmentMapSptr;
     CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER, "%{public}s fragmentMapSptr is nullptr", __func__);
-    HeifEncodeItemInfo itemInfo = GetHeifEncodeItemInfo(AuxiliaryPictureType::FRAGMENT_MAP);
+    HeifEncodeItemInfo itemInfo = HEIF_AUX_PIC_INFO_MAPPING.at(AuxiliaryPictureType::FRAGMENT_MAP);
     auto item = InitAuxiliaryImageItem(itemInfo.itemId, itemInfo.itemName);
     bool sdrIsSRGB = fragmentMap->GetContentPixel()->GetToSdrColorSpaceIsSRGB();
     SkImageInfo fragmentInfo = GetSkInfo(fragmentMap->GetContentPixel().get(), false, sdrIsSRGB);
@@ -2137,9 +2507,18 @@ void ExtEncoder::EncodeHeifMetadata(std::vector<ItemRef> &refs, std::vector<Meta
     if (AssembleExifMetaItem(inputMetas)) {
         AssembleExifRefItem(refs);
     }
-    for (const auto& iter : HEIF_METADATA_MAPPING) {
-        if (AssembleBlobMetaItem(iter.first, inputMetas)) {
-            AssembleBlobRefItem(iter.first, refs);
+    for (const auto& info : HEIF_BLOB_INFOS) {
+        auto metaType = MetadataTypeConvertFromHeif(info.type);
+        if (!opts_.needsPackProperties && metaType != MetadataType::DFXDATA) {
+            IMAGE_LOGD("no need encode blob: %{public}d", metaType);
+            continue;
+        }
+        if (metaType == MetadataType::DFXDATA && !opts_.needsPackDfxData) {
+            IMAGE_LOGD("no need encode DfxData");
+            continue;
+        }
+        if (AssembleBlobMetaItem(metaType, inputMetas)) {
+            AssembleBlobRefItem(metaType, refs);
         }
     }
 }
@@ -2394,12 +2773,17 @@ void ExtEncoder::EncodeJpegAuxiliaryPictures(SkWStream& skStream)
 void ExtEncoder::EncodeJpegAllBlobMetadata(SkWStream& skStream)
 {
     ImageFuncTimer imageFuncTimer("%s enter", __func__);
-    if (picture_ == nullptr || opts_.needsPackProperties == false) {
+    if (picture_ == nullptr) {
         return;
+    }
+    if (opts_.needsPackDfxData == false) {
+        IMAGE_LOGD("no need encode DfxData");
+        picture_->DropMetadata(MetadataType::DFXDATA);
     }
     for (const auto& iter : BLOB_METADATA_TAG_MAP) {
         auto metadataPtr = picture_->GetMetadata(iter.first);
-        if (metadataPtr == nullptr) {
+        if (metadataPtr == nullptr || (iter.first != MetadataType::DFXDATA && opts_.needsPackProperties == false)) {
+            IMAGE_LOGD("no need encode blob: %{public}d or don't have this blob", iter.first);
             continue;
         }
         uint8_t* bytes = metadataPtr->GetBlobPtr();
@@ -2413,8 +2797,10 @@ void ExtEncoder::EncodeJpegAllBlobMetadata(SkWStream& skStream)
         std::vector<uint8_t> dataSize = JpegMpfPacker::PackDataSize(writeSize, false);
         skStream.write(dataSize.data(), dataSize.size());
         std::string tagName = iter.second;
-        std::vector<uint8_t> dataTag(tagName.begin(), tagName.end());
-        dataTag.push_back(0);
+        std::vector<uint8_t> dataTag;
+        dataTag.reserve(BLOB_METADATA_TAG_LENGTH);
+        dataTag.insert(dataTag.end(), tagName.begin(), tagName.end());
+        dataTag.resize(BLOB_METADATA_TAG_LENGTH);
         skStream.write(dataTag.data(), dataTag.size());
     }
 }
@@ -2993,39 +3379,36 @@ bool ExtEncoder::FillPixelSharedBuffer(sptr<SurfaceBuffer> sbBuffer, uint32_t ca
 
 void ExtEncoder::AssembleAuxiliaryRefItem(AuxiliaryPictureType type, std::vector<ItemRef>& refs)
 {
+    auto info = HEIF_AUX_PIC_INFO_MAPPING.at(type);
     auto item = std::make_shared<ItemRef>();
     item->type = ReferenceType::AUXL;
+    item->from = info.itemId;
     item->to.resize(INDEX_ONE);
     item->to[INDEX_ZERO] = PRIMARY_IMAGE_ITEM_ID;
-    switch (type) {
-        case AuxiliaryPictureType::DEPTH_MAP:
-            item->from = DEPTH_MAP_ITEM_ID;
-            break;
-        case AuxiliaryPictureType::UNREFOCUS_MAP:
-            item->from = UNREFOCUS_MAP_ITEM_ID;
-            break;
-        case AuxiliaryPictureType::LINEAR_MAP:
-            item->from = LINEAR_MAP_ITEM_ID;
-            break;
-        case AuxiliaryPictureType::FRAGMENT_MAP:
-            item->from = FRAGMENT_MAP_ITEM_ID;
-            break;
-        case AuxiliaryPictureType::THUMBNAIL:
-            item->type = ReferenceType::THMB;
-            item->from = THUMBNAIL_ITEM_ID;
-            break;
-        default:
-            break;
-    }
     refs.push_back(*item);
+}
+
+static const HeifBlobMetadataEncodeInfo* FindHeifBlobMetadataEncodeInfo(MetadataType type)
+{
+    HeifMetadataType heifType = MetadataTypeConvertToHeif(type);
+    for (const auto& info : HEIF_BLOB_INFOS) {
+        if (info.type == heifType) {
+            return &info;
+        }
+    }
+    return nullptr;
 }
 
 void ExtEncoder::AssembleBlobRefItem(MetadataType type, std::vector<ItemRef>& refs)
 {
-    auto metadataTuple = HEIF_METADATA_MAPPING.at(type);
+    const HeifBlobMetadataEncodeInfo* info = FindHeifBlobMetadataEncodeInfo(type);
+    if (!info) {
+        IMAGE_LOGW("Unknown metadata type: %{public}d", type);
+        return;
+    }
     auto item = std::make_shared<ItemRef>();
     item->type = ReferenceType::CDSC;
-    item->from = std::get<0>(metadataTuple);
+    item->from = info->itemId;
     item->to.resize(INDEX_ONE);
     item->to[INDEX_ZERO] = PRIMARY_IMAGE_ITEM_ID;
     refs.push_back(*item);
@@ -3033,13 +3416,13 @@ void ExtEncoder::AssembleBlobRefItem(MetadataType type, std::vector<ItemRef>& re
  
 bool ExtEncoder::AssembleBlobMetaItem(MetadataType type, std::vector<MetaItem>& metaItems)
 {
-    auto metadataTuple = HEIF_METADATA_MAPPING.at(type);
-    if (!opts_.needsPackProperties) {
-        IMAGE_LOGD("no need encode blob: %{public}d", type);
-        return false;
-    }
     if (picture_ == nullptr || picture_->GetMetadata(type) == nullptr) {
         IMAGE_LOGE("fail to get picture or fail to get blob");
+        return false;
+    }
+    const HeifBlobMetadataEncodeInfo* info = FindHeifBlobMetadataEncodeInfo(type);
+    if (!info) {
+        IMAGE_LOGW("Unknown metadata type: %{public}d", static_cast<int>(type));
         return false;
     }
     auto blobMetadata = picture_->GetMetadata(type);
@@ -3055,10 +3438,10 @@ bool ExtEncoder::AssembleBlobMetaItem(MetadataType type, std::vector<MetaItem>& 
     }
  
     auto item = std::make_shared<MetaItem>();
-    item->id = std::get<0>(metadataTuple);
-    item->itemName = std::get<NUM_2>(metadataTuple);
+    item->id = info->itemId;
+    item->itemName = info->itemName;
     item->data.fd = INVALID_FD;
-    std::shared_ptr<AbsMemory> propertyAshmem = AllocateNewSharedMem(blobDataSize, std::get<1>(metadataTuple));
+    std::shared_ptr<AbsMemory> propertyAshmem = AllocateNewSharedMem(blobDataSize, info->ashmemTag);
     if (propertyAshmem == nullptr) {
         IMAGE_LOGE("AssembleBlobMetaItem alloc propertyAshmem failed");
         return false;

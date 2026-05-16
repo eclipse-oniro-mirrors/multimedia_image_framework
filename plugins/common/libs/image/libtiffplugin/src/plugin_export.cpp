@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 Huawei Device Co., Ltd.
+ * Copyright (C) 2025-2026 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,6 +17,7 @@
 #include "image_log.h"
 #include "plugin_utils.h"
 #include "tiff_decoder.h"
+#include "tiff_encoder.h"
 
 #undef LOG_DOMAIN
 #define LOG_DOMAIN LOG_TAG_DOMAIN_ID_PLUGIN
@@ -32,6 +33,7 @@ namespace {
 // register implement classes of this plugin.
 PLUGIN_EXPORT_REGISTER_CLASS_BEGIN
 PLUGIN_EXPORT_REGISTER_CLASS(OHOS::ImagePlugin::TiffDecoder)
+PLUGIN_EXPORT_REGISTER_CLASS(OHOS::ImagePlugin::TiffEncoder)
 PLUGIN_EXPORT_REGISTER_CLASS_END
 
 using std::string;

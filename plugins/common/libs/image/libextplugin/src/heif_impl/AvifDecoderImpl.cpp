@@ -398,7 +398,7 @@ bool AvifDecoderImpl::IsAvisImage()
     return parser_->IsAvisImage();
 }
 
-bool AvifDecoderImpl::IsSupportedPixelFormat(bool isAnimation, PixelFormat format)
+uint32_t AvifDecoderImpl::IsSupportedPixelFormat(bool isAnimation, PixelFormat format)
 {
     static const std::map<AvifBitDepth, std::unordered_set<PixelFormat>> BitDepthToPixelFormat = {
         {AvifBitDepth::Bit_8, {PixelFormat::NV21, PixelFormat::NV12, PixelFormat::RGB_565,
@@ -407,13 +407,15 @@ bool AvifDecoderImpl::IsSupportedPixelFormat(bool isAnimation, PixelFormat forma
                                 PixelFormat::NV21, PixelFormat::NV12}},
     };
     auto layout = GetAvifPixelFormat(isAnimation);
-    CHECK_ERROR_RETURN_RET_LOG(layout != HeifPixelFormat::YUV420, false,
+    CHECK_ERROR_RETURN_RET_LOG(layout != HeifPixelFormat::YUV420, ERR_IMAGE_DECODE_FAILED,
         "%{public}s unsupported layout : %{public}d.", __func__, static_cast<int32_t>(layout));
     auto bitDepth = GetAvifBitDepth(isAnimation);
     auto it = BitDepthToPixelFormat.find(bitDepth);
-    CHECK_ERROR_RETURN_RET_LOG(it == BitDepthToPixelFormat.end(), false,
+    CHECK_ERROR_RETURN_RET_LOG(it == BitDepthToPixelFormat.end(), ERR_IMAGE_DECODE_FAILED,
         "%{public}s unsupported bit depth : %{public}d.", __func__, static_cast<int32_t>(bitDepth));
-    return it->second.find(format) != it->second.end();
+    CHECK_ERROR_RETURN_RET_LOG(it->second.find(format) == it->second.end(), ERR_MEDIA_FORMAT_UNSUPPORT,
+        "%{public}s unsupported desired format : %{public}d.", __func__, static_cast<int32_t>(format));
+    return SUCCESS;
 }
 
 bool AvifDecoderImpl::CopySrcMemory(HeifStream *stream, size_t &len)

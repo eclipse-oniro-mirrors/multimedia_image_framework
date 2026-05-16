@@ -15,6 +15,7 @@
 
 #include "box/item_data_box.h"
 #include <climits>
+#include "image_log.h"
 
 namespace {
     const uint8_t CONSTRUCTION_METHOD_FILE_OFFSET = 0;
@@ -89,6 +90,15 @@ heif_error HeifIlocBox::ParseContent(HeifStreamReader &reader)
     int lengthSize = (values4 >> ONE_BYTE_SHIFT) & 0xF;
     int baseOffsetSize = (values4 >> baseOffsetSizeShift) & 0xF;
     int indexSize = (GetVersion() >= HEIF_BOX_VERSION_ONE) ? (values4 & 0xF) : 0;
+
+    // According to ISO standard
+    auto isValidSize = [](int size) { return size == 0 || size == 4 || size == 8; };
+    if (!isValidSize(offsetSize) || !isValidSize(lengthSize) ||
+        !isValidSize(baseOffsetSize) || !isValidSize(indexSize)) {
+        IMAGE_LOGE("HeifParser:: iloc box has invalid size field values");
+        return heif_error_invalid_data;
+    }
+
     uint32_t itemCount = GetVersion() < HEIF_BOX_VERSION_TWO ? reader.Read16() : reader.Read32();
     if (itemCount > MAX_HEIF_ITEM_COUNT) {
         return heif_error_too_many_item;
@@ -134,6 +144,7 @@ heif_error HeifIlocBox::GetIlocDataLength(const Item &item, size_t &length)
 heif_error HeifIlocBox::ReadData(const Item &item, const std::shared_ptr<HeifInputStream> &stream,
     const std::shared_ptr<HeifIdatBox> &idat, std::vector<uint8_t> *dest) const
 {
+    size_t totalSize = 0;
     for (const auto &extent: item.extents) {
         if (HasOverflowed64(extent.offset, item.baseOffset)) {
             return heif_error_eof;
@@ -144,6 +155,11 @@ heif_error HeifIlocBox::ReadData(const Item &item, const std::shared_ptr<HeifInp
 
             size_t oldSize = dest->size();
             if (extent.length > MAX_HEIF_IMAGE_GRID_SIZE) {
+                return heif_error_grid_too_large;
+            }
+
+            totalSize += extent.length;
+            if (totalSize > MAX_HEIF_IMAGE_GRID_SIZE) {
                 return heif_error_grid_too_large;
             }
             dest->resize(static_cast<size_t>(oldSize + extent.length));
@@ -455,6 +471,10 @@ heif_error HeifIdatBox::ReadData(const std::shared_ptr<HeifInputStream> &stream,
     uint64_t start, uint64_t length, std::vector<uint8_t> &outData) const
 {
     auto currSize = outData.size();
+    if (HasOverflowed64(static_cast<uint64_t>(startPos_), GetBoxSize()) ||
+        HasOverflowed64(start, length)) {
+        return heif_error_eof;
+    }
     if (start > (uint64_t) startPos_ + GetBoxSize()) {
         return heif_error_eof;
     } else if (length > GetBoxSize() || start + length > GetBoxSize()) {

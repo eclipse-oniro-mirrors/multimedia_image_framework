@@ -23,6 +23,7 @@
 #include "image_trace.h"
 #include "image_utils.h"
 #include "image_log.h"
+#include "image_func_timer.h"
 #include "image_source.h"
 #include "media_errors.h"                                                // Operation success
 #ifdef IMAGE_COLORSPACE_FLAG
@@ -452,6 +453,204 @@ std::unique_ptr<Picture> Picture::CreatePictureByHdrAndSdrPixelMap(std::shared_p
     return dstPicture;
 }
 
+static std::shared_ptr<PixelMap> DeepCopyPixelMap(const std::shared_ptr<PixelMap> &srcPixelMap)
+{
+    if (srcPixelMap == nullptr) {
+        IMAGE_LOGE("DeepCopyPixelMap srcPixelMap is nullptr.");
+        return nullptr;
+    }
+    int32_t errorCode = SUCCESS;
+    std::unique_ptr<PixelMap> tmpPixelMap = srcPixelMap->Clone(errorCode);
+    if (errorCode != SUCCESS || tmpPixelMap == nullptr) {
+        IMAGE_LOGE("DeepCopyPixelMap srcPixelMap->Clone fail.");
+        return nullptr;
+    }
+    if (srcPixelMap->GetAllocatorType() == AllocatorType::DMA_ALLOC &&
+        tmpPixelMap->GetAllocatorType() == AllocatorType::DMA_ALLOC) {
+        sptr<SurfaceBuffer> sourceSurfaceBuffer(reinterpret_cast<SurfaceBuffer*>(srcPixelMap->GetFd()));
+        sptr<SurfaceBuffer> dstSurfaceBuffer(reinterpret_cast<SurfaceBuffer*>(tmpPixelMap->GetFd()));
+        VpeUtils::CopySurfaceBufferInfo(sourceSurfaceBuffer, dstSurfaceBuffer);
+        PixelFormat format = SbFormat2PixelFormat(sourceSurfaceBuffer->GetFormat());
+        if (IsYuvFormat(format)) {
+            ImageUtils::SetYuvDataInfo(tmpPixelMap, sourceSurfaceBuffer);
+        }
+    }
+    std::shared_ptr<PixelMap> dstPixelMap = std::move(tmpPixelMap);
+#ifdef IMAGE_COLORSPACE_FLAG
+    ColorManager::ColorSpace colorSpace = srcPixelMap->InnerGetGrColorSpace();
+    dstPixelMap->InnerSetColorSpace(colorSpace);
+#endif
+    return dstPixelMap;
+}
+ 
+static int32_t DeepCopyAuxiliaryPictures(std::shared_ptr<Picture> &srcPicture, std::unique_ptr<Picture> &dstPicture,
+    std::vector<AuxiliaryPictureType> &srcAuxiliaryPictures, std::vector<AuxiliaryPictureType> &dstAuxiliaryPictures)
+{
+    for (uint32_t i = 0; i < srcAuxiliaryPictures.size(); i++) {
+        std::shared_ptr<AuxiliaryPicture> srcAuxPic = srcPicture->GetAuxiliaryPicture(srcAuxiliaryPictures[i]);
+        if (srcAuxPic == nullptr) {
+            IMAGE_LOGE("Don't have AuxiliaryPicture: %{public}d", srcAuxiliaryPictures[i]);
+            return ERR_MEDIA_INVALID_VALUE;
+        }
+        std::shared_ptr<PixelMap> tmpAuxPixelMap = srcAuxPic->GetContentPixel();
+        if (tmpAuxPixelMap == nullptr) {
+            IMAGE_LOGE("Fail to get tmpAuxPixelMap: %{public}d", srcAuxiliaryPictures[i]);
+            return ERR_MEDIA_INVALID_VALUE;
+        }
+        std::shared_ptr<PixelMap> auxPixelMap = DeepCopyPixelMap(tmpAuxPixelMap);
+        if (auxPixelMap == nullptr) {
+            IMAGE_LOGE("Fail to copy AuxiliaryPicture PixelMap: %{public}d.", srcAuxiliaryPictures[i]);
+            return ERR_MEDIA_INVALID_VALUE;
+        }
+        Size size = {auxPixelMap->GetWidth(), auxPixelMap->GetHeight()};
+        IMAGE_LOGI("Deepcopy AuxiliaryPicture: %{public}d to %{public}d, size: %{public}dx%{public}d",
+            srcAuxiliaryPictures[i], dstAuxiliaryPictures[i], size.width, size.height);
+        std::unique_ptr<AuxiliaryPicture> uniPtr =
+            AuxiliaryPicture::Create(auxPixelMap, dstAuxiliaryPictures[i], size);
+        std::shared_ptr<Media::AuxiliaryPicture> auxPtr = std::move(uniPtr);
+        if (srcAuxiliaryPictures[i] == AuxiliaryPictureType::FRAGMENT_MAP &&
+            dstAuxiliaryPictures[i] == AuxiliaryPictureType::FRAGMENT_MAP) {
+                auto fragmentMetadata = srcPicture->GetMetadata(MetadataType::FRAGMENT);
+                auxPtr->SetMetadata(MetadataType::FRAGMENT, fragmentMetadata);
+        }
+        auxPtr->SetAuxiliaryPictureInfo(srcAuxPic->GetAuxiliaryPictureInfo());
+        auxPtr->SetType(dstAuxiliaryPictures[i]);
+        dstPicture->SetAuxiliaryPicture(auxPtr);
+    }
+    return SUCCESS;
+}
+ 
+static bool isSupportedMetadataCopy(MetadataType srcMetadataType, MetadataType dstMetadataType)
+{
+    if (srcMetadataType == MetadataType::EXIF || srcMetadataType == MetadataType::FRAGMENT ||
+        srcMetadataType == MetadataType::GIF) {
+        return dstMetadataType == srcMetadataType;
+    }
+    return ImageUtils::isBlobMetadataType(srcMetadataType) && ImageUtils::isBlobMetadataType(dstMetadataType);
+}
+ 
+static int32_t DeepCopyMetadatas(std::shared_ptr<Picture> &srcPicture, std::unique_ptr<Picture> &dstPicture,
+    std::vector<MetadataType> &srcMetadatas, std::vector<MetadataType> &dstMetadatas)
+{
+    for (uint32_t i = 0; i < srcMetadatas.size(); i++) {
+        auto metadata = srcPicture->GetMetadata(srcMetadatas[i]);
+        if (metadata == nullptr) {
+            IMAGE_LOGE("Don't have Metadata: %{public}d.", srcMetadatas[i]);
+            return ERR_MEDIA_INVALID_VALUE;
+        }
+ 
+        if (!isSupportedMetadataCopy(srcMetadatas[i], dstMetadatas[i])) {
+            IMAGE_LOGE("Can not copy Metadata: %{public}d to %{public}d.", srcMetadatas[i], dstMetadatas[i]);
+            return ERR_MEDIA_INVALID_VALUE;
+        }
+        IMAGE_LOGI("copy MetadataType :%{public}d to MetadataType :%{public}d",
+            static_cast<uint32_t>(srcMetadatas[i]), static_cast<uint32_t>(dstMetadatas[i]));
+        MetadataType type = dstMetadatas[i];
+        if (ImageUtils::isBlobMetadataType(type)) {
+            auto newBlobMetadata = std::make_shared<BlobMetadata>(type);
+            uint32_t size = metadata->GetBlobSize();
+            uint8_t *data = metadata->GetBlobPtr();
+            if (newBlobMetadata->SetBlob(data, size) != SUCCESS
+                || dstPicture->SetMetadata(type, newBlobMetadata) != SUCCESS) {
+                IMAGE_LOGE("Failed to set blob to metadata: %{public}d to %{public}d.", srcMetadatas[i], type);
+                return ERR_MEDIA_INVALID_VALUE;
+            }
+        } else {
+            auto newMetadata = metadata->CloneMetadata();
+            if (dstPicture->SetMetadata(type, newMetadata) != SUCCESS) {
+                IMAGE_LOGE("Failed to clone metadata: %{public}d to %{public}d.", srcMetadatas[i], type);
+                return ERR_MEDIA_INVALID_VALUE;
+            }
+        }
+        IMAGE_LOGI("Deepcopy Metadata : %{public}d to %{public}d.", srcMetadatas[i], dstMetadatas[i]);
+    }
+    return SUCCESS;
+}
+ 
+static void FixHdrMetadataWithSrcPicture(std::shared_ptr<Picture> &srcPicture, std::unique_ptr<Picture> &dstPicture)
+{
+    if (srcPicture == nullptr || dstPicture == nullptr) {
+        IMAGE_LOGE("%{public}s picture is nullptr", __func__);
+        return;
+    }
+    std::shared_ptr<PixelMap> srcMainPixelMap = srcPicture->GetMainPixel();
+    std::shared_ptr<PixelMap> srcGainMap = srcPicture->GetGainmapPixelMap();
+    std::shared_ptr<PixelMap> dstMainPixelMap = dstPicture->GetMainPixel();
+    std::shared_ptr<PixelMap> dstGainMap = dstPicture->GetGainmapPixelMap();
+    if (srcMainPixelMap == nullptr || srcGainMap == nullptr || dstMainPixelMap == nullptr || dstGainMap == nullptr) {
+        IMAGE_LOGW("%{public}s mainPixelMap or gainmapPixelMap or hdrMetadata is nullptr", __func__);
+        return;
+    }
+    if (srcMainPixelMap->GetAllocatorType() != AllocatorType::DMA_ALLOC || srcMainPixelMap->GetFd() == nullptr ||
+        srcGainMap->GetAllocatorType() != AllocatorType::DMA_ALLOC || srcGainMap->GetFd() == nullptr ||
+        dstMainPixelMap->GetAllocatorType() != AllocatorType::DMA_ALLOC || dstMainPixelMap->GetFd() == nullptr ||
+        dstGainMap->GetAllocatorType() != AllocatorType::DMA_ALLOC || dstGainMap->GetFd() == nullptr) {
+        IMAGE_LOGW("%{public}s mainPixelMap or gainmapPixelMap is not DMA buffer", __func__);
+        return;
+    }
+    sptr<SurfaceBuffer> srcBaseSptr(reinterpret_cast<SurfaceBuffer*>(srcMainPixelMap->GetFd()));
+    sptr<SurfaceBuffer> srcGainmapSptr(reinterpret_cast<SurfaceBuffer*>(srcGainMap->GetFd()));
+    sptr<SurfaceBuffer> baseSptr(reinterpret_cast<SurfaceBuffer*>(dstMainPixelMap->GetFd()));
+    sptr<SurfaceBuffer> gainmapSptr(reinterpret_cast<SurfaceBuffer*>(dstGainMap->GetFd()));
+    VpeUtils::CopySurfaceBufferInfo(srcBaseSptr, baseSptr);
+    VpeUtils::CopySurfaceBufferInfo(srcGainmapSptr, gainmapSptr);
+}
+ 
+std::unique_ptr<Picture> Picture::DeepCopy(std::shared_ptr<Picture> srcPicture,
+    std::vector<AuxiliaryPictureType> &srcAuxiliaryPictures, std::vector<MetadataType> &srcMetadatas,
+    std::vector<AuxiliaryPictureType> &dstAuxiliaryPictures, std::vector<MetadataType> &dstMetadatas,
+    AuxiliaryPictureType mainPixelMapKey)
+{
+    ImageFuncTimer imageFuncTimer(__func__);
+    if (srcPicture == nullptr || srcAuxiliaryPictures.size() != dstAuxiliaryPictures.size()
+        || srcMetadatas.size() != dstMetadatas.size() || srcPicture->GetMainPixel() == nullptr) {
+        IMAGE_LOGE("srcPicture is null or AuxiliaryPictures/Metadatas have different size.");
+        return nullptr;
+    }
+    DumpPictureIfDumpEnabled(*srcPicture.get(), "_before_deepcopy_");
+    std::shared_ptr<PixelMap> mainPixelMap;
+    if (mainPixelMapKey == AuxiliaryPictureType::NONE) {
+        IMAGE_LOGI("DeepCopy without replace mainPixelMap.");
+        mainPixelMap = DeepCopyPixelMap(srcPicture->GetMainPixel());
+    } else {
+        auto mainAuxPic = srcPicture->GetAuxiliaryPicture(mainPixelMapKey);
+        if (mainAuxPic == nullptr) {
+            IMAGE_LOGE("Can not set a null AuxiliaryPicture: %{public}d as mainPixelMap.", mainPixelMapKey);
+            return nullptr;
+        }
+        std::shared_ptr<PixelMap> newMainPixelMap = mainAuxPic->GetContentPixel();
+        if (newMainPixelMap == nullptr) {
+            IMAGE_LOGE("Failed to get newMainPixelMap: %{public}d.", mainPixelMapKey);
+            return nullptr;
+        }
+        mainPixelMap = DeepCopyPixelMap(newMainPixelMap);
+    }
+    if (mainPixelMap == nullptr) {
+        IMAGE_LOGE("Failed to deep copy mainPixelMap.");
+        return nullptr;
+    }
+#ifdef IMAGE_COLORSPACE_FLAG
+    ColorManager::ColorSpace colorSpace = srcPicture->GetMainPixel()->InnerGetGrColorSpace();
+    mainPixelMap->InnerSetColorSpace(colorSpace);
+#endif
+    IMAGE_LOGI("DeepCopy : replace mainPixelMap with  AuxiliaryPicture: %{public}d", mainPixelMapKey);
+    std::unique_ptr<Picture> dstPicture = std::make_unique<Picture>();
+    dstPicture->mainPixelMap_ = std::move(mainPixelMap);
+    if (dstPicture->mainPixelMap_ == nullptr) {
+        IMAGE_LOGE("Failed to set MainPixelMap.");
+        return nullptr;
+    }
+    if (DeepCopyAuxiliaryPictures(srcPicture, dstPicture, srcAuxiliaryPictures, dstAuxiliaryPictures) != SUCCESS) {
+        return nullptr;
+    }
+    if (DeepCopyMetadatas(srcPicture, dstPicture, srcMetadatas, dstMetadatas) != SUCCESS) {
+        return nullptr;
+    }
+    FixHdrMetadataWithSrcPicture(srcPicture, dstPicture);
+    DumpPictureIfDumpEnabled(*dstPicture.get(), "_after_deepcopy");
+    return dstPicture;
+}
+
 static bool ShouldComposeAsCuva(const sptr<SurfaceBuffer> &baseSptr, const sptr<SurfaceBuffer> &gainmapSptr)
 {
     std::vector<uint8_t> baseStaticMetadata;
@@ -635,6 +834,22 @@ void Picture::DropAuxiliaryPicture(AuxiliaryPictureType type)
     }
 }
 
+uint32_t Picture::GetAuxiliaryPictureCount()
+{
+    return auxiliaryPictures_.size();
+}
+ 
+std::vector<AuxiliaryPictureType> Picture::GetAuxiliaryPictureTypes()
+{
+    std::vector<AuxiliaryPictureType> auxiliaryPictureTypes;
+    for (auto const& item : auxiliaryPictures_) {
+        if (item.second != nullptr) {
+            auxiliaryPictureTypes.push_back(item.first);
+        }
+    }
+    return auxiliaryPictureTypes;
+}
+
 bool Picture::MarshalMetadata(Parcel &data) const
 {
     if (!data.WriteBool(maintenanceData_ != nullptr)) {
@@ -729,10 +944,8 @@ bool Picture::UnmarshalMetadata(Parcel &parcel, Picture &picture, PICTURE_ERR &e
             imagedataPtr.reset(ExifMetadata::Unmarshalling(parcel));
         } else if (type == MetadataType::GIF) {
             imagedataPtr.reset(GifMetadata::Unmarshalling(parcel));
-        } else if (type == MetadataType::XTSTYLE) {
-            imagedataPtr.reset(XtStyleMetadata::Unmarshalling(parcel));
-        } else if (type == MetadataType::RFDATAB) {
-            imagedataPtr.reset(RfDataBMetadata::Unmarshalling(parcel));
+        } else if (ImageUtils::isBlobMetadataType(type)) {
+            imagedataPtr.reset(BlobMetadata::Unmarshalling(parcel));
         } else if (type == MetadataType::HEIFS) {
             imagedataPtr.reset(HeifsMetadata::Unmarshalling(parcel));
         } else if (type == MetadataType::AVIS) {
@@ -926,11 +1139,43 @@ uint32_t Picture::SetMetadata(MetadataType type, std::shared_ptr<ImageMetadata> 
     return SUCCESS;
 }
 
+bool Picture::HasMetadata(MetadataType type)
+{
+    auto item = metadatas_.find(type);
+    return item != metadatas_.end() && item->second != nullptr;
+}
+ 
+void Picture::DropMetadata(MetadataType type)
+{
+    auto item = metadatas_.find(type);
+    if (item != metadatas_.end()) {
+        metadatas_.erase(item);
+    } else {
+        IMAGE_LOGE("Don't have metadata type: %{public}d. Failed to drop.", static_cast<uint32_t>(type));
+    }
+}
+ 
+uint32_t Picture::GetMetadataCount()
+{
+    return metadatas_.size();
+}
+
 uint32_t Picture::SetBlobMetadataByType(const std::vector<uint8_t>& metadata, MetadataType type)
 {
     std::shared_ptr<BlobMetadata> blobMetadata = std::make_shared<BlobMetadata>(type);
     blobMetadata->SetBlob(metadata.data(), metadata.size());
     return SetMetadata(type, blobMetadata);
+}
+
+std::vector<MetadataType> Picture::GetMetadataTypes()
+{
+    std::vector<MetadataType> metadataTypes;
+    for (auto const& item : metadatas_) {
+        if (item.second != nullptr) {
+            metadataTypes.push_back(item.first);
+        }
+    }
+    return metadataTypes;
 }
 
 void Picture::DumpPictureIfDumpEnabled(Picture& picture, std::string dumpType)
@@ -949,26 +1194,26 @@ void Picture::DumpPictureIfDumpEnabled(Picture& picture, std::string dumpType)
             ImageUtils::DumpPixelMap(pixelMap.get(), dumpType + "_AuxiliaryType", static_cast<uint64_t>(auxType));
         }
     }
-    auto rfDataBMetadata = picture.GetRfDataBMetadata();
-    if (rfDataBMetadata != nullptr && rfDataBMetadata->GetBlobPtr() != nullptr) {
-        ImageUtils::DumpDataIfDumpEnabled(reinterpret_cast<char*>(rfDataBMetadata->GetBlobPtr()),
-            rfDataBMetadata->GetBlobSize(), dumpType + "_RfDataB", static_cast<uint64_t>(MetadataType::RFDATAB));
+
+    auto metaTypes = ImageUtils::GetAllMetadataType();
+    for (MetadataType type : metaTypes) {
+        if (ImageUtils::isBlobMetadataType(type)) {
+            auto blobMetadata = std::reinterpret_pointer_cast<BlobMetadata>(picture.GetMetadata(type));
+            std::string fileSuffix = dumpType + BLOB_METADATA_TAG_MAP.at(type);
+            if (blobMetadata != nullptr && blobMetadata->GetBlobPtr() != nullptr) {
+                ImageUtils::DumpData(reinterpret_cast<char*>(blobMetadata->GetBlobPtr()),
+                    blobMetadata->GetBlobSize(), fileSuffix, static_cast<uint32_t>(blobMetadata->GetBlobSize()));
+            }
+        }
     }
 }
 
 bool Picture::IsValidPictureMetadataType(MetadataType metadataType)
 {
-    const static std::set<MetadataType> pictureMetadataTypes = {
-        MetadataType::EXIF,
-        MetadataType::XTSTYLE,
-        MetadataType::RFDATAB,
-        MetadataType::GIF,
-        MetadataType::STDATA,
-        MetadataType::HEIFS,
-        MetadataType::AVIS,
-        MetadataType::JFIF,
-    };
-    return pictureMetadataTypes.find(metadataType) != pictureMetadataTypes.end();
+    if (metadataType == MetadataType::FRAGMENT) {
+        return false;
+    }
+    return ImageUtils::IsMetadataTypeSupported(metadataType);
 }
 } // namespace Media
 } // namespace OHOS

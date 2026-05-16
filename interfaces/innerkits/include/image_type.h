@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Huawei Device Co., Ltd.
+ * Copyright (C) 2021-2026 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -73,6 +73,10 @@ namespace Media {
 #define AUXILIARY_TAG_UNREFOCUS_MAP "edof"
 #define AUXILIARY_TAG_LINEAR_MAP "HighBit"
 #define AUXILIARY_TAG_FRAGMENT_MAP "Fragmnt"
+#define AUXILIARY_TAG_SNAP_MAP "SnpMain"
+#define AUXILIARY_TAG_SNAP_GAINMAP "SnpGain"
+#define AUXILIARY_TAG_PAN_MAP "PanMain"
+#define AUXILIARY_TAG_PAN_GAINMAP "PanGain"
 #define AUXILIARY_TAG_THUMBNAIL ""
 
 #define HEIF_AUXTTYPE_ID_GAINMAP "urn:iso:std:iso:ts:21496:-1"
@@ -80,20 +84,28 @@ namespace Media {
 #define HEIF_AUXTTYPE_ID_UNREFOCUS_MAP "urn:com:huawei:photo:5:0:0:aux:unrefocusmap"
 #define HEIF_AUXTTYPE_ID_LINEAR_MAP "urn:com:huawei:photo:5:0:0:aux:linearhmap"
 #define HEIF_AUXTTYPE_ID_FRAGMENT_MAP "urn:com:huawei:photo:5:0:0:aux:fragmentmap"
+#define HEIF_AUXTTYPE_ID_SNAP_MAP "urn:com:huawei:photo:6:0:0:aux:snapmain"
+#define HEIF_AUXTTYPE_ID_SNAP_GAINMAP "urn:com:huawei:photo:6:0:0:aux:snapgainmap"
+#define HEIF_AUXTTYPE_ID_PAN_MAP "urn:com:huawei:photo:6:0:0:aux:panmain"
+#define HEIF_AUXTTYPE_ID_PAN_GAINMAP "urn:com:huawei:photo:6:0:0:aux:pangainmap"
 #define HEIF_METADATA_ID_XTSTYLE "urn:com:huawei:photo:5:1:0:meta:xtstyle"
 #define HEIF_AUXTTYPE_ID_THUMBNAIL "urn:com:huawei:photo:6:1:0:aux:thumbnail"
+#define RFIMAGE_ID "urn:com:huawei:photo:5:1:0:meta:Res-Map"
 
 #define METADATA_TAG_RFDATAB "RfDataB\0"
-#define METADATA_TAG_XTSTYLE "XtStyle\0"
-#define METADATA_TAG_STDATA "STData\0"
 #define METADATA_TAG_RFDATAB_DEPTHP "DepthP\0\0"
 #define METADATA_TAG_RFDATAB_DEPTHEN "DepthEn\0"
-
+#define METADATA_TAG_XTSTYLE "XtStyle\0"
+#define METADATA_TAG_STDATA "STData\0"
+#define METADATA_TAG_RESMAP "Res-Map\0"
+#define METADATA_TAG_XDRAW4K "XDRAW4K\0"
+#define METADATA_TAG_PRIVATE "PRIVATE\0"
+#define METADATA_TAG_RFDATAN "RfDataN\0"
+#define METADATA_TAG_RFDATAS "RfDataS\0"
+#define METADATA_TAG_HDRSNAP "SnpHdrM\0"
+#define METADATA_TAG_DFXDATA "DfxData\0"
 
 constexpr uint8_t ASTC_EXTEND_INFO_TLV_NUM_6 = 6;
-
-#define RFIMAGE_ID "urn:com:huawei:photo:5:1:0:meta:Res-Map"
-#define METADATA_TAG_RESMAP "Res-Map\0"
 
 constexpr const char *NS_XML = "http://www.w3.org/XML/1998/namespace";
 constexpr const char *NS_XMP_BASIC = "http://ns.adobe.com/xap/1.0/";
@@ -198,8 +210,10 @@ enum class PixelFormat : int32_t {
     YCRCB_P010 = 12, // NV21_P010
     RGBA_U16 = 13, // Interim format for ffmpeg and skia conversion
     YUV_400 = 14,
+    Y8 = 14,  // 8-bit grayscale
     ALPHA_U8 = 15, // ALPHA_8 without 4-byte alignment
     ALPHA_F16 = 16,
+    Y1 = 17,  // 1-bit black and white
     EXTERNAL_MAX,
     INTERNAL_START = 100,
     CMYK = INTERNAL_START + 1,
@@ -322,6 +336,14 @@ struct RGBDataInfo {
     int32_t width = 0;
     int32_t height = 0;
     uint32_t stride = 0;
+};
+
+struct PixelBufferInfo {
+    uint32_t width = 0;
+    uint32_t height = 0;
+    uint8_t* data = nullptr;
+    size_t dataSize = 0;
+    uint32_t bytesPerRow = 0;  // 0 means use default calculation
 };
 
 enum class YuvConversion : int {
@@ -470,13 +492,17 @@ enum class AntiAliasingOption : int32_t {
     SLR = 10, // ScalePixelMapEx: fallback to SWS_POINT; PixelMap::scale: PostProc::ScalePixelMapWithSLR
 };
 
-enum class AuxiliaryPictureType {
+enum class AuxiliaryPictureType : int32_t {
     NONE = 0,
     GAINMAP = 1,
     DEPTH_MAP = 2,
     UNREFOCUS_MAP = 3,
     LINEAR_MAP = 4,
     FRAGMENT_MAP = 5,
+    SNAP_MAP = 6,
+    SNAP_GAINMAP = 7,
+    PAN_MAP = 8,
+    PAN_GAINMAP = 9,
     THUMBNAIL = 101,
 };
 
@@ -500,7 +526,8 @@ struct AuxiliaryPictureInfo {
     std::string jpegTagName = "";
 };
 
-enum class MetadataType {
+enum class MetadataType : int32_t {
+    UNKNOWN = 0,
     EXIF = 1,
     FRAGMENT = 2,
     XTSTYLE = 3,
@@ -508,7 +535,12 @@ enum class MetadataType {
     GIF = 5,
     STDATA = 6,
     RESMAP = 7,
-    UNKNOWN = 0,
+    XDRAW4K = 8,
+    PRIVATE = 9,
+    RFDATAN = 10,
+    RFDATAS = 11,
+    HDRSNAP = 12,
+    DFXDATA = 13,
     HEIFS = 15,
     DNG = 16,
     WEBP = 17,
@@ -516,6 +548,7 @@ enum class MetadataType {
     PNG = 19,
     JFIF = 20,
     TIFF = 21,
+    XMP = 22,
     AVIS = 23,
 };
 
@@ -524,6 +557,12 @@ static const std::map<MetadataType, std::string> BLOB_METADATA_TAG_MAP = {
     {MetadataType::RFDATAB, METADATA_TAG_RFDATAB},
     {MetadataType::RESMAP, METADATA_TAG_RESMAP},
     {MetadataType::STDATA, METADATA_TAG_STDATA},
+    {MetadataType::XDRAW4K, METADATA_TAG_XDRAW4K},
+    {MetadataType::PRIVATE, METADATA_TAG_PRIVATE},
+    {MetadataType::RFDATAN, METADATA_TAG_RFDATAN},
+    {MetadataType::RFDATAS, METADATA_TAG_RFDATAS},
+    {MetadataType::HDRSNAP, METADATA_TAG_HDRSNAP},
+    {MetadataType::DFXDATA, METADATA_TAG_DFXDATA},
 };
 
 struct DecodingOptionsForPicture {
@@ -624,25 +663,26 @@ enum class NapiMetadataType {
 
 enum class XMPTagType: int32_t {
     UNKNOWN = 0,
-    SIMPLE = 1,
+    STRING = 1,
     UNORDERED_ARRAY = 2,
     ORDERED_ARRAY = 3,
     ALTERNATE_ARRAY = 4,
     ALTERNATE_TEXT = 5,
     STRUCTURE = 6,
-    QUALIFIER = 7,
 };
 
 struct XMPTag {
     std::string xmlns;
     std::string prefix;
     std::string name;
-    XMPTagType type;
+    XMPTagType type = XMPTagType::UNKNOWN;
+    bool isQualifier = false;
     std::string value;
 };
 
-struct XMPEnumerateOption {
+struct XMPEnumerateOptions {
     bool isRecursive = false;
+    bool onlyQualifier = false;
 };
 } // namespace Media
 } // namespace OHOS

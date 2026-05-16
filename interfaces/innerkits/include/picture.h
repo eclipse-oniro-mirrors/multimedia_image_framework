@@ -50,6 +50,10 @@ public:
         std::shared_ptr<PixelMap> &hdrPixelMap, std::shared_ptr<PixelMap> &sdrPixelMap);
     NATIVEEXPORT static std::unique_ptr<Picture> CreatePictureByHdrAndSdrPixelMap(
         std::shared_ptr<PixelMap> &hdrPixelMap, std::shared_ptr<PixelMap> &sdrPixelMap, GainmapParams params);
+    NATIVEEXPORT static std::unique_ptr<Picture> DeepCopy(std::shared_ptr<Picture> srcPicture,
+        std::vector<AuxiliaryPictureType> &srcAuxiliaryPictures, std::vector<MetadataType> &srcMetadatas,
+        std::vector<AuxiliaryPictureType> &dstAuxiliaryPictures, std::vector<MetadataType> &dstMetadatas,
+        AuxiliaryPictureType mainPixelMapKey);
     NATIVEEXPORT static std::unique_ptr<PixelMap> SurfaceBuffer2PixelMap(sptr<SurfaceBuffer> &surfaceBuffer);
     NATIVEEXPORT std::shared_ptr<PixelMap> GetMainPixel();
     NATIVEEXPORT void SetMainPixel(std::shared_ptr<PixelMap> PixelMap);
@@ -62,6 +66,8 @@ public:
     NATIVEEXPORT void SetAuxiliaryPicture(std::shared_ptr<AuxiliaryPicture> &picture);
     NATIVEEXPORT bool HasAuxiliaryPicture(AuxiliaryPictureType type);
     NATIVEEXPORT void DropAuxiliaryPicture(AuxiliaryPictureType type);
+    NATIVEEXPORT uint32_t GetAuxiliaryPictureCount();
+    NATIVEEXPORT std::vector<AuxiliaryPictureType> GetAuxiliaryPictureTypes();
     NATIVEEXPORT virtual bool Marshalling(Parcel &data) const override;
     NATIVEEXPORT static Picture *Unmarshalling(Parcel &data);
     NATIVEEXPORT static Picture *Unmarshalling(Parcel &data, PICTURE_ERR &error);
@@ -80,7 +86,11 @@ public:
     NATIVEEXPORT static void DumpPictureIfDumpEnabled(Picture& picture, std::string dumpType);
     NATIVEEXPORT std::shared_ptr<ImageMetadata> GetMetadata(MetadataType type);
     NATIVEEXPORT uint32_t SetMetadata(MetadataType type, std::shared_ptr<ImageMetadata> metadata);
+    NATIVEEXPORT bool HasMetadata(MetadataType type);
+    NATIVEEXPORT void DropMetadata(MetadataType type);
+    NATIVEEXPORT uint32_t GetMetadataCount();
     NATIVEEXPORT uint32_t SetBlobMetadataByType(const std::vector<uint8_t>& metadata, MetadataType type);
+    NATIVEEXPORT std::vector<MetadataType> GetMetadataTypes();
     NATIVEEXPORT static bool IsValidPictureMetadataType(MetadataType metadataType);
 
 private:

@@ -288,7 +288,6 @@ public:
     void CheckModifyImagePropertiesEnhanced(std::vector<std::string> &originalProps,
         const std::vector<std::pair<std::string, std::string>> &expectedProps, std::set<std::string> unsupportedKeys,
         std::string filePath);
-    void DecodeBlobMetaDataTest(const std::string &filePath, std::set<MetadataType> metadataTypes);
 
     static void InitData();
     static std::vector<int64_t> gLinearizationTable_;
@@ -644,34 +643,6 @@ void ImageSourceTest::SetUpTestCase(void)
 }
 
 void ImageSourceTest::TearDownTestCase(void) {}
-
-void ImageSourceTest::DecodeBlobMetaDataTest(const std::string &filePath, std::set<MetadataType> metadataTypes)
-{
-    auto imageSource = CreateImageSourceByPath(filePath);
-    ASSERT_NE(imageSource, nullptr);
-
-    uint32_t errorCode = SUCCESS;
-
-    ImageInfo info;
-    imageSource->GetImageInfo(info);
-
-    DecodeOptions decodeOpts;
-    std::shared_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(0, decodeOpts, errorCode);
-    ASSERT_NE(pixelMap, nullptr);
-    ASSERT_EQ(errorCode, SUCCESS);
-
-    std::unique_ptr<Picture> picture = Picture::Create(pixelMap);
-    ASSERT_NE(picture, nullptr);
-
-    imageSource->DecodeBlobMetaData(picture, metadataTypes, info, errorCode);
-    ASSERT_EQ(errorCode, SUCCESS);
-
-    for (auto &type : metadataTypes) {
-        auto metadata = picture->GetMetadata(type);
-        ASSERT_NE(metadata, nullptr);
-        ASSERT_NE(metadata->GetBlobPtr(), nullptr);
-    }
-}
 
 /**
  * @tc.name: GetSupportedFormats001
@@ -3439,30 +3410,6 @@ HWTEST_F(ImageSourceTest, CreatePixelAstcFromImageFileTest001, TestSize.Level1)
 }
 
 /**
- * @tc.name: ImageSourceTest_DecodeJpegAuxiliaryPictureTest001
- * @tc.desc: Verify that DecodeJpegAuxiliaryPicture when sourceStream_ is nullptr.
- * @tc.type: FUNC
- */
-HWTEST_F(ImageSourceTest, DecodeJpegAuxiliaryPictureTest001, TestSize.Level1)
-{
-    GTEST_LOG_(INFO) << "ImageSourceTest: DecodeJpegAuxiliaryPictureTest001 start";
-    uint32_t errorCode = 0;
-    SourceOptions opts;
-    opts.formatHint = "image/jpeg";
-    std::unique_ptr<ImageSource> imageSource =
-        ImageSource::CreateImageSource(IMAGE_INPUT_JPG_PATH_EXACTSIZE, opts, errorCode);
-    ASSERT_NE(imageSource, nullptr);
-
-    imageSource->sourceStreamPtr_.reset();
-    std::set<AuxiliaryPictureType> auxTypes;
-    std::unique_ptr<Picture> picture;
-
-    imageSource->DecodeJpegAuxiliaryPicture(auxTypes, picture, errorCode);
-    ASSERT_EQ(errorCode, ERR_IMAGE_DATA_ABNORMAL);
-    GTEST_LOG_(INFO) << "ImageSourceTest: DecodeJpegAuxiliaryPictureTest001 end";
-}
-
-/**
  * @tc.name: ImageSourceTest_CreatePixelAstcFromImageFileTest002
  * @tc.desc: Verify that CreatePixelAstcFromImageFile when input size is overlarge.
  * @tc.type: FUNC
@@ -5798,51 +5745,6 @@ HWTEST_F(ImageSourceTest, GetDngImagePropertyByDngSdkTest028, TestSize.Level3)
     EXPECT_EQ(res, SUCCESS);
     EXPECT_EQ(value.bufferValue.size(), MOCK_OPCODE_SIZE);
     GTEST_LOG_(INFO) << "DngExifMetadataAccessorTest: GetDngImagePropertyByDngSdkTest028 end";
-}
-
-/**
- * @tc.name: DecodeBlobMetaDataTest001
- * @tc.desc: Test decode RfDataBMetadata when the identification field is RfDataB
- * @tc.type: FUNC
- */
-HWTEST_F(ImageSourceTest, DecodeBlobMetaDataTest001, TestSize.Level3)
-{
-    GTEST_LOG_(INFO) << "ImageSourceTest: DecodeBlobMetaDataTest001 start";
-
-    std::set<MetadataType> metadataTypes = {MetadataType::RFDATAB};
-    DecodeBlobMetaDataTest(IMAGE_INPUT_JPEG_RFDATAB_RFDATAB_PATH, metadataTypes);
-
-    GTEST_LOG_(INFO) << "ImageSourceTest: DecodeBlobMetaDataTest001 end";
-}
-
-/**
- * @tc.name: DecodeBlobMetaDataTest002
- * @tc.desc: Test decode RfDataBMetadata when the identification field is DepthP
- * @tc.type: FUNC
- */
-HWTEST_F(ImageSourceTest, DecodeBlobMetaDataTest002, TestSize.Level3)
-{
-    GTEST_LOG_(INFO) << "ImageSourceTest: DecodeBlobMetaDataTest002 start";
-
-    std::set<MetadataType> metadataTypes = {MetadataType::RFDATAB};
-    DecodeBlobMetaDataTest(IMAGE_INPUT_JPEG_RFDATAB_DEPTHP_PATH, metadataTypes);
-
-    GTEST_LOG_(INFO) << "ImageSourceTest: DecodeBlobMetaDataTest002 end";
-}
-
-/**
- * @tc.name: DecodeBlobMetaDataTest003
- * @tc.desc: Test decode RfDataBMetadata when the identification field is DepthEn
- * @tc.type: FUNC
- */
-HWTEST_F(ImageSourceTest, DecodeBlobMetaDataTest003, TestSize.Level3)
-{
-    GTEST_LOG_(INFO) << "ImageSourceTest: DecodeBlobMetaDataTest003 start";
-
-    std::set<MetadataType> metadataTypes = {MetadataType::RFDATAB};
-    DecodeBlobMetaDataTest(IMAGE_INPUT_JPEG_RFDATAB_DEPTHEN_PATH, metadataTypes);
-
-    GTEST_LOG_(INFO) << "ImageSourceTest: DecodeBlobMetaDataTest003 end";
 }
 
 /**

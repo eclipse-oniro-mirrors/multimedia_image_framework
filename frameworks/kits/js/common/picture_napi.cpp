@@ -94,6 +94,7 @@ static std::vector<struct ImageEnum> metadataTypeMap = {
     {"PNG_METADATA", static_cast<uint32_t>(MetadataType::PNG), ""},
     {"JFIF_METADATA", static_cast<uint32_t>(MetadataType::JFIF), ""},
     {"TIFF_METADATA", static_cast<uint32_t>(MetadataType::TIFF), ""},
+    {"XMP_METADATA", static_cast<uint32_t>(MetadataType::XMP), ""},
     {"AVIS_METADATA", static_cast<uint32_t>(MetadataType::AVIS), ""},
 };
 

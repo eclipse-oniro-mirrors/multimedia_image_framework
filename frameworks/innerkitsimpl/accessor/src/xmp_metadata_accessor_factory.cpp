@@ -19,6 +19,9 @@
 #include "image_mime_type.h"
 #include "xmpsdk_xmp_metadata_accessor.h"
 
+#include <unordered_map>
+#include <unordered_set>
+
 #undef LOG_DOMAIN
 #define LOG_DOMAIN LOG_TAG_DOMAIN_ID_IMAGE
 
@@ -37,16 +40,26 @@ struct XMPSource {
     int32_t fd = -1;
 };
 
-static bool IsXMPSdkSupportedMimeType(const std::string &mimeType)
+static bool IsXMPSdkSupportedMimeType(XMPAccessMode mode, const std::string &mimeType)
 {
-    return mimeType == IMAGE_JPEG_FORMAT || mimeType == IMAGE_PNG_FORMAT || mimeType == IMAGE_GIF_FORMAT ||
-        mimeType == IMAGE_TIFF_FORMAT || mimeType == IMAGE_DNG_FORMAT;
+    static const std::unordered_map<XMPAccessMode, std::unordered_set<std::string>> kFormatMap = {
+        {XMPAccessMode::READ_ONLY_XMP,
+            {IMAGE_JPEG_FORMAT, IMAGE_PNG_FORMAT, IMAGE_GIF_FORMAT, IMAGE_TIFF_FORMAT, IMAGE_DNG_FORMAT}},
+        {XMPAccessMode::READ_WRITE_XMP,
+            {IMAGE_JPEG_FORMAT, IMAGE_PNG_FORMAT, IMAGE_GIF_FORMAT}},
+    };
+
+    auto it = kFormatMap.find(mode);
+    if (it == kFormatMap.end()) {
+        return false;
+    }
+    return it->second.find(mimeType) != it->second.end();
 }
 
 static std::unique_ptr<XMPMetadataAccessor> CreateByMimeType(const XMPSource &source, XMPAccessMode mode,
     const std::string &mimeType)
 {
-    if (IsXMPSdkSupportedMimeType(mimeType)) {
+    if (IsXMPSdkSupportedMimeType(mode, mimeType)) {
         switch (source.ioType) {
             case XMPMetadataAccessor::IOType::XMP_BUFFER_IO:
                 return XMPSdkXMPMetadataAccessor::Create(source.data, source.size, mode, mimeType);
@@ -59,7 +72,8 @@ static std::unique_ptr<XMPMetadataAccessor> CreateByMimeType(const XMPSource &so
         }
     }
 
-    IMAGE_LOGE("%{public}s unsupported mimeType=%{public}s", __func__, mimeType.c_str());
+    IMAGE_LOGE("%{public}s unsupported mimeType=%{public}s for mode=%{public}d", __func__, mimeType.c_str(),
+        static_cast<int32_t>(mode));
     return nullptr;
 }
 } // anonymous namespace

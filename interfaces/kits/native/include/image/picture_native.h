@@ -114,6 +114,22 @@ typedef enum {
     * Fragment map
     */
     AUXILIARY_PICTURE_TYPE_FRAGMENT_MAP = 5,
+    /*
+    * Snap map
+    */
+    AUXILIARY_PICTURE_TYPE_SNAP_MAP = 6,
+    /*
+    * Snap gainmap
+    */
+    AUXILIARY_PICTURE_TYPE_SNAP_GAINMAP = 7,
+    /*
+    * Pan map
+    */
+    AUXILIARY_PICTURE_TYPE_PAN_MAP = 8,
+    /*
+    * Pan gainmap
+    */
+    AUXILIARY_PICTURE_TYPE_PAN_GAINMAP = 9,
 } Image_AuxiliaryPictureType;
 
 /**
@@ -205,6 +221,119 @@ Image_ErrorCode OH_PictureNative_GetMainPixelmap(OH_PictureNative *picture, OH_P
  * @since 13
  */
 Image_ErrorCode OH_PictureNative_GetHdrComposedPixelmap(OH_PictureNative *picture, OH_PixelmapNative **hdrPixelmap);
+
+/**
+ * @brief Get the number of auxiliary pictures contained in a Picture object.
+ *
+ * @param picture Pointer to the Picture object.
+ * @param count Pointer to a uint32_t variable that will receive the number of auxiliary pictures.
+ * @return Image functions result code.
+ *         {@link IMAGE_SUCCESS} if the call is successful.
+ *         {@link IMAGE_BAD_PARAMETER} if @param picture or @param count is nullptr, or fail to get the picture.
+ * @since 20
+ */
+Image_ErrorCode OH_PictureNative_GetAuxiliaryPictureCount(OH_PictureNative *picture, uint32_t *count);
+ 
+/**
+ * @brief Get the types of auxiliary pictures contained in a Picture object.
+ *
+ * @param picture Pointer to the Picture object.
+ * @param auxiliaryPictureTypes Array to receive the auxiliary picture types.
+ * @param count On input, the size of @param auxiliaryPictureTypes array.
+ *              On output, the actual number of auxiliary pictures.
+ * @return Image functions result code.
+ *         {@link IMAGE_SUCCESS} if the call is successful.
+ *         {@link IMAGE_BAD_PARAMETER} if @param picture, @param auxiliaryPictureTypes, or @param count is nullptr,
+ *                                      or @param count is smaller than required.
+ * @since 20
+ */
+Image_ErrorCode OH_PictureNative_GetAuxiliaryPictureTypes(OH_PictureNative *picture,
+    Image_AuxiliaryPictureType *auxiliaryPictureTypes, uint32_t *count);
+ 
+/**
+ * @brief Get the number of metadata entries contained in a Picture object.
+ *
+ * @param picture Pointer to the Picture object.
+ * @param count Pointer to a uint32_t variable that will receive the number of metadata entries.
+ * @return Image functions result code.
+ *         {@link IMAGE_SUCCESS} if the call is successful.
+ *         {@link IMAGE_BAD_PARAMETER} if @param picture or @param count is nullptr, or fail to get the picture.
+ * @since 20
+ */
+Image_ErrorCode OH_PictureNative_GetMetadataCount(OH_PictureNative *picture, uint32_t *count);
+ 
+/**
+ * @brief Get the types of metadata contained in a Picture object.
+ *
+ * @param picture Pointer to the Picture object.
+ * @param metadataTypes Array to receive the metadata types.
+ * @param count On input, the size of @param metadataTypes array.
+ *              On output, the actual number of metadata entries.
+ * @return Image functions result code.
+ *         {@link IMAGE_SUCCESS} if the call is successful.
+ *         {@link IMAGE_BAD_PARAMETER} if @param picture, @param metadataTypes, or @param count is nullptr,
+ *                                      or @param count is smaller than required.
+ * @since 20
+ */
+Image_ErrorCode OH_PictureNative_GetMetadataTypes(OH_PictureNative *picture,
+    Image_MetadataType *metadataTypes, uint32_t *count);
+ 
+/**
+ * @brief Deep copy a <b>Picture</b> object, selectively copying auxiliary pictures and metadata from the source
+ * picture to specified positions of the destination picture. Optionally, if @param mainPixelMapKeyFromSrc is not
+ * nullptr, a specific auxiliary picture from the source can be set as the main image of the destination picture.
+ *
+ * @param source Pointer to the source Picture object to be copied.
+ * @param srcAuxiliaryPictures Array of auxiliary picture types in the source that will be copied.
+ * @param srcAuxiliaryPictureCount Number of elements in srcAuxiliaryPictures.
+ * @param srcMetadatas Array of metadata types in the source that will be copied.
+ * @param srcMetadataCount Number of elements in srcMetadatas.
+ * @param dstAuxiliaryPictures Array of destination auxiliary picture types corresponding to source auxiliary pictures.
+ * @param dstAuxiliaryPictureCount Number of elements in dstAuxiliaryPictures.
+ * @param dstMetadatas Array of destination metadata types corresponding to source metadatas.
+ * @param dstMetadataCount Number of elements in dstMetadatas.
+ * @param mainPixelMapKeyFromSrc Pointer to the auxiliary picture type in the source to be used as the main image
+ * in the new picture. Pass nullptr to retain the main image from the source.
+ * @param picture Address of a pointer that will receive the newly created deep-copied Picture.
+ *
+ * @return Image functions result code:
+ *         {@link IMAGE_SUCCESS} if the execution is successful.
+ *         {@link IMAGE_BAD_PARAMETER}  if @param source is nullptr, or @param picture is nullptr, or counts mismatch,
+ *         or Count is not zero but corresponding array is nullptr.
+ *         {@link IMAGE_ALLOC_FAILED}   if memory allocation for the new Picture failed.
+ * @since 20
+ */
+Image_ErrorCode OH_PictureNative_DeepCopy(OH_PictureNative *source,
+    const Image_AuxiliaryPictureType* srcAuxiliaryPictures, uint32_t srcAuxiliaryPictureCount,
+    const Image_MetadataType* srcMetadatas, uint32_t srcMetadataCount,
+    const Image_AuxiliaryPictureType* dstAuxiliaryPictures, uint32_t dstAuxiliaryPictureCount,
+    const Image_MetadataType* dstMetadatas, uint32_t dstMetadataCount,
+    Image_AuxiliaryPictureType *mainPixelMapKeyFromSrc,
+    OH_PictureNative **picture);
+ 
+/**
+ * @brief Remove a specific auxiliary picture from the given Picture.
+ *
+ * @param picture Pointer to the Picture object.
+ * @param type The type of auxiliary picture to remove.
+ * @return Image functions result code.
+ *         {@link IMAGE_SUCCESS} if the auxiliary picture was successfully removed or did not exist.
+ *         {@link IMAGE_BAD_PARAMETER} if the picture is nullptr.
+ * @since 20
+ */
+Image_ErrorCode OH_PictureNative_RemoveAuxiliaryPicture(OH_PictureNative *picture, Image_AuxiliaryPictureType type);
+ 
+/**
+ * @brief Remove a specific metadata from the given Picture.
+ *
+ * @param picture Pointer to the Picture object.
+ * @param type The type of metadata to remove.
+ * @return Image functions result code.
+ *         {@link IMAGE_SUCCESS} if the metadata was successfully removed or did not exist.
+ *         {@link IMAGE_BAD_PARAMETER} if the picture is nullptr.
+ * @since 20
+ */
+Image_ErrorCode OH_PictureNative_RemoveMetadata(OH_PictureNative *picture, Image_MetadataType type);
 
 /**
  * @brief Obtains the hdr pixel map with options.

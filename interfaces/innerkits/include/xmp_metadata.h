@@ -36,10 +36,11 @@ public:
     ~XMPMetadata();
     std::unique_ptr<XMPMetadataImpl>& GetImpl();
 
-    uint32_t RegisterNamespacePrefix(const std::string &uri, const std::string &prefix);
+    uint32_t RegisterNamespacePrefix(const std::string &uri, const std::string &prefix, std::string &errMsg);
     uint32_t SetValue(const std::string &path, const XMPTagType &tagType, const std::string &value);
     uint32_t GetTag(const std::string &path, XMPTag &tag);
     uint32_t RemoveTag(const std::string &path);
+    uint32_t RemoveAllTags();
 
     // Callback type for EnumerateTags
     // Returns true to continue enumeration, false to stop
@@ -47,9 +48,27 @@ public:
 
     // Enumerate all tags, optionally starting from a specific path
     // options parameter controls the behavior of the enumeration
-    uint32_t EnumerateTags(EnumerateCallback callback, const std::string &rootPath, XMPEnumerateOption options);
+    uint32_t EnumerateTags(EnumerateCallback callback, const std::string &rootPath, XMPEnumerateOptions options);
     uint32_t GetBlob(std::string &buffer);
     uint32_t SetBlob(const uint8_t *source, const uint32_t bufferSize);
+
+    // Utils
+    // Prevent tagType from being cast to a value outside the valid range
+    static constexpr bool IsValidTagType(XMPTagType tagType)
+    {
+        using Underlying = std::underlying_type_t<XMPTagType>;
+        auto val = static_cast<Underlying>(tagType);
+
+        return val > static_cast<Underlying>(XMPTagType::UNKNOWN) &&
+            val <= static_cast<Underlying>(XMPTagType::STRUCTURE);
+    }
+
+    static constexpr bool IsContainerTagType(XMPTagType tagType)
+    {
+        return tagType == XMPTagType::STRUCTURE || tagType == XMPTagType::UNORDERED_ARRAY ||
+            tagType == XMPTagType::ORDERED_ARRAY || tagType == XMPTagType::ALTERNATE_ARRAY ||
+            tagType == XMPTagType::ALTERNATE_TEXT;
+    }
 
 private:
     DISALLOW_COPY_AND_MOVE(XMPMetadata);

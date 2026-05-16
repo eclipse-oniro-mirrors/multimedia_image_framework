@@ -71,6 +71,41 @@ const unsigned char INIT_HW_DATA[] = {
     0x00
 };
 
+static const std::vector<std::string> GPS_EXIF_KEYS = {
+    "GPSVersionID",
+    "GPSLatitudeRef",
+    "GPSLatitude",
+    "GPSLongitudeRef",
+    "GPSLongitude",
+    "GPSAltitudeRef",
+    "GPSAltitude",
+    "GPSTimeStamp",
+    "GPSSatellites",
+    "GPSStatus",
+    "GPSMeasureMode",
+    "GPSDOP",
+    "GPSSpeedRef",
+    "GPSSpeed",
+    "GPSTrackRef",
+    "GPSTrack",
+    "GPSImgDirectionRef",
+    "GPSImgDirection",
+    "GPSMapDatum",
+    "GPSDestLatitudeRef",
+    "GPSDestLatitude",
+    "GPSDestLongitudeRef",
+    "GPSDestLongitude",
+    "GPSDestBearingRef",
+    "GPSDestBearing",
+    "GPSDestDistanceRef",
+    "GPSDestDistance",
+    "GPSProcessingMethod",
+    "GPSAreaInformation",
+    "GPSDateStamp",
+    "GPSDifferential",
+    "GPSHPositioningError"
+};
+
 static const int GET_SUPPORT_MAKERNOTE_COUNT = 1;
 static const int INIT_HW_DATA_HEAD_LENGTH = 8;
 
@@ -2311,6 +2346,44 @@ std::shared_ptr<ExifMetadata> ExifMetadata::InitExifMetadata()
     ExifData* exifData = exif_data_new();
     CHECK_ERROR_RETURN_RET(exifData == nullptr, nullptr);
     return std::make_shared<ExifMetadata>(exifData);
+}
+
+bool ExifMetadata::RemoveGpsInfo()
+{
+    if (exifData_ == nullptr) {
+        IMAGE_LOGD("RemoveGpsInfo: exifData_ is nullptr");
+        return false;
+    }
+
+    std::shared_ptr<ExifMetadata> backup = Clone();
+    if (backup == nullptr) {
+        IMAGE_LOGE("RemoveGpsInfo: failed to clone exif metadata");
+        return false;
+    }
+
+    IMAGE_LOGI("RemoveGpsInfo: removing GPS information from EXIF");
+    bool hasError = false;
+    for (const std::string& gpsKey : GPS_EXIF_KEYS) {
+        std::string value;
+        if (GetValue(gpsKey, value) != SUCCESS) {
+            continue;
+        }
+        if (!RemoveEntry(gpsKey)) {
+            IMAGE_LOGE("RemoveGpsInfo: failed to remove key %{public}s", gpsKey.c_str());
+            hasError = true;
+            break;
+        }
+    }
+
+    if (hasError) {
+        IMAGE_LOGE("RemoveGpsInfo: restore exif data from backup");
+        exif_data_unref(exifData_);
+        exifData_ = backup->GetExifData();
+        exif_data_ref(exifData_);
+        return false;
+    }
+
+    return true;
 }
 } // namespace Media
 } // namespace OHOS

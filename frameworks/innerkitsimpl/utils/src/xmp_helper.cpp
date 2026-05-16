@@ -25,12 +25,9 @@
 #define LOG_TAG "XMPHelper"
 
 namespace {
-constexpr size_t NUM_1 = 1;
 constexpr std::string_view WHITE_SPACE_CHARS = " \t\r\n";
 constexpr std::string_view COLON = ":";
 constexpr std::string_view PATH_QUALIFIER_Q = "/?";
-constexpr std::string_view PATH_QUALIFIER_AT = "/@";
-constexpr std::string_view PATH_XML_LANG_AT = "/@xml:lang";
 constexpr std::string_view PATH_XML_LANG_Q = "/?xml:lang";
 constexpr std::string_view XML_LANG = "xml:lang";
 }
@@ -60,12 +57,12 @@ std::pair<std::string, std::string> XMPHelper::SplitOnce(std::string_view path, 
 /**
  * @brief Trim the characters in the string (only support trimming single character)
  * @param str: the string to be trimmed
- * @param trimChars: the characters to trim
+ * @param trimChars: A set of characters to remove from the ends. If empty, the original string is returned unchanged.
  * @return: the trimmed string
  */
 std::string XMPHelper::Trim(std::string_view str, std::string_view trimChars)
 {
-    CHECK_ERROR_RETURN_RET_LOG(str.empty() || trimChars.empty(), "", "%{public}s str or trimChars is empty", __func__);
+    CHECK_ERROR_RETURN_RET_LOG(str.empty(), "", "%{public}s trim string is empty", __func__);
 
     size_t start = str.find_first_not_of(trimChars);
     if (start == std::string_view::npos) {
@@ -73,7 +70,7 @@ std::string XMPHelper::Trim(std::string_view str, std::string_view trimChars)
     }
 
     size_t end = str.find_last_not_of(trimChars);
-    return std::string(str.substr(start, end - start + NUM_1));
+    return std::string(str.substr(start, end - start + 1));
 }
 
 uint32_t XMPHelper::MapXMPErrorToMediaError(const XMP_Error &error)
@@ -106,7 +103,7 @@ static void TrimBeforeBracket(std::string &path, size_t &writePos)
     CHECK_ERROR_RETURN_LOG(writePos > path.size(), "%{public}s writePos is out of range!"
         "writePos=%{public}zu, path.size()=%{public}zu", __func__, writePos, path.size());
     while (writePos > 0) {
-        const char previousChar = path[writePos - NUM_1];
+        const char previousChar = path[writePos - 1];
         if (previousChar == '/' || previousChar == '*') {
             --writePos;
         } else {
@@ -144,6 +141,18 @@ static void NormalizeArrayIndexPath(std::string &path)
     path.resize(writePos);
 }
 
+// Normalize language qualifier (@xml:lang -> ?xml:lang)
+static void NormalizeLanguageQualifier(std::string &path)
+{
+    constexpr std::string_view kOld = "@xml:lang";
+    constexpr std::string_view kNew = "?xml:lang";
+    size_t pos = 0;
+    while ((pos = path.find(kOld, pos)) != std::string::npos) {
+        path.replace(pos, kOld.size(), kNew);
+        pos += kNew.size();
+    }
+}
+
 // Property Extract Rule
 // | -------------------------- | ---------------------------------------------- | ---------------------------------- |
 // | Path Expression Type       | Format Example                                 | Property                           |
@@ -155,8 +164,8 @@ static void NormalizeArrayIndexPath(std::string &path)
 // | Structure Field            | exif:Flash/exif:Fired                          | exif:Fired                         |
 // | Qualifier(Path)            | dc:title[1]/?book:lastUpdated                  | book:lastUpdated                   |
 // | Qualifier(Selector)        | dc:title[?book:lastUpdated="2023"]             | dc:title[?book:lastUpdated="2023"] |
-// | Localization Text(Path)    | dc:title[1]/@xml:lang, dc:title[1]/?xml:lang   | xml:lang                           |
-// | Localization Text(Selector)| dc:title[@xml:lang="en-US"]                    | dc:title[@xml:lang="en-US"]        |
+// | Localization Text(Path)    | dc:title[1]/?xml:lang                          | xml:lang                           |
+// | Localization Text(Selector)| dc:title[?xml:lang="en-US"]                    | dc:title[?xml:lang="en-US"]        |
 // | Structure Array(Selector)  | dc:subject[dc:source="network"]                | dc:subject[dc:source="network"]    |
 // | -------------------------- | ---------------------------------------------- | ---------------------------------- |
 std::string XMPHelper::ExtractProperty(std::string_view pathExpression)
@@ -168,6 +177,8 @@ std::string XMPHelper::ExtractProperty(std::string_view pathExpression)
 
     // Normalize array index path variant format
     NormalizeArrayIndexPath(trimmed);
+    // Normalize language qualifier
+    NormalizeLanguageQualifier(trimmed);
     std::string_view path = trimmed;
 
     // Case 0: Namespace Field: xmp:CreatorTool (Without '[' and '/')
@@ -176,10 +187,9 @@ std::string XMPHelper::ExtractProperty(std::string_view pathExpression)
         return std::string(path);
     }
 
-    // Case 1: Localization Text(Path): dc:title[1]/@xml:lang OR dc:title[1]/?xml:lang
+    // Case 1: Localization Text(Path): dc:title[1]/?xml:lang
     // Return qualifier: xml:lang
-    if (path.find(PATH_XML_LANG_AT) != std::string_view::npos ||
-        path.find(PATH_XML_LANG_Q) != std::string_view::npos) {
+    if (path.find(PATH_XML_LANG_Q) != std::string_view::npos) {
         return std::string(XML_LANG);
     }
 
@@ -193,8 +203,8 @@ std::string XMPHelper::ExtractProperty(std::string_view pathExpression)
     // Case 2: Structure Field or Deep Nested Path: exif:Flash/exif:Fired, dc:first[1]/dc:second[1]/dc:third[1]
     // Return last field: exif:Fired, dc:third[1]
     size_t lastSlashPos = path.rfind('/');
-    if (lastSlashPos != std::string_view::npos && lastSlashPos < path.size() - NUM_1) {
-        std::string_view lastComponent(path.data() + lastSlashPos + NUM_1, path.size() - lastSlashPos - NUM_1);
+    if (lastSlashPos != std::string_view::npos && lastSlashPos < path.size() - 1) {
+        std::string_view lastComponent(path.data() + lastSlashPos + 1, path.size() - lastSlashPos - 1);
         return std::string(lastComponent);
     }
 
@@ -219,6 +229,43 @@ std::pair<std::string, std::string> XMPHelper::ExtractSplitProperty(std::string_
     std::string property = ExtractProperty(pathExpression);
     CHECK_ERROR_RETURN_RET_LOG(property.empty(), {}, "%{public}s extract property failed", __func__);
     return SplitOnce(property, COLON);
+}
+
+std::string XMPHelper::GetParentProperty(std::string_view pathExpression)
+{
+    CHECK_DEBUG_RETURN_RET_LOG(pathExpression.empty(), "", "%{public}s pathExpression is empty", __func__);
+
+    std::string trimmed = Trim(pathExpression, WHITE_SPACE_CHARS);
+    CHECK_DEBUG_RETURN_RET_LOG(trimmed.empty(), "", "%{public}s path is empty after trim", __func__);
+
+    NormalizeArrayIndexPath(trimmed);
+    std::string_view path = trimmed;
+
+    size_t qualifierPos = path.rfind(PATH_QUALIFIER_Q);
+    if (qualifierPos != std::string_view::npos) {
+        return std::string(path.substr(0, qualifierPos));
+    }
+
+    size_t lastSlashPos = path.rfind('/');
+    if (lastSlashPos != std::string_view::npos) {
+        return std::string(path.substr(0, lastSlashPos));
+    }
+
+    size_t firstBracketPos = path.find('[');
+    if (firstBracketPos != std::string_view::npos) {
+        return std::string(path.substr(0, firstBracketPos));
+    }
+
+    return "";
+}
+
+std::string XMPHelper::NormalizeNamespacePrefix(std::string_view prefix)
+{
+    CHECK_DEBUG_RETURN_RET_LOG(prefix.empty(), "", "%{public}s prefix is empty", __func__);
+    if (prefix.back() == ':') {
+        return std::string(prefix.substr(0, prefix.size() - 1));
+    }
+    return std::string(prefix);
 }
 } // namespace Media
 } // namespace OHOS

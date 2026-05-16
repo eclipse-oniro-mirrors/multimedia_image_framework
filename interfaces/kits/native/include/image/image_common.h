@@ -251,21 +251,6 @@ typedef enum {
      * @since 20
      */
     IMAGE_ALLOCATOR_MODE_UNSUPPROTED = 7600501,
-    /**
-     * @error XMP tag not found.
-     * @since 24
-     */
-    IMAGE_XMP_TAG_NOT_FOUND = 7600601,
-    /**
-     * @error XMP decode failed.
-     * @since 24
-     */
-    IMAGE_XMP_DECODE_FAILED = 7600602,
-    /**
-     * @error XMP namespace not registered.
-     * @since 24
-     */
-    IMAGE_XMP_NAMESPACE_NOT_REGISTERED = 7600603,
     /** unknown error */
     IMAGE_UNKNOWN_ERROR = 7600901,
     /** decode data source exception */
@@ -285,11 +270,6 @@ typedef enum {
      * @since 19
      */
     IMAGE_SOURCE_INVALID_PARAMETER = 7700204,
-    /**
-     * @error The image source does not contain XMP metadata.
-     * @since 24
-     */
-    IMAGE_SOURCE_XMP_NOT_FOUND = 7700205,
     /** decode failed */
     IMAGE_DECODE_FAILED = 7700301,
     /** memory allocation failed */
@@ -347,13 +327,15 @@ typedef enum {
      * Fragment metadata.
      */
     FRAGMENT_METADATA = 2,
-    /*
-    * Xtstyle metadata.
-    */
+
+    /**
+     * Xtstyle metadata.
+     */
     XTSTYLE_METADATA = 3,
-    /*
-    * RfDataB metadata.
-    */
+
+    /**
+     * RfDataB metadata.
+     */
     RFDATAB_METADATA = 4,
 
     /**
@@ -361,7 +343,38 @@ typedef enum {
      *
      * @since 20
      */
-    GIF_METADATA = 5
+    GIF_METADATA = 5,
+
+    /**
+     * XDRAW4K metadata.
+     */
+
+    XDRAW4K_METADATA = 8,
+
+    /**
+     * PRIVATE metadata.
+     */
+    PRIVATE_METADATA = 9,
+
+    /**
+     * RfDataN metadata.
+     */
+    RFDATAN_METADATA = 10,
+
+    /**
+     * RfDataS metadata.
+     */
+    RFDATAS_METADATA = 11,
+
+    /**
+     * HDRSnap metadata.
+     */
+    HDRSNAP_METADATA = 12,
+
+    /**
+     * DfxData metadata.
+     */
+    DFXDATA_METADATA = 13,
 } Image_MetadataType;
 
 /**

@@ -959,7 +959,7 @@ protected:
         PixelMap &dstPixelMap);
     static void InitDstImageInfo(const InitializationOptions &opts, const ImageInfo &srcImageInfo,
         ImageInfo &dstImageInfo);
-    static bool CopyPixMapToDst(PixelMap &source, void* &dstPixels, int &fd, uint32_t bufferSize);
+    static bool CopyPixMapToDst(PixelMap &source, void* &dstPixels, uint32_t bufferSize);
     static bool CopyPixelMap(PixelMap &source, PixelMap &dstPixelMap, int32_t &error);
     static bool CopyPixelMap(PixelMap &source, PixelMap &dstPixelMap);
     static bool SourceCropAndConvert(PixelMap &source, const ImageInfo &srcImageInfo, const ImageInfo &dstImageInfo,
@@ -968,6 +968,7 @@ protected:
     static bool ScalePixelMap(const Size &targetSize, const Size &dstSize, const ScaleMode &scaleMode,
                               PixelMap &dstPixelMap);
     static bool IsYuvFormat(PixelFormat format);
+    bool IsAstcOrY8Format() const;
     bool GetPixelFormatDetail(const PixelFormat format);
     uint32_t CheckAlphaFormatInput(PixelMap &wPixelMap, const bool isPremul);
     bool CheckPixelsInput(const uint8_t *dst, const uint64_t &bufferSize, const uint32_t &offset,

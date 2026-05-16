@@ -123,6 +123,8 @@ ohos_shared_library("extplugin") {
     "src/jpeg_yuv_decoder/yuv_helper.cpp",
     "src/plugin_export.cpp",
     "src/texture_encode/astc_codec.cpp",
+    "src/bandjpeg/fast_manager.cpp",
+    "src/bandjpeg/progressive_jpeg_decoder.cpp"
   ]
   if (enable_jpeg_hw_decode) {
     sources += [
@@ -498,6 +500,7 @@ ohos_shared_library("avifimpl") {
   ]
 
   external_deps = [
+    "bounds_checking_function:libsec_shared",
     "ffmpeg:libohosffmpeg",
     "graphic_2d:color_manager",
     "graphic_surface:surface",

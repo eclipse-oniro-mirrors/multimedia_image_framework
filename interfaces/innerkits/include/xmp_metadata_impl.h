@@ -19,7 +19,7 @@
 #include <memory>
 
 #include "image_log.h"
-#include "XMP.hpp"
+#include "public/include/XMP.hpp"
 #include "XMP.incl_cpp"
 
 namespace OHOS {
@@ -66,6 +66,12 @@ public:
     {
         CHECK_ERROR_RETURN_LOG(!IsValid(), "%{public}s xmpMeta is invalid", __func__);
         return xmpMeta_->SerializeToBuffer(&buffer, options, padding);
+    }
+
+    bool DoesPropertyExist(const char *schemaNS, const char *propName)
+    {
+        CHECK_ERROR_RETURN_RET_LOG(!IsValid(), false, "%{public}s xmpMeta is invalid", __func__);
+        return xmpMeta_->DoesPropertyExist(schemaNS, propName);
     }
 
 private:

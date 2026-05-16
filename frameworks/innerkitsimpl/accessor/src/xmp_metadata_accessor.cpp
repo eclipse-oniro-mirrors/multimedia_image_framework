@@ -18,7 +18,7 @@
 namespace OHOS {
 namespace Media {
 
-std::shared_ptr<XMPMetadata> XMPMetadataAccessor::Get()
+std::shared_ptr<XMPMetadata> XMPMetadataAccessor::Get() const
 {
     return xmpMetadata_;
 }

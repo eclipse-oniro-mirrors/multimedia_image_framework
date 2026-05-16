@@ -13,7 +13,6 @@
  * limitations under the License.
  */
 
-#define private public
 #include <fcntl.h>
 #include <fstream>
 #include <gtest/gtest.h>
@@ -41,7 +40,9 @@ public:
 static std::vector<uint8_t> ReadFile(const std::string& path)
 {
     std::ifstream file(path, std::ios::binary);
-    EXPECT_TRUE(file.is_open());
+    if (!file.is_open()) {
+        return {};
+    }
     file.seekg(0, std::ios::end);
 
     auto size = file.tellg();
@@ -125,7 +126,7 @@ HWTEST_F(XMPSdkXMPMetadataAccessorTest, CreateTest005, TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "XMPSdkXMPMetadataAccessorTest: CreateTest005 start";
     int32_t fd = open(IMAGE_JPEG_XMP_PATH.c_str(), O_RDONLY);
-    ASSERT_NE(fd, 0);
+    ASSERT_NE(fd, -1);
 
     auto accessor = XMPSdkXMPMetadataAccessor::Create(fd, XMPAccessMode::READ_ONLY_XMP, IMAGE_JPEG_FORMAT);
     ASSERT_NE(accessor, nullptr);
@@ -143,7 +144,7 @@ HWTEST_F(XMPSdkXMPMetadataAccessorTest, CreateTest006, TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "XMPSdkXMPMetadataAccessorTest: CreateTest006 start";
     int32_t fd = open(IMAGE_JPEG_XMP_PATH.c_str(), O_RDWR);
-    ASSERT_NE(fd, 0);
+    ASSERT_NE(fd, -1);
 
     auto accessor = XMPSdkXMPMetadataAccessor::Create(fd, XMPAccessMode::READ_WRITE_XMP, IMAGE_JPEG_FORMAT);
     ASSERT_NE(accessor, nullptr);
@@ -177,10 +178,13 @@ HWTEST_F(XMPSdkXMPMetadataAccessorTest, ReadTest001, TestSize.Level1)
     auto accessor = XMPSdkXMPMetadataAccessor::Create(IMAGE_JPEG_XMP_PATH, XMPAccessMode::READ_ONLY_XMP,
         IMAGE_JPEG_FORMAT);
     ASSERT_NE(accessor, nullptr);
+    ASSERT_NE(accessor->xmpFiles_, nullptr);
 
     uint32_t ret = accessor->Read();
-    ASSERT_EQ(ret, SUCCESS);
+    EXPECT_EQ(ret, SUCCESS);
+    EXPECT_NE(accessor->xmpMetadata_, nullptr);
 
+    accessor->xmpFiles_->CloseFile();
     GTEST_LOG_(INFO) << "XMPSdkXMPMetadataAccessorTest: ReadTest001 end";
 }
 
@@ -195,12 +199,29 @@ HWTEST_F(XMPSdkXMPMetadataAccessorTest, WriteTest001, TestSize.Level1)
     auto accessor = XMPSdkXMPMetadataAccessor::Create(IMAGE_JPEG_XMP_PATH, XMPAccessMode::READ_WRITE_XMP,
         IMAGE_JPEG_FORMAT);
     ASSERT_NE(accessor, nullptr);
+    ASSERT_NE(accessor->xmpFiles_, nullptr);
 
     uint32_t ret = accessor->Read();
     ASSERT_EQ(ret, SUCCESS);
+    ASSERT_NE(accessor->xmpMetadata_, nullptr);
+
+    std::string originValue;
+    accessor->xmpMetadata_->GetBlob(originValue);
 
     ret = accessor->Write();
+    EXPECT_EQ(ret, SUCCESS);
+
+    auto accessor2 = XMPSdkXMPMetadataAccessor::Create(IMAGE_JPEG_XMP_PATH, XMPAccessMode::READ_WRITE_XMP,
+        IMAGE_JPEG_FORMAT);
+    ret = accessor2->Read();
     ASSERT_EQ(ret, SUCCESS);
+    ASSERT_NE(accessor2->xmpMetadata_, nullptr);
+
+    std::string getValue;
+    accessor2->xmpMetadata_->GetBlob(getValue);
+    EXPECT_EQ(originValue, getValue);
+
+    accessor2->xmpFiles_->CloseFile();
     GTEST_LOG_(INFO) << "XMPSdkXMPMetadataAccessorTest: WriteTest001 end";
 }
 

@@ -76,6 +76,8 @@
 #include "raw_stream.h"
 #include "src/binary_parse/range_checked_byte_ptr.h"
 #include "src/image_type_recognition/image_type_recognition_lite.h"
+#include "bandjpeg/fast_manager.h"
+#include "bandjpeg/progressive_jpeg_decoder.h"
 
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 #define DMA_BUF_SET_TYPE _IOW(DMA_BUF_BASE, 2, const char *)
@@ -933,9 +935,8 @@ uint32_t ExtDecoder::SetDecodeOptions(uint32_t index, const PixelDecodeOptions &
             auto decoder = reinterpret_cast<AvifDecoderImpl*>(codec_->getHeifContext());
             CHECK_ERROR_RETURN_RET_LOG(decoder == nullptr, ERR_IMAGE_DATA_UNSUPPORT, "Avif Decoder is nullptr.");
 #ifndef CROSS_PLATFORM
-            CHECK_ERROR_RETURN_RET_LOG(!decoder->IsSupportedPixelFormat(opts.isAnimationDecode,
-                opts.desiredPixelFormat), ERR_IMAGE_DATA_UNSUPPORT,
-                "%{public}s current AVIF desiredFormat is not support", __func__);
+            uint32_t errorCode = decoder->IsSupportedPixelFormat(opts.isAnimationDecode, opts.desiredPixelFormat);
+            CHECK_ERROR_RETURN_RET(errorCode != SUCCESS, errorCode);
 #endif
         }
     }
@@ -1070,6 +1071,42 @@ static void FreeContextBuffer(const Media::CustomFreePixelMap &func, AllocatorTy
         buffer.buffer = nullptr;
     }
 #endif
+}
+
+static void ResetProgressiveBuffer(DecodeContext &context)
+{
+#if !defined(CROSS_PLATFORM)
+    FreeContextBuffer(context.freeFunc, context.allocatorType, context.pixelsBuffer);
+    ProgressiveJpegDecoder::ResetDecodeContextPixelsBuffer(context);
+#else
+    (void)context;
+#endif
+}
+ 
+static void FlushProgressiveBuffer(DecodeContext &context)
+{
+#if !defined(CROSS_PLATFORM)
+    if (context.allocatorType != AllocatorType::DMA_ALLOC) {
+        return;
+    }
+    SurfaceBuffer* surfaceBuffer = reinterpret_cast<SurfaceBuffer*>(context.pixelsBuffer.context);
+    if (surfaceBuffer == nullptr || !(surfaceBuffer->GetUsage() & BUFFER_USAGE_MEM_MMZ_CACHE)) {
+        return;
+    }
+    GSError err = surfaceBuffer->FlushCache();
+    if (err != GSERROR_OK) {
+        IMAGE_LOGE("FlushCache failed, GSError=%{public}d", err);
+    }
+#else
+    (void)context;
+#endif
+}
+ 
+static void UpdateProgressiveRgbOutputInfo(const ProgressiveJpegDecoder::RgbDecodePlan &plan, DecodeContext &context)
+{
+    if (plan.useDesiredSize) {
+        context.outInfo.size = {plan.dstInfo.width(), plan.dstInfo.height()};
+    }
 }
 
 uint32_t ExtDecoder::ConvertFormatToYUV(DecodeContext &context, SkImageInfo &skInfo,
@@ -1750,6 +1787,14 @@ uint32_t ExtDecoder::Decode(uint32_t index, DecodeContext &context)
     PixelFormat format = context.info.pixelFormat;
     bool isOutputYuv420Format = IsYuv420Format(context.info.pixelFormat);
     uint32_t result = 0;
+    if (skEncodeFormat == SkEncodedImageFormat::kJPEG) {
+        uint32_t progressiveResult = isOutputYuv420Format ? ProgressiveDecodeYuv(index, context) :
+            ProgressiveDecodeRgb(index, context);
+        if (progressiveResult == SUCCESS) {
+            return SUCCESS;
+        }
+        CHECK_ERROR_RETURN_RET(progressiveResult != ERR_IMAGE_DATA_UNSUPPORT, progressiveResult);
+    }
     if (isOutputYuv420Format && skEncodeFormat == SkEncodedImageFormat::kJPEG) {
 #if defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM)
         return 0;
@@ -1874,6 +1919,96 @@ JpegYuvFmt ExtDecoder::GetJpegYuvOutFmt(PixelFormat desiredFormat)
     } else {
         return iter->second;
     }
+}
+
+uint32_t ExtDecoder::ProgressiveDecodeYuv(uint32_t index, DecodeContext &context)
+{
+    uint32_t res = PreDecodeCheckYuv(index, context.info.pixelFormat);
+    CHECK_ERROR_RETURN_RET(res != SUCCESS, res);
+    Size jpgSize = {static_cast<uint32_t>(info_.width()), static_cast<uint32_t>(info_.height())};
+    ProgressiveJpegDecoder::YuvDecodeOptions options = {
+        codec_.get(), jpgSize, desiredSizeYuv_, context.info.pixelFormat, context.ifSourceCompleted,
+        supportRegionFlag_, dstOptions_.fSubset != nullptr, sampleSize_, softSampleSize_
+    };
+    ProgressiveJpegDecoder::YuvDecodePlan plan;
+    if (!ProgressiveJpegDecoder::BuildYuvDecodePlan(options, plan)) {
+        return ERR_IMAGE_DATA_UNSUPPORT;
+    }
+ 
+    ProgressiveJpegDecoder::JpegInputData jpegData;
+    res = ProgressiveJpegDecoder::GetJpegInputData(stream_,
+        [this](uint8_t *jpegBuffer, uint32_t jpegBufferSize) {
+            return ReadJpegData(jpegBuffer, jpegBufferSize);
+        }, jpegData);
+    if (res != SUCCESS) {
+        IMAGE_LOGI("progressive jpeg yuv decode fallback, get input failed ret=%{public}u", res);
+        return ERR_IMAGE_DATA_UNSUPPORT;
+    }
+ 
+    const SkImageInfo originalDstInfo = dstInfo_;
+    dstInfo_ = dstInfo_.makeWH(plan.size.width, plan.size.height);
+    res = SetContextPixelsBuffer(plan.bufferSize, context);
+    if (res == SUCCESS) {
+        res = ProgressiveJpegDecoder::DecodeYuv(jpegData, plan, context);
+        if (res == SUCCESS) {
+            return SUCCESS;
+        }
+        ResetProgressiveBuffer(context);
+    } else {
+        IMAGE_LOGI("progressive jpeg yuv decode fallback, alloc failed ret=%{public}u", res);
+    }
+    dstInfo_ = originalDstInfo;
+    return ERR_IMAGE_DATA_UNSUPPORT;
+}
+ 
+uint32_t ExtDecoder::ProgressiveDecodeRgb(uint32_t index, DecodeContext &context)
+{
+    ProgressiveJpegDecoder::RgbDecodeOptions options = {
+        codec_.get(), info_, dstInfo_, regionDesiredSize_, context.info.pixelFormat, context.allocatorType,
+        context.ifSourceCompleted, supportRegionFlag_, context.pixelsBuffer.buffer != nullptr,
+        reusePixelmap_ != nullptr, dstOptions_.fSubset != nullptr, sampleSize_, softSampleSize_
+    };
+    ProgressiveJpegDecoder::RgbDecodePlan plan;
+    CHECK_ERROR_RETURN_RET(!ProgressiveJpegDecoder::BuildRgbDecodePlan(options, plan), ERR_IMAGE_DATA_UNSUPPORT);
+    bool allocatedProgressiveBuffer = false;
+    if (context.pixelsBuffer.buffer == nullptr) {
+        const SkImageInfo savedDstInfo = dstInfo_;
+        dstInfo_ = plan.dstInfo;
+        uint32_t res = SetContextPixelsBuffer(plan.byteCount, context);
+        dstInfo_ = savedDstInfo;
+        CHECK_ERROR_RETURN_RET(res != SUCCESS, res);
+        allocatedProgressiveBuffer = true;
+    }
+    uint64_t rowStride = ProgressiveJpegDecoder::GetOutputRowStride(plan.dstInfo, context,
+        static_cast<uint8_t *>(context.pixelsBuffer.buffer));
+    if (rowStride == 0) {
+        if (allocatedProgressiveBuffer) {
+            ResetProgressiveBuffer(context);
+        }
+        IMAGE_LOGE("progressive jpeg rowStride is zero");
+        return ERR_DMA_DATA_ABNORMAL;
+    }
+    const size_t stride = plan.isRgb888Output ?
+        static_cast<size_t>(plan.dstInfo.width()) * NUM_3 : static_cast<size_t>(rowStride);
+    ProgressiveJpegDecoder::JpegInputData jpegData;
+    uint32_t res = ProgressiveJpegDecoder::GetJpegInputData(stream_,
+        [this](uint8_t *buffer, uint32_t size) { return ReadJpegData(buffer, size); }, jpegData);
+    if (res == SUCCESS) {
+        dstOptions_.fFrameIndex = static_cast<int>(index);
+        DebugInfo(info_, plan.dstInfo, dstOptions_);
+        res = ProgressiveJpegDecoder::DecodeRgb(jpegData, plan, static_cast<uint8_t *>(context.pixelsBuffer.buffer),
+            stride);
+    }
+    if (res == SUCCESS) {
+        UpdateProgressiveRgbOutputInfo(plan, context);
+        FlushProgressiveBuffer(context);
+        return SUCCESS;
+    }
+    IMAGE_LOGI("progressive jpeg decode fallback, ret=%{public}u", res);
+    if (allocatedProgressiveBuffer) {
+        ResetProgressiveBuffer(context);
+    }
+    return ERR_IMAGE_DATA_UNSUPPORT;
 }
 
 uint32_t ExtDecoder::DecodeToYuv420(uint32_t index, DecodeContext &context)
@@ -3731,9 +3866,8 @@ uint32_t ExtDecoder::AvifDecode(uint32_t index, DecodeContext &context, uint64_t
     UpdateDstInfoAndOutInfo(context);
     CHECK_ERROR_RETURN_RET_LOG(SkImageInfo::ByteSizeOverflowed(byteCount), ERR_IMAGE_TOO_LARGE,
         "%{public}s too large byteCount: %{public}llu", __func__, static_cast<unsigned long long>(byteCount));
-    CHECK_ERROR_RETURN_RET_LOG(!decoder->IsSupportedPixelFormat(context.isAnimationDecode,
-        context.info.pixelFormat), ERR_IMAGE_DATA_UNSUPPORT,
-        "%{public}s current AVIF desiredFormat is not support", __func__);
+    uint32_t errorCode = decoder->IsSupportedPixelFormat(context.isAnimationDecode, context.info.pixelFormat);
+    CHECK_ERROR_RETURN_RET(errorCode != SUCCESS, errorCode);
     decoder->setDstBuffer(reinterpret_cast<uint8_t *>(context.pixelsBuffer.buffer), rowStride, nullptr);
     decoder->SetAllocatorType(context.allocatorType);
     decoder->SetDesiredPixelFormat(context.info.pixelFormat);

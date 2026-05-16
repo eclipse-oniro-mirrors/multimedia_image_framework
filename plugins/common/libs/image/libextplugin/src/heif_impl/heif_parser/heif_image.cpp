@@ -314,34 +314,14 @@ HeifFragmentMetadata HeifImage::GetFragmentMetadata()
     return fragmentMetadata_;
 }
 
-void HeifImage::SetXtStyleData(std::vector<uint8_t>& xtStyleMetadata)
+void HeifImage::SetBlobMetadata(HeifMetadataType type, std::vector<uint8_t>& blobMetadata)
 {
-    xtStyledata_ = xtStyleMetadata;
-}
-
-std::vector<uint8_t> HeifImage::GetXtStyleData()
-{
-    return xtStyledata_;
-}
-
-void HeifImage::SetRfDataBData(std::vector<uint8_t>& rfDataBMetadata)
-{
-    rfDataBdata_ = rfDataBMetadata;
+    blobMetadataMap_[type] = blobMetadata;
 }
  
-std::vector<uint8_t> HeifImage::GetRfDataBData()
+std::vector<uint8_t> HeifImage::GetBlobMetadata(HeifMetadataType type)
 {
-    return rfDataBdata_;
-}
-
-void HeifImage::SetSTDataMetaData(std::vector<uint8_t>& stDataMetadata)
-{
-    stDatadata_ = stDataMetadata;
-}
- 
-std::vector<uint8_t> HeifImage::GetSTDataMetaData()
-{
-    return stDatadata_;
+    return blobMetadataMap_[type];
 }
 } // namespace ImagePlugin
 } // namespace OHOS

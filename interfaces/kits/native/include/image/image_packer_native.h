@@ -177,6 +177,28 @@ Image_ErrorCode OH_PackingOptions_SetNeedsPackProperties(OH_PackingOptions *opti
     bool needsPackProperties);
 
 /**
+ * @brief Get needsPackDfxData for OH_PackingOptions struct.
+ *
+ * @param options The OH_PackingOptions pointer will be operated.
+ * @param needsPackDfxData Whether the image DfxData can be saved.
+ * @return Returns {@link Image_ErrorCode}
+ * @since 20
+ */
+Image_ErrorCode OH_PackingOptions_GetNeedsPackDfxData(OH_PackingOptions *options,
+    bool *needsPackDfxData);
+ 
+/**
+ * @brief Set needsPackDfxData for OH_PackingOptions struct.
+ *
+ * @param options The OH_PackingOptions pointer will be operated.
+ * @param needsPackDfxData Whether the image DfxData can be saved.
+ * @return Returns {@link Image_ErrorCode}
+ * @since 20
+ */
+Image_ErrorCode OH_PackingOptions_SetNeedsPackDfxData(OH_PackingOptions *options,
+    bool needsPackDfxData);
+
+/**
  * @brief Get desiredDynamicRange for PackingOptions struct.
  *
  * @param options The PackingOptions pointer will be operated.

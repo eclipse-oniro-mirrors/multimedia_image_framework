@@ -434,36 +434,45 @@ bool ImageFormatConvert::CheckConvertDataInfo(const ConvertDataInfo &convertData
 
 size_t ImageFormatConvert::GetBufferSizeByFormat(PixelFormat format, const Size &size)
 {
+    size_t width = static_cast<size_t>(size.width);
+    size_t height = static_cast<size_t>(size.height);
+    size_t result = 0;
     switch (format) {
-        case PixelFormat::RGB_565:{
-            return size.width * size.height * NUM_2;
-        }
-        case PixelFormat::RGB_888:{
-            return size.width * size.height * NUM_3;
-        }
+        case PixelFormat::RGB_565:
+            result = width * height * NUM_2;
+            break;
+        case PixelFormat::RGB_888:
+            result = width * height * NUM_3;
+            break;
         case PixelFormat::ARGB_8888:
         case PixelFormat::RGBA_8888:
         case PixelFormat::BGRA_8888:
-        case PixelFormat::RGBA_1010102:{
-            return size.width * size.height * NUM_4;
-        }
-        case PixelFormat::RGBA_F16:{
-            return (((size.width + NUM_1) / NUM_2) * NUM_2) * size.height * NUM_8;
-        }
+        case PixelFormat::RGBA_1010102:
+            result = width * height * NUM_4;
+            break;
+        case PixelFormat::RGBA_F16:
+            result = (((width + NUM_1) / NUM_2) * NUM_2) * height * NUM_8;
+            break;
         case PixelFormat::NV21:
-        case PixelFormat::NV12:{
-            return size.width * size.height + ((size.width + NUM_1) / NUM_2) *
-                ((size.height + NUM_1) / NUM_2) * NUM_2;
-        }
+        case PixelFormat::NV12:
+            result = width * height + ((width + NUM_1) / NUM_2) * ((height + NUM_1) / NUM_2) * NUM_2;
+            break;
         case PixelFormat::YCBCR_P010:
-        case PixelFormat::YCRCB_P010: {
-            return (size.width * size.height + ((size.width + NUM_1) / NUM_2) *
-                ((size.height + NUM_1) / NUM_2) * NUM_2) * NUM_2;
-        }
-        default:{
+        case PixelFormat::YCRCB_P010:
+            result = (width * height + ((width + NUM_1) / NUM_2) * ((height + NUM_1) / NUM_2) * NUM_2) * NUM_2;
+            break;
+        default:
+            IMAGE_LOGE("GetBufferSizeByFormat: unsupported format: %{public}d", format);
             return NUM_0;
-        }
     }
+
+    if (result > UINT32_MAX) {
+        IMAGE_LOGE("Buffer size overflow, format=%{public}d, width=%{public}d, height=%{public}d",
+                   format, size.width, size.height);
+        return NUM_0;
+    }
+
+    return result;
 }
 
 ConvertFunction ImageFormatConvert::GetConvertFuncByFormat(PixelFormat srcFormat, PixelFormat destFormat)
@@ -547,6 +556,11 @@ std::unique_ptr<AbsMemory> ImageFormatConvert::CreateMemory(PixelFormat pixelFor
         return nullptr;
     }
     uint32_t pictureSize = GetBufferSizeByFormat(pixelFormat, size);
+    if (pictureSize == 0) {
+        IMAGE_LOGE("CreateMemory: GetBufferSizeByFormat failed");
+        return nullptr;
+    }
+
     if (IsYUVConvert(pixelFormat)) {
         strides = {size.width, (size.width + 1) / NUM_2 * NUM_2, 0, size.width * size.height};
     } else {

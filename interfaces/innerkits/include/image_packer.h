@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Huawei Device Co., Ltd.
+ * Copyright (C) 2022-2026 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -32,12 +32,30 @@ class PluginServer;
 namespace OHOS {
 namespace ImagePlugin {
 struct PlEncodeOptions;
+struct PlPackingOptionsForTiff;
 class AbsImageEncoder;
 } // namespace ImagePlugin
 } // namespace OHOS
 
 namespace OHOS {
 namespace Media {
+
+struct PackingSizeLimit {
+    Size maxSize = {0, 0};
+    AntiAliasingOption antiAliasingLevel = AntiAliasingOption::NONE;
+};
+
+struct PackingOptionsForTiff {
+    // Compression method:
+    // - For Y1 format: must be 3 (G3) or 4 (G4)
+    // - For RGB888/Y8 format: ignored, always uses LZW
+    int32_t compression = -1;
+    int32_t orientation = 1;      // Image orientation (1~8), default 1 = ORIENTATION_TOPLEFT
+    float xResolution = 0.0f;     // Horizontal resolution in DPI, 0 means not written
+    float yResolution = 0.0f;     // Vertical resolution in DPI, 0 means not written
+    int32_t resolutionUnit = 0;   // Resolution unit, 0 means not written, 2=INCH
+};
+
 struct PackOption {
     /**
      * Specify the file format of the output image.
@@ -99,6 +117,32 @@ struct PackOption {
      * Currently, this parameter is only valid for the JPEG and HEIF format of the Picture.
      */
     int32_t maxEmbedThumbnailDimension = 0;
+
+    /**
+     * Background color for encoding RGBA images to formats that don't support transparency (e.g., JPEG, HEIF).
+     * When encoding RGBA format images to non-transparent formats, this color is used as the background.
+     * Format: 0xRRGGBB, where RR is red, GG is green, BB is blue.
+     * Default value: 0 (no background color specified, use black).
+     */
+    int32_t backgroundColor = 0;
+
+    /**
+     * Size limit for packing.
+     * Default value: no size limit.
+     */
+    PackingSizeLimit sizeLimit;
+
+    /**
+     * Whether to pack GPS information in EXIF metadata during encoding.
+     * When set to false, GPS related EXIF tags will be removed before encoding.
+     * Default value: true (keep GPS information).
+     */
+    bool needsPackGPS = true;
+
+    /**
+     * TIFF-specific encoding options.
+     */
+    PackingOptionsForTiff tiffPackingOption;
 };
 
 class PackerStream;
@@ -120,6 +164,11 @@ public:
 #endif
     uint32_t FinalizePacking();
     uint32_t FinalizePacking(int64_t &packedSize);
+    uint32_t PackBinaryImageToTiffFile(const PixelBufferInfo &bufferInfo, const int &fd,
+                                       const PackingOptionsForTiff &option);
+    uint32_t PackBinaryImageToTiffData(const PixelBufferInfo &bufferInfo,
+                                       const PackingOptionsForTiff &option,
+                                       uint8_t *outputData, uint32_t &outputSize);
 
 protected:
     uint32_t StartPackingAdapter(PackerStream &outputStream, const PackOption &option);
@@ -127,11 +176,20 @@ protected:
 private:
     DISALLOW_COPY_AND_MOVE(ImagePacker);
     static void CopyOptionsToPlugin(const PackOption &opts, ImagePlugin::PlEncodeOptions &plOpts);
+    static void CopyTiffPackingOptions(const PackingOptionsForTiff &src,
+                                       ImagePlugin::PlPackingOptionsForTiff &dst);
     uint32_t StartPackingImpl(const PackOption &option);
     uint32_t DoEncodingFunc(std::function<uint32_t(ImagePlugin::AbsImageEncoder*)> func, bool forAll = true);
     bool GetEncoderPlugin(const PackOption &option);
     void FreeOldPackerStream();
     bool IsPackOptionValid(const PackOption &option);
+#if defined(SUPPORT_LIBTIFF)
+    static uint32_t ValidateBinaryImageBufferInfo(const PixelBufferInfo &bufferInfo, const char *funcName);
+    static uint32_t EncodeBinaryImageToTiffStream(const PixelBufferInfo &bufferInfo,
+                                                   PackerStream &packerStream,
+                                                   const PackingOptionsForTiff &option,
+                                                   const char *funcName);
+#endif
     static MultimediaPlugin::PluginServer &pluginServer_;
     std::unique_ptr<PackerStream> packerStream_;
     std::vector<std::unique_ptr<ImagePlugin::AbsImageEncoder>> encoders_;
@@ -142,6 +200,7 @@ private:
     std::unique_ptr<Picture> picture_;  // inner imagesource create, our manage the lifecycle
 #endif
     bool encodeToSdr_ = true;
+    std::string format_;
 };
 } // namespace Media
 } // namespace OHOS

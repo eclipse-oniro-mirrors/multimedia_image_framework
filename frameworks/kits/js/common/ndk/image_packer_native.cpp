@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Huawei Device Co., Ltd.
+ * Copyright (C) 2022-2026 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -77,6 +77,7 @@ struct OH_PackingOptions {
     int quality;
     int32_t desiredDynamicRange = IMAGE_PACKER_DYNAMIC_RANGE_SDR;
     bool needsPackProperties = false;
+    bool needsPackDfxData = false;
     uint16_t loop;
     uint16_t* delayTimes;
     uint32_t delayTimesSize;
@@ -149,9 +150,15 @@ static Image_ErrorCode CopyPackingOptions(const OH_PackingOptions *options, Pack
     if (format.empty()) {
         return IMAGE_BAD_PARAMETER;
     }
+    if (format == "image/tiff") {
+        IMAGE_LOGE("Native layer does not support format: %{public}s", format.c_str());
+        return IMAGE_BAD_PARAMETER;
+    }
+
     packOption.format = format;
     packOption.quality = options->quality;
     packOption.needsPackProperties = options->needsPackProperties;
+    packOption.needsPackDfxData = options->needsPackDfxData;
     packOption.desiredDynamicRange = ParseDynamicRange(options->desiredDynamicRange);
     return IMAGE_SUCCESS;
 }
@@ -288,6 +295,26 @@ Image_ErrorCode OH_PackingOptions_SetNeedsPackProperties(OH_PackingOptions *opti
         return IMAGE_BAD_PARAMETER;
     }
     options->needsPackProperties = needsPackProperties;
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_PackingOptions_GetNeedsPackDfxData(OH_PackingOptions *options, bool *needsPackDfxData)
+{
+    if (options == nullptr || needsPackDfxData == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
+    *needsPackDfxData = options->needsPackDfxData;
+    return IMAGE_SUCCESS;
+}
+ 
+MIDK_EXPORT
+Image_ErrorCode OH_PackingOptions_SetNeedsPackDfxData(OH_PackingOptions *options, bool needsPackDfxData)
+{
+    if (options == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
+    options->needsPackDfxData = needsPackDfxData;
     return IMAGE_SUCCESS;
 }
 
@@ -748,6 +775,10 @@ Image_ErrorCode OH_ImagePackerNative_GetSupportedFormats(Image_MimeType** suppor
     }
     std::set<std::string> formats;
     ImagePacker::GetSupportedFormats(formats);
+    auto it = formats.find("image/tiff");
+    if (it != formats.end()) {
+        formats.erase(it);
+    }
 
     auto newFormats = std::unique_ptr<Image_MimeType[], FreeDeleter>(
         new Image_MimeType[formats.size()],

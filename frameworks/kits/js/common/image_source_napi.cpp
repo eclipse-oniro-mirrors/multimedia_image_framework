@@ -145,9 +145,7 @@ struct ImageSourceAsyncContext {
     std::shared_ptr<JfifMetadata> rJfifMetadata;
     std::shared_ptr<AvisMetadata> rAvisMetadata;
     DecodingOptionsForThumbnail decodingOptsForThumbnail;
-#ifdef XMP_TOOLKIT_SDK_ENABLE
     std::shared_ptr<XMPMetadata> rXMPMetadata;
-#endif
     std::vector<uint8_t> imageRawData;
     uint32_t bitsPerSample = 0;
     bool hasUnSupportMetadata = false;
@@ -178,6 +176,7 @@ static std::vector<struct ImageEnum> sPixelMapFormatMap = {
     {"RGBA_1010102", 10, ""},
     {"YCBCR_P010", 11, ""},
     {"YCRCB_P010", 12, ""},
+    {"Y8", 14, ""},
     {"ALPHA_U8", 15, ""},
     {"ALPHA_F16", 16, ""},
     {"ASTC_4x4", 102, ""},
@@ -1468,8 +1467,6 @@ std::vector<napi_property_descriptor> ImageSourceNapi::RegisterNapi()
         DECLARE_NAPI_FUNCTION("release", Release),
         DECLARE_NAPI_FUNCTION("isJpegProgressive", IsJpegProgressive),
         DECLARE_NAPI_GETTER("supportedFormats", GetSupportedFormats),
-        DECLARE_NAPI_FUNCTION("readXMPMetadata", ReadXMPMetadata),
-        DECLARE_NAPI_FUNCTION("writeXMPMetadata", WriteXMPMetadata),
         DECLARE_NAPI_FUNCTION("modifyImageAllProperties", ModifyImageAllProperties),
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
         DECLARE_NAPI_FUNCTION("createPicture", CreatePicture),
@@ -2879,7 +2876,7 @@ static void ModifyImagePropertyComplete(napi_env env, napi_status status, ImageS
     context = nullptr;
 }
 
-static void ModifyImagePropertiesByTypeComplete(napi_env env, napi_status status, ImageSourceAsyncContext *context)
+static void WriteImageMetadataComplete(napi_env env, napi_status status, ImageSourceAsyncContext *context)
 {
     if (context == nullptr) {
         IMAGE_LOGE("context is nullptr");
@@ -2902,7 +2899,7 @@ static void ModifyImagePropertiesByTypeComplete(napi_env env, napi_status status
     napi_delete_async_work(env, context->work);
     delete context;
     context = nullptr;
-    IMAGE_LOGD("ModifyImagePropertiesEnhancedComplete end.");
+    IMAGE_LOGD("WriteImageMetadataComplete end.");
 }
 
 static void GenerateErrMsg(ImageSourceAsyncContext *context, std::string &errMsg)
@@ -3178,6 +3175,7 @@ struct MetadataCollection {
     napi_value tiffMetadata = nullptr;
     napi_value jfifMetadata = nullptr;
     napi_value pngMetadata = nullptr;
+    napi_value xmpMetadata = nullptr;
     napi_value avisMetadata = nullptr;
     bool hasExif = false;
     bool hasMakerNote = false;
@@ -3191,6 +3189,7 @@ struct MetadataCollection {
     bool hasTiffMetadata = false;
     bool hasJfifMetadata = false;
     bool hasPngMetadata = false;
+    bool hasXMPMetadata = false;
     bool hasAvisMetadata = false;
 };
 
@@ -3208,6 +3207,7 @@ static void InitMetadataAndFlags(napi_env env, ImageSourceAsyncContext *context,
     metaCol.dngMetadata = MetadataNapi::CreateDngMetadata(env);
     metaCol.tiffMetadata = MetadataNapi::CreateTiffMetadata(env);
     metaCol.jfifMetadata = MetadataNapi::CreateJfifMetadata(env, context->rJfifMetadata);
+    metaCol.xmpMetadata = XMPMetadataNapi::CreateXMPMetadata(env, context->rXMPMetadata);
     metaCol.avisMetadata = MetadataNapi::CreateAvisMetadata(env, context->rAvisMetadata);
 }
 
@@ -3282,6 +3282,7 @@ static void CheckSpecialMetadataFlags(ImageSourceAsyncContext *context, Metadata
             context->rRfDataBMetadata->GetBlobSize() != 0) ? true : metaCol.hasRfDataBMetadata;
         metaCol.hasXtStyleMetadata = (context->rXtStyleMetadata != nullptr
             && context->rXtStyleMetadata->GetBlobSize() != 0) ? true : metaCol.hasXtStyleMetadata;
+        metaCol.hasXMPMetadata = context->rXMPMetadata != nullptr ? true : false;
     } else if (context->typeArray != nullptr && !context->typeArray.get()->empty()) {
         const std::vector<uint32_t>& typeArray = *(context->typeArray);
         if (std::find(typeArray.begin(), typeArray.end(), XTSTYLE) != typeArray.end()) {
@@ -3291,6 +3292,10 @@ static void CheckSpecialMetadataFlags(ImageSourceAsyncContext *context, Metadata
         if (std::find(typeArray.begin(), typeArray.end(), RFDATAB) != typeArray.end()) {
             metaCol.hasRfDataBMetadata = (context->rRfDataBMetadata != nullptr &&
                 context->rRfDataBMetadata->GetBlobSize() != 0) ? true : metaCol.hasRfDataBMetadata;
+        }
+        if (std::find(typeArray.begin(), typeArray.end(), static_cast<uint32_t>(MetadataType::XMP)) !=
+            typeArray.end()) {
+            metaCol.hasXMPMetadata = context->rXMPMetadata != nullptr ? true : false;
         }
     }
 }
@@ -3334,6 +3339,9 @@ static void AttachMetadataToResultObj(napi_env env, MetadataCollection& metaCol,
     }
     if (metaCol.hasPngMetadata) {
         NAPI_CALL_RETURN_VOID(env, napi_set_named_property(env, resultObj, "pngMetadata", metaCol.pngMetadata));
+    }
+    if (metaCol.hasXMPMetadata) {
+        NAPI_CALL_RETURN_VOID(env, napi_set_named_property(env, resultObj, "xmpMetadata", metaCol.xmpMetadata));
     }
     if (metaCol.hasAvisMetadata) {
         NAPI_CALL_RETURN_VOID(env, napi_set_named_property(env, resultObj, "avisMetadata", metaCol.avisMetadata));
@@ -3593,6 +3601,26 @@ static std::shared_ptr<JfifMetadata> CreateNullJfifMetadata()
     return metadata;
 }
 
+static void GetAllMetadataProperties(ImageSourceAsyncContext *context)
+{
+    CHECK_ERROR_RETURN(context == nullptr);
+    const std::vector<MetadataValue> &allProperties = context->rImageSource->GetAllPropertiesWithType(context->index);
+
+    // Handle errorCode (As long as 1 Metadata object exists, status is considered as SUCCESS)
+    const bool hasRfDataB = (context->rRfDataBMetadata != nullptr);
+    const bool hasXtStyle = (context->rXtStyleMetadata != nullptr);
+    const bool hasXMP = (context->rXMPMetadata != nullptr);
+    const uint32_t status = (hasRfDataB || hasXtStyle || hasXMP || !allProperties.empty()) ? SUCCESS : ERROR;
+    context->status = status;
+
+    if (context->status != SUCCESS) {
+        IMAGE_LOGE("%{public}s Failed to get any properties, index: %{public}u", __func__, context->index);
+        context->errMsgArray.emplace(ERROR, "AllProperties");
+    }
+
+    context->kValueTypeArray = std::move(allProperties);
+}
+
 static void ReadImageMetadataExecute(napi_env env, void *data)
 {
     auto context = static_cast<ImageSourceAsyncContext*>(data);
@@ -3605,6 +3633,7 @@ static void ReadImageMetadataExecute(napi_env env, void *data)
     context->rImageHeifsMetadata = CreateNullHeifsMetadata();
     context->rWebPMetadata = CreateNullWebPMetadata();
     context->rJfifMetadata = CreateNullJfifMetadata();
+    context->rXMPMetadata = context->rImageSource->ReadXMPMetadata(errorCode);
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     context->rAvisMetadata = context->rImageSource->GetAvisMetadata(context->index, errorCode);
     errorCode = context->rImageSource->GetPngMetadata(context->rPngMetadata);
@@ -3616,16 +3645,7 @@ static void ReadImageMetadataExecute(napi_env env, void *data)
         context->rImageSource->GetBlobMetadata(MetadataType::XTSTYLE, errorCode));
 #endif
     if (context->keyStrArray.empty()) {
-        const std::vector<MetadataValue> allProperties =
-            context->rImageSource->GetAllPropertiesWithType(context->index);
-        for (const auto& property : allProperties) {
-            context->kValueTypeArray.emplace_back(property);
-        }
-        context->status = allProperties.empty() ? ERROR : SUCCESS;
-        if (allProperties.empty()) {
-            IMAGE_LOGE("Failed to get any properties");
-            context->errMsgArray.insert(std::make_pair(ERROR, "AllProperties"));
-        }
+        GetAllMetadataProperties(context);
     } else {
         uint32_t status = SUCCESS;
         for (auto keyStrIt = context->keyStrArray.begin(); keyStrIt != context->keyStrArray.end(); ++keyStrIt) {
@@ -3639,7 +3659,7 @@ static void ReadImageMetadataExecute(napi_env env, void *data)
                 IMAGE_LOGE("errCode: %{public}u, exif key: %{public}s", status, keyStrIt->c_str());
             }
         }
-        context->status = (context->kValueTypeArray.size() == context->errMsgArray.size()) ? ERROR : SUCCESS;
+        context->status = (context->keyStrArray.size() == context->errMsgArray.size()) ? ERROR : SUCCESS;
     }
 }
 
@@ -3756,15 +3776,9 @@ static void ModifyImagePropertiesEnhancedExecute(napi_env env, void *data)
     IMAGE_LOGI("ModifyImagePropertiesEnhanced end, cost: %{public}llu ms", duration.count());
 }
 
-static void WriteImageMetadataExecute(napi_env env, void *data)
+static void ApplyImagePropertiesUpdates(ImageSourceAsyncContext *context)
 {
-    IMAGE_LOGI("WriteImageMetadataExecute start.");
-    auto start = std::chrono::high_resolution_clock::now();
-    auto context = static_cast<ImageSourceAsyncContext*>(data);
-    if (context == nullptr || context->rImageSource == nullptr) {
-        IMAGE_LOGE("empty context");
-        return;
-    }
+    CHECK_ERROR_RETURN(context == nullptr);
     auto partition_end = std::partition(
         context->kValueTypeArray.begin(),
         context->kValueTypeArray.end(),
@@ -3782,10 +3796,42 @@ static void WriteImageMetadataExecute(napi_env env, void *data)
     if (!context->kValueTypeArray.empty()) {
         context->status = context->rImageSource->WriteImageMetadataBlob(context->kValueTypeArray);
     }
-    if (context->kVStrArray.empty() && context->kValueTypeArray.empty()) {
+}
+
+// If all properties in ImageMetadata are undefined, perform the REMOVE operation
+static void RemoveAllPropertiesIfNeeded(ImageSourceAsyncContext *context)
+{
+    CHECK_ERROR_RETURN(context == nullptr || context->status != SUCCESS || context->rImageSource == nullptr);
+    if (context->kVStrArray.empty() && context->kValueTypeArray.empty() && context->rXMPMetadata == nullptr) {
         context->status = context->rImageSource->RemoveAllProperties();
     }
-    
+}
+
+static void ApplyImageMetadataWithoutProperties(ImageSourceAsyncContext *context)
+{
+    CHECK_ERROR_RETURN(context == nullptr || context->status != SUCCESS || context->rImageSource == nullptr);
+    if (context->rXMPMetadata != nullptr) {
+        context->status = context->rImageSource->WriteXMPMetadata(context->rXMPMetadata);
+        if (context->status != SUCCESS) {
+            context->errMsg = ImageErrorConvert::WriteXMPMetadataMakeMsg(context->status);
+        }
+    }
+}
+
+static void WriteImageMetadataExecute(napi_env env, void *data)
+{
+    IMAGE_LOGI("WriteImageMetadataExecute start.");
+    auto start = std::chrono::high_resolution_clock::now();
+    auto context = static_cast<ImageSourceAsyncContext*>(data);
+    if (context == nullptr || context->rImageSource == nullptr) {
+        IMAGE_LOGE("empty context");
+        return;
+    }
+
+    RemoveAllPropertiesIfNeeded(context);
+    ApplyImagePropertiesUpdates(context);
+    ApplyImageMetadataWithoutProperties(context);
+
     if (context->status != SUCCESS) {
         auto unsupportedKeys = context->rImageSource->GetModifyExifUnsupportedKeys();
         if (!unsupportedKeys.empty()) {
@@ -3797,7 +3843,42 @@ static void WriteImageMetadataExecute(napi_env env, void *data)
     }
     auto end = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-    IMAGE_LOGI("ModifyImagePropertiesEnhanced end, cost: %{public}llu ms", duration.count());
+    IMAGE_LOGI("WriteImageMetadataExecute end, cost: %{public}llu ms", duration.count());
+}
+
+static bool GetXMPMetadataArgument(napi_env env, napi_value imageMetadataObj,
+    std::shared_ptr<XMPMetadata> &xmpMetadata)
+{
+#if !defined(CROSS_PLATFORM)
+    xmpMetadata = nullptr;
+
+    if (ImageNapiUtils::getType(env, imageMetadataObj) != napi_object) {
+        IMAGE_LOGE("%{public}s arg type mismatch", __func__);
+        return false;
+    }
+
+    napi_value xmpValue = nullptr;
+    if (napi_get_named_property(env, imageMetadataObj, "xmpMetadata", &xmpValue) != napi_ok) {
+        return true;
+    }
+
+    auto xmpType = ImageNapiUtils::getType(env, xmpValue);
+    if (xmpType == napi_undefined || xmpType == napi_null) {
+        return true;
+    }
+
+    if (!ImageNapiUtils::CheckTypeByName(env, xmpValue, "XMPMetadata")) {
+        IMAGE_LOGE("%{public}s check xmpMetadata type mismatch", __func__);
+        return false;
+    }
+
+    xmpMetadata = XMPMetadataNapi::GetXMPMetadata(env, xmpValue);
+    if (xmpMetadata == nullptr) {
+        IMAGE_LOGE("%{public}s fail to get xmpMetadata object", __func__);
+        return false;
+    }
+#endif
+    return true;
 }
 
 static std::unique_ptr<ImageSourceAsyncContext> UnwrapContextForWriteImageMetadata(
@@ -3820,12 +3901,15 @@ static std::unique_ptr<ImageSourceAsyncContext> UnwrapContextForWriteImageMetada
         return nullptr;
     }
     if (ImageNapiUtils::getType(env, argValue[NUM_0]) == napi_object) {
-        bool hasSupportMetadata = false;
+        bool hasSupportMetadata = false;    // if any metadata can be written, this flag will be set true
         context->kValueTypeArray = GetImageMetadataArgument(env, argValue[NUM_0], hasSupportMetadata);
+        if (GetXMPMetadataArgument(env, argValue[NUM_0], context->rXMPMetadata)) {
+            hasSupportMetadata = true;
+        }
+
         static const std::vector<std::string> unSupportMetadataTypes = {"heifsMetadata", "dngMetadata", "webpMetadata",
             "tiffMetadata", "jfifMetadata", "pngMetadata", "gifMetadata"};
-        if (hasSpecificMetadata(env, argValue[NUM_0], unSupportMetadataTypes) &&
-            !hasSupportMetadata) {
+        if (!hasSupportMetadata && hasSpecificMetadata(env, argValue[NUM_0], unSupportMetadataTypes)) {
             context->hasUnSupportMetadata = true;
         }
     } else {
@@ -3857,7 +3941,7 @@ napi_value ImageSourceNapi::WriteImageMetadata(napi_env env, napi_callback_info 
     napi_create_promise(env, &(asyncContext->deferred), &result);
     IMG_CREATE_CREATE_ASYNC_WORK(env, status, "WriteImageMetadata",
         WriteImageMetadataExecute,
-        reinterpret_cast<napi_async_complete_callback>(ModifyImagePropertiesByTypeComplete),
+        reinterpret_cast<napi_async_complete_callback>(WriteImageMetadataComplete),
         asyncContext,
         asyncContext->work);
 
@@ -4058,8 +4142,22 @@ static void ProcessSingleMetadataKey(ImageSourceAsyncContext* context, const std
     context->status = SUCCESS;
 }
 
+static uint32_t ProcessXMPMetadataType(ImageSourceAsyncContext* context)
+{
+    CHECK_ERROR_RETURN_RET(context == nullptr, IMAGE_SOURCE_UNSUPPORTED_METADATA);
+    uint32_t errorCode = ERROR;
+    (void)context->rImageSource->ReadXMPMetadata(errorCode);
+    if (errorCode != SUCCESS) {
+        return (errorCode == ERR_IMAGE_SOURCE_DATA) ? ERR_IMAGE_SOURCE_DATA : IMAGE_SOURCE_UNSUPPORTED_METADATA;
+    }
+    return SUCCESS;
+}
+
 static uint32_t ProcessSpecifiedMetadataType(ImageSourceAsyncContext* context, const uint32_t& metaType)
 {
+    if (metaType == static_cast<uint32_t>(MetadataType::XMP)) {
+        return ProcessXMPMetadataType(context);
+    }
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     if (metaType == XTSTYLE || metaType == RFDATAB) {
         uint32_t xtErrorCode;
@@ -4130,6 +4228,7 @@ static void ReadImageMetadataByTypeExecute(napi_env env, void *data)
     context->rImageHeifsMetadata = CreateNullHeifsMetadata();
     context->rWebPMetadata = CreateNullWebPMetadata();
     context->rJfifMetadata = CreateNullJfifMetadata();
+    context->rXMPMetadata = context->rImageSource->ReadXMPMetadata(errorCode);
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     context->rAvisMetadata = context->rImageSource->GetAvisMetadata(context->index, errorCode);
     errorCode = context->rImageSource->GetPngMetadata(context->rPngMetadata);
@@ -4141,16 +4240,7 @@ static void ReadImageMetadataByTypeExecute(napi_env env, void *data)
         context->rImageSource->GetBlobMetadata(MetadataType::XTSTYLE, errorCode));
 #endif
     if (context->typeArray == nullptr || context->typeArray->empty()) {
-        const std::vector<MetadataValue> allProperties =
-            context->rImageSource->GetAllPropertiesWithType(context->index);
-        for (const auto& property : allProperties) {
-            context->kValueTypeArray.emplace_back(property);
-        }
-        context->status = allProperties.empty() ? ERROR : SUCCESS;
-        if (allProperties.empty()) {
-            IMAGE_LOGE("Failed to get any properties");
-            context->errMsgArray.insert(std::make_pair(ERROR, "AllProperties"));
-        }
+        GetAllMetadataProperties(context);
     } else {
         GetSpecifiedMetadataProperties(context);
     }
@@ -4570,6 +4660,9 @@ STATIC_EXEC_FUNC(CreatePixelMapList)
             context->decodeOpts.isAnimationDecode = true;
         }
         context->pixelMaps = context->rImageSource->CreatePixelMapList(context->decodeOpts, errorCode);
+        if (imageInfo.encodedFormat == IMAGE_AVIS_FORMAT || imageInfo.encodedFormat == IMAGE_AVIF_FORMAT) {
+            errorCode = errorCode == ERR_MEDIA_FORMAT_UNSUPPORT ? ERR_IMAGE_DATA_UNSUPPORT : errorCode;
+        }
     }
     if ((errorCode == SUCCESS) && IMG_NOT_NULL(context->pixelMaps)) {
         context->status = SUCCESS;
@@ -5049,115 +5142,6 @@ void ImageSourceNapi::SetImageResource(ImageResource resource)
 ImageResource ImageSourceNapi::GetImageResource()
 {
     return resource_;
-}
-
-#ifdef XMP_TOOLKIT_SDK_ENABLE
-static void ReadXMPMetadataComplete(napi_env env, napi_status status, void *data)
-{
-    IMAGE_LOGD("ReadXMPMetadataComplete IN");
-    napi_value result = nullptr;
-    auto context = static_cast<ImageSourceAsyncContext*>(data);
-    CHECK_ERROR_RETURN_LOG(context == nullptr, "empty context");
-
-    if (context->status == SUCCESS) {
-        result = XMPMetadataNapi::CreateXMPMetadata(env, context->rXMPMetadata);
-        if (napi_undefined == ImageNapiUtils::getType(env, result)) {
-            napi_get_null(env, &result);
-        }
-    } else {
-        napi_get_null(env, &result);
-        context->errMsgArray.emplace(ImageErrorConvert::ReadXMPMetadataMakeErrMsg(context->status));
-    }
-    IMAGE_LOGD("ReadXMPMetadataComplete OUT");
-    ImageSourceCallbackRoutine(env, context, result);
-}
-#endif
-
-napi_value ImageSourceNapi::ReadXMPMetadata(napi_env env, napi_callback_info info)
-{
-    IMAGE_LOGD("ReadXMPMetadata IN");
-    napi_value result = nullptr;
-    napi_get_null(env, &result);
-#ifdef XMP_TOOLKIT_SDK_ENABLE
-    napi_status status;
-    napi_value thisVar;
-    IMG_JS_NO_ARGS(env, info, status, thisVar);
-    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, thisVar), result, IMAGE_LOGE("fail to get thisVar"));
-
-    std::unique_ptr<ImageSourceAsyncContext> asyncContext = std::make_unique<ImageSourceAsyncContext>();
-    CHECK_ERROR_RETURN_RET_LOG(asyncContext == nullptr, result, "fail to create async context");
-    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->constructor_));
-    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->constructor_), result,
-        IMAGE_LOGE("fail to unwrap thisVar"));
-    asyncContext->rImageSource = reinterpret_cast<ImageSourceNapi*>(asyncContext->constructor_)->nativeImgSrc;
-    CHECK_ERROR_RETURN_RET_LOG(asyncContext->rImageSource == nullptr, result, "fail to get nativeImgSrc");
-
-    napi_create_promise(env, &(asyncContext->deferred), &result);
-    IMG_CREATE_CREATE_ASYNC_WORK(env, status, "ReadXMPMetadata", [](napi_env env, void *data) {
-        auto context = static_cast<ImageSourceAsyncContext*>(data);
-        context->rXMPMetadata = context->rImageSource->ReadXMPMetadata(context->status);
-    }, ReadXMPMetadataComplete, asyncContext, asyncContext->work);
-
-    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), result, IMAGE_LOGE("fail to create async work"));
-#endif
-    return result;
-}
-
-#ifdef XMP_TOOLKIT_SDK_ENABLE
-static void WriteXMPMetadataComplete(napi_env env, napi_status status, void *data)
-{
-    IMAGE_LOGD("WriteXMPMetadataComplete IN");
-    napi_value result = nullptr;
-    napi_get_undefined(env, &result);
-    auto context = static_cast<ImageSourceAsyncContext*>(data);
-    CHECK_ERROR_RETURN_LOG(context == nullptr, "empty context");
-    if (context->status != SUCCESS) {
-        context->errMsgArray.emplace(ImageErrorConvert::WriteXMPMetadataMakeErrMsg(context->status));
-    }
-    ImageSourceCallbackRoutine(env, context, result);
-}
-#endif
-
-napi_value ImageSourceNapi::WriteXMPMetadata(napi_env env, napi_callback_info info)
-{
-    IMAGE_LOGD("WriteXMPMetadata IN");
-    napi_value result = nullptr;
-    napi_get_undefined(env, &result);
-
-#ifdef XMP_TOOLKIT_SDK_ENABLE
-    napi_status status;
-    napi_value thisVar = nullptr;
-    napi_value argValue[NUM_1] = {0};
-    size_t argCount = NUM_1;
-    IMG_JS_ARGS(env, info, status, argCount, argValue, thisVar);
-    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), result, IMAGE_LOGE("fail to get thisVar"));
-    if (argCount != NUM_1) {
-        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_SOURCE_INVALID_PARAMETER, "Invalid argument count");
-    }
-
-    std::unique_ptr<ImageSourceAsyncContext> asyncContext = std::make_unique<ImageSourceAsyncContext>();
-    CHECK_ERROR_RETURN_RET_LOG(asyncContext == nullptr, result, "fail to create async context");
-    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->constructor_));
-    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->constructor_), result,
-        IMAGE_LOGE("fail to unwrap thisVar"));
-    asyncContext->rImageSource = reinterpret_cast<ImageSourceNapi*>(asyncContext->constructor_)->nativeImgSrc;
-    CHECK_ERROR_RETURN_RET_LOG(asyncContext->rImageSource == nullptr, result, "fail to get nativeImgSrc");
-
-    if (!ImageNapiUtils::CheckTypeByName(env, argValue[NUM_0], "XMPMetadata")) {
-        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_SOURCE_INVALID_PARAMETER, "Invalid argument type");
-    }
-    asyncContext->rXMPMetadata = XMPMetadataNapi::GetXMPMetadata(env, argValue[NUM_0]);
-    CHECK_ERROR_RETURN_RET_LOG(asyncContext->rXMPMetadata == nullptr, result, "fail to get xmpMetadata");
-
-    napi_create_promise(env, &(asyncContext->deferred), &result);
-    IMG_CREATE_CREATE_ASYNC_WORK(env, status, "WriteXMPMetadata", [](napi_env env, void *data) {
-        auto context = static_cast<ImageSourceAsyncContext*>(data);
-        context->status = context->rImageSource->WriteXMPMetadata(context->rXMPMetadata);
-    }, WriteXMPMetadataComplete, asyncContext, asyncContext->work);
-
-    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), result, IMAGE_LOGE("fail to create async work"));
-#endif
-    return result;
 }
 
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)

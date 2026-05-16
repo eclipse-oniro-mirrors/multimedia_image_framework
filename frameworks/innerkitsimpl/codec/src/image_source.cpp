@@ -28,6 +28,7 @@
 #include <mutex>
 #include <set>
 #include <vector>
+#include <functional>
 
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 #include "auxiliary_generator.h"
@@ -184,7 +185,6 @@ constexpr int32_t SHARE_MEMORY_ALLOC = 2;
 constexpr int32_t AUTO_ALLOC = 0;
 static constexpr uint8_t JPEG_SOI[] = { 0xFF, 0xD8, 0xFF };
 constexpr uint8_t PIXEL_BYTES = 4;
-constexpr int32_t INVALID_FILE_DESCRIPTOR = -1;
 constexpr int32_t WEBP_MIN_FRAME_DURATION = 100;
 constexpr int32_t WEBP_DELAY_TIME_UINT16_MAX = 65535;
 
@@ -341,6 +341,11 @@ bool SutDecSoManager::LoadSutDecSo()
     return true;
 }
 #endif
+
+struct JpegExtendInfo {
+    std::vector<SingleJpegImage> auxiliaryPictures;
+    std::vector<SingleBlobMetadata> blobMetadatas;
+};
 
 const auto KEY_SIZE = 2;
 const static std::string DEFAULT_EXIF_VALUE = "default_exif_value";
@@ -876,11 +881,6 @@ void ImageSource::ContextToAddrInfos(DecodeContext &context, PixelMapAddrInfos &
     addrInfos.size = context.pixelsBuffer.bufferSize;
     addrInfos.type = context.allocatorType;
     addrInfos.func = context.freeFunc;
-}
-
-bool IsSupportAstcZeroCopy(const Size &size)
-{
-    return ImageSystemProperties::GetAstcEnabled() && size.width * size.height >= ASTC_SIZE;
 }
 
 bool IsSupportDma(const DecodeOptions &opts, const ImageInfo &info, bool hasDesiredSizeOptions)
@@ -1504,6 +1504,9 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMap(uint32_t index, const DecodeOpt
 
         if (finalOutputStep == FinalOutputStep::NO_CHANGE) {
             context.allocatorType = opts_.allocatorType;
+            if (context.allocatorType == AllocatorType::DEFAULT) {
+                context.allocatorType = AllocatorType::SHARE_MEM_ALLOC;
+            }
         } else {
             context.allocatorType = AllocatorType::SHARE_MEM_ALLOC;
         }
@@ -4421,7 +4424,7 @@ static bool ReadFileAndResoveAstc(size_t fileSize, size_t astcSize, unique_ptr<P
     ImageInfo pixelAstcInfo;
     pixelAstc->GetImageInfo(pixelAstcInfo);
     AllocatorType allocatorType = (opts.allocatorType == AllocatorType::DEFAULT) ?
-        (IsSupportAstcZeroCopy(pixelAstcInfo.size) ? AllocatorType::DMA_ALLOC : AllocatorType::SHARE_MEM_ALLOC) :
+        (ImageSystemProperties::GetAstcEnabled() ? AllocatorType::DMA_ALLOC : AllocatorType::SHARE_MEM_ALLOC) :
         opts.allocatorType;
     std::unique_ptr<AbsMemory> dstMemory = MemoryManager::CreateMemory(allocatorType, memoryData);
     if (dstMemory == nullptr) {
@@ -5974,6 +5977,15 @@ bool ApplyDecodingOptionsForPicture(DecodeOptions& dopts, const DecodingOptionsF
     return false;
 }
 
+static void HandleErrorCode(const std::string &encodedFormat, uint32_t &errorCode)
+{
+    if (encodedFormat == IMAGE_AVIF_FORMAT && errorCode == ERR_MEDIA_FORMAT_UNSUPPORT) {
+        errorCode = ERR_IMAGE_DESIRED_PIXELFORMAT_UNSUPPORTED;
+    } else {
+        errorCode = ERR_IMAGE_PICTURE_CREATE_FAILED;
+    }
+}
+
 std::unique_ptr<Picture> ImageSource::CreatePicture(const DecodingOptionsForPicture &opts, uint32_t &errorCode)
 {
     ImageInfo info;
@@ -5999,7 +6011,7 @@ std::unique_ptr<Picture> ImageSource::CreatePicture(const DecodingOptionsForPict
     std::unique_ptr<Picture> picture = Picture::Create(mainPixelMap);
     if (picture == nullptr) {
         IMAGE_LOGE("Picture is nullptr");
-        errorCode = ERR_IMAGE_PICTURE_CREATE_FAILED;
+        HandleErrorCode(info.encodedFormat, errorCode);
         return nullptr;
     }
     DownSamplingScaleFactor downSamplingScaleFactor;
@@ -6010,14 +6022,14 @@ std::unique_ptr<Picture> ImageSource::CreatePicture(const DecodingOptionsForPict
             opts.desiredMetadatas : ImageUtils::GetAllMetadataType();
     if (info.encodedFormat == IMAGE_HEIF_FORMAT || info.encodedFormat == IMAGE_HEIC_FORMAT) {
         DecodeHeifAuxiliaryPictures(auxTypes, picture, errorCode, downSamplingScaleFactor);
+        DecodeHeifBlobMetadatas(picture, metadataTypes, info, errorCode);
     } else if (info.encodedFormat == IMAGE_JPEG_FORMAT) {
-        DecodeJpegAuxiliaryPicture(auxTypes, picture, errorCode, downSamplingScaleFactor);
+        DecodeJpegExtendInfo(auxTypes, metadataTypes, picture, errorCode, downSamplingScaleFactor);
         SetJfifMetadataForPicture(picture);
     }
-    DecodeBlobMetaData(picture, metadataTypes, info, errorCode);
     SetHdrMetadataForPicture(picture);
     if (errorCode != SUCCESS) {
-        IMAGE_LOGE("Decode auxiliary pictures failed, error code: %{public}u", errorCode);
+        IMAGE_LOGE("Decode auxiliary pictures or blob metadatas failed, error code: %{public}u", errorCode);
     }
     Picture::DumpPictureIfDumpEnabled(*picture, "picture_decode_after");
     return picture;
@@ -6098,24 +6110,17 @@ void ImageSource::DecodeHeifAuxiliaryPictures(const std::set<AuxiliaryPictureTyp
     }
 }
 
-static bool OnlyDecodeGainmap(std::set<AuxiliaryPictureType> &auxTypes)
-{
-    return auxTypes.size() == SINGLE_FRAME_SIZE && auxTypes.find(AuxiliaryPictureType::GAINMAP) != auxTypes.end();
-}
-
-static std::vector<SingleJpegImage> ParsingJpegAuxiliaryPictures(uint8_t *stream, uint32_t streamSize,
+static JpegExtendInfo ParsingJpegExtendInfo(uint8_t *stream, uint32_t streamSize,
     std::set<AuxiliaryPictureType> &auxTypes, ImageHdrType hdrType)
 {
     ImageTrace imageTrace("%s", __func__);
+    JpegExtendInfo result;
     if (stream == nullptr || streamSize == 0) {
-        IMAGE_LOGE("No source stream when parsing auxiliary pictures");
-        return {};
+        IMAGE_LOGE("No source stream when parsing JPEG extend info");
+        return result;
     }
     auto jpegMpfParser = std::make_unique<JpegMpfParser>();
-    if (!OnlyDecodeGainmap(auxTypes) && !jpegMpfParser->ParsingAuxiliaryPictures(stream, streamSize, false)) {
-        IMAGE_LOGE("JpegMpfParser parse auxiliary pictures failed!");
-        jpegMpfParser->images_.clear();
-    }
+    jpegMpfParser->ParsingExtendInfo(stream, streamSize, false);
     if (hdrType > ImageHdrType::SDR) {
         uint32_t gainmapStreamSize = streamSize;
         for (auto &image : jpegMpfParser->images_) {
@@ -6129,7 +6134,125 @@ static std::vector<SingleJpegImage> ParsingJpegAuxiliaryPictures(uint8_t *stream
         };
         jpegMpfParser->images_.push_back(gainmapImage);
     }
-    return jpegMpfParser->images_;
+    result.auxiliaryPictures = std::move(jpegMpfParser->images_);
+    result.blobMetadatas = std::move(jpegMpfParser->blobMetadatas_);
+    return result;
+}
+
+void DecodeJpegAuxiliaryPictures(JpegExtendInfo &extendInfo, std::set<AuxiliaryPictureType> &auxTypes,
+    MainPictureInfo &mainPictureInfo, std::unique_ptr<Picture> &picture, uint32_t &errorCode, StreamInfo &streamInfo,
+    const std::function<std::unique_ptr<AbsImageDecoder>(InputDataStream&, uint32_t&)> &createDecoder,
+    const DownSamplingScaleFactor& downSamplingScaleFactor)
+{
+    if (auxTypes.empty()) {
+        return;
+    }
+    for (auto &auxInfo : extendInfo.auxiliaryPictures) {
+        if (auxTypes.find(auxInfo.auxType) == auxTypes.end()) {
+            continue;
+        }
+        if (ImageUtils::HasOverflowed(auxInfo.offset, auxInfo.size)
+            || auxInfo.offset + auxInfo.size > streamInfo.GetCurrentSize()) {
+            IMAGE_LOGW("Invalid auxType: %{public}d, offset: %{public}u, size: %{public}u, streamSize: %{public}u",
+                auxInfo.auxType, auxInfo.offset, auxInfo.size, streamInfo.GetCurrentSize());
+            continue;
+        }
+        AuxiliaryPictureDecodeInfo auxiliaryPictureDecodeInfo;
+        auxiliaryPictureDecodeInfo.downSamplingScaleFactor = downSamplingScaleFactor;
+        auxiliaryPictureDecodeInfo.imageType = IMAGE_JPEG_FORMAT;
+        auxiliaryPictureDecodeInfo.type = auxInfo.auxType;
+        IMAGE_LOGI("Jpeg auxiliary picture has found. Type: %{public}d", auxInfo.auxType);
+        std::unique_ptr<InputDataStream> auxStream =
+            BufferSourceStream::CreateSourceStream((streamInfo.GetCurrentAddress() + auxInfo.offset), auxInfo.size);
+        if (auxStream == nullptr) {
+            IMAGE_LOGE("Create auxiliary stream fail, auxiliary offset is %{public}u", auxInfo.offset);
+            continue;
+        }
+        auto auxDecoder = createDecoder(*auxStream, errorCode);
+        uint32_t auxErrorCode = ERROR;
+        auto auxPicture = AuxiliaryGenerator::GenerateJpegAuxiliaryPicture(
+            mainPictureInfo, auxStream, auxDecoder, auxErrorCode, auxiliaryPictureDecodeInfo);
+        if (auxPicture != nullptr && auxPicture->GetContentPixel() != nullptr) {
+            AuxiliaryPictureInfo auxPictureInfo = auxPicture->GetAuxiliaryPictureInfo();
+            auxPictureInfo.jpegTagName = auxInfo.auxTagName;
+            auxPicture->SetAuxiliaryPictureInfo(auxPictureInfo);
+            auxPicture->GetContentPixel()->SetEditable(true);
+            picture->SetAuxiliaryPicture(auxPicture);
+        } else {
+            IMAGE_LOGE("Generate jpeg auxiliary picture failed!, error: %{public}d", auxErrorCode);
+        }
+    }
+}
+ 
+static void DecodeJpegBlobMetadatas(JpegExtendInfo &extendInfo, std::set<MetadataType> &metadataTypes,
+    std::unique_ptr<Picture> &picture, uint32_t &errorCode, StreamInfo &streamInfo)
+{
+    if (metadataTypes.empty()) {
+        return;
+    }
+    std::map<MetadataType, std::vector<uint8_t>> metadataMap;
+    for (const auto &blobInfo : extendInfo.blobMetadatas) {
+        if (!metadataTypes.count(blobInfo.blobType)) {
+            continue;
+        }
+        if (ImageUtils::HasOverflowed(blobInfo.offset, blobInfo.size) ||
+            blobInfo.offset + blobInfo.size > streamInfo.GetCurrentSize()) {
+            IMAGE_LOGW("Invalid blob metadata: type=%{public}d, offset=%{public}u, size=%{public}u",
+                       blobInfo.blobType, blobInfo.offset, blobInfo.size);
+            continue;
+        }
+        const uint8_t *begin = streamInfo.GetCurrentAddress() + blobInfo.offset;
+        metadataMap[blobInfo.blobType].assign(begin, begin + blobInfo.size);
+    }
+ 
+    for (const auto& iter : metadataMap) {
+        if (iter.second.size()) {
+            IMAGE_LOGI("%{public}s: %{public}s size is: %{public}zu",
+                __func__, BLOB_METADATA_TAG_MAP.at(iter.first).c_str(), iter.second.size());
+            errorCode = picture->SetBlobMetadataByType(iter.second, iter.first);
+        }
+    }
+}
+ 
+void ImageSource::DecodeJpegExtendInfo(std::set<AuxiliaryPictureType> &auxTypes,
+    std::set<MetadataType> &metadataTypes, std::unique_ptr<Picture> &picture, uint32_t &errorCode,
+    const DownSamplingScaleFactor& downSamplingScaleFactor)
+{
+    if (auxTypes.empty() && metadataTypes.empty()) {
+        return;
+    }
+    StreamInfo streamInfo;
+    if (!CheckJpegSourceStream(streamInfo) || streamInfo.buffer == nullptr || streamInfo.GetCurrentSize() == 0) {
+        IMAGE_LOGE("Jpeg source stream is invalid!");
+        errorCode = ERR_IMAGE_DATA_ABNORMAL;
+        return;
+    }
+    if (!picture || !picture->GetMainPixel()) {
+        IMAGE_LOGE("%{public}s: picture or mainPixelMap is nullptr", __func__);
+        errorCode = ERR_IMAGE_DATA_ABNORMAL;
+        return;
+    }
+ 
+    JpegExtendInfo extendInfo = ParsingJpegExtendInfo(
+        streamInfo.GetCurrentAddress(), streamInfo.GetCurrentSize(), auxTypes, sourceHdrType_);
+ 
+    MainPictureInfo mainPictureInfo;
+    mainPictureInfo.hdrType = sourceHdrType_;
+    picture->GetMainPixel()->GetImageInfo(mainPictureInfo.imageInfo);
+ 
+    auto createDecoder = [this](InputDataStream &stream, uint32_t &errorCode)
+        -> std::unique_ptr<AbsImageDecoder> {
+        return std::unique_ptr<AbsImageDecoder>(
+            DoCreateDecoder(InnerFormat::IMAGE_EXTENDED_CODEC, pluginServer_, stream, errorCode));
+    };
+ 
+    if (!auxTypes.empty()) {
+        DecodeJpegAuxiliaryPictures(extendInfo, auxTypes, mainPictureInfo,
+            picture, errorCode, streamInfo, createDecoder, downSamplingScaleFactor);
+    }
+    if (!metadataTypes.empty()) {
+        DecodeJpegBlobMetadatas(extendInfo, metadataTypes, picture, errorCode, streamInfo);
+    }
 }
 
 bool ImageSource::CheckJpegSourceStream(StreamInfo &streamInfo)
@@ -6169,58 +6292,6 @@ bool ImageSource::CheckJpegSourceStream(StreamInfo &streamInfo)
         streamInfo.gainmapOffset = gainmapOffset;
     }
     return true;
-}
-
-void ImageSource::DecodeJpegAuxiliaryPicture(std::set<AuxiliaryPictureType> &auxTypes,
-    std::unique_ptr<Picture> &picture, uint32_t &errorCode, const DownSamplingScaleFactor& downSamplingScaleFactor)
-{
-    StreamInfo streamInfo;
-    if (!CheckJpegSourceStream(streamInfo) || streamInfo.buffer == nullptr || streamInfo.GetCurrentSize() == 0) {
-        IMAGE_LOGE("Jpeg source stream is invalid!");
-        errorCode = ERR_IMAGE_DATA_ABNORMAL;
-        return;
-    }
-    auto auxInfos = ParsingJpegAuxiliaryPictures(streamInfo.GetCurrentAddress(), streamInfo.GetCurrentSize(),
-        auxTypes, sourceHdrType_);
-    MainPictureInfo mainInfo;
-    mainInfo.hdrType = sourceHdrType_;
-    picture->GetMainPixel()->GetImageInfo(mainInfo.imageInfo);
-    for (auto &auxInfo : auxInfos) {
-        if (auxTypes.find(auxInfo.auxType) == auxTypes.end()) {
-            continue;
-        }
-        if (ImageUtils::HasOverflowed(auxInfo.offset, auxInfo.size) ||
-            auxInfo.offset + auxInfo.size > streamInfo.GetCurrentSize()) {
-            IMAGE_LOGW("Invalid auxType: %{public}d, offset: %{public}u, size: %{public}u, streamSize: %{public}u",
-                auxInfo.auxType, auxInfo.offset, auxInfo.size, streamInfo.GetCurrentSize());
-            continue;
-        }
-        AuxiliaryPictureDecodeInfo auxiliaryPictureDecodeInfo;
-        auxiliaryPictureDecodeInfo.downSamplingScaleFactor = downSamplingScaleFactor;
-        auxiliaryPictureDecodeInfo.imageType = IMAGE_JPEG_FORMAT;
-        auxiliaryPictureDecodeInfo.type = auxInfo.auxType;
-        IMAGE_LOGI("Jpeg auxiliary picture has found. Type: %{public}d", auxInfo.auxType);
-        std::unique_ptr<InputDataStream> auxStream =
-            BufferSourceStream::CreateSourceStream((streamInfo.GetCurrentAddress() + auxInfo.offset), auxInfo.size);
-        if (auxStream == nullptr) {
-            IMAGE_LOGE("Create auxiliary stream fail, auxiliary offset is %{public}u", auxInfo.offset);
-            continue;
-        }
-        auto auxDecoder = std::unique_ptr<AbsImageDecoder>(
-            DoCreateDecoder(InnerFormat::IMAGE_EXTENDED_CODEC, pluginServer_, *auxStream, errorCode));
-        uint32_t auxErrorCode = ERROR;
-        auto auxPicture = AuxiliaryGenerator::GenerateJpegAuxiliaryPicture(
-            mainInfo, auxStream, auxDecoder, auxErrorCode, auxiliaryPictureDecodeInfo);
-        if (auxPicture != nullptr && auxPicture->GetContentPixel() != nullptr) {
-            AuxiliaryPictureInfo auxPictureInfo = auxPicture->GetAuxiliaryPictureInfo();
-            auxPictureInfo.jpegTagName = auxInfo.auxTagName;
-            auxPicture->SetAuxiliaryPictureInfo(auxPictureInfo);
-            auxPicture->GetContentPixel()->SetEditable(true);
-            picture->SetAuxiliaryPicture(auxPicture);
-        } else {
-            IMAGE_LOGE("Generate jpeg auxiliary picture failed!, error: %{public}d", auxErrorCode);
-        }
-    }
 }
 
 static uint32_t SetThumbnailDecodeOptions(std::unique_ptr<AbsImageDecoder> &thumbDecoder,
@@ -6366,7 +6437,7 @@ std::unique_ptr<PixelMap> ImageSource::CreateThumbnail(const DecodingOptionsForT
     return pixelMap;
 }
 
-void ImageSource::DecodeBlobMetaData(std::unique_ptr<Picture> &picture, const std::set<MetadataType> &metadataTypes,
+void ImageSource::DecodeHeifBlobMetadatas(std::unique_ptr<Picture> &picture, std::set<MetadataType> &metadataTypes,
     ImageInfo &info, uint32_t &errorCode)
 {
     if (mainDecoder_ == nullptr) {
@@ -6379,19 +6450,15 @@ void ImageSource::DecodeBlobMetaData(std::unique_ptr<Picture> &picture, const st
         errorCode = ERR_IMAGE_DATA_ABNORMAL;
         return;
     }
-
+    if (metadataTypes.empty()) {
+        return;
+    }
     std::map<MetadataType, std::vector<uint8_t>> metadataMap;
     for (const auto& iter : BLOB_METADATA_TAG_MAP) {
         if (metadataTypes.find(iter.first) == metadataTypes.end()) {
             continue;
         }
-        if (info.encodedFormat == IMAGE_JPEG_FORMAT) {
-            auto jpegMpfParser = std::make_unique<JpegMpfParser>();
-            jpegMpfParser->ParsingBlobMetadata(sourceStreamPtr_->GetDataPtr(), sourceStreamPtr_->GetStreamSize(),
-                metadataMap[iter.first], iter.first);
-        } else {
-            mainDecoder_->GetHeifMetadataBlob(metadataMap[iter.first], iter.first);
-        }
+        mainDecoder_->GetHeifMetadataBlob(metadataMap[iter.first], iter.first);
     }
 
     for (const auto& iter : metadataMap) {
@@ -6421,8 +6488,11 @@ bool ImageSource::CompressToAstcFromPixelmap(const DecodeOptions &opts, unique_p
     Size desiredSize = {allocMemSize, 1};
     MemoryData memoryData = {nullptr, allocMemSize, "CompressToAstcFromPixelmap Data", desiredSize,
         opts.desiredPixelFormat};
+    if (ImageSystemProperties::GetNoPaddingEnabled()) {
+        memoryData.usage = BUFFER_USAGE_PREFER_NO_PADDING | BUFFER_USAGE_ALLOC_NO_IPC;
+    }
     AllocatorType allocatorType = (opts.allocatorType == AllocatorType::DEFAULT) ?
-        (IsSupportAstcZeroCopy(rgbaInfo.size) ? AllocatorType::DMA_ALLOC : AllocatorType::SHARE_MEM_ALLOC) :
+        (ImageSystemProperties::GetAstcEnabled() ? AllocatorType::DMA_ALLOC : AllocatorType::SHARE_MEM_ALLOC) :
         opts.allocatorType;
     dstMemory = MemoryManager::CreateMemory(allocatorType, memoryData);
     bool cond = (dstMemory == nullptr);
@@ -6645,9 +6715,17 @@ static std::shared_ptr<FragmentMetadata> ParseJpegFragmentMetadata(std::unique_p
     return std::static_pointer_cast<FragmentMetadata>(fragmentMetadata);
 }
 
+static JpegExtendInfo JpegImageCheckAndUnpack(StreamInfo &streamInfo, ImageHdrType hdrType)
+{
+    JpegExtendInfo extendInfo;
+    std::set<AuxiliaryPictureType> auxTypes = ImageUtils::GetAllAuxiliaryPictureType();
+    extendInfo = ParsingJpegExtendInfo(
+        streamInfo.GetCurrentAddress(), streamInfo.GetCurrentSize(), auxTypes, hdrType);
+    return extendInfo;
+}
+
 uint32_t ImageSource::CreateFragmentMetadataByImageSource(ImageInfo info)
 {
-    IMAGE_LOGD("CreateFragmentMetadataByImageSource IN");
     if (info.encodedFormat == IMAGE_JPEG_FORMAT) {
         StreamInfo streamInfo;
         if (!CheckJpegSourceStream(streamInfo) || streamInfo.buffer == nullptr || streamInfo.GetCurrentSize() == 0) {
@@ -6655,15 +6733,14 @@ uint32_t ImageSource::CreateFragmentMetadataByImageSource(ImageInfo info)
             return ERR_IMAGE_SOURCE_DATA;
         }
         std::shared_ptr<SingleJpegImage> fragmentPicture;
-        JpegMpfParser jpegMpfParser;
-        if (!jpegMpfParser.ParsingAuxiliaryPictures(streamInfo.GetCurrentAddress(),
-            streamInfo.GetCurrentSize(), false)) {
-            IMAGE_LOGE("JpegMpfParser parse auxiliary pictures failed!");
-            jpegMpfParser.images_.clear();
+        if (!ParseHdrType()) {
+            return ERR_DMA_DATA_ABNORMAL;
         }
-        for (const auto& picture : jpegMpfParser.images_) {
+        auto extendInfo = JpegImageCheckAndUnpack(streamInfo, sourceHdrType_);
+        for (const auto& picture : extendInfo.auxiliaryPictures) {
             if (picture.auxType == AuxiliaryPictureType::FRAGMENT_MAP) {
                 fragmentPicture = std::make_shared<SingleJpegImage>(picture);
+                break;
             }
         }
         if (!fragmentPicture) {
@@ -6686,12 +6763,17 @@ uint32_t ImageSource::CreateFragmentMetadataByImageSource(ImageInfo info)
         return SUCCESS;
     } else {
         Rect fragmentRect;
-        if (!mainDecoder_->GetHeifFragmentMetadata(fragmentRect)) {
-            IMAGE_LOGE("mainDecoder_ is nullptr");
-            return ERR_IMAGE_DATA_ABNORMAL;
+        bool ret;
+        CHECK_ERROR_RETURN_RET_LOG(mainDecoder_ == nullptr, ERR_IMAGE_DATA_ABNORMAL, "mainDecoder_ is nullptr");
+        ret = mainDecoder_->GetHeifFragmentMetadata(fragmentRect);
+        if (!ret) {
+            return ERR_IMAGE_DATA_ABNORMAL; 
         }
         auto fragmentMetadata = std::static_pointer_cast<FragmentMetadata>(
             AuxiliaryGenerator::MakeFragmentMetadata(fragmentRect));
+        if (fragmentMetadata == nullptr) {
+            return ERR_IMAGE_DATA_ABNORMAL; 
+        }
         metadatas_[MetadataType::FRAGMENT] = fragmentMetadata;
         return SUCCESS;
     }
@@ -7191,9 +7273,9 @@ bool ImageSource::IsJpegProgressive(uint32_t &errorCode)
     return mainDecoder_->IsProgressiveJpeg();
 }
 
-#ifdef XMP_TOOLKIT_SDK_ENABLE
 uint32_t ImageSource::CreateXMPMetadataByImageSource(const std::string &mimeType)
 {
+#if !defined(CROSS_PLATFORM)
     uint32_t errorCode = ERROR;
     IMAGE_LOGD("%{public}s enter", __func__);
     if (xmpMetadata_ != nullptr) {
@@ -7233,6 +7315,7 @@ uint32_t ImageSource::CreateXMPMetadataByImageSource(const std::string &mimeType
     errorCode = accessor->Read();
     CHECK_ERROR_RETURN_RET_LOG(errorCode != SUCCESS, errorCode, "%{public}s failed to read xmp metadata", __func__);
     xmpMetadata_ = accessor->Get();
+#endif
     return SUCCESS;
 }
 
@@ -7258,6 +7341,7 @@ std::shared_ptr<XMPMetadata> ImageSource::ReadXMPMetadata(uint32_t &errorCode)
 
 uint32_t ImageSource::WriteXMPMetadata(std::shared_ptr<XMPMetadata> &xmpMetadata)
 {
+#if !defined(CROSS_PLATFORM)
     IMAGE_LOGD("%{public}s enter", __func__);
     ImageInfo imageInfo;
     uint32_t errorCode = GetImageInfo(imageInfo);
@@ -7269,7 +7353,7 @@ uint32_t ImageSource::WriteXMPMetadata(std::shared_ptr<XMPMetadata> &xmpMetadata
     std::unique_ptr<XMPMetadataAccessor> accessor = nullptr;
     if (!srcFilePath_.empty()) {
         accessor = XMPMetadataAccessorFactory::Create(srcFilePath_, XMPAccessMode::READ_WRITE_XMP, mimeType);
-    } else if (srcFd_ != INVALID_FILE_DESCRIPTOR) {
+    } else if (srcFd_ != -1) {
         accessor = XMPMetadataAccessorFactory::Create(srcFd_, XMPAccessMode::READ_WRITE_XMP, mimeType);
     } else {
         IMAGE_LOGE("%{public}s no valid file source (path or fd) found", __func__);
@@ -7293,9 +7377,10 @@ uint32_t ImageSource::WriteXMPMetadata(std::shared_ptr<XMPMetadata> &xmpMetadata
     }
     Reset();
     IMAGE_LOGD("%{public}s XMP metadata written successfully", __func__);
+#endif
     return SUCCESS;
 }
-#endif
+
 uint32_t ImageSource::GetImageRawData(std::vector<uint8_t> &data, uint32_t &bitsPerSample)
 {
 #if !defined(CROSS_PLATFORM)

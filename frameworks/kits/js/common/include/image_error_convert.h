@@ -20,6 +20,8 @@
 
 namespace OHOS {
 namespace Media {
+using ImageErrorConvertFunc = std::pair<int32_t, std::string> (*)(uint32_t errorCode);
+
 class ImageErrorConvert {
 public:
     static std::pair<int32_t, std::string> CreatePictureAtIndexMakeErrMsg(uint32_t errorCode);
@@ -28,9 +30,10 @@ public:
     static std::pair<int32_t, std::string> ModifyImagePropertyArrayMakeErrMsg(uint32_t errorCode,
         std::string exMessage);
     static std::pair<int32_t, std::string> CreateThumbnailMakeErrMsg(uint32_t errorCode);
-    static std::pair<int32_t, std::string> ReadXMPMetadataMakeErrMsg(uint32_t errorCode);
-    static std::pair<int32_t, std::string> WriteXMPMetadataMakeErrMsg(uint32_t errorCode);
-    static std::pair<int32_t, std::string> XMPMetadataMakeErrMsg(uint32_t errorCode);
+
+    static std::string WriteXMPMetadataMakeMsg(uint32_t errorCode);
+    static std::pair<int32_t, std::string> XMPMetadataCommonMakeErrMsg(uint32_t errorCode);
+    static std::pair<int32_t, std::string> XMPMetadataGetBlobMakeErrMsg(uint32_t errorCode);
     static std::pair<int32_t, std::string> CreateImageRawDataMakeErrMsg(uint32_t errorCode);
 };
 } // namespace Media

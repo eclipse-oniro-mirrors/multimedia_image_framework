@@ -282,7 +282,7 @@ HWTEST_F(ImageSourceXMPTest, WriteXMPMetadataTest001, TestSize.Level1)
     ASSERT_EQ(errorCode, SUCCESS);
 
     XMPTag tag;
-    tag.type = XMPTagType::SIMPLE;
+    tag.type = XMPTagType::STRING;
     tag.value = "WriteXMPMetadataTest001";
     errorCode = xmpMetadata->SetValue("xmp:CreatorTool", tag.type, tag.value);
     ASSERT_EQ(errorCode, SUCCESS);
@@ -389,7 +389,7 @@ HWTEST_F(ImageSourceXMPTest, WriteXMPMetadataTest005, TestSize.Level1)
     ASSERT_EQ(errorCode, SUCCESS);
 
     XMPTag tag;
-    tag.type = XMPTagType::SIMPLE;
+    tag.type = XMPTagType::STRING;
     tag.value = "WriteXMPMetadataTest005";
     errorCode = xmpMetadata->SetValue("xmp:CreatorTool", tag.type, tag.value);
     ASSERT_EQ(errorCode, SUCCESS);
@@ -427,8 +427,8 @@ HWTEST_F(ImageSourceXMPTest, WriteXMPMetadataTest006, TestSize.Level1)
     ASSERT_EQ(errorCode, SUCCESS);
 
     XMPTag tag;
-    tag.type = XMPTagType::SIMPLE;
-    tag.value = "WriteXMPMetadataTest007";
+    tag.type = XMPTagType::STRING;
+    tag.value = "WriteXMPMetadataTest006";
     errorCode = xmpMetadata->SetValue("xmp:CreatorTool", tag.type, tag.value);
     ASSERT_EQ(errorCode, SUCCESS);
     errorCode = imageSource->WriteXMPMetadata(xmpMetadata);
@@ -450,7 +450,7 @@ HWTEST_F(ImageSourceXMPTest, WriteXMPMetadataTest006, TestSize.Level1)
 
 /**
  * @tc.name: WriteXMPMetadataTest007
- * @tc.desc: Verify that WriteXMPMetadata works correctly with tiff source.
+ * @tc.desc: Verify that WriteXMPMetadata fails for unsupported formats.
  * @tc.type: FUNC
  */
 HWTEST_F(ImageSourceXMPTest, WriteXMPMetadataTest007, TestSize.Level1)
@@ -465,24 +465,12 @@ HWTEST_F(ImageSourceXMPTest, WriteXMPMetadataTest007, TestSize.Level1)
     ASSERT_EQ(errorCode, SUCCESS);
 
     XMPTag tag;
-    tag.type = XMPTagType::SIMPLE;
+    tag.type = XMPTagType::STRING;
     tag.value = "WriteXMPMetadataTest008";
     errorCode = xmpMetadata->SetValue("xmp:CreatorTool", tag.type, tag.value);
     ASSERT_EQ(errorCode, SUCCESS);
     errorCode = imageSource->WriteXMPMetadata(xmpMetadata);
-    ASSERT_EQ(errorCode, SUCCESS);
-
-    // Verify that the XMP metadata is written correctly
-    std::unique_ptr<ImageSource> imageSource2 = CreateImageSourceByPath(IMAGE_TIFF_XMP_PATH);
-    ASSERT_NE(imageSource2, nullptr);
-
-    std::shared_ptr<XMPMetadata> xmpMetadata2 = imageSource2->ReadXMPMetadata(errorCode);
-    ASSERT_NE(xmpMetadata2, nullptr);
-    ASSERT_EQ(errorCode, SUCCESS);
-
-    XMPTag tag2;
-    xmpMetadata2->GetTag("xmp:CreatorTool", tag2);
-    EXPECT_TRUE(CompareXMPTag(tag, tag2));
+    ASSERT_EQ(errorCode, ERR_IMAGE_SOURCE_DATA);
     GTEST_LOG_(INFO) << "ImageSourceXMPTest: WriteXMPMetadataTest007 end";
 }
 
@@ -500,6 +488,7 @@ HWTEST_F(ImageSourceXMPTest, CreateXMPMetadataByImageSourceTest001, TestSize.Lev
     imageSource->xmpMetadata_ = std::make_shared<XMPMetadata>();
     uint32_t errorCode = imageSource->CreateXMPMetadataByImageSource(IMAGE_JPEG_FORMAT);
     ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource->xmpMetadata_, nullptr);
     GTEST_LOG_(INFO) << "ImageSourceXMPTest: CreateXMPMetadataByImageSourceTest001 end";
 }
 

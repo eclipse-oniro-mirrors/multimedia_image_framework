@@ -254,12 +254,12 @@ uint32_t DngSdkHelper::GetImageRawData(ImagePlugin::InputDataStream* stream, std
     try {
         DngSdkInputDataStream dngStream(stream);
         DngSdkHost dngHost;
-        dng_info dngInfo;
-        if (!ReadDngInfo(dngStream, dngHost, &dngInfo)) {
+        std::unique_ptr<dng_info> dngInfo = std::make_unique<dng_info>();
+        if (!ReadDngInfo(dngStream, dngHost, dngInfo.get())) {
             return ERR_IMAGE_GET_DATA_ABNORMAL;
         }
         std::unique_ptr<dng_negative> negative = nullptr;
-        const dng_image* image = ReadRawStage1(dngStream, dngHost, dngInfo, negative);
+        const dng_image* image = ReadRawStage1(dngStream, dngHost, *dngInfo, negative);
         CHECK_ERROR_RETURN_RET(image == nullptr, ERR_IMAGE_GET_DATA_ABNORMAL);
         uint32_t width = image->Width();
         uint32_t height = image->Height();

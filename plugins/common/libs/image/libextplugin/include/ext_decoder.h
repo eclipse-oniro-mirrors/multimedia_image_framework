@@ -44,6 +44,8 @@ public:
     bool HasProperty(std::string key) override;
     uint32_t Decode(uint32_t index, DecodeContext &context) override;
     uint32_t DecodeToYuv420(uint32_t index, DecodeContext &context);
+    uint32_t ProgressiveDecodeYuv(uint32_t index, DecodeContext &context);
+    uint32_t ProgressiveDecodeRgb(uint32_t index, DecodeContext &context);
     #ifdef JPEG_HW_DECODE_ENABLE
     void InitJpegDecoder() override;
     uint32_t AllocOutputBuffer(DecodeContext &context, OHOS::HDI::Codec::Image::V2_1::CodecImageBuffer& outputBuffer);

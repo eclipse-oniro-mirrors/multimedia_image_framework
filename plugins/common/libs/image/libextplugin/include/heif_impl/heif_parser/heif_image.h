@@ -109,19 +109,15 @@ public:
     void SetTmapBoxId(heif_item_id id);
     void SetStaticMetadata(std::vector<uint8_t>& display, std::vector<uint8_t>& lightInfo);
     void SetUWAInfo(std::vector<uint8_t>& uwaInfo);
-    void SetXtStyleData(std::vector<uint8_t>& xtStyleMetadata);
-    void SetRfDataBData(std::vector<uint8_t>& rfDataBMetadata);
     void SetISOMetadata(std::vector<uint8_t>& isoMetadata);
     void SetFragmentMetadata(HeifFragmentMetadata fragmentMetadata);
-    void SetSTDataMetaData(std::vector<uint8_t>& stDataMetadata);
     std::vector<uint8_t> GetDisplayInfo();
     std::vector<uint8_t> GetLightInfo();
     std::vector<uint8_t> GetUWAInfo();
     std::vector<uint8_t> GetISOMetadata();
     HeifFragmentMetadata GetFragmentMetadata();
-    std::vector<uint8_t> GetXtStyleData();
-    std::vector<uint8_t> GetRfDataBData();
-    std::vector<uint8_t> GetSTDataMetaData();
+    std::vector<uint8_t> GetBlobMetadata(HeifMetadataType type);
+    void SetBlobMetadata(HeifMetadataType type, std::vector<uint8_t>& blobMetadata);
 
     bool IsMovieImage() const;
     void SetMovieImage(bool flag);
@@ -163,9 +159,7 @@ private:
     std::vector<uint8_t> uwaInfo_;
     std::vector<uint8_t> isoMetadata_;
     HeifFragmentMetadata fragmentMetadata_;
-    std::vector<uint8_t> xtStyledata_;
-    std::vector<uint8_t> rfDataBdata_;
-    std::vector<uint8_t> stDatadata_;
+    std::map<HeifMetadataType, std::vector<uint8_t>> blobMetadataMap_;
 };
 } // namespace ImagePlugin
 } // namespace OHOS

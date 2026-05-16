@@ -61,6 +61,9 @@ public:
     static std::string ExtractProperty(std::string_view pathExpression);
     static std::pair<std::string, std::string> ExtractSplitProperty(std::string_view pathExpression);
 
+    static std::string GetParentProperty(std::string_view pathExpression);
+    static std::string NormalizeNamespacePrefix(std::string_view prefix);
+
     static uint32_t MapXMPErrorToMediaError(const XMP_Error &error);
     static void LogXMPError(const char *funcName, const XMP_Error &error);
 };

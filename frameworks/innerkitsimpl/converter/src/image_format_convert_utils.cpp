@@ -173,6 +173,39 @@ static bool NV12P010ToNV21P010SoftDecode(const uint8_t *srcBuffer, const YUVData
     return true;
 }
 
+static bool NV12P010ToNV21P010SoftDecode(const SrcConvertParam &srcParam, const DestConvertParam &destParam)
+{
+    const uint16_t *srcY = reinterpret_cast<const uint16_t *>(srcParam.slice[0]);
+    uint16_t *dstY = reinterpret_cast<uint16_t *>(destParam.slice[0]);
+    const uint16_t *srcUV = reinterpret_cast<const uint16_t *>(srcParam.slice[1]);
+    uint16_t *dstVU = reinterpret_cast<uint16_t *>(destParam.slice[1]);
+
+    uint32_t yStrideSrc = srcParam.stride[0] / TWO_SLICES;
+    uint32_t yStrideDst = destParam.stride[0] / TWO_SLICES;
+    uint32_t uvStrideSrc = srcParam.stride[1] / TWO_SLICES;
+    uint32_t uvStrideDst = destParam.stride[1] / TWO_SLICES;
+    for (uint32_t row = 0; row < srcParam.height; row++) {
+        for (uint32_t i = 0; i < srcParam.width; i++) {
+            dstY[i] = srcY[i];
+        }
+        srcY += yStrideSrc;
+        dstY += yStrideDst;
+    }
+
+    uint32_t uvHeight = (srcParam.height + 1) / TWO_SLICES;
+    uint32_t uvWidth = (srcParam.width % EVEN_ODD_DIVISOR == 0 ? srcParam.width : (srcParam.width + 1));
+    for (uint32_t row = 0; row < uvHeight; row++) {
+        for (uint32_t i = 0; i < uvWidth; i += TWO_SLICES) {
+            dstVU[i] = srcUV[i + 1];
+            dstVU[i + 1] = srcUV[i];
+        }
+        srcUV += uvStrideSrc;
+        dstVU += uvStrideDst;
+    }
+    
+    return true;
+}
+
 static bool RGBAConvert(const RGBDataInfo &rgbInfo, const uint8_t *srcBuffer, uint8_t *dstBuffer,
                         Convert10bitInfo convertInfo)
 {
@@ -334,9 +367,8 @@ static bool RGBToYuvP010Param(const RGBDataInfo &rgbInfo, SrcConvertParam &srcPa
 
 static bool SwapNV21P010(DestConvertInfo &destInfo)
 {
-    int32_t frameSize = static_cast<int32_t>(destInfo.width) * static_cast<int32_t>(destInfo.height);
-    size_t midBufferSize = (static_cast<uint32_t>(frameSize) +
-        (((destInfo.width + 1) / TWO_SLICES) * ((destInfo.height + 1) / TWO_SLICES) * TWO_SLICES)) * TWO_SLICES;
+    size_t midBufferSize = (destInfo.yStride * destInfo.height +
+                            destInfo.uvStride * ((destInfo.height + 1) / TWO_SLICES)) * TWO_SLICES;
     if (midBufferSize == 0 || midBufferSize > PIXEL_MAP_MAX_RAM_SIZE) {
         IMAGE_LOGE("Invalid destination buffer size calculation!");
         return false;
@@ -353,9 +385,31 @@ static bool SwapNV21P010(DestConvertInfo &destInfo)
         delete[] midBuffer;
         return false;
     }
-    YUVDataInfo yDInfo;
-    yDInfo.uvOffset = destInfo.width * destInfo.height;
-    bool result = NV12P010ToNV21P010SoftDecode(midBuffer, yDInfo, destInfo.buffer);
+    SrcConvertParam midParam = {destInfo.width, destInfo.height};
+    DestConvertParam destParam = {destInfo.width, destInfo.height};
+
+    midParam.slice[0] = midBuffer + destInfo.yOffset;
+    midParam.slice[1] = midBuffer + destInfo.uvOffset * TWO_SLICES;
+    midParam.stride[0] = static_cast<int>(destInfo.yStride) * TWO_SLICES;
+    midParam.stride[1] = static_cast<int>(destInfo.uvStride) * TWO_SLICES;
+
+    uint32_t dstyStride = 0;
+    uint32_t dstuvStride = 0;
+    if (destInfo.allocType == AllocatorType::DMA_ALLOC) {
+        dstyStride = destInfo.yStride;
+        dstuvStride = destInfo.uvStride;
+        destParam.slice[0] = destInfo.buffer + destInfo.yOffset;
+        destParam.slice[1] = destInfo.buffer + destInfo.uvOffset * TWO_SLICES;
+    } else {
+        dstyStride = destParam.width;
+        dstuvStride = (destParam.width % EVEN_ODD_DIVISOR == 0) ? destParam.width : (destParam.width + 1);
+        destParam.slice[0] = destInfo.buffer;
+        destParam.slice[1] = destInfo.buffer + dstyStride * destParam.height * TWO_SLICES;
+    }
+    destParam.stride[0] = static_cast<int>(dstyStride * TWO_SLICES);
+    destParam.stride[1] = static_cast<int>(dstuvStride * TWO_SLICES);
+
+    bool result = NV12P010ToNV21P010SoftDecode(midParam, destParam);
     if (!result) {
         IMAGE_LOGE("NV12P010ToNV21P010 failed!");
         delete[] midBuffer;
@@ -777,7 +831,7 @@ bool ImageFormatConvertUtils::NV12P010ToNV21P010(const uint8_t *srcBuffer, const
     }
 
     bool result = false;
-    result = NV12P010ToNV21P010SoftDecode(srcParam.slice[0], yDInfo, destParam.slice[0]);
+    result = NV12P010ToNV21P010SoftDecode(srcParam, destParam);
     if (!result) {
         IMAGE_LOGE("NV12P010ToNV21P010 failed!");
         return result;
@@ -899,7 +953,7 @@ bool ImageFormatConvertUtils::NV21P010ToNV12P010(const uint8_t *srcBuffer, const
     }
 
     bool result = false;
-    result = NV12P010ToNV21P010SoftDecode(srcParam.slice[0], yDInfo, destParam.slice[0]);
+    result = NV12P010ToNV21P010SoftDecode(srcParam, destParam);
     if (!result) {
         IMAGE_LOGE("NV12P010ToNV21P010 failed!");
         return result;

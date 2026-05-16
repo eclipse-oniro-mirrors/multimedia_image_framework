@@ -13,11 +13,12 @@
  * limitations under the License.
  */
 
+#include "xmp_metadata.h"
+
 #include "image_log.h"
 #include "media_errors.h"
 #include "securec.h"
 #include "xmp_helper.h"
-#include "xmp_metadata.h"
 #include "xmp_metadata_impl.h"
 
 #undef LOG_DOMAIN
@@ -28,6 +29,15 @@
 
 namespace {
 constexpr std::string_view COLON = ":";
+
+struct IteratorParams {
+    SXMPMeta *meta = nullptr;
+    const char *schemaNS = nullptr;
+    const char *propName = nullptr;
+    const char *rootPath = nullptr;
+    XMP_OptionBits options = kXMP_NoOptions;
+    bool onlyQualifier = false;
+};
 }
 
 namespace OHOS {
@@ -84,58 +94,83 @@ std::unique_ptr<XMPMetadataImpl>& XMPMetadata::GetImpl()
     return impl_;
 }
 
+// Helper to validate path and resolve namespace URI
+static uint32_t ValidateAndResolvePath(const std::string &path, std::string &outUri, std::string &outPropName,
+    bool isRootPath = false)
+{
+    const auto &[prefix, propName] = XMPHelper::SplitOnce(path, COLON);
+    CHECK_ERROR_RETURN_RET_LOG(prefix.empty(), ERR_IMAGE_INVALID_PARAMETER,
+        "%{public}s invalid path syntax: %{public}s. Expected format: prefix:property", __func__, path.c_str());
+
+    // rootPath allow empty property name
+    CHECK_ERROR_RETURN_RET_LOG(!isRootPath && propName.empty(), ERR_IMAGE_INVALID_PARAMETER,
+        "%{public}s invalid path syntax: %{public}s. Property name should not be empty", __func__, path.c_str());
+
+    // Block language qualifiers from being written as "@xml:lang".
+    CHECK_ERROR_RETURN_RET_LOG(propName.find("@xml:lang") != std::string::npos, ERR_IMAGE_INVALID_PARAMETER,
+        "%{public}s invalid path syntax: %{public}s. Language qualifiers should use ?xml:lang",
+        __func__, path.c_str());
+
+    CHECK_ERROR_RETURN_RET_LOG(!SXMPMeta::GetNamespaceURI(prefix.c_str(), &outUri),
+        ERR_XMP_NAMESPACE_NOT_REGISTERED, "%{public}s failed to get namespace URI for prefix: %{public}s",
+        __func__, prefix.c_str());
+
+    outPropName = propName;
+    return SUCCESS;
+}
+
+// Helper to validate tag type for 'SetValue'
+static uint32_t ValidateTagType(const std::string &path, const XMPTagType &tagType)
+{
+    if (!XMPMetadata::IsValidTagType(tagType)) {
+        IMAGE_LOGE("%{public}s tagType is invalid for path: %{public}s", __func__, path.c_str());
+        return ERR_IMAGE_INVALID_PARAMETER;
+    }
+
+    return SUCCESS;
+}
+
 static constexpr XMPTagType ConvertOptionsToTagType(XMP_OptionBits options)
 {
-    if (options & kXMP_PropValueIsStruct) {
+    if (XMP_PropIsStruct(options)) {
         return XMPTagType::STRUCTURE;
     }
 
-    if (options & kXMP_PropValueIsArray) {
-        if (options & kXMP_PropArrayIsAlternate) {
-            if (options & kXMP_PropArrayIsAltText) {
-                return XMPTagType::ALTERNATE_TEXT;
-            }
-            return XMPTagType::ALTERNATE_ARRAY;
-        } else if (options & kXMP_PropArrayIsOrdered) {
-            return XMPTagType::ORDERED_ARRAY;
-        } else {
-            return XMPTagType::UNORDERED_ARRAY;
+    if (XMP_PropIsArray(options)) {
+        if (XMP_ArrayIsAltText(options)) {
+            return XMPTagType::ALTERNATE_TEXT;
         }
+        if (XMP_ArrayIsAlternate(options)) {
+            return XMPTagType::ALTERNATE_ARRAY;
+        }
+        if (XMP_ArrayIsOrdered(options)) {
+            return XMPTagType::ORDERED_ARRAY;
+        }
+        return XMPTagType::UNORDERED_ARRAY;
     }
 
-    if (options & kXMP_PropIsQualifier) {
-        return XMPTagType::QUALIFIER;
-    }
-
-    return XMPTagType::SIMPLE;
+    return XMPTagType::STRING;
 }
 
 static constexpr XMP_OptionBits ConvertTagTypeToOptions(XMPTagType tagType)
 {
     switch (tagType) {
-        case XMPTagType::SIMPLE:
-        case XMPTagType::QUALIFIER:
+        case XMPTagType::STRING:
             return kXMP_NoOptions;
         case XMPTagType::UNORDERED_ARRAY:
             return kXMP_PropValueIsArray;
         case XMPTagType::ORDERED_ARRAY:
             return kXMP_PropValueIsArray | kXMP_PropArrayIsOrdered;
         case XMPTagType::ALTERNATE_ARRAY:
-            return kXMP_PropValueIsArray | kXMP_PropArrayIsAlternate;
+            return kXMP_PropValueIsArray | kXMP_PropArrayIsOrdered | kXMP_PropArrayIsAlternate;
         case XMPTagType::ALTERNATE_TEXT:
-            return kXMP_PropValueIsArray | kXMP_PropArrayIsAlternate | kXMP_PropArrayIsAltText;
+            return kXMP_PropValueIsArray | kXMP_PropArrayIsOrdered | kXMP_PropArrayIsAlternate |
+                kXMP_PropArrayIsAltText;
         case XMPTagType::STRUCTURE:
             return kXMP_PropValueIsStruct;
         default:
             return kXMP_NoOptions;
     }
-}
-
-static constexpr bool IsContainerTagType(XMPTagType tagType)
-{
-    return tagType == XMPTagType::STRUCTURE || tagType == XMPTagType::UNORDERED_ARRAY ||
-        tagType == XMPTagType::ORDERED_ARRAY || tagType == XMPTagType::ALTERNATE_ARRAY ||
-        tagType == XMPTagType::ALTERNATE_TEXT;
 }
 
 static bool BuildXMPTag(const std::string &pathExpression, const XMP_OptionBits &options, const std::string &value,
@@ -154,28 +189,38 @@ static bool BuildXMPTag(const std::string &pathExpression, const XMP_OptionBits 
         .prefix = propertyNS,
         .name = propertyKey,
         .type = ConvertOptionsToTagType(options),
+        .isQualifier = XMP_PropIsQualifier(options),
         .value = value,
     };
     return true;
 }
 
-uint32_t XMPMetadata::RegisterNamespacePrefix(const std::string &uri, const std::string &prefix)
+uint32_t XMPMetadata::RegisterNamespacePrefix(const std::string &uri, const std::string &prefix,
+    std::string &errMsg)
 {
     XMP_TRY();
+    errMsg.clear();
     CHECK_ERROR_RETURN_RET_LOG(uri.empty() || prefix.empty(), ERR_IMAGE_INVALID_PARAMETER,
         "%{public}s uri or prefix is empty", __func__);
     std::string placeholder;
-    bool isURIRegistered = SXMPMeta::GetNamespacePrefix(uri.c_str(), &placeholder);
-    if (isURIRegistered) {
-        IMAGE_LOGI("%{public}s namespace already registered", __func__);
-        return SUCCESS;
+    bool isUriRegistered = SXMPMeta::GetNamespacePrefix(uri.c_str(), &placeholder);
+    if (isUriRegistered) {
+        std::string normalizedPrefix = XMPHelper::NormalizeNamespacePrefix(placeholder);
+        CHECK_DEBUG_RETURN_RET_LOG(prefix == normalizedPrefix, SUCCESS,
+            "%{public}s namespace already registered with same prefix", __func__);
+
+        errMsg = "namespace('" + uri + "') already registered with prefix('" + normalizedPrefix + "').";
+        IMAGE_LOGE("%{public}s %{public}s", __func__, errMsg.c_str());
+        return ERR_IMAGE_INVALID_PARAMETER;
     }
 
     bool isPrefixRegistered = SXMPMeta::GetNamespaceURI(prefix.c_str(), &placeholder);
     if (isPrefixRegistered) {
-        IMAGE_LOGI("%{public}s prefix already registered", __func__);
+        errMsg = "prefix('" + prefix + "') already registered with namespace('" + placeholder + "').";
+        IMAGE_LOGE("%{public}s %{public}s", __func__, errMsg.c_str());
         return ERR_IMAGE_INVALID_PARAMETER;
     }
+
     CHECK_ERROR_RETURN_RET_LOG(!SXMPMeta::RegisterNamespace(uri.c_str(), prefix.c_str(), &placeholder),
         ERR_XMP_SDK_EXCEPTION, "%{public}s failed to register namespace", __func__);
     return SUCCESS;
@@ -190,18 +235,24 @@ uint32_t XMPMetadata::SetValue(const std::string &path, const XMPTagType &tagTyp
     CHECK_ERROR_RETURN_RET_LOG(path.empty(), ERR_IMAGE_INVALID_PARAMETER,
         "%{public}s path is empty", __func__);
 
-    const auto &[prefix, propName] = XMPHelper::SplitOnce(path, COLON);
-    CHECK_ERROR_RETURN_RET_LOG(prefix.empty() || propName.empty(), ERR_IMAGE_INVALID_PARAMETER,
-        "%{public}s invalid path: %{public}s", __func__, path.c_str());
     std::string namespaceUri;
-    CHECK_ERROR_RETURN_RET_LOG(!SXMPMeta::GetNamespaceURI(prefix.c_str(), &namespaceUri),
-        ERR_XMP_NAMESPACE_NOT_REGISTERED,
-        "%{public}s failed to get namespace URI for prefix: %{public}s", __func__, prefix.c_str());
+    std::string propName;
+    uint32_t errorCode = ValidateAndResolvePath(path, namespaceUri, propName);
+    CHECK_ERROR_RETURN_RET(errorCode != SUCCESS, errorCode);
+
+    errorCode = ValidateTagType(path, tagType);
+    CHECK_ERROR_RETURN_RET(errorCode != SUCCESS, errorCode);
+
+    std::string parentPath = XMPHelper::GetParentProperty(propName);
+    if (!parentPath.empty() && !impl_->DoesPropertyExist(namespaceUri.c_str(), parentPath.c_str())) {
+        IMAGE_LOGW("%{public}s parent not found for path: %{public}s", __func__, path.c_str());
+        return ERR_XMP_PARENT_NOT_FOUND;
+    }
 
     XMP_OptionBits options = ConvertTagTypeToOptions(tagType);
-    if (IsContainerTagType(tagType)) {
+    if (XMPMetadata::IsContainerTagType(tagType)) {
         CHECK_ERROR_RETURN_RET_LOG(!value.empty(), ERR_IMAGE_INVALID_PARAMETER, "%{public}s: container tag's value "
-            "should be empty for path: %{public}s", __func__, path.c_str());
+            "MUST be empty for path: %{public}s", __func__, path.c_str());
         impl_->SetProperty(namespaceUri.c_str(), propName.c_str(), nullptr, options);
     } else {
         impl_->SetProperty(namespaceUri.c_str(), propName.c_str(), value.c_str(), options);
@@ -218,18 +269,15 @@ uint32_t XMPMetadata::GetTag(const std::string &path, XMPTag &tag)
     CHECK_ERROR_RETURN_RET_LOG(path.empty(), ERR_IMAGE_INVALID_PARAMETER,
         "%{public}s path is empty", __func__);
 
-    const auto &[prefix, propName] = XMPHelper::SplitOnce(path, COLON);
-    CHECK_ERROR_RETURN_RET_LOG(prefix.empty() || propName.empty(), ERR_IMAGE_INVALID_PARAMETER,
-        "%{public}s invalid path: %{public}s", __func__, path.c_str());
     std::string namespaceUri;
-    CHECK_ERROR_RETURN_RET_LOG(!SXMPMeta::GetNamespaceURI(prefix.c_str(), &namespaceUri),
-        ERR_XMP_NAMESPACE_NOT_REGISTERED,
-        "%{public}s failed to get namespace URI for prefix: %{public}s", __func__, prefix.c_str());
+    std::string propName;
+    uint32_t errorCode = ValidateAndResolvePath(path, namespaceUri, propName);
+    CHECK_ERROR_RETURN_RET(errorCode != SUCCESS, errorCode);
 
     XMP_OptionBits options = kXMP_NoOptions;
     std::string value;
-    bool ret = impl_->GetProperty(namespaceUri.c_str(), propName.c_str(), &value, &options);
-    CHECK_ERROR_RETURN_RET_LOG(!ret, ERR_XMP_TAG_NOT_FOUND,
+    bool propRet = impl_->GetProperty(namespaceUri.c_str(), propName.c_str(), &value, &options);
+    CHECK_ERROR_RETURN_RET_LOG(!propRet, ERR_XMP_TAG_NOT_FOUND,
         "%{public}s tag not found for path: %{public}s", __func__, path.c_str());
 
     CHECK_ERROR_RETURN_RET_LOG(!BuildXMPTag(path, options, value, tag), ERR_XMP_DECODE_FAILED,
@@ -246,26 +294,41 @@ uint32_t XMPMetadata::RemoveTag(const std::string &path)
     CHECK_ERROR_RETURN_RET_LOG(path.empty(), ERR_IMAGE_INVALID_PARAMETER,
         "%{public}s path is empty", __func__);
 
-    const auto &[prefix, propName] = XMPHelper::SplitOnce(path, COLON);
-    CHECK_ERROR_RETURN_RET_LOG(prefix.empty() || propName.empty(), ERR_IMAGE_INVALID_PARAMETER,
-        "%{public}s invalid path: %{public}s", __func__, path.c_str());
     std::string namespaceUri;
-    CHECK_ERROR_RETURN_RET_LOG(!SXMPMeta::GetNamespaceURI(prefix.c_str(), &namespaceUri),
-        ERR_XMP_NAMESPACE_NOT_REGISTERED,
-        "%{public}s failed to get namespace URI for prefix: %{public}s", __func__, prefix.c_str());
+    std::string propName;
+    uint32_t errorCode = ValidateAndResolvePath(path, namespaceUri, propName);
+    CHECK_ERROR_RETURN_RET(errorCode != SUCCESS, errorCode);
+
+    // Check if property exists before deleting
+    if (!impl_->DoesPropertyExist(namespaceUri.c_str(), propName.c_str())) {
+        IMAGE_LOGW("%{public}s tag not found for path: %{public}s", __func__, path.c_str());
+        return ERR_XMP_TAG_NOT_FOUND;
+    }
+
     impl_->DeleteProperty(namespaceUri.c_str(), propName.c_str());
+    IMAGE_LOGD("%{public}s successfully removed tag: %{public}s", __func__, path.c_str());
     return SUCCESS;
     XMP_CATCH_RETURN_CODE(ERR_XMP_SDK_EXCEPTION);
 }
 
-static void EnumerateWithIterator(SXMPMeta *meta, const char *schemaNS, const char *propName, XMP_OptionBits options,
-    const XMPMetadata::EnumerateCallback &callback)
+uint32_t XMPMetadata::RemoveAllTags()
 {
-    CHECK_ERROR_RETURN_LOG(meta == nullptr, "%{public}s meta is null", __func__);
+    XMP_TRY();
+    CHECK_ERROR_RETURN_RET_LOG(!impl_ || !impl_->IsValid(), ERR_MEDIA_NULL_POINTER,
+        "%{public}s impl is invalid", __func__);
+
+    SXMPUtils::RemoveProperties(impl_->GetRawPtr(), nullptr, nullptr, kXMPUtil_DoAllProperties);
+    return SUCCESS;
+    XMP_CATCH_RETURN_CODE(ERR_XMP_SDK_EXCEPTION);
+}
+
+static void EnumerateWithIterator(const IteratorParams &params, const XMPMetadata::EnumerateCallback &callback)
+{
+    CHECK_ERROR_RETURN_LOG(params.meta == nullptr, "%{public}s meta is null", __func__);
     CHECK_ERROR_RETURN_LOG(!callback, "%{public}s callback is null", __func__);
 
-    XMP_OptionBits iterOptions = options;
-    SXMPIterator iter(*meta, schemaNS, propName, iterOptions);
+    XMP_OptionBits iterOptions = params.options;
+    SXMPIterator iter(*params.meta, params.schemaNS, params.propName, iterOptions);
     std::string iterSchemaNS;
     std::string iterPropPath;
     std::string iterPropValue;
@@ -273,6 +336,16 @@ static void EnumerateWithIterator(SXMPMeta *meta, const char *schemaNS, const ch
     while (iter.Next(&iterSchemaNS, &iterPropPath, &iterPropValue, &iterOptions)) {
         if (iterPropPath.empty()) {
             IMAGE_LOGD("Skipping schema node: %{public}s", iterSchemaNS.c_str());
+            continue;
+        }
+
+        // Skip rootPath itself
+        if (params.rootPath != nullptr && iterPropPath == params.rootPath) {
+            continue;
+        }
+
+        // Skip non-qualifier nodes when onlyQualifier is set
+        if (params.onlyQualifier && !XMP_PropIsQualifier(iterOptions)) {
             continue;
         }
 
@@ -290,7 +363,8 @@ static void EnumerateWithIterator(SXMPMeta *meta, const char *schemaNS, const ch
     }
 }
 
-static void EnumerateAllSchemasTopLevelProps(SXMPMeta *meta, const XMPMetadata::EnumerateCallback &callback)
+static void EnumerateAllSchemasTopLevelProps(SXMPMeta *meta, const XMPMetadata::EnumerateCallback &callback,
+    bool onlyQualifier)
 {
     CHECK_ERROR_RETURN_LOG(meta == nullptr, "%{public}s meta is null", __func__);
     CHECK_ERROR_RETURN_LOG(!callback, "%{public}s callback is null", __func__);
@@ -313,11 +387,20 @@ static void EnumerateAllSchemasTopLevelProps(SXMPMeta *meta, const XMPMetadata::
 
     // Enumerate all schema top level props
     for (const auto &schemaNS : schemaList) {
-        EnumerateWithIterator(meta, schemaNS.c_str(), "", kXMP_IterJustChildren, callback);
+        IteratorParams params = {
+            .meta = meta,
+            .schemaNS = schemaNS.c_str(),
+            .propName = nullptr,
+            .rootPath = nullptr,    // non-recursive mode, no need to manually skip the rootPath
+            .options = kXMP_IterJustChildren,
+            .onlyQualifier = onlyQualifier,
+        };
+        EnumerateWithIterator(params, callback);
     }
 }
 
-uint32_t XMPMetadata::EnumerateTags(EnumerateCallback callback, const std::string &rootPath, XMPEnumerateOption options)
+uint32_t XMPMetadata::EnumerateTags(EnumerateCallback callback, const std::string &rootPath,
+    XMPEnumerateOptions options)
 {
     XMP_TRY();
     CHECK_ERROR_RETURN_RET_LOG(!impl_ || !impl_->IsValid(), ERR_MEDIA_NULL_POINTER,
@@ -326,25 +409,15 @@ uint32_t XMPMetadata::EnumerateTags(EnumerateCallback callback, const std::strin
 
     if (rootPath.empty() && !options.isRecursive) {
         IMAGE_LOGD("%{public}s Enumerate all schemas top level props", __func__);
-        EnumerateAllSchemasTopLevelProps(impl_->GetRawPtr(), callback);
+        EnumerateAllSchemasTopLevelProps(impl_->GetRawPtr(), callback, options.onlyQualifier);
         return SUCCESS;
     }
 
     std::string schemaNS;
     std::string rootPropName;
     if (!rootPath.empty()) {
-        std::string_view rootPathView(rootPath);
-        size_t colonPos = rootPathView.find(COLON);
-        std::string prefix;
-        if (colonPos == std::string_view::npos) {
-            prefix = rootPath;
-        } else {
-            prefix = rootPathView.substr(0, colonPos);
-            rootPropName = rootPathView.substr(colonPos + COLON.size());
-        }
-        CHECK_ERROR_RETURN_RET_LOG(!SXMPMeta::GetNamespaceURI(prefix.c_str(), &schemaNS),
-            ERR_XMP_NAMESPACE_NOT_REGISTERED, "%{public}s failed to get namespace URI for prefix: %{public}s",
-            __func__, prefix.c_str());
+        CHECK_ERROR_RETURN_RET(ValidateAndResolvePath(rootPath, schemaNS, rootPropName, true) != SUCCESS,
+            ERR_IMAGE_INVALID_PARAMETER);
     }
 
     XMP_OptionBits iterOptions = kXMP_IterJustChildren;
@@ -352,7 +425,15 @@ uint32_t XMPMetadata::EnumerateTags(EnumerateCallback callback, const std::strin
         iterOptions = kXMP_NoOptions;
     }
 
-    EnumerateWithIterator(impl_->GetRawPtr(), schemaNS.c_str(), rootPropName.c_str(), iterOptions, callback);
+    IteratorParams params = {
+        .meta = impl_->GetRawPtr(),
+        .schemaNS = schemaNS.c_str(),
+        .propName = rootPropName.c_str(),
+        .rootPath = rootPath.empty() ? nullptr : rootPath.c_str(),
+        .options = iterOptions,
+        .onlyQualifier = options.onlyQualifier,
+    };
+    EnumerateWithIterator(params, callback);
     return SUCCESS;
     XMP_CATCH_RETURN_CODE(ERR_XMP_SDK_EXCEPTION);
 }

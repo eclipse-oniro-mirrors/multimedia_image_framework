@@ -1,4 +1,4 @@
-# Copyright (C) 2023 Huawei Device Co., Ltd.
+# Copyright (C) 2023-2026 Huawei Device Co., Ltd.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -140,6 +140,8 @@ image_native_ios_sources = [
   "//foundation/multimedia/image_framework/plugins/common/libs/image/libextplugin/src/ext_pixel_convert.cpp",
   "//foundation/multimedia/image_framework/plugins/common/libs/image/libextplugin/src/ext_stream.cpp",
   "//foundation/multimedia/image_framework/plugins/common/libs/image/libextplugin/src/ext_wstream.cpp",
+  "${image_subsystem}/plugins/common/libs/image/libextplugin/src/bandjpeg/fast_manager.cpp",
+  "${image_subsystem}/plugins/common/libs/image/libextplugin/src/bandjpeg/progressive_jpeg_decoder.cpp",
 ]
 
 # image_native: not support
@@ -296,6 +298,8 @@ if (has_libtiff) {
     image_native_ios_sources += [
         # tiff
         "${image_subsystem}/plugins/common/libs/image/libtiffplugin/src/tiff_decoder.cpp",
+        "${image_subsystem}/plugins/common/libs/image/libtiffplugin/src/tiff_encoder.cpp",
+        "${image_subsystem}/plugins/common/libs/image/libtiffplugin/src/tiff_utils.cpp",
         "${image_subsystem}/plugins/common/libs/image/formatagentplugin/src/tiff_format_agent.cpp",
     ]
 

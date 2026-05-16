@@ -53,17 +53,22 @@ int64_t HeifBufferInputStream::Tell() const
 
 bool HeifBufferInputStream::CheckSize(size_t target_size, int64_t end)
 {
-    auto posAfterRead = Tell() + static_cast<int64_t>(target_size);
-    if (static_cast<int64_t>(target_size) < 0) {
+    if (pos_ < 0 || static_cast<size_t>(pos_) > length_) {
         return false;
     }
+    if (target_size > length_ - static_cast<size_t>(pos_)) {
+        return false;
+    }
+    auto posAfterRead = Tell() + static_cast<int64_t>(target_size);
     return (end < 0 || posAfterRead <= end) && static_cast<size_t>(posAfterRead) <= length_;
 }
 
 bool HeifBufferInputStream::Read(void *data, size_t size)
 {
-    auto end_pos = static_cast<size_t>(pos_) + size;
-    if (static_cast<size_t>(end_pos) > length_) {
+    if (pos_ < 0 || static_cast<size_t>(pos_) > length_) {
+        return false;
+    }
+    if (size > length_ - static_cast<size_t>(pos_)) {
         return false;
     }
 

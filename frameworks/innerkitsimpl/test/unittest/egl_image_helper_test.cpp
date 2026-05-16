@@ -449,7 +449,7 @@ HWTEST_F(EglImageHelperTest, PixelMapProgramManagerInterfaceTest001, TestSize.Le
         SUCCEED();
         return;
     }
-    EXPECT_TRUE(PixelMapProgramManager::ExecutProgram(program));
+    EXPECT_FALSE(PixelMapProgramManager::ExecutProgram(program));
 }
 
 /**

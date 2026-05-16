@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Huawei Device Co., Ltd.
+ * Copyright (C) 2021-2026 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -329,7 +329,8 @@ static AVPixelFormat PixelFormatToAVPixelFormat(const PixelFormat &pixelFormat)
 bool IsYUV(const PixelFormat &format)
 {
     return format == PixelFormat::NV12 || format == PixelFormat::NV21 ||
-        format == PixelFormat::YCBCR_P010 || format == PixelFormat::YCRCB_P010;
+        format == PixelFormat::YCBCR_P010 || format == PixelFormat::YCRCB_P010 ||
+        format == PixelFormat::Y8;
 }
 
 bool IsYuvP010(const PixelFormat &format)
@@ -404,6 +405,9 @@ static int64_t GetCreateFromPixelsRequiredByteSize(const InitializationOptions &
     }
 
     if (IsYUV(srcPixelFormat)) {
+        if (srcPixelFormat == PixelFormat::Y8) {
+            return srcRowStride * static_cast<int64_t>(height);
+        }
         int64_t uvHeight = static_cast<int64_t>(height + 1) / NUM_2;
         return srcRowStride * (static_cast<int64_t>(height) + uvHeight);
     }
@@ -491,17 +495,19 @@ int32_t PixelMap::GetAllocatedByteCount(const ImageInfo& info)
     }
 }
 
-void UpdateYUVDataInfo(int32_t width, int32_t height, YUVDataInfo &yuvInfo)
+void UpdateYUVDataInfo(PixelFormat format, int32_t width, int32_t height, YUVDataInfo &yuvInfo)
 {
     yuvInfo.imageSize.width = width;
     yuvInfo.imageSize.height = height;
     yuvInfo.yWidth = static_cast<uint32_t>(width);
     yuvInfo.yHeight = static_cast<uint32_t>(height);
-    yuvInfo.uvWidth = static_cast<uint32_t>((width + 1) / NUM_2);
-    yuvInfo.uvHeight = static_cast<uint32_t>((height + 1) / NUM_2);
     yuvInfo.yStride = static_cast<uint32_t>(width);
-    yuvInfo.uvStride = static_cast<uint32_t>(((width + 1) / NUM_2) * NUM_2);
-    yuvInfo.uvOffset = static_cast<uint32_t>(width) * static_cast<uint32_t>(height);
+    if (format != PixelFormat::Y8) {
+        yuvInfo.uvWidth = static_cast<uint32_t>((width + 1) / NUM_2);
+        yuvInfo.uvHeight = static_cast<uint32_t>((height + 1) / NUM_2);
+        yuvInfo.uvStride = static_cast<uint32_t>(((width + 1) / NUM_2) * NUM_2);
+        yuvInfo.uvOffset = static_cast<uint32_t>(width) * static_cast<uint32_t>(height);
+    }
 }
 
 static bool ChoosePixelmap(unique_ptr<PixelMap> &dstPixelMap, PixelFormat pixelFormat, int &errorCode)
@@ -531,7 +537,7 @@ static void SetYUVDataInfoToPixelMap(unique_ptr<PixelMap> &dstPixelMap)
     }
     if (IsYUV(dstPixelMap->GetPixelFormat())) {
         YUVDataInfo yDatainfo;
-        UpdateYUVDataInfo(dstPixelMap->GetWidth(), dstPixelMap->GetHeight(), yDatainfo);
+        UpdateYUVDataInfo(dstPixelMap->GetPixelFormat(), dstPixelMap->GetWidth(), dstPixelMap->GetHeight(), yDatainfo);
         dstPixelMap->SetImageYUVInfo(yDatainfo);
     }
 }
@@ -556,8 +562,8 @@ static int AllocPixelMapMemory(std::unique_ptr<AbsMemory> &dstMemory, int32_t &d
     MemoryData memoryData = {nullptr, static_cast<size_t>(bufferSize), "Create PixelMap", dstImageInfo.size,
         dstImageInfo.pixelFormat};
     AllocatorType allocType = opts.allocatorType == AllocatorType::DEFAULT ?
-        ImageUtils::GetPixelMapAllocatorType(dstImageInfo.size, dstImageInfo.pixelFormat, opts.useDMA) :
-        opts.allocatorType;
+        ImageUtils::GetPixelMapAllocatorType(dstImageInfo.size, dstImageInfo.pixelFormat, opts.useDMA,
+            memoryData.usage) : opts.allocatorType;
     dstMemory = MemoryManager::CreateMemory(allocType, memoryData);
     if (dstMemory == nullptr) {
         IMAGE_LOGE("[PixelMap]Create: allocate memory failed");
@@ -635,6 +641,17 @@ unique_ptr<PixelMap> PixelMap::Create(const uint32_t *colors, uint32_t colorLeng
     return dstPixelMap;
 }
 
+static bool CheckY8FormatConversion(PixelFormat srcFormat, PixelFormat dstFormat)
+{
+    if (srcFormat == PixelFormat::Y8 || dstFormat == PixelFormat::Y8) {
+        if (srcFormat != dstFormat) {
+            IMAGE_LOGE("[PixelMap] Y8 format only supports same format conversion currently.");
+            return false;
+        }
+    }
+    return true;
+}
+
 pair<unique_ptr<PixelMap>, int32_t> PixelMap::CreateFromPixels(const uint8_t *pixels, uint32_t byteSize,
     const InitializationOptions &options)
 {
@@ -642,6 +659,9 @@ pair<unique_ptr<PixelMap>, int32_t> PixelMap::CreateFromPixels(const uint8_t *pi
     PixelFormat srcPixelFormat = ResolveCreateFromPixelsSrcPixelFormat(options);
     PixelFormat dstPixelFormat = ResolveCreateFromPixelsDstPixelFormat(options);
     if (!ValidateCreateFromPixelsInput(pixels, byteSize, options, srcPixelFormat)) {
+        return {nullptr, ERR_IMAGE_INVALID_PARAMETER};
+    }
+    if (srcPixelFormat == PixelFormat::Y8 || dstPixelFormat == PixelFormat::Y8) {
         return {nullptr, ERR_IMAGE_INVALID_PARAMETER};
     }
 
@@ -787,6 +807,19 @@ void *PixelMap::AllocSharedMemory(const uint64_t bufferSize, int &fd, uint32_t u
 #endif
 }
 
+static bool CheckColorSpaceConversion(const InitializationOptions &opts)
+{
+    if (opts.convertColorSpace.srcYuvConversion < YuvConversion::BT601 ||
+        opts.convertColorSpace.srcYuvConversion >= YuvConversion::BT_MAX ||
+        opts.convertColorSpace.dstYuvConversion < YuvConversion::BT601 ||
+        opts.convertColorSpace.dstYuvConversion >= YuvConversion::BT_MAX) {
+        IMAGE_LOGE("convertColorSpace yuvConversion:%{public}d,%{public}d error",
+            opts.convertColorSpace.srcYuvConversion, opts.convertColorSpace.dstYuvConversion);
+        return false;
+    }
+    return true;
+}
+
 bool PixelMap::CheckParams(const uint32_t *colors, uint32_t colorLength, int32_t offset, int32_t width,
     const InitializationOptions &opts)
 {
@@ -800,6 +833,9 @@ bool PixelMap::CheckParams(const uint32_t *colors, uint32_t colorLength, int32_t
         !ImageUtils::PixelMapCreateCheckFormat(opts.pixelFormat)) {
         IMAGE_LOGE("[PixelMap] Check format failed. src format: %{public}d, dst format: %{public}d",
             static_cast<uint32_t>(opts.srcPixelFormat), static_cast<uint32_t>(opts.pixelFormat));
+        return false;
+    }
+    if (!CheckY8FormatConversion(opts.srcPixelFormat, opts.pixelFormat)) {
         return false;
     }
     if (colors == nullptr || colorLength <= 0) {
@@ -831,15 +867,7 @@ bool PixelMap::CheckParams(const uint32_t *colors, uint32_t colorLength, int32_t
             colorLength, offset, width);
         return false;
     }
-    if (opts.convertColorSpace.srcYuvConversion < YuvConversion::BT601 ||
-        opts.convertColorSpace.srcYuvConversion >= YuvConversion::BT_MAX ||
-        opts.convertColorSpace.dstYuvConversion < YuvConversion::BT601 ||
-        opts.convertColorSpace.dstYuvConversion >= YuvConversion::BT_MAX) {
-        IMAGE_LOGE("convertColorSpace yuvConversion:%{public}d,%{public}d error",
-            opts.convertColorSpace.srcYuvConversion, opts.convertColorSpace.dstYuvConversion);
-        return false;
-    }
-    return true;
+    return CheckColorSpaceConversion(opts);
 }
 
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
@@ -1030,22 +1058,39 @@ static unique_ptr<PixelMap> CreateFromAstc(PixelMap &source, const Rect &srcRect
     return pixelAstc;
 }
 
+static bool ValidateCreateParams(PixelMap &source, const InitializationOptions &opts, const ImageInfo &srcImageInfo,
+    int32_t &errorCode)
+{
+    if (IsYUV(srcImageInfo.pixelFormat) || IsYUV(opts.pixelFormat)) {
+        IMAGE_LOGE("PixelMap::Create does not support yuv format.");
+        errorCode = IMAGE_RESULT_DECODE_FAILED;
+        return false;
+    }
+    return true;
+}
+
+static CropValue ValidateCropRange(Rect &srcRect, const Size &srcSize, int32_t &errorCode)
+{
+    CropValue cropType = PostProc::ValidCropValue(srcRect, srcSize);
+    if (cropType == CropValue::INVALID) {
+        IMAGE_LOGE("src crop range is invalid");
+        errorCode = IMAGE_RESULT_DECODE_FAILED;
+    }
+    return cropType;
+}
+
 unique_ptr<PixelMap> PixelMap::Create(PixelMap &source, const Rect &srcRect, const InitializationOptions &opts,
     int32_t &errorCode)
 {
     ImageInfo srcImageInfo;
     source.GetImageInfo(srcImageInfo);
-    if (IsYUV(srcImageInfo.pixelFormat) || IsYUV(opts.pixelFormat)) {
-        IMAGE_LOGE("PixelMap::Create does not support yuv format.");
-        errorCode = IMAGE_RESULT_DECODE_FAILED;
+    if (!ValidateCreateParams(source, opts, srcImageInfo, errorCode)) {
         return nullptr;
     }
     PostProc postProc;
     Rect sRect = srcRect;
-    CropValue cropType = PostProc::ValidCropValue(sRect, srcImageInfo.size);
+    CropValue cropType = ValidateCropRange(sRect, srcImageInfo.size, errorCode);
     if (cropType == CropValue::INVALID) {
-        IMAGE_LOGE("src crop range is invalid");
-        errorCode = IMAGE_RESULT_DECODE_FAILED;
         return nullptr;
     }
     if (source.IsAstc() && ImageUtils::IsAstc(opts.pixelFormat) && ImageUtils::IsAstc(opts.srcPixelFormat)) {
@@ -1053,6 +1098,10 @@ unique_ptr<PixelMap> PixelMap::Create(PixelMap &source, const Rect &srcRect, con
     }
     ImageInfo dstImageInfo;
     InitDstImageInfo(opts, srcImageInfo, dstImageInfo);
+    if (!CheckY8FormatConversion(srcImageInfo.pixelFormat, dstImageInfo.pixelFormat)) {
+        errorCode = IMAGE_RESULT_DECODE_FAILED;
+        return nullptr;
+    }
     Size targetSize = dstImageInfo.size;
     // use source if match
     bool isHasConvert = postProc.HasPixelConvert(srcImageInfo, dstImageInfo);
@@ -1174,7 +1223,7 @@ void PixelMap::InitDstImageInfo(const InitializationOptions &opts, const ImageIn
     }
 }
 
-bool PixelMap::CopyPixMapToDst(PixelMap &source, void* &dstPixels, int &fd, uint32_t bufferSize)
+bool PixelMap::CopyPixMapToDst(PixelMap &source, void* &dstPixels, uint32_t bufferSize)
 {
     if (source.GetAllocatorType() == AllocatorType::DMA_ALLOC) {
         ImageInfo imageInfo;
@@ -1204,24 +1253,15 @@ bool PixelMap::CopyPixelMap(PixelMap &source, PixelMap &dstPixelMap)
     return CopyPixelMap(source, dstPixelMap, error);
 }
 
-static void SetDstPixelMapInfo(PixelMap &source, PixelMap &dstPixelMap, void* dstPixels, uint32_t dstPixelsSize,
-    unique_ptr<AbsMemory>& memory)
+static void SetDstPixelMapInfo(PixelMap &source, PixelMap &dstPixelMap, void* dstPixels, unique_ptr<AbsMemory>& memory)
 {
-    // "memory" is used for SHARE_MEM_ALLOC and DMA_ALLOC type, dstPixels is used for others.
-    // Convert CUSTOM_ALLOC to SHARE_MEM_ALLOC
-    AllocatorType sourceType = source.GetAllocatorType() == AllocatorType::CUSTOM_ALLOC ?
-        AllocatorType::SHARE_MEM_ALLOC : source.GetAllocatorType();
-    if (sourceType == AllocatorType::SHARE_MEM_ALLOC || sourceType == AllocatorType::DMA_ALLOC) {
-        dstPixelMap.SetPixelsAddr(dstPixels, memory->extend.data, memory->data.size, sourceType, nullptr);
-        if (source.GetAllocatorType() == AllocatorType::DMA_ALLOC) {
+    dstPixelMap.SetPixelsAddr(dstPixels, memory->extend.data, memory->data.size, memory->GetType(), nullptr);
+    if (source.GetAllocatorType() == AllocatorType::DMA_ALLOC) {
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
-            sptr<SurfaceBuffer> sourceSurfaceBuffer(static_cast<SurfaceBuffer*> (source.GetFd()));
-            sptr<SurfaceBuffer> dstSurfaceBuffer(static_cast<SurfaceBuffer*> (dstPixelMap.GetFd()));
-            VpeUtils::CopySurfaceBufferInfo(sourceSurfaceBuffer, dstSurfaceBuffer);
+        sptr<SurfaceBuffer> sourceSurfaceBuffer(static_cast<SurfaceBuffer*> (source.GetFd()));
+        sptr<SurfaceBuffer> dstSurfaceBuffer(static_cast<SurfaceBuffer*> (dstPixelMap.GetFd()));
+        VpeUtils::CopySurfaceBufferInfo(sourceSurfaceBuffer, dstSurfaceBuffer);
 #endif
-        }
-    } else {
-        dstPixelMap.SetPixelsAddr(dstPixels, nullptr, dstPixelsSize, AllocatorType::HEAP_ALLOC, nullptr);
     }
 #ifdef IMAGE_COLORSPACE_FLAG
     OHOS::ColorManager::ColorSpace colorspace = source.InnerGetGrColorSpace();
@@ -1236,7 +1276,6 @@ bool PixelMap::CopyPixelMap(PixelMap &source, PixelMap &dstPixelMap, int32_t &er
         error = IMAGE_RESULT_GET_DATA_ABNORMAL;
         return false;
     }
-
     int32_t bufferSize = source.GetByteCount();
     if (bufferSize <= 0 || (source.GetAllocatorType() == AllocatorType::HEAP_ALLOC &&
         bufferSize > PIXEL_MAP_MAX_RAM_SIZE)) {
@@ -1245,40 +1284,34 @@ bool PixelMap::CopyPixelMap(PixelMap &source, PixelMap &dstPixelMap, int32_t &er
         return false;
     }
     size_t uBufferSize = static_cast<size_t>(bufferSize);
-    int fd = -1;
     void *dstPixels = nullptr;
-    unique_ptr<AbsMemory> memory;
-    AllocatorType sourceType = source.GetAllocatorType() == AllocatorType::CUSTOM_ALLOC ?
-        AllocatorType::SHARE_MEM_ALLOC : source.GetAllocatorType();
-    if (sourceType == AllocatorType::SHARE_MEM_ALLOC || sourceType == AllocatorType::DMA_ALLOC) {
-        ImageInfo dstImageInfo;
-        dstPixelMap.GetImageInfo(dstImageInfo);
-        MemoryData memoryData = {nullptr, uBufferSize, "Copy ImageData", dstImageInfo.size, dstImageInfo.pixelFormat};
-        memoryData.usage = source.GetNoPaddingUsage();
-        memory = MemoryManager::CreateMemory(sourceType, memoryData);
-        if (memory == nullptr) {
-            return false;
-        }
-        dstPixels = memory->data.data;
-    } else {
-        dstPixels = malloc(uBufferSize);
+    ImageInfo dstImageInfo;
+    dstPixelMap.GetImageInfo(dstImageInfo);
+    MemoryData memoryData = {nullptr, uBufferSize, "Copy ImageData", dstImageInfo.size, dstImageInfo.pixelFormat,
+        source.GetNoPaddingUsage()};
+    AllocatorType allocType = source.GetAllocatorType();
+    if (source.GetAllocatorType() == AllocatorType::DEFAULT ||
+        source.GetAllocatorType() == AllocatorType::CUSTOM_ALLOC) {
+        allocType = ImageUtils::GetPixelMapAllocatorType(dstImageInfo.size, dstImageInfo.pixelFormat, false,
+            memoryData.usage);
     }
+    unique_ptr<AbsMemory> memory = MemoryManager::CreateMemory(allocType, memoryData);
+    if (memory == nullptr) {
+        return false;
+    }
+    dstPixels = memory->data.data;
     if (dstPixels == nullptr) {
         IMAGE_LOGE("source crop allocate memory fail allocatetype: %{public}d ", source.GetAllocatorType());
         error = IMAGE_RESULT_MALLOC_ABNORMAL;
         return false;
     }
     void *tmpDstPixels = dstPixels;
-    if (!CopyPixMapToDst(source, tmpDstPixels, fd, uBufferSize)) {
-        if (sourceType == AllocatorType::SHARE_MEM_ALLOC || sourceType == AllocatorType::DMA_ALLOC) {
-            memory->Release();
-        } else {
-            ReleaseBuffer(AllocatorType::HEAP_ALLOC, fd, uBufferSize, &dstPixels);
-        }
+    if (!CopyPixMapToDst(source, tmpDstPixels, uBufferSize)) {
+        memory->Release();
         error = IMAGE_RESULT_ERR_SHAMEM_DATA_ABNORMAL;
         return false;
     }
-    SetDstPixelMapInfo(source, dstPixelMap, dstPixels, uBufferSize, memory);
+    SetDstPixelMapInfo(source, dstPixelMap, dstPixels, memory);
     return true;
 }
 
@@ -1420,6 +1453,10 @@ bool PixelMap::GetPixelFormatDetail(const PixelFormat format)
             colorProc_ = ALPHAF16ToARGB;
             break;
         }
+        case PixelFormat::Y8: {
+            pixelBytes_ = Y8_BYTES;
+            break;
+        }
         case PixelFormat::RGB_565: {
             pixelBytes_ = RGB_565_BYTES;
             colorProc_ = RGB565ToARGB;
@@ -1549,7 +1586,7 @@ uint32_t PixelMap::SetImageInfo(ImageInfo &info, bool isReused)
 
 const uint8_t *PixelMap::GetPixel8(int32_t x, int32_t y)
 {
-    if (!CheckValidParam(x, y) || (pixelBytes_ != ALPHA_8_BYTES)) {
+    if (!CheckValidParam(x, y) || (pixelBytes_ != ALPHA_8_BYTES && pixelBytes_ != Y8_BYTES)) {
         IMAGE_LOGE("get addr8 pixel position:(%{public}d, %{public}d) pixel bytes:%{public}d invalid.", x, y,
             pixelBytes_);
         return nullptr;
@@ -3682,7 +3719,7 @@ static bool CheckTlvImageInfo(const ImageInfo &info, std::unique_ptr<AbsMemory>&
     if (info.size.width <= 0 || info.size.height <= 0 || dstMemory == nullptr || dstMemory->data.data == nullptr) {
         return false;
     }
-    if (!isHdr && csm == -1 && dstMemory->GetType() == AllocatorType::HEAP_ALLOC) {
+    if (!isHdr && csm == -1) {
         return true;
     }
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
@@ -3718,6 +3755,14 @@ struct TlvDecodeInfo {
     ImageInfo info;
     int32_t csm = -1;
     std::unique_ptr<AbsMemory> dstMemory = nullptr;
+
+    ~TlvDecodeInfo()
+    {
+        if (dstMemory != nullptr) {
+            dstMemory->Release();
+            dstMemory.reset();
+        }
+    }
 };
 
 static std::map<uint8_t, std::function<bool(TlvDecodeInfo&, vector<uint8_t>&, int32_t&, int32_t)>>
@@ -3758,6 +3803,8 @@ static std::map<uint8_t, std::function<bool(TlvDecodeInfo&, vector<uint8_t>&, in
             }
             if (decodeInfo.isHdr == NUM_1) {
                 decodeInfo.allocType = static_cast<int32_t>(AllocatorType::DMA_ALLOC);
+            } else if (ImageUtils::IsSupportDefaultDmaNopadding(decodeInfo.info.pixelFormat)) {
+                decodeInfo.allocType = static_cast<int32_t>(AllocatorType::DEFAULT);
             }
             return true;
         }},
@@ -3908,12 +3955,18 @@ PixelMap *PixelMap::DecodeTlv(std::vector<uint8_t> &buff)
 bool PixelMap::IsYuvFormat(PixelFormat format)
 {
     return format == PixelFormat::NV21 || format == PixelFormat::NV12 ||
-        format == PixelFormat::YCBCR_P010 || format == PixelFormat::YCRCB_P010;
+        format == PixelFormat::YCBCR_P010 || format == PixelFormat::YCRCB_P010 ||
+        format == PixelFormat::Y8;
 }
 
 bool PixelMap::IsYuvFormat() const
 {
     return IsYuvFormat(imageInfo_.pixelFormat);
+}
+
+bool PixelMap::IsAstcOrY8Format() const
+{
+    return isAstc_ || imageInfo_.pixelFormat == PixelFormat::Y8;
 }
 
 void PixelMap::AssignYuvDataOnType(PixelFormat format, int32_t width, int32_t height)
@@ -3924,14 +3977,16 @@ void PixelMap::AssignYuvDataOnType(PixelFormat format, int32_t width, int32_t he
         yuvDataInfo_.yWidth = static_cast<uint32_t>(width);
         yuvDataInfo_.yHeight = static_cast<uint32_t>(height);
         yuvDataInfo_.yStride = static_cast<uint32_t>(width);
-        yuvDataInfo_.uvWidth = static_cast<uint32_t>((width + 1) / NUM_2);
-        yuvDataInfo_.uvHeight = static_cast<uint32_t>((height + 1) / NUM_2);
         yuvDataInfo_.yOffset = 0;
-        yuvDataInfo_.uvOffset =  yuvDataInfo_.yHeight * yuvDataInfo_.yStride;
-        if (GetAllocatorType() == AllocatorType::DMA_ALLOC) {
-            yuvDataInfo_.uvStride = yuvDataInfo_.yStride;
-        } else {
-            yuvDataInfo_.uvStride = static_cast<uint32_t>((width + 1) / NUM_2 * NUM_2);
+        if (format != PixelFormat::Y8) {
+            yuvDataInfo_.uvWidth = static_cast<uint32_t>((width + 1) / NUM_2);
+            yuvDataInfo_.uvHeight = static_cast<uint32_t>((height + 1) / NUM_2);
+            yuvDataInfo_.uvOffset = yuvDataInfo_.yHeight * yuvDataInfo_.yStride;
+            if (GetAllocatorType() == AllocatorType::DMA_ALLOC) {
+                yuvDataInfo_.uvStride = yuvDataInfo_.yStride;
+            } else {
+                yuvDataInfo_.uvStride = static_cast<uint32_t>((width + 1) / NUM_2 * NUM_2);
+            }
         }
     }
 }
@@ -3945,10 +4000,12 @@ void PixelMap::UpdateYUVDataInfo(PixelFormat format, int32_t width, int32_t heig
         yuvDataInfo_.yHeight = static_cast<uint32_t>(height);
         yuvDataInfo_.yStride = static_cast<uint32_t>(strides.yStride);
         yuvDataInfo_.yOffset = strides.yOffset;
-        yuvDataInfo_.uvStride = strides.uvStride;
-        yuvDataInfo_.uvOffset = strides.uvOffset;
-        yuvDataInfo_.uvWidth = static_cast<uint32_t>((width + 1) / NUM_2);
-        yuvDataInfo_.uvHeight = static_cast<uint32_t>((height + 1) / NUM_2);
+        if (format != PixelFormat::Y8) {
+            yuvDataInfo_.uvStride = strides.uvStride;
+            yuvDataInfo_.uvOffset = strides.uvOffset;
+            yuvDataInfo_.uvWidth = static_cast<uint32_t>((width + 1) / NUM_2);
+            yuvDataInfo_.uvHeight = static_cast<uint32_t>((height + 1) / NUM_2);
+        }
     }
 }
 
@@ -4305,8 +4362,8 @@ uint32_t PixelMap::ConvertAlphaFormat(PixelMap &wPixelMap, const bool isPremul)
     if (res != SUCCESS) {
         return res;
     }
-    if (isAstc_) {
-        IMAGE_LOGE("ConvertAlphaFormat does not support astc");
+    if (IsAstcOrY8Format()) {
+        IMAGE_LOGE("ConvertAlphaFormat does not support astc or Y8");
         return ERR_IMAGE_INVALID_PARAMETER;
     }
     ImageInfo dstImageInfo;
@@ -4657,6 +4714,10 @@ uint32_t PixelMap::ApplyAffineTransform(TransInfos &infos, AntiAliasingOption op
 void PixelMap::scale(float xAxis, float yAxis)
 {
     ImageTrace imageTrace("PixelMap scale xAxis = %f, yAxis = %f", xAxis, yAxis);
+    if (imageInfo_.pixelFormat == PixelFormat::Y8) {
+        IMAGE_LOGE("scale does not support Y8");
+        return;
+    }
     if ((static_cast<int32_t>(round(imageInfo_.size.width * xAxis)) - imageInfo_.size.width) == 0 &&
         (static_cast<int32_t>(round(imageInfo_.size.height * yAxis)) - imageInfo_.size.height) == 0) {
         return;
@@ -4677,12 +4738,16 @@ void PixelMap::scale(float xAxis, float yAxis, const AntiAliasingOption &option)
 
 uint32_t PixelMap::Scale(float xAxis, float yAxis, AntiAliasingOption option)
 {
+    if (xAxis == 0 || yAxis == 0) {
+        IMAGE_LOGE("Invalid scale ratio: 0");
+        return ERR_IMAGE_INVALID_PARAMETER;
+    }
     if ((static_cast<int32_t>(round(imageInfo_.size.width * xAxis)) - imageInfo_.size.width) == 0 &&
         (static_cast<int32_t>(round(imageInfo_.size.height * yAxis)) - imageInfo_.size.height) == 0) {
         return SUCCESS;
     }
-    if (isAstc_) {
-        IMAGE_LOGE("Scale does not support ASTC");
+    if (IsAstcOrY8Format()) {
+        IMAGE_LOGE("Scale does not support astc or Y8");
         return ERR_IMAGE_DATA_UNSUPPORT;
     }
 
@@ -4763,6 +4828,10 @@ void PixelMap::translate(float xAxis, float yAxis)
 
 uint32_t PixelMap::Translate(float xAxis, float yAxis)
 {
+    if (imageInfo_.pixelFormat == PixelFormat::Y8) {
+        IMAGE_LOGE("Translate does not support Y8");
+        return ERR_IMAGE_DATA_UNSUPPORT;
+    }
     ImageTrace imageTrace("PixelMap translate xAxis = %f, yAxis = %f", xAxis, yAxis);
     TransInfos infos;
     infos.matrix.setTranslate(xAxis, yAxis);
@@ -4784,6 +4853,10 @@ uint32_t PixelMap::Rotate(float degrees)
 {
     if (ImageUtils::FloatEqual(degrees, 0.0f)) {
         return SUCCESS;
+    }
+    if (imageInfo_.pixelFormat == PixelFormat::Y8) {
+        IMAGE_LOGE("Rotate does not support Y8");
+        return ERR_IMAGE_DATA_UNSUPPORT;
     }
     ImageTrace imageTrace("PixelMap rotate degrees = %f", degrees);
     TransInfos infos;
@@ -4807,6 +4880,10 @@ uint32_t PixelMap::Flip(bool xAxis, bool yAxis)
     ImageTrace imageTrace("PixelMap flip");
     if (xAxis == false && yAxis == false) {
         return SUCCESS;
+    }
+    if (imageInfo_.pixelFormat == PixelFormat::Y8) {
+        IMAGE_LOGE("Flip does not support Y8");
+        return ERR_IMAGE_DATA_UNSUPPORT;
     }
     return Scale(xAxis ? -1 : 1, yAxis ? -1 : 1, AntiAliasingOption::NONE);
 }
@@ -4844,6 +4921,10 @@ uint32_t PixelMap::Crop(const Rect &rect)
     if (!modifiable_) {
         IMAGE_LOGE("[PixelMap] crop can't be performed: PixelMap is not modifiable");
         return ERR_IMAGE_PIXELMAP_NOT_ALLOW_MODIFY;
+    }
+    if (imageInfo_.pixelFormat == PixelFormat::Y8) {
+        IMAGE_LOGE("Crop does not support Y8");
+        return ERR_IMAGE_DATA_UNSUPPORT;
     }
     std::lock_guard<std::mutex> lock(*translationMutex_);
     ImageTrace imageTrace("PixelMap crop");
@@ -5074,9 +5155,9 @@ uint32_t PixelMap::ToSdr()
 
 uint32_t PixelMap::ToSdr(PixelFormat format, bool toSRGB)
 {
-    if (isAstc_) {
-        IMAGE_LOGE("ToSdr does not support astc");
-        return ERR_MEDIA_INVALID_OPERATION;
+    if (IsAstcOrY8Format()) {
+        IMAGE_LOGE("ToSdr does not support astc or Y8");
+        return ERR_IMAGE_DATA_UNSUPPORT;
     }
 #if defined(_WIN32) || defined(_APPLE) || defined(IOS_PLATFORM) || defined(ANDROID_PLATFORM)
     IMAGE_LOGI("tosdr is not supported");
@@ -5158,8 +5239,8 @@ static bool isSameColorSpace(const OHOS::ColorManager::ColorSpace &src,
 
 uint32_t PixelMap::ApplyColorSpace(const OHOS::ColorManager::ColorSpace &grColorSpace)
 {
-    if (isAstc_) {
-        IMAGE_LOGE("ApplyColorSpace does not support astc");
+    if (IsAstcOrY8Format()) {
+        IMAGE_LOGE("ApplyColorSpace does not support astc or Y8");
         return ERR_IMAGE_COLOR_CONVERT;
     }
     auto grName = grColorSpace.GetColorSpaceName();

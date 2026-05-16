@@ -33,8 +33,10 @@ enum PixelMapFormat: i32 {
   RGBA_1010102 = 10,
   YCBCR_P010 = 11,
   YCRCB_P010 = 12,
+  Y8 = 14,  // 8-bit grayscale
   ALPHA_U8 = 15,
   ALPHA_F16 = 16,
+  Y1 = 17,  // 1-bit black and white
   ASTC_4x4 = 102
 }
 
@@ -308,9 +310,28 @@ struct ImageInfo {
   isHdr: bool;
 }
 
+struct PackingOptionsForTiff {
+  compression: Optional<i32>;
+  orientation: Optional<Orientation>;
+  xResolution: Optional<f64>;
+  yResolution: Optional<f64>;
+  resolutionUnit: Optional<i32>;
+}
+
+struct BinaryBufferInfo {
+  size: Size;
+  data: @arraybuffer Array<u8>;
+  bytesPerRow: Optional<i32>;
+}
+
 enum CropAndScaleStrategy: i32 {
   SCALE_FIRST = 1,
   CROP_FIRST = 2
+}
+
+struct PackingSizeLimit {
+  maxSize: Size;
+  level: AntiAliasingLevel;
 }
 
 struct PackingOption {
@@ -320,6 +341,10 @@ struct PackingOption {
   desiredDynamicRange: Optional<PackingDynamicRange>;
   needsPackProperties: Optional<bool>;
   maxEmbedThumbnailDimension: Optional<i32>;
+  backgroundColor: Optional<i32>;
+  sizeLimit: Optional<PackingSizeLimit>;
+  needsPackGPS: Optional<bool>;
+  tiffPackingOption: Optional<PackingOptionsForTiff>;
 }
 
 struct PackingOptionsForSequence {
@@ -444,6 +469,7 @@ enum MetadataType: i32 {
   PNG_METADATA = 19,
   JFIF_METADATA = 20,
   TIFF_METADATA = 21,
+  XMP_METADATA = 22,
   AVIS_METADATA = 23,
 }
 
@@ -669,14 +695,13 @@ enum XmageColorMode: i32 {
 }
 
 enum XMPTagType: i32 {
-    UNKNOWN = 0,
-    SIMPLE = 1,
-    UNORDERED_ARRAY = 2,
-    ORDERED_ARRAY = 3,
-    ALTERNATE_ARRAY = 4,
-    ALTERNATE_TEXT = 5,
-    STRUCTURE = 6,
-    QUALIFIER = 7
+  UNKNOWN = 0,
+  STRING = 1,
+  UNORDERED_ARRAY = 2,
+  ORDERED_ARRAY = 3,
+  ALTERNATE_ARRAY = 4,
+  ALTERNATE_TEXT = 5,
+  STRUCTURE = 6
 }
 
 struct DecodingOptionsForPicture {
@@ -721,12 +746,12 @@ struct ImageBufferData {
 
 union NullableImageBufferData {
   type_imageBufferData: ImageBufferData;
-  @null type_null;
+  type_null: @null unit;
 }
 
 union NullableHdrMetadataValue {
   type_hdrMetadataValue: HdrMetadataValue;
-  @null type_null;
+  type_null: @null unit;
 }
 
 interface PixelMap {
@@ -1516,7 +1541,7 @@ interface DngMetadata {
     baselineNoise?: double;
     baselineSharpness?: double;
     bayerGreenSplit?: int;
-    linearResponseLimit?: double[];
+    linearResponseLimit?: double;
     cameraSerialNumber?: string;
     lensInfo?: double[];
     chromaBlurRadius?: double;
@@ -1680,6 +1705,7 @@ struct ImageMetadata {
   jfifMetadata: Optional<JfifMetadata>;
   tiffMetadata: Optional<TiffMetadata>;
   gifMetadata: Optional<GifMetadata>;
+  xmpMetadata: Optional<XMPMetadata>;
   avisMetadata: Optional<AvisMetadata>;
 }
 
@@ -1795,12 +1821,6 @@ interface ImageSource {
   CreateThumbnailSync(options: Optional<DecodingOptionsForThumbnail>): Optional<PixelMap>;
 
   @get GetSupportedFormats(): Array<String>;
-
-  // @gen_promise("readXMPMetadata")
-  // ReadXMPMetadataSync(): NullableXMPMetadata;
-
-  // @gen_promise("writeXMPMetadata")
-  // WriteXMPMetadataSync(xmpMetadata: XMPMetadata): void;
 
   ReadImageMetadataPackage(propertyKeys: Optional<Array<String>>, index: Optional<i32>): ImageMetadataPackage;
   ReadImageMetadataPackageByType(metadataTypes: Optional<Array<MetadataType>>, index: Optional<i32>): ImageMetadataPackage;
@@ -2059,6 +2079,12 @@ interface ImagePacker {
   @promise @rename("packToFile")
   PackPictureToFileSync(picture: Picture, fd: i32, options: PackingOption): void;
 
+  @promise @rename("packBinaryImageToTiffFile")
+  PackBinaryImageToTiffFileSync(bufferInfo: BinaryBufferInfo, fd: i32, options: Optional<PackingOptionsForTiff>): void;
+
+  @promise @rename("packBinaryImageToTiffData")
+  PackBinaryImageToTiffDataSync(bufferInfo: BinaryBufferInfo, options: Optional<PackingOptionsForTiff>): @arraybuffer Array<u8>;
+
   @promise @rename("packing")
   PackingPictureSync(picture: Picture, options: PackingOption): @arraybuffer Array<u8>;
 
@@ -2213,58 +2239,46 @@ const TIFF: XMPNamespace = {
 """)
 
 struct XMPTag {
-    xmlns: String;
-    prefix: Optional<String>;
-    name: String;
-    type: XMPTagType;
-    value: Optional<String>;
+  xmpNamespace: XMPNamespace;
+  name: String;
+  type: XMPTagType;
+  value: Optional<String>;
 }
 
-struct XMPEnumerateOption {
-    isRecursive: Optional<bool>;
+struct XMPEnumerateOptions {
+  isRecursive: Optional<bool>;
+  onlyQualifier: Optional<bool>;
 }
 
 union NullableXMPTag {
-    type_xmpTag: XMPTag;
-    type_null: @null unit;
+  type_xmpTag: XMPTag;
+  type_null: @null unit;
 }
 
-// @class
-// interface XMPMetadata {
-//   GetImplPtr(): i64;
+@class
+interface XMPMetadata {
+  GetImplPtr(): i64;
 
-//   @gen_promise("registerNamespacePrefix")
-//   RegisterNamespacePrefixSync(xmlns: String, prefix: String): void;
+  @promise RegisterXMPNamespace(xmpNamespace: XMPNamespace): void;
 
-//   @gen_promise("setValue")
-//   SetValueSync(path: String, type: XMPTagType, value: Optional<String>): void;
+  @promise SetValue(path: String, type: XMPTagType, value: Optional<String>): void;
 
-//   @gen_promise("getTag")
-//   GetTagSync(path: String): NullableXMPTag;
+  @promise GetTag(path: String): NullableXMPTag;
 
-//   @gen_promise("removeTag")
-//   RemoveTagSync(path: String): void;
+  @promise RemoveTag(path: String): void;
 
-//   EnumerateTags(callback: (path: String, tag: XMPTag)=> bool, rootPath: Optional<String>, options: Optional<XMPEnumerateOption>): void;
+  EnumerateTags(callback: (path: String, tag: XMPTag)=> bool, rootPath: Optional<String>, options: Optional<XMPEnumerateOptions>): void;
 
-//   @gen_promise("getTags")
-//   GetTagsSync(rootPath: Optional<String>, options: Optional<XMPEnumerateOption>): @record Map<String, XMPTag>;
+  @promise GetTags(rootPath: Optional<String>, options: Optional<XMPEnumerateOptions>): @record Map<String, XMPTag>;
 
-//   @gen_promise("setBlob")
-//   SetBlobSync(buffer: @arraybuffer Array<u8>): void;
+  @promise SetBlob(buffer: @arraybuffer Array<u8>): void;
 
-//   @gen_promise("getBlob")
-//   GetBlobSync(): @arraybuffer Array<u8>;
-// }
+  @promise GetBlob(): @arraybuffer Array<u8>;
+}
 
-// union NullableXMPMetadata {
-//     type_xmpMetadata: XMPMetadata;
-//     type_null: @null unit;
-// }
-
-// // constructor
-// @ctor("XMPMetadata")
-// function XMPMetadataCtor(): XMPMetadata;
+// constructor
+@ctor("XMPMetadata")
+function XMPMetadataCtor(): XMPMetadata;
 
 @ctor("ExifMetadata")
 function ExifMetadataCtor(): ExifMetadata;

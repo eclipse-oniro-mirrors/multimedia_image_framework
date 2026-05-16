@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Huawei Device Co., Ltd.
+ * Copyright (C) 2021-2026 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -128,13 +128,15 @@ public:
     static bool PathToRealPath(const std::string &path, std::string &realPath);
     static bool FloatCompareZero(float src);
     static AlphaType GetValidAlphaTypeByFormat(const AlphaType &dstType, const PixelFormat &format);
-    static AllocatorType GetPixelMapAllocatorType(const Size &size, const PixelFormat &format, bool preferDma);
+    static AllocatorType GetPixelMapAllocatorType(const Size &size, const PixelFormat &format, bool preferDma,
+        uint64_t &usage);
     static bool IsValidImageInfo(const ImageInfo &info);
     static bool IsValidAuxiliaryInfo(const std::shared_ptr<PixelMap> &pixelMap, const AuxiliaryPictureInfo &info);
     static bool IsAstc(PixelFormat format);
     static bool IsWidthAligned(const int32_t &width);
     static bool IsSizeSupportDma(const Size &size);
     static bool IsFormatSupportDma(const PixelFormat &format);
+    static bool IsSupportDefaultDmaNopadding(const PixelFormat &format);
     static bool Is10Bit(const PixelFormat &format);
     static MultimediaPlugin::PluginServer& GetPluginServer();
     static bool CheckMulOverflow(int32_t width, int32_t bytesPerPixel);
@@ -149,10 +151,10 @@ public:
     static void DumpPixelMapIfDumpEnabled(std::unique_ptr<PixelMap>& pixelMap, uint64_t imageId = 0);
     static void DumpPixelMapIfDumpEnabled(PixelMap& pixelMap, std::string func);
     static void DumpPixelMapBeforeEncode(PixelMap& pixelMap);
+    static void DumpData(const char* data, const size_t& totalSize, const std::string& fileSuffix = "dat",
+        uint64_t imageId = 0);
     static void DumpDataIfDumpEnabled(const char* data, const size_t& totalSize, const std::string& fileSuffix = "dat",
         uint64_t imageId = 0);
-    static void DumpData(const char* data, const size_t& totalSize,
-        const std::string& fileSuffix, uint64_t imageId);
 #if !defined(CROSS_PLATFORM)
     static bool SurfaceBuffer2PixelMap(sptr<SurfaceBuffer> &surfaceBuffer, std::unique_ptr<PixelMap>& Pixelmap);
     static void DumpHdrBufferEnabled(sptr<SurfaceBuffer>& buffer, const std::string& fileName);
@@ -189,6 +191,7 @@ public:
     static bool IsAuxiliaryPictureTypeSupported(AuxiliaryPictureType auxiliaryPictureType);
     static bool IsAuxiliaryPictureEncoded(AuxiliaryPictureType type);
     static bool IsMetadataTypeSupported(MetadataType metadataType);
+    static bool isBlobMetadataType(MetadataType metadataType);
     static const std::set<AuxiliaryPictureType> &GetAllAuxiliaryPictureType();
     static const std::set<MetadataType> &GetAllMetadataType();
     static uint32_t GetThumbnailScaleTargetSize(const Size &sourceSize, const int32_t &maxPixelSize, Size &dstSize,
@@ -222,6 +225,7 @@ public:
     static bool IsYuvFormat(PixelFormat format);
     static bool IsRGBX(PixelFormat format);
     static bool IsAlpha8(PixelFormat format);
+    static bool IsGrayScale(PixelFormat format);
     static bool PixelMapCreateCheckFormat(PixelFormat format);
     static bool CheckTlvSupportedFormat(PixelFormat format);
     static uint16_t GetReusePixelRefCount(const std::shared_ptr<PixelMap> &reusePixelmap);

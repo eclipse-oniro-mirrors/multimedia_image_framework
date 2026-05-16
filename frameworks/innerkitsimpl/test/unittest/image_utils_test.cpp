@@ -17,12 +17,14 @@
 #include <gtest/gtest.h>
 #include <fcntl.h>
 #include <fstream>
+#include <limits>
 #include <unistd.h>
 
 #if !defined(CROSS_PLATFORM)
 #include "surface_type.h"
 #include "surface_buffer.h"
 #endif
+#include "color_utils.h"
 #include "image_utils.h"
 #include "image_trace.h"
 #include "source_stream.h"
@@ -581,6 +583,143 @@ HWTEST_F(ImageUtilsTest, ReversePixelsTest001, TestSize.Level3)
     ASSERT_EQ(byteCount % NUM_4, 1);
     ASSERT_NE(byteCount % NUM_4, NUM_0);
     GTEST_LOG_(INFO) << "ImageUtilsTest: ReversePixelsTest001 end";
+}
+
+/**
+ * @tc.name: CheckFloatMulOverflowTest001
+ * @tc.desc: CheckFloatMulOverflow
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageUtilsTest, CheckFloatMulOverflowTest001, TestSize.Level3)
+{
+    EXPECT_FALSE(ImageUtils::CheckFloatMulOverflow(1.0f, 2.0f));
+    EXPECT_FALSE(ImageUtils::CheckFloatMulOverflow(2.0f, 1.0f));
+    EXPECT_FALSE(ImageUtils::CheckFloatMulOverflow(1000.0f, 2.0f));
+    EXPECT_TRUE(ImageUtils::CheckFloatMulOverflow(std::numeric_limits<float>::max(), 2.0f));
+}
+
+/**
+ * @tc.name: CheckFloatToInt32OverflowTest001
+ * @tc.desc: CheckFloatToInt32Overflow
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageUtilsTest, CheckFloatToInt32OverflowTest001, TestSize.Level3)
+{
+    EXPECT_FALSE(ImageUtils::CheckFloatToInt32Overflow(0.0f));
+    EXPECT_FALSE(ImageUtils::CheckFloatToInt32Overflow(static_cast<float>(INT32_MAX)));
+    EXPECT_FALSE(ImageUtils::CheckFloatToInt32Overflow(static_cast<float>(INT32_MIN)));
+    EXPECT_TRUE(ImageUtils::CheckFloatToInt32Overflow(static_cast<float>(INT32_MAX) + 1024.0f));
+    EXPECT_TRUE(ImageUtils::CheckFloatToInt32Overflow(static_cast<float>(INT32_MIN) - 1024.0f));
+}
+
+#if !defined(CROSS_PLATFORM)
+/**
+ * @tc.name: SbCMColorSpaceType2ColorSpaceNameTest001
+ * @tc.desc: SbCMColorSpaceType2ColorSpaceName
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageUtilsTest, SbCMColorSpaceType2ColorSpaceNameTest001, TestSize.Level3)
+{
+    auto name = ImageUtils::SbCMColorSpaceType2ColorSpaceName(CM_SRGB_FULL);
+    EXPECT_EQ(name, ColorManager::SRGB);
+
+    name = ImageUtils::SbCMColorSpaceType2ColorSpaceName(static_cast<CM_ColorSpaceType>(-1));
+    EXPECT_EQ(name, ColorManager::NONE);
+}
+#endif
+
+/**
+ * @tc.name: GetThumbnailScaleTargetSizeTest001
+ * @tc.desc: GetThumbnailScaleTargetSize
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageUtilsTest, GetThumbnailScaleTargetSizeTest001, TestSize.Level3)
+{
+    Size dstSize;
+    float scale = 1.0f;
+    Size sourceSize { 100, 100 };
+
+    uint32_t ret = ImageUtils::GetThumbnailScaleTargetSize(sourceSize, 0, dstSize, scale);
+    EXPECT_EQ(ret, ERR_IMAGE_INVALID_PARAMETER);
+
+    Size invalidSize { 0, 10 };
+    ret = ImageUtils::GetThumbnailScaleTargetSize(invalidSize, 100, dstSize, scale);
+    EXPECT_EQ(ret, ERR_IMAGE_DATA_ABNORMAL);
+
+    Size noScaleSize { 50, 40 };
+    scale = 0.0f;
+    ret = ImageUtils::GetThumbnailScaleTargetSize(noScaleSize, 100, dstSize, scale);
+    EXPECT_EQ(ret, SUCCESS);
+    EXPECT_EQ(dstSize.width, noScaleSize.width);
+    EXPECT_EQ(dstSize.height, noScaleSize.height);
+    EXPECT_FLOAT_EQ(scale, 1.0f);
+
+    Size scaleDownSize { 200, 100 };
+    ret = ImageUtils::GetThumbnailScaleTargetSize(scaleDownSize, 100, dstSize, scale);
+    EXPECT_EQ(ret, SUCCESS);
+    EXPECT_EQ(dstSize.width, 100);
+    EXPECT_EQ(dstSize.height, 50);
+    EXPECT_GT(1.0f, scale);
+}
+
+/**
+ * @tc.name: ScaleThumbnailWithAspectRatioTest001
+ * @tc.desc: ScaleThumbnailWithAspectRatio when pixelMap is nullptr.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageUtilsTest, ScaleThumbnailWithAspectRatioTest001, TestSize.Level3)
+{
+    std::unique_ptr<PixelMap> pixelMap = nullptr;
+    uint32_t ret = ImageUtils::ScaleThumbnailWithAspectRatio(pixelMap, 100);
+    EXPECT_EQ(ret, ERR_IMAGE_DATA_ABNORMAL);
+}
+
+/**
+ * @tc.name: ScaleThumbnailWithAspectRatioTest002
+ * @tc.desc: test ScaleThumbnailWithAspectRatio when pixelMap is not nullptr and width is smaller than height.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageUtilsTest, ScaleThumbnailWithAspectRatioTest002, TestSize.Level3)
+{
+    InitializationOptions opts;
+    opts.size.width = 50;
+    opts.size.height = 40;
+    opts.pixelFormat = PixelFormat::RGBA_8888;
+    std::unique_ptr<PixelMap> pixelMap = PixelMap::Create(opts);
+    ASSERT_NE(pixelMap, nullptr);
+
+    uint32_t ret = ImageUtils::ScaleThumbnailWithAspectRatio(pixelMap, 100);
+    EXPECT_EQ(ret, SUCCESS);
+
+    ImageInfo imageInfo;
+    pixelMap->GetImageInfo(imageInfo);
+    EXPECT_EQ(imageInfo.size.width, 50);
+    EXPECT_EQ(imageInfo.size.height, 40);
+}
+
+/**
+ * @tc.name: ScaleThumbnailWithAspectRatioTest003
+ * @tc.desc: test ScaleThumbnailWithAspectRatio when pixelMap is not nullptr and width is larger than height.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageUtilsTest, ScaleThumbnailWithAspectRatioTest003, TestSize.Level3)
+{
+    InitializationOptions opts;
+    opts.size.width = 200;
+    opts.size.height = 100;
+    opts.pixelFormat = PixelFormat::RGBA_8888;
+    std::unique_ptr<PixelMap> pixelMap = PixelMap::Create(opts);
+    ASSERT_NE(pixelMap, nullptr);
+
+    uint32_t ret = ImageUtils::ScaleThumbnailWithAspectRatio(pixelMap, 100);
+    EXPECT_EQ(ret, SUCCESS);
+
+    ImageInfo imageInfo;
+    pixelMap->GetImageInfo(imageInfo);
+    EXPECT_GT(imageInfo.size.width, 0);
+    EXPECT_GT(imageInfo.size.height, 0);
+    EXPECT_LE(imageInfo.size.width, 100);
+    EXPECT_LE(imageInfo.size.height, 100);
 }
 
 /**

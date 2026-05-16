@@ -51,7 +51,6 @@ constexpr uint8_t JPEG_MARKER_APP2 = 0xE2;
 constexpr uint8_t UINT32_BYTE_SIZE = 4;
 constexpr uint8_t MAX_IMAGE_NUM = 32;
 constexpr uint8_t MP_ENTRY_BYTE_SIZE = 16;
-constexpr uint16_t AUXILIARY_TAG_NAME_LENGTH = 8;
 
 static const std::string IMAGE_INPUT_JPEG_SDR_PATH = "/data/local/tmp/image/test.jpg";
 static const std::string IMAGE_INPUT_HEIF_SDR_PATH = "/data/local/tmp/image/test.heic";
@@ -886,44 +885,6 @@ HWTEST_F(ImageSourceHdrTest, ParsingMpEntryTest001, TestSize.Level3)
     size = (MAX_IMAGE_NUM + 1) * MP_ENTRY_BYTE_SIZE + 1;
     res = jpegMpfParser->ParsingMpEntry(buf, size, true, MAX_IMAGE_NUM + 1);
     EXPECT_FALSE(res);
-}
-
-/**
- * @tc.name: ParsingAuxiliaryPicturesTest001
- * @tc.desc: test ParsingAuxiliaryPictures when data is nullptr or dataSize is 0
- * @tc.type: FUNC
- */
-HWTEST_F(ImageSourceHdrTest, ParsingAuxiliaryPicturesTest001, TestSize.Level3)
-{
-    auto jpegMpfParser = std::make_shared<JpegMpfParser>();
-    ASSERT_NE(jpegMpfParser, nullptr);
-    uint8_t buf[] = {0, 0, 0, 0, 0};
-    uint32_t dataSize = sizeof(buf);
-
-    bool res = jpegMpfParser->ParsingAuxiliaryPictures(nullptr, dataSize, true);
-    EXPECT_FALSE(res);
-
-    res = jpegMpfParser->ParsingAuxiliaryPictures(nullptr, 0, true);
-    EXPECT_FALSE(res);
-
-    res = jpegMpfParser->ParsingAuxiliaryPictures(buf, 0, true);
-    EXPECT_FALSE(res);
-}
-
-/**
- * @tc.name: ParsingAuxiliaryPicturesTest002
- * @tc.desc: test ParsingAuxiliaryPictures when size less than AUXILIARY_TAG_NAME_LENGTH
- * @tc.type: FUNC
- */
-HWTEST_F(ImageSourceHdrTest, ParsingAuxiliaryPicturesTest002, TestSize.Level3)
-{
-    auto jpegMpfParser = std::make_shared<JpegMpfParser>();
-    ASSERT_NE(jpegMpfParser, nullptr);
-    uint8_t buf[] = {0, 0, 0, 0, 0};
-    uint32_t dataSize = AUXILIARY_TAG_NAME_LENGTH - 1;
-
-    bool res = jpegMpfParser->ParsingAuxiliaryPictures(buf, dataSize, true);
-    EXPECT_TRUE(res);
 }
 
 /**

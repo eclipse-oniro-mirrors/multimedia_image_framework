@@ -83,8 +83,9 @@ int64_t PackImage(int &fd, std::unique_ptr<PixelMap> pixelMap)
 
 std::unique_ptr<PixelMap> ImageReceiver::getSurfacePixelMap(InitializationOptions initializationOpts)
 {
-    if (iraContext_->currentBuffer_ == nullptr) {
-        IMAGE_LOGE("getSurfacePixelMap: currentBuffer_ is nullptr");
+    std::lock_guard<std::mutex> guard(imageReceiverMutex_);
+    if (iraContext_ == nullptr || iraContext_->currentBuffer_ == nullptr) {
+        IMAGE_LOGE("getSurfacePixelMap: iraContext_ or currentBuffer_ is nullptr");
         return nullptr;
     }
     uint32_t *addr = reinterpret_cast<uint32_t *>(iraContext_->currentBuffer_->GetVirAddr());
@@ -121,19 +122,19 @@ static int32_t SaveSTP(uint32_t *buffer,
     return errorCode;
 }
 
-int32_t ImageReceiver::SaveBufferAsImage(int &fd,
-                                         OHOS::sptr<OHOS::SurfaceBuffer> buffer,
-                                         InitializationOptions initializationOpts)
+// Internal implementation without lock (called by public versions that already hold the lock)
+int32_t ImageReceiver::SaveBufferAsImageInner(int &fd, OHOS::sptr<OHOS::SurfaceBuffer> buffer,
+    InitializationOptions initializationOpts)
 {
     int32_t errorcode = 0;
     if (buffer != nullptr) {
         uint32_t *addr = reinterpret_cast<uint32_t *>(buffer->GetVirAddr());
         int32_t size = buffer->GetSize();
         errorcode = SaveSTP(addr, static_cast<uint32_t>(size), fd, initializationOpts);
-        if ((iraContext_->GetReceiverBufferConsumer()) != nullptr) {
-            (iraContext_->GetReceiverBufferConsumer())->ReleaseBuffer(buffer, -1);
+        if (iraContext_ != nullptr && iraContext_->GetReceiverBufferConsumer() != nullptr) {
+            iraContext_->GetReceiverBufferConsumer()->ReleaseBuffer(buffer, -1);
         } else {
-            IMAGE_LOGD("iraContext_->GetReceiverBufferConsumer() == nullptr");
+            IMAGE_LOGD("iraContext_ or GetReceiverBufferConsumer() is nullptr");
         }
     } else {
         IMAGE_LOGD("SaveBufferAsImage buffer == nullptr");
@@ -142,12 +143,29 @@ int32_t ImageReceiver::SaveBufferAsImage(int &fd,
 }
 
 int32_t ImageReceiver::SaveBufferAsImage(int &fd,
+                                         OHOS::sptr<OHOS::SurfaceBuffer> buffer,
                                          InitializationOptions initializationOpts)
 {
-    if (iraContext_->currentBuffer_ != nullptr) {
-        return SaveBufferAsImage(fd, iraContext_->currentBuffer_, initializationOpts);
+    std::lock_guard<std::mutex> guard(imageReceiverMutex_);
+    if (iraContext_ == nullptr) {
+        IMAGE_LOGE("SaveBufferAsImage: iraContext_ is nullptr");
+        return ERR_MEDIA_INVALID_VALUE;
     }
-    IMAGE_LOGD("iraContext_->GetCurrentBuffer() == nullptr");
+    return SaveBufferAsImageInner(fd, buffer, initializationOpts);
+}
+
+int32_t ImageReceiver::SaveBufferAsImage(int &fd,
+                                         InitializationOptions initializationOpts)
+{
+    std::lock_guard<std::mutex> guard(imageReceiverMutex_);
+    if (iraContext_ == nullptr) {
+        IMAGE_LOGE("SaveBufferAsImage: iraContext_ is nullptr");
+        return ERR_MEDIA_INVALID_VALUE;
+    }
+    if (iraContext_->currentBuffer_ != nullptr) {
+        return SaveBufferAsImageInner(fd, iraContext_->currentBuffer_, initializationOpts);
+    }
+    IMAGE_LOGD("iraContext_->currentBuffer_ is nullptr");
     return 0;
 }
 
@@ -260,10 +278,19 @@ static void DumpSurfaceBufferFromImageReceiver(OHOS::sptr<OHOS::SurfaceBuffer> b
 
 OHOS::sptr<OHOS::SurfaceBuffer> ImageReceiver::ReadNextImage(int64_t &timestamp)
 {
+    std::lock_guard<std::mutex> guard(imageReceiverMutex_);
+    if (iraContext_ == nullptr) {
+        IMAGE_LOGE("ReadNextImage: iraContext_ is nullptr");
+        return nullptr;
+    }
     sptr<SyncFence> flushFence = SyncFence::InvalidFence();
     OHOS::Rect damage = {};
     OHOS::sptr<OHOS::SurfaceBuffer> buffer;
     sptr<IConsumerSurface> listenerConsumerSurface = iraContext_->GetReceiverBufferConsumer();
+    if (listenerConsumerSurface == nullptr) {
+        IMAGE_LOGE("ReadNextImage: GetReceiverBufferConsumer() is nullptr");
+        return nullptr;
+    }
     SurfaceError surfaceError = listenerConsumerSurface->AcquireBuffer(buffer, flushFence, timestamp, damage);
     if (surfaceError == SURFACE_ERROR_OK) {
         uint32_t timeout = 3000;
@@ -289,11 +316,20 @@ OHOS::sptr<OHOS::SurfaceBuffer> ImageReceiver::ReadNextImage()
 
 OHOS::sptr<OHOS::SurfaceBuffer> ImageReceiver::ReadLastImage(int64_t &timestamp)
 {
+    std::lock_guard<std::mutex> guard(imageReceiverMutex_);
+    if (iraContext_ == nullptr) {
+        IMAGE_LOGE("ReadLastImage: iraContext_ is nullptr");
+        return nullptr;
+    }
     sptr<SyncFence> flushFence = SyncFence::InvalidFence();
     OHOS::Rect damage = {};
     OHOS::sptr<OHOS::SurfaceBuffer> buffer;
     OHOS::sptr<OHOS::SurfaceBuffer> bufferBefore;
     sptr<IConsumerSurface> listenerConsumerSurface = iraContext_->GetReceiverBufferConsumer();
+    if (listenerConsumerSurface == nullptr) {
+        IMAGE_LOGE("ReadLastImage: GetReceiverBufferConsumer() is nullptr");
+        return nullptr;
+    }
     SurfaceError surfaceError = listenerConsumerSurface->AcquireBuffer(buffer, flushFence, timestamp, damage);
     while (surfaceError == SURFACE_ERROR_OK) {
         uint32_t timeout = 3000;
@@ -321,6 +357,7 @@ OHOS::sptr<OHOS::SurfaceBuffer> ImageReceiver::ReadLastImage()
 
 sptr<Surface> ImageReceiver::GetReceiverSurface()
 {
+    std::lock_guard<std::mutex> guard(imageReceiverMutex_);
     if (iraContext_ != nullptr) {
         return iraContext_->GetReceiverBufferProducer();
     }
