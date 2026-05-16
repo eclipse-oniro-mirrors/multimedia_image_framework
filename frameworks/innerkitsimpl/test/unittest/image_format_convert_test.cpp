@@ -2619,6 +2619,7 @@ HWTEST_F(ImageFormatConvertTest, MakeDestPixelMapUnique_001, TestSize.Level3)
     GTEST_LOG_(INFO) << "ImageFormatConvertTest: MakeDestPixelMapUnique_001 end";
 }
 
+#ifdef EXT_PIXEL
 HWTEST_F(ImageFormatConvertTest, GetYuvConstantFromParam_001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ImageFormatConvertTest.GetYuvConstantFromParam_001: start";
@@ -2832,6 +2833,6 @@ HWTEST_F(ImageFormatConvertTest, P010ToRGB10ParamBufferSizeVaild_001, TestSize.L
     EXPECT_EQ(result, false);
     GTEST_LOG_(INFO) << "ImageFormatConvertTest.P010ToRGB10ParamBufferSizeVaild_001: end";
 }
-
+#endif
 } // namespace Media
 } // namespace OHOS
