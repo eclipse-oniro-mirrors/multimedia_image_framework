@@ -198,6 +198,8 @@ static const std::map<AuxiliaryPictureType, HeifEncodeItemInfo> HEIF_AUX_PIC_INF
         { PAN_MAP_ITEM_ID, PAN_MAP_ITEM_NAME, HEIF_AUXTTYPE_ID_PAN_MAP } },
     { AuxiliaryPictureType::PAN_GAINMAP,
         { PAN_GAINMAP_ITEM_ID, PAN_GAINMAP_ITEM_NAME, HEIF_AUXTTYPE_ID_PAN_GAINMAP } },
+    { AuxiliaryPictureType::LHDR_GAINMAP,
+        { LHDR_GAINMAP_ITEM_ID, LHDR_GAINMAP_ITEM_NAME, HEIF_AUXTTYPE_ID_LHDR_GAINMAP } },
 #endif
 };
 
@@ -224,6 +226,7 @@ static const std::map<AuxiliaryPictureType, std::string> DEFAULT_AUXILIARY_TAG_M
     {AuxiliaryPictureType::PAN_MAP, AUXILIARY_TAG_PAN_MAP},
     {AuxiliaryPictureType::PAN_GAINMAP, AUXILIARY_TAG_PAN_GAINMAP},
     {AuxiliaryPictureType::THUMBNAIL, AUXILIARY_TAG_THUMBNAIL},
+    {AuxiliaryPictureType::LHDR_GAINMAP, AUXILIARY_TAG_LHDR_GAINMAP},
 };
 
 static const uint8_t NUM_2 = 2;
@@ -563,7 +566,7 @@ uint32_t ExtEncoder::FinalizeEncode()
         return processRet;
     }
 
-    if (picture_ != nullptr) {
+    if (picture_ != nullptr && picture_->GetMainPixel() != nullptr) {
         return EncodePicture();
     }
 #endif
@@ -1737,6 +1740,7 @@ uint32_t ExtEncoder::AssembleHeifAuxiliaryPicture(std::vector<ImageItem>& inputI
     static constexpr AuxiliaryPictureType TARGET_AUX_TYPES[] = {
         AuxiliaryPictureType::SNAP_MAP, AuxiliaryPictureType::SNAP_GAINMAP,
         AuxiliaryPictureType::PAN_MAP, AuxiliaryPictureType::PAN_GAINMAP,
+        AuxiliaryPictureType::LHDR_GAINMAP,
     };
     for (auto type : TARGET_AUX_TYPES) {
         if (!picture_->HasAuxiliaryPicture(type)) {
@@ -2380,6 +2384,9 @@ uint32_t ExtEncoder::EncodePicture()
     bool cond = (encodeFormat_ != SkEncodedImageFormat::kJPEG && encodeFormat_ != SkEncodedImageFormat::kHEIF);
     CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER,
         "%{public}s: unsupported encode format: %{public}s", __func__, opts_.format.c_str());
+    cond = ImageUtils::Is10Bit(picture_->GetMainPixel()->GetPixelFormat());
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER, "unsupported 10bit encode, format: %{public}d",
+        picture_->GetMainPixel()->GetPixelFormat());
     if (ShouldGenerateThumbnail() && !GenerateThumbnailForPicture(picture_, opts_.maxEmbedThumbnailDimension)) {
         IMAGE_LOGW("%{public}s: Generate thumbnail for picture failed", __func__);
     }

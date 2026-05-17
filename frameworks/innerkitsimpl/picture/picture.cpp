@@ -1204,5 +1204,22 @@ bool Picture::IsValidPictureMetadataType(MetadataType metadataType)
     }
     return ImageUtils::IsMetadataTypeSupported(metadataType);
 }
+
+bool Picture::HdrComposeToMainPixel()
+{
+    if (!HasAuxiliaryPicture(AuxiliaryPictureType::GAINMAP)) {
+        IMAGE_LOGE("No Gainmap Compose");
+        return false;
+    }
+    auto pixel = GetHdrComposedPixelMap();
+    if (pixel == nullptr) {
+        IMAGE_LOGE("HdrComposeToMainPixel failed");
+        return false;
+    }
+    std::shared_ptr sharedPixel = std::move(pixel);
+    SetMainPixel(sharedPixel);
+    DropAuxiliaryPicture(AuxiliaryPictureType::GAINMAP);
+    return true;
+}
 } // namespace Media
 } // namespace OHOS

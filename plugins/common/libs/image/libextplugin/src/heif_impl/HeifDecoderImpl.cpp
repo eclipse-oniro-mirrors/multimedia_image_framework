@@ -103,6 +103,7 @@ const std::map<AuxiliaryPictureType, std::string> HEIF_AUXTTYPE_ID_MAP = {
     {AuxiliaryPictureType::SNAP_GAINMAP, HEIF_AUXTTYPE_ID_SNAP_GAINMAP},
     {AuxiliaryPictureType::PAN_MAP, HEIF_AUXTTYPE_ID_PAN_MAP},
     {AuxiliaryPictureType::PAN_GAINMAP, HEIF_AUXTTYPE_ID_PAN_GAINMAP},
+    {AuxiliaryPictureType::LHDR_GAINMAP, HEIF_AUXTTYPE_ID_LHDR_GAINMAP},
 };
 
 #if !defined(CROSS_PLATFORM)
@@ -291,12 +292,13 @@ bool HeifDecoderImpl::CheckAuxiliaryMap(AuxiliaryPictureType type)
         case AuxiliaryPictureType::UNREFOCUS_MAP:
         case AuxiliaryPictureType::LINEAR_MAP:
         case AuxiliaryPictureType::FRAGMENT_MAP:
-            auxiliaryImage_ = parser_->GetAuxiliaryMapImage(iter->second);
-            break;
         case AuxiliaryPictureType::SNAP_MAP:
         case AuxiliaryPictureType::SNAP_GAINMAP:
         case AuxiliaryPictureType::PAN_MAP:
         case AuxiliaryPictureType::PAN_GAINMAP:
+        case AuxiliaryPictureType::LHDR_GAINMAP:
+            auxiliaryImage_ = parser_->GetAuxiliaryMapImage(iter->second);
+            break;
         case AuxiliaryPictureType::THUMBNAIL:
             auxiliaryImage_ = this->GetThumbnailImage();
             break;

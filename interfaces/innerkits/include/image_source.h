@@ -486,6 +486,9 @@ private:
         sptr<SurfaceBuffer>& gainmapSptr, sptr<SurfaceBuffer>& hdrSptr, HdrMetadata& metadata);
     void SetXmageMetadataToGainmap(sptr<SurfaceBuffer>& gainmapSptr);
     void SetHdrMetadataForPicture(std::unique_ptr<Picture> &picture);
+    bool CheckSupportedFormat(const std::string &encodedFormat, uint32_t &errorCode);
+    void InitializeAuxiliaryAndMetadataTypes(const DecodingOptionsForPicture &opts,
+        std::set<AuxiliaryPictureType> &auxTypes, std::set<MetadataType> &metadataTypes);
     void DecodeHeifAuxiliaryPictures(const std::set<AuxiliaryPictureType> &auxTypes, std::unique_ptr<Picture> &picture,
         uint32_t &errorCode, const DownSamplingScaleFactor& downSamplingScaleFactor);
     bool CheckJpegSourceStream(StreamInfo &streamInfo);

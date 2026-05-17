@@ -79,6 +79,7 @@ static std::vector<struct ImageEnum> auxiliaryPictureTypeMap = {
     {"LINEAR_MAP", static_cast<uint32_t>(AuxiliaryPictureType::LINEAR_MAP), ""},
     {"FRAGMENT_MAP", static_cast<uint32_t>(AuxiliaryPictureType::FRAGMENT_MAP), ""},
     {"THUMBNAIL", static_cast<uint32_t>(AuxiliaryPictureType::THUMBNAIL), ""},
+    {"LHDR_GAINMAP", static_cast<uint32_t>(AuxiliaryPictureType::LHDR_GAINMAP), ""},
 };
 
 static std::vector<struct ImageEnum> metadataTypeMap = {
@@ -246,6 +247,7 @@ napi_value PictureNapi::Init(napi_env env, napi_value exports)
         DECLARE_NAPI_FUNCTION("marshalling", Marshalling),
         DECLARE_NAPI_FUNCTION("getMetadata", GetMetadata),
         DECLARE_NAPI_FUNCTION("setMetadata", SetMetadata),
+        DECLARE_NAPI_FUNCTION("hdrComposeToMainPixelmap", HdrComposeToMainPixelmap),
     };
     napi_property_descriptor static_prop[] = {
         DECLARE_NAPI_STATIC_FUNCTION("createPicture", CreatePicture),
@@ -1053,6 +1055,57 @@ napi_value PictureNapi::SetMetadata(napi_env env, napi_callback_info info)
     CreateSetMetadataAsyncWork(env, status, asyncContext, result, metadataType);
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status),
         nullptr, IMAGE_LOGE("Fail to create async work"));
+    return result;
+}
+
+static void HdrComposeToMainPixelmapComplete(napi_env env, napi_status status, void *data)
+{
+    napi_value result = nullptr;
+    napi_get_undefined(env, &result);
+    auto context = static_cast<PictureAsyncContext*>(data);
+    if (!IMG_IS_OK(status)) {
+        context->status = IMAGE_UNSUPPORTED_OPERATION;
+        IMAGE_LOGE("HdrComposeToMainPixelmapComplete failed!");
+    } else {
+        context->status = SUCCESS;
+    }
+    CommonCallbackRoutine(env, context, result);
+}
+
+napi_value PictureNapi::HdrComposeToMainPixelmap(napi_env env, napi_callback_info info)
+{
+    napi_value result = nullptr;
+    napi_get_undefined(env, &result);
+    napi_status status;
+    napi_value thisVar = nullptr;
+    IMAGE_LOGD("HdrComposeToMainPixelmap IN");
+    IMG_JS_NO_ARGS(env, info, status, thisVar);
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), result, IMAGE_LOGE("Fail to get arguments from info"));
+
+    std::unique_ptr<PictureAsyncContext> asyncContext = std::make_unique<PictureAsyncContext>();
+    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->nConstructor));
+    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->nConstructor),
+        result, IMAGE_LOGE("Fail to unwrap context"));
+    asyncContext->rPicture = asyncContext->nConstructor->nativePicture_;
+    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->rPicture), result, IMAGE_LOGE("Empty native picture"));
+    if (asyncContext->rPicture->GetAuxiliaryPicture(AuxiliaryPictureType::GAINMAP) == nullptr) {
+        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_UNSUPPORTED_OPERATION, "There is no GAINMAP");
+    }
+    if (asyncContext->rPicture->GetMainPixel()->GetAllocatorType() != AllocatorType::DMA_ALLOC ||
+        asyncContext->rPicture->GetGainmapPixelMap()->GetAllocatorType() != AllocatorType::DMA_ALLOC) {
+        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_UNSUPPORTED_OPERATION, "Pixelmap is not DMA");
+    }
+    napi_create_promise(env, &(asyncContext->deferred), &result);
+
+    IMG_CREATE_CREATE_ASYNC_WORK(env, status, "HdrComposeToMainPixelmap",
+        [](napi_env env, void* data) {
+            auto context = static_cast<PictureAsyncContext*>(data);
+            bool result = context->rPicture->HdrComposeToMainPixel();
+            context->status = result ? SUCCESS : IMAGE_UNSUPPORTED_OPERATION;
+        }, HdrComposeToMainPixelmapComplete, asyncContext, asyncContext->work);
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), result, IMAGE_LOGE("Fail to create async work"));
+
+    IMAGE_LOGD("HdrComposeToMainPixelmap OUT");
     return result;
 }
 

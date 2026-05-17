@@ -37,6 +37,7 @@ const std::map<std::string, AuxiliaryPictureType> AUXILIARY_TAG_TYPE_MAP = {
     {AUXILIARY_TAG_SNAP_GAINMAP, AuxiliaryPictureType::SNAP_GAINMAP},
     {AUXILIARY_TAG_PAN_MAP, AuxiliaryPictureType::PAN_MAP},
     {AUXILIARY_TAG_PAN_GAINMAP, AuxiliaryPictureType::PAN_GAINMAP},
+    {AUXILIARY_TAG_LHDR_GAINMAP, AuxiliaryPictureType::LHDR_GAINMAP},
 };
  
 const std::map<std::string, MetadataType> BLOB_METADATA_TAG_TYPE_MAP = {
