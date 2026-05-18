@@ -69,6 +69,7 @@ struct PictureAsyncContext {
     MetadataType metadataType = MetadataType::EXIF;
     PixelFormat hdrFormat = PixelFormat::UNKNOWN;
     bool withOptions = false;
+    GainmapParams gainmapParams;
 };
 
 using PictureAsyncContextPtr = std::unique_ptr<PictureAsyncContext>;
