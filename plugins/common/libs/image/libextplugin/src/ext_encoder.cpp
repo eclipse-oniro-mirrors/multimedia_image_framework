@@ -1099,7 +1099,7 @@ uint32_t ExtEncoder::ProcessPictureMaxSize()
         if (auxPicture == nullptr) continue;
         auto auxPixelmap = auxPicture->GetContentPixel();
         if (auxPixelmap != nullptr) {
-            uint32_t scaleRet = auxPixelmap->Scale(scale, scale, opts_.sizeLimit.antiAliasingLevel);
+            scaleRet = auxPixelmap->Scale(scale, scale, opts_.sizeLimit.antiAliasingLevel);
             if (scaleRet != SUCCESS) {
                 IMAGE_LOGE("ExtEncoder::ProcessPictureMaxSize auxPixelmap scale failed, type %{public}d", auxType);
                 return ERR_IMAGE_ENCODE_FAILED;
