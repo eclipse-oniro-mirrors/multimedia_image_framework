@@ -1187,46 +1187,57 @@ static bool CopyYuvPlanes(PixelMap &source, PixelMap &dstPixelMap)
     return true;
 }
 
-std::unique_ptr<PixelMap> PixelYuv::CloneYuv(PixelMap &source, int32_t &errorCode)
+std::unique_ptr<PixelMap> PixelYuv::Clone(int32_t &errorCode)
 {
-    ImageInfo imageInfo;
-    source.GetImageInfo(imageInfo);
-    if (!ImageUtils::IsYuvFormat(imageInfo.pixelFormat)) {
+    if (!IsYuvFormat()) {
         errorCode = ERR_IMAGE_READ_PIXELMAP_FAILED;
         return nullptr;
     }
-    if (imageInfo.size.width <= 0 || imageInfo.size.height <= 0) {
+    if (imageInfo_.size.width <= 0 || imageInfo_.size.height <= 0) {
         errorCode = ERR_IMAGE_INVALID_PARAMETER;
         return nullptr;
     }
 
     InitializationOptions opts;
-    opts.srcPixelFormat = imageInfo.pixelFormat;
-    opts.pixelFormat = imageInfo.pixelFormat;
-    opts.alphaType = imageInfo.alphaType;
-    opts.size = imageInfo.size;
-    opts.editable = source.IsEditable();
-    opts.useDMA = (source.GetAllocatorType() == AllocatorType::DMA_ALLOC);
+    opts.srcPixelFormat = imageInfo_.pixelFormat;
+    opts.pixelFormat = imageInfo_.pixelFormat;
+    opts.alphaType = imageInfo_.alphaType;
+    opts.size = imageInfo_.size;
+    opts.editable = IsEditable();
+    opts.useDMA = (GetAllocatorType() == AllocatorType::DMA_ALLOC);
     auto dstPixelMap = PixelMap::Create(opts);
     if (dstPixelMap == nullptr) {
         errorCode = ERR_IMAGE_INVALID_PARAMETER;
         return nullptr;
     }
 
-    if (!CopyYuvPlanes(source, *dstPixelMap.get())) {
+    if (!CopyYuvPlanes(*this, *dstPixelMap.get())) {
         errorCode = ERR_IMAGE_MALLOC_ABNORMAL;
         return nullptr;
     }
 
-    dstPixelMap->SetTransformered(source.IsTransformered());
+#if !defined(CROSS_PLATFORM)
+    if (opts.useDMA && dstPixelMap->GetAllocatorType() == AllocatorType::DMA_ALLOC) {
+        sptr<SurfaceBuffer> sourceSurfaceBuffer(reinterpret_cast<SurfaceBuffer*>(GetFd()));
+        sptr<SurfaceBuffer> dstSurfaceBuffer(reinterpret_cast<SurfaceBuffer*>(dstPixelMap->GetFd()));
+        VpeUtils::CopySurfaceBufferInfo(sourceSurfaceBuffer, dstSurfaceBuffer);
+        ImageUtils::SetYuvDataInfo(dstPixelMap, dstSurfaceBuffer);
+    } else {
+        dstPixelMap->SetImageYUVInfo(yuvDataInfo_);
+    }
+#else
+    dstPixelMap->SetImageYUVInfo(yuvDataInfo_);
+#endif
+
+    dstPixelMap->SetTransformered(IsTransformered());
     TransformData transformData;
-    source.GetTransformData(transformData);
+    GetTransformData(transformData);
     dstPixelMap->SetTransformData(transformData);
-    dstPixelMap->SetHdrType(source.GetHdrType());
-    dstPixelMap->SetHdrMetadata(source.GetHdrMetadata());
+    dstPixelMap->SetHdrType(GetHdrType());
+    dstPixelMap->SetHdrMetadata(GetHdrMetadata());
 
 #ifdef IMAGE_COLORSPACE_FLAG
-    OHOS::ColorManager::ColorSpace colorspace = source.InnerGetGrColorSpace();
+    OHOS::ColorManager::ColorSpace colorspace = InnerGetGrColorSpace();
     dstPixelMap->InnerSetColorSpace(colorspace);
 #endif
 
@@ -1338,7 +1349,7 @@ std::unique_ptr<PixelMap> PixelYuv::CreateThumbnailPixelMap(PixelMap &source, in
     errorCode = static_cast<int32_t>(err);
     CHECK_ERROR_RETURN_RET(errorCode != SUCCESS, nullptr);
     if (ImageUtils::FloatEqual(scale, 1.0f)) {
-        return CloneYuv(source, errorCode);
+        return source.Clone(errorCode);
     }
     targetSize.width = targetSize.width - (targetSize.width % NUM_2);
     targetSize.height = targetSize.height - (targetSize.height % NUM_2);

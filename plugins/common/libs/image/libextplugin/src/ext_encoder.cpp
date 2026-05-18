@@ -914,13 +914,7 @@ bool ExtEncoder::NeedDeepCopy()
 std::unique_ptr<PixelMap> ExtEncoder::DeepCopyPixelmap()
 {
     int32_t errorCode = SUCCESS;
-    std::unique_ptr<PixelMap> clonedPixelmap = nullptr;
-
-    if (ImageUtils::IsYuvFormat(pixelmap_->GetPixelFormat())) {
-        clonedPixelmap = PixelYuv::CloneYuv(*pixelmap_, errorCode);
-    } else {
-        clonedPixelmap = pixelmap_->Clone(errorCode);
-    }
+    std::unique_ptr<PixelMap> clonedPixelmap = pixelmap_->Clone(errorCode);
     if (errorCode != SUCCESS || clonedPixelmap == nullptr) {
         IMAGE_LOGE("ExtEncoder::DeepCopyPixelmap copy failed, errorCode=%{public}d", errorCode);
         return nullptr;
@@ -1099,10 +1093,18 @@ uint32_t ExtEncoder::ProcessPictureMaxSize()
         IMAGE_LOGE("ExtEncoder::ProcessPictureMaxSize mainPixelmap scale failed %{public}u", scaleRet);
         return scaleRet;
     }
-    scaleRet = picture_->ScaleAuxiliaryPixelMaps(scale, opts_.sizeLimit.antiAliasingLevel);
-    if (scaleRet != SUCCESS) {
-        IMAGE_LOGE("ExtEncoder::ProcessPictureMaxSize AuxiliaryPixelMaps scale failed %{public}u", scaleRet);
-        return scaleRet;
+    const auto& auxTypes = ImageUtils::GetAllAuxiliaryPictureType();
+    for (const auto& auxType : auxTypes) {
+        auto auxPicture = picture_->GetAuxiliaryPicture(auxType);
+        if (auxPicture == nullptr) continue;
+        auto auxPixelmap = auxPicture->GetContentPixel();
+        if (auxPixelmap != nullptr) {
+            uint32_t scaleRet = auxPixelmap->Scale(scale, scale, opts_.sizeLimit.antiAliasingLevel);
+            if (scaleRet != SUCCESS) {
+                IMAGE_LOGE("ExtEncoder::ProcessPictureMaxSize auxPixelmap scale failed, type %{public}d", auxType);
+                return ERR_IMAGE_ENCODE_FAILED;
+            }
+        }
     }
     return SUCCESS;
 }

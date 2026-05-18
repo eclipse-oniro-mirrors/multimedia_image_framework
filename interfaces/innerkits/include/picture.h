@@ -87,7 +87,6 @@ public:
     NATIVEEXPORT uint32_t SetBlobMetadataByType(const std::vector<uint8_t>& metadata, MetadataType type);
     NATIVEEXPORT std::vector<MetadataType> GetMetadataTypes();
     NATIVEEXPORT static bool IsValidPictureMetadataType(MetadataType metadataType);
-    NATIVEEXPORT uint32_t ScaleAuxiliaryPixelMaps(float scale, AntiAliasingOption option);
 
 private:
     std::shared_ptr<PixelMap> mainPixelMap_;
