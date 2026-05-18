@@ -143,6 +143,20 @@ NullablePixelMap PictureImpl::GetGainmapPixelmap()
     }
 }
 
+void PictureImpl::HdrComposeToMainPixelmapSync()
+{
+    IMAGE_LOGD("HdrComposeToMainPixelmapSync IN");
+    if (nativePicture_ == nullptr) {
+        ImageTaiheUtils::ThrowExceptionError(OHOS::Media::ERR_MEDIA_UNKNOWN, "Picture is a null pointer");
+        return;
+    }
+    bool result = nativePicture_->HdrComposeToMainPixel();
+    if (!result) {
+        ImageTaiheUtils::ThrowExceptionError(IMAGE_UNSUPPORTED_OPERATION, "HdrComposeToMainPixel failed");
+    }
+    IMAGE_LOGD("HdrComposeToMainPixelmapSync OUT");
+}
+
 static OHOS::Media::AuxiliaryPictureType ParseAuxiliaryPictureType(int32_t val)
 {
     if (!ImageTaiheUtils::GetTaiheSupportedAuxTypes().count(static_cast<OHOS::Media::AuxiliaryPictureType>(val))) {

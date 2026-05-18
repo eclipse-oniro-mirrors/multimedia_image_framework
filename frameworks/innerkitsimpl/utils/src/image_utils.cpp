@@ -1623,7 +1623,7 @@ bool ImageUtils::IsAuxiliaryPictureEncoded(AuxiliaryPictureType type)
     return AuxiliaryPictureType::GAINMAP == type || AuxiliaryPictureType::UNREFOCUS_MAP == type ||
         AuxiliaryPictureType::FRAGMENT_MAP == type || AuxiliaryPictureType::SNAP_MAP == type ||
         AuxiliaryPictureType::SNAP_GAINMAP == type || AuxiliaryPictureType::PAN_MAP== type ||
-        AuxiliaryPictureType::PAN_GAINMAP == type;
+        AuxiliaryPictureType::PAN_GAINMAP == type || AuxiliaryPictureType::LHDR_GAINMAP == type;
 }
 
 bool ImageUtils::IsMetadataTypeSupported(MetadataType metadataType)
@@ -1654,6 +1654,7 @@ const std::set<AuxiliaryPictureType> &ImageUtils::GetAllAuxiliaryPictureType()
         AuxiliaryPictureType::SNAP_GAINMAP,
         AuxiliaryPictureType::PAN_MAP,
         AuxiliaryPictureType::PAN_GAINMAP,
+        AuxiliaryPictureType::LHDR_GAINMAP,
     };
     return auxTypes;
 }

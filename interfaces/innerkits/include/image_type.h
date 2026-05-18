@@ -78,6 +78,7 @@ namespace Media {
 #define AUXILIARY_TAG_PAN_MAP "PanMain"
 #define AUXILIARY_TAG_PAN_GAINMAP "PanGain"
 #define AUXILIARY_TAG_THUMBNAIL ""
+#define AUXILIARY_TAG_LHDR_GAINMAP "Lhdr"
 
 #define HEIF_AUXTTYPE_ID_GAINMAP "urn:iso:std:iso:ts:21496:-1"
 #define HEIF_AUXTTYPE_ID_DEPTH_MAP "urn:com:huawei:photo:5:0:0:aux:depthmap"
@@ -90,6 +91,7 @@ namespace Media {
 #define HEIF_AUXTTYPE_ID_PAN_GAINMAP "urn:com:huawei:photo:6:0:0:aux:pangainmap"
 #define HEIF_METADATA_ID_XTSTYLE "urn:com:huawei:photo:5:1:0:meta:xtstyle"
 #define HEIF_AUXTTYPE_ID_THUMBNAIL "urn:com:huawei:photo:6:1:0:aux:thumbnail"
+#define HEIF_AUXTTYPE_ID_LHDR_GAINMAP "urn:com:huawei:photo:7:0:0:aux:lhdrgainmap"
 #define RFIMAGE_ID "urn:com:huawei:photo:5:1:0:meta:Res-Map"
 
 #define METADATA_TAG_RFDATAB "RfDataB\0"
@@ -503,6 +505,7 @@ enum class AuxiliaryPictureType : int32_t {
     SNAP_GAINMAP = 7,
     PAN_MAP = 8,
     PAN_GAINMAP = 9,
+    LHDR_GAINMAP = 10,
     THUMBNAIL = 101,
 };
 

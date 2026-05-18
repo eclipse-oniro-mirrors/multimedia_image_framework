@@ -171,6 +171,7 @@ constexpr static uint32_t SNAP_GAINMAP_ITEM_ID = 18;
 constexpr static uint32_t PAN_MAP_ITEM_ID = 19;
 constexpr static uint32_t PAN_GAINMAP_ITEM_ID = 20;
 constexpr static uint32_t DFXDATA_META_ITEM_ID = 21;
+constexpr static uint32_t LHDR_GAINMAP_ITEM_ID = 23;
  
 static const std::string COMPRESS_TYPE_TMAP = "tmap";
 static const std::string COMPRESS_TYPE_HEVC = "hevc";
@@ -202,6 +203,7 @@ static const std::string SNAP_MAP_ITEM_NAME = "Snap Map Image";
 static const std::string SNAP_GAINMAP_ITEM_NAME = "Snap Gainmap Image";
 static const std::string PAN_MAP_ITEM_NAME = "Pan Map Image";
 static const std::string PAN_GAINMAP_ITEM_NAME = "Pan Map Image";
+static const std::string LHDR_GAINMAP_ITEM_NAME = "Lhdr Gainmap Image";
 static const std::string XTSTYLE_METADATA_ITEM_NAME = "urn:com:huawei:photo:5:1:0:meta:xtstyle";
 static const std::string RFDATAB_METADATA_ITEM_NAME = "RfDataB\0";
 static const std::string STDATA_METADATA_ITEM_NAME = "STData\0";

@@ -449,7 +449,7 @@ enum AuxiliaryPictureType: i32 {
   UNREFOCUS_MAP = 3,
   LINEAR_MAP = 4,
   FRAGMENT_MAP = 5,
-  THUMBNAIL = 10,
+  LHDR_GAINMAP = 10,
 }
 
 enum MetadataType: i32 {
@@ -1030,6 +1030,9 @@ interface Picture {
 
   @promise @rename("getHdrComposedPixelmapWithOptions")
   GetHdrComposedPixelmapWithOptionsSync(options: Optional<HdrComposeOptions>): Optional<PixelMap>;
+
+  @promise @rename("hdrComposeToMainPixelmap")
+  HdrComposeToMainPixelmapSync(): void;
 
   GetGainmapPixelmap(): NullablePixelMap;
 

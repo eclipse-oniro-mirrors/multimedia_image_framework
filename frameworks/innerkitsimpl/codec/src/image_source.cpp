@@ -5990,10 +5990,7 @@ std::unique_ptr<Picture> ImageSource::CreatePicture(const DecodingOptionsForPict
 {
     ImageInfo info;
     GetImageInfo(info);
-    if (info.encodedFormat != IMAGE_HEIF_FORMAT && info.encodedFormat != IMAGE_JPEG_FORMAT &&
-        info.encodedFormat != IMAGE_HEIC_FORMAT && info.encodedFormat != IMAGE_AVIF_FORMAT) {
-        IMAGE_LOGE("CreatePicture failed, unsupport format: %{public}s", info.encodedFormat.c_str());
-        errorCode = ERR_IMAGE_MISMATCHED_FORMAT;
+    if (!CheckSupportedFormat(info.encodedFormat, errorCode)) {
         return nullptr;
     }
     DecodeOptions dopts;
@@ -6010,16 +6007,14 @@ std::unique_ptr<Picture> ImageSource::CreatePicture(const DecodingOptionsForPict
     std::shared_ptr<PixelMap> mainPixelMap = CreatePixelMap(dopts, errorCode);
     std::unique_ptr<Picture> picture = Picture::Create(mainPixelMap);
     if (picture == nullptr) {
-        IMAGE_LOGE("Picture is nullptr");
         HandleErrorCode(info.encodedFormat, errorCode);
         return nullptr;
     }
     DownSamplingScaleFactor downSamplingScaleFactor;
     GetDownSamplingScaleFactor(downSamplingScaleFactor, info, opts);
-    std::set<AuxiliaryPictureType> auxTypes = (opts.desireAuxiliaryPictures.size() > 0) ?
-            opts.desireAuxiliaryPictures : ImageUtils::GetAllAuxiliaryPictureType();
-    std::set<MetadataType> metadataTypes = (opts.desiredMetadatas.size() > 0) ?
-            opts.desiredMetadatas : ImageUtils::GetAllMetadataType();
+    std::set<AuxiliaryPictureType> auxTypes;
+    std::set<MetadataType> metadataTypes;
+    InitializeAuxiliaryAndMetadataTypes(opts, auxTypes, metadataTypes);
     if (info.encodedFormat == IMAGE_HEIF_FORMAT || info.encodedFormat == IMAGE_HEIC_FORMAT) {
         DecodeHeifAuxiliaryPictures(auxTypes, picture, errorCode, downSamplingScaleFactor);
         DecodeHeifBlobMetadatas(picture, metadataTypes, info, errorCode);
@@ -7390,6 +7385,26 @@ uint32_t ImageSource::GetImageRawData(std::vector<uint8_t> &data, uint32_t &bits
         errorCode, "GetImageRawData failed %{public}u", errorCode);
 #endif
     return SUCCESS;
+}
+
+bool ImageSource::CheckSupportedFormat(const std::string &encodedFormat, uint32_t &errorCode)
+{
+    if (encodedFormat != IMAGE_HEIF_FORMAT && encodedFormat != IMAGE_JPEG_FORMAT &&
+        encodedFormat != IMAGE_HEIC_FORMAT && encodedFormat != IMAGE_AVIF_FORMAT) {
+        IMAGE_LOGE("CreatePicture failed, unsupport format: %{public}s", encodedFormat.c_str());
+        errorCode = ERR_IMAGE_MISMATCHED_FORMAT;
+        return false;
+    }
+    return true;
+}
+
+void ImageSource::InitializeAuxiliaryAndMetadataTypes(const DecodingOptionsForPicture &opts,
+    std::set<AuxiliaryPictureType> &auxTypes, std::set<MetadataType> &metadataTypes)
+{
+    auxTypes = (opts.desireAuxiliaryPictures.size() > 0) ?
+        opts.desireAuxiliaryPictures : ImageUtils::GetAllAuxiliaryPictureType();
+    metadataTypes = (opts.desiredMetadatas.size() > 0) ?
+        opts.desiredMetadatas : ImageUtils::GetAllMetadataType();
 }
 } // namespace Media
 } // namespace OHOS
