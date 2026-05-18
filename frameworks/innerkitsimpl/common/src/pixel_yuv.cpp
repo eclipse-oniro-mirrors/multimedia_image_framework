@@ -1216,19 +1216,6 @@ std::unique_ptr<PixelMap> PixelYuv::Clone(int32_t &errorCode)
         return nullptr;
     }
 
-#if !defined(CROSS_PLATFORM)
-    if (opts.useDMA && dstPixelMap->GetAllocatorType() == AllocatorType::DMA_ALLOC) {
-        sptr<SurfaceBuffer> sourceSurfaceBuffer(reinterpret_cast<SurfaceBuffer*>(GetFd()));
-        sptr<SurfaceBuffer> dstSurfaceBuffer(reinterpret_cast<SurfaceBuffer*>(dstPixelMap->GetFd()));
-        VpeUtils::CopySurfaceBufferInfo(sourceSurfaceBuffer, dstSurfaceBuffer);
-        ImageUtils::SetYuvDataInfo(dstPixelMap, dstSurfaceBuffer);
-    } else {
-        dstPixelMap->SetImageYUVInfo(yuvDataInfo_);
-    }
-#else
-    dstPixelMap->SetImageYUVInfo(yuvDataInfo_);
-#endif
-
     dstPixelMap->SetTransformered(IsTransformered());
     TransformData transformData;
     GetTransformData(transformData);
