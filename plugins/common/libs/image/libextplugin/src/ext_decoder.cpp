@@ -1787,6 +1787,7 @@ uint32_t ExtDecoder::Decode(uint32_t index, DecodeContext &context)
     PixelFormat format = context.info.pixelFormat;
     bool isOutputYuv420Format = IsYuv420Format(context.info.pixelFormat);
     uint32_t result = 0;
+#if !defined(CROSS_PLATFORM)
     if (skEncodeFormat == SkEncodedImageFormat::kJPEG) {
         uint32_t progressiveResult = isOutputYuv420Format ? ProgressiveDecodeYuv(index, context) :
             ProgressiveDecodeRgb(index, context);
@@ -1795,6 +1796,7 @@ uint32_t ExtDecoder::Decode(uint32_t index, DecodeContext &context)
         }
         CHECK_ERROR_RETURN_RET(progressiveResult != ERR_IMAGE_DATA_UNSUPPORT, progressiveResult);
     }
+#endif
     if (isOutputYuv420Format && skEncodeFormat == SkEncodedImageFormat::kJPEG) {
 #if defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM)
         return 0;
