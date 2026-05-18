@@ -368,9 +368,9 @@ void PixelYuvExt::SetPixelsAddr(void *addr, void *context, uint32_t size, Alloca
     PixelYuv::SetPixelsAddr(addr, context, size, type, func);
 }
 
-std::unique_ptr<PixelMap> PixelYuvExt::Clone(int32_t &errorCode)
+std::unique_ptr<PixelMap> PixelYuvExt::clone(int32_t &errorCode)
 {
-    return PixelYuv::Clone(errorCode);
+    return PixelYuv::clone(errorCode);
 }
 
 #ifdef IMAGE_COLORSPACE_FLAG

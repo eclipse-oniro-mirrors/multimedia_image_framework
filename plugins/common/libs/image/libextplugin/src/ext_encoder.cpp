@@ -914,7 +914,7 @@ bool ExtEncoder::NeedDeepCopy()
 std::unique_ptr<PixelMap> ExtEncoder::DeepCopyPixelmap()
 {
     int32_t errorCode = SUCCESS;
-    std::unique_ptr<PixelMap> clonedPixelmap = pixelmap_->Clone(errorCode);
+    std::unique_ptr<PixelMap> clonedPixelmap = pixelmap_->clone(errorCode);
     if (errorCode != SUCCESS || clonedPixelmap == nullptr) {
         IMAGE_LOGE("ExtEncoder::DeepCopyPixelmap copy failed, errorCode=%{public}d", errorCode);
         return nullptr;

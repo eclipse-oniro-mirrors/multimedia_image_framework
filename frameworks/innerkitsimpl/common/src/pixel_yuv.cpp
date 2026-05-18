@@ -1187,7 +1187,7 @@ static bool CopyYuvPlanes(PixelMap &source, PixelMap &dstPixelMap)
     return true;
 }
 
-std::unique_ptr<PixelMap> PixelYuv::Clone(int32_t &errorCode)
+std::unique_ptr<PixelMap> PixelYuv::clone(int32_t &errorCode)
 {
     if (!IsYuvFormat()) {
         errorCode = ERR_IMAGE_READ_PIXELMAP_FAILED;
@@ -1203,6 +1203,7 @@ std::unique_ptr<PixelMap> PixelYuv::Clone(int32_t &errorCode)
     opts.pixelFormat = imageInfo_.pixelFormat;
     opts.alphaType = imageInfo_.alphaType;
     opts.size = imageInfo_.size;
+    opts.srcRowStride = rowStride_;
     opts.editable = IsEditable();
     opts.useDMA = (GetAllocatorType() == AllocatorType::DMA_ALLOC);
     auto dstPixelMap = PixelMap::Create(opts);
@@ -1336,7 +1337,7 @@ std::unique_ptr<PixelMap> PixelYuv::CreateThumbnailPixelMap(PixelMap &source, in
     errorCode = static_cast<int32_t>(err);
     CHECK_ERROR_RETURN_RET(errorCode != SUCCESS, nullptr);
     if (ImageUtils::FloatEqual(scale, 1.0f)) {
-        return source.Clone(errorCode);
+        return source.clone(errorCode);
     }
     targetSize.width = targetSize.width - (targetSize.width % NUM_2);
     targetSize.height = targetSize.height - (targetSize.height % NUM_2);

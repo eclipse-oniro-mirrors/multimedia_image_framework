@@ -1343,6 +1343,11 @@ static unique_ptr<PixelMap> CloneAstc(PixelMap *srcAstc, int32_t &errorCode)
 
 unique_ptr<PixelMap> PixelMap::Clone(int32_t &errorCode)
 {
+    return clone(errorCode);
+}
+
+unique_ptr<PixelMap> PixelMap::clone(int32_t &errorCode)
+{
     if (!CheckImageInfo(imageInfo_, errorCode, allocatorType_, rowDataSize_)) {
         return nullptr;
     }
