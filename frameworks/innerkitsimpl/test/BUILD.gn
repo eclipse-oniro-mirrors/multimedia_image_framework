@@ -39,6 +39,7 @@ ohos_unittest("pixelmaptest") {
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest/pixel_map_test/native_image_test.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest/pixel_map_test/pixel_map_astc_test.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest/pixel_map_test/pixel_map_parcel_test.cpp",
+    "$image_subsystem/frameworks/innerkitsimpl/test/unittest/pixel_map_test/pixel_map_tail_test.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest/pixel_map_test/pixel_map_test.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest/pixel_map_test/pixel_yuv_ext_test.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest/pixel_map_test/pixelmap_native_test.cpp",
