@@ -847,23 +847,29 @@ bool ExtEncoder::IsFormatSupportTransparency(const std::string& format) const
 
 uint32_t ExtEncoder::ProcessEncodeControlParams()
 {
-    if (picture_ != nullptr && NeedDeepCopy()) {
-        dstPicture_ = DeepCopyPicture();
-        if (dstPicture_ == nullptr) {
-            IMAGE_LOGE("ExtEncoder::ProcessEncodeControlParams DeepCopyPicture failed");
-            return ERR_IMAGE_ENCODE_FAILED;
+    if (picture_ != nullptr) {
+        if (NeedDeepCopy()) {
+            dstPicture_ = DeepCopyPicture();
+            if (dstPicture_ == nullptr) {
+                IMAGE_LOGE("ExtEncoder::ProcessEncodeControlParams DeepCopyPicture failed");
+                return ERR_IMAGE_ENCODE_FAILED;
+            }
+            picture_ = dstPicture_.get();
+            return ProcessPictureEncodeControlParams();
         }
-        picture_ = dstPicture_.get();
-        return ProcessPictureEncodeControlParams();
+        IMAGE_LOGD("ExtEncoder::ProcessEncodeControlParams no need for copy picture, skip");
     }
-    if (pixelmap_ != nullptr && NeedDeepCopy()) {
-        dstPixelmap_ = DeepCopyPixelmap();
-        if (dstPixelmap_ == nullptr) {
-            IMAGE_LOGE("ExtEncoder::ProcessEncodeControlParams DeepCopyPixelmap failed");
-            return ERR_IMAGE_ENCODE_FAILED;
+    if (pixelmap_ != nullptr) {
+        if (NeedDeepCopy()) {
+            dstPixelmap_ = DeepCopyPixelmap();
+            if (dstPixelmap_ == nullptr) {
+                IMAGE_LOGE("ExtEncoder::ProcessEncodeControlParams DeepCopyPixelmap failed");
+                return ERR_IMAGE_ENCODE_FAILED;
+            }
+            pixelmap_ = dstPixelmap_.get();
+            return ProcessPixelmapEncodeControlParams();
         }
-        pixelmap_ = dstPixelmap_.get();
-        return ProcessPixelmapEncodeControlParams();
+        IMAGE_LOGD("ExtEncoder::ProcessEncodeControlParams no need for copy pixelmap, skip");
     }
     IMAGE_LOGD("ExtEncoder::ProcessEncodeControlParams no pixelmap or picture for encoding, skip");
     return SUCCESS;
