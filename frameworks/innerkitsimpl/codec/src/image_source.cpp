@@ -7387,6 +7387,7 @@ uint32_t ImageSource::GetImageRawData(std::vector<uint8_t> &data, uint32_t &bits
     return SUCCESS;
 }
 
+#if !defined(CROSS_PLATFORM)
 bool ImageSource::CheckSupportedFormat(const std::string &encodedFormat, uint32_t &errorCode)
 {
     if (encodedFormat != IMAGE_HEIF_FORMAT && encodedFormat != IMAGE_JPEG_FORMAT &&
@@ -7406,5 +7407,6 @@ void ImageSource::InitializeAuxiliaryAndMetadataTypes(const DecodingOptionsForPi
     metadataTypes = (opts.desiredMetadatas.size() > 0) ?
         opts.desiredMetadatas : ImageUtils::GetAllMetadataType();
 }
+#endif
 } // namespace Media
 } // namespace OHOS
