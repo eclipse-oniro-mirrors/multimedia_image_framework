@@ -47,7 +47,6 @@ public:
     NATIVEEXPORT int32_t GetByteCount() override;
     NATIVEEXPORT void SetPixelsAddr(void *addr, void *context, uint32_t size, AllocatorType type,
                                     CustomFreePixelMap func) override;
-    NATIVEEXPORT std::unique_ptr<PixelMap> clone(int32_t &errorCode) override;
 #ifdef IMAGE_COLORSPACE_FLAG
     bool CheckColorSpace(const OHOS::ColorManager::ColorSpace &grColorSpace);
     int32_t ColorSpaceBGRAToYuv(uint8_t *bgraData, SkTransYuvInfo &dst, ImageInfo &imageInfo, PixelFormat &format,

@@ -368,11 +368,6 @@ void PixelYuvExt::SetPixelsAddr(void *addr, void *context, uint32_t size, Alloca
     PixelYuv::SetPixelsAddr(addr, context, size, type, func);
 }
 
-std::unique_ptr<PixelMap> PixelYuvExt::clone(int32_t &errorCode)
-{
-    return PixelYuv::clone(errorCode);
-}
-
 #ifdef IMAGE_COLORSPACE_FLAG
 bool PixelYuvExt::CheckColorSpace(const OHOS::ColorManager::ColorSpace &grColorSpace)
 {
