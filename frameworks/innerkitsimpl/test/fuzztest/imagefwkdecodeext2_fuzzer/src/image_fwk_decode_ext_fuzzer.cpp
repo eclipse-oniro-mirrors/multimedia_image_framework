@@ -27,7 +27,6 @@
 #include "image_source.h"
 #include "ext_decoder.h"
 #include "svg_decoder.h"
-#include "bmp_decoder.h"
 #include "image_log.h"
 #include "pixel_yuv.h"
 #include "file_source_stream.h"

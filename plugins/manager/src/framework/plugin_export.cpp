@@ -14,7 +14,6 @@
  */
 
 #include "plugin_export.h"
-#include "bmp_decoder.h"
 #include "bmp_format_agent.h"
 #include "gif_encoder.h"
 #include "gif_format_agent.h"

@@ -107,10 +107,6 @@ image_native_ios_sources = [
   "//foundation/multimedia/image_framework/plugins/common/libs/image/formatagentplugin/src/wbmp_format_agent.cpp",
   "//foundation/multimedia/image_framework/plugins/common/libs/image/formatagentplugin/src/webp_format_agent.cpp",
 
-  # bmp
-  "//foundation/multimedia/image_framework/plugins/common/libs/image/libbmpplugin/src/bmp_decoder.cpp",
-  "//foundation/multimedia/image_framework/plugins/common/libs/image/libbmpplugin/src/bmp_stream.cpp",
-
   # gif
   "//foundation/multimedia/image_framework/plugins/common/libs/image/libgifplugin/src/gif_encoder.cpp",
 
@@ -191,9 +187,6 @@ image_native_ios_include_dirs = [
   "$third_party_skia_root/src/images",
   "$third_party_skia_root/include/private",
   "$third_party_skia_root/third_party/externals/freetype/include/freetype",
-
-  # bmp
-  "//foundation/multimedia/image_framework/plugins/common/libs/image/libbmpplugin/include",
 
   # svg
   "//foundation/multimedia/image_framework/plugins/common/libs/image/libsvgplugin/include",
