@@ -108,10 +108,6 @@ image_native_android_sources = [
   "//foundation/multimedia/image_framework/plugins/common/libs/image/formatagentplugin/src/wbmp_format_agent.cpp",
   "//foundation/multimedia/image_framework/plugins/common/libs/image/formatagentplugin/src/webp_format_agent.cpp",
 
-  # bmp
-  "//foundation/multimedia/image_framework/plugins/common/libs/image/libbmpplugin/src/bmp_decoder.cpp",
-  "//foundation/multimedia/image_framework/plugins/common/libs/image/libbmpplugin/src/bmp_stream.cpp",
-
   # gif
   "//foundation/multimedia/image_framework/plugins/common/libs/image/libgifplugin/src/gif_encoder.cpp",
   "//foundation/multimedia/image_framework/plugins/common/libs/image/libjpegplugin/src/icc_profile_info.cpp",
@@ -203,9 +199,6 @@ image_native_android_include_dirs = [
 
   # svg
   "$image_subsystem/plugins/common/libs/image/libsvgplugin/include",
-
-  # bmp
-  "//foundation/multimedia/image_framework/plugins/common/libs/image/libbmpplugin/include",
 
   # manager
   "//foundation/multimedia/image_framework/plugins/manager/include/utils",

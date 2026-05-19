@@ -30,7 +30,6 @@
 #include "ext_decoder.h"
 #include "ext_encoder.h"
 #include "svg_decoder.h"
-#include "bmp_decoder.h"
 #include "image_log.h"
 #include "pixel_yuv.h"
 #include "file_source_stream.h"

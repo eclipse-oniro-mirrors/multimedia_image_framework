@@ -114,20 +114,6 @@ const std::vector<std::string> META_DATA = {
     })",
 
     R"({
-        "packageName":"LibBmpPlugin",
-        "version":"1.0.0.0",
-        "targetVersion":"1.0.0.0",
-        "libraryPath":"libbmpplugin.z.so",
-        "classes":[
-            {"className":"OHOS::ImagePlugin::BmpDecoder",
-             "services":[{"interfaceID":2, "serviceType":0}],
-             "priority":100,
-             "capabilities":[{"name":"encodeFormat", "type":"string", "value":"image/bmp"}]
-            }
-        ]
-    })",
-
-    R"({
         "packageName":"LibGifPlugin",
         "version":"1.0.0.0",
         "targetVersion":"1.0.0.0",

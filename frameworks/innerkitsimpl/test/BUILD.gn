@@ -362,7 +362,6 @@ ohos_unittest("imagesourcetest") {
 
   if (DUAL_ADAPTER) {
     sources += [
-      "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_source_bmp_test.cpp",
       "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_source_raw_test.cpp",
       "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_source_wbmp_test.cpp",
     ]
@@ -1104,38 +1103,6 @@ ohos_unittest("rawdecodertest") {
     "hilog:libhilog",
     "skia:piexm133",
     "ipc:ipc_single",
-  ]
-}
-
-ohos_unittest("bmpplugintest") {
-  module_out_path = module_output_path
-
-  include_dirs = [
-    "$image_subsystem/frameworks/innerkitsimpl/test/unittest/mock",
-    "//foundation/multimedia/image_framework/plugins/manager/test/unittest/common/plugin_example/interface/vision",
-    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/include",
-    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/pixelconverter/include",
-    "//foundation/multimedia/image_framework/plugins/manager/include",
-    "//foundation/multimedia/image_framework/plugins/manager/include/image",
-    "//foundation/multimedia/image_framework/plugins/manager/include/pluginbase",
-    "//foundation/multimedia/image_framework/plugins/common/libs/image/libbmpplugin/include",
-    "//foundation/multimedia/image_framework/interfaces/innerkits/include",
-    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/stream/include",
-    "//foundation/multimedia/image_framework/adapter/frameworks/bitmapconverter/native/include",
-  ]
-  sources = [ "$image_subsystem/frameworks/innerkitsimpl/test/unittest/plugin_test/bmp_decoder_test.cpp" ]
-
-  deps = [
-    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/pixelconverter:pixelconvertadapter",
-    "//foundation/multimedia/image_framework/interfaces/innerkits:image_native",
-    "//foundation/multimedia/image_framework/plugins/common/libs/image/libbmpplugin:bmpplugin",
-    "//foundation/multimedia/image_framework/plugins/manager:pluginmanager",
-  ]
-
-  external_deps = [
-    "c_utils:utils",
-    "googletest:gmock_main",
-    "googletest:gtest_main",
   ]
 }
 
