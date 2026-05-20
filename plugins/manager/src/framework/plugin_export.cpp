@@ -56,8 +56,6 @@ namespace {
 
 // register implement classes of this plugin.
 PLUGIN_EXPORT_REGISTER_CLASS_BEGIN
-PLUGIN_EXPORT_REGISTER_CLASS(OHOS::ImagePlugin::BmpDecoder)
-PLUGIN_EXPORT_REGISTER_CLASS(OHOS::ImagePlugin::BmpFormatAgent)
 PLUGIN_EXPORT_REGISTER_CLASS(OHOS::ImagePlugin::JpegDecoder)
 PLUGIN_EXPORT_REGISTER_CLASS(OHOS::ImagePlugin::JpegEncoder)
 PLUGIN_EXPORT_REGISTER_CLASS(OHOS::ImagePlugin::JpegFormatAgent)
