@@ -449,9 +449,9 @@ static std::shared_ptr<PixelMap> DeepCopyPixelMap(const std::shared_ptr<PixelMap
         return nullptr;
     }
     int32_t errorCode = SUCCESS;
-    std::unique_ptr<PixelMap> tmpPixelMap = srcPixelMap->Clone(errorCode);
+    std::unique_ptr<PixelMap> tmpPixelMap = srcPixelMap->clone(errorCode);
     if (errorCode != SUCCESS || tmpPixelMap == nullptr) {
-        IMAGE_LOGE("DeepCopyPixelMap srcPixelMap->Clone fail.");
+        IMAGE_LOGE("DeepCopyPixelMap srcPixelMap->clone fail.");
         return nullptr;
     }
     if (srcPixelMap->GetAllocatorType() == AllocatorType::DMA_ALLOC &&
