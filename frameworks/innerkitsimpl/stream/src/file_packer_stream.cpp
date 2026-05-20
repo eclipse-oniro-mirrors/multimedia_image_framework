@@ -126,7 +126,7 @@ ImagePlugin::OutputStreamType FilePackerStream::GetType()
 
 int FilePackerStream::GetFd()
 {
-    if (file == nullptr) {
+    if (file_ == nullptr) {
         return -1;
     }
     return fileno(file_);
