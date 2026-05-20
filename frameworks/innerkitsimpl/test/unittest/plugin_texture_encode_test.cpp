@@ -1155,7 +1155,7 @@ TestEncRet EncodeMutiFramesCL(AstcEncTestPara &testPara, const string shaderPath
 #ifdef SUT_ENCODE_ENABLE
         testPara.param.sutProfile = testPara.sutEncEnable ? SutProfile::EXTREME_SPEED : SutProfile::SKIP_SUT;
         testPara.param.hardwareFlag = true;
-        if (!AstcCodec::TryTextureSuperCompress(testPara.param, astcBuf)) {
+        if (!AstcCodec::TryTextureSuperCompress(testPara.param, astcBuf, testPara.param.astcBytes)) {
             GTEST_LOG_(ERROR) << "TryTextureSuperCompress failed";
             FreeMem(pixelMap, astcBuf);
             return TestEncRet::ERR_ENC_FAILED;
@@ -1209,14 +1209,14 @@ HWTEST_F(PluginTextureEncodeTest, SutEncoderBoundCheck_012, TestSize.Level3)
 {
     // test condition: width 64, height 64, block 4x4 , frames 1, isBasedOnGpu: false
     AstcEncTestPara testPara = CreateAstcEncTestPara(64, 64, 4, 1, false); // 64x64 block 4x4 , frames 1
-    ASSERT_EQ(AstcCodec::TryTextureSuperCompress(testPara.param, nullptr), true);
+    ASSERT_EQ(AstcCodec::TryTextureSuperCompress(testPara.param, nullptr, 0), true);
     uint8_t astcBuf;
     testPara.param.astcBytes = 0;
     testPara.param.sutProfile = SutProfile::EXTREME_SPEED;
     testPara.param.hardwareFlag = true;
     testPara.param.blockX_ = ASTC_BLOCK_WIDTH;
     testPara.param.blockY_ = ASTC_BLOCK_HEIGHT;
-    ASSERT_EQ(AstcCodec::TryTextureSuperCompress(testPara.param, &astcBuf), false);
+    ASSERT_EQ(AstcCodec::TryTextureSuperCompress(testPara.param, &astcBuf, sizeof(astcBuf)), false);
 }
 #endif
 
@@ -1341,7 +1341,7 @@ HWTEST_F(PluginTextureEncodeTest, TryEncSUTTest001, TestSize.Level3)
     TextureEncodeOptions param;
     uint8_t *astcBuffer = nullptr;
     AstcExtendInfo extendInfo;
-    bool ret = codec.TryEncSUT(param, astcBuffer, extendInfo);
+    bool ret = codec.TryEncSUT(param, astcBuffer, 0, extendInfo);
     EXPECT_TRUE(ret);
 }
 
