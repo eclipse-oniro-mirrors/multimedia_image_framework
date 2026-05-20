@@ -429,6 +429,10 @@ struct HdrGainmapMetadata {
   channels: Array<GainmapChannel>;
 }
 
+struct GainmapParams {
+  isFullSizeGainmap: bool;
+}
+
 enum HdrMetadataKey: i32 {
   HDR_METADATA_TYPE = 0,
   HDR_STATIC_METADATA = 1,
@@ -2516,3 +2520,6 @@ function CreateAuxiliaryPictureUsingAllocator(auxiliaryPictureInfo: AuxiliaryPic
 
 @promise @rename("createPictureByHdrAndSdrPixelMap")
 function CreatePictureByHdrAndSdrPixelMapSync(hdrPixelMap: PixelMap, sdrPixelMap: PixelMap): Picture;
+
+@promise @rename("createPictureByHdrAndSdrPixelMap")
+function CreatePictureByHdrAndSdrPixelMapWithGainmapParamsSync(hdrPixelMap: PixelMap, sdrPixelMap: PixelMap, params: GainmapParams): Picture;

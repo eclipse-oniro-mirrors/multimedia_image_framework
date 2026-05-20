@@ -33,6 +33,9 @@ namespace OHOS {
 
 namespace OHOS {
 namespace Media {
+struct GainmapParams {
+    bool isFullSizeGainmap = false;
+};
 
 class ExifMetadata;
 class ImageMetadata;
@@ -45,6 +48,8 @@ public:
     NATIVEEXPORT static std::unique_ptr<Picture> Create(sptr<SurfaceBuffer> &surfaceBuffer);
     NATIVEEXPORT static std::unique_ptr<Picture> CreatePictureByHdrAndSdrPixelMap(
         std::shared_ptr<PixelMap> &hdrPixelMap, std::shared_ptr<PixelMap> &sdrPixelMap);
+    NATIVEEXPORT static std::unique_ptr<Picture> CreatePictureByHdrAndSdrPixelMap(
+        std::shared_ptr<PixelMap> &hdrPixelMap, std::shared_ptr<PixelMap> &sdrPixelMap, GainmapParams params);
     NATIVEEXPORT static std::unique_ptr<Picture> DeepCopy(std::shared_ptr<Picture> srcPicture,
         std::vector<AuxiliaryPictureType> &srcAuxiliaryPictures, std::vector<MetadataType> &srcMetadatas,
         std::vector<AuxiliaryPictureType> &dstAuxiliaryPictures, std::vector<MetadataType> &dstMetadatas,
