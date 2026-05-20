@@ -384,6 +384,14 @@ bool AstcCodec::AstcSoftwareEncodeCore(TextureEncodeOptions &param, uint8_t *pix
         IMAGE_LOGE("pixmapIn or astcBuffer is nullptr");
         return false;
     }
+    if (param.astcBytes < TEXTURE_HEAD_BYTES) {
+        IMAGE_LOGE("AstcSoftwareEncodeCore astcBytes %{public}d less than TEXTURE_HEAD_BYTES!", param.astcBytes);
+        return false;
+    }
+    if (param.width_ <= 0 || param.height_ <= 0) {
+        IMAGE_LOGE("AstcSoftwareEncodeCore invalid width %{public}d or height %{public}d!", param.width_, param.height_);
+        return false;
+    }
     AstcEncoder work;
     if (!InitMem(&work, param)) {
         FreeMem(&work);
@@ -491,7 +499,7 @@ static bool FillAstcSutInfo(AstcInInfo &astcInfo, SutOutInfo &sutInfo, TextureEn
     return true;
 }
 
-static bool SutEncode(TextureEncodeOptions &param, uint8_t *astcBuffer)
+static bool SutEncode(TextureEncodeOptions &param, uint8_t *astcBuffer, size_t astcBufferCapacity)
 {
     bool invalidSutEnc = !g_sutEncSoManager.LoadSutEncSo() || g_sutEncSoManager.sutEncSoEncFunc_ == nullptr;
     if (invalidSutEnc) {
@@ -511,7 +519,7 @@ static bool SutEncode(TextureEncodeOptions &param, uint8_t *astcBuffer)
         IMAGE_LOGE("SutOutInfo memset failed!");
         return false;
     }
-    
+
     if (!FillAstcSutInfo(astcInfo, sutInfo, param, astcBuffer)) {
         IMAGE_LOGE("FillAstcSutInfo fail");
         return false;
@@ -522,7 +530,13 @@ static bool SutEncode(TextureEncodeOptions &param, uint8_t *astcBuffer)
         free(sutInfo.sutBuf);
         return false;
     }
-    if (memcpy_s(astcBuffer, param.astcBytes, sutInfo.sutBuf, sutInfo.sutBytes) < 0) {
+    if (static_cast<size_t>(sutInfo.sutBytes) > astcBufferCapacity) {
+        IMAGE_LOGE("SutEncode sutBytes %{public}d > astcBufferCapacity %{public}zu!",
+                   sutInfo.sutBytes, astcBufferCapacity);
+        free(sutInfo.sutBuf);
+        return false;
+    }
+    if (memcpy_s(astcBuffer, astcBufferCapacity, sutInfo.sutBuf, sutInfo.sutBytes) != 0) {
         IMAGE_LOGE("sut sutbuffer is failed to be copied to astcBuffer!");
         free(sutInfo.sutBuf);
         return false;
@@ -534,7 +548,7 @@ static bool SutEncode(TextureEncodeOptions &param, uint8_t *astcBuffer)
     return true;
 }
 
-bool AstcCodec::TryTextureSuperCompress(TextureEncodeOptions &param, uint8_t *astcBuffer)
+bool AstcCodec::TryTextureSuperCompress(TextureEncodeOptions &param, uint8_t *astcBuffer, size_t astcBufferCapacity)
 {
     bool skipSutEnc = (param.sutProfile == SutProfile::SKIP_SUT) ||
         ((!param.hardwareFlag) && (param.privateProfile_ != HIGH_SPEED_PROFILE)) ||
@@ -559,7 +573,7 @@ bool AstcCodec::TryTextureSuperCompress(TextureEncodeOptions &param, uint8_t *as
             return false;
     }
 
-    return SutEncode(param, astcBuffer);
+    return SutEncode(param, astcBuffer, astcBufferCapacity);
 }
 #endif
 
@@ -692,7 +706,7 @@ static bool CheckAstcEncInput(TextureEncodeOptions &param, AstcEncCheckInfo chec
                    param.width_, param.height_, WIDTH_MAX_ASTC, HEIGHT_MAX_ASTC);
         return false;
     }
-    uint64_t allocByteCount = static_cast<uint32_t>(param.height_) * pixmapStride;
+    uint64_t allocByteCount = static_cast<uint64_t>(param.height_) * static_cast<uint64_t>(pixmapStride);
     if (allocByteCount > std::numeric_limits<uint32_t>::max()) {
         IMAGE_LOGE("CheckAstcEncInput height %{public}d stride %{public}d overflow!",
                     param.height_, pixmapStride);
@@ -824,13 +838,14 @@ bool AstcCodec::IsAstcEnc(Media::ImageInfo &info, uint8_t* pixelmapIn, TextureEn
             IMAGE_LOGE("Buffer malloc failed in packing");
             return false;
         }
-        if (memcpy_s(astcBuffer, bufferSize, pixelmapIn, bufferSize) < 0) {
+        if (memcpy_s(astcBuffer, bufferSize, pixelmapIn, bufferSize) != 0) {
             IMAGE_LOGE("Copy data failed in packing");
             free(astcBuffer);
             return false;
         }
-        if (!TryEncSUT(param, astcBuffer, extendInfo)) {
+        if (!TryEncSUT(param, astcBuffer, static_cast<size_t>(bufferSize), extendInfo)) {
             IMAGE_LOGE("Astc encode sut failed in packing");
+            free(astcBuffer);
             return false;
         }
         bufferSize = static_cast<uint32_t>(param.sutBytes);
@@ -864,13 +879,12 @@ bool AstcCodec::InitBeforeAstcEncode(ImageInfo &imageInfo, TextureEncodeOptions 
     return true;
 }
 
-bool AstcCodec::TryEncSUT(TextureEncodeOptions &param, uint8_t* astcBuffer, AstcExtendInfo &extendInfo)
+bool AstcCodec::TryEncSUT(TextureEncodeOptions &param, uint8_t* astcBuffer, size_t astcBufferCapacity,
+    AstcExtendInfo &extendInfo)
 {
 #ifdef SUT_ENCODE_ENABLE
-    if (!TryTextureSuperCompress(param, astcBuffer)) {
+    if (!TryTextureSuperCompress(param, astcBuffer, astcBufferCapacity)) {
         IMAGE_LOGE("astc TryTextureSuperCompress failed!");
-        ReleaseExtendInfoMemory(extendInfo);
-        free(astcBuffer);
         return false;
     }
     return true;
@@ -894,11 +908,20 @@ uint32_t AstcCodec::ASTCEncode() __attribute__((no_sanitize("cfi")))
     if (!InitAstcExtendInfo(extendInfo)) {
         return ERROR;
     }
-    uint32_t packSize = static_cast<uint32_t>(param.astcBytes) + extendInfo.extendBufferSumBytes + ASTC_NUM_4;
+    uint64_t packSizeCalc = static_cast<uint64_t>(param.astcBytes) +
+        static_cast<uint64_t>(extendInfo.extendBufferSumBytes) + ASTC_NUM_4;
+    if (packSizeCalc > UINT32_MAX) {
+        IMAGE_LOGE("ASTCEncode packSize overflow!");
+        ReleaseExtendInfoMemory(extendInfo);
+        return ERROR;
+    }
+    uint32_t packSize = static_cast<uint32_t>(packSizeCalc);
     if (astcPixelMap_->IsAstc()) {
         if (!IsAstcEnc(imageInfo, pixmapIn, param, extendInfo)) {
+            ReleaseExtendInfoMemory(extendInfo);
             return ERROR;
         }
+        ReleaseExtendInfoMemory(extendInfo);
         return SUCCESS;
     }
     uint8_t *astcBuffer = static_cast<uint8_t *>(malloc(packSize));
@@ -914,7 +937,9 @@ uint32_t AstcCodec::ASTCEncode() __attribute__((no_sanitize("cfi")))
         free(astcBuffer);
         return ERROR;
     }
-    if (!TryEncSUT(param, astcBuffer, extendInfo)) {
+    if (!TryEncSUT(param, astcBuffer, static_cast<size_t>(packSize), extendInfo)) {
+        ReleaseExtendInfoMemory(extendInfo);
+        free(astcBuffer);
         return ERROR;
     }
     if (!param.outIsSut) { // only support astc for color space

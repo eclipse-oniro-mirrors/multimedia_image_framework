@@ -858,6 +858,21 @@ PixelMap *PixelMapRecordParcel::FinishUnmarshalling(PixelMap *pixelMap, Parcel &
         delete pixelMap;
         return nullptr;
     }
+    if (IsYUV(imgInfo.pixelFormat)) {
+        int32_t memBufSize = pixelMemInfo.bufferSize;
+        if (memBufSize <= 0) {
+            IMAGE_LOGE("Unmarshalling: invalid YUV bufferSize %{public}d", memBufSize);
+            delete pixelMap;
+            return nullptr;
+        }
+        int32_t expectedSize = PixelMap::GetYUVByteCount(imgInfo);
+        if (expectedSize <= 0 || static_cast<uint64_t>(expectedSize) > static_cast<uint64_t>(memBufSize)) {
+            IMAGE_LOGE("Unmarshalling: YUV bufferSize %{public}d less than expected %{public}d",
+                memBufSize, expectedSize);
+            delete pixelMap;
+            return nullptr;
+        }
+    }
     return pixelMap;
 }
 
@@ -877,9 +892,18 @@ bool PixelMapRecordParcel::ReadDmaMemInfoFromParcel(Parcel &parcel, PixelMemInfo
     }
 
     void* nativeBuffer = surfaceBuffer.GetRefPtr();
-    ImageUtils::SurfaceBuffer_Reference(nativeBuffer);
+    int32_t refRet = ImageUtils::SurfaceBuffer_Reference(nativeBuffer);
+    if (refRet != SUCCESS) {
+        IMAGE_LOGE("SurfaceBuffer reference failed");
+        return false;
+    }
     if (!pixelMemInfo.displayOnly) {
         pixelMemInfo.base = static_cast<uint8_t*>(surfaceBuffer->GetVirAddr());
+        if (pixelMemInfo.base == nullptr) {
+            IMAGE_LOGE("ReadDmaMemInfoFromParcel GetVirAddr is nullptr for non-displayOnly");
+            ImageUtils::SurfaceBuffer_Unreference(nativeBuffer);
+            return false;
+        }
     }
     pixelMemInfo.context = nativeBuffer;
 #endif

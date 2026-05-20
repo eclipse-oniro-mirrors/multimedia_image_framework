@@ -1108,7 +1108,7 @@ unique_ptr<PixelMap> PixelMap::Create(PixelMap &source, const Rect &srcRect, con
     if (opts.useSourceIfMatch && !source.IsEditable() && !opts.editable && (cropType == CropValue::NOCROP) &&
         !isHasConvert && IsSameSize(srcImageInfo.size, dstImageInfo.size)) {
         source.useSourceAsResponse_ = true;
-        return unique_ptr<PixelMap>(&source);
+        return source.Clone(errorCode);
     }
     unique_ptr<PixelMap> dstPixelMap = nullptr;
     if ((errorCode = BuildPixelMap(dstPixelMap, cropType, dstImageInfo, sRect, srcImageInfo)) != SUCCESS) {
@@ -3335,9 +3335,18 @@ bool ReadDmaMemInfoFromParcel(Parcel &parcel, PixelMemInfo &pixelMemInfo,
     }
 
     void* nativeBuffer = surfaceBuffer.GetRefPtr();
-    ImageUtils::SurfaceBuffer_Reference(nativeBuffer);
+    int32_t refRet = ImageUtils::SurfaceBuffer_Reference(nativeBuffer);
+    if (refRet != SUCCESS) {
+        IMAGE_LOGE("SurfaceBuffer reference failed");
+        return false;
+    }
     if (!pixelMemInfo.displayOnly || !isDisplay) {
         pixelMemInfo.base = static_cast<uint8_t*>(surfaceBuffer->GetVirAddr());
+        if (pixelMemInfo.base == nullptr) {
+            IMAGE_LOGE("ReadDmaMemInfoFromParcel GetVirAddr is nullptr for non-displayOnly");
+            ImageUtils::SurfaceBuffer_Unreference(nativeBuffer);
+            return false;
+        }
     }
     pixelMemInfo.context = nativeBuffer;
     return true;

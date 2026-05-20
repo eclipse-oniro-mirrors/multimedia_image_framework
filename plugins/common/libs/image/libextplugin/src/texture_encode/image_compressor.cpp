@@ -639,28 +639,28 @@ CL_ASTC_SHARE_LIB_API CL_ASTC_STATUS AstcClClose(ClAstcHandle *clAstcHandle)
         IMAGE_LOGE("astc AstcClClose clAstcHandle is nullptr!");
         return CL_ASTC_ENC_FAILED;
     }
-    cl_int clRet;
+    bool allSuccess = true;
     if (clAstcHandle->kernel != nullptr) {
-        clRet = clReleaseKernel(clAstcHandle->kernel);
+        cl_int clRet = clReleaseKernel(clAstcHandle->kernel);
         if (clRet != CL_SUCCESS) {
             IMAGE_LOGE("astc clReleaseKernel failed ret %{public}d!", clRet);
-            return CL_ASTC_ENC_FAILED;
+            allSuccess = false;
         }
         clAstcHandle->kernel = nullptr;
     }
     if (clAstcHandle->queue != nullptr) {
-        clRet = clReleaseCommandQueue(clAstcHandle->queue);
+        cl_int clRet = clReleaseCommandQueue(clAstcHandle->queue);
         if (clRet != CL_SUCCESS) {
             IMAGE_LOGE("astc clReleaseCommandQueue failed ret %{public}d!", clRet);
-            return CL_ASTC_ENC_FAILED;
+            allSuccess = false;
         }
         clAstcHandle->queue = nullptr;
     }
     if (clAstcHandle->context != nullptr) {
-        clRet = clReleaseContext(clAstcHandle->context);
+        cl_int clRet = clReleaseContext(clAstcHandle->context);
         if (clRet != CL_SUCCESS) {
             IMAGE_LOGE("astc clReleaseContext failed ret %{public}d!", clRet);
-            return CL_ASTC_ENC_FAILED;
+            allSuccess = false;
         }
         clAstcHandle->context = nullptr;
     }
@@ -668,10 +668,8 @@ CL_ASTC_SHARE_LIB_API CL_ASTC_STATUS AstcClClose(ClAstcHandle *clAstcHandle)
         free(clAstcHandle->encObj.blockErrs_);
         clAstcHandle->encObj.blockErrs_ = nullptr;
     }
-    if (clAstcHandle != nullptr) {
-        free(clAstcHandle);
-    }
-    return CL_ASTC_ENC_SUCCESS;
+    free(clAstcHandle);
+    return allSuccess ? CL_ASTC_ENC_SUCCESS : CL_ASTC_ENC_FAILED;
 }
 
 static bool CheckClBinIsExist(const std::string &name)
@@ -864,6 +862,15 @@ static CL_ASTC_STATUS AstcClEncImageCheckImageOption(const ClAstcImageOption *im
             imageIn->width, MAX_WIDTH, imageIn->height, MAX_HEIGHT);
         return CL_ASTC_ENC_FAILED;
     }
+    if (imageIn->data == nullptr) {
+        IMAGE_LOGE("astc AstcClEncImage data is nullptr!");
+        return CL_ASTC_ENC_FAILED;
+    }
+    if (imageIn->stride > MAX_WIDTH) {
+        IMAGE_LOGE("astc AstcClEncImage stride[%{public}d] exceeds MAX_WIDTH[%{public}d]!",
+            imageIn->stride, MAX_WIDTH);
+        return CL_ASTC_ENC_FAILED;
+    }
     return CL_ASTC_ENC_SUCCESS;
 }
 
@@ -872,6 +879,10 @@ CL_ASTC_SHARE_LIB_API CL_ASTC_STATUS AstcClFillImage(ClAstcImageOption *imageIn,
 {
     if (imageIn == nullptr) {
         IMAGE_LOGE("astc AstcClFillImage imageIn is  nullptr!");
+        return CL_ASTC_ENC_FAILED;
+    }
+    if (data == nullptr) {
+        IMAGE_LOGE("astc AstcClFillImage data is nullptr!");
         return CL_ASTC_ENC_FAILED;
     }
     imageIn->data = data;
