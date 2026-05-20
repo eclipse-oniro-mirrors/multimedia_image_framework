@@ -319,7 +319,7 @@ if (use_clang_android) {
         defined(global_parts_info.resourceschedule_memmgr_override)) {
       defines += [ "IMAGE_PURGEABLE_PIXELMAP" ]
       external_deps += [ 
-        "memmgr_override:libpurgeablemem_plugin",
+        "memmgr:libpurgeablemem_plugin",
         "memory_utils:libpurgeablemem"
       ]
     }
