@@ -384,14 +384,9 @@ bool AstcCodec::AstcSoftwareEncodeCore(TextureEncodeOptions &param, uint8_t *pix
         IMAGE_LOGE("pixmapIn or astcBuffer is nullptr");
         return false;
     }
-    if (param.astcBytes < TEXTURE_HEAD_BYTES) {
-        IMAGE_LOGE("AstcSoftwareEncodeCore astcBytes %{public}d less than TEXTURE_HEAD_BYTES!",
-                   param.astcBytes);
-        return false;
-    }
-    if (param.width_ <= 0 || param.height_ <= 0) {
-        IMAGE_LOGE("AstcSoftwareEncodeCore invalid width %{public}d or height %{public}d!",
-                   param.width_, param.height_);
+    if (param.astcBytes < TEXTURE_HEAD_BYTES || param.width_ <= 0 || param.height_ <= 0) {
+        IMAGE_LOGE("AstcSoftwareEncodeCore invalid param astcBytes %{public}d, w %{public}d, h %{public}d!",
+                   param.astcBytes, param.width_, param.height_);
         return false;
     }
     AstcEncoder work;
