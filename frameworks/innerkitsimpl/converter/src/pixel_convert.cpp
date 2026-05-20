@@ -1671,7 +1671,7 @@ static int32_t YUVConvert(const BufferInfo &src, const int32_t srcLength, Buffer
     if (IsYUVP010Format(srcInfo.pixelFormat) && IsYUVP010Format(dstInfo.pixelFormat)) {
         if (srcInfo.size.width == dstInfo.size.width && srcInfo.size.height == dstInfo.size.height) {
             return NV12P010ToNV21P010(const_cast<uint16_t *>(reinterpret_cast<const uint16_t *>(srcPixels)), dstInfo,
-                reinterpret_cast<uint16_t *><uint16_t *>(dstPixels)) == true ? srcLength : -1;
+                reinterpret_cast<uint16_t *>(dstPixels)) == true ? srcLength : -1;
         }
     }
     ImageInfo copySrcInfo = srcInfo;
