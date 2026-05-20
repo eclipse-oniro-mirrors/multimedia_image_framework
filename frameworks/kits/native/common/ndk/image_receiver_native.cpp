@@ -389,11 +389,11 @@ MIDK_EXPORT
 Image_ErrorCode OH_ImageReceiverNative_OnImageArrive(OH_ImageReceiverNative* receiver,
     OH_ImageReceiver_ImageArriveCallback callback, void* userdata)
 {
-    if (nullptr == receiver || nullptr == callback) {
+    if (receiver == nullptr || callback == nullptr) {
         IMAGE_LOGE("OH_ImageReceiverNative_OnImageArrive: Invalid parameter");
         return IMAGE_RECEIVER_INVALID_PARAMETER;
     }
-    if (nullptr == receiver->ptrImgRcv) {
+    if (receiver->ptrImgRcv == nullptr) {
         IMAGE_LOGE("Bad parameter: receiver data empty.");
         return IMAGE_RECEIVER_INVALID_PARAMETER;
     }
