@@ -433,7 +433,7 @@ bool ColorUtils::GetColorSpaceName(const skcms_ICCProfile* profile, OHOS::ColorM
         tmpOffset = 0;
         auto offset = ImageUtils::BytesToUint32(const_cast<uint8_t*>(tags[i].offset),
             tmpOffset, SIZE_4, true);
-        if (size == 0 || offset >= profile->size) {
+        if (size == 0 || offset >= profile->size || offset + size >= profile->size) {
             continue;
         }
         tmpOffset = 0;

@@ -289,8 +289,7 @@ static OHOS::Media::PackingOptionsForTiff ParseTiffOptions(optional_view<Packing
     if (options.has_value()) {
         const auto& opts = options.value();
         tiffOptions.compression = opts.compression.value_or(-1);
-        tiffOptions.orientation = static_cast<uint32_t>
-            (opts.orientation.value_or(Orientation::from_value(1)).get_value());
+        tiffOptions.orientation = opts.orientation.value_or(Orientation::from_value(1)).get_value();
         tiffOptions.xResolution = static_cast<float>(opts.xResolution.value_or(0.0));
         tiffOptions.yResolution = static_cast<float>(opts.yResolution.value_or(0.0));
         tiffOptions.resolutionUnit = opts.resolutionUnit.value_or(0);

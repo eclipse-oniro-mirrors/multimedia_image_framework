@@ -422,7 +422,7 @@ static uint32_t YuvToRgbaSkInfo(ImageInfo info, SkImageInfo &skInfo, uint8_t * d
     auto cs = ToSkColorSpace(pixelMap);
     skInfo = SkImageInfo::Make(info.size.width, info.size.height, SkColorType::kRGBA_8888_SkColorType, alphaType, cs);
     IMAGE_LOGD(" YuvToSkInfo: width:%{public}d, height:%{public}d, alpha:%{public}d \n ",
-        info.size.width, info.size.height, (int32_t)alphaType);
+        info.size.width, info.size.height, static_cast<int32_t>(alphaType));
     return SUCCESS;
 }
 
@@ -2069,6 +2069,8 @@ uint32_t ExtEncoder::Encode10bitSdrPixelMap(Media::PixelMap* pixelmap, ExtWStrea
         return ERR_IMAGE_ENCODE_FAILED;
     }
 
+    bool cond = buffers.hdr == nullptr;
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_ENCODE_FAILED, "buffers.hdr is nullptr");
     PixelFormat pixelFormat = ImageUtils::SbFormat2PixelFormat(buffers.hdr->GetFormat());
     std::unique_ptr<PixelMap> encodePixelmap;
     if (ImageUtils::IsYuvFormat(pixelFormat)) {
