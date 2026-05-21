@@ -25,7 +25,6 @@
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 #include <charconv>
 #include <cstdint>
-#include <regex>
 #include <vector>
 #include <memory>
 #include "vpe_utils.h"
@@ -3162,89 +3161,72 @@ napi_value PixelMapNapi::CreatePixelMapUsingAllocatorSync(napi_env env, napi_cal
 }
 
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
-static bool DealSurfaceId(std::string &surfaceId, uint64_t &id)
+static bool ParseSurfaceId(const std::string &surfaceId, uint64_t &id)
 {
-    if (surfaceId.find_first_not_of("0123456789") != std::string::npos) {
-        IMAGE_LOGE("The input string contains non-decimal characters.");
+    auto res = std::from_chars(surfaceId.data(), surfaceId.data() + surfaceId.size(), id);
+    if (res.ec != std::errc() || res.ptr != surfaceId.data() + surfaceId.size()) {
+        IMAGE_LOGE("Empty or invalid surfaceId");
         return false;
     }
-    auto res = std::from_chars(surfaceId.c_str(), surfaceId.c_str() + surfaceId.size(), id);
-    if (res.ec == std::errc()) {
+    return true;
+}
+
+static bool GetSurfaceSize(uint64_t surfaceId, Rect &region, bool hasInputRegion = false)
+{
+    if (hasInputRegion && (region.width <= 0 || region.height <= 0)) {
+        IMAGE_LOGE("[GetSurfaceSize] Invalid region");
+        return false;
+    }
+    if (region.width > 0 && region.height > 0) {
         return true;
-    } else if (res.ec == std::errc::invalid_argument) {
-        IMAGE_LOGE("Invalid argument: the input string is not a valid number.");
-        return false;
-    } else if (res.ec == std::errc::result_out_of_range) {
-        IMAGE_LOGE("Out of range: the number is too large or too small for the target type.");
-        return false;
-    } else {
-        IMAGE_LOGE("Unknown error occurred during conversion.");
-        return false;
     }
-}
 
-static bool GetSurfaceSize(size_t argc, Rect &region, std::string fd)
-{
-    if (argc == NUM_2 && (region.width <= 0 || region.height <= 0)) {
-        IMAGE_LOGE("GetSurfaceSize invalid parameter argc = %{public}zu", argc);
+    sptr<Surface> surface = SurfaceUtils::GetInstance()->GetSurface(surfaceId);
+    if (surface == nullptr) {
+        IMAGE_LOGE("[GetSurfaceSize] Can't find surface for surfaceId %{public}" PRIu64, surfaceId);
         return false;
     }
-    if (region.width <= 0 || region.height <= 0) {
-        unsigned long number_fd = 0;
-        auto res = std::from_chars(fd.c_str(), fd.c_str() + fd.size(), number_fd);
-        if (res.ec != std::errc()) {
-            IMAGE_LOGE("GetSurfaceSize invalid fd");
-            return false;
-        }
-        sptr<Surface> surface = SurfaceUtils::GetInstance()->GetSurface(std::stoull(fd));
-        if (surface == nullptr) {
-            return false;
-        }
-        sptr<SyncFence> fence = SyncFence::InvalidFence();
-        // a 4 * 4 idetity matrix
-        float matrix[16] = {
-            1, 0, 0, 0,
-            0, 1, 0, 0,
-            0, 0, 1, 0,
-            0, 0, 0, 1
-        };
-        sptr<SurfaceBuffer> surfaceBuffer = nullptr;
-        GSError ret = surface->GetLastFlushedBuffer(surfaceBuffer, fence, matrix);
-        if (ret != OHOS::GSERROR_OK || surfaceBuffer == nullptr) {
-            IMAGE_LOGE("GetLastFlushedBuffer fail, ret = %{public}d", ret);
-            return false;
-        }
-        region.width = surfaceBuffer->GetWidth();
-        region.height = surfaceBuffer->GetHeight();
+    sptr<SyncFence> fence = SyncFence::InvalidFence();
+    // 4 * 4 idetity matrix
+    float matrix[16] = {
+        1, 0, 0, 0,
+        0, 1, 0, 0,
+        0, 0, 1, 0,
+        0, 0, 0, 1
+    };
+    sptr<SurfaceBuffer> surfaceBuffer = nullptr;
+    GSError ret = surface->GetLastFlushedBuffer(surfaceBuffer, fence, matrix);
+    if (ret != OHOS::GSERROR_OK || surfaceBuffer == nullptr) {
+        IMAGE_LOGE("[GetSurfaceSize] GetLastFlushedBuffer failed, ret = %{public}d", ret);
+        return false;
     }
+    region.width = surfaceBuffer->GetWidth();
+    region.height = surfaceBuffer->GetHeight();
     return true;
 }
 
-static bool GetSurfaceSize(Rect &region, uint64_t fd)
+static std::shared_ptr<Media::PixelMap> CreateSurfacePixelMap(uint64_t surfaceId, const Rect &region,
+    bool transformEnabled = false, bool useTransformOption = false)
 {
-    if (region.width <= 0 || region.height <= 0) {
-        sptr<Surface> surface = SurfaceUtils::GetInstance()->GetSurface(fd);
-        if (surface == nullptr) {
-            return false;
-        }
-        sptr<SyncFence> fence = SyncFence::InvalidFence();
-        // a 4 * 4 idetity matrix
-        float matrix[16] = {
-            1, 0, 0, 0,
-            0, 1, 0, 0,
-            0, 0, 1, 0,
-            0, 0, 0, 1
-        };
-        sptr<SurfaceBuffer> surfaceBuffer = nullptr;
-        GSError ret = surface->GetLastFlushedBuffer(surfaceBuffer, fence, matrix);
-        if (ret != OHOS::GSERROR_OK || surfaceBuffer == nullptr) {
-            IMAGE_LOGE("GetLastFlushedBuffer fail, ret = %{public}d", ret);
-            return false;
-        }
-        region.width = surfaceBuffer->GetWidth();
-        region.height = surfaceBuffer->GetHeight();
+    auto &rsClient = Rosen::RSInterfaces::GetInstance();
+    OHOS::Rect r = {
+        .x = region.left,
+        .y = region.top,
+        .w = region.width,
+        .h = region.height,
+    };
+    std::shared_ptr<Media::PixelMap> pixelMap = useTransformOption ?
+        rsClient.CreatePixelMapFromSurfaceId(surfaceId, r, transformEnabled) :
+        rsClient.CreatePixelMapFromSurfaceId(surfaceId, r);
+    if (pixelMap != nullptr && useTransformOption) {
+        ImageUtils::DumpPixelMapIfDumpEnabled(*pixelMap, "CreatePixelMapFromSurfaceWithTransformation");
     }
-    return true;
+#ifndef EXT_PIXEL
+    if (pixelMap == nullptr) {
+        pixelMap = CreatePixelMapFromSurfaceId(surfaceId, region);
+    }
+#endif
+    return pixelMap;
 }
 
 STATIC_EXEC_FUNC(CreatePixelMapFromSurface)
@@ -3258,34 +3240,21 @@ STATIC_EXEC_FUNC(CreatePixelMapFromSurface)
     IMAGE_LOGD("CreatePixelMapFromSurface id:%{public}s,area:%{public}d,%{public}d,%{public}d,%{public}d",
         context->surfaceId.c_str(), context->area.region.left, context->area.region.top,
         context->area.region.height, context->area.region.width);
-    if (!std::regex_match(context->surfaceId, std::regex("\\d+"))) {
-        IMAGE_LOGE("CreatePixelMapFromSurface empty or invalid surfaceId");
-        context->status = context->argc == NUM_2 ?
-            ERR_IMAGE_INVALID_PARAMETER : COMMON_ERR_INVALID_PARAMETER;
+    uint64_t surfaceId = 0;
+    if (!ParseSurfaceId(context->surfaceId, surfaceId)) {
+        context->status = context->argc == NUM_2 ? ERR_IMAGE_INVALID_PARAMETER : COMMON_ERR_INVALID_PARAMETER;
         return;
     }
-    if (!GetSurfaceSize(context->argc, context->area.region, context->surfaceId)) {
-        context->status = context->argc == NUM_2 ?
-            ERR_IMAGE_INVALID_PARAMETER : COMMON_ERR_INVALID_PARAMETER;
+    if (!GetSurfaceSize(surfaceId, context->area.region, context->argc == NUM_2)) {
+        context->status = context->argc == NUM_2 ? ERR_IMAGE_INVALID_PARAMETER : COMMON_ERR_INVALID_PARAMETER;
         return;
     }
-    auto &rsClient = Rosen::RSInterfaces::GetInstance();
-    OHOS::Rect r = {.x = context->area.region.left, .y = context->area.region.top,
-        .w = context->area.region.width, .h = context->area.region.height, };
-    std::shared_ptr<Media::PixelMap> pixelMap =
-        rsClient.CreatePixelMapFromSurfaceId(std::stoull(context->surfaceId), r);
-#ifndef EXT_PIXEL
-    if (pixelMap == nullptr) {
-        pixelMap = CreatePixelMapFromSurfaceId(std::stoull(context->surfaceId), context->area.region);
-    }
-#endif
-    context->rPixelMap = std::move(pixelMap);
+    context->rPixelMap = CreateSurfacePixelMap(surfaceId, context->area.region);
 
     if (IMG_NOT_NULL(context->rPixelMap)) {
         context->status = SUCCESS;
     } else {
-        context->status = context->argc == NUM_2 ?
-            ERR_IMAGE_INVALID_PARAMETER : COMMON_ERR_INVALID_PARAMETER;
+        context->status = context->argc == NUM_2 ? ERR_IMAGE_INVALID_PARAMETER : COMMON_ERR_INVALID_PARAMETER;
     }
 }
 
@@ -3301,28 +3270,15 @@ STATIC_EXEC_FUNC(CreatePixelMapFromSurfaceWithTransformation)
         context->surfaceId.c_str(), context->area.region.left, context->area.region.top,
         context->area.region.height, context->area.region.width);
     uint64_t surfaceId = 0;
-    if (!DealSurfaceId(context->surfaceId, surfaceId)) {
+    if (!ParseSurfaceId(context->surfaceId, surfaceId)) {
         context->status = ERR_IMAGE_INVALID_PARAM;
         return;
     }
-    if (!GetSurfaceSize(context->area.region, surfaceId)) {
+    if (!GetSurfaceSize(surfaceId, context->area.region)) {
         context->status = ERR_IMAGE_GET_IMAGE_DATA_FAILED;
         return;
     }
-    auto &rsClient = Rosen::RSInterfaces::GetInstance();
-    OHOS::Rect r = {.x = context->area.region.left, .y = context->area.region.top,
-        .w = context->area.region.width, .h = context->area.region.height, };
-    std::shared_ptr<Media::PixelMap> pixelMap = rsClient.CreatePixelMapFromSurfaceId(surfaceId,
-        r, context->transformEnabled);
-    if (pixelMap) {
-        ImageUtils::DumpPixelMapIfDumpEnabled(*pixelMap, "CreatePixelMapFromSurfaceWithTransformation");
-    }
-#ifndef EXT_PIXEL
-    if (pixelMap == nullptr) {
-        pixelMap = CreatePixelMapFromSurfaceId(surfaceId, context->area.region);
-    }
-#endif
-    context->rPixelMap = std::move(pixelMap);
+    context->rPixelMap = CreateSurfacePixelMap(surfaceId, context->area.region, context->transformEnabled, true);
 
     if (IMG_NOT_NULL(context->rPixelMap)) {
         context->status = SUCCESS;
