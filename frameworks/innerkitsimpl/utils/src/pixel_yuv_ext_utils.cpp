@@ -342,27 +342,32 @@ static bool CopyP010Pixels(
     uint32_t stride = std::min(srcStrides.yStride, dstStrides.yStride);
     uint32_t uvStride = std::min(srcStrides.uvStride, dstStrides.uvStride);
     uint32_t yHeight = yuvCopyInfo.dstHeight;
-    if ((srcStrides.yOffset + srcStrides.uvOffset +
-        uvStride * static_cast<uint32_t>(GetUVHeight(yHeight))) * BYTE_PER_PIXEL > yuvCopyInfo.pixelsSize) {
+    uint32_t uvHeight = static_cast<uint32_t>(GetUVHeight(yHeight));
+    if ((srcStrides.yOffset + srcStrides.uvOffset + uvStride * uvHeight) * BYTE_PER_PIXEL > yuvCopyInfo.pixelsSize) {
         IMAGE_LOGE("CopyP010Pixels src buffer size is invalid, pixelsSize:%{public}u", yuvCopyInfo.pixelsSize);
         return false;
     }
+
+    uint32_t dstPixelsSize = (dstStrides.uvOffset + dstStrides.uvStride * uvHeight) * BYTE_PER_PIXEL;
     for (uint32_t y = 0; y < yHeight; y++) {
-        errno_t ret = memcpy_s(dstY, stride * BYTE_PER_PIXEL, srcY, stride * BYTE_PER_PIXEL);
+        errno_t ret = memcpy_s(dstY, dstPixelsSize, srcY, stride * BYTE_PER_PIXEL);
         if (ret != EOK) {
             IMAGE_LOGE("CopyP010Pixels memcpy dstY failed.");
             return false;
         }
         dstY += dstStrides.yStride;
+        dstPixelsSize -= dstStrides.yStride * BYTE_PER_PIXEL;
         srcY += srcStrides.yStride;
     }
-    for (uint32_t y = 0; y < static_cast<uint32_t>(GetUVHeight(yHeight)); y++) {
-        errno_t ret = memcpy_s(dstUV, uvStride * BYTE_PER_PIXEL, srcUV, uvStride * BYTE_PER_PIXEL);
+
+    for (uint32_t y = 0; y < uvHeight; y++) {
+        errno_t ret = memcpy_s(dstUV, dstPixelsSize, srcUV, uvStride * BYTE_PER_PIXEL);
         if (ret != EOK) {
-            IMAGE_LOGE("CopyP010Pixels memcpy dstY failed.");
+            IMAGE_LOGE("CopyP010Pixels memcpy dstUV failed.");
             return false;
         }
         dstUV += dstStrides.uvStride;
+        dstPixelsSize -= dstStrides.uvStride * BYTE_PER_PIXEL;
         srcUV += srcStrides.uvStride;
     }
     return true;
