@@ -568,11 +568,9 @@ static bool ExtractICCProfileData(const skcms_ICCProfile* profile, ICCProfileDat
         auto signature = U8ToU32(tags[i].signature);
         auto size = U8ToU32(tags[i].size);
         auto offset = U8ToU32(tags[i].offset);
-
         if (size == 0 || offset >= profile->size) {
             continue;
         }
-
         if (signature == RXYZ_SIGNATURE) {
             data.hasRXYZ = GetXYZFromTag(profile->buffer, offset, profile->size, &data.rXYZ);
         } else if (signature == GXYZ_SIGNATURE) {
@@ -679,9 +677,7 @@ static bool MatchColorSpaceByDistance(const PrimariesXY& primaries, float gamma,
     for (int i = 0; i < COLORSPACE_NUM; i++) {
         distances[i] = CalculateColorSpaceDistance(primaries, STANDARD_COLOR_SPACES[i]);
     }
-
     GammaType gammaType = DetermineGammaType(gamma);
-
     // Match sRGB
     if (distances[OFFSET_0] < TOLERANCE_THRESHOLD && gammaType == GammaType::SRGB) {
         name = OHOS::ColorManager::ColorSpaceName::SRGB;

@@ -3662,7 +3662,8 @@ HWTEST_F(ImageSourceJpegTest, MatchColorSpaceByPrimariesAndGamma002, TestSize.Le
 {
     uint32_t errorCode = 0;
     SourceOptions opts;
-    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_10BITHDR_HEIC_PATH, opts, errorCode);
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_10BITHDR_HEIC_PATH, opts, errorCode);
     uint32_t index = 0;
     const DecodeOptions opt;
     std::unique_ptr<PixelMap> crepixelmapex = imageSource->CreatePixelMapEx(index, opt, errorCode);
