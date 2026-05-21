@@ -67,10 +67,10 @@ static int32_t ImageReceiverNapiGetReceiverId(ImageReceiverNapi* native, struct 
         return IMAGE_RESULT_BAD_PARAMETER;
     }
     auto sId = receiver->iraContext_->GetReceiverKey();
-    if (sId.empty() || sId.c_str() == nullptr || args->inLen < sId.size()) {
+    if (sId.empty() || sId.c_str() == nullptr || args->inLen <= sId.size()) {
         return IMAGE_RESULT_BAD_PARAMETER;
     }
-    if (EOK != memcpy_s(args->id, args->inLen, sId.c_str(), sId.size())) {
+    if (EOK != memcpy_s(args->id, args->inLen, sId.c_str(), sId.size() + 1)) {
         return IMAGE_RESULT_BAD_PARAMETER;
     }
     return IMAGE_RESULT_SUCCESS;

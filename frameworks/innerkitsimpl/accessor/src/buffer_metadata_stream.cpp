@@ -137,6 +137,10 @@ ssize_t BufferMetadataStream::Write(uint8_t *data, ssize_t size)
 
 ssize_t BufferMetadataStream::Read(uint8_t *buf, ssize_t size)
 {
+    if (buf == nullptr || size < 0) {
+        IMAGE_LOGE("BufferMetadataStream::Read failed, buf is nullptr or size less than zero");
+        return -1;
+    }
     if (buffer_ == nullptr || currentOffset_ == bufferSize_) {
         return -1;
     }
@@ -147,7 +151,8 @@ ssize_t BufferMetadataStream::Read(uint8_t *buf, ssize_t size)
 
     long bytesToRead = std::min(static_cast<long>(size), bufferSize_ - currentOffset_);
     CHECK_ERROR_RETURN_RET(IsFileSizeChanged(), -1);
-    memcpy_s(buf, size, buffer_ + currentOffset_, bytesToRead);
+    CHECK_ERROR_RETURN_RET_LOG(EOK != memcpy_s(buf, size, buffer_ + currentOffset_, bytesToRead), -1,
+        "BufferMetadataStream::Read failed, memcpy error");
     currentOffset_ += bytesToRead;
     return bytesToRead;
 }

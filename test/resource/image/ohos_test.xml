@@ -328,6 +328,8 @@
             <option name="push" value="images/exif/test_webp_readmetadata002.webp -> /data/local/tmp/image" src="res"/>
             <option name="push" value="images/exif/test_webp_readmetadata003.webp -> /data/local/tmp/image" src="res"/>
             <option name="push" value="images/exif/test_webp_readmetadata004.webp -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/read_test.tiff -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/xmp/tiff_xmp.tiff -> /data/local/tmp/image" src="res"/>
             <option name="push" value="images/exif/test_webp_readmetadata005.webp -> /data/local/tmp/image" src="res"/>
             <option name="push" value="images/exif/test_webp_readmetadata006.webp -> /data/local/tmp/image" src="res"/>
             <option name="push" value="images/exif/test_webp_readmetadata007.webp -> /data/local/tmp/image" src="res"/>
