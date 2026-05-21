@@ -358,7 +358,7 @@ static bool CopyP010Pixels(
         dstPixelsSize -= dstStrides.yStride * BYTE_PER_PIXEL;
         srcY += srcStrides.yStride;
     }
-    dstPixelsSize = dstPixelsSize - (dstStrides.yOffset + dstStrides.uvOffset) * BYTE_PER_PIXEL;
+    dstPixelsSize = dstPixelsSize - dstStrides.uvOffset * BYTE_PER_PIXEL;
     for (uint32_t y = 0; y < uvHeight; y++) {
         errno_t ret = memcpy_s(dstUV, dstPixelsSize, srcUV, uvStride * BYTE_PER_PIXEL);
         if (ret != EOK) {
