@@ -121,6 +121,32 @@ static constexpr uint8_t SIZE_4 = 4;
 constexpr static uint32_t OFFSET_5 = 5;
 constexpr static uint32_t DESC_SIGNATURE = 0x64657363;
 constexpr static uint64_t ICC_HEADER_SIZE = 132;
+constexpr static uint32_t RXYZ_SIGNATURE = 0x7258595A;  // 'rXYZ'
+constexpr static uint32_t GXYZ_SIGNATURE = 0x6758595A;  // 'gXYZ'
+constexpr static uint32_t BXYZ_SIGNATURE = 0x6258595A;  // 'bXYZ'
+constexpr static uint32_t RTRC_SIGNATURE = 0x72545243;  // 'rTRC'
+constexpr static uint32_t GTRC_SIGNATURE = 0x67545243;  // 'gTRC'
+constexpr static uint32_t BTRC_SIGNATURE = 0x62545243;  // 'bTRC'
+constexpr static uint32_t TECR_TAG = 0x74657263; // 'TECR'
+constexpr static uint32_t OFFSET_0 = 0;
+constexpr static uint32_t OFFSET_1 = 1;
+constexpr static uint32_t OFFSET_2 = 2;
+constexpr static uint32_t OFFSET_3 = 3;
+constexpr static uint32_t OFFSET_4 = 4;
+constexpr static uint32_t OFFSET_12 = 12;
+constexpr static uint32_t SHIFT_BITS_4 = 4;
+constexpr static uint32_t SHIFT_BITS_8 = 8;
+constexpr static uint32_t SHIFT_BITS_9 = 9;
+constexpr static uint32_t SHIFT_BITS_10 = 10;
+constexpr static uint32_t SHIFT_BITS_11 = 11;
+constexpr static uint32_t SHIFT_BITS_12 = 12;
+constexpr static uint32_t SHIFT_BITS_16 = 16;
+constexpr static uint32_t SHIFT_BITS_24 = 24;
+constexpr static uint32_t XYZ_TAG_LENGTH = 20;
+constexpr static uint32_t TOLERANCE_NUMBER = 3;
+constexpr static float DEFAULT_SRGB_GAMMA = 2.2f;
+constexpr static float DEFAULT_XYZ_NUMBER = 0.0f;
+constexpr static float OVERFLOW_CHECK = 65536.0f;
 struct ColorSpaceNameEnum {
     std::string desc;
     OHOS::ColorManager::ColorSpaceName name;
@@ -130,6 +156,12 @@ struct ICCTag {
     uint8_t signature[SIZE_4];
     uint8_t offset[SIZE_4];
     uint8_t size[SIZE_4];
+};
+
+struct XYZValues {
+    float x;
+    float y;
+    float z;
 };
 
 static std::vector<ColorSpaceNameEnum> sColorSpaceNamedMap = {
@@ -464,6 +496,240 @@ OHOS::ColorManager::ColorSpaceName ColorUtils::GetSrcColorSpace(const skcms_ICCP
     }
     IMAGE_LOGD("%{public}s Parse ColorSpaceName is not support.", __func__);
     return name;
+}
+
+static uint32_t U8ToU32(const uint8_t* p)
+{
+    return (p[OFFSET_0] << SHIFT_BITS_24) | (p[OFFSET_1] << SHIFT_BITS_16) |
+        (p[OFFSET_2] << SHIFT_BITS_8) | p[OFFSET_3];
+}
+
+static bool GetXYZFromTag(const uint8_t* buffer, uint32_t offset, uint32_t size, XYZValues* xyz)
+{
+    CHECK_ERROR_RETURN_RET(buffer == nullptr || xyz == nullptr, false);
+    CHECK_ERROR_RETURN_RET(offset + XYZ_TAG_LENGTH > size, false);
+    // s15Fixed16Number to float
+    auto toFixed16 = [](const uint8_t* p) -> float {
+        int32_t val = (p[OFFSET_0] << SHIFT_BITS_24) | (p[OFFSET_1] << SHIFT_BITS_16) |
+            (p[OFFSET_2] << SHIFT_BITS_8) | p[OFFSET_3];
+        return static_cast<float>(val) / OVERFLOW_CHECK;
+    };
+
+    xyz->x = toFixed16(buffer + offset + SHIFT_BITS_8);
+    xyz->y = toFixed16(buffer + offset + SHIFT_BITS_12);
+    xyz->z = toFixed16(buffer + offset + SHIFT_BITS_16);
+    return true;
+}
+
+static bool GetGammaFromTRCTag(const uint8_t* buffer, uint32_t offset, uint32_t size, float* gamma)
+{
+    CHECK_ERROR_RETURN_RET(buffer == nullptr || gamma == nullptr, false);
+    CHECK_ERROR_RETURN_RET(offset + SHIFT_BITS_4 > size, false);
+    uint32_t curveType = (buffer[offset] << SHIFT_BITS_24) | (buffer[offset + OFFSET_1] << SHIFT_BITS_16) |
+        (buffer[offset + OFFSET_2] << SHIFT_BITS_8) | buffer[offset + OFFSET_3];
+
+    if (curveType == TECR_TAG) {
+        CHECK_ERROR_RETURN_RET(offset + OFFSET_12 > size, false);
+        int32_t val = (buffer[offset + SHIFT_BITS_8] << SHIFT_BITS_24) |
+            (buffer[offset + SHIFT_BITS_9] << SHIFT_BITS_16) |
+            (buffer[offset + SHIFT_BITS_10] << SHIFT_BITS_8) | buffer[offset + SHIFT_BITS_11];
+        *gamma = static_cast<float>(val) / OVERFLOW_CHECK;
+        return true;
+    }
+    *gamma = DEFAULT_SRGB_GAMMA;  // default sRGB gamma
+    return true;
+}
+
+struct ICCProfileData {
+    XYZValues rXYZ;
+    XYZValues gXYZ;
+    XYZValues bXYZ;
+    float gamma;
+    bool hasRXYZ;
+    bool hasGXYZ;
+    bool hasBXYZ;
+    bool hasTRC;
+};
+
+static bool ExtractICCProfileData(const skcms_ICCProfile* profile, ICCProfileData& data)
+{
+    CHECK_ERROR_RETURN_RET(profile == nullptr || profile->buffer == nullptr || profile->tag_count == 0, false);
+    data.rXYZ = {DEFAULT_XYZ_NUMBER, DEFAULT_XYZ_NUMBER, DEFAULT_XYZ_NUMBER};
+    data.gXYZ = {DEFAULT_XYZ_NUMBER, DEFAULT_XYZ_NUMBER, DEFAULT_XYZ_NUMBER};
+    data.bXYZ = {DEFAULT_XYZ_NUMBER, DEFAULT_XYZ_NUMBER, DEFAULT_XYZ_NUMBER};
+    data.gamma = DEFAULT_SRGB_GAMMA;
+    data.hasRXYZ = false;
+    data.hasGXYZ = false;
+    data.hasBXYZ = false;
+    data.hasTRC = false;
+
+    auto tags = reinterpret_cast<const ICCTag*>(profile->buffer + ICC_HEADER_SIZE);
+    for (uint32_t i = 0; i < profile->tag_count; i++) {
+        auto signature = U8ToU32(tags[i].signature);
+        auto size = U8ToU32(tags[i].size);
+        auto offset = U8ToU32(tags[i].offset);
+
+        if (size == 0 || offset >= profile->size) {
+            continue;
+        }
+
+        if (signature == RXYZ_SIGNATURE) {
+            data.hasRXYZ = GetXYZFromTag(profile->buffer, offset, profile->size, &data.rXYZ);
+        } else if (signature == GXYZ_SIGNATURE) {
+            data.hasGXYZ = GetXYZFromTag(profile->buffer, offset, profile->size, &data.gXYZ);
+        } else if (signature == BXYZ_SIGNATURE) {
+            data.hasBXYZ = GetXYZFromTag(profile->buffer, offset, profile->size, &data.bXYZ);
+        } else if (signature == RTRC_SIGNATURE || signature == GTRC_SIGNATURE || signature == BTRC_SIGNATURE) {
+            if (!data.hasTRC) {
+                data.hasTRC = GetGammaFromTRCTag(profile->buffer, offset, profile->size, &data.gamma);
+            }
+        }
+    }
+
+    CHECK_DEBUG_RETURN_RET_LOG(!data.hasRXYZ || !data.hasGXYZ || !data.hasBXYZ, false,
+        "Incomplete primaries data in ICC profile");
+    return true;
+}
+
+struct PrimariesXY {
+    float rX;
+    float rY;
+    float gX;
+    float gY;
+    float bX;
+    float bY;
+};
+
+static bool CalculatePrimariesXY(const ICCProfileData& data, PrimariesXY& primaries)
+{
+    float sumY = data.rXYZ.y + data.gXYZ.y + data.bXYZ.y;
+    CHECK_ERROR_RETURN_RET(sumY == DEFAULT_XYZ_NUMBER, false);
+
+    primaries.rX = data.rXYZ.x / (data.rXYZ.x + data.rXYZ.y + data.rXYZ.z);
+    primaries.rY = data.rXYZ.y / (data.rXYZ.x + data.rXYZ.y + data.rXYZ.z);
+    primaries.gX = data.gXYZ.x / (data.gXYZ.x + data.gXYZ.y + data.gXYZ.z);
+    primaries.gY = data.gXYZ.y / (data.gXYZ.x + data.gXYZ.y + data.gXYZ.z);
+    primaries.bX = data.bXYZ.x / (data.bXYZ.x + data.bXYZ.y + data.bXYZ.z);
+    primaries.bY = data.bXYZ.y / (data.bXYZ.x + data.bXYZ.y + data.bXYZ.z);
+    return true;
+}
+
+struct StandardColorSpace {
+    const char* name;
+    float rX;
+    float rY;
+    float gX;
+    float gY;
+    float bX;
+    float bY;
+};
+
+static const StandardColorSpace STANDARD_COLOR_SPACES[] = {
+    {"sRGB", 0.64f, 0.33f, 0.30f, 0.60f, 0.15f, 0.06f},
+    {"Display P3", 0.680f, 0.320f, 0.265f, 0.690f, 0.150f, 0.060f},
+    {"BT.2020", 0.708f, 0.292f, 0.170f, 0.797f, 0.131f, 0.046f},
+    {"Adobe RGB", 0.640f, 0.330f, 0.210f, 0.710f, 0.150f, 0.060f},
+    {"DCI-P3", 0.680f, 0.320f, 0.265f, 0.690f, 0.150f, 0.060f}
+};
+
+static float CalculateColorSpaceDistance(const PrimariesXY& primaries, const StandardColorSpace& standard)
+{
+    auto calcDistance = [](float x1, float y1, float x2, float y2) -> float {
+        return std::sqrt((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2));
+    };
+
+    return calcDistance(primaries.rX, primaries.rY, standard.rX, standard.rY) +
+           calcDistance(primaries.gX, primaries.gY, standard.gX, standard.gY) +
+           calcDistance(primaries.bX, primaries.bY, standard.bX, standard.bY);
+}
+
+enum class GammaType {
+    SRGB,
+    HLG,
+    UNKNOWN
+};
+
+static GammaType DetermineGammaType(float gamma)
+{
+    constexpr float SRGB_GAMMA = 2.2f;
+    constexpr float LINEAR_GAMMA = 1.0f;
+    constexpr float HLG_GAMMA = 1.2f;
+    constexpr float HLG_GAMMA_LOW = 0.5f;
+    constexpr float GAMMA_TOLERANCE = 0.1f;
+
+    if ((std::abs(gamma - SRGB_GAMMA) < GAMMA_TOLERANCE) ||
+        (std::abs(gamma - LINEAR_GAMMA) < GAMMA_TOLERANCE)) {
+        return GammaType::SRGB;
+    }
+    if ((std::abs(gamma - HLG_GAMMA) < GAMMA_TOLERANCE) ||
+        (std::abs(gamma - HLG_GAMMA_LOW) < GAMMA_TOLERANCE)) {
+        return GammaType::HLG;
+    }
+    return GammaType::UNKNOWN;
+}
+
+static bool MatchColorSpaceByDistance(const PrimariesXY& primaries, float gamma,
+    OHOS::ColorManager::ColorSpaceName& name)
+{
+    constexpr float TOLERANCE = 0.02f;
+    constexpr float TOLERANCE_THRESHOLD = TOLERANCE * TOLERANCE_NUMBER;
+    constexpr int COLORSPACE_NUM = 5;
+
+    float distances[COLORSPACE_NUM];
+    for (int i = 0; i < COLORSPACE_NUM; i++) {
+        distances[i] = CalculateColorSpaceDistance(primaries, STANDARD_COLOR_SPACES[i]);
+    }
+
+    GammaType gammaType = DetermineGammaType(gamma);
+
+    // Match sRGB
+    if (distances[OFFSET_0] < TOLERANCE_THRESHOLD && gammaType == GammaType::SRGB) {
+        name = OHOS::ColorManager::ColorSpaceName::SRGB;
+        IMAGE_LOGD("Matched sRGB by primaries and gamma");
+        return true;
+    }
+
+    // Match Display P3
+    if (distances[OFFSET_1] < TOLERANCE_THRESHOLD) {
+        name = OHOS::ColorManager::ColorSpaceName::DISPLAY_P3;
+        IMAGE_LOGD("Matched Display P3 by primaries");
+        return true;
+    }
+
+    // Match BT.2020
+    if (distances[OFFSET_2] < TOLERANCE_THRESHOLD) {
+        //The logic for "2020" is relatively complex, so use the original flow for matching.
+        return false;
+    }
+
+    // Match Adobe RGB
+    if (distances[OFFSET_3] < TOLERANCE_THRESHOLD) {
+        name = OHOS::ColorManager::ColorSpaceName::ADOBE_RGB;
+        IMAGE_LOGD("Matched Adobe RGB by primaries");
+        return true;
+    }
+
+    // Match DCI-P3
+    if (distances[OFFSET_4] < TOLERANCE_THRESHOLD) {
+        name = OHOS::ColorManager::ColorSpaceName::DCI_P3;
+        IMAGE_LOGD("Matched DCI-P3 by primaries");
+        return true;
+    }
+
+    IMAGE_LOGI("No standard color space matched by primaries and gamma");
+    return false;
+}
+
+// Match color space by primaries and gamma
+bool ColorUtils::MatchColorSpaceByPrimariesAndGamma(const skcms_ICCProfile* profile,
+    OHOS::ColorManager::ColorSpaceName &name)
+{
+    ICCProfileData profileData;
+    CHECK_ERROR_RETURN_RET(!ExtractICCProfileData(profile, profileData), false);
+
+    PrimariesXY primaries;
+    CHECK_ERROR_RETURN_RET(!CalculatePrimariesXY(profileData, primaries), false);
+    return MatchColorSpaceByDistance(primaries, profileData.gamma, name);
 }
 
 #endif

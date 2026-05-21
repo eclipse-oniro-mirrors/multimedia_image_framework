@@ -2711,6 +2711,9 @@ static bool GetColorSpaceName(const skcms_ICCProfile* profile, OHOS::ColorManage
         IMAGE_LOGD("profile is nullptr");
         return false;
     }
+    if (ColorUtils::MatchColorSpaceByPrimariesAndGamma(profile, name)) {
+        return true;
+    }
     auto tags = reinterpret_cast<const ICCTag*>(profile->buffer + ICC_HEADER_SIZE);
     for (uint32_t i = SIZE_ZERO; i < profile->tag_count; i++) {
         auto signature = u8ToU32(tags[i].signature);
