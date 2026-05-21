@@ -347,6 +347,7 @@ static bool CopyP010Pixels(
         IMAGE_LOGE("CopyP010Pixels src buffer size is invalid, pixelsSize:%{public}u", yuvCopyInfo.pixelsSize);
         return false;
     }
+
     uint32_t dstPixelsSize = (dstStrides.uvOffset + dstStrides.uvStride * uvHeight) * BYTE_PER_PIXEL;
     for (uint32_t y = 0; y < yHeight; y++) {
         errno_t ret = memcpy_s(dstY, dstPixelsSize, srcY, stride * BYTE_PER_PIXEL);
@@ -358,7 +359,7 @@ static bool CopyP010Pixels(
         dstPixelsSize -= dstStrides.yStride * BYTE_PER_PIXEL;
         srcY += srcStrides.yStride;
     }
-    dstPixelsSize = dstPixelsSize - dstStrides.uvOffset * BYTE_PER_PIXEL;
+
     for (uint32_t y = 0; y < uvHeight; y++) {
         errno_t ret = memcpy_s(dstUV, dstPixelsSize, srcUV, uvStride * BYTE_PER_PIXEL);
         if (ret != EOK) {
