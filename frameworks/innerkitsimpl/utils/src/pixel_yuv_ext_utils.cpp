@@ -455,7 +455,7 @@ void PixelYuvExtUtils::ScaleYuv420(float xAxis, float yAxis, const AntiAliasingO
     ConvertYuvMode(filterMode, option);
 
     uint8_t* srcY = src + yuvInfo.yuvDataInfo.yOffset;
-    int srcYStride = static_cast<int>(yuvInfo.yuvDataInfo.yStride)
+    int srcYStride = static_cast<int>(yuvInfo.yuvDataInfo.yStride);
     uint8_t* srcUV = srcY + yuvInfo.yuvDataInfo.uvOffset;
     int srcUVStride = static_cast<int>(yuvInfo.yuvDataInfo.uvStride);
     int srcWidth = yuvInfo.width;
