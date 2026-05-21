@@ -1578,9 +1578,9 @@ napi_value PixelMapNapi::CreatePixelMapUsingAllocatorSync(napi_env env, napi_cal
 }
 
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
-static bool ParseSurfaceId(const std::string &surfaceId, uint64_t &id)
+static bool ParseSurfaceId(const std::string &surfaceId, uint64_t &surfaceIdInt)
 {
-    auto res = std::from_chars(surfaceId.data(), surfaceId.data() + surfaceId.size(), id);
+    auto res = std::from_chars(surfaceId.data(), surfaceId.data() + surfaceId.size(), surfaceIdInt);
     if (res.ec != std::errc() || res.ptr != surfaceId.data() + surfaceId.size()) {
         IMAGE_LOGE("Empty or invalid surfaceId");
         return false;
