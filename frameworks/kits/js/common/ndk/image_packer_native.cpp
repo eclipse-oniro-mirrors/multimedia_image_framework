@@ -292,7 +292,7 @@ MIDK_EXPORT
 Image_ErrorCode OH_PackingOptions_SetNeedsPackProperties(OH_PackingOptions *options, bool needsPackProperties)
 {
     if (options == nullptr) {
-        return IMAGE_BAD_PARAMETER;
+        return IMAGE_PACKER_INVALID_PARAMETER;
     }
     options->needsPackProperties = needsPackProperties;
     return IMAGE_SUCCESS;
@@ -302,7 +302,7 @@ MIDK_EXPORT
 Image_ErrorCode OH_PackingOptions_GetNeedsPackDfxData(OH_PackingOptions *options, bool *needsPackDfxData)
 {
     if (options == nullptr || needsPackDfxData == nullptr) {
-        return IMAGE_BAD_PARAMETER;
+        return IMAGE_PACKER_INVALID_PARAMETER;
     }
     *needsPackDfxData = options->needsPackDfxData;
     return IMAGE_SUCCESS;
