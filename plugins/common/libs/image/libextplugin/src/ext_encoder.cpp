@@ -2514,10 +2514,10 @@ void ExtEncoder::EncodeHeifMetadata(std::vector<ItemRef> &refs, std::vector<Meta
     for (const auto& info : HEIF_BLOB_INFOS) {
         auto metaType = MetadataTypeConvertFromHeif(info.type);
         if (metaType == MetadataType::DFXDATA) {
-           if (!ImageSystemProperties::GetEncodeDfxDataEnabled() && !opts_.needsPackDfxData) {
+            if (!ImageSystemProperties::GetEncodeDfxDataEnabled() && !opts_.needsPackDfxData) {
                 IMAGE_LOGI("no need encode DfxData");
                 continue;
-           }
+            }
         } else if (!opts_.needsPackProperties) {
             IMAGE_LOGD("no need encode blob: %{public}d", metaType);
             continue;
