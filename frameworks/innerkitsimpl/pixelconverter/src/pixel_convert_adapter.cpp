@@ -277,7 +277,7 @@ bool PixelConvertAdapter::YUV420ToRGB888(const uint8_t *in, YuvImageInfo &srcInf
 {
     bool cond = (in == nullptr) || (out == nullptr);
     CHECK_DEBUG_RETURN_RET_LOG(cond, false, "YUV420ToRGB888 input or output buffer is nullptr");
-    bool cond = PixelYuvUtils::YuvScale(const_cast<uint8_t *>(in), srcInfo, out, dstInfo, SWS_BICUBIC) != SUCCESS;
+    cond = PixelYuvUtils::YuvScale(const_cast<uint8_t *>(in), srcInfo, out, dstInfo, SWS_BICUBIC) != SUCCESS;
     CHECK_ERROR_RETURN_RET_LOG(cond, false, "YUV420ToRGB888 failed");
     return true;
 }
