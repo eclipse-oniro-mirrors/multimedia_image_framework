@@ -101,7 +101,7 @@ Image_ErrorCode OH_PictureMetadata_GetMetadataByType(OH_PictureMetadata **metada
             return IMAGE_SUCCESS;
         }
     }
-    return IMAGE_BAD_PARAMETER;
+    return IMAGE_UNSUPPORTED_METADATA;
 }
 
 MIDK_EXPORT

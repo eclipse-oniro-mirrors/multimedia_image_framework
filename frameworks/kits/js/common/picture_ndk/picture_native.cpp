@@ -246,7 +246,7 @@ Image_ErrorCode OH_PictureNative_RemoveMetadata(OH_PictureNative *picture, Image
     }
     auto metadataType = MetaDataTypeNativeToInner(type);
     if (!OHOS::Media::ImageUtils::IsMetadataTypeSupported(metadataType)) {
-        return IMAGE_BAD_PARAMETER;
+        return IMAGE_UNSUPPORTED_METADATA;
     }
     picture->GetInnerPicture()->DropMetadata(metadataType);
     return IMAGE_SUCCESS;

@@ -181,7 +181,9 @@ Image_ErrorCode OH_PackingOptions_SetNeedsPackProperties(OH_PackingOptions *opti
  *
  * @param options The OH_PackingOptions pointer will be operated.
  * @param needsPackDfxData Whether the image DfxData can be saved.
- * @return Returns {@link Image_ErrorCode}
+ * @return Image functions result code.
+ *         {@link IMAGE_SUCCESS} if the execution is successful.
+ *         {@link IMAGE_PACKER_INVALID_PARAMETER} options is nullptr， or needsPackDfxData is null.
  * @since 20
  */
 Image_ErrorCode OH_PackingOptions_GetNeedsPackDfxData(OH_PackingOptions *options,
@@ -192,7 +194,9 @@ Image_ErrorCode OH_PackingOptions_GetNeedsPackDfxData(OH_PackingOptions *options
  *
  * @param options The OH_PackingOptions pointer will be operated.
  * @param needsPackDfxData Whether the image DfxData can be saved.
- * @return Returns {@link Image_ErrorCode}
+ * @return Image functions result code.
+ *         {@link IMAGE_SUCCESS} if the execution is successful.
+ *         {@link IMAGE_PACKER_INVALID_PARAMETER} options is nullptr.
  * @since 20
  */
 Image_ErrorCode OH_PackingOptions_SetNeedsPackDfxData(OH_PackingOptions *options,
