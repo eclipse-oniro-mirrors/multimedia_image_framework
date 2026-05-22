@@ -95,6 +95,10 @@ std::shared_ptr<ImageCreatorContext> ImageCreatorContext ::CreateImageCreatorCon
 void ImageCreatorSurfaceListener ::OnBufferAvailable()
 {
     IMAGE_LOGD("CreatorBufferAvailable");
+    if (ic_ == nullptr) {
+        IMAGE_LOGE("ic_ is nullptr");
+        return;
+    }
     if (ic_->surfaceBufferAvaliableListener_ != nullptr) {
         ic_->surfaceBufferAvaliableListener_->OnSurfaceBufferAvaliable();
     }
@@ -247,6 +251,10 @@ int32_t ImageCreator::SaveSenderBufferAsImage(OHOS::sptr<OHOS::SurfaceBuffer> bu
     InitializationOptions initializationOpts)
 {
     int32_t errorcode = 0;
+    if (iraContext_ == nullptr) {
+        IMAGE_LOGE("iraContext_ is nullptr");
+        return ERR_MEDIA_INVALID_VALUE;
+    }
     if (buffer != nullptr) {
         uint32_t *addr = static_cast<uint32_t *>(buffer->GetVirAddr());
         uint8_t *addr2 = nullptr;
@@ -257,7 +265,10 @@ int32_t ImageCreator::SaveSenderBufferAsImage(OHOS::sptr<OHOS::SurfaceBuffer> bu
         }
         errorcode = SaveSTP(addr, addr2, size, initializationOpts);
         ReleaseBuffer(AllocatorType::HEAP_ALLOC, &addr2);
-        (iraContext_->GetCreatorBufferConsumer())->ReleaseBuffer(buffer, -1);
+        auto consumer = iraContext_->GetCreatorBufferConsumer();
+        if (consumer != nullptr) {
+            consumer->ReleaseBuffer(buffer, -1);
+        }
         IMAGE_LOGI("start release");
     } else {
         IMAGE_LOGD("SaveBufferAsImage buffer == nullptr");
@@ -267,9 +278,17 @@ int32_t ImageCreator::SaveSenderBufferAsImage(OHOS::sptr<OHOS::SurfaceBuffer> bu
 
 OHOS::sptr<OHOS::SurfaceBuffer> ImageCreator::DequeueImage()
 {
+    if (iraContext_ == nullptr) {
+        IMAGE_LOGE("iraContext_ is nullptr");
+        return nullptr;
+    }
     int32_t flushFence = 0;
     OHOS::sptr<OHOS::SurfaceBuffer> buffer;
     sptr<Surface> creatorSurface = iraContext_->GetCreatorBufferProducer();
+    if (creatorSurface == nullptr) {
+        IMAGE_LOGE("creatorSurface is nullptr");
+        return nullptr;
+    }
     BufferRequestConfig config;
     config.width = iraContext_->GetWidth();
     config.height = iraContext_->GetHeight();
@@ -295,11 +314,23 @@ OHOS::sptr<OHOS::SurfaceBuffer> ImageCreator::DequeueImage()
 void ImageCreator::QueueImage(OHOS::sptr<OHOS::SurfaceBuffer> &buffer)
 {
     IMAGE_LOGI("start Queue Image");
+    if (iraContext_ == nullptr) {
+        IMAGE_LOGE("iraContext_ is nullptr");
+        return;
+    }
+    if (buffer == nullptr) {
+        IMAGE_LOGE("buffer is nullptr");
+        return;
+    }
     int32_t flushFence = -1;
     BufferFlushConfig config;
     config.damage.w = iraContext_->GetWidth();
     config.damage.h = iraContext_->GetHeight();
     sptr<Surface> creatorSurface = iraContext_->GetCreatorBufferProducer();
+    if (creatorSurface == nullptr) {
+        IMAGE_LOGE("creatorSurface is nullptr");
+        return;
+    }
     SurfaceError surfaceError = creatorSurface->FlushBuffer(buffer, flushFence, config);
     IMAGE_LOGI("finish Queue Image");
     if (surfaceError != SURFACE_ERROR_OK) {
@@ -308,6 +339,10 @@ void ImageCreator::QueueImage(OHOS::sptr<OHOS::SurfaceBuffer> &buffer)
 }
 sptr<IConsumerSurface> ImageCreator::GetCreatorSurface()
 {
+    if (iraContext_ == nullptr) {
+        IMAGE_LOGE("iraContext_ is nullptr");
+        return nullptr;
+    }
     return iraContext_->GetCreatorBufferConsumer();
 }
 

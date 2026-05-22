@@ -95,11 +95,16 @@ void HeifParser::Write(HeifStreamWriter &writer)
         box->Write(writer);
     }
 
-    ilocBox_->WriteMdatBox(writer);
+    if (ilocBox_) {
+        ilocBox_->WriteMdatBox(writer);
+    }
 }
 
 heif_item_id HeifParser::GetPrimaryItemId() const
 {
+    if (!pitmBox_) {
+        return 0;
+    }
     return pitmBox_->GetItemId();
 }
 
@@ -246,6 +251,9 @@ heif_error HeifParser::GetGridLength(heif_item_id itemId, size_t &length)
     if (!HasItemId(itemId)) {
         return heif_error_item_not_found;
     }
+    if (!ilocBox_) {
+        return heif_error_no_iloc;
+    }
     auto items = ilocBox_->GetItems();
     const HeifIlocBox::Item *ilocItem = nullptr;
     auto iter = std::find_if(items.begin(), items.end(), [&itemId](const auto &item) {
@@ -268,6 +276,10 @@ heif_error HeifParser::GetItemData(heif_item_id itemId, std::vector<uint8_t> *ou
     auto infe_box = GetInfeBox(itemId);
     if (!infe_box) {
         return heif_error_item_not_found;
+    }
+
+    if (!ilocBox_) {
+        return heif_error_no_iloc;
     }
 
     std::string item_type = infe_box->GetItemType();
@@ -411,7 +423,7 @@ void HeifParser::ExtractProperties(const std::vector<heif_item_id> &allItemIds)
             continue;
         }
         images_.insert(std::make_pair(itemId, image));
-        if (!infe->IsHidden() && itemId == GetPrimaryItemId()) {
+        if (pitmBox_ && !infe->IsHidden() && itemId == pitmBox_->GetItemId()) {
             image->SetPrimaryImage(true);
             primaryImage_ = image;
         }
@@ -871,6 +883,9 @@ void HeifParser::AddIspeProperty(heif_item_id itemId, uint32_t width, uint32_t h
 
 heif_property_id HeifParser::AddProperty(heif_item_id itemId, const std::shared_ptr<HeifBox>& property, bool essential)
 {
+    if (!ipcoBox_ || !ipmaBox_) {
+        return 0;
+    }
     int index = ipcoBox_->AddChild(property);
     ipmaBox_->AddProperty(itemId, PropertyAssociation{essential, uint16_t(index + 1)});
     return index + 1;
@@ -932,7 +947,9 @@ void HeifParser::AddReference(heif_item_id fromItemId, uint32_t type, const std:
 {
     if (!irefBox_) {
         irefBox_ = std::make_shared<HeifIrefBox>();
-        metaBox_->AddChild(irefBox_);
+        if (metaBox_) {
+            metaBox_->AddChild(irefBox_);
+        }
     }
     irefBox_->AddReferences(fromItemId, type, toItemIds);
 }
