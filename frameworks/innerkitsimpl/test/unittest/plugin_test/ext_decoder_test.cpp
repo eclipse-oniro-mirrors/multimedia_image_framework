@@ -1064,6 +1064,7 @@ HWTEST_F(ExtDecoderTest, WriteJpegCodedDataTest002, TestSize.Level3)
     options.srcPixelFormat = PixelFormat::UNKNOWN;
     options.pixelFormat = PixelFormat::UNKNOWN;
     options.alphaType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
+    options.allocatorType = AllocatorType::SHARE_MEM_ALLOC;
     std::unique_ptr<PixelMap> tmpPixelMap = PixelMap::Create(color, 8, options);
     std::shared_ptr<PixelMap> pixelMap = std::move(tmpPixelMap);
     ASSERT_NE(pixelMap->GetAllocatorType(), AllocatorType::DMA_ALLOC);
@@ -1096,6 +1097,7 @@ HWTEST_F(ExtDecoderTest, WriteJpegUncodedDataTest002, TestSize.Level3)
     options.srcPixelFormat = PixelFormat::UNKNOWN;
     options.pixelFormat = PixelFormat::UNKNOWN;
     options.alphaType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
+    options.allocatorType = AllocatorType::SHARE_MEM_ALLOC;
     std::unique_ptr<PixelMap> tmpPixelMap = PixelMap::Create(color, 8, options);
     std::shared_ptr<PixelMap> pixelMap = std::move(tmpPixelMap);
     ASSERT_NE(pixelMap->GetAllocatorType(), AllocatorType::DMA_ALLOC);
@@ -1128,6 +1130,7 @@ HWTEST_F(ExtDecoderTest, WriteJpegCodedDataTest003, TestSize.Level3)
     options.srcPixelFormat = PixelFormat::UNKNOWN;
     options.pixelFormat = PixelFormat::UNKNOWN;
     options.alphaType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
+    options.allocatorType = AllocatorType::SHARE_MEM_ALLOC;
     std::unique_ptr<PixelMap> tmpPixelMap = PixelMap::Create(color, 8, options);
     std::shared_ptr<PixelMap> pixelMap = std::move(tmpPixelMap);
     ASSERT_NE(pixelMap->GetAllocatorType(), AllocatorType::DMA_ALLOC);
@@ -1161,6 +1164,7 @@ HWTEST_F(ExtDecoderTest, WriteJpegUncodedDataTest003, TestSize.Level3)
     options.srcPixelFormat = PixelFormat::UNKNOWN;
     options.pixelFormat = PixelFormat::UNKNOWN;
     options.alphaType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
+    options.allocatorType = AllocatorType::SHARE_MEM_ALLOC;
     std::unique_ptr<PixelMap> tmpPixelMap = PixelMap::Create(color, 8, options);
     std::shared_ptr<PixelMap> pixelMap = std::move(tmpPixelMap);
     ASSERT_NE(pixelMap->GetAllocatorType(), AllocatorType::DMA_ALLOC);

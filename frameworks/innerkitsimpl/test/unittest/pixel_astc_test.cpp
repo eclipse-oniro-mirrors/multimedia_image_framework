@@ -91,7 +91,7 @@ static bool ConstructAstcBody(uint8_t* astcBody, size_t& blockNums, const uint8_
     return true;
 }
 
-static void ConstructPixelAstc(std::unique_ptr<PixelMap>& pixelMap, uint8_t** dataIn)
+static void ConstructPixelAstc(std::unique_ptr<PixelMap>& pixelMap, uint8_t** dataIn, AllocatorType allocatorType = AllocatorType::SHARE_MEM_ALLOC)
 {
     uint32_t errorCode = 0;
     SourceOptions opts;
@@ -117,6 +117,7 @@ static void ConstructPixelAstc(std::unique_ptr<PixelMap>& pixelMap, uint8_t** da
     ASSERT_NE(imageSource.get(), nullptr);
 
     DecodeOptions decodeOpts;
+    decodeOpts.allocatorType = allocatorType;
     pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     *dataIn = data;
@@ -816,5 +817,17 @@ HWTEST_F(PixelAstcTest, PixelAstcTest030, TestSize.Level3)
     pixelAstc->context_ = tmpContext;
     GTEST_LOG_(INFO) << "PixelAstcTest: PixelAstcTest030 end";
 }
+
+HWTEST_F(PixelAstcTest, ReadFileAndResoveAstc001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelAstcTest: ReadFileAndResoveAstc001 start";
+    std::unique_ptr<PixelMap> pixelAstc = std::unique_ptr<PixelMap>();
+    uint8_t* data = nullptr;
+    ConstructPixelAstc(pixelAstc, &data, AllocatorType::DMA_ALLOC);
+    ASSERT_NE(pixelAstc.get(), nullptr);
+    ASSERT_EQ(pixelAstc->GetAllocatorType(), AllocatorType::DMA_ALLOC);
+    GTEST_LOG_(INFO) << "PixelAstcTest: ReadFileAndResoveAstc001 end";
+}
+
 }
 }
