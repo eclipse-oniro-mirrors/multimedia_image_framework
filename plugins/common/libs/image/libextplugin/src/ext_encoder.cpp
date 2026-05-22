@@ -2786,13 +2786,13 @@ void ExtEncoder::EncodeJpegAllBlobMetadata(SkWStream& skStream)
         if (metadataPtr == nullptr) {
             IMAGE_LOGD("Don't have this blob %{public}d", iter.first);
             continue;
-         }
-         if (iter.first == MetadataType::DFXDATA) {
+        }
+        if (iter.first == MetadataType::DFXDATA) {
             if (!ImageSystemProperties::GetEncodeDfxDataEnabled() && !opts_.needsPackDfxData) {
                 IMAGE_LOGI("no need encode DfxData");
                 continue;
             }
-         } else if (!opts_.needsPackProperties) {
+        } else if (!opts_.needsPackProperties) {
             IMAGE_LOGD("no need encode blob: %{public}d", iter.first);
             continue;
         }
