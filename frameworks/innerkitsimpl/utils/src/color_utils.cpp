@@ -127,7 +127,7 @@ constexpr static uint32_t BXYZ_SIGNATURE = 0x6258595A;  // 'bXYZ'
 constexpr static uint32_t RTRC_SIGNATURE = 0x72545243;  // 'rTRC'
 constexpr static uint32_t GTRC_SIGNATURE = 0x67545243;  // 'gTRC'
 constexpr static uint32_t BTRC_SIGNATURE = 0x62545243;  // 'bTRC'
-constexpr static uint32_t TECR_TAG = 0x74657263; // 'TECR'
+constexpr static uint32_t TERC_TAG = 0x74657263; // 'TERC'
 constexpr static uint32_t OFFSET_0 = 0;
 constexpr static uint32_t OFFSET_1 = 1;
 constexpr static uint32_t OFFSET_2 = 2;
@@ -148,6 +148,7 @@ constexpr static uint32_t MAX_TAG_COUNT = 1000;
 constexpr static float DEFAULT_SRGB_GAMMA = 2.2f;
 constexpr static float DEFAULT_XYZ_NUMBER = 0.0f;
 constexpr static float OVERFLOW_CHECK = 65536.0f;
+constexpr static float XYZ_EPSILON = 1e-6f;
 struct ColorSpaceNameEnum {
     std::string desc;
     OHOS::ColorManager::ColorSpaceName name;
@@ -529,7 +530,7 @@ static bool GetGammaFromTRCTag(const uint8_t* buffer, uint32_t offset, uint32_t 
     uint32_t curveType = (buffer[offset] << SHIFT_BITS_24) | (buffer[offset + OFFSET_1] << SHIFT_BITS_16) |
         (buffer[offset + OFFSET_2] << SHIFT_BITS_8) | buffer[offset + OFFSET_3];
 
-    if (curveType == TECR_TAG) {
+    if (curveType == TERC_TAG) {
         CHECK_ERROR_RETURN_RET(offset + OFFSET_12 > size, false);
         int32_t val = (buffer[offset + SHIFT_BITS_8] << SHIFT_BITS_24) |
             (buffer[offset + SHIFT_BITS_9] << SHIFT_BITS_16) |
@@ -605,9 +606,9 @@ static bool CalculatePrimariesXY(const ICCProfileData& data, PrimariesXY& primar
     float rSum = data.rXYZ.x + data.rXYZ.y + data.rXYZ.z;
     float gSum = data.gXYZ.x + data.gXYZ.y + data.gXYZ.z;
     float bSum = data.bXYZ.x + data.bXYZ.y + data.bXYZ.z;
-    CHECK_ERROR_RETURN_RET(rSum == DEFAULT_XYZ_NUMBER, false);
-    CHECK_ERROR_RETURN_RET(gSum == DEFAULT_XYZ_NUMBER, false);
-    CHECK_ERROR_RETURN_RET(bSum == DEFAULT_XYZ_NUMBER, false);
+    CHECK_ERROR_RETURN_RET(std::abs(rSum) < XYZ_EPSILON, false);
+    CHECK_ERROR_RETURN_RET(std::abs(gSum) < XYZ_EPSILON, false);
+    CHECK_ERROR_RETURN_RET(std::abs(bSum) < XYZ_EPSILON, false);
     primaries.rX = data.rXYZ.x / rSum;
     primaries.rY = data.rXYZ.y / rSum;
     primaries.gX = data.gXYZ.x / gSum;
