@@ -144,6 +144,7 @@ constexpr static uint32_t SHIFT_BITS_16 = 16;
 constexpr static uint32_t SHIFT_BITS_24 = 24;
 constexpr static uint32_t XYZ_TAG_LENGTH = 20;
 constexpr static uint32_t TOLERANCE_NUMBER = 3;
+constexpr static uint32_t MAX_TAG_COUNT = 1000;
 constexpr static float DEFAULT_SRGB_GAMMA = 2.2f;
 constexpr static float DEFAULT_XYZ_NUMBER = 0.0f;
 constexpr static float OVERFLOW_CHECK = 65536.0f;
@@ -447,8 +448,8 @@ bool ColorUtils::MatchColorSpaceName(const uint8_t* buf, uint32_t size, OHOS::Co
 
 bool ColorUtils::GetColorSpaceName(const skcms_ICCProfile* profile, OHOS::ColorManager::ColorSpaceName &name)
 {
-    if (profile == nullptr || profile->buffer == nullptr) {
-        IMAGE_LOGD("profile is nullptr");
+    if (profile == nullptr || profile->buffer == nullptr || profile->tag_count > MAX_TAG_COUNT) {
+        IMAGE_LOGD("profile is nullptr or too many tagcount");
         return false;
     }
     auto tags = reinterpret_cast<const ICCTag*>(profile->buffer + ICC_HEADER_SIZE);
@@ -554,6 +555,7 @@ struct ICCProfileData {
 static bool ExtractICCProfileData(const skcms_ICCProfile* profile, ICCProfileData& data)
 {
     CHECK_ERROR_RETURN_RET(profile == nullptr || profile->buffer == nullptr || profile->tag_count == 0, false);
+    CHECK_ERROR_RETURN_RET(profile->tag_count > MAX_TAG_COUNT, false);
     data.rXYZ = {DEFAULT_XYZ_NUMBER, DEFAULT_XYZ_NUMBER, DEFAULT_XYZ_NUMBER};
     data.gXYZ = {DEFAULT_XYZ_NUMBER, DEFAULT_XYZ_NUMBER, DEFAULT_XYZ_NUMBER};
     data.bXYZ = {DEFAULT_XYZ_NUMBER, DEFAULT_XYZ_NUMBER, DEFAULT_XYZ_NUMBER};
@@ -600,15 +602,18 @@ struct PrimariesXY {
 
 static bool CalculatePrimariesXY(const ICCProfileData& data, PrimariesXY& primaries)
 {
-    float sumY = data.rXYZ.y + data.gXYZ.y + data.bXYZ.y;
-    CHECK_ERROR_RETURN_RET(sumY == DEFAULT_XYZ_NUMBER, false);
-
-    primaries.rX = data.rXYZ.x / (data.rXYZ.x + data.rXYZ.y + data.rXYZ.z);
-    primaries.rY = data.rXYZ.y / (data.rXYZ.x + data.rXYZ.y + data.rXYZ.z);
-    primaries.gX = data.gXYZ.x / (data.gXYZ.x + data.gXYZ.y + data.gXYZ.z);
-    primaries.gY = data.gXYZ.y / (data.gXYZ.x + data.gXYZ.y + data.gXYZ.z);
-    primaries.bX = data.bXYZ.x / (data.bXYZ.x + data.bXYZ.y + data.bXYZ.z);
-    primaries.bY = data.bXYZ.y / (data.bXYZ.x + data.bXYZ.y + data.bXYZ.z);
+    float rSum = data.rXYZ.x + data.rXYZ.y + data.rXYZ.z;
+    float gSum = data.gXYZ.x + data.gXYZ.y + data.gXYZ.z;
+    float bSum = data.bXYZ.x + data.bXYZ.y + data.bXYZ.z;
+    CHECK_ERROR_RETURN_RET(rSum == DEFAULT_XYZ_NUMBER, false);
+    CHECK_ERROR_RETURN_RET(gSum == DEFAULT_XYZ_NUMBER, false);
+    CHECK_ERROR_RETURN_RET(bSum == DEFAULT_XYZ_NUMBER, false);
+    primaries.rX = data.rXYZ.x / rSum;
+    primaries.rY = data.rXYZ.y / rSum;
+    primaries.gX = data.gXYZ.x / gSum;
+    primaries.gY = data.gXYZ.y / gSum;
+    primaries.bX = data.bXYZ.x / bSum;
+    primaries.bY = data.bXYZ.y / bSum;
     return true;
 }
 
