@@ -214,7 +214,7 @@ Image_ErrorCode OH_PictureMetadata_SetBlob(OH_PictureMetadata *metadata,  uint8_
     uint32_t ret = static_cast<uint32_t>(metadata->GetInnerAuxiliaryMetadata()->SetBlob(blob, *blobSize));
     if (ret != IMAGE_SUCCESS) {
         IMAGE_LOGE("OH_PictureMetadata_SetBlob failed");
-        return IMAGE_INVALID_PARAMETER;
+        return IMAGE_UNSUPPORTED_OPERATION;
     }
     return IMAGE_SUCCESS;
 }
@@ -231,7 +231,7 @@ Image_ErrorCode OH_PictureMetadata_GetBlob(OH_PictureMetadata *metadata, uint8_t
     uint32_t ret = static_cast<uint32_t>(metadata->GetInnerAuxiliaryMetadata()->GetBlob(blobSize, blob));
     if (ret != IMAGE_SUCCESS) {
         IMAGE_LOGE("OH_PictureMetadata_GetBlob failed");
-        return IMAGE_INVALID_PARAMETER;
+        return IMAGE_UNSUPPORTED_OPERATION;
     }
     return IMAGE_SUCCESS;
 }
