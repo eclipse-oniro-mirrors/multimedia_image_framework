@@ -427,7 +427,7 @@ Image_ErrorCode OH_PictureMetadata_SetProperty(OH_PictureMetadata *metadata, Ima
  * @param blobSize The size of the blob data.
  * @return Image functions result code.
  *         {@link IMAGE_SUCCESS} if the execution is successful.
- *         {@link IMAGE_BAD_PARAMETER} metadata is nullptr, or blob is nullptr, or SetBlob is failed.
+ *         {@link IMAGE_INVALID_PARAMETER} metadata is nullptr, or blob is nullptr, or SetBlob is failed.
  *         {@link IMAGE_UNSUPPORTED_METADATA} unsupported metadata type.
  * @since 16
  */
@@ -441,7 +441,7 @@ Image_ErrorCode OH_PictureMetadata_SetBlob(OH_PictureMetadata *metadata, uint8_t
  * @param blobSize The size of the blob data.
  * @return Image functions result code.
  *         {@link IMAGE_SUCCESS} if the execution is successful.
- *         {@link IMAGE_BAD_PARAMETER} metadata is nullptr, or blob is nullptr, or GetBlob is failed.
+ *         {@link IMAGE_INVALID_PARAMETER} metadata is nullptr, or blob is nullptr, or GetBlob is failed.
  *         {@link IMAGE_UNSUPPORTED_METADATA} unsupported metadata type.
  * @since 16
  */
@@ -454,7 +454,7 @@ Image_ErrorCode OH_PictureMetadata_GetBlob(OH_PictureMetadata *metadata, uint8_t
  * @param blobSize The size of the blob data.
  * @return Image functions result code.
  *         {@link IMAGE_SUCCESS} if the execution is successful.
- *         {@link IMAGE_BAD_PARAMETER} metadata is nullptr.
+ *         {@link IMAGE_INVALID_PARAMETER} metadata is nullptr.
  *         {@link IMAGE_UNSUPPORTED_METADATA} unsupported metadata type.
  * @since 16
  */
@@ -510,7 +510,7 @@ Image_ErrorCode OH_PictureMetadata_Clone(OH_PictureMetadata *oldMetadata, OH_Pic
  * @param metadata Pointer to the output PictureMetadata object, which stores the matched content.
  * @return Image functions result code.
  *         {@link IMAGE_SUCCESS} if the operation is successful.
- *         {@link IMAGE_BAD_PARAMETER} if metadatas/metadata is nullptr or metadataCount is 0.
+ *         {@link IMAGE_INVALID_PARAMETER} if metadatas/metadata is nullptr or metadataCount is 0.
  *         {@link IMAGE_UNSUPPORTED_METADATA} if no metadata matching the specified type is found.
  * @since 24
  */

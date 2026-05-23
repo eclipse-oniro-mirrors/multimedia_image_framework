@@ -116,7 +116,7 @@ MIDK_EXPORT
 Image_ErrorCode OH_PictureNative_GetAuxiliaryPictureCount(OH_PictureNative *picture, uint32_t *count)
 {
     if (picture == nullptr || count == nullptr || !picture->GetInnerPicture()) {
-        return IMAGE_BAD_PARAMETER;
+        return IMAGE_INVALID_PARAMETER;
     }
     *count = picture->GetInnerPicture()->GetAuxiliaryPictureCount();
     return IMAGE_SUCCESS;
@@ -127,13 +127,13 @@ Image_ErrorCode OH_PictureNative_GetAuxiliaryPictureTypes(OH_PictureNative *pict
     Image_AuxiliaryPictureType *auxiliaryPictureTypes, uint32_t *count)
 {
     if (picture == nullptr || auxiliaryPictureTypes == nullptr || count == nullptr || !picture->GetInnerPicture()) {
-        return IMAGE_BAD_PARAMETER;
+        return IMAGE_INVALID_PARAMETER;
     }
     std::vector<OHOS::Media::AuxiliaryPictureType> innerTypes = picture->GetInnerPicture()->GetAuxiliaryPictureTypes();
     uint32_t needed = static_cast<uint32_t>(innerTypes.size());
     if (*count < needed) {
         *count = needed;
-        return IMAGE_BAD_PARAMETER;
+        return IMAGE_INVALID_PARAMETER;
     }
     for (uint32_t i = 0; i < needed; ++i) {
         auxiliaryPictureTypes[i] = AuxTypeInnerToNative(innerTypes[i]);
@@ -146,7 +146,7 @@ MIDK_EXPORT
 Image_ErrorCode OH_PictureNative_GetMetadataCount(OH_PictureNative *picture, uint32_t *count)
 {
     if (picture == nullptr || count == nullptr || !picture->GetInnerPicture()) {
-        return IMAGE_BAD_PARAMETER;
+        return IMAGE_INVALID_PARAMETER;
     }
     *count = picture->GetInnerPicture()->GetMetadataCount();
     return IMAGE_SUCCESS;
@@ -157,13 +157,13 @@ Image_ErrorCode OH_PictureNative_GetMetadataTypes(OH_PictureNative *picture,
     Image_MetadataType *metadataTypes, uint32_t *count)
 {
     if (picture == nullptr || metadataTypes == nullptr || count == nullptr || !picture->GetInnerPicture()) {
-        return IMAGE_BAD_PARAMETER;
+        return IMAGE_INVALID_PARAMETER;
     }
     std::vector<OHOS::Media::MetadataType> innerTypes = picture->GetInnerPicture()->GetMetadataTypes();
     uint32_t needed = static_cast<uint32_t>(innerTypes.size());
     if (*count < needed) {
         *count = needed;
-        return IMAGE_BAD_PARAMETER;
+        return IMAGE_INVALID_PARAMETER;
     }
     for (uint32_t i = 0; i < needed; ++i) {
         metadataTypes[i] = MetaDataTypeInnerToNative(innerTypes[i]);
@@ -185,7 +185,7 @@ Image_ErrorCode OH_PictureNative_DeepCopy(OH_PictureNative *source,
         srcAuxiliaryPictureCount != dstAuxiliaryPictureCount || srcMetadataCount != dstMetadataCount ||
         (srcAuxiliaryPictureCount > 0 && (srcAuxiliaryPictures == nullptr || dstAuxiliaryPictures == nullptr)) ||
         (srcMetadataCount > 0 && (srcMetadatas == nullptr || dstMetadatas == nullptr))) {
-        return IMAGE_BAD_PARAMETER;
+        return IMAGE_INVALID_PARAMETER;
     }
  
     auto srcPicture = source->GetInnerPicture();
@@ -228,11 +228,11 @@ MIDK_EXPORT
 Image_ErrorCode OH_PictureNative_RemoveAuxiliaryPicture(OH_PictureNative *picture, Image_AuxiliaryPictureType type)
 {
     if (picture == nullptr || !picture->GetInnerPicture()) {
-        return IMAGE_BAD_PARAMETER;
+        return IMAGE_INVALID_PARAMETER;
     }
     auto auxPicType = AuxTypeNativeToInner(type);
     if (!OHOS::Media::ImageUtils::IsAuxiliaryPictureTypeSupported(auxPicType)) {
-        return IMAGE_BAD_PARAMETER;
+        return IMAGE_INVALID_PARAMETER;
     }
     picture->GetInnerPicture()->DropAuxiliaryPicture(auxPicType);
     return IMAGE_SUCCESS;
@@ -242,7 +242,7 @@ MIDK_EXPORT
 Image_ErrorCode OH_PictureNative_RemoveMetadata(OH_PictureNative *picture, Image_MetadataType type)
 {
     if (picture == nullptr || !picture->GetInnerPicture()) {
-        return IMAGE_BAD_PARAMETER;
+        return IMAGE_INVALID_PARAMETER;
     }
     auto metadataType = MetaDataTypeNativeToInner(type);
     if (!OHOS::Media::ImageUtils::IsMetadataTypeSupported(metadataType)) {
@@ -664,13 +664,13 @@ Image_ErrorCode OH_AuxiliaryPictureNative_GetPixelmap(OH_AuxiliaryPictureNative 
     OH_PixelmapNative **pixelmap)
 {
     if (!pixelmap || !auxiliaryPicture || !auxiliaryPicture->GetInnerAuxiliaryPicture()) {
-        return IMAGE_BAD_PARAMETER;
+        return IMAGE_INVALID_PARAMETER;
     }
 
     auto innerAuxiliaryPicture = auxiliaryPicture->GetInnerAuxiliaryPicture();
     auto contentPixel = innerAuxiliaryPicture->GetContentPixel();
     if (!contentPixel) {
-        return IMAGE_BAD_PARAMETER;
+        return IMAGE_INVALID_PARAMETER;
     }
 
     auto pixelmapTmp = std::make_unique<OH_PixelmapNative>(contentPixel);

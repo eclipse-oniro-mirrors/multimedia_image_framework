@@ -92,7 +92,7 @@ Image_ErrorCode OH_PictureMetadata_GetMetadataByType(OH_PictureMetadata **metada
     OH_PictureMetadata *metadata)
 {
     if (metadatas == nullptr || metadata == nullptr || metadataCount == 0) {
-        return IMAGE_BAD_PARAMETER;
+        return IMAGE_INVALID_PARAMETER;
     }
     for (size_t i = 0; i < metadataCount; ++i) {
         auto innerMetadata = (*metadatas)[i].GetInnerAuxiliaryMetadata();
@@ -205,7 +205,7 @@ Image_ErrorCode OH_PictureMetadata_Clone(OH_PictureMetadata *oldMetadata, OH_Pic
 Image_ErrorCode OH_PictureMetadata_SetBlob(OH_PictureMetadata *metadata,  uint8_t *blob, size_t *blobSize)
 {
     if (metadata == nullptr || blob == nullptr || blobSize == nullptr || *blobSize == 0) {
-        return IMAGE_BAD_PARAMETER;
+        return IMAGE_INVALID_PARAMETER;
     }
     if (!metadata->GetInnerAuxiliaryMetadata()) {
         IMAGE_LOGE("blob metadata is null");
@@ -214,7 +214,7 @@ Image_ErrorCode OH_PictureMetadata_SetBlob(OH_PictureMetadata *metadata,  uint8_
     uint32_t ret = static_cast<uint32_t>(metadata->GetInnerAuxiliaryMetadata()->SetBlob(blob, *blobSize));
     if (ret != IMAGE_SUCCESS) {
         IMAGE_LOGE("OH_PictureMetadata_SetBlob failed");
-        return IMAGE_BAD_PARAMETER;
+        return IMAGE_INVALID_PARAMETER;
     }
     return IMAGE_SUCCESS;
 }
@@ -222,7 +222,7 @@ Image_ErrorCode OH_PictureMetadata_SetBlob(OH_PictureMetadata *metadata,  uint8_
 Image_ErrorCode OH_PictureMetadata_GetBlob(OH_PictureMetadata *metadata, uint8_t *blob, size_t blobSize)
 {
     if (metadata == nullptr || blob == nullptr || blobSize == 0) {
-        return IMAGE_BAD_PARAMETER;
+        return IMAGE_INVALID_PARAMETER;
     }
     if (!metadata->GetInnerAuxiliaryMetadata()) {
         IMAGE_LOGE("blob metadata is null");
@@ -231,7 +231,7 @@ Image_ErrorCode OH_PictureMetadata_GetBlob(OH_PictureMetadata *metadata, uint8_t
     uint32_t ret = static_cast<uint32_t>(metadata->GetInnerAuxiliaryMetadata()->GetBlob(blobSize, blob));
     if (ret != IMAGE_SUCCESS) {
         IMAGE_LOGE("OH_PictureMetadata_GetBlob failed");
-        return IMAGE_BAD_PARAMETER;
+        return IMAGE_INVALID_PARAMETER;
     }
     return IMAGE_SUCCESS;
 }
@@ -240,7 +240,7 @@ Image_ErrorCode OH_PictureMetadata_GetBlobSize(OH_PictureMetadata *metadata, siz
 {
     if (metadata == nullptr || blobSize == nullptr) {
         IMAGE_LOGE("Invalid parameter: metadata is null");
-        return IMAGE_BAD_PARAMETER;
+        return IMAGE_INVALID_PARAMETER;
     }
     if (!metadata->GetInnerAuxiliaryMetadata()) {
         IMAGE_LOGE("Auxiliary metadata is null");

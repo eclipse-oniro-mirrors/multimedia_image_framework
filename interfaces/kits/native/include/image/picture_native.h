@@ -229,7 +229,7 @@ Image_ErrorCode OH_PictureNative_GetHdrComposedPixelmap(OH_PictureNative *pictur
  * @param count Pointer to a uint32_t variable that will receive the number of auxiliary pictures.
  * @return Image functions result code.
  *         {@link IMAGE_SUCCESS} if the call is successful.
- *         {@link IMAGE_BAD_PARAMETER} if @param picture or @param count is nullptr, or fail to get the picture.
+ *         {@link IMAGE_INVALID_PARAMETER} if @param picture or @param count is nullptr, or fail to get the picture.
  * @since 20
  */
 Image_ErrorCode OH_PictureNative_GetAuxiliaryPictureCount(OH_PictureNative *picture, uint32_t *count);
@@ -243,7 +243,7 @@ Image_ErrorCode OH_PictureNative_GetAuxiliaryPictureCount(OH_PictureNative *pict
  *              On output, the actual number of auxiliary pictures.
  * @return Image functions result code.
  *         {@link IMAGE_SUCCESS} if the call is successful.
- *         {@link IMAGE_BAD_PARAMETER} if @param picture, @param auxiliaryPictureTypes, or @param count is nullptr,
+ *         {@link IMAGE_INVALID_PARAMETER} if @param picture, @param auxiliaryPictureTypes, or @param count is nullptr,
  *                                      or fail to get the picture, or @param count is smaller than required.
  * @since 20
  */
@@ -257,7 +257,7 @@ Image_ErrorCode OH_PictureNative_GetAuxiliaryPictureTypes(OH_PictureNative *pict
  * @param count Pointer to a uint32_t variable that will receive the number of metadata entries.
  * @return Image functions result code.
  *         {@link IMAGE_SUCCESS} if the call is successful.
- *         {@link IMAGE_BAD_PARAMETER} if @param picture or @param count is nullptr, or fail to get the picture.
+ *         {@link IMAGE_INVALID_PARAMETER} if @param picture or @param count is nullptr, or fail to get the picture.
  * @since 20
  */
 Image_ErrorCode OH_PictureNative_GetMetadataCount(OH_PictureNative *picture, uint32_t *count);
@@ -271,7 +271,7 @@ Image_ErrorCode OH_PictureNative_GetMetadataCount(OH_PictureNative *picture, uin
  *              On output, the actual number of metadata entries.
  * @return Image functions result code.
  *         {@link IMAGE_SUCCESS} if the call is successful.
- *         {@link IMAGE_BAD_PARAMETER} if @param picture, @param metadataTypes, or @param count is nullptr,
+ *         {@link IMAGE_INVALID_PARAMETER} if @param picture, @param metadataTypes, or @param count is nullptr,
  *                                      or fail to get the picture, or @param count is smaller than required.
  * @since 20
  */
@@ -298,7 +298,7 @@ Image_ErrorCode OH_PictureNative_GetMetadataTypes(OH_PictureNative *picture,
  *
  * @return Image functions result code:
  *         {@link IMAGE_SUCCESS} if the execution is successful.
- *         {@link IMAGE_BAD_PARAMETER}  if @param source is nullptr, or @param picture is nullptr, or counts mismatch,
+ *         {@link IMAGE_INVALID_PARAMETER}  if @param source is nullptr, or @param picture is nullptr, or counts mismatch,
  *         or fail to get the source picture, or Count is not zero but corresponding array is nullptr.
  *         {@link IMAGE_ALLOC_FAILED}   if memory allocation for the new Picture failed.
  * @since 20
@@ -318,7 +318,7 @@ Image_ErrorCode OH_PictureNative_DeepCopy(OH_PictureNative *source,
  * @param type The type of auxiliary picture to remove.
  * @return Image functions result code.
  *         {@link IMAGE_SUCCESS} if the auxiliary picture was successfully removed or did not exist.
- *         {@link IMAGE_BAD_PARAMETER} if the picture is nullptr, or fail to get the picture, or the type is invalid.
+ *         {@link IMAGE_INVALID_PARAMETER} if the picture is nullptr, or fail to get the picture, or the type is invalid.
  * @since 20
  */
 Image_ErrorCode OH_PictureNative_RemoveAuxiliaryPicture(OH_PictureNative *picture, Image_AuxiliaryPictureType type);
@@ -330,7 +330,7 @@ Image_ErrorCode OH_PictureNative_RemoveAuxiliaryPicture(OH_PictureNative *pictur
  * @param type The type of metadata to remove.
  * @return Image functions result code.
  *         {@link IMAGE_SUCCESS} if the metadata was successfully removed or did not exist.
- *         {@link IMAGE_BAD_PARAMETER} if the picture is nullptr, or fail to get the picture.
+ *         {@link IMAGE_INVALID_PARAMETER} if the picture is nullptr, or fail to get the picture.
  *         {@link IMAGE_UNSUPPORTED_METADATA} unsupported metadata type.
  * @since 20
  */
@@ -584,7 +584,7 @@ Image_ErrorCode OH_AuxiliaryPictureNative_SetMetadata(OH_AuxiliaryPictureNative 
  * @param pixelmap Pixelmap pointer for obtained.
  * @return Image functions result code.
  *         {@link IMAGE_SUCCESS} if the execution is successful.
- *         {@link IMAGE_BAD_PARAMETER} auxiliaryPicture is nullptr, or pixelmap is nullptr, or fail to get the
+ *         {@link IMAGE_INVALID_PARAMETER} auxiliaryPicture is nullptr, or pixelmap is nullptr, or fail to get the
  *         auxiliary picture or its pixelmap content.
  *         {@link IMAGE_ALLOC_FAILED} memory alloc failed.
  * @since 13
