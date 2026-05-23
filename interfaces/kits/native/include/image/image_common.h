@@ -490,6 +490,18 @@ Image_ErrorCode OH_PictureMetadata_GetPropertyWithNull(OH_PictureMetadata *metad
 Image_ErrorCode OH_PictureMetadata_Release(OH_PictureMetadata *metadata);
 
 /**
+ * @brief Releases an array of PictureMetadata objects.
+ *
+ * @param metadatas Double pointer to the PictureMetadata array.
+ * @param metadatasCount Pointer to the length of the PictureMetadata array.
+ * @return Image functions result code.
+ *         {@link IMAGE_SUCCESS} if the execution is successful.
+ *         {@link IMAGE_INVALID_PARAMETER} metadatas is nullptr, or metadatasCount is nullptr.
+ * @since 26.0.0
+ */
+Image_ErrorCode OH_PictureMetadatas_Release(OH_PictureMetadata **metadatas, size_t *metadatasCount);
+
+/**
  * @brief Obtains a clone of metadata.
  *
  * @param oldMetadata The PictureMetadata pointer will be operated.

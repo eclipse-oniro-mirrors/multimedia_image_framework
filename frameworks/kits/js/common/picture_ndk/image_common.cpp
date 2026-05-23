@@ -185,6 +185,22 @@ Image_ErrorCode OH_PictureMetadata_Release(OH_PictureMetadata *metadata)
     return IMAGE_SUCCESS;
 }
 
+MIDK_EXPORT
+Image_ErrorCode OH_PictureMetadatas_Release(OH_PictureMetadata **metadatas, size_t *metadatasCount)
+{
+    if (metadatas == nullptr || metadatasCount == nullptr) {
+        return IMAGE_INVALID_PARAMETER;
+    }
+    for (size_t i = 0; i < *metadatasCount; ++i) {
+        if (metadatas[i] != nullptr) {
+            delete metadatas[i];
+            metadatas[i] = nullptr;
+        }
+    }
+    *metadatasCount = 0;
+    return IMAGE_SUCCESS;
+}
+
 Image_ErrorCode OH_PictureMetadata_Clone(OH_PictureMetadata *oldMetadata, OH_PictureMetadata **newMetadata)
 {
     if (oldMetadata == nullptr || newMetadata == nullptr || !oldMetadata->GetInnerAuxiliaryMetadata()) {
