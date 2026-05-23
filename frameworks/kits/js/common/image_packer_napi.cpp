@@ -1578,11 +1578,14 @@ STATIC_COMPLETE_FUNC(PackBinaryImageToTiffData)
     napi_value result = nullptr;
     auto context = static_cast<ImagePackerAsyncContext*>(data);
 
-    if (!ImageNapiUtils::CreateArrayBuffer(env, context->resultBuffer.get(),
-                                           context->packedSize, &result)) {
-        BuildMsgOnError(context, false, "PackBinaryImageToTiffData: fail to create arraybuffer",
-            IMAGE_ENCODE_FAILED);
-        IMAGE_LOGE("PackBinaryImageToTiffData: fail to create arraybuffer");
+    if (context->status == SUCCESS) {
+        if (!ImageNapiUtils::CreateArrayBuffer(env, context->resultBuffer.get(),
+                                            context->packedSize, &result)) {
+            context->status = ERROR;
+            BuildMsgOnError(context, false, "PackBinaryImageToTiffData: fail to create arraybuffer",
+                IMAGE_ENCODE_FAILED);
+            IMAGE_LOGE("PackBinaryImageToTiffData: fail to create arraybuffer");
+        }
     }
     CommonCallbackRoutine(env, const_cast<ImagePackerAsyncContext *&>(context), result);
 }
