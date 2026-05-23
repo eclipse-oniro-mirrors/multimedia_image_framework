@@ -693,7 +693,7 @@ Image_ErrorCode OH_DecodingOptionsForPicture_SetDesiredAuxiliaryPictures(OH_Deco
  * @return Image functions result code.
  *         {@link IMAGE_SUCCESS} if the execution is successful.
  *         {@link IMAGE_SOURCE_INVALID_PARAMETER} options is nullptr, or needsDecodeDfxData is null.
- * @since 23
+ * @since 26.0.0
  */
 Image_ErrorCode OH_DecodingOptionsForPicture_GetNeedsDecodeDfxData(OH_DecodingOptionsForPicture *options,
     bool *needsDecodeDfxData);
@@ -706,7 +706,7 @@ Image_ErrorCode OH_DecodingOptionsForPicture_GetNeedsDecodeDfxData(OH_DecodingOp
  * @return Image functions result code.
  *         {@link IMAGE_SUCCESS} if the execution is successful.
  *         {@link IMAGE_SOURCE_INVALID_PARAMETER} options is nullptr.
- * @since 23
+ * @since 26.0.0
  */
 Image_ErrorCode OH_DecodingOptionsForPicture_SetNeedsDecodeDfxData(OH_DecodingOptionsForPicture *options,
     bool needsDecodeDfxData);
