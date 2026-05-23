@@ -663,14 +663,17 @@ MIDK_EXPORT
 Image_ErrorCode OH_AuxiliaryPictureNative_GetPixelmap(OH_AuxiliaryPictureNative *auxiliaryPicture,
     OH_PixelmapNative **pixelmap)
 {
-    if (!pixelmap || !auxiliaryPicture || !auxiliaryPicture->GetInnerAuxiliaryPicture()) {
+    if (!pixelmap || !auxiliaryPicture) {
         return IMAGE_INVALID_PARAMETER;
     }
 
     auto innerAuxiliaryPicture = auxiliaryPicture->GetInnerAuxiliaryPicture();
+    if (!innerAuxiliaryPicture) {
+        return IMAGE_GET_IMAGE_DATA_FAILED;
+    }
     auto contentPixel = innerAuxiliaryPicture->GetContentPixel();
     if (!contentPixel) {
-        return IMAGE_INVALID_PARAMETER;
+        return IMAGE_GET_IMAGE_DATA_FAILED;
     }
 
     auto pixelmapTmp = std::make_unique<OH_PixelmapNative>(contentPixel);
