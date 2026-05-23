@@ -511,7 +511,7 @@ Image_ErrorCode OH_PictureMetadata_Clone(OH_PictureMetadata *oldMetadata, OH_Pic
  * @return Image functions result code.
  *         {@link IMAGE_SUCCESS} if the operation is successful.
  *         {@link IMAGE_INVALID_PARAMETER} if metadatas/metadata is nullptr or metadataCount is 0.
- *         {@link IMAGE_UNSUPPORTED_METADATA} if no metadata matching the specified type is found.
+ *         {@link IMAGE_UNSUPPORTED_METADATA} unsupported metadata type.
  * @since 24
  */
 Image_ErrorCode OH_PictureMetadata_GetMetadataByType(OH_PictureMetadata **metadatas, size_t metadataCount, int32_t type,
