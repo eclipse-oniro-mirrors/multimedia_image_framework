@@ -427,7 +427,7 @@ Image_ErrorCode OH_PictureMetadata_SetProperty(OH_PictureMetadata *metadata, Ima
  * @param blobSize The size of the blob data.
  * @return Image functions result code.
  *         {@link IMAGE_SUCCESS} if the execution is successful.
- *         {@link IMAGE_BAD_PARAMETER} metadata is nullptr, or blob is nullptr, or blobSize is nullptr or 0, or SetBlob is failed.
+ *         {@link IMAGE_BAD_PARAMETER} metadata is nullptr, or blob is nullptr, or SetBlob is failed.
  *         {@link IMAGE_UNSUPPORTED_METADATA} unsupported metadata type.
  * @since 16
  */
@@ -441,7 +441,7 @@ Image_ErrorCode OH_PictureMetadata_SetBlob(OH_PictureMetadata *metadata, uint8_t
  * @param blobSize The size of the blob data.
  * @return Image functions result code.
  *         {@link IMAGE_SUCCESS} if the execution is successful.
- *         {@link IMAGE_BAD_PARAMETER} metadata is nullptr, or blob is nullptr, or blobSize is 0, or GetBlob is failed.
+ *         {@link IMAGE_BAD_PARAMETER} metadata is nullptr, or blob is nullptr, or GetBlob is failed.
  *         {@link IMAGE_UNSUPPORTED_METADATA} unsupported metadata type.
  * @since 16
  */
@@ -454,7 +454,7 @@ Image_ErrorCode OH_PictureMetadata_GetBlob(OH_PictureMetadata *metadata, uint8_t
  * @param blobSize The size of the blob data.
  * @return Image functions result code.
  *         {@link IMAGE_SUCCESS} if the execution is successful.
- *         {@link IMAGE_BAD_PARAMETER} metadata is nullptr, or blobSize is nullptr.
+ *         {@link IMAGE_BAD_PARAMETER} metadata is nullptr.
  *         {@link IMAGE_UNSUPPORTED_METADATA} unsupported metadata type.
  * @since 16
  */
