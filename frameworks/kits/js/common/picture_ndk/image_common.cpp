@@ -191,13 +191,10 @@ Image_ErrorCode OH_PictureMetadatas_Release(OH_PictureMetadata **metadatas, size
     if (metadatas == nullptr || metadatasCount == nullptr) {
         return IMAGE_INVALID_PARAMETER;
     }
-    for (size_t i = 0; i < *metadatasCount; ++i) {
-        if (metadatas[i] != nullptr) {
-            delete metadatas[i];
-            metadatas[i] = nullptr;
-        }
+    if (*metadatas != nullptr) {
+        delete[] *metadatas;
+        *metadatas = nullptr;
     }
-    delete[] metadatas;
     *metadatasCount = 0;
     return IMAGE_SUCCESS;
 }
