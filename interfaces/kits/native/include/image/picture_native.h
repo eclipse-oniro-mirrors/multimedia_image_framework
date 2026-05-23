@@ -298,7 +298,7 @@ Image_ErrorCode OH_PictureNative_GetMetadataTypes(OH_PictureNative *picture,
  *
  * @return Image functions result code:
  *         {@link IMAGE_SUCCESS} if the execution is successful.
- *         {@link IMAGE_INVALID_PARAMETER}  if @param source is nullptr, or @param picture is nullptr, or counts mismatch,
+ *         {@link IMAGE_INVALID_PARAMETER} if @param source or @param picture is nullptr, or counts mismatch,
  *         or fail to get the source picture, or Count is not zero but corresponding array is nullptr.
  *         {@link IMAGE_ALLOC_FAILED}   if memory allocation for the new Picture failed.
  * @since 20
@@ -318,7 +318,7 @@ Image_ErrorCode OH_PictureNative_DeepCopy(OH_PictureNative *source,
  * @param type The type of auxiliary picture to remove.
  * @return Image functions result code.
  *         {@link IMAGE_SUCCESS} if the auxiliary picture was successfully removed or did not exist.
- *         {@link IMAGE_INVALID_PARAMETER} if the picture is nullptr, or fail to get the picture, or the type is invalid.
+ *         {@link IMAGE_INVALID_PARAMETER} if the picture is nullptr, or fail to get the picture.
  * @since 20
  */
 Image_ErrorCode OH_PictureNative_RemoveAuxiliaryPicture(OH_PictureNative *picture, Image_AuxiliaryPictureType type);
