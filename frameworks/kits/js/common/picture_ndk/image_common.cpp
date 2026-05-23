@@ -197,6 +197,7 @@ Image_ErrorCode OH_PictureMetadatas_Release(OH_PictureMetadata **metadatas, size
             metadatas[i] = nullptr;
         }
     }
+    delete[] metadatas;
     *metadatasCount = 0;
     return IMAGE_SUCCESS;
 }
