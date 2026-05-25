@@ -645,7 +645,7 @@ void ImagePackerImpl::PackBinaryImageToTiffFileSync(BinaryBufferInfo const& buff
     OHOS::Media::ImageTrace imageTrace("ImagePackerTaihe::PackBinaryImageToTiffFile");
 
     if (fd <= 0) {
-        ImageTaiheUtils::ThrowExceptionError("invalid fd");
+        ImageTaiheUtils::ThrowExceptionError(IMAGE_PACKER_INVALID_PARAMETER, "invalid fd");
         return;
     }
 
