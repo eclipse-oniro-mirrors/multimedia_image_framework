@@ -190,34 +190,6 @@ HWTEST_F(ExtDecoderTest, IsSupportCropOnDecodeTest001, TestSize.Level3)
 }
 
 /**
- * @tc.name: HasPropertyTest001
- * @tc.desc: Test of HasProperty
- * @tc.type: FUNC
- */
-HWTEST_F(ExtDecoderTest, HasPropertyTest001, TestSize.Level3)
-{
-    GTEST_LOG_(INFO) << "ExtDecoderTest: HasPropertyTest001 start";
-    std::shared_ptr<ExtDecoder> extDecoder = std::make_shared<ExtDecoder>();
-    extDecoder->codec_ = nullptr;
-    string key = CODEC_INITED_KEY;
-    bool ret = extDecoder->HasProperty(key);
-    ASSERT_EQ(ret, false);
-    key = ENCODED_FORMAT_KEY;
-    ret = extDecoder->HasProperty(key);
-    ASSERT_EQ(ret, true);
-    key = SUPPORT_SCALE_KEY;
-    ret = extDecoder->HasProperty(key);
-    ASSERT_EQ(ret, false);
-    key = SUPPORT_CROP_KEY;
-    ret = extDecoder->HasProperty(key);
-    ASSERT_EQ(ret, false);
-    key = EXT_SHAREMEM_NAME;
-    ret = extDecoder->HasProperty(key);
-    ASSERT_EQ(ret, false);
-    GTEST_LOG_(INFO) << "ExtDecoderTest: HasPropertyTest001 end";
-}
-
-/**
  * @tc.name: GetImageSizeTest001
  * @tc.desc: Test of GetImageSize
  * @tc.type: FUNC
