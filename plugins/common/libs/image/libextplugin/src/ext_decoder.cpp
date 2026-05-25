@@ -134,6 +134,7 @@ namespace {
     static constexpr uint8_t JPEG_SOI_HEADER[] = { 0xFF, 0xD8 };
     constexpr static uint64_t BIT_10_MULTIPLIER = 2;
     constexpr static uint32_t GIF_HEADER_AND_SCREEN_SIZE = 13;
+    constexpr static uint32_t MAX_TAG_COUNT = 1000;
 }
 
 namespace OHOS {
@@ -2707,9 +2708,12 @@ static bool MatchColorSpaceName(const uint8_t* buf, uint32_t size, OHOS::ColorMa
 
 static bool GetColorSpaceName(const skcms_ICCProfile* profile, OHOS::ColorManager::ColorSpaceName &name)
 {
-    if (profile == nullptr || profile->buffer == nullptr) {
-        IMAGE_LOGD("profile is nullptr");
+    if (profile == nullptr || profile->buffer == nullptr || profile->tag_count > MAX_TAG_COUNT) {
+        IMAGE_LOGD("profile is nullptr or too many tagcount");
         return false;
+    }
+    if (ColorUtils::MatchColorSpaceByPrimariesAndGamma(profile, name)) {
+        return true;
     }
     auto tags = reinterpret_cast<const ICCTag*>(profile->buffer + ICC_HEADER_SIZE);
     for (uint32_t i = SIZE_ZERO; i < profile->tag_count; i++) {

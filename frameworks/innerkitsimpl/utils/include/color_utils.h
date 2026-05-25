@@ -46,6 +46,8 @@ public:
     static bool GetColorSpaceName(const skcms_ICCProfile* profile, OHOS::ColorManager::ColorSpaceName &name);
     static bool MatchColorSpaceName(const uint8_t* buf, uint32_t size, OHOS::ColorManager::ColorSpaceName &name);
     static OHOS::ColorManager::ColorSpaceName GetSrcColorSpace(const skcms_ICCProfile* profile);
+    static bool MatchColorSpaceByPrimariesAndGamma(const skcms_ICCProfile* profile,
+        OHOS::ColorManager::ColorSpaceName &name);
 
 
 #endif
