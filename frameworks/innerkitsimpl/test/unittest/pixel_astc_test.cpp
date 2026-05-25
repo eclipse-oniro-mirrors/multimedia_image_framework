@@ -91,7 +91,8 @@ static bool ConstructAstcBody(uint8_t* astcBody, size_t& blockNums, const uint8_
     return true;
 }
 
-static void ConstructPixelAstc(std::unique_ptr<PixelMap>& pixelMap, uint8_t** dataIn, AllocatorType allocatorType = AllocatorType::SHARE_MEM_ALLOC)
+static void ConstructPixelAstc(std::unique_ptr<PixelMap>& pixelMap, uint8_t** dataIn,
+                               AllocatorType allocatorType = AllocatorType::SHARE_MEM_ALLOC)
 {
     uint32_t errorCode = 0;
     SourceOptions opts;

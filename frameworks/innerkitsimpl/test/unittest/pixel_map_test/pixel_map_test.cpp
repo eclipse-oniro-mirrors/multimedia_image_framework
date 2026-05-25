@@ -151,7 +151,8 @@ std::unique_ptr<PixelMap> ConstructPixmap(int32_t width, int32_t height, PixelFo
     return pixelMap;
 }
 
-std::unique_ptr<PixelMap> ConstructPixmap(PixelFormat format, AlphaType alphaType, AllocatorType type = AllocatorType::SHARE_MEM_ALLOC)
+std::unique_ptr<PixelMap> ConstructPixmap(PixelFormat format, AlphaType alphaType,
+                                          AllocatorType type = AllocatorType::SHARE_MEM_ALLOC)
 {
     int32_t width = 200;
     int32_t height = 300;
@@ -4182,7 +4183,7 @@ HWTEST_F(PixelMapTest, ReadARGBPixelsTest004, TestSize.Level3)
 HWTEST_F(PixelMapTest, UnMapPixelMapTest, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "PixelMapTest: UnMapPixelMapTest start";
-    auto pixelMap_sharedMem = 
+    auto pixelMap_sharedMem =
         ConstructPixmap(PixelFormat::RGBA_8888, AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN, AllocatorType::SHARE_MEM_ALLOC);
     EXPECT_NE(pixelMap_sharedMem, nullptr);
     EXPECT_EQ(pixelMap_sharedMem->GetAllocatorType(), AllocatorType::SHARE_MEM_ALLOC);
@@ -6227,7 +6228,7 @@ HWTEST_F(PixelMapTest, CopyPixMapToDst001, TestSize.Level3)
         AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN, AllocatorType::DMA_ALLOC);
     ASSERT_NE(dstPixelMap, nullptr);
     bool ret = PixelMap::CopyPixelMap(*(srcPixelMap.get()), *(dstPixelMap.get()));
-    EXPECT_TRUE(ret);    
+    EXPECT_TRUE(ret);
     srcPixelMap->data_ = nullptr;
     ret = PixelMap::CopyPixelMap(*(srcPixelMap.get()), *(dstPixelMap.get()));
     EXPECT_FALSE(ret);
@@ -6244,7 +6245,7 @@ HWTEST_F(PixelMapTest, SetDstPixelMapInfo001, TestSize.Level3)
         AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN, AllocatorType::DMA_ALLOC);
     ASSERT_NE(dstPixelMap, nullptr);
     bool ret = PixelMap::CopyPixelMap(*(srcPixelMap.get()), *(dstPixelMap.get()));
-    EXPECT_TRUE(ret);    
+    EXPECT_TRUE(ret);
     srcPixelMap->data_ = nullptr;
     ret = PixelMap::CopyPixelMap(*(srcPixelMap.get()), *(dstPixelMap.get()));
     EXPECT_FALSE(ret);
@@ -6261,7 +6262,6 @@ HWTEST_F(PixelMapTest, CheckTlvImageInfo001, TestSize.Level3)
     std::unique_ptr<PixelMap> pixelMap = PixelMap::Create(opts);
     ASSERT_NE(pixelMap, nullptr);
     std::vector<uint8_t> buff;
-    pixelMap->GetTlvImageInfo(buff);
 
     ASSERT_EQ(pixelMap->EncodeTlv(buff), true);
     ASSERT_NE(PixelMap::DecodeTlv(buff), nullptr);
