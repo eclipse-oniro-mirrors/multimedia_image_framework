@@ -472,6 +472,11 @@ AuxiliaryPicture CreateAuxiliaryPictureUsingAllocator(const AuxiliaryPictureInfo
         return make_holder<AuxiliaryPictureImpl, AuxiliaryPicture>();
     }
 
+    if (auxiliaryPictureInfo.rowStride <= auxiliaryPictureInfo.size.width *
+        OHOS::Media::ImageUtils::GetPixelBytes(opts.pixelFormat)) {
+        opts.srcRowStride = auxiliaryPictureInfo.size.width *
+            OHOS::Media::ImageUtils::GetPixelBytes(opts.pixelFormat);
+    }
     auto pixelMapPtr = CreatePixelMapExec(opts, pixels);
     if (pixelMapPtr == nullptr) {
         ImageTaiheUtils::ThrowExceptionError(IMAGE_INVALID_PARAMETER, "Parameter error.");

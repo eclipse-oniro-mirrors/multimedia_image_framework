@@ -1048,6 +1048,11 @@ napi_value AuxiliaryPictureNapi::CreateAuxiliaryPictureUsingAllocator(napi_env e
     if (asyncContext->arrayBufferSize != 0 && dstLength > asyncContext->arrayBufferSize) {
         ImageNapiUtils::ThrowExceptionError(env, IMAGE_INVALID_PARAMETER, "Parameter error.");
     }
+    if (asyncContext->auxiliaryPictureInfo.rowStride <= asyncContext->auxiliaryPictureInfo.size.width *
+        ImageUtils::GetPixelBytes(asyncContext->auxiliaryPictureInfo.pixelFormat)) {
+        asyncContext->auxiliaryPictureInfo.rowStride = asyncContext->auxiliaryPictureInfo.size.width *
+            ImageUtils::GetPixelBytes(asyncContext->auxiliaryPictureInfo.pixelFormat);
+    }
     CreateAuxiliaryPictureUsingAllocatorExec(env, static_cast<void*>((asyncContext).get()));
     status = napi_get_reference_value(env, sConstructor_, &constructor);
     if (IMG_IS_OK(status)) {
