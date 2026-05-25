@@ -65,6 +65,10 @@ bool HeifBufferInputStream::CheckSize(size_t target_size, int64_t end)
 
 bool HeifBufferInputStream::Read(void *data, size_t size)
 {
+    if (data == nullptr || data_ == nullptr) {
+        return false;
+    }
+    
     if (pos_ < 0 || static_cast<size_t>(pos_) > length_) {
         return false;
     }
