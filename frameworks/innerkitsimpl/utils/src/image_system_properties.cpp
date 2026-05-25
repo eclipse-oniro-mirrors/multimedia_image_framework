@@ -266,5 +266,25 @@ bool ImageSystemProperties::IsImageSubSample()
 #endif
 }
 
+bool ImageSystemProperties::GetDecodeDfxDataEnabled()
+{
+#if !defined(CROSS_PLATFORM)
+    static bool ret = system::GetBoolParameter("persist.multimedia.image.DecodeDfxData.enabled", false);
+    return ret;
+#else
+    return false;
+#endif
+}
+
+bool ImageSystemProperties::GetEncodeDfxDataEnabled()
+{
+#if !defined(CROSS_PLATFORM)
+    static bool ret = system::GetBoolParameter("persist.multimedia.image.EncodeDfxData.enabled", false);
+    return ret;
+#else
+    return false;
+#endif
+}
+
 } // namespace Media
 } // namespace OHOS
