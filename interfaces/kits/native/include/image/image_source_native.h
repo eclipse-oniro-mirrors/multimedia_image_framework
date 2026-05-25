@@ -686,32 +686,6 @@ Image_ErrorCode OH_DecodingOptionsForPicture_SetDesiredAuxiliaryPictures(OH_Deco
     Image_AuxiliaryPictureType *desiredAuxiliaryPictures, size_t length);
 
 /**
- * @brief Get decoding options needsDecodeDfxData.
- *
- * @param options The OH_DecodingOptionsForPicture pointer will be operated.
- * @param needsDecodeDfxData Whether the image DfxData can be decoded.
- * @return Image functions result code.
- *         {@link IMAGE_SUCCESS} if the execution is successful.
- *         {@link IMAGE_SOURCE_INVALID_PARAMETER} options is nullptr, or needsDecodeDfxData is null.
- * @since 23
- */
-Image_ErrorCode OH_DecodingOptionsForPicture_GetNeedsDecodeDfxData(OH_DecodingOptionsForPicture *options,
-    bool *needsDecodeDfxData);
-
-/**
- * @brief Set decoding options needsDecodeDfxData.
- *
- * @param options The OH_DecodingOptionsForPicture pointer will be operated.
- * @param needsDecodeDfxData Whether the image DfxData can be decoded.
- * @return Image functions result code.
- *         {@link IMAGE_SUCCESS} if the execution is successful.
- *         {@link IMAGE_SOURCE_INVALID_PARAMETER} options is nullptr.
- * @since 23
- */
-Image_ErrorCode OH_DecodingOptionsForPicture_SetNeedsDecodeDfxData(OH_DecodingOptionsForPicture *options,
-    bool needsDecodeDfxData);
-
-/**
  * @brief Releases an <b>DecodingOptionsForPicture</b> object.
  *
  * @param options Indicates a DecodingOptionsForPicture pointer.

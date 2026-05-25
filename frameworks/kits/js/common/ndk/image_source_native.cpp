@@ -1573,30 +1573,6 @@ Image_ErrorCode OH_DecodingOptionsForPicture_SetDesiredAuxiliaryPictures(OH_Deco
 }
 
 MIDK_EXPORT
-Image_ErrorCode OH_DecodingOptionsForPicture_GetNeedsDecodeDfxData(OH_DecodingOptionsForPicture *options,
-    bool *needsDecodeDfxData)
-{
-    if (options == nullptr || !options->GetInnerDecodingOptForPicture()) {
-        return IMAGE_SOURCE_INVALID_PARAMETER;
-    }
-    auto innerDecodingOptionsForPicture = options->GetInnerDecodingOptForPicture().get();
-    *needsDecodeDfxData = innerDecodingOptionsForPicture->needsDecodeDfxData;
-    return IMAGE_SUCCESS;
-}
-
-MIDK_EXPORT
-Image_ErrorCode OH_DecodingOptionsForPicture_SetNeedsDecodeDfxData(OH_DecodingOptionsForPicture *options,
-    bool needsDecodeDfxData)
-{
-    if (options == nullptr || !options->GetInnerDecodingOptForPicture()) {
-        return IMAGE_SOURCE_INVALID_PARAMETER;
-    }
-    auto innerDecodingOptionsForPicture = options->GetInnerDecodingOptForPicture().get();
-    innerDecodingOptionsForPicture->needsDecodeDfxData = needsDecodeDfxData;
-    return IMAGE_SUCCESS;
-}
-
-MIDK_EXPORT
 Image_ErrorCode OH_DecodingOptionsForPicture_Release(OH_DecodingOptionsForPicture *options)
 {
     if (options == nullptr) {
