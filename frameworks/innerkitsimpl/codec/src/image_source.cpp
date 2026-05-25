@@ -4413,20 +4413,33 @@ static bool FormatIsSUT(const uint8_t *fileData, size_t fileSize)
 }
 #endif
 
+AllocatorType CalculateAllocatorType(const AllocatorType& optAllocatorType, const Size& size, uint64_t& usage)
+{
+    if (optAllocatorType != AllocatorType::DEFAULT) {
+        return optAllocatorType;
+    }
+
+    if (ImageSystemProperties::GetAstcEnabled() && size.width * size.height >= ASTC_SIZE) {
+        return AllocatorType::DMA_ALLOC;
+    }
+
+    if (ImageSystemProperties::GetAstcEnabled() && ImageSystemProperties::GetDefaultDmaNoPaddingEnabled() &&
+        ImageSystemProperties::GetNoPaddingEnabled()) {
+        usage |= BUFFER_USAGE_PREFER_NO_PADDING | BUFFER_USAGE_ALLOC_NO_IPC;
+        return AllocatorType::DMA_ALLOC;
+        }
+    return AllocatorType::SHARE_MEM_ALLOC;
+}
+
 static bool ReadFileAndResoveAstc(size_t fileSize, size_t astcSize, unique_ptr<PixelAstc> &pixelAstc,
     const uint8_t *sourceFilePtr, const DecodeOptions &opts)
 {
 #if !(defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM))
     Size desiredSize = {astcSize, 1};
     MemoryData memoryData = {nullptr, astcSize, "CreatePixelMapForASTC Data", desiredSize, pixelAstc->GetPixelFormat()};
-    if (ImageSystemProperties::GetNoPaddingEnabled()) {
-        memoryData.usage = BUFFER_USAGE_PREFER_NO_PADDING | BUFFER_USAGE_ALLOC_NO_IPC;
-    }
     ImageInfo pixelAstcInfo;
     pixelAstc->GetImageInfo(pixelAstcInfo);
-    AllocatorType allocatorType = (opts.allocatorType == AllocatorType::DEFAULT) ?
-        (ImageSystemProperties::GetAstcEnabled() ? AllocatorType::DMA_ALLOC : AllocatorType::SHARE_MEM_ALLOC) :
-        opts.allocatorType;
+    AllocatorType allocatorType = CalculateAllocatorType(opts.allocatorType, pixelAstcInfo.size, memoryData.usage);
     std::unique_ptr<AbsMemory> dstMemory = MemoryManager::CreateMemory(allocatorType, memoryData);
     if (dstMemory == nullptr) {
         IMAGE_LOGE("ReadFileAndResoveAstc CreateMemory failed");
@@ -6484,12 +6497,7 @@ bool ImageSource::CompressToAstcFromPixelmap(const DecodeOptions &opts, unique_p
     Size desiredSize = {allocMemSize, 1};
     MemoryData memoryData = {nullptr, allocMemSize, "CompressToAstcFromPixelmap Data", desiredSize,
         opts.desiredPixelFormat};
-    if (ImageSystemProperties::GetNoPaddingEnabled()) {
-        memoryData.usage = BUFFER_USAGE_PREFER_NO_PADDING | BUFFER_USAGE_ALLOC_NO_IPC;
-    }
-    AllocatorType allocatorType = (opts.allocatorType == AllocatorType::DEFAULT) ?
-        (ImageSystemProperties::GetAstcEnabled() ? AllocatorType::DMA_ALLOC : AllocatorType::SHARE_MEM_ALLOC) :
-        opts.allocatorType;
+    AllocatorType allocatorType = CalculateAllocatorType(opts.allocatorType, rgbaInfo.size, memoryData.usage);
     dstMemory = MemoryManager::CreateMemory(allocatorType, memoryData);
     bool cond = (dstMemory == nullptr);
     CHECK_ERROR_RETURN_RET_LOG(cond, false, "CompressToAstcFromPixelmap CreateMemory failed");
