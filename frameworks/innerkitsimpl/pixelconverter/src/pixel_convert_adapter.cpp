@@ -275,7 +275,9 @@ bool PixelConvertAdapter::EraseBitmap(const void *srcPixels, uint32_t srcRowByte
 
 bool PixelConvertAdapter::YUV420ToRGB888(const uint8_t *in, YuvImageInfo &srcInfo, uint8_t *out, YuvImageInfo &dstInfo)
 {
-    bool cond = PixelYuvUtils::YuvScale(const_cast<uint8_t *>(in), srcInfo, out, dstInfo, SWS_BICUBIC) != SUCCESS;
+    bool cond = (in == nullptr) || (out == nullptr);
+    CHECK_DEBUG_RETURN_RET_LOG(cond, false, "YUV420ToRGB888 input or output buffer is nullptr");
+    cond = PixelYuvUtils::YuvScale(const_cast<uint8_t *>(in), srcInfo, out, dstInfo, SWS_BICUBIC) != SUCCESS;
     CHECK_ERROR_RETURN_RET_LOG(cond, false, "YUV420ToRGB888 failed");
     return true;
 }
