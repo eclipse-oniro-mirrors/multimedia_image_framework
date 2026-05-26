@@ -5255,7 +5255,7 @@ HWTEST_F(PixelMapTest, MarshallingReadOnlyTest001, TestSize.Level3)
     EXPECT_EQ(pixelMap->Marshalling(parcel3), true);
     auto displayOnlyPixelMap = pixelMap->UnmarshallingWithIsDisplay(parcel3, nullptr, true);
     EXPECT_NE(displayOnlyPixelMap, nullptr);
-    EXPECT_EQ(displayOnlyPixelMap->GetPixels(), nullptr); //need cross define
+    EXPECT_EQ(displayOnlyPixelMap->GetPixels(), nullptr);
 
     pixelMap->SetDisplayOnly(false);
     EXPECT_EQ(pixelMap->Marshalling(parcel4), true);
