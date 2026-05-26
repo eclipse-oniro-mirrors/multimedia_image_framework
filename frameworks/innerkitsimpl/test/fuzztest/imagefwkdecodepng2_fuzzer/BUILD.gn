@@ -22,7 +22,6 @@ ohos_fuzztest("ImageFwkDecodePng2FuzzTest") {
     "./include",
     "$image_subsystem/interfaces/innerkits/include",
     "$image_subsystem/frameworks/innerkitsimpl/test/fuzztest/common/include",
-    "$image_subsystem/plugins/common/libs/image/libpngplugin/include",
   ]
 
   sources = [
@@ -33,7 +32,6 @@ ohos_fuzztest("ImageFwkDecodePng2FuzzTest") {
   deps = [
     "$image_subsystem/frameworks/innerkitsimpl/utils:image_utils",
     "$image_subsystem/interfaces/innerkits:image_native",
-    "$image_subsystem/plugins/common/libs/image/libpngplugin:pngplugin",
   ]
 
   external_deps = [

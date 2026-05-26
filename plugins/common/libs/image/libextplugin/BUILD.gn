@@ -29,7 +29,6 @@ config("plugins_includes") {
   ]
 }
 config("third_part_includes") {
-  include_dirs = [ "../libjpegplugin/include" ]
 }
 config("win_config") {
   if (use_mingw_win) {

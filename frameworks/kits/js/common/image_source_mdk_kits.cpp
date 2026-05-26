@@ -694,20 +694,6 @@ static int32_t ImageSourceNapiModifyImageProperty(struct ImageSourceArgs* args)
 
 static int32_t ProcessIncrementalPixelMap(struct ImageSourceArgs* args, bool completed)
 {
-    auto incPixelMap = args->napi->GetIncrementalPixelMap();
-    if (incPixelMap == nullptr) {
-        IMAGE_LOGE("ProcessIncrementalPixelMap incremental pixelmap is nullptr");
-        return IMAGE_RESULT_BAD_PARAMETER;
-    }
-    uint8_t tmpProgress = 0;
-    uint32_t errCode = incPixelMap->PromoteDecoding(tmpProgress);
-    if (completed) {
-        incPixelMap->DetachFromDecoding();
-    }
-    if (errCode != SUCCESS || (errCode == ERR_IMAGE_SOURCE_DATA_INCOMPLETE && !completed)) {
-        IMAGE_LOGE("ProcessIncrementalPixelMap promote decoding failed");
-        return IMAGE_RESULT_BAD_PARAMETER;
-    }
     return IMAGE_RESULT_SUCCESS;
 }
 

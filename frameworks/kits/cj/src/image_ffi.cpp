@@ -420,19 +420,6 @@ FFI_EXPORT uint32_t FfiOHOSUpdateData(int64_t id, UpdateDataInfo info)
     }
     uint32_t size = info.updateLen < lastSize ? info.updateLen : lastSize;
     uint32_t ret = instance->UpdateData(buffer, size, info.isCompleted);
-    if (ret == 0) {
-        auto incPixelMap = instance->GetIncrementalPixelMap();
-        if (incPixelMap != nullptr) {
-            uint8_t decodeProgress = 0;
-            uint32_t err = incPixelMap->PromoteDecoding(decodeProgress);
-            if (!(err == SUCCESS_CODE || (err == ERR_IMAGE_SOURCE_DATA_INCOMPLETE && !info.isCompleted))) {
-                IMAGE_LOGE("UpdateData PromoteDecoding error");
-            }
-            if (info.isCompleted) {
-                incPixelMap->DetachFromDecoding();
-            }
-        }
-    }
 
     IMAGE_LOGD("[ImageSource] FfiOHOSUpdateData success");
     return ret;

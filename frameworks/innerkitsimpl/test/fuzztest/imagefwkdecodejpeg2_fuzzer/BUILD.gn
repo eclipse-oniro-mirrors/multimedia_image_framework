@@ -27,7 +27,6 @@ ohos_fuzztest("Imagefwkdecodejpeg2FuzzTest") {
     "$image_subsystem/plugins/common/libs/image/libextplugin/include",
     "$image_subsystem/plugins/common/libs/image/libextplugin/include/jpeg_yuv_decoder",
     "$image_subsystem/plugins/common/libs/image/libsvgplugin/include",
-    "$image_subsystem/plugins/common/libs/image/libjpegplugin/include",
   ]
 
   defines = [
@@ -37,14 +36,12 @@ ohos_fuzztest("Imagefwkdecodejpeg2FuzzTest") {
 
   sources = [
     "$image_subsystem/frameworks/innerkitsimpl/test/fuzztest/common/src/common_fuzztest_function.cpp",
-    "src/image_fwk_decode_jpeg_fuzzer.cpp",
   ]
 
   deps = [
     "$image_subsystem/interfaces/innerkits:image_native",
     "$image_subsystem/plugins/common/libs/image/libextplugin:extplugin",
     "$image_subsystem/plugins/common/libs/image/libsvgplugin:svgplugin",
-    "$image_subsystem/plugins/common/libs/image/libjpegplugin:jpegplugin",
   ]
 
   external_deps = [
