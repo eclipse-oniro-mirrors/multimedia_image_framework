@@ -64,6 +64,9 @@ static const std::string IMAGE_NO_EXIF_PATH = "/data/local/tmp/image/hasNoExif.j
 static const std::string IMAGE_HW_MNOTE_FOCUS_MODE_EXIF_AUTO_PATH = "/data/local/tmp/image/focus_mode_exif_auto.jpg";
 static const std::string IMAGE_HW_MNOTE_FOCUS_MODE_EXIF_AF_C_PATH = "/data/local/tmp/image/focus_mode_exif_af_c.jpg";
 static const std::string IMAGE_HW_MNOTE_FOCUS_MODE_EXIF_AF_MF_PATH = "/data/local/tmp/image/focus_mode_exif_af_mf.jpg";
+static const std::string IMAGE_NONEICC_PATH = "/data/local/tmp/image/noneicc.jpg";
+static const std::string IMAGE_10BITHDR_HEIC_PATH = "/data/local/tmp/image/10bitheif.heic";
+static const std::string IMAGE_ADOBERGB_PATH = "/data/local/tmp/image/adobergb.jpg";
 
 const std::string ORIENTATION = "Orientation";
 const std::string IMAGE_HEIGHT = "ImageHeight";
@@ -3631,5 +3634,59 @@ HWTEST_F(ImageSourceJpegTest, IsJpegProgressive002, TestSize.Level3)
     bool isJpegProgressive = imageSource->IsJpegProgressive(errorCode);
     ASSERT_EQ(isJpegProgressive, true);
 }
+
+#ifdef IMAGE_COLORSPACE_FLAG
+/**
+ * @tc.name: MatchColorSpaceByPrimariesAndGamma001
+ * @tc.desc: test MatchColorSpaceByPrimariesAndGamma
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceJpegTest, MatchColorSpaceByPrimariesAndGamma001, TestSize.Level3)
+{
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_ADOBERGB_PATH, opts, errorCode);
+    uint32_t index = 0;
+    const DecodeOptions opt;
+    std::unique_ptr<PixelMap> crepixelmapex = imageSource->CreatePixelMapEx(index, opt, errorCode);
+    ASSERT_NE(crepixelmapex, nullptr);
+    ASSERT_EQ(crepixelmapex->InnerGetGrColorSpace().GetColorSpaceName(), ColorManager::ColorSpaceName::ADOBE_RGB);
+}
+
+/**
+ * @tc.name: MatchColorSpaceByPrimariesAndGamma002
+ * @tc.desc: test MatchColorSpaceByPrimariesAndGamma
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceJpegTest, MatchColorSpaceByPrimariesAndGamma002, TestSize.Level3)
+{
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_10BITHDR_HEIC_PATH, opts, errorCode);
+    uint32_t index = 0;
+    const DecodeOptions opt;
+    std::unique_ptr<PixelMap> crepixelmapex = imageSource->CreatePixelMapEx(index, opt, errorCode);
+    ASSERT_NE(crepixelmapex, nullptr);
+    ASSERT_EQ(crepixelmapex->InnerGetGrColorSpace().GetColorSpaceName(), ColorManager::ColorSpaceName::SRGB);
+}
+
+/**
+ * @tc.name: MatchColorSpaceByPrimariesAndGamma003
+ * @tc.desc: test MatchColorSpaceByPrimariesAndGamma
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceJpegTest, MatchColorSpaceByPrimariesAndGamma003, TestSize.Level3)
+{
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_NONEICC_PATH, opts, errorCode);
+    uint32_t index = 0;
+    const DecodeOptions opt;
+    std::unique_ptr<PixelMap> crepixelmapex = imageSource->CreatePixelMapEx(index, opt, errorCode);
+    ASSERT_NE(crepixelmapex, nullptr);
+    ASSERT_EQ(crepixelmapex->InnerGetGrColorSpace().GetColorSpaceName(), ColorManager::ColorSpaceName::BT2020_PQ);
+}
+#endif
 } // namespace Multimedia
 } // namespace OHOS

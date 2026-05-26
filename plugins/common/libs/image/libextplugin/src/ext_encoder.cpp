@@ -422,7 +422,7 @@ static uint32_t YuvToRgbaSkInfo(ImageInfo info, SkImageInfo &skInfo, uint8_t * d
     auto cs = ToSkColorSpace(pixelMap);
     skInfo = SkImageInfo::Make(info.size.width, info.size.height, SkColorType::kRGBA_8888_SkColorType, alphaType, cs);
     IMAGE_LOGD(" YuvToSkInfo: width:%{public}d, height:%{public}d, alpha:%{public}d \n ",
-        info.size.width, info.size.height, (int32_t)alphaType);
+        info.size.width, info.size.height, static_cast<int32_t>(alphaType));
     return SUCCESS;
 }
 
@@ -1713,6 +1713,7 @@ uint32_t ExtEncoder::AssembleHeifThumbnail(std::vector<ImageItem>& inputImgs)
 
 uint32_t ExtEncoder::AssembleHeifAuxiliaryPicture(std::vector<ImageItem>& inputImgs, std::vector<ItemRef>& refs)
 {
+    ImageFuncTimer imageFuncTimer("%s enter", __func__);
     bool cond = !picture_;
     CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER, "picture_ is nullptr");
     if (picture_->HasAuxiliaryPicture(AuxiliaryPictureType::DEPTH_MAP) &&
@@ -2063,6 +2064,8 @@ uint32_t ExtEncoder::Encode10bitSdrPixelMap(Media::PixelMap* pixelmap, ExtWStrea
         return ERR_IMAGE_ENCODE_FAILED;
     }
 
+    bool cond = buffers.hdr == nullptr;
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_ENCODE_FAILED, "buffers.hdr is nullptr");
     PixelFormat pixelFormat = ImageUtils::SbFormat2PixelFormat(buffers.hdr->GetFormat());
     std::unique_ptr<PixelMap> encodePixelmap;
     if (ImageUtils::IsYuvFormat(pixelFormat)) {
@@ -2485,6 +2488,7 @@ uint32_t ExtEncoder::EncodeCameraScenePicture(SkWStream& skStream)
 
 uint32_t ExtEncoder::EncodeEditScenePicture()
 {
+    ImageFuncTimer imageFuncTimer("%s enter", __func__);
     bool cond = !picture_;
     CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_DATA_ABNORMAL, "picture_ is nullptr");
     auto mainPixelMap = picture_->GetMainPixel();
@@ -2511,12 +2515,13 @@ void ExtEncoder::EncodeHeifMetadata(std::vector<ItemRef> &refs, std::vector<Meta
     }
     for (const auto& info : HEIF_BLOB_INFOS) {
         auto metaType = MetadataTypeConvertFromHeif(info.type);
-        if (!opts_.needsPackProperties && metaType != MetadataType::DFXDATA) {
+        if (metaType == MetadataType::DFXDATA) {
+            if (!ImageSystemProperties::GetEncodeDfxDataEnabled() && !opts_.needsPackDfxData) {
+                IMAGE_LOGI("no need encode DfxData");
+                continue;
+            }
+        } else if (!opts_.needsPackProperties) {
             IMAGE_LOGD("no need encode blob: %{public}d", metaType);
-            continue;
-        }
-        if (metaType == MetadataType::DFXDATA && !opts_.needsPackDfxData) {
-            IMAGE_LOGD("no need encode DfxData");
             continue;
         }
         if (AssembleBlobMetaItem(metaType, inputMetas)) {
@@ -2778,14 +2783,19 @@ void ExtEncoder::EncodeJpegAllBlobMetadata(SkWStream& skStream)
     if (picture_ == nullptr) {
         return;
     }
-    if (opts_.needsPackDfxData == false) {
-        IMAGE_LOGD("no need encode DfxData");
-        picture_->DropMetadata(MetadataType::DFXDATA);
-    }
     for (const auto& iter : BLOB_METADATA_TAG_MAP) {
         auto metadataPtr = picture_->GetMetadata(iter.first);
-        if (metadataPtr == nullptr || (iter.first != MetadataType::DFXDATA && opts_.needsPackProperties == false)) {
-            IMAGE_LOGD("no need encode blob: %{public}d or don't have this blob", iter.first);
+        if (metadataPtr == nullptr) {
+            IMAGE_LOGD("Don't have this blob %{public}d", iter.first);
+            continue;
+        }
+        if (iter.first == MetadataType::DFXDATA) {
+            if (!ImageSystemProperties::GetEncodeDfxDataEnabled() && !opts_.needsPackDfxData) {
+                IMAGE_LOGI("no need encode DfxData");
+                continue;
+            }
+        } else if (!opts_.needsPackProperties) {
+            IMAGE_LOGD("no need encode blob: %{public}d", iter.first);
             continue;
         }
         uint8_t* bytes = metadataPtr->GetBlobPtr();
@@ -3188,6 +3198,7 @@ void ExtEncoder::AssembleDualHdrRefItem(std::vector<ItemRef>& refs)
 uint32_t ExtEncoder::DoHeifEncode(std::vector<ImageItem>& inputImgs, std::vector<MetaItem>& inputMetas,
     std::vector<ItemRef>& refs)
 {
+    ImageFuncTimer imageFuncTimer("%s enter", __func__);
     SharedBuffer outputBuffer {};
     std::shared_ptr<AbsMemory> outputAshmem;
     bool tempRes = AssembleOutputSharedBuffer(outputBuffer, outputAshmem);

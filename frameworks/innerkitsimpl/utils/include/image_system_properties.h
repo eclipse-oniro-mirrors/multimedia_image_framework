@@ -42,6 +42,8 @@ public:
     static bool GetPngSampleDecodeEnabled();
     static bool UseGPUScalingCapabilities();
     static bool IsImageSubSample();
+    static bool GetDecodeDfxDataEnabled();
+    static bool GetEncodeDfxDataEnabled();
 private:
     ImageSystemProperties() = default;
 };
