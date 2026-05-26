@@ -549,22 +549,13 @@ static std::shared_ptr<OHOS::Media::PixelMap> CreatePixelMapInner(ImageSourceImp
         IMAGE_LOGE("Invailed args");
         status = OHOS::Media::ERROR;
     }
-
     std::shared_ptr<OHOS::Media::PixelMap> pixelMap;
-    auto incPixelMap = (thisPtr == nullptr) ? nullptr : thisPtr->GetIncrementalPixelMap();
-    if (incPixelMap != nullptr) {
-        IMAGE_LOGD("Get Incremental PixelMap!!!");
-        pixelMap = incPixelMap;
-    } else {
-        decodeOpts.invokeType = OHOS::Media::JS_INTERFACE;
-        pixelMap = (imageSource == nullptr) ? nullptr : imageSource->CreatePixelMapEx((index >= NUM_0) ? index : NUM_0,
-            decodeOpts, status);
-    }
-
+    decodeOpts.invokeType = OHOS::Media::JS_INTERFACE;
+    pixelMap = (imageSource == nullptr) ? nullptr : imageSource->CreatePixelMapEx((index >= NUM_0) ? index : NUM_0,
+        decodeOpts, status);
     if (status != OHOS::Media::SUCCESS || pixelMap == nullptr) {
         IMAGE_LOGE("Create PixelMap error");
     }
-
     return pixelMap;
 }
 
@@ -1341,21 +1332,6 @@ static void UpdateDataExecute(std::unique_ptr<ImageSourceTaiheContext> &context)
     uint32_t res = context->rImageSource->UpdateData(buffer, size,
                                                      context->isCompleted);
     context->isSuccess = res == 0;
-    if (context->isSuccess && context->thisPtr != nullptr) {
-        auto incPixelMap = context->thisPtr->GetIncrementalPixelMap();
-        if (incPixelMap != nullptr) {
-            uint8_t decodeProgress = 0;
-            uint32_t err = incPixelMap->PromoteDecoding(decodeProgress);
-            if (!(err == OHOS::Media::SUCCESS ||
-                (err == OHOS::Media::ERR_IMAGE_SOURCE_DATA_INCOMPLETE && !context->isCompleted))) {
-                IMAGE_LOGE("UpdateData PromoteDecoding error");
-                context->isSuccess = false;
-            }
-            if (context->isCompleted) {
-                incPixelMap->DetachFromDecoding();
-            }
-        }
-    }
 }
 
 static void ModifyImagePropertiesEnhancedExecute(std::unique_ptr<ImageSourceTaiheContext> &context)

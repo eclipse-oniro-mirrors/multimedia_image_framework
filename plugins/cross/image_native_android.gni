@@ -108,28 +108,11 @@ image_native_android_sources = [
   "//foundation/multimedia/image_framework/plugins/common/libs/image/formatagentplugin/src/wbmp_format_agent.cpp",
   "//foundation/multimedia/image_framework/plugins/common/libs/image/formatagentplugin/src/webp_format_agent.cpp",
 
-  # gif
-  "//foundation/multimedia/image_framework/plugins/common/libs/image/libgifplugin/src/gif_encoder.cpp",
-  "//foundation/multimedia/image_framework/plugins/common/libs/image/libjpegplugin/src/icc_profile_info.cpp",
-  "//foundation/multimedia/image_framework/plugins/common/libs/image/libjpegplugin/src/jpeg_decoder.cpp",
-  "//foundation/multimedia/image_framework/plugins/common/libs/image/libjpegplugin/src/jpeg_encoder.cpp",
-  "//foundation/multimedia/image_framework/plugins/common/libs/image/libjpegplugin/src/jpeg_utils.cpp",
-
-  # png
-  "//foundation/multimedia/image_framework/plugins/common/libs/image/libpngplugin/src/nine_patch_listener.cpp",
-  "//foundation/multimedia/image_framework/plugins/common/libs/image/libpngplugin/src/png_decoder.cpp",
-  "//foundation/multimedia/image_framework/plugins/common/libs/image/libpngplugin/src/png_ninepatch_res.cpp",
-
   # raw
-  "//foundation/multimedia/image_framework/plugins/common/libs/image/librawplugin/src/raw_decoder.cpp",
   "//foundation/multimedia/image_framework/plugins/common/libs/image/librawplugin/src/raw_stream.cpp",
 
   # svg
   "//foundation/multimedia/image_framework/plugins/common/libs/image/libsvgplugin/src/svg_decoder.cpp",
-
-  # webp
-  "//foundation/multimedia/image_framework/plugins/common/libs/image/libwebpplugin/src/webp_decoder.cpp",
-  "//foundation/multimedia/image_framework/plugins/common/libs/image/libwebpplugin/src/webp_encoder.cpp",
 
   # ext
   "//foundation/multimedia/image_framework/plugins/common/libs/image/libextplugin/src/ext_decoder.cpp",
@@ -188,7 +171,6 @@ image_native_android_include_dirs = [
 
   # webp
   "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/pixelconverter/include",
-  "//foundation/multimedia/image_framework/plugins/common/libs/image/libwebpplugin/include",
   "$third_party_skia_root/third_party/externals/libwebp/src",
   "$third_party_skia_root/include/encode",
   "$third_party_skia_root/src/ports/skia_ohos",
@@ -209,28 +191,11 @@ image_native_android_include_dirs = [
   "//third_party/json/single_include/nlohmann",
   "//base/hiviewdfx/hilog/interfaces/native/innerkits/include",
 
-  # jpeg
-  "//foundation/multimedia/image_framework/plugins/common/libs/image/libjpegplugin/include",
-  "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/converter/include",
-  "$third_party_skia_root/third_party/libjpeg-turbo",
-  "$third_party_skia_root/third_party/externals/libjpeg-turbo",
-  "//third_party/libexif",
-
-  # gif
-  "//foundation/multimedia/image_framework/plugins/common/libs/image/libgifplugin/include",
-  "//third_party/giflib",
-
   # formatagent
   "//foundation/multimedia/image_framework/plugins/common/libs/image/formatagentplugin/include",
 
-  # png
-  "//foundation/multimedia/image_framework/plugins/common/libs/image/libpngplugin/include",
-  "//third_party/zlib",
-  "//third_party/libpng",
-
   # raw
   "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/stream/include",
-  "//foundation/multimedia/image_framework/plugins/common/libs/image/libjpegplugin",
   "//foundation/multimedia/image_framework/plugins/common/libs/image/librawplugin/include",
   "$third_party_skia_root",
   "$third_party_skia_root/third_party/externals/libjpeg-turbo",

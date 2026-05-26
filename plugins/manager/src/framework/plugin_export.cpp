@@ -27,7 +27,6 @@
 #include "plugin_utils.h"
 #include "png_decoder.h"
 #include "png_format_agent.h"
-#include "raw_decoder.h"
 #include "raw_format_agent.h"
 #include "string"
 #include "svg_decoder.h"
