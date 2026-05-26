@@ -4413,6 +4413,7 @@ static bool FormatIsSUT(const uint8_t *fileData, size_t fileSize)
 }
 #endif
 
+#if !defined(CROSS_PLATFORM)
 AllocatorType CalculateAllocatorType(const AllocatorType& optAllocatorType, const Size& size, uint64_t& usage)
 {
     if (optAllocatorType != AllocatorType::DEFAULT) {
@@ -4427,9 +4428,10 @@ AllocatorType CalculateAllocatorType(const AllocatorType& optAllocatorType, cons
         ImageSystemProperties::GetNoPaddingEnabled()) {
         usage |= BUFFER_USAGE_PREFER_NO_PADDING | BUFFER_USAGE_ALLOC_NO_IPC;
         return AllocatorType::DMA_ALLOC;
-        }
+    }
     return AllocatorType::SHARE_MEM_ALLOC;
 }
+#endif
 
 static bool ReadFileAndResoveAstc(size_t fileSize, size_t astcSize, unique_ptr<PixelAstc> &pixelAstc,
     const uint8_t *sourceFilePtr, const DecodeOptions &opts)
