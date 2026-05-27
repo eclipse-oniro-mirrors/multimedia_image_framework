@@ -1470,6 +1470,11 @@ void ImageSourceImpl::UpdateDataSync(array_view<uint8_t> buf, bool isFinished, i
         ImageTaiheUtils::ThrowExceptionError("empty buf");
         return;
     }
+    if (offset < 0 || length < 0 || static_cast<size_t>(offset) > buf.size() ||
+        static_cast<size_t>(length) > buf.size() - static_cast<size_t>(offset)) {
+        ImageTaiheUtils::ThrowExceptionError("offset or length out of range");
+        return;
+    }
     taiheContext->updataBuffer = buf.data();
     taiheContext->updataBufferSize = buf.size();
 

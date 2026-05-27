@@ -1620,6 +1620,13 @@ ohos_unittest("imageaccessortest") {
   if (enable_libexif) {
     external_deps += [ "libexif:libexif" ]
   }
+  if (has_libtiff) {
+    defines += [ "SUPPORT_LIBTIFF" ]
+    sources += [
+      "${image_subsystem}/frameworks/innerkitsimpl/test/unittest/tiff_exif_metadata_test.cpp",
+    ]
+    external_deps += [ "libtiff:libtiff" ]
+  }
 }
 
 ohos_unittest("imagetiffparsertest") {

@@ -231,7 +231,7 @@ void DoTruncateP010ToYUV420(const SurfaceBufferInfo& srcInfo, const SurfaceBuffe
 
     // tranfer uv : P010 (10-bit) - > YUV420 (8-bit) 420
     for (int32_t y = 0; y < uvHeight; y++) {
-        const uint16_t* srcUVLine = reinterpret_cast<const uint16_t*>(srcY + y *srcYStride);
+        const uint16_t* srcUVLine = reinterpret_cast<const uint16_t*>(srcUV + y * srcUVStride);
         uint8_t* dstUVLine = dstUV + y * dstUVStride;
 
         // same as vu

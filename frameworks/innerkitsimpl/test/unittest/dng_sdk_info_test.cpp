@@ -43,46 +43,39 @@ public:
     {
         testData_ = data;
         testDataSize_ = size;
-        position_ = 0;
         getCallCount_ = 0;
-    }
-
-    uint64_t Position() const { return position_; }
-    uint64_t Length() const { return testDataSize_; }
-
-    void SetReadPosition(uint64_t pos)
-    {
-        position_ = std::min(pos, static_cast<uint64_t>(testDataSize_));
-    }
-
-    void Get(void* data, uint32_t count)
-    {
-        getCallCount_++;
-        if (!data || count == 0) {
-            return;
-        }
-        if (position_ >= testDataSize_) {
-            std::fill_n(static_cast<unsigned char*>(data), count, 0);
-            position_ += count;
-            return;
-        }
-        size_t remaining = testDataSize_ - position_;
-        size_t toCopy = std::min(static_cast<size_t>(count), remaining);
-        std::copy_n(testData_ + position_, toCopy, static_cast<char*>(data));
-        position_ += toCopy;
-        if (toCopy < count) {
-            std::fill_n(static_cast<unsigned char*>(data) + toCopy, count - toCopy, 0);
-            position_ += (count - toCopy);
-        }
     }
 
     size_t GetCallCount() const { return getCallCount_; }
     void ResetCallCount() { getCallCount_ = 0; }
 
+protected:
+    uint64_t DoGetLength() override
+    {
+        return testDataSize_;
+    }
+
+    void DoRead(void* data, uint32_t count, uint64_t offset) override
+    {
+        getCallCount_++;
+        if (!data || count == 0) {
+            return;
+        }
+        if (offset >= testDataSize_) {
+            std::fill_n(static_cast<unsigned char*>(data), count, 0);
+            return;
+        }
+        size_t remaining = testDataSize_ - offset;
+        size_t toCopy = std::min(static_cast<size_t>(count), remaining);
+        std::copy_n(testData_ + offset, toCopy, static_cast<char*>(data));
+        if (toCopy < count) {
+            std::fill_n(static_cast<unsigned char*>(data) + toCopy, count - toCopy, 0);
+        }
+    }
+
 private:
     const uint8_t* testData_ = nullptr;
     size_t testDataSize_ = 0;
-    uint64_t position_ = 0;
     size_t getCallCount_ = 0;
 };
 
@@ -292,6 +285,92 @@ HWTEST_F(DngSdkInfoTest, ParseDoubleTagTest001, TestSize.Level3)
 }
 
 /**
+ * @tc.name: ParseAsciiTagTest001
+ * @tc.desc: Test ParseAsciiTag trims trailing null characters for non-empty ASCII tags.
+ * @tc.type: FUNC
+ */
+HWTEST_F(DngSdkInfoTest, ParseAsciiTagTest001, TestSize.Level3)
+{
+    const uint8_t tagData[] = {'D', 'N', 'G', '\0', '\0'};
+    MockDngStream stream;
+    stream.SetTestData(tagData, sizeof(tagData));
+    DngTagRecord tagRecord = {};
+    tagRecord.tagCount = sizeof(tagData);
+    MetadataValue value;
+
+    uint32_t result = DngSdkInfo::ParseAsciiTag(tagRecord, stream, value);
+
+    EXPECT_EQ(result, SUCCESS);
+    EXPECT_EQ(value.type, PropertyValueType::STRING);
+    EXPECT_EQ(value.stringValue, "DNG");
+    EXPECT_EQ(stream.GetCallCount(), 1U);
+}
+
+/**
+ * @tc.name: ParseUndefinedTagTest001
+ * @tc.desc: Test ParseUndefinedTag returns all bytes in a non-empty undefined tag.
+ * @tc.type: FUNC
+ */
+HWTEST_F(DngSdkInfoTest, ParseUndefinedTagTest001, TestSize.Level3)
+{
+    const uint8_t tagData[] = {0x11, 0x22, 0x33};
+    MockDngStream stream;
+    stream.SetTestData(tagData, sizeof(tagData));
+    DngTagRecord tagRecord = {};
+    tagRecord.tagCount = sizeof(tagData);
+    MetadataValue value;
+
+    uint32_t result = DngSdkInfo::ParseUndefinedTag(tagRecord, stream, value);
+
+    EXPECT_EQ(result, SUCCESS);
+    EXPECT_EQ(value.type, PropertyValueType::BLOB);
+    EXPECT_EQ(value.bufferValue, std::vector<uint8_t>({0x11, 0x22, 0x33}));
+}
+
+/**
+ * @tc.name: ParseDoubleArrayTagTest001
+ * @tc.desc: Test ParseDoubleArrayTag rejects records that exceed the remaining stream data.
+ * @tc.type: FUNC
+ */
+HWTEST_F(DngSdkInfoTest, ParseDoubleArrayTagTest001, TestSize.Level3)
+{
+    const uint8_t tagData[] = {0x00, 0x01, 0x02, 0x03};
+    MockDngStream stream;
+    stream.SetTestData(tagData, sizeof(tagData));
+    DngTagRecord tagRecord = {};
+    tagRecord.tagType = ttDouble;
+    tagRecord.tagCount = 1;
+    MetadataValue value;
+
+    uint32_t result = DngSdkInfo::ParseDoubleArrayTag(tagRecord, stream, value);
+
+    EXPECT_EQ(result, ERR_IMAGE_GET_DATA_ABNORMAL);
+}
+
+/**
+ * @tc.name: ParseDoubleArrayTagTest002
+ * @tc.desc: Test ParseDoubleArrayTag reads a double array when stream data is sufficient.
+ * @tc.type: FUNC
+ */
+HWTEST_F(DngSdkInfoTest, ParseDoubleArrayTagTest002, TestSize.Level3)
+{
+    const double tagData[] = {1.0};
+    MockDngStream stream;
+    stream.SetTestData(reinterpret_cast<const uint8_t*>(tagData), sizeof(tagData));
+    DngTagRecord tagRecord = {};
+    tagRecord.tagType = ttDouble;
+    tagRecord.tagCount = sizeof(tagData) / sizeof(tagData[0]);
+    MetadataValue value;
+
+    uint32_t result = DngSdkInfo::ParseDoubleArrayTag(tagRecord, stream, value);
+
+    EXPECT_EQ(result, SUCCESS);
+    EXPECT_EQ(value.type, PropertyValueType::DOUBLE_ARRAY);
+    ASSERT_EQ(value.doubleArrayValue.size(), 1U);
+    EXPECT_DOUBLE_EQ(value.doubleArrayValue[0], tagData[0]);
+}
+
+/**
  * @tc.name: GetExifCopyrightTest001
  * @tc.desc: Test GetExifCopyright with empty photographer/editor fields
  * @tc.type: FUNC
@@ -354,6 +433,25 @@ HWTEST_F(DngSdkInfoTest, GetExifUserCommentTest001, TestSize.Level3)
 }
 
 /**
+ * @tc.name: GetExifUserCommentTest002
+ * @tc.desc: Test non-standard user comments replace non-printable bytes.
+ * @tc.type: FUNC
+ */
+HWTEST_F(DngSdkInfoTest, GetExifUserCommentTest002, TestSize.Level3)
+{
+    const char userComment[] = {'A', '\x01', 'B', '\0'};
+    dng_exif fExif{};
+    fExif.fUserComment.Set(userComment);
+    MetadataValue value{};
+
+    uint32_t ret = DngSdkInfo::GetExifUserComment(fExif, value);
+
+    EXPECT_EQ(ret, SUCCESS);
+    EXPECT_EQ(value.type, PropertyValueType::STRING);
+    EXPECT_EQ(value.stringValue, "A.B");
+}
+
+/**
  * @tc.name: GetExifFileSourceTest001
  * @tc.desc: Test GetExifFileSource returns BLOB type
  * @tc.type: FUNC
@@ -412,6 +510,34 @@ HWTEST_F(DngSdkInfoTest, GetSharedDNGVersionTest001, TestSize.Level3)
     EXPECT_EQ(value.intArrayValue.size(), 4U);
 
     GTEST_LOG_(INFO) << "DngSdkInfoTest: GetSharedDNGVersionTest001 end";
+}
+
+/**
+ * @tc.name: GetSharedVersionAndProfileDimsTest001
+ * @tc.desc: Test backward version and camera profile dimensions shared getters.
+ * @tc.type: FUNC
+ */
+HWTEST_F(DngSdkInfoTest, GetSharedVersionAndProfileDimsTest001, TestSize.Level3)
+{
+    dng_shared fShared{};
+    fShared.fDNGBackwardVersion = 0x01020304;
+    fShared.fCameraProfile.fProfileHues = 2;
+    fShared.fCameraProfile.fProfileSats = 3;
+    fShared.fCameraProfile.fProfileVals = 4;
+    fShared.fCameraProfile.fLookTableHues = 5;
+    fShared.fCameraProfile.fLookTableSats = 6;
+    fShared.fCameraProfile.fLookTableVals = 7;
+    MetadataValue value{};
+
+    EXPECT_EQ(DngSdkInfo::GetSharedDngBackwardVersion(fShared, value), SUCCESS);
+    EXPECT_EQ(value.type, PropertyValueType::INT_ARRAY);
+    EXPECT_EQ(value.intArrayValue, std::vector<int64_t>({1, 2, 3, 4}));
+
+    EXPECT_EQ(DngSdkInfo::GetSharedProfileHueSatMapDims(fShared, value), SUCCESS);
+    EXPECT_EQ(value.intArrayValue, std::vector<int64_t>({2, 3, 4}));
+
+    EXPECT_EQ(DngSdkInfo::GetSharedProfileLookTableDims(fShared, value), SUCCESS);
+    EXPECT_EQ(value.intArrayValue, std::vector<int64_t>({5, 6, 7}));
 }
 
 /**
@@ -554,6 +680,31 @@ HWTEST_F(DngSdkInfoTest, GetIfdActiveAreaTest001, TestSize.Level3)
 }
 
 /**
+ * @tc.name: GetIfdMaskedAreasTest001
+ * @tc.desc: Test GetIfdMaskedAreas covers valid areas and mismatched area count.
+ * @tc.type: FUNC
+ */
+HWTEST_F(DngSdkInfoTest, GetIfdMaskedAreasTest001, TestSize.Level3)
+{
+    dng_ifd validIfd{};
+    validIfd.fMaskedAreaCount = 1;
+    validIfd.fMaskedArea[0].t = 10;
+    validIfd.fMaskedArea[0].l = 20;
+    validIfd.fMaskedArea[0].b = 30;
+    validIfd.fMaskedArea[0].r = 40;
+    MetadataValue value{};
+
+    EXPECT_EQ(DngSdkInfo::GetIfdMaskedAreas(validIfd, value), SUCCESS);
+    EXPECT_EQ(value.type, PropertyValueType::INT_ARRAY);
+    EXPECT_EQ(value.intArrayValue, std::vector<int64_t>({10, 20, 30, 40}));
+
+    dng_ifd invalidIfd{};
+    invalidIfd.fMaskedAreaCount = sizeof(invalidIfd.fMaskedArea) / sizeof(invalidIfd.fMaskedArea[0]) + 1;
+    EXPECT_EQ(DngSdkInfo::GetIfdMaskedAreas(invalidIfd, value), ERR_IMAGE_GET_DATA_ABNORMAL);
+    EXPECT_TRUE(value.intArrayValue.empty());
+}
+
+/**
  * @tc.name: GetIfdSubTileBlockSizeTest001
  * @tc.desc: Test GetIfdSubTileBlockSize returns INT_ARRAY with 2 elements
  * @tc.type: FUNC
@@ -590,6 +741,149 @@ HWTEST_F(DngSdkInfoTest, IsSpecialTagNameTest001, TestSize.Level3)
     EXPECT_FALSE(sdkInfo.IsSpecialTagName(""));
 
     GTEST_LOG_(INFO) << "DngSdkInfoTest: IsSpecialTagNameTest001 end";
+}
+
+/**
+ * @tc.name: SaveParsedTagTest001
+ * @tc.desc: Test parsed tag records reject maker notes and validate tag counts.
+ * @tc.type: FUNC
+ */
+HWTEST_F(DngSdkInfoTest, SaveParsedTagTest001, TestSize.Level3)
+{
+    DngSdkInfo info;
+    DngSdkInfo::UniqueTagKey makerNoteKey = {tcFirstMakerNoteIFD, tcMake};
+    DngSdkInfo::UniqueTagKey emptyTagKey = {0, tcMake};
+    DngSdkInfo::UniqueTagKey validTagKey = {0, tcModel};
+
+    EXPECT_FALSE(info.SaveParsedTag(makerNoteKey, ttAscii, 1, 0));
+    EXPECT_FALSE(info.IsInvalidParsedTag(makerNoteKey));
+
+    EXPECT_TRUE(info.SaveParsedTag(emptyTagKey, ttAscii, 0, 0));
+    EXPECT_FALSE(info.IsInvalidParsedTag(emptyTagKey));
+    EXPECT_TRUE(info.IsParsedParentCode(emptyTagKey.first));
+
+    EXPECT_TRUE(info.SaveParsedTag(validTagKey, ttAscii, 1, 0));
+    EXPECT_TRUE(info.IsInvalidParsedTag(validTagKey));
+}
+
+/**
+ * @tc.name: GetOrSetPropertyTest001
+ * @tc.desc: Test invalid source types and IFD index validation before property dispatch.
+ * @tc.type: FUNC
+ */
+HWTEST_F(DngSdkInfoTest, GetOrSetPropertyTest001, TestSize.Level3)
+{
+    DngSdkInfo info;
+    MetadataValue value = {.key = "Make"};
+    DngSdkInfo::UniqueTagKey tagKey;
+
+    DngPropertyOption defaultOption;
+    EXPECT_EQ(info.GetOrSetProperty(value, defaultOption, tagKey, true), ERR_IMAGE_INVALID_PARAMETER);
+
+    DngPropertyOption exifOption = {.type = DngMetaSourceType::EXIF};
+    EXPECT_EQ(info.GetOrSetProperty(value, exifOption, tagKey, true), ERR_MEDIA_NO_EXIF_DATA);
+
+    DngPropertyOption ifdOption = {.type = DngMetaSourceType::SUB_PREVIEW_IFD, .ifdIndex = 0};
+    EXPECT_EQ(info.GetOrSetProperty(value, ifdOption, tagKey, true), IMAGE_RESULT_INDEX_INVALID);
+
+    DngPropertyOption chainedIfdOption = {.type = DngMetaSourceType::CHAINED_IFD, .ifdIndex = 0};
+    EXPECT_EQ(info.GetOrSetProperty(value, chainedIfdOption, tagKey, true), IMAGE_RESULT_INDEX_INVALID);
+}
+
+/**
+ * @tc.name: GetSpecialUniqueTagKeyTest001
+ * @tc.desc: Test special tag keys use the expected parent code for each source type.
+ * @tc.type: FUNC
+ */
+HWTEST_F(DngSdkInfoTest, GetSpecialUniqueTagKeyTest001, TestSize.Level3)
+{
+    DngSdkInfo info;
+
+    DngPropertyOption exifOption = {.type = DngMetaSourceType::EXIF};
+    EXPECT_EQ(info.GetSpecialUniqueTagKey("MakerNote", exifOption),
+        DngSdkInfo::UniqueTagKey(tcExifIFD, tcMakerNote));
+
+    DngPropertyOption mainIfdOption = {.type = DngMetaSourceType::SUB_PREVIEW_IFD, .ifdIndex = 0};
+    EXPECT_EQ(info.GetSpecialUniqueTagKey("SubfileType", mainIfdOption),
+        DngSdkInfo::UniqueTagKey(0, tcSubFileType));
+
+    DngPropertyOption subIfdOption = {.type = DngMetaSourceType::SUB_PREVIEW_IFD, .ifdIndex = 2};
+    EXPECT_EQ(info.GetSpecialUniqueTagKey("SubfileType", subIfdOption),
+        DngSdkInfo::UniqueTagKey(tcFirstSubIFD + 1, tcSubFileType));
+
+    DngPropertyOption chainedIfdOption = {.type = DngMetaSourceType::CHAINED_IFD, .ifdIndex = 1};
+    EXPECT_EQ(info.GetSpecialUniqueTagKey("SubfileType", chainedIfdOption),
+        DngSdkInfo::UniqueTagKey(tcFirstChainedIFD + 1, tcSubFileType));
+
+    EXPECT_EQ(info.GetSpecialUniqueTagKey("NotSpecial", exifOption),
+        DngSdkInfo::UniqueTagKey(tcExifIFD, 0xFFFF));
+}
+
+/**
+ * @tc.name: GetSpecialPropertyTest001
+ * @tc.desc: Test special properties report unsupported when no parsed special tag is cached.
+ * @tc.type: FUNC
+ */
+HWTEST_F(DngSdkInfoTest, GetSpecialPropertyTest001, TestSize.Level3)
+{
+    DngSdkInfo info;
+    MetadataValue value = {.key = "MakerNote"};
+    DngPropertyOption option = {.type = DngMetaSourceType::EXIF};
+
+    EXPECT_EQ(info.GetProperty(value, option), ERR_IMAGE_DECODE_EXIF_UNSUPPORT);
+}
+
+/**
+ * @tc.name: GetPropertyTest001
+ * @tc.desc: Test ordinary properties clear getter output when no parsed tag record exists.
+ * @tc.type: FUNC
+ */
+HWTEST_F(DngSdkInfoTest, GetPropertyTest001, TestSize.Level3)
+{
+    DngSdkInfo info;
+    info.fExif.Reset(new dng_exif());
+    info.fExif->fMake.Set("camera");
+    MetadataValue value = {.key = "Make"};
+    value.intArrayValue = {1};
+    value.doubleArrayValue = {2.0};
+    value.bufferValue = {3};
+    DngPropertyOption option = {.type = DngMetaSourceType::EXIF};
+
+    EXPECT_EQ(info.GetProperty(value, option), ERR_MEDIA_NO_EXIF_DATA);
+    EXPECT_TRUE(value.stringValue.empty());
+    EXPECT_TRUE(value.intArrayValue.empty());
+    EXPECT_TRUE(value.doubleArrayValue.empty());
+    EXPECT_TRUE(value.bufferValue.empty());
+}
+
+/**
+ * @tc.name: SetPropertyTest001
+ * @tc.desc: Test setters report unsupported when the DNG maps do not expose a setter.
+ * @tc.type: FUNC
+ */
+HWTEST_F(DngSdkInfoTest, SetPropertyTest001, TestSize.Level3)
+{
+    DngSdkInfo info;
+    info.fExif.Reset(new dng_exif());
+    MetadataValue value = {.key = "Make"};
+    DngPropertyOption option = {.type = DngMetaSourceType::EXIF};
+
+    EXPECT_EQ(info.SetProperty(value, option), ERR_IMAGE_DECODE_EXIF_UNSUPPORT);
+}
+
+/**
+ * @tc.name: RemovePropertyTest001
+ * @tc.desc: Test remove reports missing EXIF data when the parsed tag record is absent.
+ * @tc.type: FUNC
+ */
+HWTEST_F(DngSdkInfoTest, RemovePropertyTest001, TestSize.Level3)
+{
+    DngSdkInfo info;
+    info.fExif.Reset(new dng_exif());
+    MetadataValue value = {.key = "Make"};
+    DngPropertyOption option = {.type = DngMetaSourceType::EXIF};
+
+    EXPECT_EQ(info.RemoveProperty(value.key, option), ERR_MEDIA_NO_EXIF_DATA);
 }
 
 /**
