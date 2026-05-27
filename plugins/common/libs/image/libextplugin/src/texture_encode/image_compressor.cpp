@@ -639,28 +639,28 @@ CL_ASTC_SHARE_LIB_API CL_ASTC_STATUS AstcClClose(ClAstcHandle *clAstcHandle)
         IMAGE_LOGE("astc AstcClClose clAstcHandle is nullptr!");
         return CL_ASTC_ENC_FAILED;
     }
-    bool allSuccess = true;
+    cl_int clRet;
     if (clAstcHandle->kernel != nullptr) {
-        cl_int clRet = clReleaseKernel(clAstcHandle->kernel);
+        clRet = clReleaseKernel(clAstcHandle->kernel);
         if (clRet != CL_SUCCESS) {
             IMAGE_LOGE("astc clReleaseKernel failed ret %{public}d!", clRet);
-            allSuccess = false;
+            return CL_ASTC_ENC_FAILED;
         }
         clAstcHandle->kernel = nullptr;
     }
     if (clAstcHandle->queue != nullptr) {
-        cl_int clRet = clReleaseCommandQueue(clAstcHandle->queue);
+        clRet = clReleaseCommandQueue(clAstcHandle->queue);
         if (clRet != CL_SUCCESS) {
             IMAGE_LOGE("astc clReleaseCommandQueue failed ret %{public}d!", clRet);
-            allSuccess = false;
+            return CL_ASTC_ENC_FAILED;
         }
         clAstcHandle->queue = nullptr;
     }
     if (clAstcHandle->context != nullptr) {
-        cl_int clRet = clReleaseContext(clAstcHandle->context);
+        clRet = clReleaseContext(clAstcHandle->context);
         if (clRet != CL_SUCCESS) {
             IMAGE_LOGE("astc clReleaseContext failed ret %{public}d!", clRet);
-            allSuccess = false;
+            return CL_ASTC_ENC_FAILED;
         }
         clAstcHandle->context = nullptr;
     }
@@ -668,8 +668,10 @@ CL_ASTC_SHARE_LIB_API CL_ASTC_STATUS AstcClClose(ClAstcHandle *clAstcHandle)
         free(clAstcHandle->encObj.blockErrs_);
         clAstcHandle->encObj.blockErrs_ = nullptr;
     }
-    free(clAstcHandle);
-    return allSuccess ? CL_ASTC_ENC_SUCCESS : CL_ASTC_ENC_FAILED;
+    if (clAstcHandle != nullptr) {
+        free(clAstcHandle);
+    }
+    return CL_ASTC_ENC_SUCCESS;
 }
 
 static bool CheckClBinIsExist(const std::string &name)

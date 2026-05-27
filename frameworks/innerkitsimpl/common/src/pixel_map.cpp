@@ -1108,7 +1108,7 @@ unique_ptr<PixelMap> PixelMap::Create(PixelMap &source, const Rect &srcRect, con
     if (opts.useSourceIfMatch && !source.IsEditable() && !opts.editable && (cropType == CropValue::NOCROP) &&
         !isHasConvert && IsSameSize(srcImageInfo.size, dstImageInfo.size)) {
         source.useSourceAsResponse_ = true;
-        return source.Clone(errorCode);
+        return unique_ptr<PixelMap>(&source);
     }
     unique_ptr<PixelMap> dstPixelMap = nullptr;
     if ((errorCode = BuildPixelMap(dstPixelMap, cropType, dstImageInfo, sRect, srcImageInfo)) != SUCCESS) {

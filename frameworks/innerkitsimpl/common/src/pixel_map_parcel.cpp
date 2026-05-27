@@ -902,6 +902,7 @@ bool PixelMapRecordParcel::ReadDmaMemInfoFromParcel(Parcel &parcel, PixelMemInfo
         if (pixelMemInfo.base == nullptr) {
             IMAGE_LOGE("ReadDmaMemInfoFromParcel GetVirAddr is nullptr for non-displayOnly");
             ImageUtils::SurfaceBuffer_Unreference(nativeBuffer);
+            pixelMemInfo.context = nullptr;
             return false;
         }
     }
