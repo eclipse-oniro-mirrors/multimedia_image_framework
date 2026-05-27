@@ -194,6 +194,9 @@ image_native_android_include_dirs = [
   # formatagent
   "//foundation/multimedia/image_framework/plugins/common/libs/image/formatagentplugin/include",
 
+  # jpeg
+  "//third_party/libexif",
+
   # raw
   "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/stream/include",
   "//foundation/multimedia/image_framework/plugins/common/libs/image/librawplugin/include",

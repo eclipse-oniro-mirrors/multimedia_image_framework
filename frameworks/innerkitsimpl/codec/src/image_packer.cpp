@@ -30,9 +30,6 @@
 #include "tiff_encoder.h"
 #endif
 #include "hdr_helper.h"
-#if defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM)
-#include "include/jpeg_encoder.h"
-#endif
 #ifdef HEIF_HW_ENCODE_ENABLE
 #include "image/v2_1/icodec_image.h"
 #include "image/v2_1/codec_image_type.h"
