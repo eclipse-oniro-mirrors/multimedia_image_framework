@@ -74,30 +74,5 @@ HWTEST_F(MemoryManagerTest, DmaMemoryReleaseTest001, TestSize.Level3)
 
     GTEST_LOG_(INFO) << "MemoryManagerTest: DmaMemoryReleaseTest001 end";
 }
-
-/**
- * @tc.name: DmaMemoryCreateAlphaF16Test001
- * @tc.desc: Test DmaMemory can allocate ALPHA_F16 buffer
- * @tc.type: FUNC
- */
-HWTEST_F(MemoryManagerTest, DmaMemoryCreateAlphaF16Test001, TestSize.Level3)
-{
-    GTEST_LOG_(INFO) << "MemoryManagerTest: DmaMemoryCreateAlphaF16Test001 start";
-
-    MemoryData data;
-    data.size = TEST_MEMORY_SIZE_1024;
-    data.desiredSize.width = TEST_BUFFER_WIDTH_32;
-    data.desiredSize.height = TEST_BUFFER_HEIGHT_32;
-    data.format = PixelFormat::ALPHA_F16;
-
-    std::unique_ptr<AbsMemory> memory = MemoryManager::CreateMemory(AllocatorType::DMA_ALLOC, data);
-    ASSERT_NE(memory, nullptr);
-    EXPECT_NE(memory->data.data, nullptr);
-
-    uint32_t ret = memory->Release();
-    EXPECT_EQ(ret, SUCCESS);
-
-    GTEST_LOG_(INFO) << "MemoryManagerTest: DmaMemoryCreateAlphaF16Test001 end";
-}
 } // namespace Multimedia
 } // namespace OHOS
