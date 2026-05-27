@@ -1821,6 +1821,8 @@ interface ImageSource {
   CreateWideGamutSdrPixelMapSync(): Optional<PixelMap>;
 
   @promise @rename("createThumbnail")
+  CreateThumbnailPromise(options: Optional<DecodingOptionsForThumbnail>): Optional<PixelMap>;
+
   CreateThumbnailSync(options: Optional<DecodingOptionsForThumbnail>): Optional<PixelMap>;
 
   @get GetSupportedFormats(): Array<String>;

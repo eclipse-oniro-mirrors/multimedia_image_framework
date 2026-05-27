@@ -1650,6 +1650,11 @@ optional<PixelMap> ImageSourceImpl::CreateThumbnailSync(optional_view<DecodingOp
     CreateThumbnailExecute(taiheContext);
     return CreateThumbnailComplete(taiheContext);
 }
+
+optional<PixelMap> ImageSourceImpl::CreateThumbnailPromise(optional_view<DecodingOptionsForThumbnail> options)
+{
+    return CreateThumbnailSync(options);
+}
 #endif
 
 array<string> ImageSourceImpl::GetSupportedFormats()
