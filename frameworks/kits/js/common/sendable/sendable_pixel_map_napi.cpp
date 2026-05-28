@@ -996,6 +996,11 @@ STATIC_EXEC_FUNC(CreateSendablePixelMapFromSurface)
         return;
     }
     std::shared_ptr<Media::PixelMap> pixelMap = rsClient.CreatePixelMapFromSurfaceId(surfaceId, r);
+#ifndef EXT_PIXEL
+    if (pixelMap == nullptr) {
+        pixelMap = CreatePixelMapFromSurfaceId(surfaceId, context->area.region);
+    }
+#endif
     context->rPixelMap = std::move(pixelMap);
 
     if (IMG_NOT_NULL(context->rPixelMap)) {
