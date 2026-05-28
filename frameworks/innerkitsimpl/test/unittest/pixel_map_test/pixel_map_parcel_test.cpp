@@ -153,6 +153,7 @@ HWTEST_F(PixelMapParcelTest, MarshallingUnmarshallingRecodeParcelTest002, TestSi
     GTEST_LOG_(INFO) << "PixelMapParcelTest: MarshallingUnmarshallingRecodeParcelTest002 end";
 }
 
+#ifdef EXT_PIXEL
 static bool RecodeParcelTest(int32_t size, PixelFormat format, bool useDma)
 {
     InitializationOptions opts;
@@ -191,5 +192,6 @@ HWTEST_F(PixelMapParcelTest, MarshallingUnmarshallingRecodeParcelTest003, TestSi
     }
     GTEST_LOG_(INFO) << "PixelMapParcelTest: MarshallingUnmarshallingRecodeParcelTest003 end";
 }
+#endif
 }
 }

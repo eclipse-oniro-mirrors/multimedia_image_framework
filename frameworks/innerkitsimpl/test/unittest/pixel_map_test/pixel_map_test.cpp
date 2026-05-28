@@ -357,6 +357,7 @@ void CreateBuffer(const uint32_t width, const uint32_t height, const uint32_t pi
     }
 }
 
+#ifdef EXT_PIXEL
 static bool ReadFile(void *chOrg, std::string path, int32_t totalSize, int32_t srcNum)
 {
     FILE* const fileOrg = fopen(path.c_str(), "rb");
@@ -379,6 +380,7 @@ static bool ReadFile(void *chOrg, std::string path, int32_t totalSize, int32_t s
     }
     return true;
 }
+#endif
 
 void InitOption(struct InitializationOptions& opts, const uint32_t width, const uint32_t height,
     PixelFormat format, AlphaType alphaType)
@@ -3280,6 +3282,7 @@ HWTEST_F(PixelMapTest, ReadARGBPixelsTest003, TestSize.Level3)
     GTEST_LOG_(INFO) << "PixelMapTest: ReadARGBPixelsTest003 end";
 }
 
+#ifdef EXT_PIXEL
 /**
  * @tc.name: PixelMapCreateTest011
  * @tc.desc: Create PixelMap
@@ -3308,6 +3311,7 @@ HWTEST_F(PixelMapTest, PixelMapCreateTest011, TestSize.Level3)
     EXPECT_TRUE(pixelMap != nullptr);
     GTEST_LOG_(INFO) << "PixelMapTest: PixelMapCreateTest011 end";
 }
+#endif
 
 /**
  * @tc.name: MarshallingUnmarshallingCustomAllocPixelMapTest
@@ -5225,6 +5229,7 @@ HWTEST_F(PixelMapTest, GetRGBA1010102ColorTest002, TestSize.Level3)
     GTEST_LOG_(INFO) << "PixelMapTest: GetRGBA1010102ColorTest002 end";
 }
 
+#ifdef EXT_PIXEL
 /**
  * @tc.name: MarshallingReadOnlyTest001
  * @tc.desc: Test UnmarshallingReadOnly
@@ -5262,6 +5267,7 @@ HWTEST_F(PixelMapTest, MarshallingReadOnlyTest001, TestSize.Level3)
     EXPECT_NE(pixelMap->UnmarshallingWithIsDisplay(parcel4, nullptr, true), nullptr);
     GTEST_LOG_(INFO) << "PixelMapTest: MarshallingReadOnlyTest001 end";
 }
+#endif
 
 /**
  * @tc.name: MarshallingReadOnlyTest002
@@ -5313,6 +5319,7 @@ HWTEST_F(PixelMapTest, SetInitializationOptionAboutAllocator001, TestSize.Level3
     GTEST_LOG_(INFO) << "PixelMapTest: SetInitializationOptionAboutAllocator001 end";
 }
 
+#ifdef EXT_PIXEL
 /**
  * @tc.name: HdrPixelMapTlvTest001
  * @tc.desc: Test HdrPixelMapTlv
@@ -5444,6 +5451,7 @@ HWTEST_F(PixelMapTest, HdrPixelMapTlvTest004, TestSize.Level3)
     ASSERT_NE(hdrPixelMap, nullptr);
     ASSERT_EQ(hdrPixelMap->GetAllocatorType(), pixelMap->GetAllocatorType());
 }
+#endif
 
 /**
  * @tc.name: HdrPixelMapTlvTest005
@@ -5583,6 +5591,7 @@ HWTEST_F(PixelMapTest, HdrPixelMapTlvTest008, TestSize.Level3)
     }
 }
 
+#ifdef EXT_PIXEL
 /**
  * @tc.name: Verify parameter validation of PixelMap::Create
  * @tc.desc: Verify invalid size.
@@ -5623,6 +5632,7 @@ HWTEST_F(PixelMapTest, CreatePixelMapYUVTest001, TestSize.Level3)
     EXPECT_NE(pixelMap, nullptr);
     GTEST_LOG_(INFO) << "PixelMapTest: Verify YUV Format Create001 end";
 }
+#endif
 
 /**
  * @tc.name: RecoverAshMemFdClosedTest001

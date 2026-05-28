@@ -854,6 +854,7 @@ HWTEST_F(PixelAstcTest, PixelAstcTest030, TestSize.Level3)
     GTEST_LOG_(INFO) << "PixelAstcTest: PixelAstcTest030 end";
 }
 
+#ifdef EXT_PIXEL
 /**
  * @tc.name: PixelAstcTest031
  * @tc.desc: Test ASTC real size validation with valid boundary dimensions
@@ -937,5 +938,6 @@ HWTEST_F(PixelAstcTest, PixelAstcTest032, TestSize.Level3)
     }
     GTEST_LOG_(INFO) << "PixelAstcTest: PixelAstcTest032 end";
 }
+#endif
 }
 }
