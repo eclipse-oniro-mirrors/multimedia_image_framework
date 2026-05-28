@@ -44,7 +44,7 @@ int64_t ImageImpl::Create(ImageImpl* image, std::shared_ptr<NativeImage> nativeI
     image->native_ = sNativeImageHolder_.get(id);
     image->isTestImage_ = false;
     if (image->native_ == nullptr) {
-        IMAGE_LOGE("[ImageImpl] Create : Failed to get native image");
+        IMAGE_LOGE("native fail");
         return INIT_FAILED;
     }
     return SUCCESS;
@@ -60,14 +60,14 @@ uint32_t ImageImpl::GetClipRect(CRegion& ret)
         return SUCCESS;
     }
     if (native_ == nullptr) {
-        IMAGE_LOGE("Image buffer cannot be nullptr");
+        IMAGE_LOGE("buf null");
         return ERR_IMAGE_INIT_ABNORMAL;
     }
     uint32_t retCode = native_->GetSize(ret.size.width, ret.size.height);
     ret.x = 0;
     ret.y = 0;
     if (retCode != SUCCESS) {
-        IMAGE_LOGE("[ImageImpl] GetSize : Image native get size failed.");
+        IMAGE_LOGE("size fail");
     }
     return retCode;
 }
@@ -80,12 +80,12 @@ uint32_t ImageImpl::GetSize(CSize& ret)
         return SUCCESS;
     }
     if (native_ == nullptr) {
-        IMAGE_LOGE("Image buffer cannot be nullptr");
+        IMAGE_LOGE("buf null");
         return ERR_IMAGE_INIT_ABNORMAL;
     }
     uint32_t retCode = native_->GetSize(ret.width, ret.height);
     if (retCode != SUCCESS) {
-        IMAGE_LOGE("[ImageImpl] GetSize : Image native get size failed.");
+        IMAGE_LOGE("size fail");
     }
     return retCode;
 }
@@ -97,12 +97,12 @@ uint32_t ImageImpl::GetFormat(int32_t& ret)
         return SUCCESS;
     }
     if (native_ == nullptr) {
-        IMAGE_LOGE("Image buffer cannot be nullptr");
+        IMAGE_LOGE("buf null");
         return ERR_IMAGE_INIT_ABNORMAL;
     }
     uint32_t retCode = native_->GetFormat(ret);
     if (retCode != SUCCESS) {
-        IMAGE_LOGE("[ImageImpl] GetFormat : Image native get format failed.");
+        IMAGE_LOGE("format fail");
     }
     return retCode;
 }
@@ -110,12 +110,12 @@ uint32_t ImageImpl::GetFormat(int32_t& ret)
 int64_t ImageImpl::GetTimestamp()
 {
     if (native_ == nullptr) {
-        IMAGE_LOGE("Image buffer cannot be nullptr");
+        IMAGE_LOGE("buf null");
         return 0;
     }
     int64_t timestamp = 0;
     if (native_->GetTimestamp(timestamp) != SUCCESS) {
-        IMAGE_LOGE("Image native get timestamp failed");
+        IMAGE_LOGE("ts fail");
     }
     return timestamp;
 }
@@ -123,12 +123,12 @@ int64_t ImageImpl::GetTimestamp()
 uint32_t ImageImpl::GetComponent(int32_t componentType, CRetComponent& ret)
 {
     if (native_ == nullptr) {
-        IMAGE_LOGE("Image buffer cannot be nullptr");
+        IMAGE_LOGE("buf null");
         return ERR_IMAGE_INIT_ABNORMAL;
     }
     auto nativePtr = native_->GetComponent(componentType);
     if (nativePtr == nullptr) {
-        IMAGE_LOGE("Image component is nullptr");
+        IMAGE_LOGE("comp null");
         return ERR_IMAGE_INIT_ABNORMAL;
     }
     ret.componentType = componentType;
@@ -142,19 +142,19 @@ uint32_t ImageImpl::GetComponent(int32_t componentType, CRetComponent& ret)
     }
 
     if (buffer == nullptr || nativePtr->size == 0) {
-        IMAGE_LOGE("Invalid buffer");
+        IMAGE_LOGE("buf invalid");
         return ERR_IMAGE_INIT_ABNORMAL;
     }
 
     if (nativePtr->size > static_cast<size_t>(INT32_MAX)) {
-        IMAGE_LOGE("Buffer size exceeds maximum limit");
+        IMAGE_LOGE("buf max err");
         return ERR_IMAGE_INIT_ABNORMAL;
     }
 
     size_t len = nativePtr->size;
     ret.byteBuffer = static_cast<uint8_t*>(malloc(len));
     if (ret.byteBuffer == nullptr) {
-        IMAGE_LOGE("[ImageImpl] GetComponent failed to malloc.");
+        IMAGE_LOGE("comp malloc fail");
         return ERR_IMAGE_INIT_ABNORMAL;
     }
     memcpy_s(ret.byteBuffer, len, buffer, len);
