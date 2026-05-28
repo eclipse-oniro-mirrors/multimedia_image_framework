@@ -913,7 +913,6 @@ public:
     NATIVEEXPORT void MarkDirty()
     {
         isMemoryDirty_ = true;
-        MarkPropertiesDirty();
     }
 
     NATIVEEXPORT bool IsMemoryDirty()
