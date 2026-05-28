@@ -1124,6 +1124,9 @@ private:
     // used to mark whether DMA memory should be refreshed
     mutable bool isMemoryDirty_ = false;
 
+    // used to mark is use default DMA nopadding memory
+    mutable bool isUseDefaultDmaNopadding_ = false;
+
     // used to mark whether properties have been refreshed by user
     mutable bool isPropertiesDirty_ = false;
     std::shared_ptr<std::mutex> propertiesDirtyMutex_ = std::make_shared<std::mutex>();
