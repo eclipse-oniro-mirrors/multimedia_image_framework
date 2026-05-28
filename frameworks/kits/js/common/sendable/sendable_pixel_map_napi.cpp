@@ -14,7 +14,6 @@
  */
 
 #include "sendable_pixel_map_napi.h"
-#include <charconv>
 #include <mutex>
 #include "media_errors.h"
 #include "image_log.h"
@@ -26,8 +25,11 @@
 #include "napi_message_sequence.h"
 #include "hitrace_meter.h"
 #include "pixel_map.h"
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+#include <charconv>
+#include "pixel_map_from_surface.h"
 #include "transaction/rs_interfaces.h"
-#if defined(IOS_PLATFORM) || defined(ANDROID_PLATFORM)
+#else
 static int g_uniqueTid = 0;
 #endif
 
@@ -966,6 +968,16 @@ napi_value SendablePixelMapNapi::CreateSendablePixelMapSync(napi_env env, napi_c
 }
 
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+static bool ParseSurfaceId(const std::string &surfaceId, uint64_t &surfaceIdInt)
+{
+    auto res = std::from_chars(surfaceId.data(), surfaceId.data() + surfaceId.size(), surfaceIdInt);
+    if (res.ec != std::errc() || res.ptr != surfaceId.data() + surfaceId.size()) {
+        IMAGE_LOGE("Empty or invalid surfaceId");
+        return false;
+    }
+    return true;
+}
+
 STATIC_EXEC_FUNC(CreateSendablePixelMapFromSurface)
 {
     auto context = static_cast<PixelMapAsyncContext*>(data);
@@ -980,14 +992,17 @@ STATIC_EXEC_FUNC(CreateSendablePixelMapFromSurface)
         .w = context->area.region.width,
         .h = context->area.region.height,
     };
-    unsigned long surfaceId = 0;
-    auto res = std::from_chars(context->surfaceId.c_str(),
-        context->surfaceId.c_str() + context->surfaceId.size(), surfaceId);
-    if (res.ec != std::errc()) {
-        IMAGE_LOGE("CreateSendablePixelMapFromSurface invalid surfaceId");
+    uint64_t surfaceId = 0;
+    if (!ParseSurfaceId(context->surfaceId, surfaceId)) {
+        context->status = ERR_IMAGE_INVALID_PARAMETER;
         return;
     }
     std::shared_ptr<Media::PixelMap> pixelMap = rsClient.CreatePixelMapFromSurfaceId(surfaceId, r);
+#ifndef EXT_PIXEL
+    if (pixelMap == nullptr) {
+        pixelMap = CreatePixelMapFromSurfaceId(surfaceId, context->area.region);
+    }
+#endif
     context->rPixelMap = std::move(pixelMap);
 
     if (IMG_NOT_NULL(context->rPixelMap)) {
