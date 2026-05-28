@@ -14,7 +14,6 @@
  */
 
 #include "sendable_pixel_map_napi.h"
-#include <charconv>
 #include <mutex>
 #include "media_errors.h"
 #include "image_log.h"
@@ -26,8 +25,11 @@
 #include "napi_message_sequence.h"
 #include "hitrace_meter.h"
 #include "pixel_map.h"
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+#include <charconv>
+#include "pixel_map_from_surface.h"
 #include "transaction/rs_interfaces.h"
-#if defined(IOS_PLATFORM) || defined(ANDROID_PLATFORM)
+#else
 static int g_uniqueTid = 0;
 #endif
 
