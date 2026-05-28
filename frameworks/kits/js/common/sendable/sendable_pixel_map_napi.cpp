@@ -980,11 +980,12 @@ STATIC_EXEC_FUNC(CreateSendablePixelMapFromSurface)
         .w = context->area.region.width,
         .h = context->area.region.height,
     };
-    unsigned long surfaceId = 0;
-    auto res = std::from_chars(context->surfaceId.c_str(),
-        context->surfaceId.c_str() + context->surfaceId.size(), surfaceId);
-    if (res.ec != std::errc()) {
-        IMAGE_LOGE("CreateSendablePixelMapFromSurface invalid surfaceId");
+    uint64_t surfaceId = 0;
+    auto res = std::from_chars(context->surfaceId.data(),
+        context->surfaceId.data() + context->surfaceId.size(), surfaceId);
+    if (res.ec != std::errc() || res.ptr != surfaceId.data() + surfaceId.size()) {
+        IMAGE_LOGE("[CreateSendablePixelMapFromSurfaceExec] Empty or invalid surfaceId");
+        context->status = ERR_IMAGE_INVALID_PARAMETER;
         return;
     }
     std::shared_ptr<Media::PixelMap> pixelMap = rsClient.CreatePixelMapFromSurfaceId(surfaceId, r);
