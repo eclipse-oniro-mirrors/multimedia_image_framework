@@ -83,6 +83,7 @@ ohos_shared_library("textureEncoderCL") {
   } else if (use_clang_mac) {
     configs += [ ":mac_config" ]
   } else {
+    deps = [ "${image_subsystem}/frameworks/innerkitsimpl/utils:image_utils" ]
     external_deps = [
       "c_utils:utils",
       "hilog:libhilog",
