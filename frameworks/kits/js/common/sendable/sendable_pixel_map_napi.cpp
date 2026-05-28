@@ -966,6 +966,16 @@ napi_value SendablePixelMapNapi::CreateSendablePixelMapSync(napi_env env, napi_c
 }
 
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+static bool ParseSurfaceId(const std::string &surfaceId, uint64_t &surfaceIdInt)
+{
+    auto res = std::from_chars(surfaceId.data(), surfaceId.data() + surfaceId.size(), surfaceIdInt);
+    if (res.ec != std::errc() || res.ptr != surfaceId.data() + surfaceId.size()) {
+        IMAGE_LOGE("Empty or invalid surfaceId");
+        return false;
+    }
+    return true;
+}
+
 STATIC_EXEC_FUNC(CreateSendablePixelMapFromSurface)
 {
     auto context = static_cast<PixelMapAsyncContext*>(data);
@@ -981,10 +991,7 @@ STATIC_EXEC_FUNC(CreateSendablePixelMapFromSurface)
         .h = context->area.region.height,
     };
     uint64_t surfaceId = 0;
-    auto res = std::from_chars(context->surfaceId.data(),
-        context->surfaceId.data() + context->surfaceId.size(), surfaceId);
-    if (res.ec != std::errc() || res.ptr != surfaceId.data() + surfaceId.size()) {
-        IMAGE_LOGE("[CreateSendablePixelMapFromSurfaceExec] Empty or invalid surfaceId");
+    if (!ParseSurfaceId(context->surfaceId, surfaceId)) {
         context->status = ERR_IMAGE_INVALID_PARAMETER;
         return;
     }
