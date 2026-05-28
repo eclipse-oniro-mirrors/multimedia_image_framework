@@ -1296,7 +1296,7 @@ bool PixelMap::CopyPixelMap(PixelMap &source, PixelMap &dstPixelMap, int32_t &er
     if (source.GetAllocatorType() == AllocatorType::DEFAULT ||
         source.GetAllocatorType() == AllocatorType::CUSTOM_ALLOC) {
         allocType = ImageUtils::GetPixelMapAllocatorType(dstImageInfo.size, dstImageInfo.pixelFormat, false,
-            memoryData.usage, dstPixelMap->isUseDefaultDmaNopadding_);
+            memoryData.usage, dstPixelMap.isUseDefaultDmaNopadding_);
     }
     unique_ptr<AbsMemory> memory = MemoryManager::CreateMemory(allocType, memoryData);
     if (memory == nullptr) {

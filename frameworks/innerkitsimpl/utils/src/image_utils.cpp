@@ -532,7 +532,6 @@ AllocatorType ImageUtils::GetPixelMapAllocatorType(const Size &size, const Pixel
 AllocatorType ImageUtils::GetPixelMapAllocatorType(const Size &size, const PixelFormat &format, bool preferDma,
     uint64_t &usage, bool &isUseDefaultDmaNopadding)
 {
-    isUseDefaultDmaNopadding = false;
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     if (IsSizeSupportDma(size) && (preferDma || (IsWidthAligned(size.width) && IsFormatSupportDma(format))) &&
         (format == PixelFormat::RGBA_8888 || format == PixelFormat::ALPHA_F16 || Is10Bit(format))) {
