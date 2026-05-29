@@ -653,7 +653,7 @@ Image_ErrorCode OH_AuxiliaryPictureNative_SetMetadata(OH_AuxiliaryPictureNative 
  *
  * @param auxiliaryPicture Pointer to an OH_AuxiliaryPictureNative object.
  * @param pixelmap Double pointer to the OH_PixelmapNative object obtained.
- * @return <ul> 
+ * @return <ul>
  *         <li>{@link IMAGE_SUCCESS} if the execution is successful.</li>
  *         <li>{@link IMAGE_INVALID_PARAMETER} auxiliaryPicture is nullptr, or pixelmap is nullptr.</li>
  *         <li>{@link IMAGE_GET_IMAGE_DATA_FAILED} fail to get the auxiliary picture or its pixelmap content.</li>
