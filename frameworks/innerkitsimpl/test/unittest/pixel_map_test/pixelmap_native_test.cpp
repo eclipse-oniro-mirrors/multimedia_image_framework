@@ -61,6 +61,7 @@ static const std::string IMAGE_JPEG_PATH = "/data/local/tmp/image/test_jpeg_writ
 static const std::string IMAGE_JPEG_PATH_TEST = "/data/local/tmp/image/test.jpg";
 static const std::string IMAGE_JPEG_PATH_TEST_PICTURE = "/data/local/tmp/image/test_picture.jpg";
 
+#ifdef EXT_PIXEL
 /* Compare two OH_Pixelmap_ImageInfo structures for equality */
 static bool CompareImageInfo(OH_Pixelmap_ImageInfo* srcImageInfo, OH_Pixelmap_ImageInfo* dstImageInfo)
 {
@@ -132,6 +133,7 @@ static void CreatePixelmapNative(OH_PixelmapNative** pixelmapNative,
     }
     *pixelmapNative = pixelmap;
 }
+#endif
 
 struct PixelmapNativeTestCreateOptions {
     uint32_t width = FOUR;
@@ -914,6 +916,7 @@ HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_SetMetadata, TestSize.Level3)
     GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_SetMetadata end";
 }
 
+#ifdef EXT_PIXEL
 /**
  * @tc.name: OH_PixelmapNative_SetGetColorSpace
  * @tc.desc: OH_PixelmapNative_SetGetColorSpace
@@ -941,6 +944,7 @@ HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_SetGetColorSpace, TestSize.Level3)
 
     GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_SetGetColorSpace end";
 }
+#endif
 
 /**
  * @tc.name: OH_PixelmapNative_GetByteCount
@@ -969,6 +973,7 @@ HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_GetByteCount, TestSize.Level3)
     GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_GetByteCount end";
 }
 
+#ifdef EXT_PIXEL
 /**
  * @tc.name: OH_PixelmapNative_CreateScaledPixelMapWithAntiAliasing
  * @tc.desc: OH_PixelmapNative_CreateScaledPixelMapWithAntiAliasing
@@ -1062,6 +1067,7 @@ HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_CreateScaledPixelMap, TestSize.Leve
 
     GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_CreateScaledPixelMap end";
 }
+#endif
 
 /**
  * @tc.name: OH_PixelmapNative_CreateEmptyPixelmap
@@ -1159,6 +1165,7 @@ HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_CreateEmptyPixelmapForPIXEL_FORMAT_
     GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_CreateEmptyPixelmapForPIXEL_FORMAT_YCRCB_P010 end";
 }
 
+#ifdef EXT_PIXEL
 static int32_t GetPixelBytes(PIXEL_FORMAT &pixelFormat)
 {
     int pixelBytes = ZERO;
@@ -1319,6 +1326,8 @@ static bool CreateUsingAlloc(uint32_t size,
     }
     return OH_PixelmapNative_CreatePixelmapUsingAllocator_Test(size, pixelFormat, type, imageSource);
 }
+#endif
+#ifdef EXT_PIXEL
 /**
  * @tc.name: OH_PixelmapNative_CreatePixelmapUsingAllocator
  * @tc.desc: Test OH_PixelmapNative_CreatePixelmapUsingAllocator with valid inputs
@@ -1367,6 +1376,7 @@ HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_CreatePixelmapUsingAllocator, TestS
     ASSERT_EQ(CreateUsingAlloc(size, PIXEL_FORMAT_YCRCB_P010, IMAGE_ALLOCATOR_MODE_SHARED_MEMORY, imageSource), false);
     GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_CreatePixelmapUsingAllocator end";
 }
+#endif
 
 bool CreateEmptypixelmap(uint32_t size, int32_t pixelFormat, IMAGE_ALLOCATOR_MODE type)
 {
@@ -1400,6 +1410,7 @@ bool CreateEmptypixelmap(uint32_t size, int32_t pixelFormat, IMAGE_ALLOCATOR_MOD
     return true;
 }
 
+#ifdef EXT_PIXEL
 static bool CheckCreateEmptypixelmap()
 {
     const int32_t size = 300;
@@ -1426,7 +1437,9 @@ static bool CheckCreateEmptypixelmap()
     ret = ret && CreateEmptypixelmap(dmaSize, PIXEL_FORMAT_YCBCR_P010, IMAGE_ALLOCATOR_MODE_DMA);
     return ret;
 }
+#endif
 
+#ifdef EXT_PIXEL
 /**
  * @tc.name: OH_PixelmapNative_CreateEmptyPixelmapUsingAllocator
  * @tc.desc: OH_PixelmapNative_CreateEmptyPixelmapUsingAllocator For PIXEL_FORMAT_YCRCB_P010
@@ -1465,7 +1478,9 @@ HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_CreateEmptyPixelmapUsingAllocator, 
     ASSERT_EQ(CheckCreateEmptypixelmap(), true);
     GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_CreateEmptyPixelmapUsingAllocator end";
 }
+#endif
 
+#ifdef EXT_PIXEL
 /**
  * @tc.name: OH_PixelmapNative_GetNativeBuffer
  * @tc.desc: OH_PixelmapNative_GetNativeBuffer
@@ -1491,6 +1506,7 @@ HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_GetNativeBuffer, TestSize.Level3)
 
     GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_GetNativeBuffer end";
 }
+#endif
 
 /**
  * @tc.name: OH_PixelmapNative_CreatePixelmapFromSurface
@@ -1532,6 +1548,7 @@ HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_CreatePixelmapFromSurfaceWithTransf
     GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_CreatePixelmapFromSurfaceWithTransformation end";
 }
 
+#ifdef EXT_PIXEL
 /**
  * @tc.name: OH_PixelmapNative_CreatePixelmapFromNativeBuffer
  * @tc.desc: OH_PixelmapNative_CreatePixelmapFromNativeBuffer
@@ -1567,7 +1584,9 @@ HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_CreatePixelmapFromNativeBuffer, Tes
 
     GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_CreatePixelmapFromNativeBuffer end";
 }
+#endif
 
+#ifdef EXT_PIXEL
 /**
  * @tc.name: OH_PixelmapNative_ReadPixelsFromArea
  * @tc.desc: OH_PixelmapNative_ReadPixelsFromArea
@@ -1598,7 +1617,9 @@ HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_ReadPixelsFromArea, TestSize.Level3
 
     GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_ReadPixelsFromArea end";
 }
+#endif
 
+#ifdef EXT_PIXEL
 /**
  * @tc.name: OH_PixelmapNative_WritePixelsToArea
  * @tc.desc: OH_PixelmapNative_WritePixelsToArea
@@ -1629,7 +1650,9 @@ HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_WritePixelsToArea, TestSize.Level3)
 
     GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_WritePixelsToArea end";
 }
+#endif
 
+#ifdef EXT_PIXEL
 /**
  * @tc.name: OH_PixelmapNative_CreateAlphaPixelmap
  * @tc.desc: OH_PixelmapNative_CreateAlphaPixelmap
@@ -1660,6 +1683,7 @@ HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_CreateAlphaPixelmap, TestSize.Level
 
     GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_CreateAlphaPixelmap end";
 }
+#endif
 
 /**
  * @tc.name: OH_PixelmapNative_CreateAlphaPixelmapAlphaF16
@@ -1868,6 +1892,7 @@ HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_CreatePixelmapAlphaF16ToNV12OddWidt
     GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_CreatePixelmapAlphaF16ToNV12OddWidth end";
 }
 
+#ifdef EXT_PIXEL
 /**
  * @tc.name: OH_PixelmapNative_Clone
  * @tc.desc: OH_PixelmapNative_Clone
@@ -1899,7 +1924,9 @@ HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_Clone, TestSize.Level3)
 
     GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_Clone end";
 }
+#endif
 
+#ifdef EXT_PIXEL
 /**
  * @tc.name: OH_PixelmapNative_CreateCroppedAndScaledPixelMap
  * @tc.desc: OH_PixelmapNative_CreateCroppedAndScaledPixelMap
@@ -1941,7 +1968,9 @@ HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_CreateCroppedAndScaledPixelMap, Tes
     
     GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_CreateCroppedAndScaledPixelMap end";
 }
+#endif
 
+#ifdef EXT_PIXEL
 /**
  * @tc.name: OH_PixelmapNative_GetUniqueId
  * @tc.desc: OH_PixelmapNative_GetUniqueId
@@ -1965,7 +1994,9 @@ HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_GetUniqueId, TestSize.Level3)
 
     GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_GetUniqueId end";
 }
+#endif
 
+#ifdef EXT_PIXEL
 /**
  * @tc.name: OH_PixelmapNative_IsReleased
  * @tc.desc: OH_PixelmapNative_IsReleased
@@ -1994,7 +2025,9 @@ HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_IsReleased, TestSize.Level3)
 
     GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_IsReleased end";
 }
+#endif
 
+#ifdef EXT_PIXEL
 /**
  * @tc.name: OH_PixelmapImageInfo_GetWidth_Success
  * @tc.desc: Test OH_PixelmapImageInfo_GetWidth with valid ImageInfo
@@ -2022,7 +2055,9 @@ HWTEST_F(PixelMapNdk2Test, OH_PixelmapImageInfo_GetWidth_Success, TestSize.Level
 
     GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapImageInfo_GetWidth_Success end";
 }
+#endif
 
+#ifdef EXT_PIXEL
 /**
  * @tc.name: OH_PixelmapImageInfo_GetHeight_Success
  * @tc.desc: Test OH_PixelmapImageInfo_GetHeight with valid ImageInfo
@@ -2050,7 +2085,9 @@ HWTEST_F(PixelMapNdk2Test, OH_PixelmapImageInfo_GetHeight_Success, TestSize.Leve
 
     GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapImageInfo_GetHeight_Success end";
 }
+#endif
 
+#ifdef EXT_PIXEL
 /**
  * @tc.name: OH_PixelmapImageInfo_GetRowStride_Success
  * @tc.desc: Test OH_PixelmapImageInfo_GetRowStride with valid ImageInfo
@@ -2078,7 +2115,9 @@ HWTEST_F(PixelMapNdk2Test, OH_PixelmapImageInfo_GetRowStride_Success, TestSize.L
 
     GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapImageInfo_GetRowStride_Success end";
 }
+#endif
 
+#ifdef EXT_PIXEL
 /**
  * @tc.name: OH_PixelmapImageInfo_GetPixelFormat_Success
  * @tc.desc: Test OH_PixelmapImageInfo_GetPixelFormat with valid ImageInfo
@@ -2106,7 +2145,9 @@ HWTEST_F(PixelMapNdk2Test, OH_PixelmapImageInfo_GetPixelFormat_Success, TestSize
 
     GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapImageInfo_GetPixelFormat_Success end";
 }
+#endif
 
+#ifdef EXT_PIXEL
 /**
  * @tc.name: OH_PixelmapImageInfo_GetAlphaType_Success
  * @tc.desc: Test OH_PixelmapImageInfo_GetAlphaType with valid ImageInfo
@@ -2134,6 +2175,7 @@ HWTEST_F(PixelMapNdk2Test, OH_PixelmapImageInfo_GetAlphaType_Success, TestSize.L
 
     GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapImageInfo_GetAlphaType_Success end";
 }
+#endif
 
 /**
  * @tc.name: OH_PixelmapImageInfo_Release_Success
@@ -2215,6 +2257,7 @@ HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_CreatePixelMap_DifferentFormats, Te
     GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_CreatePixelMap_DifferentFormats end";
 }
 
+#ifdef EXT_PIXEL
 /**
  * @tc.name: OH_PixelmapNative_ReadPixels_Success
  * @tc.desc: Test OH_PixelmapNative_ReadPixels with valid inputs
@@ -2242,7 +2285,9 @@ HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_ReadPixels_Success, TestSize.Level3
 
     GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_ReadPixels_Success end";
 }
+#endif
 
+#ifdef EXT_PIXEL
 /**
  * @tc.name: OH_PixelmapNative_ReadPixels_SmallBuffer
  * @tc.desc: Test OH_PixelmapNative_ReadPixels with small buffer
@@ -2266,6 +2311,7 @@ HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_ReadPixels_SmallBuffer, TestSize.Le
 
     GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_ReadPixels_SmallBuffer end";
 }
+#endif
 
 /**
  * @tc.name: OH_PixelmapNative_WritePixels_Success
@@ -2298,6 +2344,7 @@ HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_WritePixels_Success, TestSize.Level
     GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_WritePixels_Success end";
 }
 
+#ifdef EXT_PIXEL
 /**
  * @tc.name: OH_PixelmapNative_GetImageInfo_Success
  * @tc.desc: Test OH_PixelmapNative_GetImageInfo with valid inputs
@@ -2327,7 +2374,9 @@ HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_GetImageInfo_Success, TestSize.Leve
 
     GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_GetImageInfo_Success end";
 }
+#endif
 
+#ifdef EXT_PIXEL
 /**
  * @tc.name: OH_PixelmapNative_Opacity_Success
  * @tc.desc: Test OH_PixelmapNative_Opacity with valid inputs
@@ -2347,7 +2396,9 @@ HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_Opacity_Success, TestSize.Level3)
 
     GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_Opacity_Success end";
 }
+#endif
 
+#ifdef EXT_PIXEL
 /**
  * @tc.name: OH_PixelmapNative_Opacity_EdgeCases
  * @tc.desc: Test OH_PixelmapNative_Opacity with edge case values
@@ -2370,7 +2421,9 @@ HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_Opacity_EdgeCases, TestSize.Level3)
 
     GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_Opacity_EdgeCases end";
 }
+#endif
 
+#ifdef EXT_PIXEL
 /**
  * @tc.name: OH_PixelmapNative_Scale_Success
  * @tc.desc: Test OH_PixelmapNative_Scale with valid inputs
@@ -2392,7 +2445,9 @@ HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_Scale_Success, TestSize.Level3)
 
     GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_Scale_Success end";
 }
+#endif
 
+#ifdef EXT_PIXEL
 /**
  * @tc.name: OH_PixelmapNative_ScaleWithAntiAliasing_Success
  * @tc.desc: Test OH_PixelmapNative_ScaleWithAntiAliasing with valid inputs
@@ -2417,7 +2472,9 @@ HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_ScaleWithAntiAliasing_Success, Test
 
     GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_ScaleWithAntiAliasing_Success end";
 }
+#endif
 
+#ifdef EXT_PIXEL
 /**
  * @tc.name: OH_PixelmapNative_Translate_Success
  * @tc.desc: Test OH_PixelmapNative_Translate with valid inputs
@@ -2439,7 +2496,9 @@ HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_Translate_Success, TestSize.Level3)
 
     GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_Translate_Success end";
 }
+#endif
 
+#ifdef EXT_PIXEL
 /**
  * @tc.name: OH_PixelmapNative_Rotate_Success
  * @tc.desc: Test OH_PixelmapNative_Rotate with valid inputs
@@ -2463,7 +2522,9 @@ HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_Rotate_Success, TestSize.Level3)
 
     GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_Rotate_Success end";
 }
+#endif
 
+#ifdef EXT_PIXEL
 /**
  * @tc.name: OH_PixelmapNative_Flip_Success
  * @tc.desc: Test OH_PixelmapNative_Flip with valid inputs
@@ -2486,7 +2547,9 @@ HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_Flip_Success, TestSize.Level3)
 
     GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_Flip_Success end";
 }
+#endif
 
+#ifdef EXT_PIXEL
 /**
  * @tc.name: OH_PixelmapNative_Crop_Success
  * @tc.desc: Test OH_PixelmapNative_Crop with valid inputs
@@ -2510,7 +2573,9 @@ HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_Crop_Success, TestSize.Level3)
 
     GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_Crop_Success end";
 }
+#endif
 
+#ifdef EXT_PIXEL
 /**
  * @tc.name: OH_PixelmapNative_ConvertAlphaFormat_ToPremultiplied
  * @tc.desc: Test OH_PixelmapNative_ConvertAlphaFormat with valid inputs
@@ -2535,7 +2600,9 @@ HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_ConvertAlphaFormat_ToPremultiplied,
 
     GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_ConvertAlphaFormat_ToPremultiplied end";
 }
+#endif
 
+#ifdef EXT_PIXEL
 /**
  * @tc.name: OH_PixelmapNative_ConvertAlphaFormat_ToUnpremultiplied
  * @tc.desc: Test OH_PixelmapNative_ConvertAlphaFormat to unpremultiplied
@@ -2560,7 +2627,9 @@ HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_ConvertAlphaFormat_ToUnpremultiplie
 
     GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_ConvertAlphaFormat_ToUnpremultiplied end";
 }
+#endif
 
+#ifdef EXT_PIXEL
 /**
  * @tc.name: OH_PixelmapImageInfo_GetDynamicRange_Success
  * @tc.desc: Test OH_PixelmapImageInfo_GetDynamicRange with valid ImageInfo
@@ -2587,7 +2656,9 @@ HWTEST_F(PixelMapNdk2Test, OH_PixelmapImageInfo_GetDynamicRange_Success, TestSiz
 
     GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapImageInfo_GetDynamicRange_Success end";
 }
+#endif
 
+#ifdef EXT_PIXEL
 /**
  * @tc.name: OH_PixelmapNative_Scale_ZeroScale
  * @tc.desc: Test OH_PixelmapNative_Scale with zero scale factor
@@ -2608,7 +2679,9 @@ HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_Scale_ZeroScale, TestSize.Level3)
 
     GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_Scale_ZeroScale end";
 }
+#endif
 
+#ifdef EXT_PIXEL
 /**
  * @tc.name: OH_PixelmapNative_Rotate_NegativeAngle
  * @tc.desc: Test OH_PixelmapNative_Rotate with negative angle
@@ -2629,6 +2702,7 @@ HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_Rotate_NegativeAngle, TestSize.Leve
 
     GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_Rotate_NegativeAngle end";
 }
+#endif
 
 /**
  * @tc.name: OH_PixelmapNative_SetOpacity_Success
