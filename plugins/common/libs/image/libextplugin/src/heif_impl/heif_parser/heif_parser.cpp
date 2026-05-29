@@ -340,7 +340,6 @@ heif_error HeifParser::AssembleAnimationImages()
     bool isHeifs = moovBox_ && isSequenceMajorBrand();
     if (isHeifs) {
         std::shared_ptr<HeifImage> image = std::make_shared<HeifImage>(0);
-        CHECK_ERROR_RETURN_RET(!image, heif_error_eof);
         image->SetMovieImage(true);
         ExtractMovieImageProperties(image);
         if (!primaryImage_) {

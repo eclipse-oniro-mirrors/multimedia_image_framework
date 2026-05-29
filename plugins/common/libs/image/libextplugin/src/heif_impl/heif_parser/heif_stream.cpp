@@ -36,9 +36,10 @@ HeifBufferInputStream::HeifBufferInputStream(const uint8_t *data, size_t size, b
         return;
     }
     if (copied_) {
-        auto *copiedData = new uint8_t[length_];
+        auto *copiedData = new (std::nothrow) uint8_t[length_];
         if (copiedData == nullptr) {
             data_ = nullptr;
+            length_ = 0;
             return;
         }
         memcpy_s(copiedData, length_, data, length_);
