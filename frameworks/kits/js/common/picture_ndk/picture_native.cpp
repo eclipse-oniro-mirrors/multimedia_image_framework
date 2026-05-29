@@ -225,6 +225,55 @@ Image_ErrorCode OH_PictureNative_DeepCopy(OH_PictureNative *source,
 }
  
 MIDK_EXPORT
+Image_ErrorCode OH_PictureNative_DeepCopyWithItems(OH_PictureNative *source,
+    const OH_PictureNative_AuxiliaryPictureCopyItem *auxiliaryPictureCopyItems, uint32_t auxiliaryPictureCopyCount,
+    const OH_PictureNative_MetadataCopyItem *metadataCopyItems, uint32_t metadataCopyCount,
+    Image_AuxiliaryPictureType *sourceAuxPictureAsMainPixelMap,
+    OH_PictureNative **picture)
+{
+    if (source == nullptr || picture == nullptr || !source->GetInnerPicture() ||
+        (auxiliaryPictureCopyCount > 0 && auxiliaryPictureCopyItems == nullptr) ||
+        (metadataCopyCount > 0 && metadataCopyItems == nullptr)) {
+        return IMAGE_INVALID_PARAMETER;
+    }
+ 
+    auto srcPicture = source->GetInnerPicture();
+ 
+    std::vector<OHOS::Media::AuxiliaryPictureType> srcAuxPics;
+    std::vector<OHOS::Media::MetadataType> srcMetas;
+    std::vector<OHOS::Media::AuxiliaryPictureType> dstAuxPics;
+    std::vector<OHOS::Media::MetadataType> dstMetas;
+ 
+    srcAuxPics.reserve(auxiliaryPictureCopyCount);
+    dstAuxPics.reserve(auxiliaryPictureCopyCount);
+    for (uint32_t i = 0; i < auxiliaryPictureCopyCount; ++i) {
+        srcAuxPics.push_back(AuxTypeNativeToInner(auxiliaryPictureCopyItems[i].srcType));
+        dstAuxPics.push_back(AuxTypeNativeToInner(auxiliaryPictureCopyItems[i].dstType));
+    }
+ 
+    srcMetas.reserve(metadataCopyCount);
+    dstMetas.reserve(metadataCopyCount);
+    for (uint32_t i = 0; i < metadataCopyCount; ++i) {
+        srcMetas.push_back(MetaDataTypeNativeToInner(metadataCopyItems[i].srcType));
+        dstMetas.push_back(MetaDataTypeNativeToInner(metadataCopyItems[i].dstType));
+    }
+ 
+    OHOS::Media::AuxiliaryPictureType mainType = OHOS::Media::AuxiliaryPictureType::NONE;
+    if (sourceAuxPictureAsMainPixelMap != nullptr) {
+        mainType = AuxTypeNativeToInner(*sourceAuxPictureAsMainPixelMap);
+    }
+ 
+    std::unique_ptr<OHOS::Media::Picture> newPicture = OHOS::Media::Picture::DeepCopy(
+        srcPicture, srcAuxPics, srcMetas, dstAuxPics, dstMetas, mainType);
+    if (!newPicture) {
+        return IMAGE_ALLOC_FAILED;
+    }
+    std::shared_ptr<OHOS::Media::Picture> pictureShared = std::move(newPicture);
+    *picture = new OH_PictureNative(pictureShared);
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
 Image_ErrorCode OH_PictureNative_RemoveAuxiliaryPicture(OH_PictureNative *picture, Image_AuxiliaryPictureType type)
 {
     if (picture == nullptr || !picture->GetInnerPicture()) {
@@ -475,6 +524,10 @@ MIDK_EXPORT
 Image_ErrorCode OH_AuxiliaryPictureNative_CreateUsingAllocator(uint8_t *data, size_t dataLength,
     OH_AuxiliaryPictureInfo *info, IMAGE_ALLOCATOR_MODE allocator, OH_AuxiliaryPictureNative **auxiliaryPicture)
 {
+    if (!OHOS::Media::ImageUtils::IsSystemApp()) {
+        IMAGE_LOGE("This interface can be called only by system apps.");
+        return IMAGE_PERMISSIONS_FAILED;
+    }
     if (info == nullptr || info->GetInnerAuxiliaryPictureInfo() == nullptr ||
         auxiliaryPicture == nullptr || allocator < IMAGE_ALLOCATOR_MODE_AUTO ||
         allocator > IMAGE_ALLOCATOR_MODE_SHARED_MEMORY) {
@@ -681,6 +734,32 @@ Image_ErrorCode OH_AuxiliaryPictureNative_GetPixelmap(OH_AuxiliaryPictureNative 
         return IMAGE_ALLOC_FAILED;
     }
 
+    *pixelmap = pixelmapTmp.release();
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_AuxiliaryPictureNative_AcquirePixelmap(OH_AuxiliaryPictureNative *auxiliaryPicture,
+    OH_PixelmapNative **pixelmap)
+{
+    if (pixelmap == nullptr || auxiliaryPicture == nullptr) {
+        return IMAGE_INVALID_PARAMETER;
+    }
+ 
+    auto innerAuxiliaryPicture = auxiliaryPicture->GetInnerAuxiliaryPicture();
+    if (innerAuxiliaryPicture == nullptr) {
+        return IMAGE_GET_IMAGE_DATA_FAILED;
+    }
+    auto contentPixel = innerAuxiliaryPicture->GetContentPixel();
+    if (contentPixel == nullptr) {
+        return IMAGE_GET_IMAGE_DATA_FAILED;
+    }
+ 
+    auto pixelmapTmp = std::make_unique<OH_PixelmapNative>(contentPixel);
+    if (pixelmapTmp == nullptr || pixelmapTmp->GetInnerPixelmap() == nullptr) {
+        return IMAGE_ALLOC_FAILED;
+    }
+ 
     *pixelmap = pixelmapTmp.release();
     return IMAGE_SUCCESS;
 }
