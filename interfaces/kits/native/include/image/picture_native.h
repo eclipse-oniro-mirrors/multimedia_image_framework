@@ -355,7 +355,7 @@ Image_ErrorCode OH_PictureNative_RemoveAuxiliaryPicture(OH_PictureNative *pictur
  *
  * @param picture Pointer to an OH_PictureNative object.
  * @param type Type of the metadata to remove.
- * @return <ul> 
+ * @return <ul>
  *         <li>{@link IMAGE_SUCCESS} if the metadata was successfully removed or did not exist.</li>
  *         <li>{@link IMAGE_INVALID_PARAMETER} picture is nullptr, or fail to get the picture.</li>
  *         <li>{@link IMAGE_UNSUPPORTED_METADATA} unsupported metadata type.</li>

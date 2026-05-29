@@ -577,7 +577,7 @@ Image_ErrorCode OH_PictureMetadata_GetMetadataByType(OH_PictureMetadata **metada
  * @return <ul>
  *         <li>{@link IMAGE_SUCCESS} if the execution is successful.</li>
  *         <li>202 if a non-system application calls this system API.</li>
- *         <li>{@link IMAGE_INVALID_PARAMETER} metadatas is nullptr, or metadatasCount is zero.</li>
+ *         <li>{@link IMAGE_INVALID_PARAMETER} metadatas is nullptr, or metadatasCount is 0.</li>
  *         </ul>
  * @since 26.0.0
  */
