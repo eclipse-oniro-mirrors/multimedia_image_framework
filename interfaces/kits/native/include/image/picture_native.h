@@ -341,7 +341,7 @@ Image_ErrorCode OH_PictureNative_DeepCopy(OH_PictureNative *source,
  *
  * @param picture Pointer to an OH_PictureNative object.
  * @param type Type of the auxiliary picture to remove.
- * @return <ul> 
+ * @return <ul>
  *         <li>{@link IMAGE_SUCCESS} if the auxiliary picture was successfully removed or did not exist.</li>
  *         <li>{@link IMAGE_INVALID_PARAMETER} picture is nullptr, or fail to get the picture,
  *         or the type is invalid.</li>
@@ -389,7 +389,7 @@ typedef struct OH_PictureNative_AuxiliaryPictureCopyItem {
 } OH_PictureNative_AuxiliaryPictureCopyItem;
  
 /**
- * @brief This structure is used to specify a metadata copy rule when creating a deep copy of a PictureNative object. 
+ * @brief This structure is used to specify a metadata copy rule when creating a deep copy of a PictureNative object.
  * It describes how to copy metadata from one type to another.
  *
  * @since 26.0.0
@@ -834,7 +834,7 @@ Image_ErrorCode OH_AuxiliaryPictureInfo_Release(OH_AuxiliaryPictureInfo *info);
  * @since 26.0.0
  */
 Image_ErrorCode OH_AuxiliaryPictureNative_CreateUsingAllocator(uint8_t *data, size_t dataLength,
- 	OH_AuxiliaryPictureInfo *info, IMAGE_ALLOCATOR_MODE allocator, OH_AuxiliaryPictureNative **auxiliaryPicture);
+    OH_AuxiliaryPictureInfo *info, IMAGE_ALLOCATOR_MODE allocator, OH_AuxiliaryPictureNative **auxiliaryPicture);
 
 #ifdef __cplusplus
 };
