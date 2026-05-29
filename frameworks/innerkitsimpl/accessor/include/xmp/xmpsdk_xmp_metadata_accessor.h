@@ -27,11 +27,10 @@
 #include "public/include/XMP.hpp"
 #include "XMP.incl_cpp"
 
-class XMPBuffer_IO;
-class XMPFd_IO;
-
 namespace OHOS {
 namespace Media {
+class XMPBuffer_IO;
+class XMPFd_IO;
 
 class XMPSdkXMPMetadataAccessor : public XMPMetadataAccessor {
 public:

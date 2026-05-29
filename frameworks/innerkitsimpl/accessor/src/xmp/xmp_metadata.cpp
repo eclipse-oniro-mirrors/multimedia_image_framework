@@ -98,7 +98,16 @@ std::unique_ptr<XMPMetadataImpl>& XMPMetadata::GetImpl()
 static uint32_t ValidateAndResolvePath(const std::string &path, std::string &outUri, std::string &outPropName,
     bool isRootPath = false)
 {
-    const auto &[prefix, propName] = XMPHelper::SplitOnce(path, COLON);
+    std::string prefix;
+    std::string propName;
+    if (isRootPath && path.find(COLON) == std::string::npos) {
+        prefix = path;
+    } else {
+        const auto &[splitPrefix, splitPropName] = XMPHelper::SplitOnce(path, COLON);
+        prefix = splitPrefix;
+        propName = splitPropName;
+    }
+
     CHECK_ERROR_RETURN_RET_LOG(prefix.empty(), ERR_IMAGE_INVALID_PARAMETER,
         "%{public}s invalid path syntax: %{public}s. Expected format: prefix:property", __func__, path.c_str());
 
@@ -307,17 +316,6 @@ uint32_t XMPMetadata::RemoveTag(const std::string &path)
 
     impl_->DeleteProperty(namespaceUri.c_str(), propName.c_str());
     IMAGE_LOGD("%{public}s successfully removed tag: %{public}s", __func__, path.c_str());
-    return SUCCESS;
-    XMP_CATCH_RETURN_CODE(ERR_XMP_SDK_EXCEPTION);
-}
-
-uint32_t XMPMetadata::RemoveAllTags()
-{
-    XMP_TRY();
-    CHECK_ERROR_RETURN_RET_LOG(!impl_ || !impl_->IsValid(), ERR_MEDIA_NULL_POINTER,
-        "%{public}s impl is invalid", __func__);
-
-    SXMPUtils::RemoveProperties(impl_->GetRawPtr(), nullptr, nullptr, kXMPUtil_DoAllProperties);
     return SUCCESS;
     XMP_CATCH_RETURN_CODE(ERR_XMP_SDK_EXCEPTION);
 }

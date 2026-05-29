@@ -51,6 +51,17 @@ class XMP_Error;
         IMAGE_LOGE("%{public}s unknown exception", __func__);                    \
     }
 
+#define XMP_CATCH_THROW()                                                        \
+    } catch (const XMP_Error &error) {                                           \
+        (void)error;                                                             \
+        throw;                                                                   \
+    } catch (...) {                                                              \
+        IMAGE_LOGE("%{public}s unknown exception", __func__);                    \
+        throw;                                                                   \
+    }
+
+#define XMP_Throw(msg, id) throw XMP_Error(id, msg)
+
 namespace OHOS {
 namespace Media {
 class XMPHelper {

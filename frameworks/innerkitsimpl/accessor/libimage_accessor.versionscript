@@ -30,6 +30,8 @@
     *PngExifMetadataAccessor*;
     *PngImageChunkUtils*;
     *WebpExifMetadataAccessor*;
+    *XMPHelper*;
+    *XMPMetadata*;
   local:
     *;
 };
