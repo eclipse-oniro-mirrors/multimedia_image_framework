@@ -543,7 +543,7 @@ static void SetYUVDataInfoToPixelMap(unique_ptr<PixelMap> &dstPixelMap)
 }
 
 static int AllocPixelMapMemory(std::unique_ptr<AbsMemory> &dstMemory, int32_t &dstRowStride,
-    const ImageInfo &dstImageInfo, const InitializationOptions &opts)
+    const ImageInfo &dstImageInfo, const InitializationOptions &opts, bool &isUseDefaultDmaNopadding)
 {
     int64_t rowDataSize = ImageUtils::GetRowDataSizeByPixelFormat(dstImageInfo.size.width, dstImageInfo.pixelFormat);
     if (rowDataSize <= 0) {
@@ -563,7 +563,7 @@ static int AllocPixelMapMemory(std::unique_ptr<AbsMemory> &dstMemory, int32_t &d
         dstImageInfo.pixelFormat};
     AllocatorType allocType = opts.allocatorType == AllocatorType::DEFAULT ?
         ImageUtils::GetPixelMapAllocatorType(dstImageInfo.size, dstImageInfo.pixelFormat, opts.useDMA,
-            memoryData.usage) : opts.allocatorType;
+            memoryData.usage, isUseDefaultDmaNopadding) : opts.allocatorType;
     dstMemory = MemoryManager::CreateMemory(allocType, memoryData);
     if (dstMemory == nullptr) {
         IMAGE_LOGE("[PixelMap]Create: allocate memory failed");
@@ -615,7 +615,8 @@ unique_ptr<PixelMap> PixelMap::Create(const uint32_t *colors, uint32_t colorLeng
 
     std::unique_ptr<AbsMemory> dstMemory = nullptr;
     int32_t dstRowStride = 0;
-    errorCode = AllocPixelMapMemory(dstMemory, dstRowStride, dstImageInfo, opts);
+    errorCode = AllocPixelMapMemory(dstMemory, dstRowStride, dstImageInfo, opts,
+        dstPixelMap->isUseDefaultDmaNopadding_);
     if (errorCode != IMAGE_RESULT_SUCCESS) {
         return nullptr;
     }
@@ -682,7 +683,8 @@ pair<unique_ptr<PixelMap>, int32_t> PixelMap::CreateFromPixels(const uint8_t *pi
 
     unique_ptr<AbsMemory> dstMemory = nullptr;
     int32_t dstRowStride = 0;
-    errorCode = AllocPixelMapMemory(dstMemory, dstRowStride, dstImageInfo, options);
+    errorCode = AllocPixelMapMemory(dstMemory, dstRowStride, dstImageInfo, options,
+        dstPixelMap->isUseDefaultDmaNopadding_);
     if (errorCode != IMAGE_RESULT_SUCCESS) {
         return {nullptr, errorCode};
     }
@@ -945,7 +947,8 @@ unique_ptr<PixelMap> PixelMap::Create(const InitializationOptions &opts)
 
     std::unique_ptr<AbsMemory> dstMemory = nullptr;
     int32_t dstRowStride = 0;
-    int errorCode = AllocPixelMapMemory(dstMemory, dstRowStride, dstImageInfo, opts);
+    int errorCode = AllocPixelMapMemory(dstMemory, dstRowStride, dstImageInfo, opts,
+        dstPixelMap->isUseDefaultDmaNopadding_);
     if (errorCode != IMAGE_RESULT_SUCCESS) {
         return nullptr;
     }
@@ -1293,7 +1296,7 @@ bool PixelMap::CopyPixelMap(PixelMap &source, PixelMap &dstPixelMap, int32_t &er
     if (source.GetAllocatorType() == AllocatorType::DEFAULT ||
         source.GetAllocatorType() == AllocatorType::CUSTOM_ALLOC) {
         allocType = ImageUtils::GetPixelMapAllocatorType(dstImageInfo.size, dstImageInfo.pixelFormat, false,
-            memoryData.usage);
+            memoryData.usage, dstPixelMap.isUseDefaultDmaNopadding_);
     }
     unique_ptr<AbsMemory> memory = MemoryManager::CreateMemory(allocType, memoryData);
     if (memory == nullptr) {
@@ -3072,7 +3075,7 @@ bool PixelMap::Marshalling(Parcel &parcel) const
         return false;
     }
 
-    if (isMemoryDirty_) {
+    if (isMemoryDirty_ || isUseDefaultDmaNopadding_) {
         ImageUtils::FlushSurfaceBuffer(const_cast<PixelMap*>(this));
         isMemoryDirty_ = false;
     }
