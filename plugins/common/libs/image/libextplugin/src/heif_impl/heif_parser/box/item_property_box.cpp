@@ -16,6 +16,7 @@
 #include "box/item_property_box.h"
 
 #include <algorithm>
+#include "image_log.h"
 
 namespace {
     const uint8_t LARGE_PROPERTY_INDEX_FLAG = 1;
