@@ -74,7 +74,6 @@ const static int PIXEL_OFFSET_2 = 2;
 const static int PIXEL_OFFSET_3 = 3;
 const static int PIXEL_SIZE_4 = 4;
 const static int MAX_ALPHA = 255;
-static constexpr uint32_t MAX_STREAM_LEN = 300 * 1024 * 1024;
 
 const static int GRID_NUM_2 = 2;
 const static uint32_t HEIF_HARDWARE_TILE_MIN_DIM = 128;
@@ -222,8 +221,8 @@ bool HeifDecoderImpl::init(HeifStream *stream, HeifFrameInfo *frameInfo)
     CHECK_ERROR_RETURN_RET(!stream, false);
     size_t fileLength = stream->getLength();
     if (srcMemory_ == nullptr) {
-        if (fileLength == 0 || fileLength > MAX_STREAM_LEN) {
-            IMAGE_LOGE("file size is 0 or the file size is too large");
+        if (fileLength == 0) {
+            IMAGE_LOGE("file size is 0");
             return false;
         }
         srcMemory_ = new uint8_t[fileLength];
