@@ -33,6 +33,7 @@ HeifBufferInputStream::HeifBufferInputStream(const uint8_t *data, size_t size, b
 {
     if (data == nullptr || length_ == 0) {
         data_ = nullptr;
+        length_ == 0
         return;
     }
     if (copied_) {
