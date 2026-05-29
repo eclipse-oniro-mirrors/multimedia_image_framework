@@ -1748,8 +1748,7 @@ Image_ErrorCode OH_ImageSourceNative_ReadImageMetadataByType(OH_ImageSourceNativ
     }
     uint32_t errorCode;
     uint32_t frameCount = source->GetInnerImageSource()->GetFrameCount(errorCode);
-    CHECK_ERROR_RETURN_RET((errorCode != SUCCESS) || index >= frameCount,
-        IMAGE_SOURCE_INVALID_PARAMETER);
+    CHECK_ERROR_RETURN_RET((errorCode != SUCCESS) || index >= frameCount, IMAGE_SOURCE_INVALID_PARAMETER);
     std::vector<std::shared_ptr<OHOS::Media::ImageMetadata>> validMetadatas;
     if (metadataTypes == nullptr || typeCount == 0) {
         IMAGE_LOGD("Get all metadata.");
@@ -1775,9 +1774,7 @@ Image_ErrorCode OH_ImageSourceNative_ReadImageMetadataByType(OH_ImageSourceNativ
             validMetadatas.push_back(metadata);
         }
     }
-    if (validMetadatas.size() == 0) {
-        return IMAGE_SOURCE_UNSUPPORTED_METADATA;
-    }
+    CHECK_ERROR_RETURN_RET((validMetadatas.size() == 0), IMAGE_SOURCE_UNSUPPORTED_METADATA);
     *metadataCount = validMetadatas.size();
     *outMetadataArray = new OH_PictureMetadata[*metadataCount];
     if (*outMetadataArray == nullptr) {

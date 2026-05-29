@@ -330,7 +330,7 @@ typedef enum {
 
     /**
      * Xtstyle metadata.
-     * 
+     *
      * @since 26.0.0
      */
     XTSTYLE_METADATA = 3,
