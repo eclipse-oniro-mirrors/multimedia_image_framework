@@ -236,6 +236,10 @@ static void Release([[maybe_unused]] ani_env* env, [[maybe_unused]] ani_object o
         return;
     }
     PixelMapAni* pixelmapAni = reinterpret_cast<PixelMapAni*>(nativeObj);
+    if (pixelmapAni == nullptr) {
+        IMAGE_LOGE("[Release] nativeObj is nullptr");
+        return;
+    }
     pixelmapAni->nativePixelMap_ = nullptr;
 }
 
