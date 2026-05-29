@@ -74,6 +74,7 @@ const static int PIXEL_OFFSET_2 = 2;
 const static int PIXEL_OFFSET_3 = 3;
 const static int PIXEL_SIZE_4 = 4;
 const static int MAX_ALPHA = 255;
+static constexpr uint32_t MAX_STREAM_LEN = 300 * 1024 * 1024;
 
 const static int GRID_NUM_2 = 2;
 const static uint32_t HEIF_HARDWARE_TILE_MIN_DIM = 128;
@@ -218,20 +219,15 @@ HeifDecoderImpl::~HeifDecoderImpl()
 bool HeifDecoderImpl::init(HeifStream *stream, HeifFrameInfo *frameInfo)
 {
     ImageTrace trace("HeifDecoderImpl::init");
-    if (stream == nullptr) {
-        return false;
-    }
-
+    CHECK_ERROR_RETURN_RET(!stream, false);
     size_t fileLength = stream->getLength();
     if (srcMemory_ == nullptr) {
-        if (fileLength == 0) {
-            IMAGE_LOGE("file size is 0");
+        if (fileLength == 0 || fileLength > MAX_STREAM_LEN) {
+            IMAGE_LOGE("file size is 0 or the file size is too large");
             return false;
         }
         srcMemory_ = new uint8_t[fileLength];
-        if (srcMemory_ == nullptr) {
-            return false;
-        }
+        CHECK_ERROR_RETURN_RET(!srcMemory_, false);
         stream->read(srcMemory_, fileLength);
     }
     if (stream != nullptr) {
@@ -264,10 +260,7 @@ GridInfo HeifDecoderImpl::GetGridInfo()
 
 std::shared_ptr<HeifImage> HeifDecoderImpl::GetThumbnailImage()
 {
-    if (primaryImage_ == nullptr) {
-        IMAGE_LOGE("Primary image is not init");
-        return nullptr;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(!primaryImage_, nullptr, "Primary image is not init");
     auto thumbImages = primaryImage_->GetThumbnailImages();
     if (thumbImages.empty()) {
         IMAGE_LOGE("Heif parser has not thumbnail Images.");
@@ -278,10 +271,7 @@ std::shared_ptr<HeifImage> HeifDecoderImpl::GetThumbnailImage()
 
 bool HeifDecoderImpl::CheckAuxiliaryMap(AuxiliaryPictureType type)
 {
-    if (parser_ == nullptr) {
-        IMAGE_LOGE("Heif parser is nullptr.");
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(!parser_, false, "Heif parser is nullptr.");
 
     auto iter = HEIF_AUXTTYPE_ID_MAP.find(type);
     switch (type) {
@@ -308,10 +298,7 @@ bool HeifDecoderImpl::CheckAuxiliaryMap(AuxiliaryPictureType type)
             break;
     }
 
-    if (auxiliaryImage_ == nullptr) {
-        IMAGE_LOGE("Auxiliary map type that does not exist");
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(!auxiliaryImage_, false, "Auxiliary map type that does not exist");
 
     return true;
 }
@@ -345,10 +332,8 @@ bool HeifDecoderImpl::Reinit(HeifFrameInfo *frameInfo)
 
 void HeifDecoderImpl::InitFrameInfo(HeifFrameInfo *info, const std::shared_ptr<HeifImage> &image)
 {
-    if (info == nullptr || image == nullptr) {
-        IMAGE_LOGE("InitFrameInfo info or image is null");
-        return;
-    }
+    CHECK_ERROR_RETURN_LOG(!info || !image, "InitFrameInfo info or image is null");
+    CHECK_ERROR_RETURN_LOG(!parser_, "InitFrameInfo parser is null");
     info->mWidth = image->GetOriginalWidth();
     info->mHeight = image->GetOriginalHeight();
     info->mRotationAngle = (DEGREE_360 - image->GetRotateDegrees()) % DEGREE_360;
@@ -388,9 +373,7 @@ void HeifDecoderImpl::SetColorSpaceInfo(HeifFrameInfo* info, const std::shared_p
 
 bool HeifDecodeImpl::SeekRefGridRangeInfo(const std::shared_ptr<HeifImage> &image)
 {
-    if (parser_ == nullptr || image == nullptr) {
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET(!parser_ || !image, false);
     std::string imageType = parser_->GetItemType(image->GetItemId());
     if (imageType != "grid") {
         IMAGE_LOGE("seek grid error, type is : %{public}s", imageType.c_str());
@@ -398,10 +381,7 @@ bool HeifDecodeImpl::SeekRefGridRangeInfo(const std::shared_ptr<HeifImage> &imag
     }
     std::vector<std::shared_ptr<HeifImage>> tileImages;
     parser_->GetTileImages(image->GetItemId(), tileImages);
-    if (tileImages.empty() || tileImages[0] == nullptr) {
-        IMAGE_LOGE("grid image has no tile image");
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(tileImages.empty() || !tileImages[0], false, "grid image has no tile image");
     auto firstTileImage = tileImages[0];
     int range = firstTileImage->GetColorRangeFlag();
     image->setColorRangeFlag(range);
@@ -411,10 +391,7 @@ bool HeifDecodeImpl::SeekRefGridRangeInfo(const std::shared_ptr<HeifImage> &imag
 
 void HeifDecoderImpl::InitGridInfo(const std::shared_ptr<HeifImage> &image, GridInfo &gridInfo)
 {
-    if (!image) {
-        IMAGE_LOGE("InitGridInfo image is null");
-        return;
-    }
+    CHECK_ERROR_RETURN_LOG(!image, "InitGridInfo image is null");
     gridInfo.displayWidth = image->GetOriginalWidth();
     gridInfo.displayHeight = image->GetOriginalHeight();
     uint32_t recursionCount = 0;
@@ -433,10 +410,8 @@ void HeifDecoderImpl::InitGridInfo(const std::shared_ptr<HeifImage> &image, Grid
 void HeifDecoderImpl::GetTileSize(const std::shared_ptr<HeifImage> &image,
     GridInfo &gridInfo, uint32_t &recursionCount)
 {
-    if (!image) {
-        IMAGE_LOGE("GetTileSize image is null");
-        return;
-    }
+    CHECK_ERROR_RETURN_LOG(!image, "GetTileSize image is null");
+    CHECK_ERROR_RETURN_LOG(!parser_, "GetTileSize parser is null");
     recursionCount++;
     bool cond = recursionCount > MAX_IDEN_RECURSION_COUNT;
     CHECK_ERROR_RETURN(cond);
@@ -461,10 +436,7 @@ void HeifDecoderImpl::GetTileSize(const std::shared_ptr<HeifImage> &image,
     }
     std::vector<std::shared_ptr<HeifImage>> tileImages;
     parser_->GetTileImages(image->GetItemId(), tileImages);
-    if (tileImages.empty() || tileImages[0] == nullptr) {
-        IMAGE_LOGE("grid image has no tile image");
-        return;
-    }
+    CHECK_ERROR_RETURN_LOG(tileImages.empty() || !tileImages[0], "grid image has no tile image");
     gridInfo.tileWidth = tileImages[0]->GetOriginalWidth();
     gridInfo.tileHeight = tileImages[0]->GetOriginalHeight();
 }
@@ -506,13 +478,9 @@ bool HeifDecoderImpl::copyToAshmem(std::vector<std::vector<uint8_t>> &inputs, st
     for (auto& input : inputs) {
         size_t size = input.size();
         sptr<Ashmem> mem = Ashmem::CreateAshmem(HEIF_SHAREMEM_NAME.c_str(), size);
+        CHECK_ERROR_RETURN_RET_LOG(!mem, false, "AshmemCreate failed");
         if (!mem->MapAshmem(PROT_READ | PROT_WRITE)) {
             IMAGE_LOGE("Ashmem map failed");
-            return false;
-        }
-        if (mem == nullptr) {
-            IMAGE_LOGE("AshmemCreate failed");
-            hwInputs.clear();
             return false;
         }
         if (!mem->WriteToAshmem(input.data(), size, 0)) {
@@ -527,10 +495,7 @@ bool HeifDecoderImpl::copyToAshmem(std::vector<std::vector<uint8_t>> &inputs, st
 
 GSError HeifDecoderImpl::HwSetColorSpaceData(sptr<SurfaceBuffer>& buffer, GridInfo &gridInfo)
 {
-    if (buffer == nullptr) {
-        IMAGE_LOGE("HwSetColorSpaceData buffer is nullptr");
-        return GSERROR_NO_BUFFER;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(!buffer, GSERROR_NO_BUFFER, "HwSetColorSpaceData buffer is nullptr");
     if (isGainmapDecode_ || isAuxiliaryDecode_) {
         GetGainmapColorSpace(colorSpaceName_);
     }
@@ -667,6 +632,7 @@ bool HeifDecoderImpl::decodeAuxiliaryMap()
 
 bool HeifDecoderImpl::IsRegionDecode()
 {
+    CHECK_ERROR_RETURN_RET(!primaryImage_, false);
     std::shared_ptr<HeifImage> alphaImage = primaryImage_->GetAlphaImage();
     if (regionInfo_.colCount > 0 && regionInfo_.rowCount > 0 && alphaImage == nullptr && !IsGainmapGrid()) {
         return true;
@@ -704,10 +670,7 @@ bool HeifDecoderImpl::HwDecodeImage(std::shared_ptr<HeifImage> &image, GridInfo 
     GraphicPixelFormat inPixelFormat = GetInPixelFormat(image);
     sptr<SurfaceBuffer> hwBuffer;
     AllocateHwOutputBuffer(hwBuffer, isPrimary);
-    if (hwBuffer == nullptr) {
-        IMAGE_LOGE("decode AllocateOutputBuffer return null");
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(!hwBuffer, false, "decode AllocateOutputBuffer return null");
     if (IsDirectYUVDecode()) {
         inPixelFormat = static_cast<GraphicPixelFormat>(hwBuffer->GetFormat());
     }
@@ -881,10 +844,7 @@ bool HeifDecoderImpl::HwDecodeIdenImage(std::shared_ptr<HeifImage> &image, GridI
 bool HeifDecoderImpl::HwDecodeSingleImage(std::shared_ptr<HeifImage> &image,
     GridInfo &gridInfo, sptr<SurfaceBuffer> &hwBuffer)
 {
-    if (image == nullptr) {
-        IMAGE_LOGE("HeifDecoderImpl::DecodeSingleImage image is nullptr");
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(!image, false, "HeifDecoderImpl::DecodeSingleImage image is nullptr");
     std::vector<std::vector<uint8_t>> inputs(GRID_NUM_2);
     parser_->GetItemData(image->GetItemId(), &inputs[0], heif_only_header);
     ProcessChunkHead(inputs[0].data(), inputs[0].size());
@@ -919,10 +879,7 @@ bool HeifDecoderImpl::HwDecodeSingleImage(std::shared_ptr<HeifImage> &image,
 
 bool HeifDecoderImpl::HwDecodeMimeImage(std::shared_ptr<HeifImage> &image)
 {
-    if (image == nullptr) {
-        IMAGE_LOGE("HeifDecoderImpl::DecodeSingleImage image is nullptr");
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(!image, false, "HeifDecoderImpl::DecodeSingleImage image is nullptr");
     std::vector<uint8_t> inputs;
     parser_->GetItemData(image->GetItemId(), &inputs, heif_only_header);
     ProcessChunkHead(inputs.data(), inputs.size());
@@ -948,9 +905,7 @@ bool HeifDecoderImpl::SwDecodeImage(std::shared_ptr<HeifImage> &image, HevcSoftD
         IMAGE_LOGE("unknown pixel type: %{public}d", outPixelFormat_);
         return false;
     }
-    if (image == nullptr) {
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET(!image, false);
 
     if (!isPrimary && IsHeifsImage()) {
         IMAGE_LOGI("SwDecodeImage image is heifs image.");
@@ -1066,9 +1021,7 @@ bool HeifDecoderImpl::SwDecodeIdenImage(std::shared_ptr<HeifImage> &image,
 
 bool HeifDecoderImpl::SwDecodeSingleImage(std::shared_ptr<HeifImage> &image, HevcSoftDecodeParam &param)
 {
-    if (extManager_.hevcSoftwareDecodeFunc_ == nullptr && !extManager_.LoadImageFwkExtNativeSo()) {
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET(!extManager_.hevcSoftwareDecodeFunc_ && !extManager_.LoadImageFwkExtNativeSo(), false);
     bool cond = (param.dstBuffer == nullptr || param.dstStride == 0);
     CHECK_ERROR_RETURN_RET(cond, false);
     std::vector<std::vector<uint8_t>> inputs(1);
@@ -1087,6 +1040,7 @@ bool HeifDecoderImpl::SwDecodeAuxiliaryImage(std::shared_ptr<HeifImage> &gainmap
                                              GridInfo &gainmapGridInfo, uint8_t *auxiliaryDstMemory)
 {
     ImageTrace trace("HeifDecoderImpl::SwdecodeGainmap");
+    CHECK_ERROR_RETURN_RET(!gainmapImage, false);
     uint32_t width = gainmapImage->GetOriginalWidth();
     uint32_t height = gainmapImage->GetOriginalHeight();
     sptr<SurfaceBuffer> output = SurfaceBuffer::Create();
@@ -1109,6 +1063,7 @@ bool HeifDecoderImpl::SwDecodeAuxiliaryImage(std::shared_ptr<HeifImage> &gainmap
 
 Media::PixelFormat GetDecodeHeifFormat(std::shared_ptr<HeifImage> &heifImage)
 {
+    CHECK_ERROR_RETURN_RET(!heifImage, PixelFormat::UNKNOWN);
     switch (heifImage->GetDefaultPixelFormat()) {
         case  HeifPixelFormat::MONOCHROME:
             return PixelFormat::YUV_400;
@@ -1186,7 +1141,7 @@ static bool IsEmptyBuffer(uint8_t *buffer, uint32_t width, uint32_t height, uint
 static bool FillAlphaChannel(std::shared_ptr<HeifImage> &masterImage, uint8_t *alphaMemory,
                              size_t alphaStride, uint8_t *dstMemory, size_t dstRowStride)
 {
-    // merge alpha channel
+    CHECK_ERROR_RETURN_RET(!masterImage, false);
     uint8_t *alphaRowStart = alphaMemory;
     uint8_t *dstRowStart = dstMemory;
     uint32_t width = masterImage->GetOriginalWidth();
@@ -1227,9 +1182,7 @@ bool HeifDecoderImpl::HwApplyAlphaImage(std::shared_ptr<HeifImage> &masterImage,
                                         uint8_t *dstMemory, size_t dstRowStride)
 {
     // check alpha image is available
-    if (masterImage == nullptr || IsDirectYUVDecode()) {
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET(!masterImage || IsDirectYUVDecode(), false);
     std::shared_ptr<HeifImage> alphaImage = masterImage->GetAlphaImage();
     if (!IsValidAlphaImage(masterImage, alphaImage, outPixelFormat_, true)) {
         return false;
@@ -1254,9 +1207,7 @@ bool HeifDecoderImpl::SwApplyAlphaImage(std::shared_ptr<HeifImage> &masterImage,
                                         uint8_t *dstMemory, size_t dstRowStride)
 {
     // check alpha image is available
-    if (masterImage == nullptr || IsDirectYUVDecode()) {
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET(!masterImage || IsDirectYUVDecode(), false);
     std::shared_ptr<HeifImage> alphaImage = masterImage->GetAlphaImage();
     if (!IsValidAlphaImage(masterImage, alphaImage, outPixelFormat_, false)) {
         return false;
@@ -1302,10 +1253,9 @@ bool HeifDecoderImpl::ProcessChunkHead(uint8_t *data, size_t len)
 
 bool HeifDecoderImpl::IsHeifAlphaYuv400()
 {
+    CHECK_ERROR_RETURN_RET(!primaryImage_, false);
     std::shared_ptr<HeifImage> alphaImage = primaryImage_->GetAlphaImage();
-    if (alphaImage == nullptr) {
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET(!alphaImage, false);
     if (alphaImage->GetDefaultPixelFormat() != HeifPixelFormat::YUV420) {
         IMAGE_LOGE("heif alphaImage is not YUV420");
         return true;
@@ -1315,9 +1265,7 @@ bool HeifDecoderImpl::IsHeifAlphaYuv400()
 
 bool HeifDecoderImpl::IsHeifGainmapYuv400()
 {
-    if (gainmapImage_ == nullptr) {
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET(!gainmapImage_, false);
     if (gainmapImage_->GetDefaultPixelFormat() != HeifPixelFormat::YUV420) {
         IMAGE_LOGE("heif gainmapImage is not YUV420");
         return true;
@@ -1327,14 +1275,14 @@ bool HeifDecoderImpl::IsHeifGainmapYuv400()
 
 int32_t HeifDecoderImpl::GetPrimaryLumaBitNum()
 {
+    CHECK_ERROR_RETURN_RET(!primaryImage_, 0);
     return primaryImage_->GetLumaBitNum();
 }
 
 bool HeifDecoderImpl::IsDirectYUVDecode()
 {
-    if (dstHwBuffer_ == nullptr || isGainmapDecode_) {
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET(!dstHwBuffer_ || isGainmapDecode_, false);
+    CHECK_ERROR_RETURN_RET(!primaryImage_, false);
     if (primaryImage_->GetLumaBitNum() == LUMA_10_BIT) {
         return outPixelFormat_ == Media::PixelFormat::YCRCB_P010 || outPixelFormat_ == Media::PixelFormat::YCBCR_P010;
     }
@@ -1349,19 +1297,17 @@ bool HeifDecoderImpl::decodeSequence(int frameIndex, HeifFrameInfo *frameInfo)
 
 bool HeifDecoderImpl::IsHeifHasAlphaImage()
 {
+    CHECK_ERROR_RETURN_RET(!primaryImage_, false);
     std::shared_ptr<HeifImage> alphaImage = primaryImage_->GetAlphaImage();
-    if (alphaImage == nullptr) {
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET(!alphaImage, false);
     return true;
 }
 
 bool HeifDecoderImpl::IsHeifAlphaYuv400()
 {
+    CHECK_ERROR_RETURN_RET(!primaryImage_, false);
     std::shared_ptr<HeifImage> alphaImage = primaryImage_->GetAlphaImage();
-    if (alphaImage == nullptr) {
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET(!alphaImage, false);
     if (alphaImage->GetDefaultPixelFormat() != HeifPixelFormat::YUV420) {
         IMAGE_LOGD("heif alphaImage is not YUV420");
         return true;
@@ -1371,18 +1317,14 @@ bool HeifDecoderImpl::IsHeifAlphaYuv400()
 
 bool HeifDecoderImpl::IsGainmapDivisibleBySampleSize(uint32_t sampleSize)
 {
-    if (gainmapImage_ == nullptr) {
-        return true;
-    }
+    CHECK_ERROR_RETURN_RET(!gainmapImage_, true);
     return gainmapImage_->GetOriginalWidth() % sampleSize == 0 &&
         gainmapImage_->GetOriginalHeight() % sampleSize == 0;
 }
 
 bool HeifDecoderImpl::IsHeifGainmapYuv400()
 {
-    if (gainmapImage_ == nullptr) {
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET(!gainmapImage_, false);
     if (gainmapImage_->GetDefaultPixelFormat() != HeifPixelFormat::YUV420) {
         IMAGE_LOGD("heif gainmapImage is not YUV420");
         return true;
@@ -1392,6 +1334,7 @@ bool HeifDecoderImpl::IsHeifGainmapYuv400()
 
 int32_t HeifDecoderImpl::GetPrimaryLumaBitNum()
 {
+    CHECK_ERROR_RETURN_RET(!primaryImage_, 0);
     return primaryImage_->GetLumaBitNum();
 }
 
@@ -1400,9 +1343,7 @@ bool HeifDecoderImpl::IsGainmapGrid()
     if (!regionInfo_.isGainmapImage) {
         return false;
     }
-    if (parser_ == nullptr || gainmapImage_ == nullptr) {
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET(!parser_ || !gainmapImage_, false);
     std::string imageType = parser_->GetItemType(gainmapImage_->GetItemId());
     if (imageType == "grid") {
         return true;
@@ -1412,9 +1353,7 @@ bool HeifDecoderImpl::IsGainmapGrid()
 
 bool HeifDecoderImpl::IsHeifGainmapDivisibility(int32_t primaryDisplayWidth, int32_t primaryDisplayHeight)
 {
-    if (gainmapImage_ == nullptr) {
-        return true;
-    }
+    CHECK_ERROR_RETURN_RET(!gainmapImage_, true);
     bool isMultiple = (primaryDisplayWidth % static_cast<int32_t>(gainmapGridInfo_.displayWidth) == 0 &&
         primaryDisplayHeight % static_cast<int32_t>(gainmapGridInfo_.displayHeight) == 0);
     if (isMultiple) {
@@ -1455,6 +1394,11 @@ void HeifDecoderImpl::SetSampleFormat(uint32_t sampleSize, ColorManager::ColorSp
 void HeifDecoderImpl::setDstBuffer(uint8_t *dstBuffer, size_t rowStride, void *context)
 {
     dstMemory_ = dstBuffer;
+    if (primaryImage_ == nullptr || parser_ == nullptr) {
+        dstRowStride_ = rowStride;
+        dstHwBuffer_ = reinterpret_cast<SurfaceBuffer*>(context);
+        return;
+    }
     std::shared_ptr<HeifImage> alphaImage = primaryImage_->GetAlphaImage();
     std::string imageType = parser_->GetItemType(primaryImage_->GetItemId());
     if (regionInfo_.colCount > 0 && regionInfo_.rowCount > 0 && alphaImage == nullptr && imageType == "grid") {
@@ -1547,6 +1491,7 @@ void HeifDecoderImpl::SetColorSpaceSupportFlag(bool supported)
 
 HeifImageHdrType HeifDecoderImpl::getHdrType()
 {
+    CHECK_ERROR_RETURN_RET(!primaryImage_, HeifImageHdrType::UNKNOWN);
     std::vector<uint8_t> uwaInfo = primaryImage_->GetUWAInfo();
     IMAGE_LOGD("HeifDecoderImpl::getHdrType ColorSpaceName enum: %{public}d, colorSpaceMatched_: %{public}s",
                colorSpaceName_, colorSpaceMatched_ ? "true" : "false");
@@ -1563,6 +1508,7 @@ HeifImageHdrType HeifDecoderImpl::getHdrType()
 void HeifDecoderImpl::getVividMetadata(std::vector<uint8_t>& uwaInfo, std::vector<uint8_t>& displayInfo,
     std::vector<uint8_t>& lightInfo)
 {
+    CHECK_ERROR_RETURN(!primaryImage_);
     uwaInfo = primaryImage_->GetUWAInfo();
     displayInfo = primaryImage_->GetDisplayInfo();
     lightInfo = primaryImage_->GetLightInfo();
@@ -1580,6 +1526,7 @@ std::vector<uint8_t> HeifImage::GetBlobMetadata(HeifMetadataType type)
 
 void HeifDecoderImpl::getFragmentMetadata(Media::Rect& fragmentMetadata)
 {
+    CHECK_ERROR_RETURN(!primaryImage_);
     HeifFragmentMetadata metadata = primaryImage_->GetFragmentMetadata();
     fragmentMetadata.width = static_cast<int32_t>(metadata.width);
     fragmentMetadata.height = static_cast<int32_t>(metadata.height);

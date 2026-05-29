@@ -304,6 +304,9 @@ heif_error HeifBox::ReadChildren(HeifStreamReader &reader, uint32_t &recursionCo
 heif_error HeifBox::WriteChildren(HeifStreamWriter &writer) const
 {
     for (const auto &child: children_) {
+        if (child == nullptr) {
+            continue;
+        }
         if (child->GetBoxType() == BOX_TYPE_GRPL) {
             continue;
         }

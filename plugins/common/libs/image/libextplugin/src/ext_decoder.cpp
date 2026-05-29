@@ -3685,7 +3685,7 @@ void ExtDecoder::SetHeifParseError()
     }
 
     size_t fileLength = stream_->GetStreamSize();
-    if (fileLength <= 0) {
+    if (fileLength <= 0 || fileLength > MALLOC_LIMIT) {
         return;
     }
     uint8_t *fileMem = reinterpret_cast<uint8_t*>(malloc(fileLength));

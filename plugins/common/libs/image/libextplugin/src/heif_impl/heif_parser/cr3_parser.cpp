@@ -57,9 +57,7 @@ heif_error Cr3Parser::ParseCr3Boxes(HeifStreamReader &reader)
         if (error != heif_error_ok) {
             return error;
         }
-        if (box == nullptr) {
-            return heif_error_no_data;
-        }
+        CHECK_ERROR_RETURN_RET(!box, heif_error_no_data);
         if (box->GetBoxType() == BOX_TYPE_FTYP) {
             ftypBox_ = std::dynamic_pointer_cast<Cr3FtypBox>(box);
         }
@@ -74,16 +72,12 @@ heif_error Cr3Parser::ParseCr3Boxes(HeifStreamReader &reader)
         }
     }
 
-    if (ftypBox_ == nullptr || ftypBox_->GetMajorBrand() != CR3_FILE_TYPE_CRX) {
-        return heif_error_no_ftyp;
-    }
+    CHECK_ERROR_RETURN_RET(!ftypBox_ || ftypBox_->GetMajorBrand() != CR3_FILE_TYPE_CRX, heif_error_no_ftyp);
 
     if (moovBox_ != nullptr) {
         uuidCanonBox_ = moovBox_->GetChild<Cr3UuidBox>(BOX_TYPE_UUID);
     }
-    if (uuidCanonBox_ == nullptr) {
-        return heif_error_primary_item_not_found;
-    }
+    CHECK_ERROR_RETURN_RET(!uuidCanonBox_, heif_error_primary_item_not_found);
     cmt1Box_ = uuidCanonBox_->GetChild<Cr3Box>(CR3_BOX_TYPE_CMT1);
     cmt2Box_ = uuidCanonBox_->GetChild<Cr3Box>(CR3_BOX_TYPE_CMT2);
     cmt3Box_ = uuidCanonBox_->GetChild<Cr3Box>(CR3_BOX_TYPE_CMT3);

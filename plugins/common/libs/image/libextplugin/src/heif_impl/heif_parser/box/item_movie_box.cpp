@@ -14,6 +14,7 @@
  */
 
 #include "box/item_movie_box.h"
+#include "image_log.h"
 
 #include <algorithm>
 #include <numeric>
@@ -66,9 +67,7 @@ static std::string ReadFixedString(HeifStreamReader &reader, size_t length)
     std::string result;
     result.resize(length);
     auto stream = reader.GetStream();
-    if (!stream) {
-        return "";
-    }
+    CHECK_ERROR_RETURN_RET(!stream, std::string());
     bool res = stream->Read(&result[0], length);
     if (!res) {
         reader.SetError(true);
@@ -350,17 +349,17 @@ heif_error HeifStsdBox::GetSampleEntryWidthHeight(uint32_t index, uint32_t &widt
         return heif_error_invalid_index;
     }
     const auto entry = entries_[index];
-    if (entry == nullptr) {
-        return heif_error_invalid_stsd;
-    }
+    CHECK_ERROR_RETURN_RET(!entry, heif_error_invalid_stsd);
 
     if (entry->GetBoxType() == BOX_TYPE_HVC1) {
         auto hvc1Entry = std::dynamic_pointer_cast<HeifHvc1Box>(entry);
+        CHECK_ERROR_RETURN_RET(!hvc1Entry, heif_error_invalid_stsd);
         width = hvc1Entry->GetWidth();
         height = hvc1Entry->GetHeight();
         return heif_error_ok;
     } else if (entry->GetBoxType() == BOX_TYPE_AV01) {
         auto av01Entry = std::dynamic_pointer_cast<HeifAv01Box>(entry);
+        CHECK_ERROR_RETURN_RET(!av01Entry, heif_error_invalid_stsd);
         width = av01Entry->GetWidth();
         height = av01Entry->GetHeight();
         return heif_error_ok;

@@ -5123,6 +5123,7 @@ bool ImageSource::DecodeJpegGainMap(ImageHdrType hdrType, float scale, DecodeCon
     CHECK_ERROR_RETURN_RET_LOG(cond, false, "[ImageSource] decode jpeg gainmap failed, gainmap offset is %{public}d"
         " stream size is %{public}d", gainMapOffset, streamSize);
     uint8_t* streamBuffer = sourceStreamPtr_->GetDataPtr();
+    CHECK_ERROR_RETURN_RET_LOG(streamBuffer == nullptr, false, "[ImageSource] streamBuffer is nullptr");
     if (sourceStreamPtr_->GetStreamType() != ImagePlugin::BUFFER_SOURCE_TYPE) {
         streamBuffer = new (std::nothrow) uint8_t[streamSize];
         if (!GetStreamData(sourceStreamPtr_, streamBuffer, streamSize)) {

@@ -15,6 +15,7 @@
 
 #include "heif_stream.h"
 #include "heif_constant.h"
+#include "image_log.h"
 #include "securec.h"
 
 #include <sstream>
@@ -30,8 +31,16 @@ namespace ImagePlugin {
 HeifBufferInputStream::HeifBufferInputStream(const uint8_t *data, size_t size, bool needCopy)
     : length_(size), pos_(0), copied_(needCopy)
 {
+    if (data == nullptr || length_ == 0) {
+        data_ = nullptr;
+        return;
+    }
     if (copied_) {
         auto *copiedData = new uint8_t[length_];
+        if (copiedData == nullptr) {
+            data_ = nullptr;
+            return;
+        }
         memcpy_s(copiedData, length_, data, length_);
         data_ = copiedData;
     } else {
@@ -65,10 +74,8 @@ bool HeifBufferInputStream::CheckSize(size_t target_size, int64_t end)
 
 bool HeifBufferInputStream::Read(void *data, size_t size)
 {
-    if (data == nullptr || data_ == nullptr) {
-        return false;
-    }
-    
+    CHECK_ERROR_RETURN_RET(!data || !data_, false);
+
     if (pos_ < 0 || static_cast<size_t>(pos_) > length_) {
         return false;
     }
@@ -106,6 +113,7 @@ uint8_t HeifStreamReader::Read8()
     }
     uint8_t buf;
     auto stream = GetStream();
+    CHECK_ERROR_RETURN_RET(!stream, 0);
     bool success = stream->Read(&buf, UINT8_BYTES_NUM);
     if (!success) {
         SetError(true);
@@ -121,6 +129,7 @@ uint16_t HeifStreamReader::Read16()
     }
     uint8_t buf[UINT16_BYTES_NUM];
     auto stream = GetStream();
+    CHECK_ERROR_RETURN_RET(!stream, 0);
     bool success = stream->Read(buf, UINT16_BYTES_NUM);
     if (!success) {
         SetError(true);
@@ -136,6 +145,7 @@ uint32_t HeifStreamReader::Read32()
     }
     uint8_t buf[UINT32_BYTES_NUM];
     auto stream = GetStream();
+    CHECK_ERROR_RETURN_RET(!stream, 0);
     bool success = stream->Read(buf, UINT32_BYTES_NUM);
     if (!success) {
         SetError(true);
@@ -154,6 +164,7 @@ uint64_t HeifStreamReader::Read64()
     }
     uint8_t buf[UINT64_BYTES_NUM];
     auto stream = GetStream();
+    CHECK_ERROR_RETURN_RET(!stream, 0);
     bool success = stream->Read(buf, UINT64_BYTES_NUM);
     if (!success) {
         SetError(true);
@@ -171,6 +182,7 @@ uint64_t HeifStreamReader::Read64()
 
 bool HeifStreamReader::ReadData(uint8_t *data, size_t size)
 {
+    CHECK_ERROR_RETURN_RET(!data || !GetStream(), false);
     if (!CheckSize(size)) {
         return false;
     }
@@ -188,6 +200,7 @@ std::string HeifStreamReader::ReadString()
     }
     std::stringstream strStream;
     auto stream = GetStream();
+    CHECK_ERROR_RETURN_RET(!stream, {});
     char strChar = UINT8_BYTES_NUM;
     while (strChar != 0) {
         if (!CheckSize(UINT8_BYTES_NUM)) {
@@ -207,6 +220,7 @@ std::string HeifStreamReader::ReadString()
 
 bool HeifStreamReader::CheckSize(size_t size)
 {
+    CHECK_ERROR_RETURN_RET(!inputStream_, false);
     bool res = inputStream_->CheckSize(size, end_);
     if (!res) {
         SetError(true);
