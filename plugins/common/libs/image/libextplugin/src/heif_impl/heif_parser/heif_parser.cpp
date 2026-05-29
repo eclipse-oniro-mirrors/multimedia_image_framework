@@ -1141,7 +1141,8 @@ void HeifParser::ParseHeifsStaticImageBox()
 
 heif_error HeifParser::IsHeifsImage(bool &isHeifs) const
 {
-    CHECK_ERROR_RETURN_RET(!ftypBox_ || ftypBox_->GetMajorBrand() != HEIF_BRAND_TYPE_MSF1, heif_error_invalid_major_brand);
+    CHECK_ERROR_RETURN_RET(!ftypBox_ || ftypBox_->GetMajorBrand() != HEIF_BRAND_TYPE_MSF1,
+        heif_error_invalid_major_brand);
     CHECK_ERROR_RETURN_RET(!hdlrBox_ || hdlrBox_->GetHandlerType() != HANDLER_TYPE_PICT, heif_error_invalid_handler);
     isHeifs = true;
     return heif_error_ok;

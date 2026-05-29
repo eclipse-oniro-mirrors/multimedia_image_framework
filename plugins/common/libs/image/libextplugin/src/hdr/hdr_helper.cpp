@@ -323,10 +323,8 @@ static ImageHdrType CheckJpegGainMapHdrType(SkJpegCodec* jpegCodec,
             isoPreMarkerOffset.push_back(allAppSize);
         }
         if (JPEG_MARKER_APP0 == (marker->marker & 0xF0)) {
-            if (allAppSize > UINT32_MAX - marker->data_length - JPEG_MARKER_TAG_SIZE - JPEG_MARKER_LENGTH_SIZE) {
-                IMAGE_LOGE("allAppSize is overflowed");
-                return ImageHdrType::SDR;
-            }
+            CHECK_ERROR_RETURN_RET_LOG(allAppSize > UINT32_MAX - marker->data_length - JPEG_MARKER_TAG_SIZE - JPEG_MARKER_LENGTH_SIZE,
+                ImageHdrType::SDR, "allAppSize is overflowed");
             allAppSize += marker->data_length + JPEG_MARKER_TAG_SIZE + JPEG_MARKER_LENGTH_SIZE;
         }
         if (JPEG_MARKER_APP11 == marker->marker) {
