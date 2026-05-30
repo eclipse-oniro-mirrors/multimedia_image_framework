@@ -320,7 +320,7 @@ static bool CheckAstcEncInput(TextureEncodeOptions &param, AstcEncCheckInfo chec
                    param.width_, param.height_, WIDTH_MAX_ASTC, HEIGHT_MAX_ASTC);
         return false;
     }
-    if (checkInfo.pixmapInSize < (param.height_ * pixmapStride)) {
+    if (checkInfo.pixmapInSize < static_cast<uint64_t>(param.height_) * static_cast<uint64_t>(pixmapStride)) {
         IMAGE_LOGE("CheckAstcEncInput pixmapInSize %{public}d not enough for height %{public}d stride %{public}d!",
                    checkInfo.pixmapInSize, param.height_, pixmapStride);
         return false;

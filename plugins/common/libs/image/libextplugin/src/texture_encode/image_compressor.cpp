@@ -864,6 +864,15 @@ static CL_ASTC_STATUS AstcClEncImageCheckImageOption(const ClAstcImageOption *im
             imageIn->width, MAX_WIDTH, imageIn->height, MAX_HEIGHT);
         return CL_ASTC_ENC_FAILED;
     }
+    if (imageIn->data == nullptr) {
+        IMAGE_LOGE("astc AstcClEncImage data is nullptr!");
+        return CL_ASTC_ENC_FAILED;
+    }
+    if (imageIn->stride > MAX_WIDTH) {
+        IMAGE_LOGE("astc AstcClEncImage stride[%{public}d] exceeds MAX_WIDTH[%{public}d]!",
+            imageIn->stride, MAX_WIDTH);
+        return CL_ASTC_ENC_FAILED;
+    }
     return CL_ASTC_ENC_SUCCESS;
 }
 
@@ -872,6 +881,10 @@ CL_ASTC_SHARE_LIB_API CL_ASTC_STATUS AstcClFillImage(ClAstcImageOption *imageIn,
 {
     if (imageIn == nullptr) {
         IMAGE_LOGE("astc AstcClFillImage imageIn is  nullptr!");
+        return CL_ASTC_ENC_FAILED;
+    }
+    if (data == nullptr) {
+        IMAGE_LOGE("astc AstcClFillImage data is nullptr!");
         return CL_ASTC_ENC_FAILED;
     }
     imageIn->data = data;

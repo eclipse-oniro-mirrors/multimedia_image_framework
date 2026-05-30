@@ -4482,7 +4482,17 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapForASTC(uint32_t &errorCode, con
     ImageTrace imageTrace("CreatePixelMapForASTC");
     unique_ptr<PixelAstc> pixelAstc = make_unique<PixelAstc>();
     ImageInfo info;
+    if (!sourceStreamPtr_) {
+        IMAGE_LOGE("[ImageSource] CreatePixelMapForASTC sourceStreamPtr_ is null.");
+        errorCode = ERR_IMAGE_DATA_ABNORMAL;
+        return nullptr;
+    }
     uint8_t *sourceFilePtr = sourceStreamPtr_->GetDataPtr();
+    if (sourceFilePtr == nullptr) {
+        IMAGE_LOGE("[ImageSource] CreatePixelMapForASTC sourceFilePtr is null.");
+        errorCode = ERR_IMAGE_DATA_ABNORMAL;
+        return nullptr;
+    }
     if (!GetImageInfoForASTC(info, sourceFilePtr)) {
         IMAGE_LOGE("[ImageSource] get astc image info failed.");
         return nullptr;
