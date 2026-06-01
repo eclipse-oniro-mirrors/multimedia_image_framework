@@ -668,21 +668,6 @@ Image_ErrorCode OH_AuxiliaryPictureNative_AcquirePixelmap(OH_AuxiliaryPictureNat
     OH_PixelmapNative **pixelmap);
 
 /**
- * @brief Obtains the auxiliary picture pixel map.
- *
- * @param auxiliaryPicture The AuxiliaryPicture pointer will be operated.
- * @param pixelmap Pixelmap pointer for obtained.
- * @return Image functions result code.
- *         {@link IMAGE_SUCCESS} if the execution is successful.
- *         {@link IMAGE_INVALID_PARAMETER} auxiliaryPicture is nullptr, or pixelmap is nullptr.
- *         {@link IMAGE_GET_IMAGE_DATA_FAILED} fail to get the auxiliary picture or its pixelmap content.
- *         {@link IMAGE_ALLOC_FAILED} memory alloc failed.
- * @since 26.0.0
- */
-Image_ErrorCode OH_AuxiliaryPictureNative_GetPixelmap(OH_AuxiliaryPictureNative *auxiliaryPicture,
-    OH_PixelmapNative **pixelmap);
-
-/**
  * @brief Releases this AuxiliaryPicture object.
  *
  * @param picture The Picture pointer will be operated.
