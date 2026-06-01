@@ -15,6 +15,9 @@
 
 #include <charconv>
 #include <dlfcn.h>
+#include <atomic>
+#include <mutex>
+#include <thread>
 #ifdef USE_M133_SKIA
 #include <unistd.h>
 #endif
@@ -67,6 +70,10 @@ constexpr uint8_t UINT32_3TH_BYTES = 24;
 #ifdef ENABLE_ASTC_ENCODE_BASED_GPU
 constexpr int32_t WIDTH_CL_THRESHOLD = 256;
 constexpr int32_t HEIGHT_CL_THRESHOLD = 256;
+constexpr char ASTC_CL_PREBUILT_BIN_PATH[] = "/sys_prod/etc/graphic/AstcEncShader_ALN-AL00.bin";
+constexpr char ASTC_CL_RUNTIME_BIN_PATH[] = "/data/storage/el1/base/AstcEncShader.bin";
+std::atomic<bool> g_astcClCompileInProgress = false;
+std::mutex g_astcClCompileMutex;
 #endif
 constexpr int32_t WIDTH_MAX_ASTC = 8192;
 constexpr int32_t HEIGHT_MAX_ASTC = 8192;
@@ -82,6 +89,55 @@ static bool CheckClBinIsExistWithLock(const std::string &name)
 {
     std::lock_guard<std::mutex> lock(checkClBinPathMutex);
     return (access(name.c_str(), F_OK) != -1); // -1 means that the file is  not exist
+}
+
+bool AstcCodec::ResolveAstcClBinPath(const std::string &prebuiltBinPath, const std::string &runtimeBinPath,
+    std::string &clBinPath)
+{
+    clBinPath = prebuiltBinPath;
+    if (CheckClBinIsExistWithLock(clBinPath)) {
+        return true;
+    }
+    clBinPath = runtimeBinPath;
+    return CheckClBinIsExistWithLock(clBinPath);
+}
+
+bool AstcCodec::TryStartAstcClWarmup()
+{
+    bool expected = false;
+    return g_astcClCompileInProgress.compare_exchange_strong(expected, true);
+}
+
+void AstcCodec::FinishAstcClWarmup()
+{
+    g_astcClCompileInProgress.store(false);
+}
+
+void AstcCodec::DoAstcClBinWarmup(const std::string &clBinPath)
+{
+    std::lock_guard<std::mutex> lock(g_astcClCompileMutex);
+    if (!CheckClBinIsExistWithLock(clBinPath)) {
+        AstcEncBasedCl::ClAstcHandle *astcClEncoder = nullptr;
+        bool warmupSuccess = AstcClCreate(&astcClEncoder, clBinPath) == CL_ASTC_ENC_SUCCESS;
+        if (warmupSuccess) {
+            (void)AstcClClose(astcClEncoder);
+        }
+        IMAGE_LOGI("astc warmup build bin result: %{public}d, path: %{public}s",
+            static_cast<int32_t>(warmupSuccess), clBinPath.c_str());
+    }
+    FinishAstcClWarmup();
+}
+
+bool AstcCodec::TriggerAstcClBinWarmup(const std::string &clBinPath)
+{
+    if (!TryStartAstcClWarmup()) {
+        return false;
+    }
+    std::thread astcClWarmupThread([clBinPath]() {
+        AstcCodec::DoAstcClBinWarmup(clBinPath);
+    });
+    astcClWarmupThread.detach();
+    return true;
 }
 #endif
 
@@ -777,16 +833,20 @@ static bool AstcEncProcess(TextureEncodeOptions &param, uint8_t *pixmapIn, uint8
         (param.blockX_ == DEFAULT_DIM) && (param.blockY_ == DEFAULT_DIM); // HardWare only support 4x4 now
     if (enableClEnc) {
         IMAGE_LOGI("astc hardware encode begin");
-        std::string clBinPath = "/sys_prod/etc/graphic/AstcEncShader_ALN-AL00.bin";
-        if (!CheckClBinIsExistWithLock(clBinPath)) {
-            clBinPath = "/data/storage/el1/base/AstcEncShader.bin";
-        }
+        std::string clBinPath;
+        bool hasClBin = AstcCodec::ResolveAstcClBinPath(ASTC_CL_PREBUILT_BIN_PATH, ASTC_CL_RUNTIME_BIN_PATH,
+            clBinPath);
         IMAGE_LOGI("AstcEncProcess size: %{public}d, %{public}d, block: %{public}d, %{public}d, stride: %{public}d,"\
             "privateProfile: %{public}d, blocksNum: %{public}d, astcBytes: %{public}d",
             param.width_, param.height_,  param.blockX_, param.blockY_, param.stride_, param.privateProfile_,
             param.blocksNum, param.astcBytes);
-        param.hardwareFlag = AstcCodec::TryAstcEncBasedOnCl(param, pixmapIn, astcBuffer, clBinPath);
-        IMAGE_LOGI("AstcEncProcess hardwareFlag: %{public}d", param.hardwareFlag);
+        if (hasClBin) {
+            param.hardwareFlag = AstcCodec::TryAstcEncBasedOnCl(param, pixmapIn, astcBuffer, clBinPath);
+            IMAGE_LOGI("AstcEncProcess hardwareFlag: %{public}d", param.hardwareFlag);
+        } else {
+            IMAGE_LOGI("AstcEncProcess cl bin miss, fallback to cpu and trigger warmup");
+            (void)AstcCodec::TriggerAstcClBinWarmup(clBinPath);
+        }
     }
 #endif
     if (!param.hardwareFlag) {

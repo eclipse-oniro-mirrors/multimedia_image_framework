@@ -12,10 +12,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include <chrono>
+#include <cstdio>
 #include <cstdlib>
+#include <fstream>
 #include <gtest/gtest.h>
 #include <securec.h>
 #include <sys/time.h>
+#include <thread>
 
 #define private public
 #define protected public
@@ -41,6 +45,8 @@ using namespace AstcEncBasedCl;
 constexpr uint8_t RGBA_BYTES_PIXEL_LOG2 = 2;
 constexpr int32_t RGBA_MAX_WIDTH = 8192;
 constexpr int32_t RGBA_MAX_HEIGHT = 8192;
+constexpr int32_t ASTC_CL_WARMUP_RETRY_TIMES = 100;
+constexpr int32_t ASTC_CL_WARMUP_RETRY_INTERVAL_MS = 1;
 #endif
 
 constexpr int32_t RGBA_TEST0001_WIDTH = 256;
@@ -725,6 +731,87 @@ HWTEST_F(PluginTextureEncodeTest, AstcEncBasedOnCl003, TestSize.Level3)
     ASSERT_EQ(ret, CL_ASTC_ENC_FAILED);
 
     GTEST_LOG_(INFO) << "PluginTextureEncodeTest: AstcEncBasedOnCl003 end";
+}
+
+static void RemoveAstcClTestFile(const std::string &path)
+{
+    (void)std::remove(path.c_str());
+}
+
+static bool CreateAstcClTestFile(const std::string &path)
+{
+    std::ofstream outFile(path, std::ios::binary | std::ios::trunc);
+    if (!outFile.is_open()) {
+        return false;
+    }
+    outFile.put('\0');
+    return outFile.good();
+}
+
+/**
+ * @tc.name: AstcEncBasedOnCl004
+ * @tc.desc: Test ASTC CL bin path selection.
+ * @tc.type: branch coverage
+ */
+HWTEST_F(PluginTextureEncodeTest, AstcEncBasedOnCl004, TestSize.Level3)
+{
+    const std::string prebuiltPath = "/data/local/tmp/astc_cl_prebuilt_for_unit_test.bin";
+    const std::string runtimePath = "/data/local/tmp/astc_cl_runtime_for_unit_test.bin";
+    RemoveAstcClTestFile(prebuiltPath);
+    RemoveAstcClTestFile(runtimePath);
+
+    std::string clBinPath;
+    EXPECT_FALSE(AstcCodec::ResolveAstcClBinPath(prebuiltPath, runtimePath, clBinPath));
+    EXPECT_EQ(runtimePath, clBinPath);
+
+    ASSERT_TRUE(CreateAstcClTestFile(runtimePath));
+    EXPECT_TRUE(AstcCodec::ResolveAstcClBinPath(prebuiltPath, runtimePath, clBinPath));
+    EXPECT_EQ(runtimePath, clBinPath);
+
+    ASSERT_TRUE(CreateAstcClTestFile(prebuiltPath));
+    EXPECT_TRUE(AstcCodec::ResolveAstcClBinPath(prebuiltPath, runtimePath, clBinPath));
+    EXPECT_EQ(prebuiltPath, clBinPath);
+
+    RemoveAstcClTestFile(prebuiltPath);
+    RemoveAstcClTestFile(runtimePath);
+}
+
+/**
+ * @tc.name: AstcEncBasedOnCl005
+ * @tc.desc: Test ASTC CL warmup state and detached thread finish.
+ * @tc.type: branch coverage
+ */
+HWTEST_F(PluginTextureEncodeTest, AstcEncBasedOnCl005, TestSize.Level3)
+{
+    AstcCodec::FinishAstcClWarmup();
+    EXPECT_TRUE(AstcCodec::TryStartAstcClWarmup());
+    EXPECT_FALSE(AstcCodec::TryStartAstcClWarmup());
+    EXPECT_FALSE(AstcCodec::TriggerAstcClBinWarmup("/"));
+    AstcCodec::FinishAstcClWarmup();
+
+    EXPECT_TRUE(AstcCodec::TriggerAstcClBinWarmup("/"));
+    bool isWarmupFinished = false;
+    for (int32_t retry = 0; retry < ASTC_CL_WARMUP_RETRY_TIMES; retry++) {
+        if (AstcCodec::TryStartAstcClWarmup()) {
+            AstcCodec::FinishAstcClWarmup();
+            isWarmupFinished = true;
+            break;
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(ASTC_CL_WARMUP_RETRY_INTERVAL_MS));
+    }
+    EXPECT_TRUE(isWarmupFinished);
+
+    AstcCodec::FinishAstcClWarmup();
+    AstcCodec::DoAstcClBinWarmup("/");
+    EXPECT_TRUE(AstcCodec::TryStartAstcClWarmup());
+    AstcCodec::FinishAstcClWarmup();
+
+    const std::string warmupPath = "/data/local/tmp/astc_cl_warmup_for_unit_test.bin";
+    RemoveAstcClTestFile(warmupPath);
+    AstcCodec::DoAstcClBinWarmup(warmupPath);
+    EXPECT_TRUE(AstcCodec::TryStartAstcClWarmup());
+    AstcCodec::FinishAstcClWarmup();
+    RemoveAstcClTestFile(warmupPath);
 }
 #endif
 

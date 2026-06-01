@@ -22,6 +22,7 @@
 #include "securec.h"
 #include "media_errors.h"
 #include "image_log.h"
+#include "image_trace.h"
 
 #undef LOG_DOMAIN
 #define LOG_DOMAIN LOG_TAG_DOMAIN_ID_PLUGIN
@@ -830,6 +831,7 @@ static CL_ASTC_STATUS AstcCreateClKernel(ClAstcHandle *clAstcHandle, const std::
 
 CL_ASTC_SHARE_LIB_API CL_ASTC_STATUS AstcClCreate(ClAstcHandle **handle, const std::string &clBinPath)
 {
+    Media::ImageTrace imageTrace("AstcClCreate");
     ClAstcHandle *clAstcHandle = static_cast<ClAstcHandle *>(calloc(1, sizeof(ClAstcHandle)));
     if (clAstcHandle == nullptr) {
         IMAGE_LOGE("astc AstcClCreate handle calloc failed!");
