@@ -88,8 +88,8 @@ Image_ErrorCode OH_PictureMetadata_GetProperty(OH_PictureMetadata *metadata, Ima
 }
 
 MIDK_EXPORT
-Image_ErrorCode OH_PictureMetadata_GetMetadataByType(OH_PictureMetadata **metadatas, size_t metadataCount, int32_t type,
-    OH_PictureMetadata *metadata)
+Image_ErrorCode OH_PictureMetadata_GetMetadataByType(OH_PictureMetadata **metadatas, uint32_t metadataCount,
+    int32_t type, OH_PictureMetadata *metadata)
 {
     if (!OHOS::Media::ImageUtils::IsSystemApp()) {
         IMAGE_LOGE("This interface can be called only by system apps.");
@@ -223,7 +223,7 @@ Image_ErrorCode OH_PictureMetadata_Clone(OH_PictureMetadata *oldMetadata, OH_Pic
     return IMAGE_SUCCESS;
 }
 
-Image_ErrorCode OH_PictureMetadata_SetBlobData(OH_PictureMetadata *metadata, uint8_t *blob, size_t blobSize)
+Image_ErrorCode OH_PictureMetadata_SetBlobData(OH_PictureMetadata *metadata, uint8_t *blob, uint32_t blobSize)
 {
     if (metadata == nullptr || blob == nullptr || blobSize == 0) {
         return IMAGE_INVALID_PARAMETER;
@@ -240,7 +240,7 @@ Image_ErrorCode OH_PictureMetadata_SetBlobData(OH_PictureMetadata *metadata, uin
     return IMAGE_SUCCESS;
 }
  
-Image_ErrorCode OH_PictureMetadata_GetBlobData(OH_PictureMetadata *metadata, uint8_t *blob, size_t blobSize)
+Image_ErrorCode OH_PictureMetadata_GetBlobData(OH_PictureMetadata *metadata, uint8_t *blob, uint32_t blobSize)
 {
     if (metadata == nullptr || blob == nullptr || blobSize == 0) {
         return IMAGE_INVALID_PARAMETER;
@@ -248,6 +248,11 @@ Image_ErrorCode OH_PictureMetadata_GetBlobData(OH_PictureMetadata *metadata, uin
     if (!metadata->GetInnerAuxiliaryMetadata()) {
         IMAGE_LOGE("blob metadata is null");
         return IMAGE_UNSUPPORTED_METADATA;
+    }
+    uint32_t metadataSize = metadata->GetInnerAuxiliaryMetadata()->GetBlobSize();
+    if (blobSize < metadataSize) {
+        IMAGE_LOGE("blobSize is less than metadata length");
+        return IMAGE_INVALID_PARAMETER;
     }
     uint32_t ret = static_cast<uint32_t>(metadata->GetInnerAuxiliaryMetadata()->GetBlob(blobSize, blob));
     if (ret != IMAGE_SUCCESS) {
@@ -257,7 +262,7 @@ Image_ErrorCode OH_PictureMetadata_GetBlobData(OH_PictureMetadata *metadata, uin
     return IMAGE_SUCCESS;
 }
  
-Image_ErrorCode OH_PictureMetadata_GetBlobDataSize(OH_PictureMetadata *metadata, size_t *blobSize)
+Image_ErrorCode OH_PictureMetadata_GetBlobDataSize(OH_PictureMetadata *metadata, uint32_t *blobSize)
 {
     if (metadata == nullptr || blobSize == nullptr) {
         IMAGE_LOGE("Invalid parameter: metadata is null");

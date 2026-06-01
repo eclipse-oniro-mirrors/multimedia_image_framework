@@ -386,7 +386,7 @@ typedef enum {
 
     /**
      * DfxData metadata.
-     * @systemapi
+     *
      * @since 26.0.0
      */
     DFXDATA_METADATA = 13
@@ -448,7 +448,7 @@ Image_ErrorCode OH_PictureMetadata_SetProperty(OH_PictureMetadata *metadata, Ima
  *         </ul>
  * @since 26.0.0
  */
-Image_ErrorCode OH_PictureMetadata_SetBlobData(OH_PictureMetadata *metadata, uint8_t *blob, size_t blobSize);
+Image_ErrorCode OH_PictureMetadata_SetBlobData(OH_PictureMetadata *metadata, uint8_t *blob, uint32_t blobSize);
  
 /**
  * @brief Obtains the size of the blob data in the metadata.
@@ -457,12 +457,12 @@ Image_ErrorCode OH_PictureMetadata_SetBlobData(OH_PictureMetadata *metadata, uin
  * @param blobSize Pointer to the size of the blob data.
  * @return <ul>
  *         <li>{@link IMAGE_SUCCESS} if the execution is successful.</li>
- *         <li>{@link IMAGE_INVALID_PARAMETER} a parameter is incorrect.</li>
- *         <li>{@link IMAGE_UNSUPPORTED_METADATA} the metadata type is not supported.</li>
+ *         <li>{@link IMAGE_INVALID_PARAMETER} metadata or blobSize is nullptr.</li>
+ *         <li>{@link IMAGE_UNSUPPORTED_METADATA} unsupported metadata type.</li>
  *         </ul>
  * @since 26.0.0
  */
-Image_ErrorCode OH_PictureMetadata_GetBlobDataSize(OH_PictureMetadata *metadata, size_t *blobSize);
+Image_ErrorCode OH_PictureMetadata_GetBlobDataSize(OH_PictureMetadata *metadata, uint32_t *blobSize);
  
 /**
  * @brief Obtains blob data from the metadata.
@@ -480,7 +480,7 @@ Image_ErrorCode OH_PictureMetadata_GetBlobDataSize(OH_PictureMetadata *metadata,
  *         </ul>
  * @since 26.0.0
  */
-Image_ErrorCode OH_PictureMetadata_GetBlobData(OH_PictureMetadata *metadata, uint8_t *blob, size_t blobSize);
+Image_ErrorCode OH_PictureMetadata_GetBlobData(OH_PictureMetadata *metadata, uint8_t *blob, uint32_t blobSize);
 
 /**
  * @brief Sets the blob data in picture metadata.
@@ -566,8 +566,8 @@ Image_ErrorCode OH_PictureMetadata_Release(OH_PictureMetadata *metadata);
  *         </ul>
  * @since 26.0.0
  */
-Image_ErrorCode OH_PictureMetadata_GetMetadataByType(OH_PictureMetadata **metadatas, size_t metadataCount, int32_t type,
-    OH_PictureMetadata *metadata);
+Image_ErrorCode OH_PictureMetadata_GetMetadataByType(OH_PictureMetadata **metadatas, uint32_t metadataCount,
+    int32_t type, OH_PictureMetadata *metadata);
  
 /**
  * @brief Releases an array of OH_PictureMetadata objects.
@@ -581,7 +581,7 @@ Image_ErrorCode OH_PictureMetadata_GetMetadataByType(OH_PictureMetadata **metada
  *         </ul>
  * @since 26.0.0
  */
-Image_ErrorCode OH_PictureMetadatas_Release(OH_PictureMetadata **metadatas, size_t metadatasCount);
+Image_ErrorCode OH_PictureMetadatas_Release(OH_PictureMetadata **metadatas, uint32_t metadatasCount);
 
 /**
  * @brief Obtains a clone of metadata.

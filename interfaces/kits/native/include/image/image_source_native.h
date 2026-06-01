@@ -714,7 +714,67 @@ Image_ErrorCode OH_DecodingOptionsForPicture_GetNeedsDecodeDfxData(OH_DecodingOp
  */
 Image_ErrorCode OH_DecodingOptionsForPicture_SetNeedsDecodeDfxData(OH_DecodingOptionsForPicture *options,
     bool needsDecodeDfxData);
+
+/**
+ * @brief Gets the desiredSizeForMainPixelMap number for DecodingOptionsForPicture struct.
+ * @systemapi
+ * @param options The OH_DecodingOptionsForPicture pointer will be operated.
+ * @param desiredSizeForMainPixelmap On output, the number of main pixelMap desiredSize.
+ * @return <ul>
+ *         <li>{@link IMAGE_SUCCESS} if the execution is successful.</li>
+ *         <li>202 if a non-system application calls this system API.</li>
+ *         <li>{@link IMAGE_SOURCE_INVALID_PARAMETER} options is nullptr.</li>
+ *         </ul>
+ * @since 26.0.0
+ */
+Image_ErrorCode OH_DecodingOptionsForPicture_GetDesiredSizeForMainPixelmap(OH_DecodingOptionsForPicture *options,
+    Image_Size *desiredSizeForMainPixelmap);
  
+/**
+ * @brief Sets the desiredSizeForMainPixelMap number for DecodingOptionsForPicture struct.
+ * @systemapi
+ * @param options The OH_DecodingOptionsForPicture pointer will be operated.
+ * @param desiredSizeForMainPixelmap the number of main pixelMap desiredSize.
+ * @return <ul>
+ *         <li>{@link IMAGE_SUCCESS} if the execution is successful.</li>
+ *         <li>202 if a non-system application calls this system API.</li>
+ *         <li>{@link IMAGE_SOURCE_INVALID_PARAMETER} options is nullptr.</li>
+ *         </ul>
+ * @since 26.0.0
+ */
+Image_ErrorCode OH_DecodingOptionsForPicture_SetDesiredSizeForMainPixelmap(OH_DecodingOptionsForPicture *options,
+    Image_Size desiredSizeForMainPixelmap);
+ 
+/**
+ * @brief Get pixelFormat number for DecodingOptionsForPicture struct.
+ * @systemapi
+ * @param options The OH_DecodingOptionsForPicture pointer will be operated.
+ * @param desiredPixelFormat the number of image pixelFormat.
+ * @return <ul>
+ *         <li>{@link IMAGE_SUCCESS} if the execution is successful.</li>
+ *         <li>202 if a non-system application calls this system API.</li>
+ *         <li>{@link IMAGE_SOURCE_INVALID_PARAMETER} options is nullptr.</li>
+ *         </ul>
+ * @since 26.0.0
+ */
+Image_ErrorCode OH_DecodingOptionsForPicture_GetDesiredPixelFormat(OH_DecodingOptionsForPicture *options,
+    PIXEL_FORMAT *desiredPixelFormat);
+ 
+/**
+ * @brief Set pixelFormat number for DecodingOptionsForPicture struct.
+ * @systemapi
+ * @param options The OH_DecodingOptionsForPicture pointer will be operated.
+ * @param desiredPixelFormat Image pixel format.
+ * @return <ul>
+ *         <li>{@link IMAGE_SUCCESS} if the execution is successful.</li>
+ *         <li>202 if a non-system application calls this system API.</li>
+ *         <li>{@link IMAGE_SOURCE_INVALID_PARAMETER} options is nullptr.</li>
+ *         </ul>
+ * @since 26.0.0
+ */
+Image_ErrorCode OH_DecodingOptionsForPicture_SetDesiredPixelFormat(OH_DecodingOptionsForPicture *options,
+    PIXEL_FORMAT desiredPixelFormat);
+
 /**
  * @brief Get the desiredSizeForMainPixelMap number for DecodingOptionsForPicture struct.
  * @systemapi

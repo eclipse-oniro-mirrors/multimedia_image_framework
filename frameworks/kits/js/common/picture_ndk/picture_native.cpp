@@ -521,7 +521,7 @@ void InitOptionsForAuxiliaryPicture(OHOS::Media::AuxiliaryPictureInfo info,
 }
 
 MIDK_EXPORT
-Image_ErrorCode OH_AuxiliaryPictureNative_CreateUsingAllocator(uint8_t *data, size_t dataLength,
+Image_ErrorCode OH_AuxiliaryPictureNative_CreateUsingAllocator(uint8_t *data, uint32_t dataLength,
     OH_AuxiliaryPictureInfo *info, IMAGE_ALLOCATOR_MODE allocator, OH_AuxiliaryPictureNative **auxiliaryPicture)
 {
     if (!OHOS::Media::ImageUtils::IsSystemApp()) {
