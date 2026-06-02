@@ -78,6 +78,7 @@ static std::unique_ptr<Image_MimeType[], FreeDeleter> IMAGE_SOURCE_SUPPORTED_FOR
 static const size_t MAX_DOUBLE_ARRAY_SIZE = 8 * 1024;
 static const size_t MAX_INT_ARRAY_SIZE = 16 * 1024;
 static const size_t MAX_EXIF_SIZE = 64 * 1024;
+static const uint8_t PIXEL_FORMAT_ARGB_8888 = 1;
 
 struct OH_DecodingOptions {
     int32_t pixelFormat;
