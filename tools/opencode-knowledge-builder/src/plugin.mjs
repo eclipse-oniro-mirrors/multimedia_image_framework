@@ -17,7 +17,7 @@ export const KnowledgeBuilderPlugin = async () => ({
         module: tool.schema.string().optional(),
       },
       async execute(args) {
-        return asPrettyJson(buildRecipe(args.module || "pixelmap"));
+        return asPrettyJson(buildRecipe(args.module));
       },
     }),
 
@@ -27,7 +27,7 @@ export const KnowledgeBuilderPlugin = async () => ({
         module: tool.schema.string().optional(),
       },
       async execute(args) {
-        return buildKnowledgeDocTemplate(args.module || "pixelmap");
+        return buildKnowledgeDocTemplate(args.module);
       },
     }),
   },

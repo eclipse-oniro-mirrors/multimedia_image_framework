@@ -44,7 +44,7 @@ test("buildCommandTemplate starts the interactive knowledge workflow", () => {
   assert.match(command, /^---\ndescription:/);
   assert.match(command, /agent: knowledge-builder/);
   assert.match(command, /knowledge_recipe/);
-  assert.match(command, /\/knowledge pixelmap/);
+  assert.match(command, /\/knowledge <module>/);
   assert.match(command, /Discover/);
   assert.match(command, /Review Gate/);
   assert.match(command, /processArtifacts/);
@@ -62,20 +62,35 @@ test("buildAgentTemplate limits permissions and requires owner interview before 
   assert.match(agent, /不要把推测写成事实/);
 });
 
-test("buildRecipe returns the pixelmap code anchors, process artifacts, and expected output path", () => {
-  const recipe = buildRecipe("pixelmap");
+test("buildRecipe returns generic process artifacts for any module", () => {
+  const recipe = buildRecipe("sample module");
 
-  assert.equal(recipe.module, "pixelmap");
-  assert.equal(recipe.outputPath, "docs/knowledge/pixelmap-memory-model.md");
-  assert.equal(recipe.processArtifacts.evidence, "docs/knowledge/.drafts/pixelmap/evidence.md");
-  assert.equal(recipe.processArtifacts.interview, "docs/knowledge/.drafts/pixelmap/interview.md");
-  assert.equal(recipe.processArtifacts.draft, "docs/knowledge/.drafts/pixelmap/draft.md");
-  assert.equal(recipe.processArtifacts.review, "docs/knowledge/.drafts/pixelmap/review.md");
+  assert.equal(recipe.module, "sample module");
+  assert.equal(recipe.moduleSlug, "sample-module");
+  assert.equal(recipe.outputPath, "docs/knowledge/sample-module.md");
+  assert.equal(recipe.processArtifacts.evidence, "docs/knowledge/.drafts/sample-module/evidence.md");
+  assert.equal(recipe.processArtifacts.interview, "docs/knowledge/.drafts/sample-module/interview.md");
+  assert.equal(recipe.processArtifacts.draft, "docs/knowledge/.drafts/sample-module/draft.md");
+  assert.equal(recipe.processArtifacts.review, "docs/knowledge/.drafts/sample-module/review.md");
   assert.deepEqual(recipe.workflowPhases, ["Discover", "Interview Plan", "Owner Interview", "Draft", "Review Gate", "Finalize"]);
-  assert.ok(recipe.codeAnchors.includes("interfaces/innerkits/include/pixel_map.h"));
-  assert.ok(recipe.codeAnchors.includes("interfaces/innerkits/include/pixel_astc.h"));
-  assert.ok(recipe.interviewTopics.some((topic) => topic.includes("ASTC")));
+  assert.ok(recipe.routeSources.includes("AGENTS.md"));
+  assert.ok(recipe.discoveryQuestions.some((question) => question.includes("代码锚点")));
   assert.ok(recipe.reviewChecklist.some((item) => item.includes("代码锚点")));
+});
+
+test("package templates do not hardcode a pilot module name", async () => {
+  const packageRoot = new URL("..", import.meta.url);
+  const files = [
+    "README.md",
+    "src/install.mjs",
+    "src/plugin.mjs",
+    "bin/opencode-knowledge-builder.mjs",
+  ];
+
+  for (const file of files) {
+    const text = await readFile(new URL(file, packageRoot), "utf8");
+    assert.doesNotMatch(text, /pixelmap/i, `${file} should not hardcode pilot module names`);
+  }
 });
 
 test("installKnowledgeBuilder writes global command, agent, and config without clobbering", async () => {

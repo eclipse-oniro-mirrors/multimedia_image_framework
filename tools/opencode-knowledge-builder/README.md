@@ -23,10 +23,10 @@ It does not write `.opencode/` files into product repositories.
 Open an OpenHarmony repository in OpenCode and run:
 
 ```text
-/knowledge pixelmap
+/knowledge <module>
 ```
 
-The current pilot includes a built-in `pixelmap` recipe; later modules can reuse the same `/knowledge <module>` entry.
+The module name is an input. The plugin reads the current repository's `AGENTS.md` knowledge routing and code evidence to decide what to inspect and ask; it does not include module-specific interview questions.
 
 The workflow follows a superpowers-style gated process:
 
@@ -37,19 +37,19 @@ The workflow follows a superpowers-style gated process:
 5. `Review Gate` checks the draft against evidence, API compatibility, XTS, real-device validation, and unanswered questions.
 6. `Finalize` writes the final knowledge doc only after the user confirms.
 
-For `pixelmap`, process artifacts are written under:
+For a module named `<module>`, process artifacts are written under:
 
 ```text
-docs/knowledge/.drafts/pixelmap/evidence.md
-docs/knowledge/.drafts/pixelmap/interview.md
-docs/knowledge/.drafts/pixelmap/draft.md
-docs/knowledge/.drafts/pixelmap/review.md
+docs/knowledge/.drafts/<module>/evidence.md
+docs/knowledge/.drafts/<module>/interview.md
+docs/knowledge/.drafts/<module>/draft.md
+docs/knowledge/.drafts/<module>/review.md
 ```
 
-The final document path is:
+The final document path prefers the path found in `AGENTS.md`; otherwise it falls back to:
 
 ```text
-docs/knowledge/pixelmap-memory-model.md
+docs/knowledge/<module>.md
 ```
 
 ## Local Trial
