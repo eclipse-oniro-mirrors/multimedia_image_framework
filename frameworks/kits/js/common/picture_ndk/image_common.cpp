@@ -91,10 +91,6 @@ MIDK_EXPORT
 Image_ErrorCode OH_PictureMetadata_GetMetadataByType(OH_PictureMetadata **metadatas, uint32_t metadataCount,
     int32_t type, OH_PictureMetadata *metadata)
 {
-    if (!OHOS::Media::ImageUtils::IsSystemApp()) {
-        IMAGE_LOGE("This interface can be called only by system apps.");
-        return IMAGE_PERMISSIONS_FAILED;
-    }
     if (metadatas == nullptr || metadata == nullptr || metadataCount == 0) {
         return IMAGE_INVALID_PARAMETER;
     }
@@ -192,10 +188,6 @@ Image_ErrorCode OH_PictureMetadata_Release(OH_PictureMetadata *metadata)
 MIDK_EXPORT
 Image_ErrorCode OH_PictureMetadatas_Release(OH_PictureMetadata **metadatas, size_t metadatasCount)
 {
-    if (!OHOS::Media::ImageUtils::IsSystemApp()) {
-        IMAGE_LOGE("This interface can be called only by system apps.");
-        return IMAGE_PERMISSIONS_FAILED;
-    }
     if (metadatas == nullptr || metadatasCount == 0) {
         return IMAGE_INVALID_PARAMETER;
     }
