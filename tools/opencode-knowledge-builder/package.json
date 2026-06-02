@@ -1,0 +1,31 @@
+{
+  "name": "@ohos-graphics/opencode-knowledge-builder",
+  "version": "0.1.0",
+  "description": "OpenCode workflow plugin for building repository knowledge docs through code reading and owner interviews.",
+  "type": "module",
+  "main": "./src/plugin.mjs",
+  "exports": {
+    ".": "./src/plugin.mjs",
+    "./install": "./src/install.mjs"
+  },
+  "bin": {
+    "opencode-knowledge-builder": "./bin/opencode-knowledge-builder.mjs"
+  },
+  "scripts": {
+    "test": "node --test test/*.test.mjs",
+    "check": "node --check src/install.mjs && node --check src/plugin.mjs && node --check bin/opencode-knowledge-builder.mjs",
+    "pack:dry": "npm pack --dry-run"
+  },
+  "dependencies": {
+    "@opencode-ai/plugin": "^1.15.13"
+  },
+  "files": [
+    "bin/",
+    "src/",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "license": "Apache-2.0"
+}
