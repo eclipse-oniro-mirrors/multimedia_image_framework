@@ -431,6 +431,19 @@ void PixelYuv::scale(float xAxis, float yAxis, const AntiAliasingOption &option)
     }
 }
 
+static void SetDstYuvDataInfo(Size size, YUVStrideInfo dstStrides, YUVDataInfo &dstYuvDataInfo)
+{
+    dstYuvDataInfo.imageSize = {size.width, size.height};
+    dstYuvDataInfo.yWidth = static_cast<uint32_t>(size.width);
+    dstYuvDataInfo.yHeight = static_cast<uint32_t>(size.height);
+    dstYuvDataInfo.uvWidth = static_cast<uint32_t>((size.width + 1) / NUM_2);
+    dstYuvDataInfo.uvHeight = static_cast<uint32_t>(GetUVHeight(size.height));
+    dstYuvDataInfo.yStride = dstStrides.yStride;
+    dstYuvDataInfo.uvStride = dstStrides.uvStride;
+    dstYuvDataInfo.yOffset = dstStrides.yOffset;
+    dstYuvDataInfo.uvOffset = dstStrides.uvOffset;
+}
+
 uint32_t PixelYuv::Scale(float xAxis, float yAxis, AntiAliasingOption option)
 {
     if (!IsYuvFormat()) {
@@ -460,8 +473,10 @@ uint32_t PixelYuv::Scale(float xAxis, float yAxis, AntiAliasingOption option)
     GetImageYUVInfo(yuvDataInfo);
     YuvImageInfo srcInfo = {PixelYuvUtils::ConvertFormat(imageInfo.pixelFormat),
         imageInfo.size.width, imageInfo.size.height, imageInfo_.pixelFormat, yuvDataInfo};
+    YUVDataInfo dstYuvDataInfo;
+    SetDstYuvDataInfo({dstW, dstH}, dstStrides, dstYuvDataInfo);
     YuvImageInfo dstInfo = {PixelYuvUtils::ConvertFormat(imageInfo.pixelFormat),
-        dstW, dstH, imageInfo_.pixelFormat, yuvDataInfo};
+        dstW, dstH, imageInfo_.pixelFormat, dstYuvDataInfo};
     if (PixelYuvUtils::YuvScale(data_, srcInfo, yuvData, dstInfo, PixelYuvUtils::YuvConvertOption(option)) != SUCCESS) {
         IMAGE_LOGE("ScaleYuv failed");
         dstMemory->Release();
@@ -508,8 +523,10 @@ uint32_t PixelYuv::Scale(int32_t dstW, int32_t dstH, AntiAliasingOption option)
     GetImageYUVInfo(yuvDataInfo);
     YuvImageInfo srcInfo = {PixelYuvUtils::ConvertFormat(imageInfo.pixelFormat),
         imageInfo.size.width, imageInfo.size.height, imageInfo_.pixelFormat, yuvDataInfo};
+    YUVDataInfo dstYuvDataInfo;
+    SetDstYuvDataInfo({dstW, dstH}, dstStrides, dstYuvDataInfo);
     YuvImageInfo dstInfo = {PixelYuvUtils::ConvertFormat(imageInfo.pixelFormat),
-        dstW, dstH, imageInfo_.pixelFormat, yuvDataInfo};
+        dstW, dstH, imageInfo_.pixelFormat, dstYuvDataInfo};
     if (PixelYuvUtils::YuvScale(data_, srcInfo, yuvData, dstInfo, PixelYuvUtils::YuvConvertOption(option)) != SUCCESS) {
         IMAGE_LOGE("ScaleYuv failed");
         dstMemory->Release();
@@ -1267,19 +1284,6 @@ static void GetYuvDataInfo(PixelMap &source, YUVDataInfo &yuvDataInfo)
             yuvDataInfo.yStride, yuvDataInfo.uvStride);
     }
 #endif
-}
-
-static void SetDstYuvDataInfo(Size size, YUVStrideInfo dstStrides, YUVDataInfo &dstYuvDataInfo)
-{
-    dstYuvDataInfo.imageSize = {size.width, size.height};
-    dstYuvDataInfo.yWidth = static_cast<uint32_t>(size.width);
-    dstYuvDataInfo.yHeight = static_cast<uint32_t>(size.height);
-    dstYuvDataInfo.uvWidth = static_cast<uint32_t>((size.width + 1) / NUM_2);
-    dstYuvDataInfo.uvHeight = static_cast<uint32_t>(GetUVHeight(size.height));
-    dstYuvDataInfo.yStride = dstStrides.yStride;
-    dstYuvDataInfo.uvStride = dstStrides.uvStride;
-    dstYuvDataInfo.yOffset = dstStrides.yOffset;
-    dstYuvDataInfo.uvOffset = dstStrides.uvOffset;
 }
 
 std::unique_ptr<PixelMap> CreateDstPixelMap(PixelMap &source, Size targetSize, std::unique_ptr<AbsMemory> dstMemory,
