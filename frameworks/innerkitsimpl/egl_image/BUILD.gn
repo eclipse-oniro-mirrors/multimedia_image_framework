@@ -102,6 +102,9 @@ if (!use_clang_ios && !use_clang_android) {
       "hilog:libhilog",
       "hitrace:hitrace_meter",
       "skia:skia_canvaskit",
+      "egl:libEGL",
+      "opengles:libGLES",
+      "jsoncpp:jsoncpp",
     ]
     version_script = "post_proc.versionscript"
     innerapi_tags = [ "platformsdk" ]

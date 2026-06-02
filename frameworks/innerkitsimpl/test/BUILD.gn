@@ -69,6 +69,8 @@ ohos_unittest("pixelmaptest") {
     "resource_management:librawfile",
     "graphic_2d:GLESv3",
     "napi:ace_napi",
+    "egl:libEGL",
+    "opengles:libGLES",
   ]
 
   defines = []
@@ -767,6 +769,8 @@ ohos_unittest("convertertest") {
     "hilog:libhilog",
     "graphic_2d:GLESv3",
     "graphic_surface:surface",
+    "egl:libEGL",
+    "opengles:libGLES",
   ]
 }
 
@@ -1392,6 +1396,8 @@ ohos_unittest("eglimagetest") {
     "graphic_2d:color_manager",
     "graphic_surface:surface",
     "hilog:libhilog",
+    "egl:libEGL",
+    "opengles:libGLES",
   ]
 }
 
@@ -1437,6 +1443,8 @@ ohos_unittest("eglimagetest2") {
     "hitrace:hitrace_meter",
     "ipc:ipc_single",
     "skia:skia_canvaskit",
+    "egl:libEGL",
+    "opengles:libGLES",
   ]
 }
 

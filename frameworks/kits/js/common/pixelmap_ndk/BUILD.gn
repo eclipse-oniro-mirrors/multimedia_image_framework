@@ -94,6 +94,8 @@ ohos_shared_library("pixelmap") {
     "graphic_2d:libnative_color_space_manager",
     "graphic_surface:surface",
     "hilog:libhilog",
+    "egl:libEGL",
+    "opengles:libGLES",
   ]
 
   innerapi_tags = [ "ndk" ]

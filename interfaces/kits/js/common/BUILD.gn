@@ -331,6 +331,8 @@ if (use_clang_ios) {
       "ipc:ipc_single",
       "napi:ace_napi",
       "resource_management:librawfile",
+      "egl:libEGL",
+      "opengles:libGLES",
     ]
 
     public_external_deps = [ "graphic_2d:color_manager" ]
@@ -379,6 +381,8 @@ if (use_clang_ios) {
       external_deps = [
         "c_utils:utils",
         "hitrace:hitrace_meter",
+        "egl:libEGL",
+        "opengles:libGLES",
       ]
 
       if (defined(global_parts_info) &&
