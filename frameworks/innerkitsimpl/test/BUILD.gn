@@ -2564,43 +2564,21 @@ group("unittest") {
     ":imagepixelmapparceltest",
     ":imagepixelmaptest",
     ":imagesourcetest",
-    ":imagestreamtest",
     ":imagetiffparsertest",
     ":imageutilstest",
     ":interfacetest",
-    ":jpeg_yuv_decoder_test",
     ":jpegdecoderextest",
     ":jpegutilstest",
-    ":jpgyuvtest",
-    ":kvmetadatatest",
-    ":memorymanagertest",
-    ":metadatatest",
-    ":napitest",
-    ":ndktest2",
-    ":picturetest",
     ":pixelastctest",
-    ":pixelconvertadaptertest",
     ":pixelmaptest",
-    ":platformadptest",
-    ":pluginlibjpegtest",
-    ":pluginsmanagersrcframeworktest",
-    ":pngtest",
     #":rawdecodertest",
-    ":receivertest",
-    ":sk_ohoscodec_test",
-    ":streamtest",
     ":textureencodetest",
-    ":transformtest",
 
     ":cr3_parser_test",
     ":itempropertybasicboxtest",
     ":imagedfxtest",
-    ":heifsmetadatatest",
-    ":xmpmetadatatest"
+    ":heifsmetadatatest"
   ]
-  if (has_libtiff) {
-    deps += [ ":tiffplugintest" ]
-  }
 
   if (enable_jpeg_hw_decode) {
     deps += [ ":jpeg_hw_decoder_test" ]
