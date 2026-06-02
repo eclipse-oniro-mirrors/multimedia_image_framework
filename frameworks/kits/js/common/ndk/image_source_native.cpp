@@ -156,6 +156,16 @@ static OHOS::Media::AuxiliaryPictureType AuxTypeNativeToInner(Image_AuxiliaryPic
     return static_cast<OHOS::Media::AuxiliaryPictureType>(static_cast<int>(type));
 }
 
+static PIXEL_FORMAT PixelFormatInnerToNative(OHOS::Media::PixelFormat type)
+{
+    return static_cast<PIXEL_FORMAT>(static_cast<int>(type));
+}
+ 
+static OHOS::Media::PixelFormat PixelFormatNativeToInner(PIXEL_FORMAT type)
+{
+    return static_cast<OHOS::Media::PixelFormat>(static_cast<int>(type));
+}
+
 static DecodeDynamicRange ParseImageDynamicRange(int32_t val)
 {
     if (val <= static_cast<int32_t>(DecodeDynamicRange::HDR)) {
