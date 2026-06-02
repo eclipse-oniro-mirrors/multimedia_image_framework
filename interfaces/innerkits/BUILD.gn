@@ -520,6 +520,9 @@ if (use_mingw_win || use_clang_mac || use_clang_ios || use_clang_android) {
         "napi:ace_napi",
         "graphic_2d:GLESv3",
         "xmp_toolkit_sdk:xmpsdk",
+        "egl:libEGL",
+        "opengles:libGLES",
+        "jsoncpp:jsoncpp",
       ]
       if (enable_libexif) {
         external_deps += [ "libexif:libexif" ]

@@ -33,6 +33,8 @@ ohos_fuzztest("ImagePixelmapSlrGpuFuzzTest") {
     "graphic_surface:sync_fence",
     "hilog:libhilog",
     "hitrace:hitrace_meter",
+    "egl:libEGL",
+    "opengles:libGLES",
   ]
   fuzz_config_file = "$image_subsystem/frameworks/innerkitsimpl/test/fuzztest/imagepixelmapSlrGpu_fuzzer"
   module_out_path = "image_framework/image_framework"
