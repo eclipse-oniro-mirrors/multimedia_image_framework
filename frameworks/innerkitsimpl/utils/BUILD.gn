@@ -151,6 +151,7 @@ if (use_clang_ios) {
       ]
       external_deps += [
         "access_token:libprivacy_sdk",
+        "access_token:libtokenid_sdk",
         "bundle_framework:appexecfwk_base",
         "bundle_framework:appexecfwk_core",
         "c_utils:utils",
@@ -162,6 +163,7 @@ if (use_clang_ios) {
         "hisysevent:libhisysevent",
         "hitrace:hitrace_meter",
         "ipc:ipc_single",
+        "ipc:ipc_core",
         "os_account:os_account_innerkits",
         "samgr:samgr_proxy",
         "json:nlohmann_json_static",

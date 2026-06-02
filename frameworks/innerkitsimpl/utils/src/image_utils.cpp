@@ -45,6 +45,8 @@
 #include "image_system_properties.h"
 #include "image/abs_image_decoder.h"
 #include "pixel_map.h"
+#include "tokenid_kit.h"
+#include "ipc_skeleton.h"
 #ifdef IOS_PLATFORM
 #include <sys/syscall.h>
 #endif
@@ -2557,6 +2559,12 @@ PixelFormat ImageUtils::ConvertTo10BitPixelFormat(PixelFormat pixelFormat)
             break;
     }
     return hdrAllocFormat;
+}
+
+bool ImageUtils::IsSystemApp()
+{
+    static bool isSys = Security::AccessToken::TokenIdKit::IsSystemAppByFullTokenID(IPCSkeleton::GetSelfTokenID());
+    return isSys;
 }
 
 bool ImageUtils::CalcRGBStride(PixelFormat format, uint32_t width, int &stride)

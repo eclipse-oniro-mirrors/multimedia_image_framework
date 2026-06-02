@@ -1577,6 +1577,10 @@ MIDK_EXPORT
 Image_ErrorCode OH_DecodingOptionsForPicture_GetNeedsDecodeDfxData(OH_DecodingOptionsForPicture *options,
     bool *needsDecodeDfxData)
 {
+    if (!ImageUtils::IsSystemApp()) {
+        IMAGE_LOGE("This interface can be called only by system apps.");
+        return IMAGE_PERMISSIONS_FAILED;
+    }
     if (options == nullptr || !options->GetInnerDecodingOptForPicture()) {
         return IMAGE_SOURCE_INVALID_PARAMETER;
     }
@@ -1589,6 +1593,10 @@ MIDK_EXPORT
 Image_ErrorCode OH_DecodingOptionsForPicture_SetNeedsDecodeDfxData(OH_DecodingOptionsForPicture *options,
     bool needsDecodeDfxData)
 {
+    if (!ImageUtils::IsSystemApp()) {
+        IMAGE_LOGE("This interface can be called only by system apps.");
+        return IMAGE_PERMISSIONS_FAILED;
+    }
     if (options == nullptr || !options->GetInnerDecodingOptForPicture()) {
         return IMAGE_SOURCE_INVALID_PARAMETER;
     }
@@ -1601,6 +1609,10 @@ MIDK_EXPORT
 Image_ErrorCode OH_DecodingOptionsForPicture_GetDesiredSizeForMainPixelmap(OH_DecodingOptionsForPicture *options,
     Image_Size *desiredSizeForMainPixelmap)
 {
+    if (!ImageUtils::IsSystemApp()) {
+        IMAGE_LOGE("This interface can be called only by system apps.");
+        return IMAGE_PERMISSIONS_FAILED;
+    }
     if (options == nullptr || !options->GetInnerDecodingOptForPicture() ||
         desiredSizeForMainPixelmap == nullptr) {
         return IMAGE_SOURCE_INVALID_PARAMETER;
@@ -1617,6 +1629,10 @@ MIDK_EXPORT
 Image_ErrorCode OH_DecodingOptionsForPicture_SetDesiredSizeForMainPixelmap(OH_DecodingOptionsForPicture *options,
     Image_Size desiredSizeForMainPixelmap)
 {
+    if (!ImageUtils::IsSystemApp()) {
+        IMAGE_LOGE("This interface can be called only by system apps.");
+        return IMAGE_PERMISSIONS_FAILED;
+    }
     if (options == nullptr || !options->GetInnerDecodingOptForPicture()) {
         return IMAGE_SOURCE_INVALID_PARAMETER;
     }
@@ -1632,6 +1648,10 @@ MIDK_EXPORT
 Image_ErrorCode OH_DecodingOptionsForPicture_GetDesiredPixelFormat(OH_DecodingOptionsForPicture *options,
     PIXEL_FORMAT *desiredPixelFormat)
 {
+    if (!ImageUtils::IsSystemApp()) {
+        IMAGE_LOGE("This interface can be called only by system apps.");
+        return IMAGE_PERMISSIONS_FAILED;
+    }
     if (options == nullptr || !options->GetInnerDecodingOptForPicture() ||
         desiredPixelFormat == nullptr) {
         return IMAGE_SOURCE_INVALID_PARAMETER;
@@ -1645,6 +1665,10 @@ MIDK_EXPORT
 Image_ErrorCode OH_DecodingOptionsForPicture_SetDesiredPixelFormat(OH_DecodingOptionsForPicture *options,
     PIXEL_FORMAT desiredPixelFormat)
 {
+    if (!ImageUtils::IsSystemApp()) {
+        IMAGE_LOGE("This interface can be called only by system apps.");
+        return IMAGE_PERMISSIONS_FAILED;
+    }
     if (options == nullptr || !options->GetInnerDecodingOptForPicture()) {
         return IMAGE_SOURCE_INVALID_PARAMETER;
     }
@@ -1713,6 +1737,10 @@ MIDK_EXPORT
 Image_ErrorCode OH_ImageSourceNative_ReadImageMetadataByType(OH_ImageSourceNative *source, uint32_t index,
     Image_MetadataType *metadataTypes, size_t typeCount, OH_PictureMetadata **outMetadataArray, size_t *metadataCount)
 {
+    if (!ImageUtils::IsSystemApp()) {
+        IMAGE_LOGE("This interface can be called only by system apps.");
+        return IMAGE_PERMISSIONS_FAILED;
+    }
     if (source == nullptr || source->GetInnerImageSource() == nullptr || outMetadataArray == nullptr ||
         metadataCount == nullptr) {
         return IMAGE_SOURCE_INVALID_PARAMETER;

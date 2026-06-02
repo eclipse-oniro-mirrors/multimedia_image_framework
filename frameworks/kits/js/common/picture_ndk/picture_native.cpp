@@ -524,6 +524,10 @@ MIDK_EXPORT
 Image_ErrorCode OH_AuxiliaryPictureNative_CreateUsingAllocator(uint8_t *data, uint32_t dataLength,
     OH_AuxiliaryPictureInfo *info, IMAGE_ALLOCATOR_MODE allocator, OH_AuxiliaryPictureNative **auxiliaryPicture)
 {
+    if (!OHOS::Media::ImageUtils::IsSystemApp()) {
+        IMAGE_LOGE("This interface can be called only by system apps.");
+        return IMAGE_PERMISSIONS_FAILED;
+    }
     if (info == nullptr || info->GetInnerAuxiliaryPictureInfo() == nullptr ||
         auxiliaryPicture == nullptr || allocator < IMAGE_ALLOCATOR_MODE_AUTO ||
         allocator > IMAGE_ALLOCATOR_MODE_SHARED_MEMORY) {
