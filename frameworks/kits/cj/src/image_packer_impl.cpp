@@ -60,6 +60,17 @@ struct ImagePackerContext {
     int32_t packType = TYPE_IMAGE_SOURCE;
 };
 
+static std::shared_ptr<ImagePackerContext> CreateImagePackerContext(
+    std::shared_ptr<ImagePacker> packer, int32_t packType)
+{
+    auto context = std::make_shared<ImagePackerContext>();
+    if (context) {
+        context->rImagePacker = packer;
+        context->packType = packType;
+    }
+    return context;
+}
+
 static uint64_t getDefaultBufferSize(int32_t width, int32_t height)
 {
     if (width <= SIZE_256 && height <= SIZE_256) {
@@ -103,7 +114,6 @@ static uint64_t getDefaultBufferSize(std::shared_ptr<ImagePackerContext> context
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 bool SetPicture(std::shared_ptr<ImagePackerContext> context, uint32_t& addImageRet)
 {
-    IMAGE_LOGD("ImagePacker set picture");
     if (context->rPicture == nullptr) {
         return false;
     }
@@ -115,25 +125,22 @@ bool SetPicture(std::shared_ptr<ImagePackerContext> context, uint32_t& addImageR
 static uint32_t CommonPackToDataExec(std::shared_ptr<ImagePackerContext> context)
 {
     if (context->packType == TYPE_IMAGE_SOURCE) {
-        IMAGE_LOGI("ImagePacker set image source");
         if (context->rImageSource == nullptr) {
             IMAGE_LOGE("ImageSource is nullptr");
             return COMMON_ERR_INVALID_PARAMETER;
         }
         return context->rImagePacker->AddImage(*(context->rImageSource));
     } else if (context->packType == TYPE_PIXEL_MAP) {
-        IMAGE_LOGD("ImagePacker set pixelmap");
         if (context->rPixelMap == nullptr) {
-            IMAGE_LOGE("Pixelmap is nullptr");
+            IMAGE_LOGE("PixelMap is nullptr");
             return COMMON_ERR_INVALID_PARAMETER;
         }
         return context->rImagePacker->AddImage(*(context->rPixelMap));
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     } else if (context->packType == TYPE_PICTURE) {
-        IMAGE_LOGD("ImagePacker set picture");
         uint32_t addImageRet = SUCCESS;
         if (!SetPicture(context, addImageRet)) {
-            IMAGE_LOGE("Picture is nullptr");
+            IMAGE_LOGE("pic null");
             return IMAGE_BAD_PARAMETER;
         }
         return addImageRet;
@@ -148,26 +155,25 @@ static std::tuple<int32_t, uint8_t*, int64_t> CommonPackToData(
     uint32_t innerEncodeErrorCode =
         static_cast<uint32_t>(context->packType == TYPE_PICTURE ? IMAGE_ENCODE_FAILED : ERR_IMAGE_ENCODE_FAILED);
     if (context->rImagePacker == nullptr) {
-        IMAGE_LOGE("Packing failed, real_ is nullptr");
+        IMAGE_LOGE("Pack: real null");
         return std::make_tuple(innerEncodeErrorCode, nullptr, 0);
     }
 
-    IMAGE_LOGD("ImagePacker BufferSize %{public}" PRId64, bufferSize);
     bufferSize = bufferSize <= 0 ? getDefaultBufferSize(context) : bufferSize;
     if (bufferSize > INT32_MAX) {
-        IMAGE_LOGE("Packing failed, bufferSize cannot be more than INT32_MAX");
+        IMAGE_LOGE("Pack: buf > INT32_MAX");
         return std::make_tuple(innerEncodeErrorCode, nullptr, 0);
     }
 
     uint8_t* resultBuffer = static_cast<uint8_t*>(malloc(sizeof(uint8_t) * bufferSize));
     if (resultBuffer == nullptr) {
-        IMAGE_LOGE("ImagePacker buffer alloc error");
+        IMAGE_LOGE("buf alloc err");
         return std::make_tuple(innerEncodeErrorCode, nullptr, 0);
     }
 
     uint32_t packingRet = context->rImagePacker->StartPacking(resultBuffer, bufferSize, option);
     if (packingRet != SUCCESS) {
-        IMAGE_LOGE("Packing start packing failed");
+        IMAGE_LOGE("Pack: start fail");
         free(resultBuffer);
         packingRet = packingRet == ERR_IMAGE_INVALID_PARAMETER ? COMMON_ERR_INVALID_PARAMETER : innerEncodeErrorCode;
         return std::make_tuple(packingRet, nullptr, 0);
@@ -175,7 +181,7 @@ static std::tuple<int32_t, uint8_t*, int64_t> CommonPackToData(
 
     uint32_t addImageRet = CommonPackToDataExec(context);
     if (addImageRet != SUCCESS) {
-        IMAGE_LOGE("Packing failed, AddImage failed, ret=%{public}u.", addImageRet);
+        IMAGE_LOGE("Pack: add fail %{public}u", addImageRet);
         free(resultBuffer);
         return std::make_tuple(addImageRet, nullptr, 0);
     }
@@ -185,12 +191,12 @@ static std::tuple<int32_t, uint8_t*, int64_t> CommonPackToData(
     if (finalPackRet == SUCCESS) {
         return std::make_tuple(SUCCESS_CODE, resultBuffer, packedSize);
     } else if (packedSize == static_cast<int64_t>(bufferSize)) {
-        IMAGE_LOGE("output buffer is not enough");
+        IMAGE_LOGE("buf not enough");
         free(resultBuffer);
         return context->packType == TYPE_PICTURE ? std::make_tuple(IMAGE_ENCODE_FAILED, nullptr, 0)
                                                  : std::make_tuple(ERR_IMAGE_TOO_LARGE, nullptr, 0);
     } else {
-        IMAGE_LOGE("Packing failed, packedSize outside size.");
+        IMAGE_LOGE("Pack: size err");
         free(resultBuffer);
         finalPackRet =
             finalPackRet == ERR_IMAGE_INVALID_PARAMETER ? ERR_IMAGE_INVALID_PARAMETER : innerEncodeErrorCode;
@@ -205,7 +211,7 @@ static uint32_t FinalizePacking(std::shared_ptr<ImagePackerContext> context)
     if (finalPackRet == SUCCESS && packedSize > 0) {
         return SUCCESS;
     } else {
-        IMAGE_LOGE("Packing failed, packedSize outside size.");
+        IMAGE_LOGE("Pack: size err");
         if (context->packType != TYPE_PICTURE) {
             return finalPackRet;
         }
@@ -216,135 +222,167 @@ static uint32_t FinalizePacking(std::shared_ptr<ImagePackerContext> context)
 static uint32_t CommonPackToFile(std::shared_ptr<ImagePackerContext> context, int fd, const PackOption& option)
 {
     if (fd <= INVALID_FD) {
-        IMAGE_LOGE("ImagePacker invalid fd");
+        IMAGE_LOGE("Pack: invalid fd");
         return ERR_IMAGE_INVALID_PARAMETER;
     }
     if (context->rImagePacker == nullptr) {
-        IMAGE_LOGE("Packing failed, real_ is nullptr");
+        IMAGE_LOGE("Pack: real null");
         return context->packType == TYPE_PICTURE ? ERR_IMAGE_INVALID_PARAMETER : ERR_IMAGE_INIT_ABNORMAL;
     }
 
     uint32_t packingRet = context->rImagePacker->StartPacking(fd, option);
     if (packingRet != SUCCESS) {
-        IMAGE_LOGE("Packing failed, StartPacking failed, ret=%{public}u.", packingRet);
+        IMAGE_LOGE("Pack: start fail %{public}u", packingRet);
         return packingRet;
     }
 
     uint32_t addImageRet = SUCCESS;
     if (context->packType == TYPE_IMAGE_SOURCE) {
-        IMAGE_LOGD("ImagePacker set image source");
-        if (!context->rImageSource) {
+        if (context->rImageSource == nullptr) {
             IMAGE_LOGE("ImageSource is nullptr");
             return ERR_IMAGE_INVALID_PARAMETER;
         }
         addImageRet = context->rImagePacker->AddImage(*(context->rImageSource));
     } else if (context->packType == TYPE_PIXEL_MAP) {
-        IMAGE_LOGD("ImagePacker set pixelmap");
-        if (!context->rPixelMap) {
-            IMAGE_LOGE("Pixelmap is nullptr");
+        if (context->rPixelMap == nullptr) {
+            IMAGE_LOGE("PixelMap is nullptr");
             return ERR_IMAGE_INVALID_PARAMETER;
         }
         addImageRet = context->rImagePacker->AddImage(*(context->rPixelMap));
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     } else if (context->packType == TYPE_PICTURE) {
-        IMAGE_LOGD("ImagePacker set picture");
         if (!SetPicture(context, addImageRet)) {
-            IMAGE_LOGE("Picture is nullptr");
+            IMAGE_LOGE("pic null");
             return ERR_IMAGE_INVALID_PARAMETER;
         }
 #endif
     }
     if (addImageRet != SUCCESS) {
-        IMAGE_LOGE("Packing failed, AddImage failed, ret=%{public}u.", addImageRet);
+        IMAGE_LOGE("Pack: add fail %{public}u", addImageRet);
         return addImageRet;
     }
     return FinalizePacking(context);
 }
 
+namespace {
+template<typename T>
+std::tuple<int32_t, uint8_t*, int64_t> CommonPacking(
+    std::shared_ptr<ImagePacker> real, T& source, const PackOption& option, uint64_t bufferSize)
+{
+    if (real == nullptr) {
+        IMAGE_LOGE("Pack: real null");
+        return std::make_tuple(ERR_IMAGE_INIT_ABNORMAL, nullptr, 0);
+    }
+
+    if (bufferSize <= 0 || bufferSize > INT32_MAX) {
+        IMAGE_LOGE("Pack: buf range err");
+        return std::make_tuple(ERR_IMAGE_INIT_ABNORMAL, nullptr, 0);
+    }
+
+    uint8_t* resultBuffer = static_cast<uint8_t*>(malloc(sizeof(uint8_t) * bufferSize));
+    if (resultBuffer == nullptr) {
+        IMAGE_LOGE("Pack: malloc fail");
+        return std::make_tuple(ERR_IMAGE_INIT_ABNORMAL, nullptr, 0);
+    }
+
+    uint32_t packingRet = real->StartPacking(resultBuffer, bufferSize, option);
+    if (packingRet != SUCCESS) {
+        IMAGE_LOGE("Pack: start fail %{public}u", packingRet);
+        free(resultBuffer);
+        return std::make_tuple(packingRet, nullptr, 0);
+    }
+
+    uint32_t addImageRet = real->AddImage(source);
+    if (addImageRet != SUCCESS) {
+        IMAGE_LOGE("Pack: add fail %{public}u", addImageRet);
+        free(resultBuffer);
+        return std::make_tuple(addImageRet, nullptr, 0);
+    }
+
+    int64_t packedSize = 0;
+    uint32_t finalPackRet = real->FinalizePacking(packedSize);
+    if (finalPackRet != SUCCESS) {
+        IMAGE_LOGE("Pack: finalize fail %{public}u", finalPackRet);
+        free(resultBuffer);
+        return std::make_tuple(finalPackRet, nullptr, 0);
+    }
+
+    return std::make_tuple(SUCCESS_CODE, resultBuffer, packedSize);
+}
+} // namespace
+
 std::tuple<int32_t, uint8_t*, int64_t> ImagePackerImpl::Packing(
     PixelMap& source, const PackOption& option, uint64_t bufferSize)
 {
-    return CommonPacking<PixelMap>(source, option, bufferSize);
+    return CommonPacking<PixelMap>(real_, source, option, bufferSize);
 }
 
 std::tuple<int32_t, uint8_t*, int64_t> ImagePackerImpl::Packing(
     ImageSource& source, const PackOption& option, uint64_t bufferSize)
 {
-    return CommonPacking<ImageSource>(source, option, bufferSize);
+    return CommonPacking<ImageSource>(real_, source, option, bufferSize);
 }
 
 std::tuple<int32_t, uint8_t*, int64_t> ImagePackerImpl::PackToData(
     std::shared_ptr<PixelMap> source, const PackOption& option, uint64_t bufferSize)
 {
-    std::shared_ptr<ImagePackerContext> context = std::make_shared<ImagePackerContext>();
-    if (context == nullptr) {
+    auto context = CreateImagePackerContext(real_, TYPE_PIXEL_MAP);
+    if (context == nullptr || source == nullptr) {
         return std::make_tuple(ERR_IMAGE_ENCODE_FAILED, nullptr, 0);
     }
     context->rPixelMap = source;
-    context->packType = TYPE_PIXEL_MAP;
-    context->rImagePacker = real_;
     return CommonPackToData(context, option, bufferSize);
 }
 
 std::tuple<int32_t, uint8_t*, int64_t> ImagePackerImpl::PackToData(
     std::shared_ptr<ImageSource> source, const PackOption& option, uint64_t bufferSize)
 {
-    std::shared_ptr<ImagePackerContext> context = std::make_shared<ImagePackerContext>();
-    if (context == nullptr) {
+    auto context = CreateImagePackerContext(real_, TYPE_IMAGE_SOURCE);
+    if (context == nullptr || source == nullptr) {
         return std::make_tuple(ERR_IMAGE_ENCODE_FAILED, nullptr, 0);
     }
     context->rImageSource = source;
-    context->packType = TYPE_IMAGE_SOURCE;
-    context->rImagePacker = real_;
     return CommonPackToData(context, option, bufferSize);
 }
 
 std::tuple<int32_t, uint8_t*, int64_t> ImagePackerImpl::PackToData(
     std::shared_ptr<Picture> source, const PackOption& option, uint64_t bufferSize)
 {
-    std::shared_ptr<ImagePackerContext> context = std::make_shared<ImagePackerContext>();
-    if (context == nullptr) {
+    auto context = CreateImagePackerContext(real_, TYPE_PICTURE);
+    if (context == nullptr || source == nullptr) {
         return std::make_tuple(IMAGE_ENCODE_FAILED, nullptr, 0);
     }
     context->rPicture = source;
-    context->packType = TYPE_PICTURE;
-    context->rImagePacker = real_;
     return CommonPackToData(context, option, bufferSize);
 }
 
 uint32_t ImagePackerImpl::PackToFile(std::shared_ptr<PixelMap> source, int fd, const PackOption& option)
 {
-    std::shared_ptr<ImagePackerContext> context = std::make_shared<ImagePackerContext>();
-    if (context == nullptr) {
+    auto context = CreateImagePackerContext(real_, TYPE_PIXEL_MAP);
+    if (context == nullptr || source == nullptr) {
         return ERR_IMAGE_ENCODE_FAILED;
     }
     context->rPixelMap = source;
-    context->packType = TYPE_PIXEL_MAP;
-    context->rImagePacker = real_;
     return CommonPackToFile(context, fd, option);
 }
 
 uint32_t ImagePackerImpl::PackToFile(std::shared_ptr<ImageSource> source, int fd, const PackOption& option)
 {
-    std::shared_ptr<ImagePackerContext> context = std::make_shared<ImagePackerContext>();
-    if (context == nullptr) {
+    auto context = CreateImagePackerContext(real_, TYPE_IMAGE_SOURCE);
+    if (context == nullptr || source == nullptr) {
         return ERR_IMAGE_ENCODE_FAILED;
     }
     context->rImageSource = source;
-    context->packType = TYPE_IMAGE_SOURCE;
-    context->rImagePacker = real_;
     return CommonPackToFile(context, fd, option);
 }
 
 uint32_t ImagePackerImpl::PackToFile(std::shared_ptr<Picture> source, int fd, const PackOption& option)
 {
-    std::shared_ptr<ImagePackerContext> context = std::make_shared<ImagePackerContext>();
-    if (context == nullptr) {
+    auto context = CreateImagePackerContext(real_, TYPE_PICTURE);
+    if (context == nullptr || source == nullptr) {
         return IMAGE_ENCODE_FAILED;
     }
     context->rPicture = source;
-    context->packType = TYPE_PICTURE;
-    context->rImagePacker = real_;
     return CommonPackToFile(context, fd, option);
 }
 } // namespace Media

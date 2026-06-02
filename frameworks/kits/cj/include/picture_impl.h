@@ -21,7 +21,7 @@
 
 namespace OHOS {
 namespace Media {
-class PictureImpl : public OHOS::FFI::FFIData {
+class FFI_EXPORT PictureImpl : public OHOS::FFI::FFIData {
     DECL_TYPE(PictureImpl, OHOS::FFI::FFIData)
 public:
     explicit PictureImpl(std::shared_ptr<Picture> picture);

@@ -16,7 +16,11 @@ import("//foundation/multimedia/image_framework/ide/image_decode_config.gni")
 
 config("ffi_image_native_config") {
   include_dirs = [ "include" ]
-  cflags_cc = [ "-std=c++17" ]
+  cflags_cc = [
+    "-std=c++17",
+    "-Os",
+    "-fvisibility=hidden",
+  ]
 }
 
 ohos_shared_library("cj_image_ffi") {
@@ -81,6 +85,8 @@ ohos_shared_library("cj_image_ffi") {
     "src/picture_impl.cpp",
     "src/pixel_map_impl.cpp",
   ]
+
+  version_script = "cj_image_ffi.map"
 
   if (is_ohos) {
     defines += [ "OHOS_PLATFORM" ]

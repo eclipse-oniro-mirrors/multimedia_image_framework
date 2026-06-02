@@ -48,51 +48,6 @@ public:
         real_.reset();
     }
 
-    template<typename T>
-    std::tuple<int32_t, uint8_t*, int64_t> CommonPacking(T& source, const PackOption& option, uint64_t bufferSize)
-    {
-        if (real_ == nullptr) {
-            IMAGE_LOGE("Packing failed, real_ is nullptr");
-            return std::make_tuple(ERR_IMAGE_INIT_ABNORMAL, nullptr, 0);
-        }
-
-        if (bufferSize <= 0 || bufferSize > INT32_MAX) {
-            IMAGE_LOGE("Packing failed, bufferSize cannot be less than or equal to 0 or more than INT32_MAX");
-            return std::make_tuple(ERR_IMAGE_INIT_ABNORMAL, nullptr, 0);
-        }
-
-        uint8_t* resultBuffer = static_cast<uint8_t*>(malloc(sizeof(uint8_t) * bufferSize));
-        if (resultBuffer == nullptr) {
-            IMAGE_LOGE("Packing failed, malloc buffer failed");
-            return std::make_tuple(ERR_IMAGE_INIT_ABNORMAL, nullptr, 0);
-        }
-
-        uint32_t packingRet = real_->StartPacking(resultBuffer, bufferSize, option);
-        if (packingRet != SUCCESS) {
-            IMAGE_LOGE("Packing failed, StartPacking failed, ret=%{public}u.", packingRet);
-            free(resultBuffer);
-            return std::make_tuple(packingRet, nullptr, 0);
-        }
-
-        uint32_t addImageRet = real_->AddImage(source);
-        if (addImageRet != SUCCESS) {
-            IMAGE_LOGE("Packing failed, AddImage failed, ret=%{public}u.", addImageRet);
-            free(resultBuffer);
-            return std::make_tuple(addImageRet, nullptr, 0);
-        }
-
-        int64_t packedSize = 0;
-        uint32_t finalPackRet = real_->FinalizePacking(packedSize);
-        if (finalPackRet != SUCCESS) {
-            IMAGE_LOGE("Packing failed, FinalizePacking failed, ret=%{public}u.", finalPackRet);
-            free(resultBuffer);
-            return std::make_tuple(finalPackRet, nullptr, 0);
-        }
-        IMAGE_LOGD("packedSize=%{public}" PRId64, packedSize);
-
-        return std::make_tuple(SUCCESS_CODE, resultBuffer, packedSize);
-    }
-
 private:
     std::shared_ptr<ImagePacker> real_ = nullptr;
 };

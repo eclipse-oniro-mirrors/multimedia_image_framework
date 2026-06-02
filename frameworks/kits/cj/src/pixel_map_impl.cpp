@@ -49,7 +49,7 @@ std::unique_ptr<PixelMap> PixelMapImpl::CreatePixelMap(const InitializationOptio
     }
     std::unique_ptr<PixelMap> ptr_ = PixelMap::Create(opts);
     if (ptr_ == nullptr) {
-        IMAGE_LOGE("[PixelMapImpl] instance init failed!");
+        IMAGE_LOGE("inst init fail");
     }
     return ptr_;
 }
@@ -63,7 +63,7 @@ std::unique_ptr<PixelMap> PixelMapImpl::CreatePixelMap(
     }
     std::unique_ptr<PixelMap> ptr_ = PixelMap::Create(colors, colorLength, opts);
     if (ptr_ == nullptr) {
-        IMAGE_LOGE("[PixelMapImpl] instance init failed!");
+        IMAGE_LOGE("inst init fail");
     }
     return ptr_;
 }
@@ -72,7 +72,7 @@ std::unique_ptr<PixelMap> PixelMapImpl::CreateAlphaPixelMap(PixelMap& source, In
 {
     std::unique_ptr<PixelMap> ptr_ = PixelMap::Create(source, opts);
     if (ptr_ == nullptr) {
-        IMAGE_LOGE("[PixelMapImpl] instance init failed!");
+        IMAGE_LOGE("inst init fail");
     }
     return ptr_;
 }
@@ -146,7 +146,7 @@ uint32_t PixelMapImpl::WritePixels(
 void PixelMapImpl::GetImageInfo(ImageInfo& imageInfo)
 {
     if (real_ == nullptr) {
-        IMAGE_LOGE("[PixelMapImpl] real_ is nullptr!");
+        IMAGE_LOGE("real null");
         return;
     }
     real_->GetImageInfo(imageInfo);
@@ -155,7 +155,7 @@ void PixelMapImpl::GetImageInfo(ImageInfo& imageInfo)
 int32_t PixelMapImpl::GetDensity()
 {
     if (real_ == nullptr) {
-        IMAGE_LOGE("[PixelMapImpl] real_ is nullptr!");
+        IMAGE_LOGE("real null");
         return 0;
     }
     return real_->GetBaseDensity();
@@ -172,7 +172,7 @@ uint32_t PixelMapImpl::Opacity(float percent)
 void PixelMapImpl::Scale(float xAxis, float yAxis)
 {
     if (real_ == nullptr) {
-        IMAGE_LOGE("[PixelMapImpl] real_ is nullptr!");
+        IMAGE_LOGE("real null");
         return;
     }
     real_->scale(xAxis, yAxis);
@@ -181,7 +181,7 @@ void PixelMapImpl::Scale(float xAxis, float yAxis)
 void PixelMapImpl::Scale(float xAxis, float yAxis, AntiAliasingOption& option)
 {
     if (real_ == nullptr) {
-        IMAGE_LOGE("[PixelMapImpl] real_ is nullptr!");
+        IMAGE_LOGE("real null");
         return;
     }
     real_->scale(xAxis, yAxis, option);
@@ -190,11 +190,11 @@ void PixelMapImpl::Scale(float xAxis, float yAxis, AntiAliasingOption& option)
 uint32_t PixelMapImpl::ApplyScale(float xAxis, float yAxis, AntiAliasingOption& option)
 {
     if (real_ == nullptr) {
-        IMAGE_LOGE("[PixelMapImpl] real_ is nullptr!");
+        IMAGE_LOGE("real null");
         return ERR_IMAGE_GET_IMAGE_DATA_FAILED;
     }
     if (!GetPixelMapImplEditable()) {
-        IMAGE_LOGE("[PixelMapImpl] ApplyScale pixelmap is not editable");
+        IMAGE_LOGE("ApplyScale pixelmap is not editable");
         return ERR_RESOURCE_UNAVAILABLE;
     }
     uint32_t status = real_->Scale(xAxis, yAxis, option);
@@ -203,7 +203,7 @@ uint32_t PixelMapImpl::ApplyScale(float xAxis, float yAxis, AntiAliasingOption& 
     } else if (status == ERR_IMAGE_READ_PIXELMAP_FAILED) {
         return ERR_IMAGE_READ_PIXELMAP_FAILED;
     } else if (status != SUCCESS) {
-        IMAGE_LOGE("[PixelMapImpl] ApplyScale failed, status: %{public}u", status);
+        IMAGE_LOGE("scale fail: %{public}u", status);
         return ERR_IMAGE_GET_IMAGE_DATA_FAILED;
     }
     return SUCCESS;
@@ -212,18 +212,18 @@ uint32_t PixelMapImpl::ApplyScale(float xAxis, float yAxis, AntiAliasingOption& 
 std::shared_ptr<PixelMap> PixelMapImpl::Clone(int32_t& errCode)
 {
     if (real_ == nullptr) {
-        IMAGE_LOGE("[PixelMapImpl] real_ is nullptr!");
+        IMAGE_LOGE("real null");
         errCode = ERR_IMAGE_INIT_ABNORMAL;
         return nullptr;
     }
     if (!GetPixelMapImplEditable()) {
-        IMAGE_LOGE("[PixelMapImpl] Clone pixelmap has crossed threads");
+        IMAGE_LOGE("Clone pixelmap has crossed threads");
         errCode = ERR_RESOURCE_UNAVAILABLE;
         return nullptr;
     }
     auto clonePixelMap = real_->Clone(errCode);
     if (clonePixelMap == nullptr) {
-        IMAGE_LOGE("[PixelMapImpl] Clone failed, errCode: %{public}d", errCode);
+        IMAGE_LOGE("clone fail: %{public}d", errCode);
     }
     return clonePixelMap;
 }
@@ -231,11 +231,11 @@ std::shared_ptr<PixelMap> PixelMapImpl::Clone(int32_t& errCode)
 uint32_t PixelMapImpl::SetMemoryName(const std::string& name)
 {
     if (real_ == nullptr) {
-        IMAGE_LOGE("[PixelMapImpl] real_ is nullptr!");
+        IMAGE_LOGE("real null");
         return ERR_IMAGE_INIT_ABNORMAL;
     }
     if (!GetPixelMapImplEditable()) {
-        IMAGE_LOGE("[PixelMapImpl] SetMemoryName pixelmap has crossed threads");
+        IMAGE_LOGE("crossed threads");
         return ERR_RESOURCE_UNAVAILABLE;
     }
     return real_->SetMemoryName(name);
@@ -264,7 +264,7 @@ uint32_t PixelMapImpl::ToSdr()
 void PixelMapImpl::Flip(bool xAxis, bool yAxis)
 {
     if (real_ == nullptr) {
-        IMAGE_LOGE("[PixelMapImpl] real_ is nullptr!");
+        IMAGE_LOGE("real null");
         return;
     }
     real_->flip(xAxis, yAxis);
@@ -273,7 +273,7 @@ void PixelMapImpl::Flip(bool xAxis, bool yAxis)
 void PixelMapImpl::Rotate(float degrees)
 {
     if (real_ == nullptr) {
-        IMAGE_LOGE("[PixelMapImpl] real_ is nullptr!");
+        IMAGE_LOGE("real null");
         return;
     }
     real_->rotate(degrees);
@@ -282,7 +282,7 @@ void PixelMapImpl::Rotate(float degrees)
 void PixelMapImpl::Translate(float xAxis, float yAxis)
 {
     if (real_ == nullptr) {
-        IMAGE_LOGE("[PixelMapImpl] real_ is nullptr!");
+        IMAGE_LOGE("real null");
         return;
     }
     real_->translate(xAxis, yAxis);
@@ -291,7 +291,7 @@ void PixelMapImpl::Translate(float xAxis, float yAxis)
 uint32_t PixelMapImpl::GetPixelBytesNumber()
 {
     if (real_ == nullptr) {
-        IMAGE_LOGE("[PixelMapImpl] real_ is nullptr!");
+        IMAGE_LOGE("real null");
         return 0;
     }
     return real_->GetByteCount();
@@ -300,7 +300,7 @@ uint32_t PixelMapImpl::GetPixelBytesNumber()
 uint32_t PixelMapImpl::GetBytesNumberPerRow()
 {
     if (real_ == nullptr) {
-        IMAGE_LOGE("[PixelMapImpl] real_ is nullptr!");
+        IMAGE_LOGE("real null");
         return 0;
     }
     return real_->GetRowBytes();
@@ -309,7 +309,7 @@ uint32_t PixelMapImpl::GetBytesNumberPerRow()
 bool PixelMapImpl::GetIsEditable()
 {
     if (real_ == nullptr) {
-        IMAGE_LOGE("[PixelMapImpl] real_ is nullptr!");
+        IMAGE_LOGE("real null");
         return false;
     }
     return real_->IsEditable();
@@ -318,7 +318,7 @@ bool PixelMapImpl::GetIsEditable()
 bool PixelMapImpl::GetIsStrideAlignment()
 {
     if (real_ == nullptr) {
-        IMAGE_LOGE("[PixelMapImpl] real_ is nullptr!");
+        IMAGE_LOGE("real null");
         return false;
     }
     bool isDMA = real_->IsStrideAlignment();
@@ -342,7 +342,7 @@ std::shared_ptr<OHOS::ColorManager::ColorSpace> PixelMapImpl::GetColorSpace()
 {
 #ifdef IMAGE_COLORSPACE_FLAG
     if (real_ == nullptr) {
-        IMAGE_LOGE("[PixelMapImpl] real_ is nullptr!");
+        IMAGE_LOGE("real null");
         return nullptr;
     }
     auto colorSpace = real_->InnerGetGrColorSpacePtr();
@@ -403,12 +403,9 @@ std::shared_ptr<PixelMap> PixelMapImpl::CreatePixelMapFromSurface(
 #else
     errCode = argc == NUM_2 ? ERR_IMAGE_INVALID_PARAMETER : COMMON_ERR_INVALID_PARAMETER;
     if (surfaceId == nullptr) {
-        IMAGE_LOGE("surfaceId is nullptr!");
+        IMAGE_LOGE("surfaceId null");
         return nullptr;
     }
-    IMAGE_LOGD("CreatePixelMapFromSurface IN");
-    IMAGE_LOGD("CreatePixelMapFromSurface id:%{public}s,area:%{public}d,%{public}d,%{public}d,%{public}d", surfaceId,
-        region.left, region.top, region.height, region.width);
     if (!std::regex_match(surfaceId, std::regex("\\d+"))) {
         IMAGE_LOGE("CreatePixelMapFromSurface empty or invalid surfaceId");
         return nullptr;
@@ -452,7 +449,6 @@ uint32_t PixelMapImpl::Marshalling(int64_t rpcId)
 #if defined(IOS_PLATFORM) || defined(ANDROID_PLATFORM)
     return ERR_IMAGE_INVALID_PARAMETER;
 #else
-    IMAGE_LOGD("Marshalling IN");
     if (real_ == nullptr) {
         IMAGE_LOGE("marshalling pixel map to parcel failed.");
         return ERR_IPC;
@@ -482,7 +478,6 @@ std::shared_ptr<PixelMap> PixelMapImpl::Unmarshalling(int64_t rpcId, uint32_t& e
     errCode = ERR_IMAGE_INVALID_PARAMETER;
     return nullptr;
 #else
-    IMAGE_LOGD("Unmarshalling IN");
     auto messageSequence = FFIData::GetData<MessageSequenceImpl>(rpcId);
     if (!messageSequence) {
         IMAGE_LOGE("[PixelMap] rpc not exist %{public}" PRId64, rpcId);
@@ -512,7 +507,6 @@ std::shared_ptr<PixelMap> PixelMapImpl::CreatePixelMapFromParcel(int64_t rpcId, 
     errCode = ERR_IMAGE_PIXELMAP_CREATE_FAILED;
     return nullptr;
 #else
-    IMAGE_LOGD("CreatePixelMapFromParcel IN");
     auto messageSequence = FFIData::GetData<MessageSequenceImpl>(rpcId);
     if (!messageSequence) {
         IMAGE_LOGE("[PixelMap] rpc not exist %{public}" PRId64, rpcId);
@@ -565,7 +559,7 @@ static FormatType TypeFormat(PixelFormat& pixelForamt)
 uint32_t PixelMapImpl::ConvertPixelMapFormat(PixelFormat& destFormat)
 {
     if (real_ == nullptr) {
-        IMAGE_LOGE("pixelmap is nullptr");
+        IMAGE_LOGE("pixelmap null");
         return ERR_IMAGE_PIXELMAP_CREATE_FAILED;
     }
     if (TypeFormat(destFormat) == FormatType::UNKNOWN) {
