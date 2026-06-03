@@ -22,7 +22,7 @@
 
 namespace OHOS {
 namespace Media {
-class FFI_EXPORT ImageSourceImpl : public OHOS::FFI::FFIData {
+class ImageSourceImpl : public OHOS::FFI::FFIData {
     DECL_TYPE(ImageSourceImpl, OHOS::FFI::FFIData)
 public:
     explicit ImageSourceImpl(std::unique_ptr<ImageSource> ptr_);

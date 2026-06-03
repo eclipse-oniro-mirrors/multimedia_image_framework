@@ -43,7 +43,7 @@ std::vector<std::pair<std::string, std::string>> MetadataImpl::GetAllProperties(
 {
     std::vector<std::pair<std::string, std::string>> propertiesArray;
     if (nativeMetadata_ == nullptr) {
-        IMAGE_LOGE("meta null");
+        IMAGE_LOGE("Empty native rMetadata");
         return propertiesArray;
     }
     ImageMetadata::PropertyMapPtr allKey = nativeMetadata_->GetAllProperties();

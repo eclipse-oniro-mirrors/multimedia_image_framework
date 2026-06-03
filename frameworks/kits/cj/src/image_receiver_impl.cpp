@@ -47,13 +47,14 @@ static bool CheckFormat(int32_t format)
 
 int64_t ImageReceiverImpl::CreateImageReceiver(int32_t width, int32_t height, int32_t format, int32_t capacity)
 {
+    IMAGE_LOGD("[ImageReceiver] Create.");
     if (!CheckFormat(format)) {
-        IMAGE_LOGE("invalid param");
+        IMAGE_LOGE("[ImageReceiverImpl] Invailed param.");
         return INIT_FAILED;
     }
     std::shared_ptr imageReceiver = ImageReceiver::CreateImageReceiver(width, height, format, capacity);
     if (imageReceiver == nullptr) {
-        IMAGE_LOGE("create fail");
+        IMAGE_LOGE("[ImageReceiverImpl] Failed to create native ImageReceiver.");
         return INIT_FAILED;
     }
     auto receiverImpl = FFIData::Create<ImageReceiverImpl>(imageReceiver);
@@ -68,7 +69,7 @@ ImageReceiverImpl::ImageReceiverImpl(std::shared_ptr<ImageReceiver> imageReceive
 uint32_t ImageReceiverImpl::GetSize(CSize* ret)
 {
     if (imageReceiver_ == nullptr || imageReceiver_->iraContext_ == nullptr) {
-        IMAGE_LOGE("ctx null");
+        IMAGE_LOGE("[ImageReceiverImpl] GetSize : Image receiver context is nullptr");
         return ERR_IMAGE_INIT_ABNORMAL;
     }
 
@@ -80,7 +81,7 @@ uint32_t ImageReceiverImpl::GetSize(CSize* ret)
 uint32_t ImageReceiverImpl::GetCapacity(int32_t* ret)
 {
     if (imageReceiver_ == nullptr || imageReceiver_->iraContext_ == nullptr) {
-        IMAGE_LOGE("ctx null");
+        IMAGE_LOGE("[ImageReceiverImpl] GetCapacity : Image receiver context is nullptr");
         return ERR_IMAGE_INIT_ABNORMAL;
     }
 
@@ -91,7 +92,7 @@ uint32_t ImageReceiverImpl::GetCapacity(int32_t* ret)
 uint32_t ImageReceiverImpl::GetFormat(int32_t* ret)
 {
     if (imageReceiver_ == nullptr || imageReceiver_->iraContext_ == nullptr) {
-        IMAGE_LOGE("ctx null");
+        IMAGE_LOGE("[ImageReceiverImpl] GetFormat : Image receiver context is nullptr");
         return ERR_IMAGE_INIT_ABNORMAL;
     }
 
@@ -116,17 +117,17 @@ char* ImageReceiverImpl::GetReceivingSurfaceId()
 sptr<ImageImpl> ImageReceiverImpl::ReadNextImage()
 {
     if (imageReceiver_ == nullptr) {
-        IMAGE_LOGE("native null");
+        IMAGE_LOGE("Native instance is nullptr");
         return nullptr;
     }
     auto image = imageReceiver_->NextNativeImage();
     if (image == nullptr) {
-        IMAGE_LOGE("next null");
+        IMAGE_LOGE("NextNativeImage is nullptr");
         return nullptr;
     }
     auto imageImpl = FFIData::Create<ImageImpl>(image);
     if (imageImpl == nullptr) {
-        IMAGE_LOGE("impl null");
+        IMAGE_LOGE("ImageImpl Create is nullptr");
         return nullptr;
     }
     return imageImpl;
@@ -135,12 +136,12 @@ sptr<ImageImpl> ImageReceiverImpl::ReadNextImage()
 sptr<ImageImpl> ImageReceiverImpl::ReadLatestImage()
 {
     if (imageReceiver_ == nullptr) {
-        IMAGE_LOGE("native null");
+        IMAGE_LOGE("Native instance is nullptr");
         return nullptr;
     }
     auto image = imageReceiver_->LastNativeImage();
     if (image == nullptr) {
-        IMAGE_LOGE("last null");
+        IMAGE_LOGE("LastNativeImage is nullptr.");
         return nullptr;
     }
     return FFIData::Create<ImageImpl>(image);
@@ -154,7 +155,7 @@ void ImageReceiverImpl::Release()
 uint32_t ImageReceiverImpl::CjOn(std::string name, std::function<void()> callBack)
 {
     if (imageReceiver_ == nullptr) {
-        IMAGE_LOGE("native null");
+        IMAGE_LOGE("Native instance is nullptr");
         return ERR_IMAGE_INIT_ABNORMAL;
     }
     shared_ptr<CjImageReceiverAvaliableListener> listener = make_shared<CjImageReceiverAvaliableListener>();
@@ -173,7 +174,7 @@ uint32_t ImageReceiverImpl::CjOn(std::string name, std::function<void()> callBac
 uint32_t ImageReceiverImpl::CjOff()
 {
     if (imageReceiver_ == nullptr) {
-        IMAGE_LOGE("native null");
+        IMAGE_LOGE("Native instance is nullptr");
         return ERR_IMAGE_INIT_ABNORMAL;
     }
     imageReceiver_->UnRegisterBufferAvaliableListener();

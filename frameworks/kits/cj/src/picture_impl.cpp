@@ -49,12 +49,13 @@ std::shared_ptr<Picture> PictureImpl::GetPicture()
 
 uint32_t PictureImpl::SetMetadata(MetadataType metadataType, std::shared_ptr<ImageMetadata> imageMetadata)
 {
+    IMAGE_LOGD("SetMetadata IN");
     if (nativePicture_ == nullptr) {
-        IMAGE_LOGE("pic null");
+        IMAGE_LOGE("Empty native picture");
         return IMAGE_BAD_PARAMETER;
     }
     if (metadataType != MetadataType::EXIF) {
-        IMAGE_LOGE("unsupported meta");
+        IMAGE_LOGE("Unsupport MetadataType");
         return IMAGE_UNSUPPORTED_METADATA;
     }
     return nativePicture_->SetExifMetadata(std::reinterpret_pointer_cast<ExifMetadata>(imageMetadata));
@@ -62,13 +63,14 @@ uint32_t PictureImpl::SetMetadata(MetadataType metadataType, std::shared_ptr<Ima
 
 std::shared_ptr<ImageMetadata> PictureImpl::GetMetadata(MetadataType metadataType, uint32_t* errCode)
 {
+    IMAGE_LOGD("GetMetadata IN");
     if (nativePicture_ == nullptr) {
-        IMAGE_LOGE("pic null");
+        IMAGE_LOGE("Empty native picture");
         return nullptr;
     }
     if (metadataType != MetadataType::EXIF) {
         *errCode = IMAGE_UNSUPPORTED_METADATA;
-        IMAGE_LOGE("unsupported meta");
+        IMAGE_LOGE("Unsupport MetadataType");
         return nullptr;
     }
     return std::reinterpret_pointer_cast<ImageMetadata>(nativePicture_->GetExifMetadata());
