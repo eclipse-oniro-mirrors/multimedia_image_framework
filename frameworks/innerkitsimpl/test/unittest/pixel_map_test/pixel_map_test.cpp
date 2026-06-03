@@ -5055,13 +5055,13 @@ HWTEST_F(PixelMapTest, AlphaF16ValueRangeRoundtripTest001, TestSize.Level3)
 
     uint32_t dst = 0;
     EXPECT_EQ(pixelMap->ReadPixel({0, 0}, dst), SUCCESS);
-    EXPECT_EQ((dst >> BGRA32_A_SHIFT) & 0xFF, 0xFF);
+    EXPECT_EQ((dst >> ARGB_A_SHIFT) & 0xFF, 0xFF);
     EXPECT_EQ(pixelMap->ReadPixel({3, 0}, dst), SUCCESS);
-    EXPECT_EQ((dst >> BGRA32_A_SHIFT) & 0xFF, 0x00);
+    EXPECT_EQ((dst >> ARGB_A_SHIFT) & 0xFF, 0x00);
     EXPECT_EQ(pixelMap->ReadPixel({1, 0}, dst), SUCCESS);
-    EXPECT_NEAR(static_cast<float>((dst >> BGRA32_A_SHIFT) & 0xFF), 128.0f, 2.0f);
+    EXPECT_NEAR(static_cast<float>((dst >> ARGB_A_SHIFT) & 0xFF), 128.0f, 2.0f);
     EXPECT_EQ(pixelMap->ReadPixel({2, 0}, dst), SUCCESS);
-    EXPECT_NEAR(static_cast<float>((dst >> BGRA32_A_SHIFT) & 0xFF), 64.0f, 2.0f);
+    EXPECT_NEAR(static_cast<float>((dst >> ARGB_A_SHIFT) & 0xFF), 64.0f, 2.0f);
 
     EXPECT_EQ(pixelMap->SetAlpha(0.5f), SUCCESS);
     const uint16_t *alphaPixel = pixelMap->GetPixel16(0, 0);
