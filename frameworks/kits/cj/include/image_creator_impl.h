@@ -29,6 +29,9 @@ public:
     std::shared_ptr<ImageCreator> GetImageCreator();
     void Release();
     uint32_t CjOn(std::string name, std::function<void()> callBack);
+#ifdef IMAGE_DEBUG_FLAG
+    bool isCallBackTest = false;
+#endif
 
 private:
     void release();
