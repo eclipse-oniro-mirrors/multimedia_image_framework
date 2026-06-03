@@ -1679,8 +1679,8 @@ HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_CreateAlphaPixelmapAlphaF16, TestSi
     EXPECT_EQ(OH_PixelmapInitializationOptions_SetPixelFormat(options, PIXEL_FORMAT_ALPHA_F16), IMAGE_SUCCESS);
 
     uint8_t srcData[8] = {
-        0x00, 0x00, 0x00, 0x54,
-        0x00, 0x58, 0x00, 0x5B
+        0x00, 0x00, 0x00, 0x3C,
+        0x00, 0x38, 0x00, 0x3C
     };
     OH_PixelmapNative *srcPixelmap = nullptr;
     ASSERT_EQ(OH_PixelmapNative_CreatePixelmap(srcData, sizeof(srcData), options, &srcPixelmap), IMAGE_SUCCESS);
@@ -1723,8 +1723,8 @@ HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_CreatePixelmapAlphaF16ToNV12, TestS
     EXPECT_EQ(OH_PixelmapInitializationOptions_SetPixelFormat(options, PIXEL_FORMAT_NV12), IMAGE_SUCCESS);
 
     uint8_t srcData[8] = {
-        0x00, 0x4C, 0x00, 0x50,
-        0x00, 0x58, 0x00, 0x5B
+        0x00, 0x2C, 0x00, 0x34,
+        0x00, 0x38, 0x00, 0x3C
     };
     OH_PixelmapNative *pixelMap = nullptr;
     ASSERT_EQ(OH_PixelmapNative_CreatePixelmap(srcData, sizeof(srcData), options, &pixelMap), IMAGE_SUCCESS);
@@ -1762,8 +1762,8 @@ HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_CreatePixelmapAlphaF16ToNV21, TestS
     EXPECT_EQ(OH_PixelmapInitializationOptions_SetPixelFormat(options, PIXEL_FORMAT_NV21), IMAGE_SUCCESS);
 
     uint8_t srcData[8] = {
-        0x00, 0x48, 0x00, 0x52,
-        0x00, 0x59, 0x00, 0x5C
+        0x00, 0x2C, 0x00, 0x34,
+        0x00, 0x38, 0x00, 0x3C
     };
     OH_PixelmapNative *pixelMap = nullptr;
     ASSERT_EQ(OH_PixelmapNative_CreatePixelmap(srcData, sizeof(srcData), options, &pixelMap), IMAGE_SUCCESS);
@@ -1801,8 +1801,8 @@ HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_CreatePixelmapAlphaF16ToYcbcrP010, 
     EXPECT_EQ(OH_PixelmapInitializationOptions_SetPixelFormat(options, PIXEL_FORMAT_YCBCR_P010), IMAGE_SUCCESS);
 
     uint8_t srcData[8] = {
-        0x00, 0x4A, 0x00, 0x53,
-        0x00, 0x57, 0x00, 0x5D
+        0x00, 0x30, 0x00, 0x34,
+        0x00, 0x38, 0x00, 0x3C
     };
     OH_PixelmapNative *pixelMap = nullptr;
     ASSERT_EQ(OH_PixelmapNative_CreatePixelmap(srcData, sizeof(srcData), options, &pixelMap), IMAGE_BAD_PARAMETER);
@@ -1829,8 +1829,8 @@ HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_CreatePixelmapAlphaF16ToYcrcbP010, 
     EXPECT_EQ(OH_PixelmapInitializationOptions_SetPixelFormat(options, PIXEL_FORMAT_YCRCB_P010), IMAGE_SUCCESS);
 
     uint8_t srcData[8] = {
-        0x00, 0x49, 0x00, 0x51,
-        0x00, 0x59, 0x00, 0x5D
+        0x00, 0x30, 0x00, 0x34,
+        0x00, 0x38, 0x00, 0x3C
     };
     OH_PixelmapNative *pixelMap = nullptr;
     ASSERT_EQ(OH_PixelmapNative_CreatePixelmap(srcData, sizeof(srcData), options, &pixelMap), IMAGE_BAD_PARAMETER);
@@ -1857,7 +1857,7 @@ HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_CreatePixelmapAlphaF16ToNV12OddWidt
     EXPECT_EQ(OH_PixelmapInitializationOptions_SetPixelFormat(options, PIXEL_FORMAT_NV12), IMAGE_SUCCESS);
 
     uint8_t srcData[4] = {
-        0x00, 0x48, 0x00, 0x58
+        0x00, 0x38, 0x00, 0x3C
     };
     OH_PixelmapNative *pixelMap = nullptr;
     Image_ErrorCode ret = OH_PixelmapNative_CreatePixelmap(srcData, sizeof(srcData), options, &pixelMap);

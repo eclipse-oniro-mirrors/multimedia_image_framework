@@ -4509,7 +4509,7 @@ HWTEST_F(PixelMapTest, CreateColorsAlphaF16ToYUVTest001, TestSize.Level3)
     uint8_t buffer[colorLength] = {0};
     const uint8_t alphaValues[width * height] = {0x10, 0x40, 0x80, 0xFF};
     for (int32_t i = 0; i < width * height; ++i) {
-        uint16_t half = FloatToHalf(static_cast<float>(alphaValues[i]));
+        uint16_t half = FloatToHalf(static_cast<float>(alphaValues[i]) / 255.0f);
         buffer[i * 2] = static_cast<uint8_t>(half & 0xFF);
         buffer[i * 2 + 1] = static_cast<uint8_t>((half >> 8) & 0xFF);
     }
@@ -4547,7 +4547,7 @@ HWTEST_F(PixelMapTest, CreateColorsAlphaF16ToP010Test001, TestSize.Level3)
     uint8_t buffer[colorLength] = {0};
     const uint8_t alphaValues[width * height] = {0x11, 0x33, 0x77, 0xFF};
     for (int32_t i = 0; i < width * height; ++i) {
-        uint16_t half = FloatToHalf(static_cast<float>(alphaValues[i]));
+        uint16_t half = FloatToHalf(static_cast<float>(alphaValues[i]) / 255.0f);
         buffer[i * 2] = static_cast<uint8_t>(half & 0xFF);
         buffer[i * 2 + 1] = static_cast<uint8_t>((half >> 8) & 0xFF);
     }
@@ -4589,7 +4589,7 @@ HWTEST_F(PixelMapTest, CreateColorsAlphaF16WithOffsetStrideTest001, TestSize.Lev
     uint8_t buffer[colorLength] = {0};
     const uint8_t alphaValues[width * height] = {0x10, 0x20, 0x90, 0xF0};
     for (int32_t i = 0; i < width * height; ++i) {
-        uint16_t half = FloatToHalf(static_cast<float>(alphaValues[i]));
+        uint16_t half = FloatToHalf(static_cast<float>(alphaValues[i]) / 255.0f);
         buffer[i * 2] = static_cast<uint8_t>(half & 0xFF);
         buffer[i * 2 + 1] = static_cast<uint8_t>((half >> 8) & 0xFF);
     }
@@ -4624,7 +4624,7 @@ HWTEST_F(PixelMapTest, CreateColorsAlphaF16ToYUVOddWidthTest001, TestSize.Level3
     constexpr int32_t width = 1;
     constexpr int32_t height = 2;
     constexpr uint32_t colorLength = width * height * 2;
-    uint8_t buffer[colorLength] = {0x00, 0x48, 0x00, 0x58};
+    uint8_t buffer[colorLength] = {0x00, 0x00, 0x00, 0x3C};
 
     InitializationOptions opts;
     opts.size.width = width;
@@ -4652,7 +4652,7 @@ HWTEST_F(PixelMapTest, CreateColorsAlphaF16ToP010OddHeightTest001, TestSize.Leve
     constexpr int32_t width = 2;
     constexpr int32_t height = 1;
     constexpr uint32_t colorLength = width * height * 2;
-    uint8_t buffer[colorLength] = {0x00, 0x48, 0x00, 0x58};
+    uint8_t buffer[colorLength] = {0x00, 0x38, 0x00, 0x3C};
 
     InitializationOptions opts;
     opts.size.width = width;
@@ -5018,6 +5018,62 @@ HWTEST_F(PixelMapTest, AlphaF16PublicApiSerializeAndCloneTest001, TestSize.Level
     EXPECT_EQ(tlvPixelMap->GetPixelFormat(), PixelFormat::ALPHA_F16);
     EXPECT_TRUE(CompareAlphaF16Pixels(*pixelMap, *tlvPixelMap));
     GTEST_LOG_(INFO) << "PixelMapTest: AlphaF16PublicApiSerializeAndCloneTest001 end";
+}
+
+/**
+ * @tc.name: AlphaF16ValueRangeRoundtripTest001
+ * @tc.desc: Test ALPHA_F16 stores alpha in 0~1 range and conversions to/from uint8 are correct.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, AlphaF16ValueRangeRoundtripTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelMapTest: AlphaF16ValueRangeRoundtripTest001 start";
+    std::unique_ptr<PixelMap> pixelMap = CreateAlphaF16PixelMap(4, 1);
+    ASSERT_NE(pixelMap, nullptr);
+
+    EXPECT_EQ(pixelMap->WritePixel({0, 0}, 0xFF000000), SUCCESS);
+    EXPECT_EQ(pixelMap->WritePixel({1, 0}, 0x80000000), SUCCESS);
+    EXPECT_EQ(pixelMap->WritePixel({2, 0}, 0x40000000), SUCCESS);
+    EXPECT_EQ(pixelMap->WritePixel({3, 0}, 0x00000000), SUCCESS);
+
+    const uint16_t *pixel0 = pixelMap->GetPixel16(0, 0);
+    const uint16_t *pixel1 = pixelMap->GetPixel16(1, 0);
+    const uint16_t *pixel2 = pixelMap->GetPixel16(2, 0);
+    const uint16_t *pixel3 = pixelMap->GetPixel16(3, 0);
+    ASSERT_NE(pixel0, nullptr);
+    ASSERT_NE(pixel1, nullptr);
+    ASSERT_NE(pixel2, nullptr);
+    ASSERT_NE(pixel3, nullptr);
+
+    EXPECT_EQ(*pixel0, FloatToHalf(1.0f));
+    EXPECT_EQ(*pixel3, FloatToHalf(0.0f));
+
+    float half1 = HalfToFloat(*pixel1);
+    float half2 = HalfToFloat(*pixel2);
+    EXPECT_NEAR(half1, 0.502f, 0.01f);
+    EXPECT_NEAR(half2, 0.251f, 0.01f);
+
+    uint32_t dst = 0;
+    EXPECT_EQ(pixelMap->ReadPixel({0, 0}, dst), SUCCESS);
+    EXPECT_EQ((dst >> BGRA32_A_SHIFT) & 0xFF, 0xFF);
+    EXPECT_EQ(pixelMap->ReadPixel({3, 0}, dst), SUCCESS);
+    EXPECT_EQ((dst >> BGRA32_A_SHIFT) & 0xFF, 0x00);
+    EXPECT_EQ(pixelMap->ReadPixel({1, 0}, dst), SUCCESS);
+    EXPECT_NEAR(static_cast<float>((dst >> BGRA32_A_SHIFT) & 0xFF), 128.0f, 2.0f);
+    EXPECT_EQ(pixelMap->ReadPixel({2, 0}, dst), SUCCESS);
+    EXPECT_NEAR(static_cast<float>((dst >> BGRA32_A_SHIFT) & 0xFF), 64.0f, 2.0f);
+
+    EXPECT_EQ(pixelMap->SetAlpha(0.5f), SUCCESS);
+    const uint16_t *alphaPixel = pixelMap->GetPixel16(0, 0);
+    ASSERT_NE(alphaPixel, nullptr);
+    float setAlphaVal = HalfToFloat(*alphaPixel);
+    EXPECT_NEAR(setAlphaVal, 0.5f, 0.01f);
+
+    uint32_t color = 0;
+    EXPECT_TRUE(pixelMap->GetARGB32Color(0, 0, color));
+    EXPECT_NEAR(static_cast<float>((color >> ARGB_A_SHIFT) & 0xFF), 128.0f, 2.0f);
+
+    GTEST_LOG_(INFO) << "PixelMapTest: AlphaF16ValueRangeRoundtripTest001 end";
 }
 
 /**
