@@ -127,7 +127,6 @@ bool Dav1dDecoder::ConvertToRGB(SwsContext *ctx, Dav1dPicture &pic, ConvertInfo 
     uint8_t* srcV = reinterpret_cast<uint8_t*>((pic).data[V_PLANE_INDEX]);
     uint8_t* srcData[] = { srcY, srcU, srcV };
     int32_t srcLinesize[] = { pic.stride[Y_STRIDE_INDEX], pic.stride[U_STRIDE_INDEX], pic.stride[V_STRIDE_INDEX] };
-    CHECK_ERROR_RETURN_RET(!srcY || !srcU || !srcV, false);
 
     uint8_t* dstData[] = { info.dstBuffer };
     int32_t dstLinesize[] = { info.rowStride };

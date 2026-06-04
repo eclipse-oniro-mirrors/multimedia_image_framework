@@ -115,7 +115,6 @@ uint8_t HeifStreamReader::Read8()
     }
     uint8_t buf;
     auto stream = GetStream();
-    CHECK_ERROR_RETURN_RET(!stream, 0);
     bool success = stream->Read(&buf, UINT8_BYTES_NUM);
     if (!success) {
         SetError(true);
@@ -131,7 +130,6 @@ uint16_t HeifStreamReader::Read16()
     }
     uint8_t buf[UINT16_BYTES_NUM];
     auto stream = GetStream();
-    CHECK_ERROR_RETURN_RET(!stream, 0);
     bool success = stream->Read(buf, UINT16_BYTES_NUM);
     if (!success) {
         SetError(true);
@@ -147,7 +145,6 @@ uint32_t HeifStreamReader::Read32()
     }
     uint8_t buf[UINT32_BYTES_NUM];
     auto stream = GetStream();
-    CHECK_ERROR_RETURN_RET(!stream, 0);
     bool success = stream->Read(buf, UINT32_BYTES_NUM);
     if (!success) {
         SetError(true);
@@ -166,7 +163,6 @@ uint64_t HeifStreamReader::Read64()
     }
     uint8_t buf[UINT64_BYTES_NUM];
     auto stream = GetStream();
-    CHECK_ERROR_RETURN_RET(!stream, 0);
     bool success = stream->Read(buf, UINT64_BYTES_NUM);
     if (!success) {
         SetError(true);
