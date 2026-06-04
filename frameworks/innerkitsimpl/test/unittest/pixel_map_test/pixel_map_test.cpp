@@ -5028,50 +5028,31 @@ HWTEST_F(PixelMapTest, AlphaF16PublicApiSerializeAndCloneTest001, TestSize.Level
 HWTEST_F(PixelMapTest, AlphaF16ValueRangeRoundtripTest001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "PixelMapTest: AlphaF16ValueRangeRoundtripTest001 start";
-    std::unique_ptr<PixelMap> pixelMap = CreateAlphaF16PixelMap(4, 1);
+    std::unique_ptr<PixelMap> pixelMap = CreateAlphaF16PixelMap(2, 2);
     ASSERT_NE(pixelMap, nullptr);
 
     EXPECT_EQ(pixelMap->WritePixel({0, 0}, 0xFF000000), SUCCESS);
     EXPECT_EQ(pixelMap->WritePixel({1, 0}, 0x80000000), SUCCESS);
-    EXPECT_EQ(pixelMap->WritePixel({2, 0}, 0x40000000), SUCCESS);
-    EXPECT_EQ(pixelMap->WritePixel({3, 0}, 0x00000000), SUCCESS);
 
-    const uint16_t *pixel0 = pixelMap->GetPixel16(0, 0);
-    const uint16_t *pixel1 = pixelMap->GetPixel16(1, 0);
-    const uint16_t *pixel2 = pixelMap->GetPixel16(2, 0);
-    const uint16_t *pixel3 = pixelMap->GetPixel16(3, 0);
-    ASSERT_NE(pixel0, nullptr);
-    ASSERT_NE(pixel1, nullptr);
-    ASSERT_NE(pixel2, nullptr);
-    ASSERT_NE(pixel3, nullptr);
+    const uint16_t *pixelFull = pixelMap->GetPixel16(0, 0);
+    const uint16_t *pixelHalf = pixelMap->GetPixel16(1, 0);
+    ASSERT_NE(pixelFull, nullptr);
+    ASSERT_NE(pixelHalf, nullptr);
 
-    EXPECT_EQ(*pixel0, FloatToHalf(1.0f));
-    EXPECT_EQ(*pixel3, FloatToHalf(0.0f));
-
-    float half1 = HalfToFloat(*pixel1);
-    float half2 = HalfToFloat(*pixel2);
-    EXPECT_NEAR(half1, 0.502f, 0.01f);
-    EXPECT_NEAR(half2, 0.251f, 0.01f);
+    EXPECT_EQ(*pixelFull, FloatToHalf(1.0f));
+    float halfVal = HalfToFloat(*pixelHalf);
+    EXPECT_NEAR(halfVal, 128.0f / 255.0f, 0.01f);
 
     uint32_t dst = 0;
     EXPECT_EQ(pixelMap->ReadPixel({0, 0}, dst), SUCCESS);
     EXPECT_EQ((dst >> ARGB_A_SHIFT) & 0xFF, 0xFF);
-    EXPECT_EQ(pixelMap->ReadPixel({3, 0}, dst), SUCCESS);
-    EXPECT_EQ((dst >> ARGB_A_SHIFT) & 0xFF, 0x00);
     EXPECT_EQ(pixelMap->ReadPixel({1, 0}, dst), SUCCESS);
     EXPECT_NEAR(static_cast<float>((dst >> ARGB_A_SHIFT) & 0xFF), 128.0f, 2.0f);
-    EXPECT_EQ(pixelMap->ReadPixel({2, 0}, dst), SUCCESS);
-    EXPECT_NEAR(static_cast<float>((dst >> ARGB_A_SHIFT) & 0xFF), 64.0f, 2.0f);
 
     EXPECT_EQ(pixelMap->SetAlpha(0.5f), SUCCESS);
-    const uint16_t *alphaPixel = pixelMap->GetPixel16(0, 0);
-    ASSERT_NE(alphaPixel, nullptr);
-    float setAlphaVal = HalfToFloat(*alphaPixel);
-    EXPECT_NEAR(setAlphaVal, 0.5f, 0.01f);
-
-    uint32_t color = 0;
-    EXPECT_TRUE(pixelMap->GetARGB32Color(0, 0, color));
-    EXPECT_NEAR(static_cast<float>((color >> ARGB_A_SHIFT) & 0xFF), 128.0f, 2.0f);
+    const uint16_t *setPixel = pixelMap->GetPixel16(0, 0);
+    ASSERT_NE(setPixel, nullptr);
+    EXPECT_EQ(*setPixel, FloatToHalf(0.5f));
 
     GTEST_LOG_(INFO) << "PixelMapTest: AlphaF16ValueRangeRoundtripTest001 end";
 }

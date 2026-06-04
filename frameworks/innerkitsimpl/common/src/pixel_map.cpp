@@ -4088,8 +4088,8 @@ static float HalfTranslate(const uint8_t* ui)
 static void HalfTranslate(const float pixel, uint8_t* ui)
 {
     uint16_t val = FloatToHalf(pixel);
-    ui[HALF_LOW_BYTE] = static_cast<uint8_t>((val >> SHIFT_8_BIT) & UINT8_MAX);
-    ui[HALF_HIGH_BYTE] = static_cast<uint8_t>(val & UINT8_MAX);
+    ui[HALF_LOW_BYTE] = static_cast<uint8_t>(val & UINT8_MAX);
+    ui[HALF_HIGH_BYTE] = static_cast<uint8_t>((val >> SHIFT_8_BIT) & UINT8_MAX);
 }
 
 static uint8_t AlphaF16ToUInt8(const uint8_t *pixel)
