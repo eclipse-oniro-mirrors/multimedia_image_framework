@@ -17,6 +17,7 @@
 #define FRAMEWORKS_KITS_JS_COMMON_INCLUDE_IMAGE_NAPI_UTILS_H
 
 #include "image_type.h"
+#include "image_system_properties.h"
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
 
@@ -190,7 +191,6 @@ public:
         bool codeAsNumber = false);
     static napi_status Throw(napi_env env, napi_ref &error);
     static void CleanUpConstructorContext(void* data);
-    static bool IsSystemApp();
 };
 } // namespace Media
 } // namespace OHOS

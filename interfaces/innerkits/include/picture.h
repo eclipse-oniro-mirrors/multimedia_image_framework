@@ -37,6 +37,11 @@ struct GainmapParams {
     bool isFullSizeGainmap = false;
 };
 
+struct HdrDecomposeOption {
+    bool isFullSizeGainmap = false;
+    PixelFormat desiredPixelFormat = PixelFormat::RGBA_8888;
+};
+
 class ExifMetadata;
 class ImageMetadata;
 
@@ -54,6 +59,10 @@ public:
         std::vector<AuxiliaryPictureType> &srcAuxiliaryPictures, std::vector<MetadataType> &srcMetadatas,
         std::vector<AuxiliaryPictureType> &dstAuxiliaryPictures, std::vector<MetadataType> &dstMetadatas,
         AuxiliaryPictureType mainPixelMapKey);
+    NATIVEEXPORT static std::unique_ptr<Picture> DecomposeToPicture(
+        std::shared_ptr<PixelMap> &hdrPixelMap, int32_t& errCode);
+    NATIVEEXPORT static std::unique_ptr<Picture> DecomposeToPicture(
+        std::shared_ptr<PixelMap> &hdrPixelMap, HdrDecomposeOption params, int32_t& errCode);
     NATIVEEXPORT static std::unique_ptr<PixelMap> SurfaceBuffer2PixelMap(sptr<SurfaceBuffer> &surfaceBuffer);
     NATIVEEXPORT std::shared_ptr<PixelMap> GetMainPixel();
     NATIVEEXPORT void SetMainPixel(std::shared_ptr<PixelMap> PixelMap);

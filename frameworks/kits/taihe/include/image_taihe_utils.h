@@ -18,6 +18,7 @@
 
 #include "image_source.h"
 #include "image_type.h"
+#include "image_system_properties.h"
 #include "message_parcel.h"
 #include "ohos.multimedia.image.image.proj.hpp"
 #include "ohos.multimedia.image.image.impl.hpp"
@@ -67,7 +68,6 @@ public:
 
     template <typename T>
     static bool IsValidPtr(T data);
-    static bool IsSystemApp();
 private:
     static AniObjectInfo businessErrorInfo_;
 };

@@ -18,6 +18,7 @@
 #include "image_common_impl.h"
 #include "image_log.h"
 #include "image_type.h"
+#include "image_system_properties.h"
 #include "image_utils.h"
 #include "media_errors.h"
 #include "picture_native.h"
@@ -29,6 +30,11 @@ extern "C" {
 
 struct OH_ComposeOptions {
     PIXEL_FORMAT desiredPixelFormat = PIXEL_FORMAT::PIXEL_FORMAT_UNKNOWN;
+};
+
+struct OH_DecomposeOptions {
+    bool isFullSizeGainmap = false;
+    PIXEL_FORMAT desiredPixelFormat = PIXEL_FORMAT::PIXEL_FORMAT_RGBA_8888;
 };
 
 static Image_AuxiliaryPictureType AuxTypeInnerToNative(OHOS::Media::AuxiliaryPictureType type)
@@ -895,6 +901,128 @@ Image_ErrorCode OH_AuxiliaryPictureInfo_Release(OH_AuxiliaryPictureInfo *info)
     delete info;
     info = nullptr;
     return  IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_DecomposeOptions_Create(OH_DecomposeOptions **options)
+{
+    if (!OHOS::Media::ImageSystemProperties::IsSystemApp()) {
+        return IMAGE_PERMISSIONS_FAILED;
+    }
+    if (options == nullptr) {
+        return IMAGE_INVALID_PARAMETER;
+    }
+    *options = new (std::nothrow) OH_DecomposeOptions();
+    if (*options == nullptr) {
+        return IMAGE_ALLOC_FAILED;
+    }
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_DecomposeOptions_SetIsFullSizeGainmap(OH_DecomposeOptions *options, bool isFullSizeGainmap)
+{
+    if (!OHOS::Media::ImageSystemProperties::IsSystemApp()) {
+        return IMAGE_PERMISSIONS_FAILED;
+    }
+    if (options == nullptr) {
+        return IMAGE_INVALID_PARAMETER;
+    }
+    options->isFullSizeGainmap = isFullSizeGainmap;
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_DecomposeOptions_GetIsFullSizeGainmap(OH_DecomposeOptions *options, bool *isFullSizeGainmap)
+{
+    if (!OHOS::Media::ImageSystemProperties::IsSystemApp()) {
+        return IMAGE_PERMISSIONS_FAILED;
+    }
+    if (options == nullptr || isFullSizeGainmap == nullptr) {
+        return IMAGE_INVALID_PARAMETER;
+    }
+    *isFullSizeGainmap = options->isFullSizeGainmap;
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_DecomposeOptions_SetDesiredPixelFormat(OH_DecomposeOptions *options, int32_t desiredPixelFormat)
+{
+    if (!OHOS::Media::ImageSystemProperties::IsSystemApp()) {
+        return IMAGE_PERMISSIONS_FAILED;
+    }
+    if (options == nullptr) {
+        return IMAGE_INVALID_PARAMETER;
+    }
+    if (desiredPixelFormat != static_cast<int32_t>(PIXEL_FORMAT::PIXEL_FORMAT_RGBA_8888) &&
+        desiredPixelFormat != static_cast<int32_t>(PIXEL_FORMAT::PIXEL_FORMAT_NV12) &&
+        desiredPixelFormat != static_cast<int32_t>(PIXEL_FORMAT::PIXEL_FORMAT_NV21)) {
+        return IMAGE_UNSUPPORTED_OPERATION;
+    }
+    options->desiredPixelFormat = static_cast<PIXEL_FORMAT>(desiredPixelFormat);
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_DecomposeOptions_GetDesiredPixelFormat(OH_DecomposeOptions *options, int32_t *desiredPixelFormat)
+{
+    if (!OHOS::Media::ImageSystemProperties::IsSystemApp()) {
+        return IMAGE_PERMISSIONS_FAILED;
+    }
+    if (options == nullptr || desiredPixelFormat == nullptr) {
+        return IMAGE_INVALID_PARAMETER;
+    }
+    *desiredPixelFormat = static_cast<int32_t>(options->desiredPixelFormat);
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_DecomposeOptions_Release(OH_DecomposeOptions *options)
+{
+    if (!OHOS::Media::ImageSystemProperties::IsSystemApp()) {
+        return IMAGE_PERMISSIONS_FAILED;
+    }
+    if (options == nullptr) {
+        return IMAGE_INVALID_PARAMETER;
+    }
+    delete options;
+    options = nullptr;
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_PictureNative_DecomposeToPicture(
+    OH_PixelmapNative *hdrPixelmap, OH_DecomposeOptions *options, OH_PictureNative **picture)
+{
+    if (!OHOS::Media::ImageSystemProperties::IsSystemApp()) {
+        return IMAGE_PERMISSIONS_FAILED;
+    }
+    if (hdrPixelmap == nullptr || options == nullptr || picture == nullptr) {
+        return IMAGE_INVALID_PARAMETER;
+    }
+    auto innerPixelMap = hdrPixelmap->GetInnerPixelmap();
+    if (innerPixelMap == nullptr) {
+        return IMAGE_INVALID_PARAMETER;
+    }
+    OHOS::Media::HdrDecomposeOption params;
+    params.isFullSizeGainmap = options->isFullSizeGainmap;
+    params.desiredPixelFormat = static_cast<OHOS::Media::PixelFormat>(options->desiredPixelFormat);
+ 
+    int32_t errCode = OHOS::Media::SUCCESS;
+    auto pictureTmp = OHOS::Media::Picture::DecomposeToPicture(innerPixelMap, params, errCode);
+    if (errCode != OHOS::Media::SUCCESS) {
+        return static_cast<Image_ErrorCode>(errCode);
+    }
+    if (!pictureTmp) {
+        return IMAGE_DECOMPOSE_FAILED;
+    }
+ 
+    std::shared_ptr<OHOS::Media::Picture> pictureShared = std::move(pictureTmp);
+    *picture = new (std::nothrow) OH_PictureNative(pictureShared);
+    if (*picture == nullptr) {
+        return IMAGE_ALLOC_FAILED;
+    }
+    return IMAGE_SUCCESS;
 }
 
 #ifdef __cplusplus

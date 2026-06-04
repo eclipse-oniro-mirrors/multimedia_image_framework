@@ -182,6 +182,7 @@ const int32_t ERR_MEDIA_INVALID_REGION = 7600204; // Invalid Region
 const int32_t ERR_MEDIA_UNSUPPORTED_MEMORY_FORMAT = 7600205; // Unsupported memory format
 const int32_t ERR_IMAGE_INVALID_PARAM = 7600206; // Invalid parameter
 const int32_t ERR_IMAGE_UNSUPPORTED_DATA_FORMAT = 7600207; // Unsupported data format
+const int32_t ERR_IMAGE_DECOMPOSE_FAILED = 7600208; // Decompose process failed
 const int32_t ERR_MEDIA_MEMORY_ALLOC_FAILED = 7600301; // Memory alloc failed
 const int32_t ERR_MEDIA_MEMORY_COPY_FAILED = 7600302; // Memory copy failed
 const int32_t ERR_IMAGE_CREATE_PIXELMAP_FAILED = 7600305; // Failed to create PixelMap

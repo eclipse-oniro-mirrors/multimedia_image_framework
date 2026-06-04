@@ -1232,5 +1232,216 @@ bool Picture::HdrComposeToMainPixel()
     DropAuxiliaryPicture(AuxiliaryPictureType::GAINMAP);
     return true;
 }
+
+static Media::Size GetGainmapSize(const ImageInfo& imageInfo, const HdrDecomposeOption& params)
+{
+    int32_t gainmapSizeDivisor = params.isFullSizeGainmap ? 1 : 2;
+    Media::Size gainmapSize = {
+        .width = imageInfo.size.width / gainmapSizeDivisor,
+        .height = imageInfo.size.height / gainmapSizeDivisor,
+    };
+    gainmapSize.width = gainmapSize.width > 0 ? gainmapSize.width : 1;
+    gainmapSize.height = gainmapSize.height > 0 ? gainmapSize.height : 1;
+    return gainmapSize;
+}
+ 
+static int32_t AllocSdrDecomposeBuffer(const ImageInfo& imageInfo, const HdrDecomposeOption& params,
+    sptr<SurfaceBuffer>& sdrSptr)
+{
+    sdrSptr = SurfaceBuffer::Create();
+    CHECK_ERROR_RETURN_RET_LOG(sdrSptr == nullptr, ERR_MEDIA_MEMORY_ALLOC_FAILED,
+        "AllocSdrDecomposeBuffer: create sdrSptr failed");
+    BufferRequestConfig sdrConfig = {
+        .width = imageInfo.size.width,
+        .height = imageInfo.size.height,
+        .strideAlignment = imageInfo.size.width,
+        .format = ImageUtils::PixelFormat2GraphicFormat(params.desiredPixelFormat),
+        .usage = BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA | BUFFER_USAGE_MEM_MMZ_CACHE,
+        .timeout = 0,
+    };
+    GSError sdrError = sdrSptr->Alloc(sdrConfig);
+    CHECK_ERROR_RETURN_RET_LOG(sdrError != GSERROR_OK, ERR_MEDIA_MEMORY_ALLOC_FAILED,
+        "alloc sdrSptr failed: width=%{public}d, height=%{public}d, format=%{public}d, error=%{public}s",
+        sdrConfig.width, sdrConfig.height, sdrConfig.format, GSErrorStr(sdrError).c_str());
+    VpeUtils::SetSbMetadataType(sdrSptr, CM_IMAGE_HDR_VIVID_DUAL);
+    VpeUtils::SetSbColorSpaceType(sdrSptr, CM_P3_FULL);
+    return SUCCESS;
+}
+
+static int32_t AllocGainmapDecomposeBuffer(const ImageInfo& imageInfo, const HdrDecomposeOption& params,
+    sptr<SurfaceBuffer>& gainmapSptr)
+{
+    gainmapSptr = SurfaceBuffer::Create();
+    CHECK_ERROR_RETURN_RET_LOG(gainmapSptr == nullptr, ERR_MEDIA_MEMORY_ALLOC_FAILED,
+        "AllocGainmapDecomposeBuffer: create gainmapSptr failed");
+    Media::Size gainmapSize = GetGainmapSize(imageInfo, params);
+    BufferRequestConfig gainmapConfig = {
+        .width = gainmapSize.width,
+        .height = gainmapSize.height,
+        .strideAlignment = gainmapSize.width,
+        .format = ImageUtils::PixelFormat2GraphicFormat(params.desiredPixelFormat),
+        .usage = BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA | BUFFER_USAGE_MEM_MMZ_CACHE,
+        .timeout = 0,
+    };
+    GSError gainmapError = gainmapSptr->Alloc(gainmapConfig);
+    CHECK_ERROR_RETURN_RET_LOG(gainmapError != GSERROR_OK, ERR_MEDIA_MEMORY_ALLOC_FAILED,
+        "alloc gainmapSptr failed: width=%{public}d, height=%{public}d, format=%{public}d, error=%{public}s",
+        gainmapConfig.width, gainmapConfig.height, gainmapConfig.format, GSErrorStr(gainmapError).c_str());
+    VpeUtils::SetSbMetadataType(gainmapSptr, CM_METADATA_NONE);
+    VpeUtils::SetSbColorSpaceType(gainmapSptr, CM_P3_FULL);
+    return SUCCESS;
+}
+ 
+static int32_t PerformDecompose(VpeSurfaceBuffers& buffers)
+{
+    std::unique_ptr<VpeUtils> utils = std::make_unique<VpeUtils>();
+    int32_t res = utils->ColorSpaceConverterDecomposeImage(buffers);
+    CHECK_ERROR_RETURN_RET_LOG(res != VPE_ERROR_OK, ERR_IMAGE_DECOMPOSE_FAILED,
+        "PerformDecompose: ColorSpaceConverterDecomposeImage failed: %{public}d", res);
+    ImageUtils::FlushSurfaceBuffer(buffers.sdr);
+    ImageUtils::FlushSurfaceBuffer(buffers.gainmap);
+    return SUCCESS;
+}
+ 
+static int32_t ConvertBuffersToPixelMaps(VpeSurfaceBuffers& buffers, std::shared_ptr<PixelMap>& sdrPixelMap,
+    std::shared_ptr<PixelMap>& gainmapPixelMap)
+{
+    sdrPixelMap = Picture::SurfaceBuffer2PixelMap(buffers.sdr);
+    CHECK_ERROR_RETURN_RET_LOG(sdrPixelMap == nullptr,
+        ERR_IMAGE_DECOMPOSE_FAILED, "ConvertBuffersToPixelMaps: sdr SurfaceBuffer2PixelMap failed");
+    gainmapPixelMap = Picture::SurfaceBuffer2PixelMap(buffers.gainmap);
+    CHECK_ERROR_RETURN_RET_LOG(gainmapPixelMap == nullptr,
+        ERR_IMAGE_DECOMPOSE_FAILED, "ConvertBuffersToPixelMaps: gainmap SurfaceBuffer2PixelMap failed");
+    return SUCCESS;
+}
+ 
+static std::unique_ptr<Picture> CreatePictureBySdrAndGainmap(std::shared_ptr<PixelMap>& sdrPixelMap,
+    std::shared_ptr<PixelMap>& gainmapPixelMap, int32_t& errCode)
+{
+    if (sdrPixelMap == nullptr || gainmapPixelMap == nullptr) {
+        IMAGE_LOGE("CreatePictureBySdrAndGainmap: input pixelmap is nullptr");
+        errCode = ERR_IMAGE_DECOMPOSE_FAILED;
+        return nullptr;
+    }
+ 
+    std::unique_ptr<Picture> picture = Picture::Create(sdrPixelMap);
+    if (picture == nullptr) {
+        IMAGE_LOGE("CreatePictureBySdrAndGainmap: Create picture failed");
+        errCode = ERR_IMAGE_DECOMPOSE_FAILED;
+        return nullptr;
+    }
+ 
+    Media::Size gainmapSize = {gainmapPixelMap->GetWidth(), gainmapPixelMap->GetHeight()};
+    std::unique_ptr<AuxiliaryPicture> gainmap = AuxiliaryPicture::Create(gainmapPixelMap,
+        AuxiliaryPictureType::GAINMAP, gainmapSize);
+    if (gainmap == nullptr) {
+        IMAGE_LOGE("CreatePictureBySdrAndGainmap: Create gainmap failed");
+        errCode = ERR_IMAGE_DECOMPOSE_FAILED;
+        return nullptr;
+    }
+ 
+    std::shared_ptr<AuxiliaryPicture> gainmapPtr = std::move(gainmap);
+    picture->SetAuxiliaryPicture(gainmapPtr);
+    return picture;
+}
+ 
+static int32_t ValidateHdrPixelMap(std::shared_ptr<PixelMap>& hdrPixelMap)
+{
+    CHECK_ERROR_RETURN_RET_LOG(hdrPixelMap == nullptr, ERR_IMAGE_INVALID_PARAM,
+        "ValidateHdrPixelMap: hdrPixelMap is nullptr");
+ 
+    CHECK_ERROR_RETURN_RET_LOG(hdrPixelMap->GetAllocatorType() != AllocatorType::DMA_ALLOC,
+        ERR_MEDIA_UNSUPPORT_OPERATION, "ValidateHdrPixelMap: hdrPixelMap is not DMA alloc");
+ 
+    CHECK_ERROR_RETURN_RET_LOG(!ImageUtils::Is10Bit(hdrPixelMap->GetPixelFormat()),
+        ERR_MEDIA_UNSUPPORT_OPERATION, "ValidateHdrPixelMap: hdrPixelMap is not 10-bit format");
+ 
+    CHECK_ERROR_RETURN_RET_LOG(!hdrPixelMap->IsHdr(), ERR_MEDIA_UNSUPPORT_OPERATION,
+        "ValidateHdrPixelMap: hdrPixelMap is not HDR");
+    return SUCCESS;
+}
+ 
+static std::shared_ptr<PixelMap> ConvertHdrPixelMapIfNeeded(
+    const std::shared_ptr<PixelMap>& hdrPixelMap, int32_t& errCode)
+{
+    errCode = SUCCESS;
+    if (hdrPixelMap->GetPixelFormat() != PixelFormat::RGBA_F16) {
+        return hdrPixelMap;
+    }
+#if !defined(CROSS_PLATFORM)
+    sptr<SurfaceBuffer> sptrF16 = sptr<SurfaceBuffer>(reinterpret_cast<SurfaceBuffer*>(hdrPixelMap->GetFd()));
+    ImageUtils::DumpHdrBufferEnabled(sptrF16, "DecomposeToPicture-RGBAF16-before-convert");
+    std::unique_ptr<PixelMap> convertedPixelMap = std::make_unique<PixelMap>();
+    if (!ImageUtils::ConvertRGBAF16ToRGBA1010102(hdrPixelMap, convertedPixelMap)) {
+        IMAGE_LOGE("ConvertHdrPixelMapIfNeeded: ConvertRGBAF16ToRGBA1010102 failed");
+        errCode = ERR_MEDIA_UNSUPPORT_OPERATION;
+        return nullptr;
+    }
+#ifdef IMAGE_COLORSPACE_FLAG
+    convertedPixelMap->InnerSetColorSpace(
+        ColorManager::ColorSpace(ColorManager::ColorSpaceName::BT2020_HLG));
+#endif
+    sptr<SurfaceBuffer> sptr1010102 = sptr<SurfaceBuffer>(reinterpret_cast<SurfaceBuffer*>(convertedPixelMap->GetFd()));
+    ImageUtils::DumpHdrBufferEnabled(sptr1010102, "DecomposeToPicture-RGBA1010102-after-convert");
+    return std::move(convertedPixelMap);
+#else
+    return hdrPixelMap;
+#endif
+}
+
+std::unique_ptr<Picture> Picture::DecomposeToPicture(std::shared_ptr<PixelMap> &hdrPixelMap, int32_t& errCode)
+{
+    HdrDecomposeOption params;
+    return DecomposeToPicture(hdrPixelMap, params, errCode);
+}
+
+std::unique_ptr<Picture> Picture::DecomposeToPicture(
+    std::shared_ptr<PixelMap> &hdrPixelMap, HdrDecomposeOption params, int32_t& errCode)
+{
+    errCode = SUCCESS;
+    if (hdrPixelMap == nullptr) {
+        errCode = ERR_IMAGE_INVALID_PARAM;
+        return nullptr;
+    }
+    if (hdrPixelMap->GetPixelFormat() != PixelFormat::RGBA_F16 && !ImageUtils::Is10Bit(hdrPixelMap->GetPixelFormat())) {
+        IMAGE_LOGE("DecomposeToPicture: unsupported input format %{public}d", hdrPixelMap->GetPixelFormat());
+        errCode = ERR_MEDIA_UNSUPPORT_OPERATION;
+        return nullptr;
+    }
+    if (params.desiredPixelFormat != PixelFormat::RGBA_8888 && params.desiredPixelFormat != PixelFormat::NV12 &&
+        params.desiredPixelFormat != PixelFormat::NV21) {
+        IMAGE_LOGE("DecomposeToPicture: unsupported desiredPixelFormat %{public}d", params.desiredPixelFormat);
+        errCode = ERR_MEDIA_UNSUPPORT_OPERATION;
+        return nullptr;
+    }
+    auto workingPixelMap = ConvertHdrPixelMapIfNeeded(hdrPixelMap, errCode);
+    CHECK_ERROR_RETURN_RET_LOG(workingPixelMap == nullptr, nullptr,
+        "DecomposeToPicture: ConvertHdrPixelMapIfNeeded failed");
+    errCode = ValidateHdrPixelMap(workingPixelMap);
+    CHECK_ERROR_RETURN_RET_LOG(errCode != SUCCESS, nullptr,
+        "DecomposeToPicture: ValidateHdrPixelMap failed, errCode=%{public}d", errCode);
+    ImageInfo imageInfo;
+    workingPixelMap->GetImageInfo(imageInfo);
+    sptr<SurfaceBuffer> hdrSptr = sptr<SurfaceBuffer>(
+        reinterpret_cast<SurfaceBuffer*>(workingPixelMap->GetFd()));
+    ImageUtils::FlushSurfaceBuffer(hdrSptr);
+    VpeSurfaceBuffers buffers = { .hdr = hdrSptr };
+    errCode = AllocSdrDecomposeBuffer(imageInfo, params, buffers.sdr);
+    CHECK_ERROR_RETURN_RET_LOG(errCode != SUCCESS, nullptr,
+        "DecomposeToPicture: AllocSdrDecomposeBuffer failed, errCode=%{public}d", errCode);
+    errCode = AllocGainmapDecomposeBuffer(imageInfo, params, buffers.gainmap);
+    CHECK_ERROR_RETURN_RET_LOG(errCode != SUCCESS, nullptr,
+        "DecomposeToPicture: AllocGainmapDecomposeBuffer failed, errCode=%{public}d", errCode);
+    errCode = PerformDecompose(buffers);
+    CHECK_ERROR_RETURN_RET_LOG(errCode != SUCCESS, nullptr,
+        "DecomposeToPicture: PerformDecompose failed, errCode=%{public}d", errCode);
+    std::shared_ptr<PixelMap> sdrPixelMap;
+    std::shared_ptr<PixelMap> gainmapPixelMap;
+    errCode = ConvertBuffersToPixelMaps(buffers, sdrPixelMap, gainmapPixelMap);
+    CHECK_ERROR_RETURN_RET_LOG(errCode != SUCCESS, nullptr,
+        "DecomposeToPicture: ConvertBuffersToPixelMaps failed, errCode=%{public}d", errCode);
+
+    return CreatePictureBySdrAndGainmap(sdrPixelMap, gainmapPixelMap, errCode);
+}
 } // namespace Media
 } // namespace OHOS

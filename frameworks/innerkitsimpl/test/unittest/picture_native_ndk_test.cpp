@@ -18,6 +18,7 @@
 #include "image_common.h"
 #include "image_common_impl.h"
 #include "image_source_native.h"
+#include "image_system_properties.h"
 #include "image_utils.h"
 #include "metadata.h"
 #include "picture_native.h"
@@ -1356,5 +1357,106 @@ HWTEST_F(PictureNdkTest, OH_PictureNative_SetAndGetMetadataTest003, TestSize.Lev
     ret = OH_PictureMetadata_Release(metadata);
     EXPECT_EQ(ret, IMAGE_SUCCESS);
 }
+
+/**
+ * @tc.name: OH_PictureNative_DecomposeToPictureTest001
+ * @tc.desc: Test OH_PictureNative_DecomposeToPicture with invalid parameters.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureNdkTest, OH_PictureNative_DecomposeToPictureTest001, TestSize.Level3)
+{
+    ImageSystemProperties::SetIsSystemAppForTest(true);
+    OH_PixelmapNative *pixelmap = nullptr;
+    OH_PictureNative *picture = nullptr;
+    OH_DecomposeOptions *options = nullptr;
+    Image_ErrorCode ret = OH_DecomposeOptions_Create(&options);
+    EXPECT_EQ(ret, IMAGE_SUCCESS);
+    ASSERT_NE(options, nullptr);
+
+    bool isFullSizeGainmap = true;
+    ret = OH_DecomposeOptions_GetIsFullSizeGainmap(options, &isFullSizeGainmap);
+    EXPECT_EQ(ret, IMAGE_SUCCESS);
+    EXPECT_FALSE(isFullSizeGainmap);
+
+    ret = OH_DecomposeOptions_SetIsFullSizeGainmap(options, true);
+    EXPECT_EQ(ret, IMAGE_SUCCESS);
+    ret = OH_DecomposeOptions_GetIsFullSizeGainmap(options, &isFullSizeGainmap);
+    EXPECT_EQ(ret, IMAGE_SUCCESS);
+    EXPECT_TRUE(isFullSizeGainmap);
+
+    ret = OH_PictureNative_DecomposeToPicture(pixelmap, options, &picture);
+    EXPECT_EQ(ret, IMAGE_INVALID_PARAMETER);
+    EXPECT_EQ(picture, nullptr);
+
+    ret = OH_PictureNative_DecomposeToPicture(pixelmap, nullptr, &picture);
+    EXPECT_EQ(ret, IMAGE_INVALID_PARAMETER);
+
+    ret = OH_PictureNative_DecomposeToPicture(pixelmap, options, nullptr);
+    EXPECT_EQ(ret, IMAGE_INVALID_PARAMETER);
+
+    ret = OH_DecomposeOptions_Release(options);
+    EXPECT_EQ(ret, IMAGE_SUCCESS);
+    ImageSystemProperties::SetIsSystemAppForTest(false);
+}
+
+
+/**
+ * @tc.name: OH_DecomposeOptionsTest001
+ * @tc.desc: Test OH_DecomposeOptions create, set, get, and release with invalid parameters.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureNdkTest, OH_DecomposeOptionsTest001, TestSize.Level3)
+{
+    ImageSystemProperties::SetIsSystemAppForTest(true);
+    Image_ErrorCode ret = OH_DecomposeOptions_Create(nullptr);
+    EXPECT_EQ(ret, IMAGE_INVALID_PARAMETER);
+
+    OH_DecomposeOptions *options = nullptr;
+    ret = OH_DecomposeOptions_Create(&options);
+    EXPECT_EQ(ret, IMAGE_SUCCESS);
+    ASSERT_NE(options, nullptr);
+
+    ret = OH_DecomposeOptions_SetIsFullSizeGainmap(nullptr, true);
+    EXPECT_EQ(ret, IMAGE_INVALID_PARAMETER);
+
+    ret = OH_DecomposeOptions_GetIsFullSizeGainmap(nullptr, nullptr);
+    EXPECT_EQ(ret, IMAGE_INVALID_PARAMETER);
+
+    ret = OH_DecomposeOptions_GetIsFullSizeGainmap(options, nullptr);
+    EXPECT_EQ(ret, IMAGE_INVALID_PARAMETER);
+
+    ret = OH_DecomposeOptions_SetDesiredPixelFormat(nullptr, 0);
+    EXPECT_EQ(ret, IMAGE_INVALID_PARAMETER);
+
+    ret = OH_DecomposeOptions_GetDesiredPixelFormat(nullptr, nullptr);
+    EXPECT_EQ(ret, IMAGE_INVALID_PARAMETER);
+
+    ret = OH_DecomposeOptions_GetDesiredPixelFormat(options, nullptr);
+    EXPECT_EQ(ret, IMAGE_INVALID_PARAMETER);
+
+    ret = OH_DecomposeOptions_Release(nullptr);
+    EXPECT_EQ(ret, IMAGE_INVALID_PARAMETER);
+
+    ret = OH_DecomposeOptions_Release(options);
+    EXPECT_EQ(ret, IMAGE_SUCCESS);
+    ImageSystemProperties::SetIsSystemAppForTest(false);
+}
+
+/**
+ * @tc.name: OH_DecomposeOptionsTest002
+ * @tc.desc: Test OH_DecomposeOptions_SetDesiredPixelFormat with unsupported formats.
+ * @tc.type: FUNC */
+HWTEST_F(PictureNdkTest, OH_DecomposeOptionsTest002, TestSize.Level3)
+{
+    OH_DecomposeOptions *options = nullptr;
+    EXPECT_EQ(OH_DecomposeOptions_Create(&options), IMAGE_PERMISSIONS_FAILED);
+    EXPECT_EQ(OH_DecomposeOptions_SetIsFullSizeGainmap(nullptr, true), IMAGE_PERMISSIONS_FAILED);
+    EXPECT_EQ(OH_DecomposeOptions_GetIsFullSizeGainmap(nullptr, nullptr), IMAGE_PERMISSIONS_FAILED);
+    EXPECT_EQ(OH_DecomposeOptions_SetDesiredPixelFormat(nullptr, 0), IMAGE_PERMISSIONS_FAILED);
+    EXPECT_EQ(OH_DecomposeOptions_SetDesiredPixelFormat(nullptr, 0), IMAGE_PERMISSIONS_FAILED);
+    EXPECT_EQ(OH_DecomposeOptions_Release(nullptr), IMAGE_PERMISSIONS_FAILED);
+    EXPECT_EQ(OH_PictureNative_DecomposeToPicture(nullptr, nullptr, nullptr), IMAGE_PERMISSIONS_FAILED);
+}
+
 } // namespace Media
 } // namespace OHOS

@@ -1416,7 +1416,7 @@ void ImageSourceImpl::modifyImageAllPropertiesSync(map_view<string, PropertyValu
 {
     OHOS::Media::ImageTrace imageTrace("ImageSourceImpl::modifyImageAllPropertiesSync");
 
-    if (!ImageTaiheUtils::IsSystemApp()) {
+    if (!OHOS::Media::ImageSystemProperties::IsSystemApp()) {
         IMAGE_LOGE("This interface can be called only by system apps");
         ImageTaiheUtils::ThrowExceptionError(IMAGE_PERMISSIONS_FAILED,
             "This interface can be called only by system apps");

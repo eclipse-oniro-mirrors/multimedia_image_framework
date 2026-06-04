@@ -823,6 +823,124 @@ Image_ErrorCode OH_AuxiliaryPictureInfo_Release(OH_AuxiliaryPictureInfo *info);
 Image_ErrorCode OH_AuxiliaryPictureNative_CreateUsingAllocator(uint8_t *data, uint32_t dataLength,
     OH_AuxiliaryPictureInfo *info, IMAGE_ALLOCATOR_MODE allocator, OH_AuxiliaryPictureNative **auxiliaryPicture);
 
+/**
+ * @brief **OH_DecomposeOptions** is the HDR decomposition option struct encapsulated at the native layer. It is
+ * used to specify parameters used for HDR decomposition, such as the target pixel format.
+ *
+ * @systemapi
+ * @since 26.0.0
+ */
+typedef struct OH_DecomposeOptions OH_DecomposeOptions;
+
+/**
+ * @brief Creates an OH_DecomposeOptions object.
+ *
+ * @param options The pointer to an OH_DecomposeOptions object.
+ * @return <ul>
+ *         <li>{@link IMAGE_SUCCESS} if the execution is successful.</li>
+ *         <li>{@link IMAGE_INVALID_PARAMETER} options is nullptr.</li>
+ *         <li>{@link IMAGE_ALLOC_FAILED} memory allocation failed.</li>
+ *         </ul>
+ * @systemapi
+ * @since 26.0.0
+ */
+Image_ErrorCode OH_DecomposeOptions_Create(OH_DecomposeOptions **options);
+
+/**
+ * @brief Sets whether to generate a full-size gainmap. If not set, the default value is false.
+ *
+ * @param options The pointer to an OH_DecomposeOptions object.
+ * @param isFullSizeGainmap Whether to generate a full-size gainmap.
+ * @return <ul>
+ *         <li>{@link IMAGE_SUCCESS} if the execution is successful.</li>
+ *         <li>{@link IMAGE_INVALID_PARAMETER} options is nullptr.</li>
+ *         </ul>
+ * @systemapi
+ * @since 26.0.0
+ */
+Image_ErrorCode OH_DecomposeOptions_SetIsFullSizeGainmap(OH_DecomposeOptions *options,
+    bool isFullSizeGainmap);
+
+/**
+ * @brief Gets whether to generate a full-size gainmap.
+ *
+ * @param options The pointer to an OH_DecomposeOptions object.
+ * @param isFullSizeGainmap Pointer to the value indicating whether to generate a full-size gainmap.
+ * @return <ul>
+ *         <li>{@link IMAGE_SUCCESS} if the execution is successful.</li>
+ *         <li>{@link IMAGE_INVALID_PARAMETER} options or isFullSizeGainmap is nullptr.</li>
+ *         </ul>
+ * @systemapi
+ * @since 26.0.0
+ */
+Image_ErrorCode OH_DecomposeOptions_GetIsFullSizeGainmap(OH_DecomposeOptions *options,
+    bool *isFullSizeGainmap);
+
+/**
+ * @brief Sets the desired pixel format of the SDR pixel map generated after HDR decomposition. If not set,
+ * the default value is RGBA_8888.
+ *
+ * @param options The pointer to an OH_DecomposeOptions object.
+ * @param desiredPixelFormat The desired pixel format of the generated SDR pixel map, which can be set to
+ *     RGBA_8888, NV12, or NV21.
+ * @return <ul>
+ *         <li>{@link IMAGE_SUCCESS} if the execution is successful.</li>
+ *         <li>{@link IMAGE_INVALID_PARAMETER} options is nullptr.</li>
+ *         <li>{@link IMAGE_UNSUPPORTED_OPERATION} desiredPixelFormat is not supported.</li>
+ *         </ul>
+ * @systemapi
+ * @since 26.0.0
+ */
+Image_ErrorCode OH_DecomposeOptions_SetDesiredPixelFormat(OH_DecomposeOptions *options,
+    int32_t desiredPixelFormat);
+
+/**
+ * @brief Gets the desired pixel format of the SDR pixel map generated after HDR decomposition.
+ *
+ * @param options The pointer to an OH_DecomposeOptions object.
+ * @param desiredPixelFormat Pointer to the desired pixel format of the generated SDR pixel map.
+ * @return <ul>
+ *         <li>{@link IMAGE_SUCCESS} if the execution is successful.</li>
+ *         <li>{@link IMAGE_INVALID_PARAMETER} options or desiredPixelFormat is nullptr.</li>
+ *         </ul>
+ * @systemapi
+ * @since 26.0.0
+ */
+Image_ErrorCode OH_DecomposeOptions_GetDesiredPixelFormat(OH_DecomposeOptions *options,
+    int32_t *desiredPixelFormat);
+
+/**
+ * @brief Releases an OH_DecomposeOptions object.
+ *
+ * @param options The pointer to an OH_DecomposeOptions object.
+ * @return <ul>
+ *         <li>{@link IMAGE_SUCCESS} if the execution is successful.</li>
+ *         <li>{@link IMAGE_INVALID_PARAMETER} options is nullptr.</li>
+ *         </ul>
+ * @systemapi
+ * @since 26.0.0
+ */
+Image_ErrorCode OH_DecomposeOptions_Release(OH_DecomposeOptions *options);
+
+/**
+ * @brief Decomposes an HDR pixel map into a Picture object which contains an SDR pixel map and a gainmap.
+ *
+ * @param hdrPixelmap The HDR pixel map to be decomposed.
+ * @param options Options used to control HDR decomposition. This parameter is mandatory.
+ * @param picture Pointer to the created Picture object.
+ * @return <ul>
+ *         <li>{@link IMAGE_SUCCESS} if the execution is successful.</li>
+ *         <li>{@link IMAGE_INVALID_PARAMETER} hdrPixelmap, options, or picture is nullptr.</li>
+ *         <li>{@link IMAGE_UNSUPPORTED_OPERATION} the pixel map is not supported for decomposition.</li>
+ *         <li>{@link IMAGE_DECOMPOSE_FAILED} the decomposition process failed.</li>
+ *         <li>{@link IMAGE_ALLOC_FAILED} memory allocation failed.</li>
+ *         </ul>
+ * @systemapi
+ * @since 26.0.0
+ */
+Image_ErrorCode OH_PictureNative_DecomposeToPicture(OH_PixelmapNative *hdrPixelmap, OH_DecomposeOptions *options,
+    OH_PictureNative **picture);
+
 #ifdef __cplusplus
 };
 #endif

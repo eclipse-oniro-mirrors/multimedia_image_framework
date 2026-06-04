@@ -221,6 +221,11 @@ typedef enum {
      * @since 22
      */
     IMAGE_UNSUPPORTED_DATA_FORMAT = 7600207,
+    /**
+     * @error Decompose process failed
+     * @since 26.0.0
+     */
+    IMAGE_DECOMPOSE_FAILED = 7600208,
     /** failed to allocate memory */
     IMAGE_ALLOC_FAILED = 7600301,
     /** memory copy failed */

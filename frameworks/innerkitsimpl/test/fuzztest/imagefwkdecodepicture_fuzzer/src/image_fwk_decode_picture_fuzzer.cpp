@@ -67,6 +67,17 @@ static constexpr uint32_t OPT_SIZE = 80;
 using namespace OHOS::ImagePlugin;
 FuzzedDataProvider *FDP;
 
+enum FuzzAction : uint8_t {
+    ACTION_RANDOM_PICTURE = 0,
+    ACTION_CREATE_JPEG_PICTURE,
+    ACTION_CREATE_HEIF_PICTURE,
+    ACTION_GAINMAP_CREATE,
+    ACTION_CREATE_GAINMAP_BY_HDR_AND_SDR,
+    ACTION_GET_HDR_COMPOSED_PIXELMAP,
+    ACTION_DECOMPOSE_TO_PICTURE,
+    ACTION_MAX,
+};
+
 namespace {
     const uint8_t* g_data = nullptr;
     size_t g_size = 0;
@@ -504,6 +515,34 @@ bool TestGetHdrComposedPixelMap(const uint8_t* data, size_t size)
     IMAGE_LOGI("%{public}s completed.", __func__);
     return true;
 }
+
+    bool TestDecomposeToPicture(const uint8_t* data, size_t size)
+{
+    IMAGE_LOGI("%{public}s start.", __func__);
+    if (data == nullptr || size < sizeof(int32_t) * NUM_2) {
+        return false;
+    }
+    g_data = data;
+    g_size = size;
+    g_pos = 0;
+    std::shared_ptr<PixelMap> pixelMap = GetPixelMapFromData(PixelFormat::RGBA_1010102);
+    if (pixelMap == nullptr) {
+        IMAGE_LOGE("Failed to create PixelMap");
+        return false;
+    }
+    int32_t errCode = SUCCESS;
+    auto picture = Picture::DecomposeToPicture(pixelMap, errCode);
+    if (picture != nullptr) {
+        IMAGE_LOGI("DecomposeToPicture succeeded");
+    } else {
+        IMAGE_LOGI("DecomposeToPicture returned null, errCode: %{public}d", errCode);
+    }
+    IMAGE_LOGI("%{public}s completed.", __func__);
+    return errCode == SUCCESS ||
+           errCode == ERR_IMAGE_INVALID_PARAMETER ||
+           errCode == ERR_MEDIA_UNSUPPORT_OPERATION ||
+           errCode == ERR_IMAGE_DECOMPOSE_FAILED;
+}
 } // namespace Media
 } // namespace OHOS
 
@@ -516,29 +555,32 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     }
     FuzzedDataProvider fdp(data + size - OHOS::Media::OPT_SIZE, OHOS::Media::OPT_SIZE);
     OHOS::Media::FDP = &fdp;
-    uint8_t action = fdp.ConsumeIntegral<uint8_t>() % 6;
+    uint8_t action = fdp.ConsumeIntegral<uint8_t>() % OHOS::Media::ACTION_MAX;
     switch (action) {
-        case 0:
+        case OHOS::Media::ACTION_RANDOM_PICTURE:
             OHOS::Media::PictureRandomFuzzTest(data, size - OHOS::Media::OPT_SIZE);
             break;
-        case 1: {
+        case OHOS::Media::ACTION_CREATE_JPEG_PICTURE: {
             std::string pathName = "/data/local/tmp/test_jpeg.jpg";
             OHOS::Media::CreatePictureByRandomImageSource(data, size - OHOS::Media::OPT_SIZE, pathName);
             break;
         }
-        case 2: {
+        case OHOS::Media::ACTION_CREATE_HEIF_PICTURE: {
             std::string pathName = "/data/local/tmp/test_heif.heic";
             OHOS::Media::CreatePictureByRandomImageSource(data, size - OHOS::Media::OPT_SIZE, pathName);
             break;
         }
-        case 3:
+        case OHOS::Media::ACTION_GAINMAP_CREATE:
             OHOS::Media::GainmapCreateFuzzTest(data, size - OHOS::Media::OPT_SIZE);
             break;
-        case 4:
+        case OHOS::Media::ACTION_CREATE_GAINMAP_BY_HDR_AND_SDR:
             OHOS::Media::TestCreateGainmapByHdrAndSdr(data, size - OHOS::Media::OPT_SIZE);
             break;
-        case 5:
+        case OHOS::Media::ACTION_GET_HDR_COMPOSED_PIXELMAP:
             OHOS::Media::TestGetHdrComposedPixelMap(data, size - OHOS::Media::OPT_SIZE);
+            break;
+        case OHOS::Media::ACTION_DECOMPOSE_TO_PICTURE:
+            OHOS::Media::TestDecomposeToPicture(data, size - OHOS::Media::OPT_SIZE);
             break;
         default:
             break;

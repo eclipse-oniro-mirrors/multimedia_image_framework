@@ -429,16 +429,6 @@ void ImageNapiUtils::CleanUpConstructorContext(void* data)
     delete ctorContext;
 }
 
-bool ImageNapiUtils::IsSystemApp()
-{
-#if !defined(CROSS_PLATFORM)
-    static bool isSys = Security::AccessToken::TokenIdKit::IsSystemAppByFullTokenID(IPCSkeleton::GetSelfTokenID());
-    return isSys;
-#else
-    return false;
-#endif
-}
-
 napi_value ImageNapiUtils::CreateEnumTypeObject(napi_env env, napi_valuetype type,
     const std::vector<struct ImageEnum> &imageEnumMap)
 {

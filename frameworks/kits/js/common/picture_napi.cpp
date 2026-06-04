@@ -70,6 +70,7 @@ struct PictureAsyncContext {
     PixelFormat hdrFormat = PixelFormat::UNKNOWN;
     bool withOptions = false;
     GainmapParams gainmapParams;
+    HdrDecomposeOption decomposeOption;
 };
 
 using PictureAsyncContextPtr = std::unique_ptr<PictureAsyncContext>;
@@ -255,6 +256,7 @@ napi_value PictureNapi::Init(napi_env env, napi_value exports)
         DECLARE_NAPI_STATIC_FUNCTION("createPicture", CreatePicture),
         DECLARE_NAPI_STATIC_FUNCTION("createPictureFromParcel", CreatePictureFromParcel),
         DECLARE_NAPI_STATIC_FUNCTION("createPictureByHdrAndSdrPixelMap", CreatePictureByHdrAndSdrPixelMap),
+        DECLARE_NAPI_STATIC_FUNCTION("decomposeToPicture", DecomposeToPicture),
         DECLARE_NAPI_PROPERTY("AuxiliaryPictureType",
             ImageNapiUtils::CreateEnumTypeObject(env, napi_number, auxiliaryPictureTypeMap)),
         DECLARE_NAPI_PROPERTY("MetadataType",
@@ -613,17 +615,17 @@ STATIC_EXEC_FUNC(CreatePictureByHdrAndSdrPixelMap)
     }
 }
 
-bool parseGainmapParams(napi_env env, napi_value root, GainmapParams *gainmapParams)
+bool ParseGainmapParams(napi_env env, napi_value root, GainmapParams *gainmapParams)
 {
     if (root == nullptr || gainmapParams == nullptr) {
-        IMAGE_LOGE("parseGainmapParams: invalid input parameters");
+        IMAGE_LOGE("ParseGainmapParams: invalid input parameters");
         return false;
     }
     // Check if root is a valid object
     napi_valuetype valueType;
     napi_status status = napi_typeof(env, root, &valueType);
     if (status != napi_ok || valueType != napi_object) {
-        IMAGE_LOGD("parseGainmapParams: root is not a valid object");
+        IMAGE_LOGE("ParseGainmapParams: root is not a valid object");
         return false;
     }
     // Use GET_BOOL_BY_NAME macro to get isFullSizeGainmap
@@ -631,12 +633,51 @@ bool parseGainmapParams(napi_env env, napi_value root, GainmapParams *gainmapPar
     bool getSuccess = GET_BOOL_BY_NAME(root, "isFullSizeGainmap", isFullSizeGainmap);
     if (getSuccess) {
         gainmapParams->isFullSizeGainmap = isFullSizeGainmap;
-        IMAGE_LOGD("parseGainmapParams: isFullSizeGainmap = %{public}d", isFullSizeGainmap);
-        return true;
+        IMAGE_LOGD("ParseGainmapParams: isFullSizeGainmap = %{public}d", isFullSizeGainmap);
+    } else {
+        // Property not found or wrong type, use default value false
+        gainmapParams->isFullSizeGainmap = false;
+        IMAGE_LOGD("ParseGainmapParams: isFullSizeGainmap not found, using default false");
     }
-    // Property not found or wrong type, use default value false
-    gainmapParams->isFullSizeGainmap = false;
-    IMAGE_LOGD("parseGainmapParams: isFullSizeGainmap not found, using default false");
+    return true;
+}
+ 
+bool ParseDecomposeOptions(napi_env env, napi_value root, HdrDecomposeOption *decomposeOption)
+{
+    if (root == nullptr || decomposeOption == nullptr) {
+        IMAGE_LOGE("ParseDecomposeOptions: invalid input parameters");
+        return false;
+    }
+    // Check if root is a valid object
+    napi_valuetype valueType;
+    napi_status status = napi_typeof(env, root, &valueType);
+    if (status != napi_ok || valueType != napi_object) {
+        IMAGE_LOGE("ParseDecomposeOptions: root is not a valid object");
+        return false;
+    }
+    // Use GET_BOOL_BY_NAME macro to get isFullSizeGainmap
+    bool isFullSizeGainmap = false;
+    bool getSuccess = GET_BOOL_BY_NAME(root, "isFullSizeGainmap", isFullSizeGainmap);
+    if (getSuccess) {
+        decomposeOption->isFullSizeGainmap = isFullSizeGainmap;
+        IMAGE_LOGD("ParseDecomposeOptions: isFullSizeGainmap = %{public}d", isFullSizeGainmap);
+    } else {
+        // Property not found, use default value false
+        decomposeOption->isFullSizeGainmap = false;
+        IMAGE_LOGD("ParseDecomposeOptions: isFullSizeGainmap not found, using default false");
+    }
+ 
+    // Get desiredPixelFormat
+    uint32_t desiredPixelFormat = 3; // RGBA_8888
+    getSuccess = GET_UINT32_BY_NAME(root, "desiredPixelFormat", desiredPixelFormat);
+    if (getSuccess) {
+        decomposeOption->desiredPixelFormat = static_cast<PixelFormat>(desiredPixelFormat);
+        IMAGE_LOGD("ParseDecomposeOptions: desiredPixelFormat = %{public}d", desiredPixelFormat);
+    } else {
+        // Property not found, use default value RGBA_8888
+        decomposeOption->desiredPixelFormat = PixelFormat::RGBA_8888;
+        IMAGE_LOGD("ParseDecomposeOptions: desiredPixelFormat not found, using default RGBA_8888");
+    }
     return true;
 }
 
@@ -658,7 +699,7 @@ bool ParsePixelMapParameter(
 napi_value PictureNapi::CreatePictureByHdrAndSdrPixelMap(napi_env env, napi_callback_info info)
 {
     IMAGE_LOGD("CreatePictureByHdrAndSdrPixelMap IN");
-    if (!ImageNapiUtils::IsSystemApp()) {
+    if (!ImageSystemProperties::IsSystemApp()) {
         IMAGE_LOGE("This interface can be called only by system apps");
         return ImageNapiUtils::ThrowExceptionError(env, IMAGE_PERMISSIONS_FAILED,
             "This interface can be called only by system apps");
@@ -691,7 +732,9 @@ napi_value PictureNapi::CreatePictureByHdrAndSdrPixelMap(napi_env env, napi_call
     }
     GainmapParams gainmapParams;
     if (argCount == NUM_3) {
-        parseGainmapParams(env, argValue[NUM_2], &gainmapParams);
+        if (!ParseGainmapParams(env, argValue[NUM_2], &gainmapParams)) {
+            return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER, "Invalid gainmap params");
+        }
     }
     asyncContext->gainmapParams = gainmapParams;
     CreatePictureByHdrAndSdrPixelMapExec(env, static_cast<void*>((asyncContext).get()));
@@ -702,6 +745,103 @@ napi_value PictureNapi::CreatePictureByHdrAndSdrPixelMap(napi_env env, napi_call
     }
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, IMAGE_LOGE("fail to create picture sync"));
     IMAGE_LOGD("CreatePictureByHdrAndSdrPixelMap OUT");
+    return result;
+}
+
+STATIC_EXEC_FUNC(DecomposeToPicture)
+{
+    IMAGE_LOGD("DecomposeToPictureExec IN");
+    auto context = static_cast<PictureAsyncContext*>(data);
+    if (context == nullptr) {
+        IMAGE_LOGE("DecomposeToPictureExec: context is nullptr");
+        return;
+    }
+ 
+    int32_t errCode = SUCCESS;
+    auto picture = Picture::DecomposeToPicture(context->rHdrPixelMap, context->decomposeOption, errCode);
+    context->rPicture = std::move(picture);
+    if (errCode != SUCCESS) {
+        context->status = static_cast<uint32_t>(errCode);
+    } else if (context->rPicture == nullptr) {
+        context->status = ERR_IMAGE_DECOMPOSE_FAILED;
+    } else {
+        context->status = SUCCESS;
+    }
+    IMAGE_LOGD("DecomposeToPictureExec OUT");
+}
+ 
+static void CreateDecomposeToPictureComplete(napi_env env, napi_status status, void *data)
+{
+    napi_value result = nullptr;
+    napi_get_undefined(env, &result);
+    auto context = static_cast<PictureAsyncContext*>(data);
+ 
+    if (context == nullptr) {
+        IMAGE_LOGE("CreateDecomposeToPictureComplete: context is nullptr");
+        return;
+    }
+ 
+    if (!IMG_IS_OK(status)) {
+        IMAGE_LOGE("CreateDecomposeToPictureComplete: async work failed");
+        context->status = ERROR;
+        CommonCallbackRoutine(env, context, result);
+        return;
+    }
+ 
+    if (context->status == SUCCESS && context->rPicture != nullptr) {
+        result = PictureNapi::CreatePicture(env, context->rPicture);
+    } else if (context->status == SUCCESS) {
+        context->status = ERR_IMAGE_DECOMPOSE_FAILED;
+    }
+ 
+    CommonCallbackRoutine(env, context, result);
+}
+ 
+napi_value PictureNapi::DecomposeToPicture(napi_env env, napi_callback_info info)
+{
+    IMAGE_LOGD("DecomposeToPicture IN");
+    if (!ImageSystemProperties::IsSystemApp()) {
+        IMAGE_LOGE("PictureNapi::DecomposeToPicture can be called only by system apps");
+        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_PERMISSIONS_FAILED,
+            "DecomposeToPicture can be called only by system apps");
+    }
+ 
+    if (sConstructor_ == nullptr) {
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        PictureNapi::Init(env, exports);
+    }
+ 
+    napi_value result = nullptr;
+    napi_get_undefined(env, &result);
+    napi_status status;
+    napi_value thisVar = nullptr;
+    napi_value argValue[NUM_2] = {0};
+    size_t argCount = NUM_2;
+    IMG_JS_ARGS(env, info, status, argCount, argValue, thisVar);
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER,
+        "Invalid args"), IMAGE_LOGE("fail to napi_get_cb_info"));
+    IMG_NAPI_CHECK_RET_D(argCount >= NUM_1 && argCount <= NUM_2,
+        ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER, "Invalid args count"),
+        IMAGE_LOGE("Invalid args count %{public}zu", argCount));
+ 
+    std::unique_ptr<PictureAsyncContext> asyncContext = std::make_unique<PictureAsyncContext>();
+    if (!ParsePixelMapParameter(env, argValue[NUM_0], "hdr", asyncContext->rHdrPixelMap)) {
+        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER, "Invalid hdr PixelMap parameter");
+    }
+    if (argCount == NUM_2 && !ParseDecomposeOptions(env, argValue[NUM_1], &asyncContext->decomposeOption)) {
+        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER, "Invalid DecomposeOptions parameter");
+    }
+ 
+    napi_create_promise(env, &(asyncContext->deferred), &result);
+    asyncContext->status = SUCCESS;
+ 
+    IMG_CREATE_CREATE_ASYNC_WORK(env, status, "DecomposeToPicture",
+        DecomposeToPictureExec, CreateDecomposeToPictureComplete, asyncContext, asyncContext->work);
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status),
+        nullptr, IMAGE_LOGE("Fail to create DecomposeToPicture async work"));
+ 
+    IMAGE_LOGD("DecomposeToPicture OUT");
     return result;
 }
 

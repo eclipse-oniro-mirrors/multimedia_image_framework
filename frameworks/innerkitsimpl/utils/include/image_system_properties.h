@@ -44,6 +44,8 @@ public:
     static bool IsImageSubSample();
     static bool GetDecodeDfxDataEnabled();
     static bool GetEncodeDfxDataEnabled();
+    static bool IsSystemApp();
+    static void SetIsSystemAppForTest(bool isSystemApp);
 private:
     ImageSystemProperties() = default;
 };
