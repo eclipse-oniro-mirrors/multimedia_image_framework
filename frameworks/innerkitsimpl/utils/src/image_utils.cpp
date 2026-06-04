@@ -87,6 +87,19 @@ namespace Media {
 using namespace std;
 using namespace MultimediaPlugin;
 #if !defined(CROSS_PLATFORM)
+static const std::map<PixelFormat, int32_t> PIXEL_FORMAT_TO_GRAPHIC_MAP = {
+    { PixelFormat::RGBA_8888, GRAPHIC_PIXEL_FMT_RGBA_8888 },
+    { PixelFormat::NV12, GRAPHIC_PIXEL_FMT_YCBCR_420_SP },
+    { PixelFormat::NV21, GRAPHIC_PIXEL_FMT_YCRCB_420_SP },
+    { PixelFormat::RGBA_1010102, GRAPHIC_PIXEL_FMT_RGBA_1010102 },
+    { PixelFormat::BGRA_8888, GRAPHIC_PIXEL_FMT_BGRA_8888 },
+    { PixelFormat::RGB_888, GRAPHIC_PIXEL_FMT_RGB_888 },
+    { PixelFormat::RGB_565, GRAPHIC_PIXEL_FMT_RGB_565 },
+    { PixelFormat::RGBA_F16, GRAPHIC_PIXEL_FMT_RGBA16_FLOAT },
+    { PixelFormat::YCBCR_P010, GRAPHIC_PIXEL_FMT_YCBCR_P010 },
+    { PixelFormat::YCRCB_P010, GRAPHIC_PIXEL_FMT_YCRCB_P010 },
+};
+
 #define GET_VAR_NAME(var) #var
 using namespace HDI::Display::Graphic::Common::V1_0;
 #endif
@@ -1122,6 +1135,15 @@ PixelFormat ImageUtils::SbFormat2PixelFormat(int32_t sbFormat)
     auto iter = PIXEL_FORMAT_MAP.find(sbFormat);
     if (iter == PIXEL_FORMAT_MAP.end()) {
         return PixelFormat::UNKNOWN;
+    }
+    return iter->second;
+}
+
+int32_t ImageUtils::PixelFormat2GraphicFormat(PixelFormat pixelFormat)
+{
+    auto iter = PIXEL_FORMAT_TO_GRAPHIC_MAP.find(pixelFormat);
+    if (iter == PIXEL_FORMAT_TO_GRAPHIC_MAP.end()) {
+        return GRAPHIC_PIXEL_FMT_RGBA_8888;
     }
     return iter->second;
 }
@@ -2636,6 +2658,75 @@ void ImageUtils::GetYUVStrideInfo(int32_t pixelFmt, OH_NativeBuffer_Planes *plan
         auto uvOffset = planes->planes[PLANE_V].offset / NUM_2;
         dstStrides = {yStride, uvStride, yOffset, uvOffset};
     }
+}
+
+static sptr<SurfaceBuffer> CreateRGBA1010102SurfaceBuffer(int32_t width, int32_t height)
+{
+    sptr<SurfaceBuffer> dstSb = SurfaceBuffer::Create();
+    CHECK_ERROR_RETURN_RET_LOG(dstSb == nullptr, nullptr, "create dstSb failed");
+    BufferRequestConfig dstConfig = {
+        .width = width,
+        .height = height,
+        .strideAlignment = 0x8,
+        .format = GRAPHIC_PIXEL_FMT_RGBA_1010102,
+        .usage = BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA | BUFFER_USAGE_MEM_MMZ_CACHE,
+        .timeout = 0,
+    };
+    GSError ret = dstSb->Alloc(dstConfig);
+    CHECK_ERROR_RETURN_RET_LOG(ret != GSERROR_OK, nullptr, "alloc dstSb failed, error: %{public}s",
+        GSErrorStr(ret).c_str());
+    return dstSb;
+}
+
+static void SetupConversionColorSpace(sptr<SurfaceBuffer>& srcSb, sptr<SurfaceBuffer>& dstSb)
+{
+    CM_ColorSpaceInfo ColorSpace_Info_SRGB_FULL = {
+        .primaries = COLORPRIMARIES_SRGB,
+        .transfunc = TRANSFUNC_SRGB,
+        .matrix = MATRIX_BT601_N,
+        .range = RANGE_FULL,
+    };
+    VpeUtils::SetSbMetadataType(srcSb, CM_IMAGE_HDR_VIVID_SINGLE);
+    MetadataHelper::SetColorSpaceInfo(srcSb, ColorSpace_Info_SRGB_FULL);
+    CM_ColorSpaceInfo COLORSPACE_INFO_BT2020_HLG_FULL = {
+        .primaries = COLORPRIMARIES_BT2020,
+        .transfunc = TRANSFUNC_HLG,
+        .matrix = MATRIX_BT2020,
+        .range = RANGE_FULL
+    };
+    VpeUtils::SetSbMetadataType(dstSb, CM_IMAGE_HDR_VIVID_SINGLE);
+    MetadataHelper::SetColorSpaceInfo(dstSb, COLORSPACE_INFO_BT2020_HLG_FULL);
+}
+
+bool ImageUtils::ConvertRGBAF16ToRGBA1010102(
+    const std::shared_ptr<PixelMap>& srcPixelMap, std::unique_ptr<PixelMap>& dstPixelMap)
+{
+    CHECK_ERROR_RETURN_RET_LOG(srcPixelMap == nullptr, false, "srcPixelMap is nullptr");
+    ImageInfo srcImageInfo;
+    srcPixelMap->GetImageInfo(srcImageInfo);
+    CHECK_ERROR_RETURN_RET_LOG(srcImageInfo.pixelFormat != PixelFormat::RGBA_F16, false,
+        "srcPixelMap format is not RGBA_F16");
+    int32_t width = srcImageInfo.size.width;
+    int32_t height = srcImageInfo.size.height;
+
+    sptr<SurfaceBuffer> dstSb = CreateRGBA1010102SurfaceBuffer(width, height);
+    CHECK_ERROR_RETURN_RET_LOG(dstSb == nullptr, false, "create dstSb failed");
+
+    sptr<SurfaceBuffer> srcSb = sptr<SurfaceBuffer>(
+        reinterpret_cast<SurfaceBuffer*>(srcPixelMap->GetFd()));
+    CHECK_ERROR_RETURN_RET_LOG(srcSb == nullptr, false, "get srcSb from srcPixelMap failed");
+
+    SetupConversionColorSpace(srcSb, dstSb);
+
+    std::unique_ptr<VpeUtils> utils = std::make_unique<VpeUtils>();
+    int32_t res = utils->ColorSpaceConverterImageProcess(srcSb, dstSb);
+    CHECK_ERROR_RETURN_RET_LOG(res != VPE_ERROR_OK, false,
+        "ColorSpaceConverterImageProcess failed, res = %{public}d", res);
+
+    CHECK_ERROR_RETURN_RET_LOG(!ImageUtils::SurfaceBuffer2PixelMap(dstSb, dstPixelMap), false,
+        "SurfaceBuffer2PixelMap failed");
+
+    return true;
 }
 #endif
 } // namespace Media

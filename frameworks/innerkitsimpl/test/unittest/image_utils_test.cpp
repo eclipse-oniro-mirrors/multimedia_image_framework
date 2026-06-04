@@ -1862,5 +1862,54 @@ HWTEST_F(ImageUtilsTest, ConvertTo10BitPixelFormatTest001, TestSize.Level3)
 
     GTEST_LOG_(INFO) << "ImageUtilsTest: ConvertTo10BitPixelFormatTest001 end";
 }
+
+/**
+ * @tc.name: ConvertRGBAF16ToRGBA1010102Test001
+ * @tc.desc: Test ConvertRGBAF16ToRGBA1010102 with invalid inputs.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageUtilsTest, ConvertRGBAF16ToRGBA1010102Test001, TestSize.Level1)
+{
+    std::unique_ptr<PixelMap> dstPixelMap = std::make_unique<PixelMap>();
+    bool ret = ImageUtils::ConvertRGBAF16ToRGBA1010102(nullptr, dstPixelMap);
+    EXPECT_FALSE(ret);
+
+    InitializationOptions options;
+    options.size.width = 100;
+    options.size.height = 100;
+    options.pixelFormat = PixelFormat::RGBA_8888;
+    options.alphaType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
+    std::unique_ptr<PixelMap> srcPixelMap = PixelMap::Create(options);
+    ASSERT_NE(srcPixelMap, nullptr);
+    std::shared_ptr<PixelMap> srcShared = std::move(srcPixelMap);
+    dstPixelMap = std::make_unique<PixelMap>();
+    ret = ImageUtils::ConvertRGBAF16ToRGBA1010102(srcShared, dstPixelMap);
+    EXPECT_FALSE(ret);
 }
+
+/**
+ * @tc.name: PixelFormat2GraphicFormatTest001
+ * @tc.desc: Test PixelFormat2GraphicFormat mapping and fallback.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageUtilsTest, PixelFormat2GraphicFormatTest001, TestSize.Level1)
+{
+    EXPECT_EQ(ImageUtils::PixelFormat2GraphicFormat(PixelFormat::UNKNOWN),
+        static_cast<int32_t>(GRAPHIC_PIXEL_FMT_RGBA_8888));
+    EXPECT_EQ(ImageUtils::PixelFormat2GraphicFormat(PixelFormat::ARGB_8888),
+        static_cast<int32_t>(GRAPHIC_PIXEL_FMT_RGBA_8888));
+    EXPECT_EQ(ImageUtils::PixelFormat2GraphicFormat(PixelFormat::RGBA_8888),
+        static_cast<int32_t>(GRAPHIC_PIXEL_FMT_RGBA_8888));
+    EXPECT_EQ(ImageUtils::PixelFormat2GraphicFormat(PixelFormat::NV12),
+        static_cast<int32_t>(GRAPHIC_PIXEL_FMT_YCBCR_420_SP));
+    EXPECT_EQ(ImageUtils::PixelFormat2GraphicFormat(PixelFormat::NV21),
+        static_cast<int32_t>(GRAPHIC_PIXEL_FMT_YCRCB_420_SP));
+    EXPECT_EQ(ImageUtils::PixelFormat2GraphicFormat(PixelFormat::RGBA_1010102),
+        static_cast<int32_t>(GRAPHIC_PIXEL_FMT_RGBA_1010102));
+    EXPECT_EQ(ImageUtils::PixelFormat2GraphicFormat(PixelFormat::BGRA_8888),
+        static_cast<int32_t>(GRAPHIC_PIXEL_FMT_BGRA_8888));
+    EXPECT_EQ(ImageUtils::PixelFormat2GraphicFormat(PixelFormat::RGBA_F16),
+        static_cast<int32_t>(GRAPHIC_PIXEL_FMT_RGBA16_FLOAT));
 }
+} // namespace Multimedia
+} // namespace OHOS

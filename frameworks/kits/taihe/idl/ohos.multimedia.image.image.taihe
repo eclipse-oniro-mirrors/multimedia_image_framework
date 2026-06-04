@@ -1024,6 +1024,11 @@ struct HdrComposeOptions {
   desiredPixelFormat: Optional<PixelMapFormat>;
 }
 
+struct HdrDecomposeOptions {
+  desiredPixelFormat: Optional<PixelMapFormat>;
+  isFullSizeGainmap: Optional<bool>;
+}
+
 interface Picture {
   GetImplPtr(): i64;
 
@@ -2523,3 +2528,5 @@ function CreatePictureByHdrAndSdrPixelMapSync(hdrPixelMap: PixelMap, sdrPixelMap
 
 @promise @rename("createPictureByHdrAndSdrPixelMap")
 function CreatePictureByHdrAndSdrPixelMapWithGainmapParamsSync(hdrPixelMap: PixelMap, sdrPixelMap: PixelMap, params: GainmapParams): Picture;
+@promise @rename("decomposeToPicture")
+function DecomposeToPicture(hdrPixelMap: PixelMap, options: HdrDecomposeOptions): Picture;

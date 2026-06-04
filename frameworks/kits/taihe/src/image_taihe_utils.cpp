@@ -261,14 +261,5 @@ bool ImageTaiheUtils::IsValidPtr<weak::ImageSource>(weak::ImageSource data);
 template
 bool ImageTaiheUtils::IsValidPtr<weak::Picture>(weak::Picture data);
 
-bool ImageTaiheUtils::IsSystemApp()
-{
-#if !defined(CROSS_PLATFORM)
-    static bool isSys = OHOS::Security::AccessToken::TokenIdKit::IsSystemAppByFullTokenID(
-        OHOS::IPCSkeleton::GetSelfTokenID());
-    return isSys;
-#else
-    return false;
-#endif
-}
+
 } // namespace ANI::Image

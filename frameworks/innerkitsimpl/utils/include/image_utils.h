@@ -159,6 +159,8 @@ public:
         uint64_t imageId = 0);
 #if !defined(CROSS_PLATFORM)
     static bool SurfaceBuffer2PixelMap(sptr<SurfaceBuffer> &surfaceBuffer, std::unique_ptr<PixelMap>& Pixelmap);
+    static bool ConvertRGBAF16ToRGBA1010102(
+        const std::shared_ptr<PixelMap>& srcPixelMap, std::unique_ptr<PixelMap>& dstPixelMap);
     static void DumpHdrBufferEnabled(sptr<SurfaceBuffer>& buffer, const std::string& fileName);
     static void DumpHdrExtendMetadataEnabled(sptr<SurfaceBuffer>& buffer, const std::string& fileName);
     static void DumpSurfaceBufferAllKeysEnabled(sptr<SurfaceBuffer>& buffer, const std::string& fileName);
@@ -169,6 +171,7 @@ public:
     static bool GetYuvInfoFromSurfaceBuffer(YUVDataInfo &yuvInfo, sptr<SurfaceBuffer> surfaceBuffer);
 #endif
     static PixelFormat SbFormat2PixelFormat(int32_t sbFormat);
+    static int32_t PixelFormat2GraphicFormat(PixelFormat pixelFormat);
     static uint64_t GetNowTimeMilliSeconds();
     static uint64_t GetNowTimeMicroSeconds();
     static std::string GetCurrentProcessName();
