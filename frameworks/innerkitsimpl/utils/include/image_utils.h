@@ -283,6 +283,7 @@ public:
     static uint8_t GetVarintLen(int32_t value);
     static void WriteVarint(std::vector<uint8_t> &buff, int32_t value);
     static void WriteUint8(std::vector<uint8_t> &buff, uint8_t value);
+    static bool IsSystemApp();
 #if !defined(CROSS_PLATFORM)
     static void FlushSurfaceBuffer(sptr<SurfaceBuffer>& surfaceBuffer);
 #endif

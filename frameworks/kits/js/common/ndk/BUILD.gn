@@ -212,6 +212,7 @@ ohos_shared_library("image_packer") {
   ]
 
   deps = [
+    "$image_subsystem/frameworks/innerkitsimpl/utils:image_utils",
     "$image_subsystem/frameworks/kits/js/common/ndk:image_source",
     "$image_subsystem/frameworks/kits/js/common/picture_ndk:picture",
     "$image_subsystem/frameworks/kits/js/common/pixelmap_ndk:pixelmap",

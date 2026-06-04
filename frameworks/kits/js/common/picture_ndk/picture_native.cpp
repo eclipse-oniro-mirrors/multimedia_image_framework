@@ -116,7 +116,7 @@ MIDK_EXPORT
 Image_ErrorCode OH_PictureNative_GetAuxiliaryPictureCount(OH_PictureNative *picture, uint32_t *count)
 {
     if (picture == nullptr || count == nullptr || !picture->GetInnerPicture()) {
-        return IMAGE_BAD_PARAMETER;
+        return IMAGE_INVALID_PARAMETER;
     }
     *count = picture->GetInnerPicture()->GetAuxiliaryPictureCount();
     return IMAGE_SUCCESS;
@@ -127,13 +127,13 @@ Image_ErrorCode OH_PictureNative_GetAuxiliaryPictureTypes(OH_PictureNative *pict
     Image_AuxiliaryPictureType *auxiliaryPictureTypes, uint32_t *count)
 {
     if (picture == nullptr || auxiliaryPictureTypes == nullptr || count == nullptr || !picture->GetInnerPicture()) {
-        return IMAGE_BAD_PARAMETER;
+        return IMAGE_INVALID_PARAMETER;
     }
     std::vector<OHOS::Media::AuxiliaryPictureType> innerTypes = picture->GetInnerPicture()->GetAuxiliaryPictureTypes();
     uint32_t needed = static_cast<uint32_t>(innerTypes.size());
     if (*count < needed) {
         *count = needed;
-        return IMAGE_BAD_PARAMETER;
+        return IMAGE_INVALID_PARAMETER;
     }
     for (uint32_t i = 0; i < needed; ++i) {
         auxiliaryPictureTypes[i] = AuxTypeInnerToNative(innerTypes[i]);
@@ -146,7 +146,7 @@ MIDK_EXPORT
 Image_ErrorCode OH_PictureNative_GetMetadataCount(OH_PictureNative *picture, uint32_t *count)
 {
     if (picture == nullptr || count == nullptr || !picture->GetInnerPicture()) {
-        return IMAGE_BAD_PARAMETER;
+        return IMAGE_INVALID_PARAMETER;
     }
     *count = picture->GetInnerPicture()->GetMetadataCount();
     return IMAGE_SUCCESS;
@@ -157,13 +157,13 @@ Image_ErrorCode OH_PictureNative_GetMetadataTypes(OH_PictureNative *picture,
     Image_MetadataType *metadataTypes, uint32_t *count)
 {
     if (picture == nullptr || metadataTypes == nullptr || count == nullptr || !picture->GetInnerPicture()) {
-        return IMAGE_BAD_PARAMETER;
+        return IMAGE_INVALID_PARAMETER;
     }
     std::vector<OHOS::Media::MetadataType> innerTypes = picture->GetInnerPicture()->GetMetadataTypes();
     uint32_t needed = static_cast<uint32_t>(innerTypes.size());
     if (*count < needed) {
         *count = needed;
-        return IMAGE_BAD_PARAMETER;
+        return IMAGE_INVALID_PARAMETER;
     }
     for (uint32_t i = 0; i < needed; ++i) {
         metadataTypes[i] = MetaDataTypeInnerToNative(innerTypes[i]);
@@ -185,7 +185,7 @@ Image_ErrorCode OH_PictureNative_DeepCopy(OH_PictureNative *source,
         srcAuxiliaryPictureCount != dstAuxiliaryPictureCount || srcMetadataCount != dstMetadataCount ||
         (srcAuxiliaryPictureCount > 0 && (srcAuxiliaryPictures == nullptr || dstAuxiliaryPictures == nullptr)) ||
         (srcMetadataCount > 0 && (srcMetadatas == nullptr || dstMetadatas == nullptr))) {
-        return IMAGE_BAD_PARAMETER;
+        return IMAGE_INVALID_PARAMETER;
     }
  
     auto srcPicture = source->GetInnerPicture();
@@ -225,14 +225,63 @@ Image_ErrorCode OH_PictureNative_DeepCopy(OH_PictureNative *source,
 }
  
 MIDK_EXPORT
+Image_ErrorCode OH_PictureNative_DeepCopyWithItems(OH_PictureNative *source,
+    const OH_PictureNative_AuxiliaryPictureCopyItem *auxiliaryPictureCopyItems, uint32_t auxiliaryPictureCopyCount,
+    const OH_PictureNative_MetadataCopyItem *metadataCopyItems, uint32_t metadataCopyCount,
+    Image_AuxiliaryPictureType *sourceAuxPictureAsMainPixelMap,
+    OH_PictureNative **picture)
+{
+    if (source == nullptr || picture == nullptr || !source->GetInnerPicture() ||
+        (auxiliaryPictureCopyCount > 0 && auxiliaryPictureCopyItems == nullptr) ||
+        (metadataCopyCount > 0 && metadataCopyItems == nullptr)) {
+        return IMAGE_INVALID_PARAMETER;
+    }
+ 
+    auto srcPicture = source->GetInnerPicture();
+ 
+    std::vector<OHOS::Media::AuxiliaryPictureType> srcAuxPics;
+    std::vector<OHOS::Media::MetadataType> srcMetas;
+    std::vector<OHOS::Media::AuxiliaryPictureType> dstAuxPics;
+    std::vector<OHOS::Media::MetadataType> dstMetas;
+ 
+    srcAuxPics.reserve(auxiliaryPictureCopyCount);
+    dstAuxPics.reserve(auxiliaryPictureCopyCount);
+    for (uint32_t i = 0; i < auxiliaryPictureCopyCount; ++i) {
+        srcAuxPics.push_back(AuxTypeNativeToInner(auxiliaryPictureCopyItems[i].srcType));
+        dstAuxPics.push_back(AuxTypeNativeToInner(auxiliaryPictureCopyItems[i].dstType));
+    }
+ 
+    srcMetas.reserve(metadataCopyCount);
+    dstMetas.reserve(metadataCopyCount);
+    for (uint32_t i = 0; i < metadataCopyCount; ++i) {
+        srcMetas.push_back(MetaDataTypeNativeToInner(metadataCopyItems[i].srcType));
+        dstMetas.push_back(MetaDataTypeNativeToInner(metadataCopyItems[i].dstType));
+    }
+ 
+    OHOS::Media::AuxiliaryPictureType mainType = OHOS::Media::AuxiliaryPictureType::NONE;
+    if (sourceAuxPictureAsMainPixelMap != nullptr) {
+        mainType = AuxTypeNativeToInner(*sourceAuxPictureAsMainPixelMap);
+    }
+ 
+    std::unique_ptr<OHOS::Media::Picture> newPicture = OHOS::Media::Picture::DeepCopy(
+        srcPicture, srcAuxPics, srcMetas, dstAuxPics, dstMetas, mainType);
+    if (!newPicture) {
+        return IMAGE_ALLOC_FAILED;
+    }
+    std::shared_ptr<OHOS::Media::Picture> pictureShared = std::move(newPicture);
+    *picture = new OH_PictureNative(pictureShared);
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
 Image_ErrorCode OH_PictureNative_RemoveAuxiliaryPicture(OH_PictureNative *picture, Image_AuxiliaryPictureType type)
 {
     if (picture == nullptr || !picture->GetInnerPicture()) {
-        return IMAGE_BAD_PARAMETER;
+        return IMAGE_INVALID_PARAMETER;
     }
     auto auxPicType = AuxTypeNativeToInner(type);
     if (!OHOS::Media::ImageUtils::IsAuxiliaryPictureTypeSupported(auxPicType)) {
-        return IMAGE_BAD_PARAMETER;
+        return IMAGE_INVALID_PARAMETER;
     }
     picture->GetInnerPicture()->DropAuxiliaryPicture(auxPicType);
     return IMAGE_SUCCESS;
@@ -242,11 +291,11 @@ MIDK_EXPORT
 Image_ErrorCode OH_PictureNative_RemoveMetadata(OH_PictureNative *picture, Image_MetadataType type)
 {
     if (picture == nullptr || !picture->GetInnerPicture()) {
-        return IMAGE_BAD_PARAMETER;
+        return IMAGE_INVALID_PARAMETER;
     }
     auto metadataType = MetaDataTypeNativeToInner(type);
     if (!OHOS::Media::ImageUtils::IsMetadataTypeSupported(metadataType)) {
-        return IMAGE_BAD_PARAMETER;
+        return IMAGE_UNSUPPORTED_METADATA;
     }
     picture->GetInnerPicture()->DropMetadata(metadataType);
     return IMAGE_SUCCESS;
@@ -472,9 +521,13 @@ void InitOptionsForAuxiliaryPicture(OHOS::Media::AuxiliaryPictureInfo info,
 }
 
 MIDK_EXPORT
-Image_ErrorCode OH_AuxiliaryPictureNative_CreateUsingAllocator(uint8_t *data, size_t dataLength,
+Image_ErrorCode OH_AuxiliaryPictureNative_CreateUsingAllocator(uint8_t *data, uint32_t dataLength,
     OH_AuxiliaryPictureInfo *info, IMAGE_ALLOCATOR_MODE allocator, OH_AuxiliaryPictureNative **auxiliaryPicture)
 {
+    if (!OHOS::Media::ImageUtils::IsSystemApp()) {
+        IMAGE_LOGE("This interface can be called only by system apps.");
+        return IMAGE_PERMISSIONS_FAILED;
+    }
     if (info == nullptr || info->GetInnerAuxiliaryPictureInfo() == nullptr ||
         auxiliaryPicture == nullptr || allocator < IMAGE_ALLOCATOR_MODE_AUTO ||
         allocator > IMAGE_ALLOCATOR_MODE_SHARED_MEMORY) {
@@ -663,14 +716,17 @@ MIDK_EXPORT
 Image_ErrorCode OH_AuxiliaryPictureNative_GetPixelmap(OH_AuxiliaryPictureNative *auxiliaryPicture,
     OH_PixelmapNative **pixelmap)
 {
-    if (!pixelmap || !auxiliaryPicture || !auxiliaryPicture->GetInnerAuxiliaryPicture()) {
-        return IMAGE_BAD_PARAMETER;
+    if (!pixelmap || !auxiliaryPicture) {
+        return IMAGE_INVALID_PARAMETER;
     }
 
     auto innerAuxiliaryPicture = auxiliaryPicture->GetInnerAuxiliaryPicture();
+    if (!innerAuxiliaryPicture) {
+        return IMAGE_GET_IMAGE_DATA_FAILED;
+    }
     auto contentPixel = innerAuxiliaryPicture->GetContentPixel();
     if (!contentPixel) {
-        return IMAGE_BAD_PARAMETER;
+        return IMAGE_GET_IMAGE_DATA_FAILED;
     }
 
     auto pixelmapTmp = std::make_unique<OH_PixelmapNative>(contentPixel);
@@ -678,6 +734,32 @@ Image_ErrorCode OH_AuxiliaryPictureNative_GetPixelmap(OH_AuxiliaryPictureNative 
         return IMAGE_ALLOC_FAILED;
     }
 
+    *pixelmap = pixelmapTmp.release();
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_AuxiliaryPictureNative_AcquirePixelmap(OH_AuxiliaryPictureNative *auxiliaryPicture,
+    OH_PixelmapNative **pixelmap)
+{
+    if (pixelmap == nullptr || auxiliaryPicture == nullptr) {
+        return IMAGE_INVALID_PARAMETER;
+    }
+ 
+    auto innerAuxiliaryPicture = auxiliaryPicture->GetInnerAuxiliaryPicture();
+    if (innerAuxiliaryPicture == nullptr) {
+        return IMAGE_GET_IMAGE_DATA_FAILED;
+    }
+    auto contentPixel = innerAuxiliaryPicture->GetContentPixel();
+    if (contentPixel == nullptr) {
+        return IMAGE_GET_IMAGE_DATA_FAILED;
+    }
+ 
+    auto pixelmapTmp = std::make_unique<OH_PixelmapNative>(contentPixel);
+    if (pixelmapTmp == nullptr || pixelmapTmp->GetInnerPixelmap() == nullptr) {
+        return IMAGE_ALLOC_FAILED;
+    }
+ 
     *pixelmap = pixelmapTmp.release();
     return IMAGE_SUCCESS;
 }
