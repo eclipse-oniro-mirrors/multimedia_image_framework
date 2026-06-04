@@ -16,6 +16,7 @@
 #include "box/item_property_box.h"
 
 #include <algorithm>
+#include "image_log.h"
 
 namespace {
     const uint8_t LARGE_PROPERTY_INDEX_FLAG = 1;
@@ -47,9 +48,7 @@ heif_error HeifIpcoBox::GetProperties(uint32_t itemId, const std::shared_ptr<cla
                                       std::vector<std::shared_ptr<HeifBox>> &outProperties) const
 {
     const std::vector<PropertyAssociation> *propertyAssocs = ipma->GetProperties(itemId);
-    if (propertyAssocs == nullptr) {
-        return heif_error_property_not_found;
-    }
+    CHECK_ERROR_RETURN_RET(!propertyAssocs, heif_error_property_not_found);
 
     const auto &allProperties = GetChildren();
     for (const PropertyAssociation &assoc: *propertyAssocs) {
@@ -69,9 +68,7 @@ std::shared_ptr<HeifBox> HeifIpcoBox::GetProperty(heif_item_id itemId,
     const std::shared_ptr<class HeifIpmaBox> &ipma, uint32_t boxType) const
 {
     const std::vector<PropertyAssociation> *propertyAssocs = ipma->GetProperties(itemId);
-    if (propertyAssocs == nullptr) {
-        return nullptr;
-    }
+    CHECK_ERROR_RETURN_RET(!propertyAssocs, nullptr);
 
     const auto &allProperties = GetChildren();
     for (const PropertyAssociation &assoc: *propertyAssocs) {

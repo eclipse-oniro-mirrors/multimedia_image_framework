@@ -125,6 +125,7 @@ heif_error HeifHvccBox::ParseContent(HeifStreamReader& reader)
 
 bool HeifHvccBox::GetHeaders(std::vector<uint8_t>* outData) const
 {
+    CHECK_ERROR_RETURN_RET(!outData, false);
     for (const auto& array : nalArrays_) {
         for (const auto& unit : array.nalUnits) {
             outData->push_back((unit.size() >> THREE_BYTES_SHIFT) & 0xFF);

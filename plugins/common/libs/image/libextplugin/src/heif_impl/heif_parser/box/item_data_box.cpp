@@ -144,6 +144,7 @@ heif_error HeifIlocBox::GetIlocDataLength(const Item &item, size_t &length)
 heif_error HeifIlocBox::ReadData(const Item &item, const std::shared_ptr<HeifInputStream> &stream,
     const std::shared_ptr<HeifIdatBox> &idat, std::vector<uint8_t> *dest) const
 {
+    CHECK_ERROR_RETURN_RET(!stream || !dest, heif_error_eof);
     size_t totalSize = 0;
     for (const auto &extent: item.extents) {
         if (HasOverflowed64(extent.offset, item.baseOffset)) {
