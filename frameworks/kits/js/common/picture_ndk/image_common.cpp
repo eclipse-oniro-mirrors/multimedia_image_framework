@@ -190,7 +190,7 @@ Image_ErrorCode OH_PictureMetadata_Release(OH_PictureMetadata *metadata)
 }
 
 MIDK_EXPORT
-Image_ErrorCode OH_PictureMetadatas_Release(OH_PictureMetadata **metadatas, size_t metadatasCount)
+Image_ErrorCode OH_PictureMetadatas_Release(OH_PictureMetadata **metadatas, uint32_t metadatasCount)
 {
     if (!OHOS::Media::ImageUtils::IsSystemApp()) {
         IMAGE_LOGE("This interface can be called only by system apps.");
