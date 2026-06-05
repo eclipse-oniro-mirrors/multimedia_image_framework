@@ -164,7 +164,13 @@ private:
     void UpdateHeifSKInfo(DecodeContext &context, uint64_t &rowStride);
     bool IsHeifRegionDecode();
     bool HeifGainMapRegionCrop(DecodeContext &gainmapRegionContext, int32_t rowStride, uint8_t* dstBuffer,
-        uint32_t gainmapWidth, uint32_t gainmapHeight);
+        uint32_t gainmapWidth, uint32_t gainmapHeight, OHOS::Media::PixelFormat gainmapPixelFormat);
+    int32_t GetGainmapPixelBytes(OHOS::Media::PixelFormat format);
+    bool CopyGainmapPlaneRows(uint8_t* srcBuffer, int32_t srcStride, int32_t srcOffset,
+        uint8_t* dstBuffer, int32_t dstStride, int32_t dstOffset, int32_t rowBytes, int32_t rowCount);
+    SkHeifColorFormat PixelFormatToHeifColorFormat(OHOS::Media::PixelFormat format);
+    bool IsGainmapYuvOrP010Format(OHOS::Media::PixelFormat format);
+    uint32_t AllocGainmapBuffer(DecodeContext &context, SkImageInfo &dstInfo, uint64_t byteCount);
     bool IsRegionDecodeSupported(uint32_t index, const PixelDecodeOptions &opts, PlImageInfo &info);
     uint32_t DoRegionDecode(DecodeContext &context);
     SkCodec::Result DoSampleDecode(DecodeContext &context);
