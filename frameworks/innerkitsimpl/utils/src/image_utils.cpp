@@ -45,14 +45,13 @@
 #include "image_system_properties.h"
 #include "image/abs_image_decoder.h"
 #include "pixel_map.h"
-#include "tokenid_kit.h"
-#include "ipc_skeleton.h"
 #ifdef IOS_PLATFORM
 #include <sys/syscall.h>
 #endif
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 #include "bundle_mgr_interface.h"
 #include "iservice_registry.h"
+#include "tokenid_kit.h"
 #include "ipc_skeleton.h"
 #include "system_ability_definition.h"
 #include "os_account_manager.h"
@@ -2563,8 +2562,12 @@ PixelFormat ImageUtils::ConvertTo10BitPixelFormat(PixelFormat pixelFormat)
 
 bool ImageUtils::IsSystemApp()
 {
+#if !defined(CROSS_PLATFORM)
     static bool isSys = Security::AccessToken::TokenIdKit::IsSystemAppByFullTokenID(IPCSkeleton::GetSelfTokenID());
     return isSys;
+#else
+    return false;
+#endif
 }
 
 bool ImageUtils::CalcRGBStride(PixelFormat format, uint32_t width, int &stride)
