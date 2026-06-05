@@ -124,7 +124,7 @@ static constexpr uint8_t NUM_5 = 5;
 static constexpr uint8_t NUM_6 = 6;
 static constexpr uint8_t NUM_7 = 7;
 static constexpr uint8_t NUM_8 = 8;
-static constexpr float ALPHA_F16_MAX_VALUE = 255.0f;
+static constexpr float ALPHA_F16_MAX_VALUE = 1.0f;
 
 static uint8_t AlphaF16ToUInt8(const uint8_t *pixel);
 static void UInt8ToAlphaF16(uint8_t alpha, uint8_t *pixel);
@@ -1756,7 +1756,7 @@ bool PixelMap::ALPHAF16ToARGB(const uint8_t *in, uint32_t inCount, uint32_t *out
     for (uint32_t i = 0; i < outCount; i++) {
         float alpha = HalfTranslate(src);
         alpha = std::clamp(alpha, 0.0f, ALPHA_F16_MAX_VALUE);
-        *out++ = GetColorARGB(static_cast<uint8_t>(alpha + HALF_ONE), BYTE_ZERO, BYTE_ZERO, BYTE_ZERO);
+        *out++ = GetColorARGB(static_cast<uint8_t>(alpha * UINT8_MAX + HALF_ONE), BYTE_ZERO, BYTE_ZERO, BYTE_ZERO);
         src += ALPHA_F16_BYTES;
     }
     return true;
@@ -4100,8 +4100,8 @@ static float HalfTranslate(const uint8_t* ui)
 static void HalfTranslate(const float pixel, uint8_t* ui)
 {
     uint16_t val = FloatToHalf(pixel);
-    ui[HALF_LOW_BYTE] = static_cast<uint8_t>((val >> SHIFT_8_BIT) & UINT8_MAX);
-    ui[HALF_HIGH_BYTE] = static_cast<uint8_t>(val & UINT8_MAX);
+    ui[HALF_LOW_BYTE] = static_cast<uint8_t>(val & UINT8_MAX);
+    ui[HALF_HIGH_BYTE] = static_cast<uint8_t>((val >> SHIFT_8_BIT) & UINT8_MAX);
 }
 
 static uint8_t AlphaF16ToUInt8(const uint8_t *pixel)
@@ -4111,7 +4111,7 @@ static uint8_t AlphaF16ToUInt8(const uint8_t *pixel)
     }
     float alpha = HalfTranslate(pixel);
     alpha = std::clamp(alpha, 0.0f, ALPHA_F16_MAX_VALUE);
-    return static_cast<uint8_t>(alpha + HALF_ONE);
+    return static_cast<uint8_t>(alpha * UINT8_MAX + HALF_ONE);
 }
 
 static void UInt8ToAlphaF16(uint8_t alpha, uint8_t *pixel)
@@ -4119,7 +4119,7 @@ static void UInt8ToAlphaF16(uint8_t alpha, uint8_t *pixel)
     if (pixel == nullptr) {
         return;
     }
-    HalfTranslate(static_cast<float>(alpha), pixel);
+    HalfTranslate(static_cast<float>(alpha) / UINT8_MAX, pixel);
 }
 
 constexpr uint8_t RGBA_F16_R_OFFSET = 0;
@@ -4469,7 +4469,7 @@ uint32_t PixelMap::SetAlpha(const float percent)
         for (int j = 0; j < GetRowStride(); j += pixelBytes_) {
             uint8_t* pixel = data_ + GetRowStride() * i + j;
             if (pixelFormat == PixelFormat::ALPHA_F16) {
-                UInt8ToAlphaF16(static_cast<uint8_t>(UINT8_MAX * percent + HALF_ONE), pixel);
+                HalfTranslate(percent, pixel);
             } else if (pixelFormat == PixelFormat::RGBA_F16) {
                 SetF16PixelAlpha(pixel, percent, isPixelPremul);
             } else if (pixelFormat == PixelFormat::RGBA_1010102) {

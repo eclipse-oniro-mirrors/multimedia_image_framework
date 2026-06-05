@@ -3463,7 +3463,7 @@ HWTEST_F(PixelConvertTest, PixelsConvertAlphaF16Test001, TestSize.Level3)
     std::array<uint32_t, WIDTH * HEIGHT> dstPixels = {0};
     const uint8_t alphaValues[WIDTH * HEIGHT] = {0, 64, 128, 255};
     for (size_t i = 0; i < dstPixels.size(); ++i) {
-        uint16_t half = FloatToHalf(static_cast<float>(alphaValues[i]));
+        uint16_t half = FloatToHalf(static_cast<float>(alphaValues[i]) / 255.0f);
         srcPixels[i * 2] = static_cast<uint8_t>(half & 0xFF);
         srcPixels[i * 2 + 1] = static_cast<uint8_t>((half >> 8) & 0xFF);
     }
@@ -3507,7 +3507,7 @@ HWTEST_F(PixelConvertTest, PixelsConvertAlphaF16ToYUVTest001, TestSize.Level3)
     std::array<uint8_t, WIDTH * HEIGHT * 2> srcPixels = {0};
     const uint8_t alphaValues[WIDTH * HEIGHT] = {16, 64, 128, 255};
     for (size_t i = 0; i < WIDTH * HEIGHT; ++i) {
-        uint16_t half = FloatToHalf(static_cast<float>(alphaValues[i]));
+        uint16_t half = FloatToHalf(static_cast<float>(alphaValues[i]) / 255.0f);
         srcPixels[i * 2] = static_cast<uint8_t>(half & 0xFF);
         srcPixels[i * 2 + 1] = static_cast<uint8_t>((half >> 8) & 0xFF);
     }
@@ -3553,7 +3553,7 @@ HWTEST_F(PixelConvertTest, PixelsConvertAlphaF16ToNV21Test001, TestSize.Level3)
     std::array<uint8_t, WIDTH * HEIGHT * 2> srcPixels = {0};
     const uint8_t alphaValues[WIDTH * HEIGHT] = {0x08, 0x20, 0x80, 0xF0};
     for (size_t i = 0; i < WIDTH * HEIGHT; ++i) {
-        uint16_t half = FloatToHalf(static_cast<float>(alphaValues[i]));
+        uint16_t half = FloatToHalf(static_cast<float>(alphaValues[i]) / 255.0f);
         srcPixels[i * 2] = static_cast<uint8_t>(half & 0xFF);
         srcPixels[i * 2 + 1] = static_cast<uint8_t>((half >> 8) & 0xFF);
     }
@@ -3599,7 +3599,7 @@ HWTEST_F(PixelConvertTest, PixelsConvertAlphaF16ToYcbcrP010Test001, TestSize.Lev
     std::array<uint8_t, WIDTH * HEIGHT * 2> srcPixels = {0};
     const uint8_t alphaValues[WIDTH * HEIGHT] = {0x10, 0x30, 0x90, 0xFF};
     for (size_t i = 0; i < WIDTH * HEIGHT; ++i) {
-        uint16_t half = FloatToHalf(static_cast<float>(alphaValues[i]));
+        uint16_t half = FloatToHalf(static_cast<float>(alphaValues[i]) / 255.0f);
         srcPixels[i * 2] = static_cast<uint8_t>(half & 0xFF);
         srcPixels[i * 2 + 1] = static_cast<uint8_t>((half >> 8) & 0xFF);
     }
@@ -3647,7 +3647,7 @@ HWTEST_F(PixelConvertTest, PixelsConvertAlphaF16ToYcrcbP010Test001, TestSize.Lev
     std::array<uint8_t, WIDTH * HEIGHT * 2> srcPixels = {0};
     const uint8_t alphaValues[WIDTH * HEIGHT] = {0x12, 0x45, 0x87, 0xFE};
     for (size_t i = 0; i < WIDTH * HEIGHT; ++i) {
-        uint16_t half = FloatToHalf(static_cast<float>(alphaValues[i]));
+        uint16_t half = FloatToHalf(static_cast<float>(alphaValues[i]) / 255.0f);
         srcPixels[i * 2] = static_cast<uint8_t>(half & 0xFF);
         srcPixels[i * 2 + 1] = static_cast<uint8_t>((half >> 8) & 0xFF);
     }
@@ -3692,7 +3692,7 @@ HWTEST_F(PixelConvertTest, PixelsConvertAlphaF16ToYUVOddWidthTest001, TestSize.L
     dstInfo.pixelFormat = PixelFormat::NV12;
     dstInfo.alphaType = AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL;
 
-    std::array<uint8_t, HEIGHT * 2> srcPixels = {0x00, 0x48, 0x00, 0x58};
+    std::array<uint8_t, HEIGHT * 2> srcPixels = {0x00, 0x38, 0x00, 0x3C};
     std::array<uint8_t, HEIGHT * 2> dstPixels = {0};
 
     BufferInfo srcBuffer;
@@ -3731,7 +3731,7 @@ HWTEST_F(PixelConvertTest, PixelsConvertAlphaF16ToP010OddHeightTest001, TestSize
     dstInfo.pixelFormat = PixelFormat::YCBCR_P010;
     dstInfo.alphaType = AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL;
 
-    std::array<uint8_t, WIDTH * 2> srcPixels = {0x00, 0x40, 0x00, 0x5B};
+    std::array<uint8_t, WIDTH * 2> srcPixels = {0x00, 0x34, 0x00, 0x3C};
     std::array<uint8_t, WIDTH * 4> dstPixels = {0};
 
     BufferInfo srcBuffer;
