@@ -77,6 +77,10 @@ static bool ParseInitializationOptions([[maybe_unused]] ani_env* env, ani_object
         ":C{@ohos.multimedia.image.image.Size}", &size)) {
         IMAGE_LOGE("Object_GetFieldByName_Ref Failed");
     }
+    if (size == nullptr) {
+        IMAGE_LOGE("Size is null");
+        return false;
+    }
     ani_status ret;
     if (ANI_OK != env->Object_CallMethodByName_Int(reinterpret_cast<ani_object>(size),
         Builder::BuildGetterName("width").c_str(), ":i", &opts.size.width)) {
@@ -122,6 +126,10 @@ static bool ParseRegion([[maybe_unused]] ani_env* env, ani_object region, Rect& 
         IMAGE_LOGE("Object_GetFieldByName_Ref Failed");
         return false;
     }
+    if (size == nullptr) {
+        IMAGE_LOGE("Size is null");
+        return false;
+    }
     if (ANI_OK != env->Object_CallMethodByName_Int(reinterpret_cast<ani_object>(size),
         Builder::BuildGetterName("width").c_str(), ":i", &rect.width)) {
         IMAGE_LOGE("Object_CallMethodByName_Int width Failed");
@@ -139,6 +147,11 @@ static bool ParseRegion([[maybe_unused]] ani_env* env, ani_object region, Rect& 
     }
     if (ANI_OK != env->Object_CallMethodByName_Int(region, Builder::BuildGetterName("y").c_str(), ":i", &rect.top)) {
         IMAGE_LOGE("Object_CallMethodByName_Int y Failed");
+        return false;
+    }
+    
+    if (rect.width <= 0 || rect.height <= 0 || rect.left < 0 || rect.top < 0) {
+        IMAGE_LOGE("Rect is invalid");
         return false;
     }
 
