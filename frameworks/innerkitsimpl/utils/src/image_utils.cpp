@@ -2709,6 +2709,9 @@ bool ImageUtils::ConvertRGBAF16ToRGBA1010102(
     int32_t width = srcImageInfo.size.width;
     int32_t height = srcImageInfo.size.height;
 
+    CHECK_ERROR_RETURN_RET_LOG(srcPixelMap->GetAllocatorType() != AllocatorType::DMA_ALLOC, false,
+        "srcPixelMap is not DMA memory");
+
     sptr<SurfaceBuffer> dstSb = CreateRGBA1010102SurfaceBuffer(width, height);
     CHECK_ERROR_RETURN_RET_LOG(dstSb == nullptr, false, "create dstSb failed");
 

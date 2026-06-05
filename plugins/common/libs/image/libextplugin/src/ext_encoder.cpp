@@ -538,36 +538,6 @@ bool IsSuperFastEncode(const std::string &format)
 }
 #endif
 
-bool ExtEncoder::ConvertRGBAF16ToRGBA1010102IfNeeded()
-{
-#if defined(CROSS_PLATFORM)
-    return true;
-#else
-    if (pixelmap_ == nullptr || pixelmap_->GetPixelFormat() != PixelFormat::RGBA_F16) {
-        return true;
-    }
-
-    std::shared_ptr<PixelMap> srcPixelMap(pixelmap_, [](PixelMap*) {});
-    std::unique_ptr<PixelMap> convertedPixelMap = std::make_unique<PixelMap>();
-    sptr<SurfaceBuffer> sptrF16 = sptr<SurfaceBuffer>(reinterpret_cast<SurfaceBuffer*>(pixelmap_->GetFd()));
-    ImageUtils::DumpHdrBufferEnabled(sptrF16, "ExtEncoder-RGBAF16-before-convert");
-
-    if (!ImageUtils::ConvertRGBAF16ToRGBA1010102(srcPixelMap, convertedPixelMap)) {
-        IMAGE_LOGE("ExtEncoder::ConvertRGBAF16ToRGBA1010102IfNeeded ConvertRGBAF16ToRGBA1010102 failed");
-        return false;
-    }
-
-    convertedPixelMap->InnerSetColorSpace(
-        OHOS::ColorManager::ColorSpace(OHOS::ColorManager::ColorSpaceName::BT2020_HLG));
-
-    sptr<SurfaceBuffer> sptr1010102 = sptr<SurfaceBuffer>(reinterpret_cast<SurfaceBuffer*>(convertedPixelMap->GetFd()));
-    ImageUtils::DumpHdrBufferEnabled(sptr1010102, "ExtEncoder-RGBA1010102-after-convert");
-    dstPixelmap_ = std::move(convertedPixelMap);
-    pixelmap_ = dstPixelmap_.get();
-    return true;
-#endif
-}
-
 uint32_t ExtEncoder::FinalizeEncode()
 {
     bool isParameterInvalid = (picture_ == nullptr && pixelmap_ == nullptr) || output_ == nullptr;
@@ -588,10 +558,6 @@ uint32_t ExtEncoder::FinalizeEncode()
         return ERR_IMAGE_INVALID_PARAMETER;
     }
     encodeFormat_ = iter->second;
-
-    if (!ConvertRGBAF16ToRGBA1010102IfNeeded()) {
-        return ERR_IMAGE_ENCODE_FAILED;
-    }
 
 #if !defined(CROSS_PLATFORM)
     uint32_t processRet = ProcessEncodeControlParams();
