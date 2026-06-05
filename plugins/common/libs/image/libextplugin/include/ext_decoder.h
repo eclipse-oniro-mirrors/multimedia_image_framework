@@ -168,7 +168,7 @@ private:
     int32_t GetGainmapPixelBytes(OHOS::Media::PixelFormat format);
     bool CopyGainmapPlaneRows(uint8_t* srcBuffer, int32_t srcStride, int32_t srcOffset,
         uint8_t* dstBuffer, int32_t dstStride, int32_t dstOffset, int32_t rowBytes, int32_t rowCount);
-    SkHeifColorFormat PixelFormatToHeifColorFormat(OHOS::Media::PixelFormat format);
+    int32_t PixelFormatToHeifColorFormat(OHOS::Media::PixelFormat format);
     bool IsGainmapYuvOrP010Format(OHOS::Media::PixelFormat format);
     uint32_t AllocGainmapBuffer(DecodeContext &context, SkImageInfo &dstInfo, uint64_t byteCount);
     bool IsRegionDecodeSupported(uint32_t index, const PixelDecodeOptions &opts, PlImageInfo &info);

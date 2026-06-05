@@ -3590,7 +3590,7 @@ bool ExtDecoder::HeifGainMapRegionCrop(DecodeContext &gainmapRegionContext, int3
 #endif
 }
 
-SkHeifColorFormat ExtDecoder::PixelFormatToHeifColorFormat(PixelFormat format)
+int32_t ExtDecoder::PixelFormatToHeifColorFormat(PixelFormat format)
 {
     if (IsYuv420Format(format)) {
         return (format == PixelFormat::NV12) ? kHeifColorFormat_NV12 : kHeifColorFormat_NV21;
@@ -3649,7 +3649,8 @@ bool ExtDecoder::DecodeHeifGainMap(DecodeContext& context)
     cond = AllocGainmapBuffer(context, dstInfo, byteCount) != SUCCESS;
     CHECK_ERROR_RETURN_RET(cond, false);
     if (IsGainmapYuvOrP010Format(context.info.pixelFormat)) {
-        decoder->setOutputColor(PixelFormatToHeifColorFormat(context.info.pixelFormat));
+        decoder->setOutputColor(static_cast<SkHeifColorFormat>(
+            PixelFormatToHeifColorFormat(context.info.pixelFormat)));
     }
     auto* dstBuffer = static_cast<uint8_t*>(context.pixelsBuffer.buffer);
     auto* sbBuffer = reinterpret_cast<SurfaceBuffer*>(context.pixelsBuffer.context);
