@@ -769,31 +769,43 @@ STATIC_EXEC_FUNC(DecomposeToPicture)
     }
     IMAGE_LOGD("DecomposeToPictureExec OUT");
 }
- 
+
 static void CreateDecomposeToPictureComplete(napi_env env, napi_status status, void *data)
 {
     napi_value result = nullptr;
     napi_get_undefined(env, &result);
     auto context = static_cast<PictureAsyncContext*>(data);
- 
+
     if (context == nullptr) {
         IMAGE_LOGE("CreateDecomposeToPictureComplete: context is nullptr");
         return;
     }
- 
+
     if (!IMG_IS_OK(status)) {
         IMAGE_LOGE("CreateDecomposeToPictureComplete: async work failed");
         context->status = ERROR;
         CommonCallbackRoutine(env, context, result);
         return;
     }
- 
+
     if (context->status == SUCCESS && context->rPicture != nullptr) {
         result = PictureNapi::CreatePicture(env, context->rPicture);
     } else if (context->status == SUCCESS) {
         context->status = ERR_IMAGE_DECOMPOSE_FAILED;
     }
- 
+
+    if (context->status != SUCCESS && context->error == nullptr) {
+        napi_value errorObj;
+        napi_value codeValue;
+        napi_value msgValue;
+        napi_create_int32(env, static_cast<int32_t>(context->status), &codeValue);
+        napi_create_string_utf8(env, "HDR image decomposition failed",
+            NAPI_AUTO_LENGTH, &msgValue);
+        napi_create_error(env, nullptr, msgValue, &errorObj);
+        napi_set_named_property(env, errorObj, "code", codeValue);
+        napi_create_reference(env, errorObj, 1, &context->error);
+    }
+
     CommonCallbackRoutine(env, context, result);
 }
  
@@ -827,7 +839,8 @@ napi_value PictureNapi::DecomposeToPicture(napi_env env, napi_callback_info info
  
     std::unique_ptr<PictureAsyncContext> asyncContext = std::make_unique<PictureAsyncContext>();
     if (!ParsePixelMapParameter(env, argValue[NUM_0], "hdr", asyncContext->rHdrPixelMap)) {
-        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER, "Invalid hdr PixelMap parameter");
+        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_INVALID_PARAMETER,
+            "hdrPixelMap is empty");
     }
     if (argCount == NUM_2 && !ParseDecomposeOptions(env, argValue[NUM_1], &asyncContext->decomposeOption)) {
         return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER, "Invalid DecomposeOptions parameter");

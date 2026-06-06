@@ -186,7 +186,6 @@ private:
     uint32_t ProcessBackgroundColor(PixelMap* processPixelmap);
     uint32_t ProcessRemoveGpsInfo();
     bool IsFormatNotSupportTransparency(const std::string& format) const;
-    bool ConvertRGBAF16ToRGBA1010102IfNeeded();
 
     SkEncodedImageFormat encodeFormat_ = SkEncodedImageFormat::kBMP;
     OutputDataStream* output_ = nullptr;
