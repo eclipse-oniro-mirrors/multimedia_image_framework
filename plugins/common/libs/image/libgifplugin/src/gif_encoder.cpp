@@ -56,6 +56,7 @@ const uint32_t DEFAULT_DISPOSAL_TYPE = 1;
 const uint8_t GIF89_STAMP[] = {0x47, 0x49, 0x46, 0x38, 0x39, 0x61};
 const uint8_t APPLICATION_IDENTIFIER[] = {0x4E, 0x45, 0x54, 0x53, 0x43, 0x41, 0x50, 0x45};
 const uint8_t APPLICATION_AUTENTICATION_CODE[] = {0x32, 0x2E, 0x30};
+const uint8_t GIF_TRAILER[] = {0x3B};
 
 static int g_sortRGBAxis = 0;
 
@@ -179,13 +180,23 @@ uint32_t GifEncoder::DoEncode()
 {
     IMAGE_LOGD("DoEncode IN");
 
-    WriteFileInfo();
+    uint32_t ret = WriteFileInfo();
+    CHECK_ERROR_RETURN_RET_LOG(ret != SUCCESS, ret, "Failed to write GIF file info.");
 
     for (int index = 0; index < static_cast<int>(pixelMaps_.size()); index++) {
         InitDictionary();
-        WriteFrameInfo(index);
-        processFrame(index);
+
+        ret = WriteFrameInfo(index);
+        CHECK_ERROR_RETURN_RET_LOG(ret != SUCCESS, ret,
+            "Failed to write GIF frame info, index=%{public}d.", index);
+
+        ret = processFrame(index);
+        CHECK_ERROR_RETURN_RET_LOG(ret != SUCCESS, ret,
+            "Failed to process GIF frame, index=%{public}d.", index);
     }
+
+    CHECK_ERROR_RETURN_RET_LOG(!Write(GIF_TRAILER, sizeof(GIF_TRAILER)), ERR_IMAGE_ENCODE_FAILED,
+        "Failed to write GIF trailer.");
 
     IMAGE_LOGD("DoEncode OUT");
     return SUCCESS;
