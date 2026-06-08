@@ -264,14 +264,7 @@ std::unique_ptr<AbsMemory> PixelYuv::CreateMemory(PixelFormat pixelFormat, std::
             return m;
         }
         auto sb = reinterpret_cast<SurfaceBuffer*>(m->extend.data);
-        OH_NativeBuffer_Planes *planes = nullptr;
-        GSError retVal = sb->GetPlanesInfo(reinterpret_cast<void**>(&planes));
-        if (retVal != OHOS::GSERROR_OK || planes == nullptr) {
-            IMAGE_LOGE("CreateMemory Get planesInfo failed, retVal:%{public}d", retVal);
-        } else if (planes->planeCount >= NUM_2) {
-            int32_t pixelFmt = sb->GetFormat();
-            ImageUtils::GetYUVStrideInfo(pixelFmt, planes, dstStrides);
-        }
+        ImageUtils::GetYUVStrideInfo(sb, dstStrides);
         sptr<SurfaceBuffer> sourceSurfaceBuffer(reinterpret_cast<SurfaceBuffer*>(GetFd()));
         sptr<SurfaceBuffer> dstSurfaceBuffer(reinterpret_cast<SurfaceBuffer*>(sb));
         VpeUtils::CopySurfaceBufferInfo(sourceSurfaceBuffer, dstSurfaceBuffer);
@@ -1266,15 +1259,8 @@ static void GetYuvDataInfo(PixelMap &source, YUVDataInfo &yuvDataInfo)
     SurfaceBuffer *sb = reinterpret_cast<SurfaceBuffer *>(source.GetFd());
     CHECK_ERROR_RETURN_LOG(sb == nullptr, "GetYuvDataInfo source pixelMap etFd failed");
 
-    OH_NativeBuffer_Planes *planes = nullptr;
-    GSError retVal = sb->GetPlanesInfo(reinterpret_cast<void**>(&planes));
-
-    CHECK_ERROR_RETURN_LOG(retVal != OHOS::GSERROR_OK || planes == nullptr || planes->planeCount < NUM_2,
-        "GetYuvDataInfo GetPlanesInfo failed, retVal:%{public}d", retVal);
-
-    int32_t pixelFmt = sb->GetFormat();
     YUVStrideInfo strideInfo;
-    ImageUtils::GetYUVStrideInfo(pixelFmt, planes, strideInfo);
+    ImageUtils::GetYUVStrideInfo(sb, strideInfo);
     if (strideInfo.yStride > 0 && strideInfo.uvStride > 0) {
         yuvDataInfo.yStride = strideInfo.yStride;
         yuvDataInfo.uvStride = strideInfo.uvStride;

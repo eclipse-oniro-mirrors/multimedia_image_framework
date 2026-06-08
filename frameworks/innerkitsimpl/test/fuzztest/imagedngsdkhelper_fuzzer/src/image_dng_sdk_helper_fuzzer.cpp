@@ -16,6 +16,7 @@
 #include <fcntl.h>
 #include <memory>
 #include <string>
+#include <unistd.h>
 #include "common_fuzztest_function.h"
 #include "dng_area_task.h"
 #include "dng/dng_exif_metadata.h"

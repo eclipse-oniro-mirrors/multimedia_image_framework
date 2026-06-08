@@ -23,8 +23,7 @@
 #include "image_type.h"
 #include "iosfwd"
 #if !defined(CROSS_PLATFORM)
-#include "surface_type.h"
-#include "surface_buffer.h"
+#include <refbase.h>
 #endif
 
 namespace OHOS { namespace MultimediaPlugin { class PluginServer; } }
@@ -32,6 +31,7 @@ namespace OHOS { namespace ImagePlugin { struct DecodeContext; } }
 namespace OHOS { namespace ColorManager {enum ColorSpaceName: uint32_t; } }
 namespace OHOS { namespace HDI { namespace Display { namespace Graphic { namespace Common {
     namespace V1_0 { enum CM_ColorSpaceType: int32_t; } } } } } }
+namespace OHOS { class SurfaceBuffer; }
 namespace OHOS {
 namespace Media {
 const std::string IMAGE_ENCODE_FORMAT = "encodeFormat";
@@ -298,7 +298,7 @@ public:
         return oss.str();
     }
 #if !defined(CROSS_PLATFORM)
-    static void GetYUVStrideInfo(int32_t pixelFmt, OH_NativeBuffer_Planes *planes, YUVStrideInfo &dstStrides);
+    static void GetYUVStrideInfo(SurfaceBuffer* surfaceBuffer, YUVStrideInfo &dstStrides);
 #endif
 private:
     static uint32_t RegisterPluginServer();

@@ -157,14 +157,7 @@ std::unique_ptr<AbsMemory> PixelYuvUtils::CreateYuvMemory(PixelFormat pixelForma
             return m;
         }
         auto sb = reinterpret_cast<SurfaceBuffer*>(m->extend.data);
-        OH_NativeBuffer_Planes *planes = nullptr;
-        GSError retVal = sb->GetPlanesInfo(reinterpret_cast<void**>(&planes));
-        if (retVal != OHOS::GSERROR_OK || planes == nullptr) {
-            IMAGE_LOGE("CreateYuvMemory Get planesInfo failed, retVal:%{public}d", retVal);
-        } else if (planes->planeCount >= NUM_2) {
-            int32_t pixelFmt = sb->GetFormat();
-            ImageUtils::GetYUVStrideInfo(pixelFmt, planes, dstStrides);
-        }
+        ImageUtils::GetYUVStrideInfo(sb, dstStrides);
         if (srcSurfaceBuffer != nullptr) {
             sptr<SurfaceBuffer> sourceSurfaceBuffer(reinterpret_cast<SurfaceBuffer*>(srcSurfaceBuffer));
             sptr<SurfaceBuffer> dstSurfaceBuffer(reinterpret_cast<SurfaceBuffer*>(sb));

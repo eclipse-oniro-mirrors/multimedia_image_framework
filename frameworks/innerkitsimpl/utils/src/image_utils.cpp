@@ -51,6 +51,8 @@
 #include <sys/syscall.h>
 #endif
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+#include "surface_buffer.h"
+#include "surface_type.h"
 #include "bundle_mgr_interface.h"
 #include "iservice_registry.h"
 #include "ipc_skeleton.h"
@@ -1919,37 +1921,6 @@ int32_t ImageUtils::GetAPIVersionInner()
 #endif
 }
 
-#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
-static void GetYUVStrideInfo(int32_t pixelFmt, OH_NativeBuffer_Planes *planes, YUVStrideInfo &dstStrides)
-{
-    if (pixelFmt == GRAPHIC_PIXEL_FMT_YCBCR_420_SP) {
-        auto yStride = planes->planes[PLANE_Y].columnStride;
-        auto uvStride = planes->planes[PLANE_U].columnStride;
-        auto yOffset = planes->planes[PLANE_Y].offset;
-        auto uvOffset = planes->planes[PLANE_U].offset;
-        dstStrides = {yStride, uvStride, yOffset, uvOffset};
-    } else if (pixelFmt == GRAPHIC_PIXEL_FMT_YCRCB_420_SP) {
-        auto yStride = planes->planes[PLANE_Y].columnStride;
-        auto uvStride = planes->planes[PLANE_V].columnStride;
-        auto yOffset = planes->planes[PLANE_Y].offset;
-        auto uvOffset = planes->planes[PLANE_V].offset;
-        dstStrides = {yStride, uvStride, yOffset, uvOffset};
-    } else if (pixelFmt == GRAPHIC_PIXEL_FMT_YCBCR_P010) {
-        auto yStride = planes->planes[PLANE_Y].columnStride / 2;
-        auto uvStride = planes->planes[PLANE_U].columnStride / 2;
-        auto yOffset = planes->planes[PLANE_Y].offset / 2;
-        auto uvOffset = planes->planes[PLANE_U].offset / 2;
-        dstStrides = {yStride, uvStride, yOffset, uvOffset};
-    } else if (pixelFmt == GRAPHIC_PIXEL_FMT_YCRCB_P010) {
-        auto yStride = planes->planes[PLANE_Y].columnStride / 2;
-        auto uvStride = planes->planes[PLANE_V].columnStride / 2;
-        auto yOffset = planes->planes[PLANE_Y].offset / 2;
-        auto uvOffset = planes->planes[PLANE_V].offset / 2;
-        dstStrides = {yStride, uvStride, yOffset, uvOffset};
-    }
-}
-#endif
-
 void ImageUtils::UpdateSdrYuvStrides(const ImageInfo &imageInfo, YUVStrideInfo &dstStrides,
     void *context, AllocatorType dstType)
 {
@@ -1971,14 +1942,7 @@ void ImageUtils::UpdateSdrYuvStrides(const ImageInfo &imageInfo, YUVStrideInfo &
             IMAGE_LOGE("get SurfaceBuffer failed");
             return;
         }
-        OH_NativeBuffer_Planes *planes = nullptr;
-        GSError retVal = sb->GetPlanesInfo(reinterpret_cast<void**>(&planes));
-        if (retVal != OHOS::GSERROR_OK || planes == nullptr) {
-            IMAGE_LOGE("UpdateSdrYuvStrides Get planesInfo failed, retVal:%{public}d", retVal);
-        } else if (planes->planeCount >= NUM_2) {
-            int32_t pixelFmt = sb->GetFormat();
-            GetYUVStrideInfo(pixelFmt, planes, dstStrides);
-        }
+        GetYUVStrideInfo(sb, dstStrides);
     }
 #endif
 }
@@ -2609,8 +2573,18 @@ bool ImageUtils::CalcRGBStride(PixelFormat format, uint32_t width, int &stride)
 }
 
 #if !defined(CROSS_PLATFORM)
-void ImageUtils::GetYUVStrideInfo(int32_t pixelFmt, OH_NativeBuffer_Planes *planes, YUVStrideInfo &dstStrides)
+void ImageUtils::GetYUVStrideInfo(SurfaceBuffer* surfaceBuffer, YUVStrideInfo &dstStrides)
 {
+    int32_t pixelFmt = surfaceBuffer->GetFormat();
+    OH_NativeBuffer_Planes *planes = nullptr;
+    GSError retVal = surfaceBuffer->GetPlanesInfo(reinterpret_cast<void**>(&planes));
+    if (retVal != OHOS::GSERROR_OK || planes == nullptr) {
+        IMAGE_LOGE("%{public}s Get planesInfo failed, retVal:%{public}d", __func__, retVal);
+        return;
+    } else if (planes->planeCount < NUM_2) {
+        IMAGE_LOGE("%{public}s Planes->planeCount: %{public}d, less than two", __func__, planes->planeCount);
+        return;
+    }
     if (pixelFmt == GRAPHIC_PIXEL_FMT_YCBCR_420_SP) {
         auto yStride = planes->planes[PLANE_Y].columnStride;
         auto uvStride = planes->planes[PLANE_U].columnStride;
