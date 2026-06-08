@@ -38,6 +38,7 @@ const static uint32_t HEIF_MAX_EXIF_SIZE = 128 * 1024;
 const static uint32_t HEIF_MAX_SAMPLE_SIZE = 20 * 1024 * 1024;
 const static uint32_t FRAME_INDEX_DELTA = 1;
 const static uint32_t MS_PER_SECOND = 1000;
+const static uint32_t MAX_TOP_LEVEL_BOXES = 1000;
 
 static bool HasOverflowed(uint32_t num1, uint32_t num2)
 {
@@ -125,6 +126,10 @@ heif_error HeifParser::AssembleBoxes(HeifStreamReader &reader)
             return error;
         }
         CHECK_ERROR_RETURN_RET(!box, heif_error_no_meta);
+        
+        if (topBoxes_.size() >= MAX_TOP_LEVEL_BOXES) {
+            return heif_error_too_many_boxes;
+        }
         topBoxes_.push_back(box);
         if (box->GetBoxType() == BOX_TYPE_META) {
             metaBox_ = std::dynamic_pointer_cast<HeifMetaBox>(box);
