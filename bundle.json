@@ -71,7 +71,8 @@
           "xmp_toolkit_sdk",
           "egl",
           "opengles",
-          "jsoncpp"
+          "jsoncpp",
+          "taihe_ffi_gen"
         ]
       },
       "build": {
