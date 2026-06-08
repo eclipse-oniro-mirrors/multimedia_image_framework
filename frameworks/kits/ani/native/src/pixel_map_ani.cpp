@@ -67,9 +67,8 @@ static bool ParseInitializationOptions([[maybe_unused]] ani_env* env, ani_object
         return false;
     }
     ani_class dateCls;
-    const char *className = "@ohos.multimedia.image.image.Size";
-    if (ANI_OK != env->FindClass(className, &dateCls)) {
-        IMAGE_LOGE("Not found %{public}s", className);
+    if (ANI_OK != env->FindClass("@ohos.multimedia.image.image.Size", &dateCls)) {
+        IMAGE_LOGE("Not found @ohos.multimedia.image.image.Size");
         return false;
     }
     ani_ref size;
