@@ -1561,7 +1561,7 @@ FFI_EXPORT int64_t FfiImagePictureImplCreatePicture(int64_t id, uint32_t* errCod
 FFI_EXPORT uint32_t FfiImagePictureImplSetMetadata(int64_t id, int32_t metadataType, int64_t metadataId)
 {
     IMAGE_LOGD("[Picture] FfiImagePictureImplSetMetadata in");
-    if (metadataType != static_cast<int32_t>(MetadataType::EXIF)) {
+    if (!Picture::IsValidPictureMetadataType(static_cast<MetadataType>(metadataType))) {
         IMAGE_LOGE("Unsupport MetadataType");
         return IMAGE_UNSUPPORTED_METADATA;
     }
@@ -1582,7 +1582,7 @@ FFI_EXPORT uint32_t FfiImagePictureImplSetMetadata(int64_t id, int32_t metadataT
 FFI_EXPORT int64_t FfiImagePictureImplGetMetadata(int64_t id, int32_t metadataType, uint32_t* errCode)
 {
     IMAGE_LOGD("[Picture] FfiImagePictureImplGetMetadata in");
-    if (metadataType != static_cast<int32_t>(MetadataType::EXIF)) {
+    if (!Picture::IsValidPictureMetadataType(static_cast<MetadataType>(metadataType))) {
         IMAGE_LOGE("Unsupport MetadataType");
         *errCode = IMAGE_UNSUPPORTED_METADATA;
         return 0;
@@ -1596,7 +1596,6 @@ FFI_EXPORT int64_t FfiImagePictureImplGetMetadata(int64_t id, int32_t metadataTy
     auto metadata = picture->GetMetadata(MetadataType(metadataType), errCode);
     if (!metadata) {
         IMAGE_LOGE("[Picture] metadata is nullptr");
-        *errCode = IMAGE_BAD_PARAMETER;
         return 0;
     }
     auto native = FFIData::Create<MetadataImpl>(metadata);
