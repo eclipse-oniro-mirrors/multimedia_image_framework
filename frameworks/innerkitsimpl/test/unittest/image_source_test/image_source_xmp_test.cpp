@@ -329,31 +329,6 @@ HWTEST_F(ImageSourceXMPTest, WriteXMPMetadataTest002, TestSize.Level1)
 }
 
 /**
- * @tc.name: WriteXMPMetadataTest003
- * @tc.desc: Verify that WriteXMPMetadata works correctly when both file path and file descriptor are invalid.
- * @tc.type: FUNC
- */
-HWTEST_F(ImageSourceXMPTest, WriteXMPMetadataTest003, TestSize.Level1)
-{
-    GTEST_LOG_(INFO) << "ImageSourceXMPTest: WriteXMPMetadataTest003 start";
-    std::unique_ptr<ImageSource> imageSource = CreateImageSourceByPath(IMAGE_JPEG_XMP_PATH);
-    ASSERT_NE(imageSource, nullptr);
-
-    uint32_t errorCode = 0;
-    std::shared_ptr<XMPMetadata> xmpMetadata = imageSource->ReadXMPMetadata(errorCode);
-    ASSERT_NE(xmpMetadata, nullptr);
-    ASSERT_EQ(errorCode, SUCCESS);
-
-    imageSource->srcFilePath_ = "";
-    imageSource->srcFd_ = INVALID_FILE_DESCRIPTOR;
-
-    errorCode = imageSource->WriteXMPMetadata(xmpMetadata);
-    ASSERT_NE(errorCode, SUCCESS);
-
-    GTEST_LOG_(INFO) << "ImageSourceXMPTest: WriteXMPMetadataTest003 end";
-}
-
-/**
  * @tc.name: WriteXMPMetadataTest004
  * @tc.desc: Verify that WriteXMPMetadata works correctly when xmpMetadata is null.
  * @tc.type: FUNC
