@@ -442,7 +442,8 @@ static bool ParseVividJpegStaticMetadata(uint8_t* data, uint32_t& offset, uint32
         staticMetaVec.resize(EMPTY_SIZE);
         return true;
     }
-    bool cond = staticMetadataSize > size - offset || staticMetadataSize < VIVID_STATIC_METADATA_SIZE_IN_IMAGE;
+    bool cond = offset > size || staticMetadataSize > size - offset ||
+        staticMetadataSize < VIVID_STATIC_METADATA_SIZE_IN_IMAGE;
     CHECK_ERROR_RETURN_RET(cond, false);
 
     HdrStaticMetadata staticMeta{};
