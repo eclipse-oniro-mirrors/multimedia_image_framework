@@ -28,7 +28,7 @@ string ExtractFileExt(const string& fileName)
     if (pos == string::npos) {
         return "";
     }
-    return string(fileName).substr(pos + 1, fileName.size());
+    return string(fileName).substr(pos + 1);
 }
 
 string TransformFileName(const string& fileName)

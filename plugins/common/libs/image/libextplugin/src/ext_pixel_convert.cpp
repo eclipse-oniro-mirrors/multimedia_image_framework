@@ -71,6 +71,9 @@ uint32_t ExtPixelConvert::RGBxToRGB(const ExtPixels &src, ExtPixels &dst)
     }
     RGBxPixel* srcPixel = Cast<RGBxPixel>(src.data);
     RGBPixel* dstPixel = Cast<RGBPixel>(dst.data);
+    if (srcPixel == nullptr || dstPixel == nullptr) {
+        return ERR_IMAGE_INVALID_PARAMETER;
+    }
     for (uint32_t i = NUM_0 ; i < srcPixelCount; i++) {
         PixelCopy(&srcPixel[i], &dstPixel[i]);
     }
