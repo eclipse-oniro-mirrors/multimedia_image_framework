@@ -371,11 +371,10 @@ static void BGR888ConvertRGB565(void *destinationRow, const uint8_t *sourceRow, 
     BGR888Convert(newDestinationRow, sourceRow, sourceWidth, BRANCH_BGR888_TO_RGB565);
 }
 
-static void BGR888ConvertRGBAF16(uint8_t *destinationRow, const uint8_t *sourceRow, uint32_t sourceWidth,
+static void BGR888ConvertRGBAF16(void *destinationRow, const uint8_t *sourceRow, uint32_t sourceWidth,
     const ProcFuncExtension &extension)
 {
-    void* tmp = static_cast<void *>(destinationRow);
-    uint64_t *newDestinationRow = static_cast<uint64_t *>(tmp);
+    uint64_t *newDestinationRow = static_cast<uint64_t *>(destinationRow);
     BGR888Convert(newDestinationRow, sourceRow, sourceWidth, BRANCH_BGR888_TO_RGBAF16);
 }
 
@@ -439,11 +438,10 @@ static void RGB888ConvertRGB565(void *destinationRow, const uint8_t *sourceRow, 
     RGB888Convert(newDestinationRow, sourceRow, sourceWidth, BRANCH_RGB888_TO_RGB565);
 }
 
-static void RGB888ConvertRGBAF16(uint8_t *destinationRow, const uint8_t *sourceRow, uint32_t sourceWidth,
+static void RGB888ConvertRGBAF16(void *destinationRow, const uint8_t *sourceRow, uint32_t sourceWidth,
     const ProcFuncExtension &extension)
 {
-    void* tmp = static_cast<void *>(destinationRow);
-    uint64_t *newDestinationRow = static_cast<uint64_t *>(tmp);
+    uint64_t *newDestinationRow = static_cast<uint64_t *>(destinationRow);
     RGB888Convert(newDestinationRow, sourceRow, sourceWidth, BRANCH_RGB888_TO_RGBAF16);
 }
 constexpr uint32_t BRANCH_RGBA8888_TO_RGBA8888_ALPHA = 0x40000001;
@@ -508,11 +506,10 @@ static void RGBA8888ConvertRGB565(void *destinationRow, const uint8_t *sourceRow
     RGBA8888Convert(newDestinationRow, sourceRow, sourceWidth, BRANCH_RGBA8888_TO_RGB565, extension);
 }
 
-static void RGBA8888ConvertRGBAF16(uint8_t *destinationRow, const uint8_t *sourceRow, uint32_t sourceWidth,
+static void RGBA8888ConvertRGBAF16(void *destinationRow, const uint8_t *sourceRow, uint32_t sourceWidth,
     const ProcFuncExtension &extension)
 {
-    void* tmp = static_cast<void *>(destinationRow);
-    uint64_t *newDestinationRow = static_cast<uint64_t *>(tmp);
+    uint64_t *newDestinationRow = static_cast<uint64_t *>(destinationRow);
     RGBA8888Convert(newDestinationRow, sourceRow, sourceWidth, BRANCH_RGBA8888_TO_RGBAF16, extension);
 }
 constexpr uint32_t BRANCH_BGRA8888_TO_BGRA8888_ALPHA = 0x80000001;
@@ -578,11 +575,10 @@ static void BGRA8888ConvertRGB565(void *destinationRow, const uint8_t *sourceRow
     BGRA8888Convert(newDestinationRow, sourceRow, sourceWidth, BRANCH_BGRA8888_TO_RGB565, extension);
 }
 
-static void BGRA8888ConvertRGBAF16(uint8_t *destinationRow, const uint8_t *sourceRow, uint32_t sourceWidth,
+static void BGRA8888ConvertRGBAF16(void *destinationRow, const uint8_t *sourceRow, uint32_t sourceWidth,
     const ProcFuncExtension &extension)
 {
-    void* tmp = static_cast<void *>(destinationRow);
-    uint64_t *newDestinationRow = static_cast<uint64_t *>(tmp);
+    uint64_t *newDestinationRow = static_cast<uint64_t *>(destinationRow);
     BGRA8888Convert(newDestinationRow, sourceRow, sourceWidth, BRANCH_BGRA8888_TO_RGBAF16, extension);
 }
 
@@ -649,11 +645,10 @@ static void ARGB8888ConvertRGB565(void *destinationRow, const uint8_t *sourceRow
     ARGB8888Convert(newDestinationRow, sourceRow, sourceWidth, BRANCH_ARGB8888_TO_RGB565, extension);
 }
 
-static void ARGB8888ConvertRGBAF16(uint8_t *destinationRow, const uint8_t *sourceRow, uint32_t sourceWidth,
+static void ARGB8888ConvertRGBAF16(void *destinationRow, const uint8_t *sourceRow, uint32_t sourceWidth,
     const ProcFuncExtension &extension)
 {
-    void* tmp = static_cast<void *>(destinationRow);
-    uint64_t *newDestinationRow = static_cast<uint64_t *>(tmp);
+    uint64_t *newDestinationRow = static_cast<uint64_t *>(destinationRow);
     ARGB8888Convert(newDestinationRow, sourceRow, sourceWidth, BRANCH_ARGB8888_TO_RGBAF16, extension);
 }
 
@@ -728,11 +723,10 @@ static void RGB161616ConvertRGB565(void *destinationRow, const uint8_t *sourceRo
     RGB161616Convert(newDestinationRow, sourceRow, sourceWidth, BRANCH_RGB161616_TO_RGB565);
 }
 
-static void RGB161616ConvertRGBAF16(uint8_t *destinationRow, const uint8_t *sourceRow, uint32_t sourceWidth,
+static void RGB161616ConvertRGBAF16(void *destinationRow, const uint8_t *sourceRow, uint32_t sourceWidth,
     const ProcFuncExtension &extension)
 {
-    void* tmp = static_cast<void *>(destinationRow);
-    uint64_t *newDestinationRow = static_cast<uint64_t *>(tmp);
+    uint64_t *newDestinationRow = static_cast<uint64_t *>(destinationRow);
     RGB161616Convert(newDestinationRow, sourceRow, sourceWidth, BRANCH_RGB161616_TO_RGBAF16);
 }
 
@@ -796,11 +790,10 @@ static void RGBA16161616ConvertBGRA8888(void *destinationRow, const uint8_t *sou
     RGBA16161616Convert(newDestinationRow, sourceRow, sourceWidth, BRANCH_RGBA16161616_TO_BGRA8888, extension);
 }
 
-static void RGBA16161616ConvertRGBAF16(uint8_t *destinationRow, const uint8_t *sourceRow, uint32_t sourceWidth,
+static void RGBA16161616ConvertRGBAF16(void *destinationRow, const uint8_t *sourceRow, uint32_t sourceWidth,
     const ProcFuncExtension &extension)
 {
-    void* tmp = static_cast<void *>(destinationRow);
-    uint64_t *newDestinationRow = static_cast<uint64_t *>(tmp);
+    uint64_t *newDestinationRow = static_cast<uint64_t *>(destinationRow);
     RGBA16161616Convert(newDestinationRow, sourceRow, sourceWidth, BRANCH_RGBA16161616_TO_RGBAF16, extension);
 }
 
@@ -924,11 +917,10 @@ static void RGB565ConvertBGRA8888(void *destinationRow, const uint8_t *sourceRow
     RGB565Convert(newDestinationRow, sourceRow, sourceWidth, BRANCH_RGB565_TO_BGRA8888);
 }
 
-static void RGB565ConvertRGBAF16(uint8_t *destinationRow, const uint8_t *sourceRow, uint32_t sourceWidth,
+static void RGB565ConvertRGBAF16(void *destinationRow, const uint8_t *sourceRow, uint32_t sourceWidth,
     const ProcFuncExtension &extension)
 {
-    void* tmp = static_cast<void *>(destinationRow);
-    uint64_t *newDestinationRow = static_cast<uint64_t *>(tmp);
+    uint64_t *newDestinationRow = static_cast<uint64_t *>(destinationRow);
     RGB565Convert(newDestinationRow, sourceRow, sourceWidth, BRANCH_RGB565_TO_RGBAF16);
 }
 
@@ -967,43 +959,38 @@ static void RGBAF16Convert(T *destinationRow, const uint8_t *sourceRow, uint32_t
     }
 }
 
-static void RGBAF16ConvertARGB8888(uint8_t *destinationRow, const uint8_t *sourceRow, uint32_t sourceWidth,
+static void RGBAF16ConvertARGB8888(void *destinationRow, const uint8_t *sourceRow, uint32_t sourceWidth,
     const ProcFuncExtension &extension)
 {
-    void* tmp = static_cast<void *>(destinationRow);
-    uint32_t *newDestinationRow = static_cast<uint32_t *>(tmp);
+    uint32_t *newDestinationRow = static_cast<uint32_t *>(destinationRow);
     RGBAF16Convert(newDestinationRow, sourceRow, sourceWidth, BRANCH_RGBAF16_TO_ARGB8888, extension);
 }
 
-static void RGBAF16ConvertRGBA8888(uint8_t *destinationRow, const uint8_t *sourceRow, uint32_t sourceWidth,
+static void RGBAF16ConvertRGBA8888(void *destinationRow, const uint8_t *sourceRow, uint32_t sourceWidth,
     const ProcFuncExtension &extension)
 {
-    void* tmp = static_cast<void *>(destinationRow);
-    uint32_t *newDestinationRow = static_cast<uint32_t *>(tmp);
+    uint32_t *newDestinationRow = static_cast<uint32_t *>(destinationRow);
     RGBAF16Convert(newDestinationRow, sourceRow, sourceWidth, BRANCH_RGBAF16_TO_RGBA8888, extension);
 }
 
-static void RGBAF16ConvertBGRA8888(uint8_t *destinationRow, const uint8_t *sourceRow, uint32_t sourceWidth,
+static void RGBAF16ConvertBGRA8888(void *destinationRow, const uint8_t *sourceRow, uint32_t sourceWidth,
     const ProcFuncExtension &extension)
 {
-    void* tmp = static_cast<void *>(destinationRow);
-    uint32_t *newDestinationRow = static_cast<uint32_t *>(tmp);
+    uint32_t *newDestinationRow = static_cast<uint32_t *>(destinationRow);
     RGBAF16Convert(newDestinationRow, sourceRow, sourceWidth, BRANCH_RGBAF16_TO_BGRA8888, extension);
 }
 
-static void RGBAF16ConvertABGR8888(uint8_t *destinationRow, const uint8_t *sourceRow, uint32_t sourceWidth,
+static void RGBAF16ConvertABGR8888(void *destinationRow, const uint8_t *sourceRow, uint32_t sourceWidth,
     const ProcFuncExtension &extension)
 {
-    void* tmp = static_cast<void *>(destinationRow);
-    uint32_t *newDestinationRow = static_cast<uint32_t *>(tmp);
+    uint32_t *newDestinationRow = static_cast<uint32_t *>(destinationRow);
     RGBAF16Convert(newDestinationRow, sourceRow, sourceWidth, BRANCH_RGBAF16_TO_ABGR8888, extension);
 }
 
-static void RGBAF16ConvertRGB565(uint8_t *destinationRow, const uint8_t *sourceRow, uint32_t sourceWidth,
+static void RGBAF16ConvertRGB565(void *destinationRow, const uint8_t *sourceRow, uint32_t sourceWidth,
     const ProcFuncExtension &extension)
 {
-    void* tmp = static_cast<void *>(destinationRow);
-    uint16_t *newDestinationRow = static_cast<uint16_t *>(tmp);
+    uint16_t *newDestinationRow = static_cast<uint16_t *>(destinationRow);
     RGBAF16Convert(newDestinationRow, sourceRow, sourceWidth, BRANCH_RGBAF16_TO_RGB565, extension);
 }
 
@@ -1085,33 +1072,20 @@ static void InitCMYKProc()
 
 static void InitF16Proc()
 {
-    g_procMapping.emplace(MakeKey(RGBA_F16, ARGB_8888),
-        reinterpret_cast<ProcFuncType>(&RGBAF16ConvertARGB8888));
-    g_procMapping.emplace(MakeKey(RGBA_F16, RGBA_8888),
-        reinterpret_cast<ProcFuncType>(&RGBAF16ConvertRGBA8888));
-    g_procMapping.emplace(MakeKey(RGBA_F16, BGRA_8888),
-        reinterpret_cast<ProcFuncType>(&RGBAF16ConvertBGRA8888));
-    g_procMapping.emplace(MakeKey(RGBA_F16, ABGR_8888),
-        reinterpret_cast<ProcFuncType>(&RGBAF16ConvertABGR8888));
-    g_procMapping.emplace(MakeKey(RGBA_F16, RGB_565),
-        reinterpret_cast<ProcFuncType>(&RGBAF16ConvertRGB565));
+    g_procMapping.emplace(MakeKey(RGBA_F16, ARGB_8888), &RGBAF16ConvertARGB8888);
+    g_procMapping.emplace(MakeKey(RGBA_F16, RGBA_8888), &RGBAF16ConvertRGBA8888);
+    g_procMapping.emplace(MakeKey(RGBA_F16, BGRA_8888), &RGBAF16ConvertBGRA8888);
+    g_procMapping.emplace(MakeKey(RGBA_F16, ABGR_8888), &RGBAF16ConvertABGR8888);
+    g_procMapping.emplace(MakeKey(RGBA_F16, RGB_565), &RGBAF16ConvertRGB565);
 
-    g_procMapping.emplace(MakeKey(BGR_888, RGBA_F16),
-        reinterpret_cast<ProcFuncType>(&BGR888ConvertRGBAF16));
-    g_procMapping.emplace(MakeKey(RGB_888, RGBA_F16),
-        reinterpret_cast<ProcFuncType>(&RGB888ConvertRGBAF16));
-    g_procMapping.emplace(MakeKey(RGB_161616, RGBA_F16),
-        reinterpret_cast<ProcFuncType>(&RGB161616ConvertRGBAF16));
-    g_procMapping.emplace(MakeKey(ARGB_8888, RGBA_F16),
-        reinterpret_cast<ProcFuncType>(&ARGB8888ConvertRGBAF16));
-    g_procMapping.emplace(MakeKey(RGBA_8888, RGBA_F16),
-        reinterpret_cast<ProcFuncType>(&RGBA8888ConvertRGBAF16));
-    g_procMapping.emplace(MakeKey(BGRA_8888, RGBA_F16),
-        reinterpret_cast<ProcFuncType>(&BGRA8888ConvertRGBAF16));
-    g_procMapping.emplace(MakeKey(RGB_565, RGBA_F16),
-        reinterpret_cast<ProcFuncType>(&RGB565ConvertRGBAF16));
-    g_procMapping.emplace(MakeKey(RGBA_16161616, RGBA_F16),
-        reinterpret_cast<ProcFuncType>(&RGBA16161616ConvertRGBAF16));
+    g_procMapping.emplace(MakeKey(BGR_888, RGBA_F16), &BGR888ConvertRGBAF16);
+    g_procMapping.emplace(MakeKey(RGB_888, RGBA_F16), &RGB888ConvertRGBAF16);
+    g_procMapping.emplace(MakeKey(RGB_161616, RGBA_F16), &RGB161616ConvertRGBAF16);
+    g_procMapping.emplace(MakeKey(ARGB_8888, RGBA_F16), &ARGB8888ConvertRGBAF16);
+    g_procMapping.emplace(MakeKey(RGBA_8888, RGBA_F16), &RGBA8888ConvertRGBAF16);
+    g_procMapping.emplace(MakeKey(BGRA_8888, RGBA_F16), &BGRA8888ConvertRGBAF16);
+    g_procMapping.emplace(MakeKey(RGB_565, RGBA_F16), &RGB565ConvertRGBAF16);
+    g_procMapping.emplace(MakeKey(RGBA_16161616, RGBA_F16), &RGBA16161616ConvertRGBAF16);
 }
 
 static ProcFuncType GetProcFuncType(uint32_t srcPixelFormat, uint32_t dstPixelFormat)
