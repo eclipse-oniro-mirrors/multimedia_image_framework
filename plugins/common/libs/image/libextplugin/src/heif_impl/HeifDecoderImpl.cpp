@@ -1087,7 +1087,7 @@ bool HeifDecoderImpl::DoSwDecodeAuxiliaryImage(std::shared_ptr<HeifImage> &gainm
     }
     uint32_t gainmapRowStride;
     if (isGainmapDecode_) {
-        gainmapDstFmt = PixelFormat::RGBA_8888;
+        gainmapDstFmt = outPixelFormat_;
         gainmapRowStride = static_cast<uint32_t>(gainmapDstRowStride_);
     } else {
         gainmapDstFmt = outPixelFormat_;
