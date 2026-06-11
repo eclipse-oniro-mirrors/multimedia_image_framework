@@ -186,6 +186,7 @@ static constexpr uint8_t JPEG_SOI[] = { 0xFF, 0xD8, 0xFF };
 constexpr uint8_t PIXEL_BYTES = 4;
 constexpr int32_t WEBP_MIN_FRAME_DURATION = 100;
 constexpr int32_t WEBP_DELAY_TIME_UINT16_MAX = 65535;
+const static uint64_t IMAGESOURCE_FDSAN_TAG = LOG_TAG_DOMAIN_ID_IMAGE;
 
 struct StreamInfo {
     uint8_t* buffer = nullptr;
@@ -2892,7 +2893,7 @@ ImageSource::~ImageSource() __attribute__((no_sanitize("cfi")))
         }
     }
     if (srcFd_ != -1) {
-        close(srcFd_);
+        fdsan_close_with_tag(srcFd_, IMAGESOURCE_FDSAN_TAG);
     }
 }
 
@@ -6596,6 +6597,9 @@ unique_ptr<PixelMap> ImageSource::CreatePixelAstcFromImageFile(uint32_t index, c
 void ImageSource::SetSrcFd(const int& fd)
 {
     srcFd_ = dup(fd);
+    if (srcFd_ != -1) {
+        fdsan_exchange_owner_tag(srcFd_, 0, IMAGESOURCE_FDSAN_TAG);
+ 	}
 }
 
 void ImageSource::SetSrcFilePath(const std::string& pathName)

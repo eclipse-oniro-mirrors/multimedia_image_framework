@@ -37,6 +37,7 @@ namespace Media {
 const static uint64_t MAX_BLOB_METADATA_LENGTH = 20 * 1024 * 1024;
 const static uint32_t MAX_MARSHAL_BLOB_DATA_SIZE = 32 * 1024;
 std::atomic<uint32_t> BlobMetadata::currentId = 0;
+const static uint64_t BLOB_METADATA_FDSAN_TAG = LOG_TAG_DOMAIN_ID_IMAGE;
 
 BlobMetadata::BlobMetadata()
 {
@@ -160,7 +161,7 @@ void BlobMetadata::ReleaseMemory(void *addr, void *context, uint32_t size)
             ::munmap(addr, size);
         }
         if (fd != nullptr) {
-            ::close(*fd);
+            fdsan_close_with_tag(*fd, BLOB_METADATA_FDSAN_TAG);
         }
         context = nullptr;
         addr = nullptr;
@@ -228,19 +229,19 @@ bool BlobMetadata::ReadDataFromAshmem(Parcel &parcel, std::unique_ptr<BlobMetada
     }
     int32_t ashmemSize = AshmemGetSize(fd);
     if (blobMetadataPtr->dataSize_ != static_cast<uint32_t>(ashmemSize)) {
-        ::close(fd);
+        fdsan_close_with_tag(fd, BLOB_METADATA_FDSAN_TAG);
         IMAGE_LOGE("ReadBlobDataFromParcel check ashmem size failed, fd:[%{public}d].", fd);
         return false;
     }
     void *ptr = ::mmap(nullptr, blobMetadataPtr->dataSize_, PROT_READ, MAP_SHARED, fd, 0);
     if (ptr == MAP_FAILED) {
-        ::close(fd);
+        fdsan_close_with_tag(fd, BLOB_METADATA_FDSAN_TAG);
         IMAGE_LOGE("ReadBlobData map failed, errno:%{public}d", errno);
         return false;
     }
     if (memcpy_s(blobMetadataPtr->data_, blobMetadataPtr->dataSize_, ptr, blobMetadataPtr->dataSize_) != EOK) {
         ::munmap(ptr, blobMetadataPtr->dataSize_);
-        ::close(fd);
+        fdsan_close_with_tag(fd, BLOB_METADATA_FDSAN_TAG);
         IMAGE_LOGE("memcpy Blob data size:[%{public}d] error.", blobMetadataPtr->dataSize_);
         return false;
     }
@@ -275,7 +276,12 @@ int BlobMetadata::ReadFileDescriptor(Parcel &parcel)
         IMAGE_LOGE("ReadFileDescriptor get fd failed, fd:[%{public}d].", fd);
         return -1;
     }
-    return dup(fd);
+    int dupFd = dup(fd);
+ 	if (dupFd < 0) {
+        return dupFd;
+ 	}
+ 	fdsan_exchange_owner_tag(dupFd, 0, BLOB_METADATA_FDSAN_TAG);
+ 	return dupFd;
 }
 
 bool BlobMetadata::WriteFileDescriptor(Parcel &parcel, int fd)
