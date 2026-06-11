@@ -2893,7 +2893,11 @@ ImageSource::~ImageSource() __attribute__((no_sanitize("cfi")))
         }
     }
     if (srcFd_ != -1) {
+#if !defined(CROSS_PLATFORM)
         fdsan_close_with_tag(srcFd_, IMAGESOURCE_FDSAN_TAG);
+#else
+        close(srcFd_);
+#endif
     }
 }
 
@@ -6597,9 +6601,11 @@ unique_ptr<PixelMap> ImageSource::CreatePixelAstcFromImageFile(uint32_t index, c
 void ImageSource::SetSrcFd(const int& fd)
 {
     srcFd_ = dup(fd);
+#if !defined(CROSS_PLATFORM)
     if (srcFd_ != -1) {
         fdsan_exchange_owner_tag(srcFd_, 0, IMAGESOURCE_FDSAN_TAG);
     }
+#endif
 }
 
 void ImageSource::SetSrcFilePath(const std::string& pathName)

@@ -347,7 +347,9 @@ static bool DupFd(FILE *f, int &res)
         IMAGE_LOGE("[FileSourceStream]Fail to dup fd.");
         return false;
     }
+#if !defined(CROSS_PLATFORM)
     fdsan_exchange_owner_tag(res, 0, FILE_SOURCE_FDSAN_TAG);
+#endif
     return true;
 }
 
