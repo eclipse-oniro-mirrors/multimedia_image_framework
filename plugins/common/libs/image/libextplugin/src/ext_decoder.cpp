@@ -3573,6 +3573,18 @@ bool ExtDecoder::HeifGainMapRegionCrop(DecodeContext &gainmapRegionContext, int3
     cond = (dstBuffer == nullptr || dstRegionBuffer == nullptr || regionStride <= 0);
     CHECK_ERROR_RETURN_RET_LOG(cond, false,
         "gainmap region crop, buffer nullptr or stride invalid");
+    return CropHeifGainmapRegionPixels(dstBuffer, rowStride, gainmapWidth, gainmapHeight,
+        gainmapPixelFormat, gainmapWidthRatio, gainmapHeightRatio, dstRegionBuffer, regionStride);
+#else
+    return false;
+#endif
+}
+
+bool ExtDecoder::CropHeifGainmapRegionPixels(uint8_t* dstBuffer, int32_t rowStride,
+    uint32_t gainmapWidth, uint32_t gainmapHeight, PixelFormat gainmapPixelFormat,
+    int32_t gainmapWidthRatio, int32_t gainmapHeightRatio,
+    uint8_t* dstRegionBuffer, int32_t regionStride)
+{
     int32_t left = desiredRegion_.left / heifGridRegionInfo_.tileWidth *
         heifGridRegionInfo_.tileWidth / gainmapWidthRatio;
     int32_t top = desiredRegion_.top / heifGridRegionInfo_.tileHeight *
@@ -3583,7 +3595,7 @@ bool ExtDecoder::HeifGainMapRegionCrop(DecodeContext &gainmapRegionContext, int3
     int32_t cropHeight = (heifGridRegionInfo_.tileHeight * heifGridRegionInfo_.rowCount -
         heifGridRegionInfo_.heightPadding) / gainmapHeightRatio;
     int32_t srcHeight = static_cast<int32_t>(gainmapHeight);
-    cond = (top < 0 || left < 0 || cropWidth <= 0 || cropHeight <= 0 ||
+    bool cond = (top < 0 || left < 0 || cropWidth <= 0 || cropHeight <= 0 ||
         top > srcHeight - cropHeight || left > static_cast<int32_t>(gainmapWidth) - cropWidth);
     CHECK_ERROR_RETURN_RET_LOG(cond, false, "gainmap crop region out of source bounds");
     int32_t rowBytes = 0;
@@ -3596,9 +3608,6 @@ bool ExtDecoder::HeifGainMapRegionCrop(DecodeContext &gainmapRegionContext, int3
         CHECK_ERROR_RETURN_RET(cond, false);
     }
     return true;
-#else
-    return false;
-#endif
 }
 
 bool ExtDecoder::CropHeifGainmapYPlane(uint8_t* dstBuffer, int32_t rowStride,
