@@ -129,8 +129,14 @@ namespace {
         .matrix = MATRIX_BT2020,
         .range = RANGE_FULL,
     };
-    constexpr CM_ColorSpaceInfo HDR_CAPTURE_SDR_COLORSPACE = {
+    constexpr CM_ColorSpaceInfo HDR_CAPTURE_SDR_P3_COLORSPACE = {
         .primaries = COLORPRIMARIES_P3_D65,
+        .transfunc = TRANSFUNC_SRGB,
+        .matrix = MATRIX_BT601_N,
+        .range = RANGE_FULL,
+    };
+    constexpr CM_ColorSpaceInfo HDR_CAPTURE_SDR_SRGB_COLORSPACE = {
+        .primaries = COLORPRIMARIES_SRGB,
         .transfunc = TRANSFUNC_SRGB,
         .matrix = MATRIX_BT601_N,
         .range = RANGE_FULL,
@@ -406,7 +412,13 @@ sptr<SurfaceBuffer> CreateGainmapByHdrAndSdr(
     MetadataHelper::SetColorSpaceInfo(hdrSptr, HDR_CAPTURE_HDR_COLORSPACE);
     sptr<SurfaceBuffer> sdrSptr(reinterpret_cast<SurfaceBuffer*>(sdrPixelMap->GetFd()));
     VpeUtils::SetSbMetadataType(sdrSptr, CM_IMAGE_HDR_VIVID_DUAL);
-    MetadataHelper::SetColorSpaceInfo(sdrSptr, HDR_CAPTURE_SDR_COLORSPACE);
+    CM_ColorSpaceInfo sdrColorSpace = HDR_CAPTURE_SDR_P3_COLORSPACE;
+#ifdef IMAGE_COLORSPACE_FLAG
+    if (sdrPixelMap->InnerGetGrColorSpace().GetColorSpaceName() == OHOS::ColorManager::ColorSpaceName::SRGB) {
+        sdrColorSpace = HDR_CAPTURE_SDR_SRGB_COLORSPACE;
+    }
+#endif
+    MetadataHelper::SetColorSpaceInfo(sdrSptr, sdrColorSpace);
     VpeSurfaceBuffers buffers = {
         .sdr = sdrSptr,
         .gainmap = gainmapSptr,
