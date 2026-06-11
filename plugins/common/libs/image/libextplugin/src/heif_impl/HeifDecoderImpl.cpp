@@ -1214,8 +1214,25 @@ bool HeifDecoderImpl::SwApplyAlphaImage(std::shared_ptr<HeifImage> &masterImage,
 
     GridInfo alphaGridInfo;
     InitGridInfo(alphaImage, alphaGridInfo);
-    uint32_t alphaStride = alphaImage->GetOriginalWidth();
-    uint32_t alphaMemorySize = alphaStride * alphaImage->GetOriginalHeight();
+    uint32_t tileSpanX = 0;
+    uint32_t tileSpanY = 0;
+    if (__builtin_mul_overflow(alphaGridInfo.cols, alphaGridInfo.tileWidth, &tileSpanX) ||
+        __builtin_mul_overflow(alphaGridInfo.rows, alphaGridInfo.tileHeight, &tileSpanY)) {
+        IMAGE_LOGE("Alpha image grid dimensions overflow: cols=%{public}u, tileWidth=%{public}u, "
+                   "rows=%{public}u, tileHeight=%{public}u",
+                   alphaGridInfo.cols, alphaGridInfo.tileWidth, alphaGridInfo.rows, alphaGridInfo.tileHeight);
+        return false;
+    }
+    uint32_t alphaStride = (alphaGridInfo.displayWidth > tileSpanX)
+        ? alphaGridInfo.displayWidth : tileSpanX;
+    uint32_t alphaHeight = (alphaGridInfo.displayHeight > tileSpanY)
+        ? alphaGridInfo.displayHeight : tileSpanY;
+    uint32_t alphaMemorySize = 0;
+    if (__builtin_mul_overflow(alphaStride, alphaHeight, &alphaMemorySize) || alphaMemorySize == 0) {
+        IMAGE_LOGE("Alpha image dimensions overflow: stride=%{public}u, height=%{public}u",
+                   alphaStride, alphaHeight);
+        return false;
+    }
     PixelFormat alphaDstFmt = PixelFormat::ALPHA_8;
     std::unique_ptr<uint8_t[]> alphaMemory = std::make_unique<uint8_t[]>(alphaMemorySize);
     HevcSoftDecodeParam param {

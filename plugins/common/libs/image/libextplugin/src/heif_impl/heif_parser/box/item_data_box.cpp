@@ -152,7 +152,10 @@ heif_error HeifIlocBox::ReadData(const Item &item, const std::shared_ptr<HeifInp
         }
 
         if (item.constructionMethod == CONSTRUCTION_METHOD_FILE_OFFSET) {
-            stream->Seek(extent.offset + item.baseOffset);
+            bool ret = stream->Seek(extent.offset + item.baseOffset);
+            if (!ret) {
+                return heif_error_eof;
+            }
 
             size_t oldSize = dest->size();
             if (extent.length > MAX_HEIF_IMAGE_GRID_SIZE) {
@@ -164,7 +167,10 @@ heif_error HeifIlocBox::ReadData(const Item &item, const std::shared_ptr<HeifInp
                 return heif_error_grid_too_large;
             }
             dest->resize(static_cast<size_t>(oldSize + extent.length));
-            stream->Read(reinterpret_cast<char*>(dest->data()) + oldSize, static_cast<size_t>(extent.length));
+            ret = stream->Read(reinterpret_cast<char*>(dest->data()) + oldSize, static_cast<size_t>(extent.length));
+            if (!ret) {
+                return heif_error_eof;
+            }
         } else if (item.constructionMethod == CONSTRUCTION_METHOD_IDAT_OFFSET) {
             if (!idat) {
                 return heif_error_no_idat;
@@ -482,13 +488,19 @@ heif_error HeifIdatBox::ReadData(const std::shared_ptr<HeifInputStream> &stream,
         return heif_error_eof;
     }
 
-    stream->Seek(startPos_ + (std::streampos) start);
+    bool ret = stream->Seek(startPos_ + (std::streampos) start);
+    if (!ret) {
+        return heif_error_eof;
+    }
 
     if (length > 0) {
         outData.resize(static_cast<size_t>(currSize + length));
         uint8_t *data = &outData[currSize];
 
-        stream->Read(reinterpret_cast<char*>(data), static_cast<size_t>(length));
+        ret = stream->Read(reinterpret_cast<char*>(data), static_cast<size_t>(length));
+        if (!ret) {
+            return heif_error_eof;
+        }
     }
 
     return heif_error_ok;

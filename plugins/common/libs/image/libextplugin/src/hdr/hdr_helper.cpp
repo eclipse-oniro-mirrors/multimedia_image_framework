@@ -187,7 +187,10 @@ static bool GetVividJpegGainMapOffset(const vector<jpeg_marker_struct*>& markerL
             continue;
         }
         uint32_t originOffset = ImageUtils::BytesToUint32(data, dataOffset, size);
-        offset = originOffset + preOffsets[i];
+        if (__builtin_add_overflow(originOffset, preOffsets[i], &offset)) {
+            IMAGE_LOGE("VividJpegGainMapOffset is overflowed");
+            return false;
+        }
         uint32_t relativeOffset = ImageUtils::BytesToUint32(data, dataOffset, size); // offset minus all app size
         IMAGE_LOGD("vivid base info originOffset=%{public}d, relativeOffset=%{public}d, offset=%{public}d",
             originOffset, relativeOffset, offset);
@@ -439,7 +442,8 @@ static bool ParseVividJpegStaticMetadata(uint8_t* data, uint32_t& offset, uint32
         staticMetaVec.resize(EMPTY_SIZE);
         return true;
     }
-    bool cond = staticMetadataSize > size || staticMetadataSize < VIVID_STATIC_METADATA_SIZE_IN_IMAGE;
+    bool cond = offset > size || staticMetadataSize > size - offset ||
+        staticMetadataSize < VIVID_STATIC_METADATA_SIZE_IN_IMAGE;
     CHECK_ERROR_RETURN_RET(cond, false);
 
     HdrStaticMetadata staticMeta{};
@@ -462,7 +466,11 @@ static bool ParseVividJpegStaticMetadata(uint8_t* data, uint32_t& offset, uint32
         return false;
     }
     if (staticMetadataSize > VIVID_STATIC_METADATA_SIZE_IN_IMAGE) {
-        offset += (staticMetadataSize - VIVID_STATIC_METADATA_SIZE_IN_IMAGE);
+        uint32_t skipBytes = staticMetadataSize - VIVID_STATIC_METADATA_SIZE_IN_IMAGE;
+        if (offset + skipBytes > size) {
+            return false;
+        }
+        offset += skipBytes;
     }
     return true;
 #endif
@@ -719,7 +727,8 @@ static bool GetVividJpegMetadata(jpeg_marker_struct* markerList, HdrMetadata& me
         if (JPEG_MARKER_APP8 != marker->marker) {
             continue;
         }
-        if (memcmp(marker->data, ITUT35_TAG, ITUT35_TAG_SIZE) != 0) {
+        if (marker->data_length <= ITUT35_TAG_SIZE ||
+            memcmp(marker->data, ITUT35_TAG, ITUT35_TAG_SIZE) != 0) {
             continue;
         }
         uint8_t* data = marker->data + ITUT35_TAG_SIZE;
@@ -870,7 +879,8 @@ static bool GetHdrMediaTypeInfo(jpeg_marker_struct* markerList, HdrMetadata& met
         }
         uint8_t* data = marker->data + HDR_MEDIA_TYPE_TAG_SIZE;
         uint32_t dataOffset = 0;
-        uint32_t hdrMediaType = ImageUtils::BytesToUint32(data, dataOffset, marker->data_length);
+        uint32_t length = marker->data_length - HDR_MEDIA_TYPE_TAG_SIZE;
+        uint32_t hdrMediaType = ImageUtils::BytesToUint32(data, dataOffset, length);
         metadata.hdrMetadataType = static_cast<int32_t>(hdrMediaType);
         return true;
     }

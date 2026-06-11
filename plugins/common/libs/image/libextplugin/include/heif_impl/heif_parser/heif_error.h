@@ -80,6 +80,7 @@ enum heif_error {
     heif_error_not_support_avif = 58,
     heif_error_not_avis = 59,
     heif_error_invalid_data = 60,
+    heif_error_too_many_boxes = 61,
 };
 } // namespace ImagePlugin
 } // namespace OHOS

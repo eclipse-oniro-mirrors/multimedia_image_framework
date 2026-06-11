@@ -420,16 +420,22 @@ int PngImageChunkUtils::ConvertAsciiToInt(const char *sourcePtr, size_t exifInfo
             sourcePtrCount++;
         }
 
-        if (!IsHexAscii(*sourcePtr)) {
-            IMAGE_LOGE("Invalid hex character encountered while converting Exif ASCII string.");
+        if (sourcePtrCount < sourceLength) {
+            if (!IsHexAscii(*sourcePtr)) {
+                IMAGE_LOGE("Invalid hex character encountered while converting Exif ASCII string.");
+                return ERR_IMAGE_SOURCE_DATA_INCOMPLETE;
+            }
+
+            if ((i % HEX_STRING_UNIT_SIZE) == 0) {
+                *destPtr = static_cast<unsigned char>(HEX_BASE * hexAsciiToInt[static_cast<size_t>(*sourcePtr++)]);
+            } else {
+                (*destPtr++) += hexAsciiToInt[static_cast<size_t>(*sourcePtr++)];
+            }
+            sourcePtrCount++;
+        } else {
+            IMAGE_LOGE("sourcePtr has reached the end point");
             return ERR_IMAGE_SOURCE_DATA_INCOMPLETE;
         }
-        if ((i % HEX_STRING_UNIT_SIZE) == 0) {
-            *destPtr = static_cast<unsigned char>(HEX_BASE * hexAsciiToInt[static_cast<size_t>(*sourcePtr++)]);
-        } else {
-            (*destPtr++) += hexAsciiToInt[static_cast<size_t>(*sourcePtr++)];
-        }
-        sourcePtrCount++;
     }
     return SUCCESS;
 }
