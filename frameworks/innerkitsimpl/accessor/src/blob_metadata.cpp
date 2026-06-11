@@ -277,11 +277,11 @@ int BlobMetadata::ReadFileDescriptor(Parcel &parcel)
         return -1;
     }
     int dupFd = dup(fd);
- 	if (dupFd < 0) {
+    if (dupFd < 0) {
         return dupFd;
- 	}
- 	fdsan_exchange_owner_tag(dupFd, 0, BLOB_METADATA_FDSAN_TAG);
- 	return dupFd;
+    }
+    fdsan_exchange_owner_tag(dupFd, 0, BLOB_METADATA_FDSAN_TAG);
+    return dupFd;
 }
 
 bool BlobMetadata::WriteFileDescriptor(Parcel &parcel, int fd)

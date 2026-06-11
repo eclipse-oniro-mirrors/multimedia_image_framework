@@ -6599,7 +6599,7 @@ void ImageSource::SetSrcFd(const int& fd)
     srcFd_ = dup(fd);
     if (srcFd_ != -1) {
         fdsan_exchange_owner_tag(srcFd_, 0, IMAGESOURCE_FDSAN_TAG);
- 	}
+    }
 }
 
 void ImageSource::SetSrcFilePath(const std::string& pathName)
