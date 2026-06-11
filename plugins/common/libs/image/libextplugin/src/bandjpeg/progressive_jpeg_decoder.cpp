@@ -207,10 +207,12 @@ uint32_t ProgressiveJpegDecoder::GetJpegInputData(InputDataStream *stream, const
     CHECK_ERROR_RETURN_RET_LOG(streamSize == 0, ERR_IMAGE_SOURCE_DATA, "jpegBufferSize 0");
     
     CHECK_ERROR_RETURN_RET_LOG(streamSize > MAX_JPEG_BUFFER_SIZE,
-        ERR_IMAGE_TOO_LARGE, "jpegBufferSize %{public}llu exceeds max size", streamSize);
+        ERR_IMAGE_TOO_LARGE, "jpegBufferSize %{public}llu exceeds max size",
+        static_cast<unsigned long long>(streamSize));
     
     CHECK_ERROR_RETURN_RET_LOG(streamSize > UINT32_MAX,
-        ERR_IMAGE_TOO_LARGE, "jpegBufferSize %{public}llu exceeds uint32 max", streamSize);
+        ERR_IMAGE_TOO_LARGE, "jpegBufferSize %{public}llu exceeds uint32 max",
+        static_cast<unsigned long long>(streamSize));
     
     jpegData.bufferSize = static_cast<uint32_t>(streamSize);
     if (stream->GetStreamType() == ImagePlugin::BUFFER_SOURCE_TYPE) {
