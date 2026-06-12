@@ -2160,7 +2160,8 @@ napi_value ImageSourceNapi::CreateIncrementalSource(napi_env env, napi_callback_
     napi_value globalValue;
     napi_get_global(env, &globalValue);
     napi_value func;
-    napi_get_named_property(env, globalValue, "requireNapi", &func);
+    bool cond = napi_get_named_property(env, globalValue, "requireNapi", &func) != napi_ok;
+    CHECK_ERROR_RETURN_RET_LOG(cond, nullptr, "%{public}s property not found, skipping", __func__);
 
     napi_value imageInfo;
     napi_create_string_utf8(env, "multimedia.image", NAPI_AUTO_LENGTH, &imageInfo);
