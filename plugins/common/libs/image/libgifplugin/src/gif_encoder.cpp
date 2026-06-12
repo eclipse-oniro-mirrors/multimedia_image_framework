@@ -179,25 +179,13 @@ uint32_t GifEncoder::FinalizeEncode()
 uint32_t GifEncoder::DoEncode()
 {
     IMAGE_LOGD("DoEncode IN");
-
-    uint32_t ret = WriteFileInfo();
-    CHECK_ERROR_RETURN_RET_LOG(ret != SUCCESS, ret, "Failed to write GIF file info.");
-
+    WriteFileInfo();
     for (int index = 0; index < static_cast<int>(pixelMaps_.size()); index++) {
         InitDictionary();
-
-        ret = WriteFrameInfo(index);
-        CHECK_ERROR_RETURN_RET_LOG(ret != SUCCESS, ret,
-            "Failed to write GIF frame info, index=%{public}d.", index);
-
-        ret = processFrame(index);
-        CHECK_ERROR_RETURN_RET_LOG(ret != SUCCESS, ret,
-            "Failed to process GIF frame, index=%{public}d.", index);
+        WriteFrameInfo(index);
+        processFrame(index);
     }
-
-    CHECK_ERROR_RETURN_RET_LOG(!Write(GIF_TRAILER, sizeof(GIF_TRAILER)), ERR_IMAGE_ENCODE_FAILED,
-        "Failed to write GIF trailer.");
-
+    Write(GIF_TRAILER, sizeof(GIF_TRAILER));
     IMAGE_LOGD("DoEncode OUT");
     return SUCCESS;
 }
