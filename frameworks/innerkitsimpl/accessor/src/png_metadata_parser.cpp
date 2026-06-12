@@ -65,10 +65,32 @@ static bool SafeUint32ToInt32(png_uint_32 value, int32_t& result)
     return true;
 }
 
+static jmp_buf* SafePngSetLongjmpFn(png_structp png_ptr)
+{
+#ifdef PNG_SETJMP_SUPPORTED
+    if (png_ptr != nullptr) {
+        return png_set_longjmp_fn(png_ptr, longjmp, sizeof(jmp_buf));
+    }
+#endif
+    return nullptr;
+}
+
+static int SafeSetJmp(png_structp png_ptr) {
+    auto jmpBuf = SafePngSetLongjmpFn(png_ptr);
+    return jmpBuf == nullptr ? -1 : setjmp(*jmpBuf);
+}
+
+static void SafeLongJmp(png_structp png_ptr) {
+    auto jmpBuf = SafePngSetLongjmpFn(png_ptr);
+    if (jmpBuf != nullptr) {
+        longjmp(*jmpBuf, 1);
+    }
+}
+
 static void PngErrorExit(png_structp pngPtr, png_const_charp message)
 {
     IMAGE_LOGE("PNG error: %{public}s", message);
-    longjmp(png_jmpbuf(pngPtr), 1);
+    SafeLongJmp(pngPtr);
 }
 
 static void PngWarning(png_structp pngPtr, png_const_charp message)
@@ -82,19 +104,19 @@ static void PngReadFunc(png_structp pngPtr, png_bytep data, png_size_t length)
         static_cast<OHOS::ImagePlugin::InputDataStream*>(png_get_io_ptr(pngPtr));
     if (stream == nullptr) {
         IMAGE_LOGE("%{public}s: stream is nullptr", __func__);
-        longjmp(png_jmpbuf(pngPtr), 1);
+        SafeLongJmp(pngPtr);
     }
     uint32_t readSize = 0;
     uint32_t desiredSize = static_cast<uint32_t>(length);
     bool ret = stream->Read(desiredSize, reinterpret_cast<uint8_t*>(data), desiredSize, readSize);
     if (!ret) {
         IMAGE_LOGE("%{public}s: Read operation failed, desired=%{public}u", __func__, desiredSize);
-        longjmp(png_jmpbuf(pngPtr), 1);
+        SafeLongJmp(pngPtr);
     }
     if (readSize < desiredSize) {
         IMAGE_LOGE("%{public}s: Unexpected EOF, desired=%{public}u, actual=%{public}u", __func__, desiredSize,
             readSize);
-        longjmp(png_jmpbuf(pngPtr), 1);
+        SafeLongJmp(pngPtr);
     }
 }
 
@@ -111,7 +133,7 @@ PngMetadataParser::~PngMetadataParser()
 
 bool PngMetadataParser::ReadPngInfo(ImagePlugin::InputDataStream *stream)
 {
-    if (setjmp(png_jmpbuf(pngStructPtr_))) {
+    if (SafeSetJmp(pngStructPtr_)) {
         IMAGE_LOGE("PNG lib error during header decode");
         return false;
     }
@@ -232,7 +254,7 @@ bool PngMetadataParser::GetPropertyDouble(const std::string &key, double &value)
         IMAGE_LOGE("pngStructPtr_ or pngInfoPtr_ is null");
         return false;
     }
-    if (setjmp(png_jmpbuf(pngStructPtr_))) {
+    if (SafeSetJmp(pngStructPtr_)) {
         IMAGE_LOGE("PNG lib error during property get");
         return false;
     }
@@ -248,7 +270,7 @@ bool PngMetadataParser::GetPropertyInt(const std::string &key, int32_t &value)
         IMAGE_LOGE("pngStructPtr_ or pngInfoPtr_ is null");
         return false;
     }
-    if (setjmp(png_jmpbuf(pngStructPtr_))) {
+    if (SafeSetJmp(pngStructPtr_)) {
         IMAGE_LOGE("PNG lib error during property get");
         return false;
     }
@@ -337,7 +359,7 @@ bool PngMetadataParser::GetPropertyString(const std::string &key, std::string &v
         return false;
     }
 
-    if (setjmp(png_jmpbuf(pngStructPtr_))) {
+    if (SafeSetJmp(pngStructPtr_)) {
         IMAGE_LOGE("%{public}s: PNG lib error during property get", __func__);
         return false;
     }
