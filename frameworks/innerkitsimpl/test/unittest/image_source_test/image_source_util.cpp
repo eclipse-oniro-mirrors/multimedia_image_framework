@@ -107,8 +107,8 @@ int64_t PackImage(const std::string &filePath,
     option.quality = QUALITY;
     option.numberHint = NUMBERHINT;
     std::set<std::string> formats;
-    if (pixelMaps == nullptr) {
-        IMAGE_LOGE("pixelMap is nullptr");
+    if (pixelMaps == nullptr || pixelMaps->empty()) {
+        IMAGE_LOGE("pixelMap is nullptr or vector is empty");
         return 0;
     }
     uint32_t ret = imagePacker.GetSupportedFormats(formats);
@@ -116,13 +116,25 @@ int64_t PackImage(const std::string &filePath,
         IMAGE_LOGE("image packer get supported format failed, ret=%{public}u.", ret);
         return 0;
     }
-    imagePacker.StartPacking(filePath, option);
-    for (auto &pixelMap : *pixelMaps.get()) {
-        imagePacker.AddImage(*(pixelMap.get()));
+    ret = imagePacker.StartPacking(filePath, option);
+    if (ret != SUCCESS) {
+        IMAGE_LOGE("StartPacking failed, ret=%{public}u.", ret);
+        return 0;
+    }
+    for (auto &pixelMap : *pixelMaps) {
+        if (pixelMap == nullptr) {
+            IMAGE_LOGE("pixelMap element is nullptr, skip invalid element");
+            continue;
+        }
+        imagePacker.AddImage(*pixelMap);
     }
     int64_t packedSize = 0;
-    imagePacker.FinalizePacking(packedSize);
-    return static_cast<int64_t>(packedSize);
+    ret = imagePacker.FinalizePacking(packedSize);
+    if (ret != SUCCESS) {
+        IMAGE_LOGE("FinalizePacking failed, ret=%{public}u.", ret);
+        return 0;
+    }
+    return packedSize;
 }
 
 bool ReadFileToBuffer(const std::string &filePath, uint8_t *buffer, size_t bufferSize)

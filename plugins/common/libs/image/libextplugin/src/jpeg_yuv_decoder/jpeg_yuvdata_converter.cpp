@@ -343,6 +343,7 @@ int I400ToI420_wrapper(const YuvPlaneInfo &src, const YuvPlaneInfo &dest)
         const uint8_t chromaValueForGray = 0x80;
         uint32_t UVCOMSize = dest.planeWidth[UCOM] * dest.planeHeight[UCOM];
         UVCOMSize += dest.planeWidth[VCOM] * dest.planeHeight[VCOM];
+        // U/V planes must be physically contiguous in memory; non-contiguous buffers may cause heap buffer overflow.
         errno_t ret = memset_s(dest.planes[UCOM], UVCOMSize, chromaValueForGray, UVCOMSize);
         if (ret != EOK) {
             return -1;
