@@ -1042,17 +1042,24 @@ bool HeifDecoderImpl::SwDecodeAuxiliaryImage(std::shared_ptr<HeifImage> &gainmap
     CHECK_ERROR_RETURN_RET(!gainmapImage, false);
     uint32_t width = gainmapImage->GetOriginalWidth();
     uint32_t height = gainmapImage->GetOriginalHeight();
-    sptr<SurfaceBuffer> output = SurfaceBuffer::Create();
-    BufferRequestConfig config = {
-        .width = width,
-        .height = height,
-        .format = GRAPHIC_PIXEL_FMT_YCBCR_420_SP,
-        .usage = BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA | BUFFER_USAGE_MEM_MMZ_CACHE,
-        .timeout = 0
-    };
-    GSError ret = output->Alloc(config);
-    bool cond = ret != GSERROR_OK;
-    CHECK_ERROR_RETURN_RET_LOG(cond, false, "output->alloc(config)faild, GSError=%{public}d", ret);
+    sptr<SurfaceBuffer> output;
+    if (isGainmapDecode_ && gainMapDstHwbuffer_ != nullptr) {
+        output = sptr<SurfaceBuffer>(gainMapDstHwbuffer_);
+    } else if (isAuxiliaryDecode_ && auxiliaryDstHwbuffer_ != nullptr) {
+        output = sptr<SurfaceBuffer>(auxiliaryDstHwbuffer_);
+    } else {
+        output = SurfaceBuffer::Create();
+        BufferRequestConfig config = {
+            .width = width,
+            .height = height,
+            .format = GRAPHIC_PIXEL_FMT_YCBCR_420_SP,
+            .usage = BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA | BUFFER_USAGE_MEM_MMZ_CACHE,
+            .timeout = 0
+        };
+        GSError ret = output->Alloc(config);
+        bool cond = ret != GSERROR_OK;
+        CHECK_ERROR_RETURN_RET_LOG(cond, false, "output->alloc(config)faild, GSError=%{public}d", ret);
+    }
     if (!DoSwDecodeAuxiliaryImage(gainmapImage, gainmapGridInfo, output, auxiliaryDstMemory)) {
         IMAGE_LOGE("HDR-IMAGE SwDecodeGainmap failed");
         return false;
