@@ -3585,6 +3585,9 @@ bool ExtDecoder::CropHeifGainmapRegionPixels(uint8_t* dstBuffer, int32_t rowStri
     int32_t gainmapWidthRatio, int32_t gainmapHeightRatio,
     uint8_t* dstRegionBuffer, int32_t regionStride)
 {
+    bool cond = (heifGridRegionInfo_.tileWidth <= 0 || heifGridRegionInfo_.tileHeight <= 0 ||
+        gainmapWidthRatio <= 0 || gainmapHeightRatio <= 0);
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "crop tile or ratio params invalid");
     int32_t left = desiredRegion_.left / heifGridRegionInfo_.tileWidth *
         heifGridRegionInfo_.tileWidth / gainmapWidthRatio;
     int32_t top = desiredRegion_.top / heifGridRegionInfo_.tileHeight *
@@ -3595,7 +3598,7 @@ bool ExtDecoder::CropHeifGainmapRegionPixels(uint8_t* dstBuffer, int32_t rowStri
     int32_t cropHeight = (heifGridRegionInfo_.tileHeight * heifGridRegionInfo_.rowCount -
         heifGridRegionInfo_.heightPadding) / gainmapHeightRatio;
     int32_t srcHeight = static_cast<int32_t>(gainmapHeight);
-    bool cond = (top < 0 || left < 0 || cropWidth <= 0 || cropHeight <= 0 ||
+    cond = (top < 0 || left < 0 || cropWidth <= 0 || cropHeight <= 0 ||
         top > srcHeight - cropHeight || left > static_cast<int32_t>(gainmapWidth) - cropWidth);
     CHECK_ERROR_RETURN_RET_LOG(cond, false, "gainmap crop region out of source bounds");
     int32_t rowBytes = 0;
