@@ -383,8 +383,8 @@ XMP_IO *XMPFd_IO::DeriveTemp()
     tempGuard.fd = tempFd;
     tempGuard.path = tempPath;
 
-    derivedTemp_ = new XMPFd_IO(tempGuard.fd, false, true);
     tempFilePath_ = tempGuard.path;
+    derivedTemp_ = new XMPFd_IO(tempGuard.fd, false, true);
     tempGuard.Release();
     return derivedTemp_;
     XMP_CATCH_THROW();
