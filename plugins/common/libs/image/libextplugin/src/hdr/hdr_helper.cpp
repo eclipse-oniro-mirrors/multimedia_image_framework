@@ -1052,8 +1052,13 @@ vector<uint8_t> HdrJpegPackerHelper::PackBaseMpfMarker(uint32_t baseSize, uint32
         .offset = 0,
         .size = baseSize,
     };
+    const uint32_t MPF_OFFSET_BASE_SIZE = JPEG_MARKER_TAG_SIZE + JPEG_MARKER_LENGTH_SIZE + MPF_TAG_SIZE;
+    if (baseSize < MPF_OFFSET_BASE_SIZE || appOffset > baseSize - MPF_OFFSET_BASE_SIZE) {
+        IMAGE_LOGE("Invalid parameter: baseSize is too small");
+        return {};
+    }
     SingleJpegImage gainmapImage = {
-        .offset = baseSize - appOffset - JPEG_MARKER_TAG_SIZE - JPEG_MARKER_LENGTH_SIZE - MPF_TAG_SIZE,
+        .offset = baseSize - appOffset - MPF_OFFSET_BASE_SIZE,
         .size = gainmapSize,
     };
     return JpegMpfPacker::PackHdrJpegMpfMarker(baseImage, gainmapImage);

@@ -166,7 +166,8 @@ static int64_t ParseBufferSize(std::unique_ptr<ImagePackerTaiheContext> &context
     }
     int64_t tmpNumber = options.bufferSize.value();
     IMAGE_LOGD("BufferSize is %{public}" PRId64, tmpNumber);
-    if (tmpNumber < 0) {
+    if (tmpNumber < 0 || tmpNumber > INT32_MAX) {
+        IMAGE_LOGE("BufferSize %{public}" PRId64 " out of range, using default", tmpNumber);
         return defaultSize;
     }
     return tmpNumber;
