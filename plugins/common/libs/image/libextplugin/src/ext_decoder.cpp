@@ -3624,11 +3624,15 @@ bool ExtDecoder::DecodeHeifGainMap(DecodeContext& context)
     auto* dstBuffer = static_cast<uint8_t*>(context.pixelsBuffer.buffer);
     auto* sbBuffer = reinterpret_cast<SurfaceBuffer*>(context.pixelsBuffer.context);
     int32_t rowStride = sbBuffer->GetStride();
-    cond = rowStride <= 0;
-    CHECK_ERROR_RETURN_RET_LOG(cond, false, "gainmap stride invalid:%{public}d", rowStride);
+    if (rowStride <= 0) {
+        FreeContextBuffer(context.freeFunc, context.allocatorType, context.pixelsBuffer);
+        return false;
+    }
     decoder->setGainmapDstBuffer(dstBuffer, static_cast<size_t>(rowStride), context.pixelsBuffer.context);
-    cond = !decoder->decodeGainmap();
-    CHECK_ERROR_RETURN_RET_LOG(cond, false, "decode heif gainmap failed");
+    if (!decoder->decodeGainmap()) {
+        FreeContextBuffer(context.freeFunc, context.allocatorType, context.pixelsBuffer);
+        return false;
+    }
     if (IsHeifRegionDecode()) {
         DecodeContext gainmapRegionContext;
         if (HeifGainMapRegionCrop(gainmapRegionContext, rowStride, dstBuffer, width, height)) {
