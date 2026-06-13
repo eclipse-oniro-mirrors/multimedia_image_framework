@@ -164,17 +164,8 @@ private:
     void UpdateHeifSKInfo(DecodeContext &context, uint64_t &rowStride);
     bool IsHeifRegionDecode();
     bool HeifGainMapRegionCrop(DecodeContext &gainmapRegionContext, int32_t rowStride, uint8_t* dstBuffer,
-        uint32_t gainmapWidth, uint32_t gainmapHeight, OHOS::Media::PixelFormat gainmapPixelFormat);
-    bool CropHeifGainmapRegionPixels(GainmapCropParam& param, uint32_t gainmapWidth,
-        uint32_t gainmapHeight, int32_t widthRatio, int32_t heightRatio);
-    int32_t GetGainmapPixelBytes(OHOS::Media::PixelFormat format);
-    bool CopyGainmapPlaneRows(const PlaneCopyInfo& src, const PlaneCopyInfo& dst,
-        int32_t rowBytes, int32_t rowCount);
-    bool CropHeifGainmapYPlane(const GainmapCropParam& param, int32_t cropWidth,
-        int32_t cropHeight, int32_t& outRowBytes);
-    bool CropHeifGainmapUVPlane(const GainmapCropParam& param, int32_t gainmapHeight,
-        int32_t cropHeight, int32_t rowBytes);
-    int32_t PixelFormatToHeifColorFormat(OHOS::Media::PixelFormat format);
+        uint32_t gainmapWidth, uint32_t gainmapHeight);
+    SkHeifColorFormat PixelFormatToHeifColorFormat(OHOS::Media::PixelFormat format);
     bool IsGainmapYuvOrP010Format(OHOS::Media::PixelFormat format);
     uint32_t AllocGainmapBuffer(DecodeContext &context, SkImageInfo &dstInfo, uint64_t byteCount);
     bool IsRegionDecodeSupported(uint32_t index, const PixelDecodeOptions &opts, PlImageInfo &info);
@@ -212,23 +203,6 @@ private:
     uint32_t heifParseErr_ = 0;
     std::shared_ptr<Media::PixelMap> reusePixelmap_ = nullptr;
     OHOS::Media::Rect desiredRegion_ = {0, 0, 0, 0};
-    typedef struct PlaneCopyInfo {
-        uint8_t* buffer;
-        int32_t stride;
-        int32_t offset;
-    } PlaneCopyInfo;
-
-    typedef struct GainmapCropParam {
-        uint8_t* srcBuffer;
-        int32_t srcStride;
-        uint8_t* dstBuffer;
-        int32_t dstStride;
-        int32_t top;
-        int32_t left;
-        int32_t pixelBytes;
-        bool isYuvOrP010;
-    } GainmapCropParam;
-
     typedef struct HeifGridRegionInfo {
         int32_t colCount;
         int32_t rowCount;
