@@ -656,7 +656,6 @@ Image_ErrorCode OH_ImageSourceNative_Release(OH_ImageSourceNative *source);
 Image_ErrorCode OH_ImageSourceNative_Destroy(OH_ImageSourceNative **source);
 
 /**
-
  * @brief Create a pointer for OH_DecodingOptionsForPicture struct.
  *
  * @param options The OH_DecodingOptionsForPicture pointer will be operated.
