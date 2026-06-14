@@ -645,6 +645,16 @@ Image_ErrorCode OH_ImageSourceNative_GetFrameCount(OH_ImageSourceNative *source,
 Image_ErrorCode OH_ImageSourceNative_Release(OH_ImageSourceNative *source);
 
 /**
+ * @brief Destroys an <b>OH_ImageSourceNative</b> object.
+ *
+ * @param pixelmap A pointer to the OH_ImageSourceNative pointer to destroy.
+ * @return Returns {@link Image_ErrorCode} IMAGE_SUCCESS - if the operation is successful.
+ * returns {@link Image_ErrorCode} IMAGE_BAD_PARAMETER - if source is null or *source is null.
+ * @since 24
+ */
+Image_ErrorCode OH_ImageSourceNative_Destroy(OH_ImageSourceNative **source);
+
+/**
  * @brief Create a pointer for OH_DecodingOptionsForPicture struct.
  *
  * @param options The OH_DecodingOptionsForPicture pointer will be operated.
