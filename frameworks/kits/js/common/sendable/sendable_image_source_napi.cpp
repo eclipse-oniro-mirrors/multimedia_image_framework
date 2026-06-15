@@ -543,12 +543,21 @@ static std::shared_ptr<PixelMap> CreatePixelMapInner(SendableImageSourceNapi *th
         status = ERROR;
         return nullptr;
     }
+
     std::shared_ptr<PixelMap> pixelMap;
-    decodeOpts.invokeType = JS_INTERFACE;
-    pixelMap = imageSource->CreatePixelMapEx(index, decodeOpts, status);
+    auto incPixelMap = thisPtr->GetIncrementalPixelMap();
+    if (incPixelMap != nullptr) {
+        IMAGE_LOGD("Get Incremental PixelMap!!!");
+        pixelMap = incPixelMap;
+    } else {
+        decodeOpts.invokeType = JS_INTERFACE;
+        pixelMap = imageSource->CreatePixelMapEx(index, decodeOpts, status);
+    }
+
     if (status != SUCCESS || !IMG_NOT_NULL(pixelMap)) {
         IMAGE_LOGE("Create PixelMap error");
     }
+
     return pixelMap;
 }
 

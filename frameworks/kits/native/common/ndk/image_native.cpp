@@ -206,11 +206,9 @@ Image_ErrorCode OH_ImageNative_Release(OH_ImageNative* image)
     if (nullptr != image->imgNative) {
         image->imgNative->release();
         delete image->imgNative;
-        image->imgNative = nullptr;
     }
     IMAGE_LOGD("OH_ImageNative Release");
     delete image;
-    image = nullptr;
     return IMAGE_SUCCESS;
 }
 

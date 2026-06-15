@@ -19,6 +19,38 @@
 namespace OHOS {
 namespace MultimediaPlugin {
 const std::vector<std::string> META_DATA = {
+    R"({
+        "packageName":"LibJpegPlugin",
+        "version":"1.0.0.0",
+        "targetVersion":"1.0.0.0",
+        "libraryPath":"libjpegplugin.z.so",
+        "classes":[
+            {"className":"OHOS::ImagePlugin::JpegDecoder",
+             "services":[{"interfaceID":2, "serviceType":0}],
+             "priority":100,
+             "capabilities":[{"name":"encodeFormat", "type":"string", "value":"image/jpeg"}]
+            },
+            {"className":"OHOS::ImagePlugin::JpegEncoder",
+             "services":[{"interfaceID":3, "serviceType":0}],
+             "priority":100,
+             "capabilities":[{"name":"encodeFormat", "type":"string", "value":"image/jpeg"}]
+            }
+        ]
+    })",
+
+    R"({
+        "packageName":"LibPngPlugin",
+        "version":"1.0.0.0",
+        "targetVersion":"1.0.0.0",
+        "libraryPath":"libpngplugin.z.so",
+        "classes":[
+            {"className":"OHOS::ImagePlugin::PngDecoder",
+             "services":[{"interfaceID":2, "serviceType":0}],
+             "priority":100,
+             "capabilities":[{"name":"encodeFormat", "type":"string", "value":"image/png"}]
+            }
+        ]
+    })",
 
     R"({
         "packageName":"LibRawPlugin",
@@ -58,6 +90,39 @@ const std::vector<std::string> META_DATA = {
              "services":[{"interfaceID":2, "serviceType":0}],
              "priority":100,
              "capabilities":[{"name":"encodeFormat", "type":"string", "value":"image/svg+xml"}]
+            }
+        ]
+    })",
+
+    R"({
+        "packageName":"LibWebpPlugin",
+        "version":"1.0.0.0",
+        "targetVersion":"1.0.0.0",
+        "libraryPath":"libwebpplugin.z.so",
+        "classes":[
+            {"className":"OHOS::ImagePlugin::WebpDecoder",
+             "services":[{"interfaceID":2, "serviceType":0}],
+             "priority":100,
+             "capabilities":[{"name":"encodeFormat", "type":"string", "value":"image/webp"}]
+            },
+            {"className":"OHOS::ImagePlugin::WebpEncoder",
+             "services":[{"interfaceID":3, "serviceType":0}],
+             "priority":100,
+             "capabilities":[{"name":"encodeFormat", "type":"string", "value":"image/webp"}]
+            }
+        ]
+    })",
+
+    R"({
+        "packageName":"LibGifPlugin",
+        "version":"1.0.0.0",
+        "targetVersion":"1.0.0.0",
+        "libraryPath":"libgifplugin.z.so",
+        "classes":[
+            {"className":"OHOS::ImagePlugin::GifEncoder",
+             "services":[{"interfaceID":3, "serviceType":0}],
+             "priority":100,
+             "capabilities":[{"name":"encodeFormat", "type":"string", "value":"image/gif"}]
             }
         ]
     })",
