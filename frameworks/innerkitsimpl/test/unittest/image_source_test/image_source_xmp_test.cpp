@@ -38,7 +38,6 @@ static const std::string IMAGE_PNG_XMP_PATH = "/data/local/tmp/image/png_xmp.png
 static const std::string IMAGE_TIFF_XMP_PATH = "/data/local/tmp/image/tiff_xmp.tiff";
 
 static const uint32_t MAX_SOURCE_SIZE = 300 * 1024 * 1024;
-constexpr int32_t INVALID_FILE_DESCRIPTOR = -1;
 }
 
 class ImageSourceXMPTest : public testing::Test {
