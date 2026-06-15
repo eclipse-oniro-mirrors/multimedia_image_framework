@@ -796,7 +796,8 @@ uint32_t ExtEncoder::EncodeHeifByPixelmap(PixelMap* pixelmap, const PlEncodeOpti
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM) && \
     defined(HEIF_HW_ENCODE_ENABLE)
     sptr<SurfaceBuffer> surfaceBuffer;
-    bool needConvertToSurfaceBuffer = pixelmap->GetAllocatorType() != AllocatorType::DMA_ALLOC;
+    bool needConvertToSurfaceBuffer = pixelmap->GetAllocatorType() != AllocatorType::DMA_ALLOC ||
+        pixelmap->GetNoPaddingUsage();
     if (needConvertToSurfaceBuffer) {
         surfaceBuffer = ConvertToSurfaceBuffer(pixelmap);
         cond = surfaceBuffer == nullptr;
@@ -1272,7 +1273,7 @@ sptr<SurfaceBuffer> ExtEncoder::ConvertToSurfaceBuffer(PixelMap* pixelmap)
 sptr<SurfaceBuffer> ExtEncoder::ConvertPixelMapToDmaBuffer(std::shared_ptr<PixelMap> pixelmap)
 {
     sptr<SurfaceBuffer> surfaceBuffer;
-    if (pixelmap->GetAllocatorType() != AllocatorType::DMA_ALLOC) {
+    if (pixelmap->GetAllocatorType() != AllocatorType::DMA_ALLOC || pixelmap->GetNoPaddingUsage()) {
         surfaceBuffer = ConvertToSurfaceBuffer(pixelmap.get());
     } else {
         surfaceBuffer = sptr<SurfaceBuffer>(reinterpret_cast<SurfaceBuffer*>(pixelmap->GetFd()));
