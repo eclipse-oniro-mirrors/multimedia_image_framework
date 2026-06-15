@@ -173,7 +173,7 @@ private:
     bool CropHeifGainmapYPlane(const GainmapCropParam& param, int32_t cropWidth,
         int32_t cropHeight, int32_t& outRowBytes);
     bool CropHeifGainmapUVPlane(const GainmapCropParam& param, int32_t gainmapHeight,
-        int32_t cropHeight, int32_t rowBytes);
+        int32_t cropHeight, int32_t cropWidth, int32_t rowBytes);
     int32_t PixelFormatToHeifColorFormat(OHOS::Media::PixelFormat format);
     bool IsGainmapYuvOrP010Format(OHOS::Media::PixelFormat format);
     uint32_t AllocGainmapBuffer(DecodeContext &context, SkImageInfo &dstInfo, uint64_t byteCount);

@@ -3608,7 +3608,7 @@ bool ExtDecoder::CropHeifGainmapRegionPixels(GainmapCropParam& param, uint32_t g
     cond = !CropHeifGainmapYPlane(param, cropWidth, cropHeight, rowBytes);
     CHECK_ERROR_RETURN_RET(cond, false);
     if (param.isYuvOrP010) {
-        cond = !CropHeifGainmapUVPlane(param, gainmapHeight, cropHeight, rowBytes);
+        cond = !CropHeifGainmapUVPlane(param, gainmapHeight, cropHeight, cropWidth, rowBytes);
         CHECK_ERROR_RETURN_RET(cond, false);
     }
     return true;
@@ -3637,7 +3637,7 @@ bool ExtDecoder::CropHeifGainmapYPlane(const GainmapCropParam& param, int32_t cr
 }
 
 bool ExtDecoder::CropHeifGainmapUVPlane(const GainmapCropParam& param, int32_t gainmapHeight,
-    int32_t cropHeight, int32_t rowBytes)
+    int32_t cropHeight, int32_t cropWidth, int32_t rowBytes)
 {
     bool cond = ImageUtils::CheckMulOverflow(gainmapHeight, param.srcStride);
     CHECK_ERROR_RETURN_RET_LOG(cond, false, "gainmapHeight * rowStride overflow");
@@ -3646,9 +3646,10 @@ bool ExtDecoder::CropHeifGainmapUVPlane(const GainmapCropParam& param, int32_t g
     int32_t topDiv2MulStride;
     cond = __builtin_mul_overflow(topDiv2, param.srcStride, &topDiv2MulStride);
     CHECK_ERROR_RETURN_RET_LOG(cond, false, "(top/2) * rowStride overflow");
+    int32_t leftAligned = (param.left / 2) * 2;
     int32_t leftMulPixelBytes;
-    cond = __builtin_mul_overflow(param.left, param.pixelBytes, &leftMulPixelBytes);
-    CHECK_ERROR_RETURN_RET_LOG(cond, false, "left * pixelBytes overflow");
+    cond = __builtin_mul_overflow(leftAligned, param.pixelBytes, &leftMulPixelBytes);
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "leftAligned * pixelBytes overflow");
     int32_t heightPlusTop;
     cond = __builtin_add_overflow(heightMulStride, topDiv2MulStride, &heightPlusTop);
     CHECK_ERROR_RETURN_RET_LOG(cond, false, "uvSrcOffset row add overflow");
@@ -3658,9 +3659,12 @@ bool ExtDecoder::CropHeifGainmapUVPlane(const GainmapCropParam& param, int32_t g
     cond = ImageUtils::CheckMulOverflow(cropHeight, param.dstStride);
     CHECK_ERROR_RETURN_RET_LOG(cond, false, "cropHeight * regionStride overflow");
     int32_t uvDstOffset = cropHeight * param.dstStride;
+    int32_t uvRowBytes = ((cropWidth + 1) / 2) * 2 * param.pixelBytes;
+    cond = ImageUtils::CheckMulOverflow(((cropWidth + 1) / 2) * 2, param.pixelBytes);
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "uvRowBytes overflow");
     PlaneCopyInfo src = {param.srcBuffer, param.srcStride, uvSrcOffset};
     PlaneCopyInfo dst = {param.dstBuffer, param.dstStride, uvDstOffset};
-    cond = !CopyGainmapPlaneRows(src, dst, rowBytes, (cropHeight + 1) / 2);
+    cond = !CopyGainmapPlaneRows(src, dst, uvRowBytes, cropHeight / 2);
     CHECK_ERROR_RETURN_RET_LOG(cond, false, "gainmap UV plane crop failed");
     return true;
 }
@@ -3730,11 +3734,15 @@ bool ExtDecoder::DecodeHeifGainMap(DecodeContext& context)
     auto* dstBuffer = static_cast<uint8_t*>(context.pixelsBuffer.buffer);
     auto* sbBuffer = reinterpret_cast<SurfaceBuffer*>(context.pixelsBuffer.context);
     int32_t rowStride = sbBuffer->GetStride();
-    cond = rowStride <= 0;
-    CHECK_ERROR_RETURN_RET_LOG(cond, false, "gainmap stride invalid:%{public}d", rowStride);
+    if (rowStride <= 0) {
+        FreeContextBuffer(context.freeFunc, context.allocatorType, context.pixelsBuffer);
+        return false;
+    }
     decoder->setGainmapDstBuffer(dstBuffer, static_cast<size_t>(rowStride), context.pixelsBuffer.context);
-    cond = !decoder->decodeGainmap();
-    CHECK_ERROR_RETURN_RET_LOG(cond, false, "decode heif gainmap failed");
+    if (!decoder->decodeGainmap()) {
+        FreeContextBuffer(context.freeFunc, context.allocatorType, context.pixelsBuffer);
+        return false;
+    }
     if (IsHeifRegionDecode()) {
         DecodeContext gainmapRegionContext;
         if (HeifGainMapRegionCrop(gainmapRegionContext, rowStride, dstBuffer, width, height,
