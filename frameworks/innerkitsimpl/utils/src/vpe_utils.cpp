@@ -394,7 +394,7 @@ bool VpeUtils::GetColorSpaceInfo(const sptr<SurfaceBuffer>& buffer, CM_ColorSpac
     std::vector<uint8_t> colorSpaceInfoVec;
     auto ret = buffer->GetMetadata(ATTRKEY_COLORSPACE_INFO, colorSpaceInfoVec);
     if (ret != GSERROR_OK) {
-        IMAGE_LOGE("GetColorSpaceInfo GetMetadata failed, return value is %{public}d", ret);
+        IMAGE_LOGD("GetColorSpaceInfo GetMetadata failed, return value is %{public}d", ret);
         return false;
     }
     return MetadataManager::ConvertVecToMetadata(colorSpaceInfoVec, colorSpaceInfo) == GSERROR_OK;
