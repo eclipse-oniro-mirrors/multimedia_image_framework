@@ -647,7 +647,7 @@ Image_ErrorCode OH_ImageSourceNative_Release(OH_ImageSourceNative *source);
 /**
  * @brief Destroys an <b>OH_ImageSourceNative</b> object.
  *
- * @param source A pointer to the OH_ImageSourceNative pointer to destroy.
+ * @param source Double pointer to the OH_ImageSourceNative to destroy.
  * @return Image functions result code.
  *         {@link IMAGE_SUCCESS} if the operation is successful.
  *         {@link IMAGE_BAD_PARAMETER} if source is null or *source is null.
