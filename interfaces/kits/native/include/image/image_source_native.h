@@ -651,7 +651,7 @@ Image_ErrorCode OH_ImageSourceNative_Release(OH_ImageSourceNative *source);
  * @return Image functions result code.
  *         {@link IMAGE_SUCCESS} if the operation is successful.
  *         {@link IMAGE_BAD_PARAMETER} if source is null or *source is null.
- * @since 24
+ * @since 26
  */
 Image_ErrorCode OH_ImageSourceNative_Destroy(OH_ImageSourceNative **source);
 
