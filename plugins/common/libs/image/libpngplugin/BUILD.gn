@@ -1,0 +1,99 @@
+# Copyright (C) 2021 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import("//build/ohos.gni")
+import("//foundation/multimedia/image_framework/ide/image_decode_config.gni")
+
+ohos_shared_library("pngplugin") {
+  if (!use_clang_android && !use_clang_ios) {
+    sanitize = {
+      cfi = true
+      cfi_cross_dso = true
+      cfi_vcall_icall_only = true
+      debug = false
+    }
+  }
+  sources = [
+    "//foundation/multimedia/image_framework/plugins/common/libs/image/libpngplugin/src/nine_patch_listener.cpp",
+    "//foundation/multimedia/image_framework/plugins/common/libs/image/libpngplugin/src/plugin_export.cpp",
+    "//foundation/multimedia/image_framework/plugins/common/libs/image/libpngplugin/src/png_decoder.cpp",
+    "//foundation/multimedia/image_framework/plugins/common/libs/image/libpngplugin/src/png_ninepatch_res.cpp",
+  ]
+  include_dirs = [
+    "//foundation/multimedia/image_framework/plugins/manager/include",
+    "//foundation/multimedia/image_framework/plugins/manager/include/image",
+    "//foundation/multimedia/image_framework/plugins/manager/include/pluginbase",
+    "//foundation/multimedia/image_framework/plugins/common/libs/image/libpngplugin/include",
+    "//foundation/multimedia/image_framework/interfaces/innerkits/include",
+    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/include",
+  ]
+  deps = []
+  external_deps = [ "zlib:shared_libz" ]
+
+  if (use_mingw_win) {
+    defines = image_decode_windows_defines
+    include_dirs += [
+      "//foundation/multimedia/image_framework/mock/native/include",
+      "//third_party/libpng",
+    ]
+    deps += [
+      "//foundation/multimedia/image_framework/mock/native:log_mock_static",
+      "//foundation/multimedia/image_framework/plugins/manager:pluginmanager_static",
+      "//third_party/libpng:png_static",
+    ]
+
+    libs = [ "//prebuilts/mingw-w64/ohos/linux-x86_64/clang-mingw/x86_64-w64-mingw32/lib/libws2_32.a" ]
+  } else if (use_clang_mac) {
+    defines = image_decode_mac_defines
+    include_dirs += [
+      "//foundation/multimedia/image_framework/mock/native/include",
+      "//third_party/bounds_checking_function/include",
+    ]
+    deps += [
+      "//foundation/multimedia/image_framework/mock/native:log_mock_static",
+      "//foundation/multimedia/image_framework/plugins/manager:pluginmanager_static",
+      "//third_party/bounds_checking_function:libsec_static",
+      "//third_party/libpng:png_static",
+    ]
+  } else {
+    defines = [ "DUAL_ADAPTER" ]
+    DUAL_ADAPTER = true
+    deps += [
+      "${image_subsystem}/frameworks/innerkitsimpl/utils:image_utils",
+      "//foundation/multimedia/image_framework/plugins/manager:pluginmanager",
+    ]
+    if (DUAL_ADAPTER) {
+    } else {
+      deps += [ "//third_party/libpng:libpng" ]
+    }
+    external_deps += [
+      "c_utils:utils",
+      "graphic_2d:color_manager",
+      "graphic_surface:surface",
+      "hilog:libhilog",
+      "libpng:libpng",
+    ]
+  }
+  cflags = [ "-DIMAGE_COLORSPACE_FLAG" ]
+
+  innerapi_tags = [ "platformsdk" ]
+  part_name = "image_framework"
+  subsystem_name = "multimedia"
+}
+
+ohos_prebuilt_etc("pngpluginmetadata") {
+  source = "pngplugin.pluginmeta"
+  relative_install_dir = "multimediaplugin/image"
+  subsystem_name = "multimedia"
+  part_name = "image_framework"
+}

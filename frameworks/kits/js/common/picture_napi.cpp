@@ -521,7 +521,7 @@ napi_value PictureNapi::SetAuxiliaryPicture(napi_env env, napi_callback_info inf
 
     AuxiliaryPictureNapi* auxiliaryPictureNapi = nullptr;
     status = napi_unwrap(env, argValue[NUM_1], reinterpret_cast<void**>(&auxiliaryPictureNapi));
-    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, auxiliaryPictureNapi),
+    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, pictureNapi),
         ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER, "Fail to unwrap AuxiliaryPictureNapi!"),
         IMAGE_LOGE("Fail to unwrap AuxiliaryPictureNapi"));
 
