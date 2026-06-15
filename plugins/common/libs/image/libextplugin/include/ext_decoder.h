@@ -166,7 +166,7 @@ private:
     bool HeifGainMapRegionCrop(DecodeContext &gainmapRegionContext, int32_t rowStride, uint8_t* dstBuffer,
         uint32_t gainmapWidth, uint32_t gainmapHeight, OHOS::Media::PixelFormat gainmapPixelFormat);
     bool CropHeifGainmapRegionPixels(GainmapCropParam& param, uint32_t gainmapWidth,
-        uint32_t gainmapHeight, int32_t widthRatio, int32_t heightRatio);
+        uint32_t gainmapHeight, int32_t cropWidth, int32_t cropHeight);
     int32_t GetGainmapPixelBytes(OHOS::Media::PixelFormat format);
     bool CopyGainmapPlaneRows(const PlaneCopyInfo& src, const PlaneCopyInfo& dst,
         int32_t rowBytes, int32_t rowCount);

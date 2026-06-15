@@ -3578,27 +3578,25 @@ bool ExtDecoder::HeifGainMapRegionCrop(DecodeContext &gainmapRegionContext, int3
     GainmapCropParam param = {
         dstBuffer, rowStride, dstRegionBuffer, regionStride, 0, 0, pixelBytes, isYuvOrP010
     };
-    return CropHeifGainmapRegionPixels(param, gainmapWidth, gainmapHeight,
-        gainmapWidthRatio, gainmapHeightRatio);
+    param.left = desiredRegion_.left / heifGridRegionInfo_.tileWidth *
+        heifGridRegionInfo_.tileWidth / gainmapWidthRatio;
+    param.top = desiredRegion_.top / heifGridRegionInfo_.tileHeight *
+        heifGridRegionInfo_.tileHeight / gainmapHeightRatio;
+    int32_t cropWidth = (heifGridRegionInfo_.tileWidth * heifGridRegionInfo_.colCount -
+        heifGridRegionInfo_.widthPadding) / gainmapWidthRatio;
+    int32_t cropHeight = (heifGridRegionInfo_.tileHeight * heifGridRegionInfo_.rowCount -
+        heifGridRegionInfo_.heightPadding) / gainmapHeightRatio;
+    return CropHeifGainmapRegionPixels(param, gainmapWidth, gainmapHeight, cropWidth, cropHeight);
 #else
     return false;
 #endif
 }
 
 bool ExtDecoder::CropHeifGainmapRegionPixels(GainmapCropParam& param, uint32_t gainmapWidth,
-    uint32_t gainmapHeight, int32_t widthRatio, int32_t heightRatio)
+    uint32_t gainmapHeight, int32_t cropWidth, int32_t cropHeight)
 {
-    bool cond = (heifGridRegionInfo_.tileWidth <= 0 || heifGridRegionInfo_.tileHeight <= 0 ||
-        widthRatio <= 0 || heightRatio <= 0);
-    CHECK_ERROR_RETURN_RET_LOG(cond, false, "crop tile or ratio params invalid");
-    param.left = desiredRegion_.left / heifGridRegionInfo_.tileWidth *
-        heifGridRegionInfo_.tileWidth / widthRatio;
-    param.top = desiredRegion_.top / heifGridRegionInfo_.tileHeight *
-        heifGridRegionInfo_.tileHeight / heightRatio;
-    int32_t cropWidth = (heifGridRegionInfo_.tileWidth * heifGridRegionInfo_.colCount -
-        heifGridRegionInfo_.widthPadding) / widthRatio;
-    int32_t cropHeight = (heifGridRegionInfo_.tileHeight * heifGridRegionInfo_.rowCount -
-        heifGridRegionInfo_.heightPadding) / heightRatio;
+    bool cond = (heifGridRegionInfo_.tileWidth <= 0 || heifGridRegionInfo_.tileHeight <= 0);
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "crop tile params invalid");
     int32_t srcHeight = static_cast<int32_t>(gainmapHeight);
     cond = (param.top < 0 || param.left < 0 || cropWidth <= 0 || cropHeight <= 0 ||
         param.top > srcHeight - cropHeight ||
