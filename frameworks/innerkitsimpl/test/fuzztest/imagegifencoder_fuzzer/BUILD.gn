@@ -23,13 +23,15 @@ ohos_fuzztest("ImageGifEnCoderFuzzTest") {
     "./include",
     "$image_subsystem/interfaces/innerkits/include",
     "$image_subsystem/frameworks/innerkitsimpl/test/fuzztest/imagegifencoder_fuzzer/include",
+    "$image_subsystem/plugins/common/libs/image/libgifplugin/include",
   ]
 
-  sources = []
+  sources = [ "src/image_gif_encoder_fuzzer.cpp" ]
 
   deps = [
     "$image_subsystem/frameworks/innerkitsimpl/utils:image_utils",
     "$image_subsystem/interfaces/innerkits:image_native",
+    "$image_subsystem/plugins/common/libs/image/libgifplugin:gifplugin",
     "$image_subsystem/plugins/manager:pluginmanager_static",
   ]
 
