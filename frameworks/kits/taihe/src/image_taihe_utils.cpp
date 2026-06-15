@@ -196,6 +196,7 @@ array<uint8_t> ImageTaiheUtils::CreateTaiheArrayBuffer(uint8_t* src, size_t srcL
 uintptr_t ImageTaiheUtils::GetUndefinedPtr(ani_env *env)
 {
     ani_ref undefinedRef {};
+    CHECK_ERROR_RETURN_RET_LOG(env == nullptr, 0, "env is nullptr");
     CHECK_ERROR_RETURN_RET_LOG(env->GetUndefined(&undefinedRef) != ANI_OK, 0, "GetUndefined failed");
     ani_object undefinedObj = static_cast<ani_object>(undefinedRef);
     return reinterpret_cast<uintptr_t>(undefinedObj);
