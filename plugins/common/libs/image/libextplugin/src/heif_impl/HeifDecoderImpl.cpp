@@ -1049,6 +1049,7 @@ bool HeifDecoderImpl::SwDecodeAuxiliaryImage(std::shared_ptr<HeifImage> &gainmap
         output = sptr<SurfaceBuffer>(auxiliaryDstHwbuffer_);
     } else {
         output = SurfaceBuffer::Create();
+        CHECK_ERROR_RETURN_RET(!output, false);
         BufferRequestConfig config = {
             .width = width,
             .height = height,
