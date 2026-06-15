@@ -96,6 +96,23 @@ private:
         uint64_t byteCount;
     } FrameCacheInfo;
 
+    typedef struct PlaneCopyInfo {
+        uint8_t* buffer;
+        int32_t stride;
+        int32_t offset;
+    } PlaneCopyInfo;
+
+    typedef struct GainmapCropParam {
+        uint8_t* srcBuffer;
+        int32_t srcStride;
+        uint8_t* dstBuffer;
+        int32_t dstStride;
+        int32_t top;
+        int32_t left;
+        int32_t pixelBytes;
+        bool isYuvOrP010;
+    } GainmapCropParam;
+
     bool CheckCodec();
     bool CheckIndexValied(uint32_t index);
     bool DecodeHeader();
@@ -212,23 +229,6 @@ private:
     uint32_t heifParseErr_ = 0;
     std::shared_ptr<Media::PixelMap> reusePixelmap_ = nullptr;
     OHOS::Media::Rect desiredRegion_ = {0, 0, 0, 0};
-    typedef struct PlaneCopyInfo {
-        uint8_t* buffer;
-        int32_t stride;
-        int32_t offset;
-    } PlaneCopyInfo;
-
-    typedef struct GainmapCropParam {
-        uint8_t* srcBuffer;
-        int32_t srcStride;
-        uint8_t* dstBuffer;
-        int32_t dstStride;
-        int32_t top;
-        int32_t left;
-        int32_t pixelBytes;
-        bool isYuvOrP010;
-    } GainmapCropParam;
-
     typedef struct HeifGridRegionInfo {
         int32_t colCount;
         int32_t rowCount;
