@@ -1556,7 +1556,7 @@ uint32_t PixelMap::SetRowDataSizeForImageInfo(ImageInfo info)
 uint32_t PixelMap::SetImageInfo(ImageInfo &info, bool isReused)
 {
     if (info.size.width <= 0 || info.size.height <= 0) {
-        IMAGE_LOGE("pixel map width or height invalid.");
+        IMAGE_LOGE("PixelMap width (%{public}d) or height (%{public}d) invalid.", info.size.width, info.size.height);
         return ERR_IMAGE_DATA_ABNORMAL;
     }
 
@@ -1565,20 +1565,20 @@ uint32_t PixelMap::SetImageInfo(ImageInfo &info, bool isReused)
     }
     if (pixelBytes_ <= 0) {
         ResetPixelMap();
-        IMAGE_LOGE("pixel map bytes is invalid.");
+        IMAGE_LOGE("PixelMap pixel bytes (%{public}d) invalid.", pixelBytes_);
         return ERR_IMAGE_DATA_ABNORMAL;
     }
 
     uint32_t ret = SetRowDataSizeForImageInfo(info);
     if (ret != SUCCESS) {
-        IMAGE_LOGE("pixel map set rowDataSize error.");
+        IMAGE_LOGE("PixelMap set rowDataSize error (%{public}d).", ret);
         return ret;
     }
 
     int64_t totalSize = static_cast<int64_t>(std::max(rowDataSize_, GetRowStride())) * info.size.height;
     if (totalSize > (allocatorType_ == AllocatorType::HEAP_ALLOC ? PIXEL_MAP_MAX_RAM_SIZE : INT32_MAX)) {
         ResetPixelMap();
-        IMAGE_LOGE("pixel map size (byte count) out of range.");
+        IMAGE_LOGE("PixelMap total size (%{public}lld) out of range.", static_cast<long long>(totalSize));
         return ERR_IMAGE_TOO_LARGE;
     }
 
