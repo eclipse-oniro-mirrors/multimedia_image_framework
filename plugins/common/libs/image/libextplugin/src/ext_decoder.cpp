@@ -3593,59 +3593,34 @@ uint32_t ExtDecoder::AllocGainmapBuffer(DecodeContext& context, SkImageInfo& dst
 #endif
 }
 
-#ifdef HEIF_HW_DECODE_ENABLE
-bool ExtDecoder::InitHeifGainmapDecodeParams(HeifDecoderImpl*& decoder, uint32_t& dstWidth, uint32_t& dstHeight,
-    uint32_t& origWidth, uint32_t& origHeight)
+bool ExtDecoder::DecodeHeifGainMap(DecodeContext& context)
 {
+#ifdef HEIF_HW_DECODE_ENABLE
     bool cond = codec_ == nullptr || codec_->getEncodedFormat() != SkEncodedImageFormat::kHEIF;
     CHECK_ERROR_RETURN_RET_LOG(cond, false, "decode heif gainmap, codec error");
-    decoder = reinterpret_cast<HeifDecoderImpl*>(codec_->getHeifContext());
+    auto decoder = reinterpret_cast<HeifDecoderImpl*>(codec_->getHeifContext());
     cond = decoder == nullptr;
     CHECK_ERROR_RETURN_RET_LOG(cond, false, "decode heif gainmap, decoder error");
     HeifFrameInfo gainmapInfo;
     decoder->getGainmapInfo(&gainmapInfo);
-    origWidth = gainmapInfo.mWidth;
-    origHeight = gainmapInfo.mHeight;
-    cond = origWidth > INT_MAX || origHeight > INT_MAX;
+    uint32_t width = gainmapInfo.mWidth;
+    uint32_t height = gainmapInfo.mHeight;
+    cond = width > INT_MAX || height > INT_MAX;
     CHECK_INFO_RETURN_RET_LOG(cond, false, "DecodeHeifGainmap size exceeds the maximum value");
-    dstWidth = origWidth / sampleSize_;
-    dstHeight = origHeight / sampleSize_;
+    uint32_t dstGainmapWidth = width / sampleSize_;
+    uint32_t dstGainmapHeight = height / sampleSize_;
     IMAGE_LOGD("DecodeHeifGainmap size:%{public}d-%{public}d, dst:%{public}d-%{public}d",
-        origWidth, origHeight, dstWidth, dstHeight);
-    return true;
-}
-
-bool ExtDecoder::PrepareHeifGainmapBuffer(DecodeContext& context, HeifDecoderImpl* decoder,
-    uint32_t dstWidth, uint32_t dstHeight)
-{
-    SkImageInfo dstInfo = SkImageInfo::Make(static_cast<int>(dstWidth), static_cast<int>(dstHeight),
+        width, height, dstGainmapWidth, dstGainmapHeight);
+    SkImageInfo dstInfo = SkImageInfo::Make(static_cast<int>(dstGainmapWidth), static_cast<int>(dstGainmapHeight),
         dstInfo_.colorType(), dstInfo_.alphaType(), dstInfo_.refColorSpace());
     uint64_t byteCount = static_cast<uint64_t>(dstInfo.computeMinByteSize());
-    context.info.size.width = static_cast<int32_t>(dstWidth);
-    context.info.size.height = static_cast<int32_t>(dstHeight);
-    bool cond = AllocGainmapBuffer(context, dstInfo, byteCount) != SUCCESS;
+    context.info.size.width = static_cast<int32_t>(dstGainmapWidth);
+    context.info.size.height = static_cast<int32_t>(dstGainmapHeight);
+    cond = AllocGainmapBuffer(context, dstInfo, byteCount) != SUCCESS;
     CHECK_ERROR_RETURN_RET(cond, false);
     if (IsGainmapYuvOrP010Format(context.info.pixelFormat)) {
         decoder->setOutputColor(PixelFormatToHeifColorFormat(context.info.pixelFormat));
     }
-    return true;
-}
-#endif
-
-bool ExtDecoder::DecodeHeifGainMap(DecodeContext& context)
-{
-#ifdef HEIF_HW_DECODE_ENABLE
-    HeifDecoderImpl* decoder = nullptr;
-    uint32_t dstWidth = 0;
-    uint32_t dstHeight = 0;
-    uint32_t origWidth = 0;
-    uint32_t origHeight = 0;
-    bool cond = !InitHeifGainmapDecodeParams(decoder, dstWidth, dstHeight, origWidth, origHeight);
-    CHECK_ERROR_RETURN_RET(cond, false);
-
-    cond = !PrepareHeifGainmapBuffer(context, decoder, dstWidth, dstHeight);
-    CHECK_ERROR_RETURN_RET(cond, false);
-
     auto* dstBuffer = static_cast<uint8_t*>(context.pixelsBuffer.buffer);
     auto* sbBuffer = reinterpret_cast<SurfaceBuffer*>(context.pixelsBuffer.context);
     int32_t rowStride = sbBuffer->GetStride();
@@ -3660,7 +3635,7 @@ bool ExtDecoder::DecodeHeifGainMap(DecodeContext& context)
     }
     if (IsHeifRegionDecode()) {
         DecodeContext gainmapRegionContext;
-        if (HeifGainMapRegionCrop(gainmapRegionContext, rowStride, dstBuffer, origWidth, origHeight)) {
+        if (HeifGainMapRegionCrop(gainmapRegionContext, rowStride, dstBuffer, width, height)) {
             context = gainmapRegionContext;
         } else {
             FreeContextBuffer(context.freeFunc, context.allocatorType, context.pixelsBuffer);

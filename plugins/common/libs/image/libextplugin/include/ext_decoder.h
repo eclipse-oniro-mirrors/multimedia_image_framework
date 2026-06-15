@@ -30,7 +30,6 @@
 #include "plugin_class_base.h"
 #include "jpeg_yuv_decoder/jpeg_decoder_yuv.h"
 #include "heif_type.h"
-#include "heif_impl/HeifDecoder.h"
 
 namespace OHOS {
     struct BufferRequestConfig;
@@ -38,7 +37,6 @@ namespace OHOS {
 
 namespace OHOS {
 namespace ImagePlugin {
-class HeifDecoderImpl;
 class ExtDecoder : public AbsImageDecoder, public OHOS::MultimediaPlugin::PluginClassBase, NoCopyable {
 public:
     ExtDecoder();
@@ -170,10 +168,6 @@ private:
     SkHeifColorFormat PixelFormatToHeifColorFormat(OHOS::Media::PixelFormat format);
     bool IsGainmapYuvOrP010Format(OHOS::Media::PixelFormat format);
     uint32_t AllocGainmapBuffer(DecodeContext &context, SkImageInfo &dstInfo, uint64_t byteCount);
-    bool InitHeifGainmapDecodeParams(HeifDecoderImpl*& decoder, uint32_t& dstWidth, uint32_t& dstHeight,
-        uint32_t& origWidth, uint32_t& origHeight);
-    bool PrepareHeifGainmapBuffer(DecodeContext& context, HeifDecoderImpl* decoder,
-        uint32_t dstWidth, uint32_t dstHeight);
     bool IsRegionDecodeSupported(uint32_t index, const PixelDecodeOptions &opts, PlImageInfo &info);
     uint32_t DoRegionDecode(DecodeContext &context);
     SkCodec::Result DoSampleDecode(DecodeContext &context);
