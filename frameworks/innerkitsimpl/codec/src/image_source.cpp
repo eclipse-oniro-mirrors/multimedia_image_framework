@@ -2617,13 +2617,13 @@ uint32_t ImageSource::FillPngMetadataValue(const std::string &key, const ImageMe
         while (pos < len) {
             size_t commaPos = strValue.find(',', pos);
             commaPos = (commaPos == std::string::npos) ? len : commaPos;
-            std::string token = strValue.substr(pos, commaPos - pos);
+            std::string str = strValue.substr(pos, commaPos - pos);
             char* endPtr = nullptr;
-            double dblValue = strtod(token.c_str(), &endPtr);
-            if (endPtr != token.c_str() && *endPtr == '\0') {
+            double dblValue = strtod(str.c_str(), &endPtr);
+            if (endPtr != str.c_str() && *endPtr == '\0') {
                 value.doubleArrayValue.emplace_back(dblValue);
             } else {
-                IMAGE_LOGE("Failed to convert string to double: %{public}s", token.c_str());
+                IMAGE_LOGE("Failed to convert string to double: %{public}s", str.c_str());
             }
             pos = commaPos + 1;
         }

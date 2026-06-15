@@ -530,7 +530,7 @@ bool AvifDecoderImpl::IsMemoryExceed(uint32_t groupNum)
         "%{public}s av_image_get_buffer_size failed.", __func__);
     CHECK_DEBUG_RETURN_RET_LOG(ImageUtils::CheckMulOverflow<uint64_t>(groupNum, perPicMemorySize), true,
         "%{public}s group memory size is exceed.", __func__);
-    groupMemorySize = groupNum * perPicMemorySize;
+    groupMemorySize = groupNum * static_cast<uint64_t>(perPicMemorySize);
     return ImageUtils::HasOverflowed64(groupMemorySize, dstMemorySize_);
 }
 
