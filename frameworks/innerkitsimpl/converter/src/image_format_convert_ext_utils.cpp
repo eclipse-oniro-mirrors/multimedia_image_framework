@@ -208,8 +208,9 @@ static bool I420ToRGB(I420Info &i420, DestConvertParam &destParam, [[maybe_unuse
                 destParam.width, destParam.height);
             break;
         case PixelFormat::BGRA_8888:
-            converter.I420ToARGB(i420.I420Y, i420.yStride, i420.I420U, i420.uStride, i420.I420V, i420.vStride,
-                destParam.slice[0], destParam.stride[0], destParam.width, destParam.height);
+            converter.I420ToARGBMatrix(i420.I420Y, i420.yStride, i420.I420U, i420.uStride, i420.I420V, i420.vStride,
+                destParam.slice[0], destParam.stride[0], OHOS::OpenSourceLibyuv::YuvConstants::YuvJPEG,
+                destParam.width, destParam.height);
             break;
         case PixelFormat::RGB_888:
             converter.I420ToRAW(i420.I420Y, i420.yStride, i420.I420U, i420.uStride, i420.I420V, i420.vStride,
@@ -1230,7 +1231,6 @@ bool ImageFormatConvertExtUtils::NV21ToRGBA(const uint8_t *srcBuffer, const YUVD
                                             DestConvertInfo &destInfo,
                                             [[maybe_unused]]ColorSpace colorSpace)
 {
-    destInfo.format = PixelFormat::RGBA_8888;
     return YuvTo420ToRGB(srcBuffer, yDInfo, PixelFormat::NV21, destInfo, colorSpace);
 }
 
@@ -1238,7 +1238,6 @@ bool ImageFormatConvertExtUtils::NV12ToRGBA(const uint8_t *srcBuffer, const YUVD
                                             DestConvertInfo &destInfo,
                                             [[maybe_unused]]ColorSpace colorSpace)
 {
-    destInfo.format = PixelFormat::RGBA_8888;
     return YuvTo420ToRGB(srcBuffer, yDInfo, PixelFormat::NV12, destInfo, colorSpace);
 }
 
@@ -1246,21 +1245,20 @@ bool ImageFormatConvertExtUtils::NV21ToBGRA(const uint8_t *srcBuffer, const YUVD
                                             DestConvertInfo &destInfo,
                                             [[maybe_unused]]ColorSpace colorSpace)
 {
-    return YuvToRGB(srcBuffer, yDInfo, PixelFormat::NV21, destInfo, PixelFormat::BGRA_8888);
+    return YuvTo420ToRGB(srcBuffer, yDInfo, PixelFormat::NV21, destInfo, colorSpace);
 }
 
 bool ImageFormatConvertExtUtils::NV12ToBGRA(const uint8_t *srcBuffer, const YUVDataInfo &yDInfo,
                                             DestConvertInfo &destInfo,
                                             [[maybe_unused]]ColorSpace colorSpace)
 {
-    return YuvToRGB(srcBuffer, yDInfo, PixelFormat::NV12, destInfo, PixelFormat::BGRA_8888);
+    return YuvTo420ToRGB(srcBuffer, yDInfo, PixelFormat::NV12, destInfo, colorSpace);
 }
 
 bool ImageFormatConvertExtUtils::NV21ToRGB565(const uint8_t *srcBuffer, const YUVDataInfo &yDInfo,
                                               DestConvertInfo &destInfo,
                                               [[maybe_unused]]ColorSpace colorSpace)
 {
-    destInfo.format = PixelFormat::RGB_565;
     return YuvTo420ToRGB(srcBuffer, yDInfo, PixelFormat::NV21, destInfo, colorSpace);
 }
 
@@ -1268,7 +1266,6 @@ bool ImageFormatConvertExtUtils::NV12ToRGB565(const uint8_t *srcBuffer, const YU
                                               DestConvertInfo &destInfo,
                                               [[maybe_unused]]ColorSpace colorSpace)
 {
-    destInfo.format = PixelFormat::RGB_565;
     return YuvTo420ToRGB(srcBuffer, yDInfo, PixelFormat::NV12, destInfo, colorSpace);
 }
 } // namespace Media
