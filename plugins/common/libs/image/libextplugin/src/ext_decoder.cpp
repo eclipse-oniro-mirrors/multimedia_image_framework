@@ -3588,8 +3588,7 @@ bool ExtDecoder::HeifGainMapRegionCrop(DecodeContext &gainmapRegionContext,
     int32_t pixelBytes = GetGainmapPixelBytes(gainmapPixelFormat);
     bool isYuvOrP010 = IsGainmapYuvOrP010Format(gainmapPixelFormat);
     GainmapCropParam param = {
-        dstBuffer, rowStride, dstRegionBuffer, regionStride, 0, 0, pixelBytes, isYuvOrP010
-    };
+        dstBuffer, rowStride, dstRegionBuffer, regionStride, 0, 0, pixelBytes, isYuvOrP010 };
     param.left = desiredRegion_.left / heifGridRegionInfo_.tileWidth *
         heifGridRegionInfo_.tileWidth / gainmapWidthRatio;
     param.top = desiredRegion_.top / heifGridRegionInfo_.tileHeight *
