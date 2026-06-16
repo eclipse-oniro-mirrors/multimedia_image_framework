@@ -113,6 +113,14 @@ private:
         bool isYuvOrP010;
     } GainmapCropParam;
 
+    typedef struct GainmapRegionCropInput {
+        int32_t rowStride;
+        uint8_t* srcBuffer;
+        uint32_t gainmapWidth;
+        uint32_t gainmapHeight;
+        OHOS::Media::PixelFormat pixelFormat;
+    } GainmapRegionCropInput;
+
     bool CheckCodec();
     bool CheckIndexValied(uint32_t index);
     bool DecodeHeader();
@@ -180,8 +188,8 @@ private:
     void UpdateHeifRegionDstInfo(DecodeContext &context);
     void UpdateHeifSKInfo(DecodeContext &context, uint64_t &rowStride);
     bool IsHeifRegionDecode();
-    bool HeifGainMapRegionCrop(DecodeContext &gainmapRegionContext, int32_t rowStride, uint8_t* dstBuffer,
-        uint32_t gainmapWidth, uint32_t gainmapHeight, OHOS::Media::PixelFormat gainmapPixelFormat);
+    bool HeifGainMapRegionCrop(DecodeContext &gainmapRegionContext,
+        const GainmapRegionCropInput& input);
     bool CropHeifGainmapRegionPixels(GainmapCropParam& param, uint32_t gainmapWidth,
         uint32_t gainmapHeight, int32_t cropWidth, int32_t cropHeight);
     int32_t GetGainmapPixelBytes(OHOS::Media::PixelFormat format);
