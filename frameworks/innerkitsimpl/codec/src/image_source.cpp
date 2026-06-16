@@ -5191,6 +5191,7 @@ bool ImageSource::ApplyGainMap(ImageHdrType hdrType, DecodeContext& baseCtx, Dec
     HdrMetadata metadata;
     if (format == IMAGE_HEIF_FORMAT || format == IMAGE_HEIC_FORMAT) {
         ImageTrace imageTrace("ImageSource decode heif gainmap hdrType:%d, scale:%d", hdrType, scale);
+        gainMapCtx.info.pixelFormat = baseCtx.info.pixelFormat;
         bool cond = !mainDecoder_->DecodeHeifGainMap(gainMapCtx);
         CHECK_INFO_RETURN_RET_LOG(cond, false, "[ImageSource] heif get gainmap failed");
         metadata = mainDecoder_->GetHdrMetadata(hdrType);
