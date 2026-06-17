@@ -146,6 +146,7 @@ static const std::string DNG_FORMAT = "image/x-adobe-dng";
 static const uint32_t FIRST_FRAME = 0;
 static const int INT_ZERO = 0;
 static const size_t SIZE_ZERO = 0;
+static const uint8_t UINT_255 = 255;
 static const uint8_t NUM_0 = 0;
 static const uint8_t NUM_1 = 1;
 static const uint8_t NUM_2 = 2;
@@ -784,7 +785,10 @@ static void NotifyDecodeEvent(set<DecodeListener *> &listeners,
 
 bool IsWidthAligned(const int32_t &width)
 {
-    return ((width * NUM_4) & INT_255) == 0;
+    if (width < 0) {
+        return false;
+    }
+    return ((static_cast<uint32_t>(width) * NUM_4) & UINT_255) == 0;
 }
 
 const std::unordered_map<std::string, int32_t> formatThresholds{
