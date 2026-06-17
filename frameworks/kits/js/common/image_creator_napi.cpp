@@ -695,7 +695,7 @@ static bool JsQueueArgs(napi_env env, size_t argc, napi_value* argv,
     return true;
 }
 
-void ImageCreatorNapi::JsQueueImageSendEvent(napi_env env, ImageCreatorAsyncContext* context,
+bool ImageCreatorNapi::JsQueueImageSendEvent(napi_env env, ImageCreatorAsyncContext* context,
                                              napi_event_priority prio, const char* taskName)
 {
     auto task = [env, context]() {
@@ -723,7 +723,9 @@ void ImageCreatorNapi::JsQueueImageSendEvent(napi_env env, ImageCreatorAsyncCont
     };
     if (napi_status::napi_ok != napi_send_event(env, task, prio, taskName)) {
         IMAGE_LOGE("JsQueueImageSendEvent: failed to SendEvent!");
+        return false;
     }
+    return true;
 }
 
 napi_value ImageCreatorNapi::JsQueueImage(napi_env env, napi_callback_info info)
@@ -756,9 +758,9 @@ napi_value ImageCreatorNapi::JsQueueImage(napi_env env, napi_callback_info info)
         napi_create_promise(env, &(context->deferred), &result);
     }
 
-    JsQueueImageSendEvent(env, context.get(), napi_eprio_high, "ImageCreator.queueImage");
-    context.release();
-
+    if (JsQueueImageSendEvent(env, context.get(), napi_eprio_high, "ImageCreator.queueImage")) {
+        context.release();
+    }
     IMAGE_FUNCTION_OUT();
     return result;
 }
