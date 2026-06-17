@@ -18,6 +18,8 @@
 #include <sstream>
 #include <thread>
 #include "securec.h"
+#include "surface_type.h"
+#include "surface_buffer.h"
 #include "color_utils.h"
 #include "image_log.h"
 #include "image_trace.h"
