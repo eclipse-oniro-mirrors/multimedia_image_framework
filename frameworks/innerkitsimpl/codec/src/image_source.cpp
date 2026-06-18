@@ -146,6 +146,7 @@ static const std::string DNG_FORMAT = "image/x-adobe-dng";
 static const uint32_t FIRST_FRAME = 0;
 static const int INT_ZERO = 0;
 static const size_t SIZE_ZERO = 0;
+static const uint8_t UINT_255 = 255;
 static const uint8_t NUM_0 = 0;
 static const uint8_t NUM_1 = 1;
 static const uint8_t NUM_2 = 2;
@@ -178,6 +179,9 @@ constexpr size_t ASTC_TLV_SIZE = 10; // 10 is tlv size, colorspace size
 constexpr uint8_t ASTC_OPTION_QUALITY = 85;
 static constexpr uint32_t SINGLE_FRAME_SIZE = 1;
 static constexpr uint8_t ISO_USE_BASE_COLOR = 0x01;
+constexpr int32_t JPEG_DMA_SIZE = 128 * 128;
+constexpr int32_t PNG_DMA_SIZE = 256 * 256;
+constexpr int32_t HEIF_DMA_SIZE = 128 * 128;
 constexpr int32_t DEFAULT_DMA_SIZE = 512 * 512;
 constexpr int32_t DMA_ALLOC = 1;
 constexpr int32_t SHARE_MEMORY_ALLOC = 2;
@@ -779,6 +783,38 @@ static void NotifyDecodeEvent(set<DecodeListener *> &listeners,
     }
 }
 
+bool IsWidthAligned(const int32_t &width)
+{
+    if (width < 0) {
+        return false;
+    }
+    return ((static_cast<uint32_t>(width) * NUM_4) & UINT_255) == 0;
+}
+
+const std::unordered_map<std::string, int32_t> formatThresholds{
+    {IMAGE_JPEG_FORMAT, JPEG_DMA_SIZE},
+    {IMAGE_HEIF_FORMAT, HEIF_DMA_SIZE},
+    {IMAGE_HEIC_FORMAT, HEIF_DMA_SIZE},
+    {IMAGE_PNG_FORMAT, PNG_DMA_SIZE},
+    {IMAGE_WEBP_FORMAT, DEFAULT_DMA_SIZE},
+    {IMAGE_GIF_FORMAT, DEFAULT_DMA_SIZE},
+    {IMAGE_BMP_FORMAT, DEFAULT_DMA_SIZE}
+};
+
+static bool IsSizeSupportDma(const ImageInfo& info)
+{
+    // Check for overflow risk
+    if (info.size.width > 0 && info.size.height > INT_MAX / info.size.width) {
+        return false;
+    }
+    const int64_t area = info.size.width * info.size.height;
+    auto it = formatThresholds.find(info.encodedFormat);
+    if (it != formatThresholds.end()) {
+        return area >= it->second;
+    }
+    return area >= DEFAULT_DMA_SIZE && IsWidthAligned(info.size.width);
+}
+
 bool ImageSource::IsDecodeHdrImage(const DecodeOptions &opts)
 {
     ParseHdrType();
@@ -804,7 +840,7 @@ AllocatorType ImageSource::ConvertAutoAllocatorType(const DecodeOptions &opts)
     if (info.encodedFormat == IMAGE_SVG_FORMAT) {
         return AllocatorType::SHARE_MEM_ALLOC;
     }
-    if (ImageUtils::IsSizeSupportDma(info.size)) {
+    if (IsSizeSupportDma(info)) {
         return AllocatorType::DMA_ALLOC;
     }
     return AllocatorType::SHARE_MEM_ALLOC;
