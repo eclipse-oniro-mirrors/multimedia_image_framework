@@ -1087,14 +1087,7 @@ bool HeifDecoderImpl::DoSwDecodeAuxiliaryImage(std::shared_ptr<HeifImage> &gainm
     PixelFormat gainmapDstFmt = outPixelFormat_;
     uint32_t gainmapRowStride = isGainmapDecode_ ?
         static_cast<uint32_t>(gainmapDstRowStride_) : static_cast<uint32_t>(auxiliaryDstRowStride_);
-    return BuildAndDecodeAuxiliaryParam(gainmapImage, gainmapgridInfo, output, auxiliaryDstMemory,
-        gainmapSrcFmt, gainmapDstFmt, gainmapRowStride);
-}
 
-bool HeifDecoderImpl::BuildAndDecodeAuxiliaryParam(std::shared_ptr<HeifImage> &gainmapImage, GridInfo &gainmapgridInfo,
-    sptr<SurfaceBuffer> &output, uint8_t *auxiliaryDstMemory,
-    Media::PixelFormat gainmapSrcFmt, Media::PixelFormat gainmapDstFmt, uint32_t gainmapRowStride)
-{
     uint32_t gainmapStride;
     uint32_t gainmapMemorySize;
     void *nativeBuffer = nullptr;
