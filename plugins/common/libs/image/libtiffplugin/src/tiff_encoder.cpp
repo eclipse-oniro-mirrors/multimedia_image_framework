@@ -79,6 +79,17 @@ uint64_t TiffEncoder::GetDefaultRowBytes(uint32_t width, uint64_t bytesPerRow)
     return result;
 }
 
+uint64_t TiffEncoder::GetMinRowBytes(uint32_t width, PixelFormat format)
+{
+    TiffEncodeParam param = GetEncodeParam(format);
+    CHECK_ERROR_RETURN_RET(param.bitsPerSample == 0 || param.samplesPerPixel == 0, 0);
+    uint64_t bitsPerPixel = static_cast<uint64_t>(param.bitsPerSample) * param.samplesPerPixel;
+    uint64_t maxBits = std::numeric_limits<uint64_t>::max() - (BITS_PER_BYTE - 1);
+    CHECK_ERROR_RETURN_RET(static_cast<uint64_t>(width) > maxBits / bitsPerPixel, 0);
+    uint64_t bitsPerRow = static_cast<uint64_t>(width) * bitsPerPixel;
+    return (bitsPerRow + BITS_PER_BYTE - 1) / BITS_PER_BYTE;
+}
+
 tmsize_t TiffEncoder::ReadProc(thandle_t handle, void *data, tmsize_t size)
 {
     // Encoder does not read data from output stream, return 0
@@ -249,7 +260,7 @@ uint32_t TiffEncoder::EncodeBinaryImageToTiff(const PixelBufferInfo* bufferInfo,
     return SUCCESS;
 }
 
-uint32_t TiffEncoder::ValidatePixelBufferInfo(const PixelBufferInfo &bufferInfo)
+uint32_t TiffEncoder::ValidatePixelBufferInfo(const PixelBufferInfo &bufferInfo, PixelFormat format)
 {
     if (bufferInfo.data == nullptr) {
         IMAGE_LOGE("[TiffEncoder] ValidatePixelBufferInfo failed, data is null");
@@ -263,6 +274,11 @@ uint32_t TiffEncoder::ValidatePixelBufferInfo(const PixelBufferInfo &bufferInfo)
     }
 
     uint64_t rowBytes = GetDefaultRowBytes(bufferInfo.width, bufferInfo.bytesPerRow);
+    uint64_t minRowBytes = GetMinRowBytes(bufferInfo.width, format);
+    CHECK_ERROR_RETURN_RET_LOG(minRowBytes == 0 || rowBytes < minRowBytes,
+        ERR_IMAGE_INVALID_PARAMETER,
+        "[TiffEncoder] ValidatePixelBufferInfo failed, bytesPerRow too small: "
+        "%{public}" PRIu64 " < required %{public}" PRIu64, rowBytes, minRowBytes);
     // Check for overflow before multiplication
     if (rowBytes > std::numeric_limits<uint64_t>::max() / bufferInfo.height) {
         IMAGE_LOGE("[TiffEncoder] ValidatePixelBufferInfo failed, size calculation overflow: "
@@ -283,7 +299,7 @@ uint32_t TiffEncoder::ValidatePixelBufferInfo(const PixelBufferInfo &bufferInfo)
 
 uint32_t TiffEncoder::PrepareEncoding(const PixelBufferInfo &bufferInfo, PixelFormat format)
 {
-    uint32_t ret = ValidatePixelBufferInfo(bufferInfo);
+    uint32_t ret = ValidatePixelBufferInfo(bufferInfo, format);
     if (ret != SUCCESS) {
         return ret;
     }

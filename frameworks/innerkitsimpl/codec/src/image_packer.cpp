@@ -53,6 +53,7 @@ using namespace MultimediaPlugin;
 static constexpr uint8_t QUALITY_MAX = 100;
 const static std::string EXTENDED_ENCODER = "image/jpeg,image/png,image/webp";
 static constexpr size_t SIZE_ZERO = 0;
+static constexpr uint8_t BITS_PER_BYTE = 8;
 
 PluginServer &ImagePacker::pluginServer_ = ImageUtils::GetPluginServer();
 
@@ -427,26 +428,30 @@ uint32_t ImagePacker::DoEncodingFunc(std::function<uint32_t(ImagePlugin::AbsImag
 #if defined(SUPPORT_LIBTIFF)
 uint32_t ImagePacker::ValidateBinaryImageBufferInfo(const PixelBufferInfo &bufferInfo, const char *funcName)
 {
-    if (bufferInfo.data == nullptr || bufferInfo.dataSize == 0) {
-        IMAGE_LOGE("[ImagePacker] %{public}s failed, invalid buffer data", funcName);
-        return ERR_IMAGE_INVALID_PARAMETER;
-    }
+    bool cond = (bufferInfo.data == nullptr) || (bufferInfo.dataSize == 0);
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER,
+        "[ImagePacker] %{public}s failed, invalid buffer data", funcName);
+    cond = (bufferInfo.width == 0) || (bufferInfo.height == 0);
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER,
+        "[ImagePacker] %{public}s failed, invalid dimensions: width or height cannot be zero", funcName);
 
-    if (bufferInfo.width == 0 || bufferInfo.height == 0) {
-        IMAGE_LOGE("[ImagePacker] %{public}s failed, invalid dimensions: width or height cannot be zero", funcName);
-        return ERR_IMAGE_INVALID_PARAMETER;
+    // Get and validate rowBytes for Y1 format (1 bit per pixel, packed into bytes)
+    uint64_t minRowBytes = (static_cast<uint64_t>(bufferInfo.width) + BITS_PER_BYTE - 1) / BITS_PER_BYTE;
+    uint64_t rowBytes = minRowBytes;
+    if (bufferInfo.bytesPerRow > 0) {
+        cond = bufferInfo.bytesPerRow < minRowBytes;
+        CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER,
+            "[ImagePacker] %{public}s failed, bytesPerRow too small: %{public}u < required %{public}llu",
+            funcName, bufferInfo.bytesPerRow, static_cast<unsigned long long>(minRowBytes));
+        rowBytes = bufferInfo.bytesPerRow;
     }
-
-    // Validate data size for Y1 format (1 bit per pixel, packed into bytes)
-    uint32_t rowBytes = (bufferInfo.bytesPerRow > 0) ? bufferInfo.bytesPerRow :
-                        (bufferInfo.width + 7) / 8;
     // Check for overflow when calculating required size
-    if (static_cast<uint64_t>(rowBytes) > std::numeric_limits<uint64_t>::max() / bufferInfo.height) {
-        IMAGE_LOGE("[ImagePacker] %{public}s failed, dimensions cause overflow: %{public}ux%{public}u",
-                   funcName, bufferInfo.width, bufferInfo.height);
-        return ERR_IMAGE_INVALID_PARAMETER;
-    }
-    uint64_t requiredSize = static_cast<uint64_t>(rowBytes) * bufferInfo.height;
+    CHECK_ERROR_RETURN_RET_LOG(rowBytes > std::numeric_limits<uint64_t>::max() / bufferInfo.height,
+        ERR_IMAGE_INVALID_PARAMETER,
+        "[ImagePacker] %{public}s failed, dimensions cause overflow: %{public}ux%{public}u",
+        funcName, bufferInfo.width, bufferInfo.height);
+    // Check for buffer size
+    uint64_t requiredSize = rowBytes * bufferInfo.height;
     static constexpr uint64_t maxDataSize = std::numeric_limits<uint32_t>::max();
     if (bufferInfo.dataSize < requiredSize) {
         IMAGE_LOGE("[ImagePacker] %{public}s failed, dataSize too small: %{public}llu < required %{public}llu",
