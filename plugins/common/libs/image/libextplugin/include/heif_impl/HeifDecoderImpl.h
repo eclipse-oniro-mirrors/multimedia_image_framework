@@ -169,6 +169,9 @@ private:
                                 GridInfo &gainmapGridInfo, uint8_t *auxiliaryDstMemory);
     bool DoSwDecodeAuxiliaryImage(std::shared_ptr<HeifImage> &gainmapImage, GridInfo &gainmapGridInfo,
                                   sptr<SurfaceBuffer> &output, uint8_t *auxiliaryDstMemory);
+    bool BuildAndDecodeAuxiliaryParam(std::shared_ptr<HeifImage> &gainmapImage, GridInfo &gainmapgridInfo,
+        sptr<SurfaceBuffer> &output, uint8_t *auxiliaryDstMemory,
+        Media::PixelFormat gainmapSrcFmt, Media::PixelFormat gainmapDstFmt, uint32_t gainmapRowStride);
 
     bool SwDecodeGrids(std::shared_ptr<HeifImage> &image, HevcSoftDecodeParam &param);
 
