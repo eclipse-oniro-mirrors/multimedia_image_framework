@@ -15,20 +15,27 @@
 
 #include "plugin_export.h"
 #include "bmp_format_agent.h"
+#include "gif_encoder.h"
 #include "gif_format_agent.h"
 #include "image_log.h"
 #include "iosfwd"
+#include "jpeg_decoder.h"
+#include "jpeg_encoder.h"
 #include "jpeg_format_agent.h"
 #include "map"
 #include "plugin_class_base.h"
 #include "plugin_utils.h"
+#include "png_decoder.h"
 #include "png_format_agent.h"
+#include "raw_decoder.h"
 #include "raw_format_agent.h"
 #include "string"
 #include "svg_decoder.h"
 #include "svg_format_agent.h"
 #include "utility"
 #include "wbmp_format_agent.h"
+#include "webp_decoder.h"
+#include "webp_encoder.h"
 #include "webp_format_agent.h"
 #include "ext_decoder.h"
 #include "ext_encoder.h"
@@ -49,11 +56,18 @@ namespace {
 
 // register implement classes of this plugin.
 PLUGIN_EXPORT_REGISTER_CLASS_BEGIN
+PLUGIN_EXPORT_REGISTER_CLASS(OHOS::ImagePlugin::JpegDecoder)
+PLUGIN_EXPORT_REGISTER_CLASS(OHOS::ImagePlugin::JpegEncoder)
 PLUGIN_EXPORT_REGISTER_CLASS(OHOS::ImagePlugin::JpegFormatAgent)
+PLUGIN_EXPORT_REGISTER_CLASS(OHOS::ImagePlugin::PngDecoder)
 PLUGIN_EXPORT_REGISTER_CLASS(OHOS::ImagePlugin::PngFormatAgent)
+PLUGIN_EXPORT_REGISTER_CLASS(OHOS::ImagePlugin::GifEncoder)
 PLUGIN_EXPORT_REGISTER_CLASS(OHOS::ImagePlugin::GifFormatAgent)
+PLUGIN_EXPORT_REGISTER_CLASS(OHOS::ImagePlugin::WebpDecoder)
+PLUGIN_EXPORT_REGISTER_CLASS(OHOS::ImagePlugin::WebpEncoder)
 PLUGIN_EXPORT_REGISTER_CLASS(OHOS::ImagePlugin::WebpFormatAgent)
 PLUGIN_EXPORT_REGISTER_CLASS(OHOS::ImagePlugin::WbmpFormatAgent)
+PLUGIN_EXPORT_REGISTER_CLASS(OHOS::ImagePlugin::RawDecoder)
 PLUGIN_EXPORT_REGISTER_CLASS(OHOS::ImagePlugin::RawFormatAgent)
 PLUGIN_EXPORT_REGISTER_CLASS(OHOS::ImagePlugin::SvgDecoder)
 PLUGIN_EXPORT_REGISTER_CLASS(OHOS::ImagePlugin::SvgFormatAgent)
