@@ -77,6 +77,7 @@
 #include "image_handle.h"
 #include "xmp_metadata_accessor_factory.h"
 #if defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM)
+#include "include/jpeg_decoder.h"
 #else
 #include "surface_buffer.h"
 #include "native_buffer.h"
@@ -1180,7 +1181,6 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index, const D
             pixelMap, plInfo.pixelFormat, opts_.desiredPixelFormat);
         CHECK_ERROR_PRINT_LOG(convertRes != SUCCESS, "convert rgb to yuv failed, return origin rgb!");
     }
-    
     ImageUtils::FlushSurfaceBuffer(pixelMap.get());
     pixelMap->SetMemoryName(GetPixelMapName(pixelMap.get()));
     ImageTrace pixelMapId("CreatePixelMapExtended, pixelMapId:%u", pixelMap->GetUniqueId());
@@ -1773,7 +1773,6 @@ uint32_t ImageSource::GetImageInfo(uint32_t index, ImageInfo &imageInfo)
     CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_DECODE_FAILED,
                                "[ImageSource]get the image size fail on get image info, width:%{public}d,"
                                "height:%{public}d.", info.size.width, info.size.height);
-    
     info.pixelFormat = sourceOptions_.pixelFormat;
     imageInfo = info;
     return SUCCESS;
@@ -3197,6 +3196,11 @@ uint32_t ImageSource::GetFormatExtended(string &format) __attribute__((no_saniti
     if (decoderPtr == nullptr) {
         IMAGE_LOGE("Decoder pointer is null.");
         return ERR_MEDIA_NULL_POINTER;
+    }
+    ProgDecodeContext context;
+    if (IsIncrementalSource() &&
+        decoderPtr->PromoteIncrementalDecode(UINT32_MAX, context) == ERR_IMAGE_DATA_UNSUPPORT) {
+        return ERR_IMAGE_DATA_UNSUPPORT;
     }
     errorCode = decoderPtr->GetImagePropertyString(FIRST_FRAME, EXT_ENCODED_FORMAT_KEY, format);
     if (errorCode != SUCCESS) {

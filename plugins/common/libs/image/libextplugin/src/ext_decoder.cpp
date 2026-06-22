@@ -2347,7 +2347,7 @@ bool ExtDecoder::FrameCacheInfoIsEqual(ExtDecoder::FrameCacheInfo& src, ExtDecod
 
 uint32_t ExtDecoder::GetFramePixels(SkImageInfo& info, uint8_t* buffer, uint64_t rowStride, SkCodec::Options options)
 {
-    bool cond = ((buffer == nullptr) || (codec_ == nullptr));
+    bool cond = buffer == nullptr;
     CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_DECODE_ABNORMAL, "get pixels failed, buffer is nullptr");
     SkCodec::Result ret = codec_->getPixels(info, buffer, rowStride, &options);
     if (ret == SkCodec::kIncompleteInput || ret == SkCodec::kErrorInInput) {

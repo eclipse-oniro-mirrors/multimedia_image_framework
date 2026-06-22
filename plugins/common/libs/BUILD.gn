@@ -19,6 +19,12 @@ group("multimediaplugin") {
     deps = [
       "image/formatagentplugin:formatagentmetadata",
       "image/formatagentplugin:imageformatagent",
+      "image/libgifplugin:gifplugin",
+      "image/libgifplugin:gifpluginmetadata",
+      "image/libjpegplugin:jpegplugin",
+      "image/libjpegplugin:jpegpluginmetadata",
+      "image/libpngplugin:pngplugin",
+      "image/libpngplugin:pngpluginmetadata",
       "image/librawplugin:rawplugin",
       "image/librawplugin:rawpluginmetadata",
       "image/libsvgplugin:svgplugin",
@@ -37,16 +43,25 @@ group("multimediaplugin") {
     deps = [
       "image/formatagentplugin:formatagentmetadata",
       "image/formatagentplugin:imageformatagent",
+      "image/libgifplugin:gifplugin",
+      "image/libgifplugin:gifpluginmetadata",
 
       "image/libextplugin:extplugin",
       "image/libextplugin:extpluginmetadata",
-      "image/libgifplugin:gifplugin",
-      "image/libgifplugin:gifpluginmetadata",
+      "image/libjpegplugin:jpegplugin",
+      "image/libjpegplugin:jpegpluginmetadata",
+      "image/libpngplugin:pngplugin",
+      "image/libpngplugin:pngpluginmetadata",
       #"image/librawplugin:rawplugin",
       "image/librawplugin:rawpluginmetadata",
       "image/libsvgplugin:svgplugin",
       "image/libsvgplugin:svgpluginmetadata",
 
+      #"image/libwebpplugin:webpplugin",
+      #"image/libwebpplugin:webppluginmetadata",
+
+      #      "//foundation/multimedia/image_framework/adapter/frameworks/libhwjpegplugin:hwjpegplugin",
+      #      "//foundation/multimedia/image_framework/adapter/frameworks/libhwjpegplugin:hwjpegpluginmetadata",
     ]
     if (has_libtiff) {
         deps += [

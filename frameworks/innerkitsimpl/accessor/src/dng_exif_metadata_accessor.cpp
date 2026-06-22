@@ -54,7 +54,7 @@ uint32_t DngExifMetadataAccessor::Read()
     imageStream_->Seek(0, SeekPos::BEGIN);
     ssize_t size = imageStream_->GetSize();
     byte *byteStream = imageStream_->GetAddr();
-    if ((size <= 0) || (byteStream == nullptr) || size > MAX_DNG_STREAM_SIZE) {
+    if ((size == 0) || (byteStream == nullptr) || size > MAX_DNG_STREAM_SIZE) {
         IMAGE_LOGE("Input image stream is empty.");
         return ERR_IMAGE_SOURCE_DATA;
     }
