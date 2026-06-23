@@ -41,6 +41,10 @@ struct PlPackingOptionsForTiff {
     int32_t resolutionUnit = 0;
 };
 
+struct PlPackingOptionsForAstc {
+    bool enableAstcClEncode = false;
+};
+
 struct PlEncodeOptions {
     std::string format;
     uint8_t quality = 100;
@@ -58,6 +62,7 @@ struct PlEncodeOptions {
     PackingSizeLimit sizeLimit;
     bool needsPackGPS = true;
     PlPackingOptionsForTiff tiffPackingOption;
+    PlPackingOptionsForAstc astcPackingOption;
 };
 
 class AbsImageEncoder {

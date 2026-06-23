@@ -363,6 +363,7 @@ void ImagePacker::CopyOptionsToPlugin(const PackOption &opts, PlEncodeOptions &p
     plOpts.sizeLimit.maxSize = opts.sizeLimit.maxSize;
     plOpts.sizeLimit.antiAliasingLevel = opts.sizeLimit.antiAliasingLevel;
     plOpts.needsPackGPS = opts.needsPackGPS;
+    plOpts.astcPackingOption.enableAstcClEncode = opts.astcPackingOption.enableAstcClEncode;
 
     if (opts.format == IMAGE_TIFF_FORMAT) {
         CopyTiffPackingOptions(opts.tiffPackingOption, plOpts.tiffPackingOption);
