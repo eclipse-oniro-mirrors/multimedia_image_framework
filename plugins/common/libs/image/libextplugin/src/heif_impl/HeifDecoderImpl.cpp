@@ -1040,26 +1040,20 @@ bool HeifDecoderImpl::SwDecodeAuxiliaryImage(std::shared_ptr<HeifImage> &gainmap
 {
     ImageTrace trace("HeifDecoderImpl::SwdecodeGainmap");
     CHECK_ERROR_RETURN_RET(!gainmapImage, false);
-    uint32_t width = gainmapImage->GetOriginalWidth();
-    uint32_t height = gainmapImage->GetOriginalHeight();
+    PixelFormat gainmapSrcFmt = GetDecodeHeifFormat(gainmapImage);
+    if (gainmapSrcFmt == PixelFormat::UNKNOWN) {
+        IMAGE_LOGE("HDR-IMAGE Unsupported gainmap default DstFmt");
+        return false;
+    }
     sptr<SurfaceBuffer> output;
-    if (isGainmapDecode_ && gainMapDstHwbuffer_ != nullptr) {
-        output = sptr<SurfaceBuffer>(gainMapDstHwbuffer_);
-    } else if (isAuxiliaryDecode_ && auxiliaryDstHwbuffer_ != nullptr) {
-        output = sptr<SurfaceBuffer>(auxiliaryDstHwbuffer_);
-    } else {
-        output = SurfaceBuffer::Create();
-        CHECK_ERROR_RETURN_RET(!output, false);
-        BufferRequestConfig config = {
-            .width = width,
-            .height = height,
-            .format = GRAPHIC_PIXEL_FMT_YCBCR_420_SP,
-            .usage = BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA | BUFFER_USAGE_MEM_MMZ_CACHE,
-            .timeout = 0
-        };
-        GSError ret = output->Alloc(config);
-        bool cond = ret != GSERROR_OK;
-        CHECK_ERROR_RETURN_RET_LOG(cond, false, "output->alloc(config)faild, GSError=%{public}d", ret);
+    if (gainmapSrcFmt == PixelFormat::YUV_400) {
+        if (isGainmapDecode_ && gainMapDstHwbuffer_ != nullptr) {
+            output = sptr<SurfaceBuffer>(gainMapDstHwbuffer_);
+        } else if (isAuxiliaryDecode_ && auxiliaryDstHwbuffer_ != nullptr) {
+            output = sptr<SurfaceBuffer>(auxiliaryDstHwbuffer_);
+        }
+        CHECK_ERROR_RETURN_RET_LOG(!output, false,
+            "YUV_400 gainmap requires dst hw buffer, isGainmapDecode:%{public}d", isGainmapDecode_);
     }
     if (!DoSwDecodeAuxiliaryImage(gainmapImage, gainmapGridInfo, output, auxiliaryDstMemory)) {
         IMAGE_LOGE("HDR-IMAGE SwDecodeGainmap failed");
@@ -1085,44 +1079,50 @@ Media::PixelFormat GetDecodeHeifFormat(std::shared_ptr<HeifImage> &heifImage)
 bool HeifDecoderImpl::DoSwDecodeAuxiliaryImage(std::shared_ptr<HeifImage> &gainmapImage, GridInfo &gainmapgridInfo,
     sptr<SurfaceBuffer> &output, uint8_t *auxiliaryDstMemory)
 {
-    bool cond = (output == nullptr);
-    CHECK_ERROR_RETURN_RET(cond, false);
     PixelFormat gainmapSrcFmt = GetDecodeHeifFormat(gainmapImage);
-    PixelFormat gainmapDstFmt = PixelFormat::UNKNOWN;
     if (gainmapSrcFmt == PixelFormat::UNKNOWN) {
         IMAGE_LOGE("HDR-IMAGE Unsupported gainmap default DstFmt");
         return false;
     }
-    uint32_t gainmapRowStride;
-    if (isGainmapDecode_) {
-        gainmapDstFmt = outPixelFormat_;
-        gainmapRowStride = static_cast<uint32_t>(gainmapDstRowStride_);
+    PixelFormat gainmapDstFmt = outPixelFormat_;
+    uint32_t gainmapRowStride = isGainmapDecode_ ?
+        static_cast<uint32_t>(gainmapDstRowStride_) : static_cast<uint32_t>(auxiliaryDstRowStride_);
+
+    uint32_t gainmapStride;
+    uint32_t gainmapMemorySize;
+    void *nativeBuffer = nullptr;
+    if (output != nullptr) {
+        OH_NativeBuffer_Planes *dataPlanesInfo = nullptr;
+        output->GetPlanesInfo((void **)&dataPlanesInfo);
+        bool cond = (dataPlanesInfo == nullptr);
+        CHECK_ERROR_RETURN_RET_LOG(cond, false, "failed to get src buffer planes info.");
+        nativeBuffer = output.GetRefPtr();
+        int32_t err = ImageUtils::SurfaceBuffer_Reference(nativeBuffer);
+        if (err != OHOS::GSERROR_OK) {
+            return false;
+        }
+        gainmapStride = static_cast<uint32_t>(output->GetStride());
+        gainmapMemorySize = gainmapStride * static_cast<uint32_t>(output->GetHeight());
     } else {
-        gainmapDstFmt = outPixelFormat_;
-        gainmapRowStride = static_cast<uint32_t>(auxiliaryDstRowStride_);
+        gainmapStride = gainmapRowStride;
+        gainmapMemorySize = 0;
     }
-    OH_NativeBuffer_Planes *dataPlanesInfo = nullptr;
-    output->GetPlanesInfo((void **)&dataPlanesInfo);
-    cond = (dataPlanesInfo == nullptr);
-    CHECK_ERROR_RETURN_RET_LOG(cond, false, "failed to get src buffer planes info.");
-    void *nativeBuffer = output.GetRefPtr();
-    int32_t err = ImageUtils::SurfaceBuffer_Reference(nativeBuffer);
-    if (err != OHOS::GSERROR_OK) {
-        return false;
-    }
-    uint32_t gainmapStride = static_cast<uint32_t>(output->GetStride());
-    uint32_t gainmapMemorySize = gainmapStride * static_cast<uint32_t>(output->GetHeight());
+
+    void *hwBuffer = isGainmapDecode_ ? static_cast<void *>(gainMapDstHwbuffer_) :
+        (isAuxiliaryDecode_ ? static_cast<void *>(auxiliaryDstHwbuffer_) : nullptr);
     HevcSoftDecodeParam gainmapParam {
         gainmapgridInfo, gainmapSrcFmt, gainmapDstFmt,
         auxiliaryDstMemory, gainmapMemorySize,
-        gainmapStride, nullptr, false, static_cast<void *>(nativeBuffer), gainmapRowStride
+        gainmapStride, hwBuffer, false, static_cast<void *>(nativeBuffer), gainmapRowStride
     };
     if (!SwDecodeImage(gainmapImage, gainmapParam, gainmapgridInfo, false)) {
-        ImageUtils::SurfaceBuffer_Unreference(nativeBuffer);
+        if (nativeBuffer != nullptr) {
+            ImageUtils::SurfaceBuffer_Unreference(nativeBuffer);
+        }
         IMAGE_LOGE("HDR-IMAGE SwDecodeImage failed");
         return false;
     }
-    if (output != nullptr) {
+    if (nativeBuffer != nullptr) {
         ImageUtils::SurfaceBuffer_Unreference(nativeBuffer);
     }
     return true;
