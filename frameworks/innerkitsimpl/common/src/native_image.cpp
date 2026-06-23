@@ -434,7 +434,9 @@ NativeComponent* NativeImage::GetComponent(int32_t type)
     if (GetFormat(format) == SUCCESS && type == format) {
         return CreateCombineComponent(type);
     }
-    SplitSurfaceToComponent();
+    if (SplitSurfaceToComponent() != SUCCESS) {
+        return nullptr;
+    }
     // Try again
     component = GetCachedComponent(type);
 
