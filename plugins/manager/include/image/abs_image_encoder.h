@@ -42,7 +42,7 @@ struct PlPackingOptionsForTiff {
 };
 
 struct PlPackingOptionsForAstc {
-    bool enableAstcClEncode = false;
+    bool enableGPUEncode = false;
 };
 
 struct PlEncodeOptions {
