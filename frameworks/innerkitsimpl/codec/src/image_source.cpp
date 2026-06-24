@@ -128,13 +128,13 @@ static const map<PixelFormat, GraphicPixelFormat> SINGLE_HDR_CONVERT_FORMAT_MAP 
     { PixelFormat::YCRCB_P010, GRAPHIC_PIXEL_FMT_YCRCB_420_SP },
     { PixelFormat::YCBCR_P010, GRAPHIC_PIXEL_FMT_YCBCR_420_SP },
 };
+#endif
 
-const std::map<PixelFormat, GraphicPixelFormat> SURFACE_FORMAT_MAP = {
+static const std::map<PixelFormat, GraphicPixelFormat> SURFACE_FORMAT_MAP = {
     { PixelFormat::RGBA_8888, GRAPHIC_PIXEL_FMT_RGBA_8888 },
     { PixelFormat::NV21, GRAPHIC_PIXEL_FMT_YCRCB_420_SP },
     { PixelFormat::NV12, GRAPHIC_PIXEL_FMT_YCBCR_420_SP },
 };
-#endif
 
 namespace InnerFormat {
 const string RAW_FORMAT = "image/x-raw";
