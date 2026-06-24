@@ -726,7 +726,7 @@ static bool InitAstcEncPara(TextureEncodeOptions &param,
     param.stride_ = stride;
     param.privateProfile_ = qualityProfile;
     param.outIsSut = false;
-    param.enableClEncode = astcOpts.astcPackingOption.enableAstcClEncode;
+    param.enableGPUEncode = astcOpts.astcPackingOption.enableGPUEncode;
     extractDimensions(astcOpts.format, param);
     if (!CheckParamBlockSize(param)) { // DEFAULT_DIM = 4
         IMAGE_LOGE("InitAstcEncPara failed %{public}dx%{public}d is invalid!", param.blockX_, param.blockY_);
@@ -831,7 +831,7 @@ static bool AstcEncProcess(TextureEncodeOptions &param, uint8_t *pixmapIn, uint8
     bool openClEnc = param.width_ >= WIDTH_CL_THRESHOLD && param.height_ >= HEIGHT_CL_THRESHOLD &&
         param.privateProfile_ == QualityProfile::HIGH_SPEED_PROFILE;
     bool enableClEnc = openClEnc && ImageSystemProperties::GetGenThumbWithGpu() &&
-        param.enableClEncode &&
+        param.enableGPUEncode &&
         (param.blockX_ == DEFAULT_DIM) && (param.blockY_ == DEFAULT_DIM); // HardWare only support 4x4 now
     if (enableClEnc) {
         IMAGE_LOGI("astc hardware encode begin");
