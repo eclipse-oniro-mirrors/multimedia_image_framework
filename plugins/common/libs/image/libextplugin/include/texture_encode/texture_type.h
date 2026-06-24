@@ -64,7 +64,7 @@ struct TextureEncodeOptions {
     uint8_t *extInfoBuf;
     int32_t extInfoBytes;
     TextureEncodeType textureEncodeType;
-    bool enableClEncode = false;
+    bool enableGPUEncode = false;
 };
 
 struct AstcEncoder {
