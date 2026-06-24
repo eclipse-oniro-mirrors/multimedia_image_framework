@@ -57,7 +57,7 @@ struct PackingOptionsForTiff {
 };
 
 struct PackingOptionsForAstc {
-    bool enableAstcClEncode = false;
+    bool enableGPUEncode = false;
 };
 
 struct PackOption {
