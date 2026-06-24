@@ -211,7 +211,6 @@ bool ImageSystemProperties::GetSLRParallelEnabled()
 bool ImageSystemProperties::GetGenThumbWithGpu()
 {
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
-    // Global switch controlled by system parameter, without process name restriction.
     static bool ret = system::GetBoolParameter("persist.multimedia.image.GenThumbWithGpu.endabled", false);
     return ret;
 #else
@@ -222,7 +221,6 @@ bool ImageSystemProperties::GetGenThumbWithGpu()
 bool ImageSystemProperties::GetSLRLaplacianEnabled()
 {
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
-    // Global switch controlled by system parameter, without process name restriction.
     static bool ret = system::GetBoolParameter("persist.multimedia.image.PostProcLaplacian.endabled", false);
     return ret;
 #else
