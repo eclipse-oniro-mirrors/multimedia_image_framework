@@ -71,6 +71,7 @@ using namespace JpegHwTile;
 #define SUCCESS OHOS::Media::SUCCESS
 
 namespace {
+constexpr static uint32_t NUM_0 = 0;
 constexpr static uint32_t NUM_1 = 1;
 constexpr static uint32_t NUM_2 = 2;
 constexpr static uint32_t NUM_3 = 3;
@@ -78,6 +79,7 @@ constexpr static uint32_t NUM_4 = 4;
 constexpr static uint32_t NUM_5 = 5;
 constexpr static uint32_t NUM_6 = 6;
 constexpr static uint32_t NUM_8 = 8;
+constexpr static uint32_t NUM_12 = 12;
 constexpr static uint32_t NUM_4k = 4 * 1024;
 constexpr static uint32_t NUM_8k = 8 * 1024;
 constexpr static uint32_t NUM_16k = 16 * 1024;
@@ -118,14 +120,14 @@ static inline float Max(float a, float b)
 
 enum class TableClass : uint8_t
 {
-    DC_Table = 0,
-    AC_Table,
+    DC_TABLE = 0,
+    AC_TABLE,
 };
 
 enum class TableComponent : uint8_t
 {
-    Luma = 0,
-    Chroma,
+    LUMA = 0,
+    CHROMA,
 };
 
 namespace {
@@ -139,8 +141,8 @@ constexpr uint8_t MAX_NUM_HUFFCODE = MAX_NUM_AC_HUFFCODE;
 
 struct HuffTable
 {
-    TableClass Tc;
-    TableComponent Th;
+    TableClass tc;
+    TableComponent th;
 
     uint32_t numCodes = 0;
     uint32_t HUFFVAL[MAX_NUM_HUFFCODE] = {0};
@@ -162,24 +164,24 @@ struct HuffTable
     } HUFFLUT_ENC_DC[MAX_DC_CATEGORY];
 
     HuffTable()
-        : Tc(TableClass::DC_Table), Th(TableComponent::Luma) {}
-    HuffTable(TableClass TC_, TableComponent Th_)
-        : Tc(TC_), Th(Th_) {}
+        : tc(TableClass::DC_TABLE), th(TableComponent::LUMA) {}
+    HuffTable(TableClass tc_, TableComponent th_)
+        : tc(tc_), th(th_) {}
 };
 
 struct HuffTables
 {
     HuffTables() {}
-    HuffTable& GetTable(TableClass Tc, TableComponent Th)
+    HuffTable& GetTable(TableClass tc, TableComponent th)
     {
-        if (Tc == TableClass::DC_Table && Th == TableComponent::Luma) {
-            return tables[0];
-        } else if (Tc == TableClass::DC_Table && Th == TableComponent::Chroma) {
-            return tables[1];
-        } else if (Tc == TableClass::AC_Table && Th == TableComponent::Luma) {
-            return tables[2];
+        if (tc == TableClass::DC_TABLE && th == TableComponent::LUMA) {
+            return tables[NUM_0];
+        } else if (tc == TableClass::DC_TABLE && th == TableComponent::CHROMA) {
+            return tables[NUM_1];
+        } else if (tc == TableClass::AC_TABLE && th == TableComponent::LUMA) {
+            return tables[NUM_2];
         } else {
-            return tables[3];
+            return tables[NUM_3];
         }
     }
 private:
@@ -194,27 +196,27 @@ public:
         auto jpgSource = UserBufferSourceStream::Create(jpg, jpgLen);
         REQUIRE(jpgSource && jpgSource->Seek(2));  // skip SOI
         StreamBuffer buf;
-        for (bool meetSOS = false; meetSOS == false; ) {
+        for (bool meetSOS = false; meetSOS == false;) {
             REQUIRE(jpgSource->Read(4, buf) && buf.dataHead && buf.dataSize == 4);
             REQUIRE(buf.dataHead[0] == FFCode);
             if (buf.dataHead[1] == JPEG_MARKER_DHT) {
                 REQUIRE(jpgSource->Read(1 + MAX_HUFFCODE_LENGTH, buf) && buf.dataHead &&
                     buf.dataSize == 1 + MAX_HUFFCODE_LENGTH);
-                TableClass Tc = static_cast<TableClass>(buf.dataHead[0] >> 4);
-                TableComponent Th = static_cast<TableComponent>(buf.dataHead[0] & 0x0f);
-                REQUIRE((Tc == TableClass::DC_Table || Tc == TableClass::AC_Table) &&
-                        (Th == TableComponent::Luma || Th == TableComponent::Chroma));
-                HuffTable& table = tables.GetTable(Tc, Th);
-                table.Tc = Tc;
-                table.Th = Th;
+                TableClass tc = static_cast<TableClass>(buf.dataHead[0] >> 4);
+                TableComponent th = static_cast<TableComponent>(buf.dataHead[0] & 0x0f);
+                REQUIRE((tc == TableClass::DC_TABLE || tc == TableClass::AC_TABLE) &&
+                        (th == TableComponent::LUMA || th == TableComponent::CHROMA));
+                HuffTable& table = tables.GetTable(tc, th);
+                table.tc = tc;
+                table.th = th;
                 auto BITS = buf.dataHead + 1;
                 table.numCodes = 0;
                 for (uint32_t i = 0; i < MAX_HUFFCODE_LENGTH; i++) {
                     table.numCodes += BITS[i];
                 }
-                if (Tc == TableClass::DC_Table) {
+                if (tc == TableClass::DC_TABLE) {
                     REQUIRE(table.numCodes <= MAX_NUM_DC_HUFFCODE);
-                } else if (Tc == TableClass::AC_Table) {
+                } else if (tc == TableClass::AC_TABLE) {
                     REQUIRE(table.numCodes <= MAX_NUM_AC_HUFFCODE);
                 }
                 REQUIRE(jpgSource->Read(table.numCodes, buf) && buf.dataHead &&
@@ -272,7 +274,7 @@ private:
                 table.HUFFLUT_DEC[j].value = table.HUFFVAL[i];
             }
         }
-        if (table.Tc != TableClass::DC_Table) {
+        if (table.tc != TableClass::DC_TABLE) {
             return;
         }
         for (uint8_t category = 0; category < MAX_DC_CATEGORY; category++) {
@@ -349,27 +351,27 @@ struct MCU
 
     MCU()
     {
-        dus[0].comp = 0;
-        dus[1].comp = 0;
-        dus[2].comp = 0;
-        dus[3].comp = 0;
-        dus[4].comp = 1;
-        dus[5].comp = 2;
+        dus[NUM_0].comp = NUM_0;
+        dus[NUM_1].comp = NUM_0;
+        dus[NUM_2].comp = NUM_0;
+        dus[NUM_3].comp = NUM_0;
+        dus[NUM_4].comp = NUM_1;
+        dus[NUM_5].comp = NUM_2;
 
-        dus[0].idx = 0;
-        dus[1].idx = 1;
-        dus[2].idx = 2;
-        dus[3].idx = 3;
-        dus[4].idx = 0;
-        dus[5].idx = 0;
+        dus[NUM_0].idx = NUM_0;
+        dus[NUM_1].idx = NUM_1;
+        dus[NUM_2].idx = NUM_2;
+        dus[NUM_3].idx = NUM_3;
+        dus[NUM_4].idx = NUM_0;
+        dus[NUM_5].idx = NUM_0;
     }
 
     bool BeIndependent(MCU& other, HuffTables& tables)
     {
         other = *this;
-        for (uint32_t comp = 0; comp < 3; comp++) {
-            HuffTable& table = comp ? tables.GetTable(TableClass::DC_Table, TableComponent::Chroma) :
-                                      tables.GetTable(TableClass::DC_Table, TableComponent::Luma);
+        for (uint32_t comp = 0; comp < NUM_3; comp++) {
+            HuffTable& table = comp ? tables.GetTable(TableClass::DC_TABLE, TableComponent::CHROMA) :
+                                      tables.GetTable(TableClass::DC_TABLE, TableComponent::LUMA);
             DataUnit& du = other.GetFirstDU(comp);
             du.pre_du_dc_value = 0;
             REQUIRE(du.EncodeDC(table));
@@ -379,9 +381,9 @@ struct MCU
     bool BeDependent(MCU& other, HuffTables& tables)
     {
         other = *this;
-        for (uint32_t comp = 0; comp < 3; comp++) {
-            HuffTable& table = comp ? tables.GetTable(TableClass::DC_Table, TableComponent::Chroma) :
-                                      tables.GetTable(TableClass::DC_Table, TableComponent::Luma);
+        for (uint32_t comp = 0; comp < NUM_3; comp++) {
+            HuffTable& table = comp ? tables.GetTable(TableClass::DC_TABLE, TableComponent::CHROMA) :
+                                      tables.GetTable(TableClass::DC_TABLE, TableComponent::LUMA);
             DataUnit& du = other.GetFirstDU(comp);
             REQUIRE(du.EncodeDC(table));
         }
@@ -484,13 +486,12 @@ struct Bitstream
         : jpg(jpg_), jpgLen(jpgLen_), pos(0), fifo(0), numHeldBits(0) {}
 };
 
-class IECS : public Bitstream
-{
+class IECS : public Bitstream {
     uint32_t rst = 0;
     uint32_t mcuCnt = 0;
     int32_t preDUDC[3] = {0};
-    HuffTable* dc_htbl[3] = {nullptr};
-    HuffTable* ac_htbl[3] = {nullptr};
+    HuffTable* dcHtbl[3] = {nullptr};
+    HuffTable* acHtbl[3] = {nullptr};
 
     // for bitstream use
     uint32_t numHeldBytes = 0;
@@ -515,12 +516,12 @@ public:
     IECS(uint8_t* jpg_, size_t jpgLen_, HuffTables& tables)
         : Bitstream(jpg_, jpgLen_)
     {
-        dc_htbl[0] = &tables.GetTable(TableClass::DC_Table, TableComponent::Luma);
-        dc_htbl[1] = &tables.GetTable(TableClass::DC_Table, TableComponent::Chroma);
-        dc_htbl[2] = &tables.GetTable(TableClass::DC_Table, TableComponent::Chroma);
-        ac_htbl[0] = &tables.GetTable(TableClass::AC_Table, TableComponent::Luma);
-        ac_htbl[1] = &tables.GetTable(TableClass::AC_Table, TableComponent::Chroma);
-        ac_htbl[2] = &tables.GetTable(TableClass::AC_Table, TableComponent::Chroma);
+        dcHtbl[NUM_0] = &tables.GetTable(TableClass::DC_TABLE, TableComponent::LUMA);
+        dcHtbl[NUM_1] = &tables.GetTable(TableClass::DC_TABLE, TableComponent::CHROMA);
+        dcHtbl[NUM_2] = &tables.GetTable(TableClass::DC_TABLE, TableComponent::CHROMA);
+        acHtbl[NUM_0] = &tables.GetTable(TableClass::AC_TABLE, TableComponent::LUMA);
+        acHtbl[NUM_1] = &tables.GetTable(TableClass::AC_TABLE, TableComponent::CHROMA);
+        acHtbl[NUM_2] = &tables.GetTable(TableClass::AC_TABLE, TableComponent::CHROMA);
     }
 
     void RePos(size_t pos_, uint16_t rst_)
@@ -537,7 +538,7 @@ public:
         for (uint32_t blkIdx = 0; blkIdx < NUM_DATAUNIT; blkIdx++) {
             DataUnit& du = mcu.dus[blkIdx];
             // DC
-            HUFF_DECODE(dc_htbl[du.comp], SSSSCode, SSSSValue);
+            HUFF_DECODE(dcHtbl[du.comp], SSSSCode, SSSSValue);
             REQUIRE_LOG(tmpReadSize <= MAX_HUFFCODE_LENGTH, "DC Decoding error");
             CHECK_FIFO(SSSSValue);
             addlBits = READ_N_BITS(SSSSValue);
@@ -553,9 +554,9 @@ public:
             du.ac_num = 0;
             acCnt = 0;
             while (acCnt < NUM_AC_COEFF) {
-                HUFF_DECODE(ac_htbl[du.comp], RRRRSSSSCode, RRRRSSSSValue);
+                HUFF_DECODE(acHtbl[du.comp], RRRRSSSSCode, RRRRSSSSValue);
                 REQUIRE_LOG(tmpReadSize <= MAX_HUFFCODE_LENGTH, "AC Decoding error");
-                RRRRValue = RRRRSSSSValue >> 4;
+                RRRRValue = RRRRSSSSValue >> NUM_4;
                 SSSSValue = RRRRSSSSValue & 0x0f;
                 acCnt = RRRRSSSSValue ? acCnt + RRRRValue + 1 : NUM_AC_COEFF;
                 CHECK_FIFO(SSSSValue);
@@ -588,7 +589,10 @@ public:
         std::function findCode = [](HuffTable& htbl, uint32_t value) -> std::optional<DataUnit::Code> {
             for (uint32_t i = 0; i < htbl.numCodes; i++) {
                 if (htbl.HUFFVAL[i] == value) {
-                    return DataUnit::Code {.bits = htbl.HUFFCODE[i], .n = htbl.HUFFSIZE[i]};
+                    return DataUnit::Code {
+                        .bits = htbl.HUFFCODE[i],
+                        .n = htbl.HUFFSIZE[i]
+                    };
                 }
             }
             return std::nullopt;
@@ -597,11 +601,15 @@ public:
         MCU mcu;
         for (uint32_t blkIdx = 0; blkIdx < NUM_6; blkIdx++) {
             auto& du = mcu.dus[blkIdx];
-            auto code = findCode(*dc_htbl[du.comp], 0);
-            if (!code) { return std::nullopt; }
+            auto code = findCode(*dcHtbl[du.comp], 0);
+            if (!code) {
+                return std::nullopt;
+            }
             du.dc_code = *code;
-            code = findCode(*ac_htbl[du.comp], 0);
-            if (!code) { return std::nullopt; }
+            code = findCode(*acHtbl[du.comp], 0);
+            if (!code) {
+                return std::nullopt;
+            }
             du.ac_num = 1;
             du.ac[0] = *code;
         }
@@ -667,8 +675,7 @@ private:
         numHeldBits = 0;                           \
     } while (0)
 
-class OECS : public Bitstream
-{
+class OECS : public Bitstream {
     // for bitstream use
     uint32_t tmpNumHeldBits = 0;
 
@@ -809,6 +816,15 @@ bool RSTBasedDecoder::CheckResolution(uint32_t image_width, uint32_t image_heigh
     REQUIRE_LOG(hwDecoder, "create JpegHardwareDecoder failed");
     REQUIRE_LOG(hwDecoder->IsHardwareDecodeSupported(IMAGE_JPEG_FORMAT, {NUM_8k, NUM_8k}),
         "the jpeg hardware decoder doesn't support 8192x8192");
+
+    constexpr int32_t maxLengthJ = 15 * 1000;
+    REQUIRE_LOG(hwDecoder->IsHardwareDecodeSupported(IMAGE_JPEG_FORMAT,
+                    {maxLengthJ, static_cast<uint64_t>(NUM_8k) * NUM_8k / maxLengthJ}),
+                "the jpeg hardware decoder doesn't support 15000x4473");
+
+    REQUIRE_LOG(hwDecoder->IsHardwareDecodeSupported(IMAGE_JPEG_FORMAT,
+                    {static_cast<uint64_t>(NUM_8k) * NUM_8k / maxLengthJ, maxLengthJ}),
+                "the jpeg hardware decoder doesn't support 4473x15000");
     return true;
 }
 
@@ -866,8 +882,9 @@ bool RSTBasedDecoder::ParseRSTs()
             }
             // Since extra bytes are allocated, it is guaranteed that additional one byte can be fetched
             uint8_t nextByte = streamData[i + j + 1];
-            if (nextByte == 0x00) {}
-            else if (nextByte == RSTs[rstCnt]) {
+            if (nextByte == 0x00) {
+                continue;
+            } else if (nextByte == RSTs[rstCnt]) {
                 rstPositions.push_back(i + j + NUM_2);
                 rstCnt = (rstCnt + 1) % NUM_8;
             } else if (UNLIKELY(nextByte == MARK_EOI)) {
@@ -887,24 +904,24 @@ bool RSTBasedDecoder::ParseRSTs()
 bool RSTBasedDecoder::ParseDHTs()
 {
     REQUIRE_LOG(JpegHuff::Parse(jpg.streamData.get(), jpg.streamSize, *jpg.tables), "Parsing DHT failed");
-    HuffTable* table = &jpg.tables->GetTable(TableClass::DC_Table, TableComponent::Luma);
+    HuffTable* table = &jpg.tables->GetTable(TableClass::DC_TABLE, TableComponent::LUMA);
     REQUIRE_LOG(table->numCodes > 0 && table->numCodes <= MAX_NUM_DC_HUFFCODE,
-        "Incorrect number of Luma DC codewords, num(%{public}d)", table->numCodes);
-    table = &jpg.tables->GetTable(TableClass::DC_Table, TableComponent::Chroma);
+        "Incorrect number of LUMA DC codewords, num(%{public}d)", table->numCodes);
+    table = &jpg.tables->GetTable(TableClass::DC_TABLE, TableComponent::CHROMA);
     REQUIRE_LOG(table->numCodes > 0 && table->numCodes <= MAX_NUM_DC_HUFFCODE,
-        "Incorrect number of Chroma DC codewords, num(%{public}d)", table->numCodes);
-    table = &jpg.tables->GetTable(TableClass::AC_Table, TableComponent::Luma);
+        "Incorrect number of CHROMA DC codewords, num(%{public}d)", table->numCodes);
+    table = &jpg.tables->GetTable(TableClass::AC_TABLE, TableComponent::LUMA);
     REQUIRE_LOG(table->numCodes > 0 && table->numCodes <= MAX_NUM_AC_HUFFCODE,
-        "Incorrect number of Luma AC codewords, num(%{public}d)", table->numCodes);
-    table = &jpg.tables->GetTable(TableClass::AC_Table, TableComponent::Chroma);
+        "Incorrect number of LUMA AC codewords, num(%{public}d)", table->numCodes);
+    table = &jpg.tables->GetTable(TableClass::AC_TABLE, TableComponent::CHROMA);
     REQUIRE_LOG(table->numCodes > 0 && table->numCodes <= MAX_NUM_AC_HUFFCODE,
-        "Incorrect number of Chroma AC codewords, num(%{public}d)", table->numCodes);
+        "Incorrect number of CHROMA AC codewords, num(%{public}d)", table->numCodes);
 
-    REQUIRE_LOG(jpg.tables->GetTable(TableClass::DC_Table, TableComponent::Luma).numCodes == MAX_NUM_DC_HUFFCODE &&
-        jpg.tables->GetTable(TableClass::DC_Table, TableComponent::Chroma).numCodes == MAX_NUM_DC_HUFFCODE,
-        "A complete DC Huffman table is required due to the algorithmic requirements. Luma DC(%{public}u entries) "
-        "Chroma DC(%{public}u entries)", jpg.tables->GetTable(TableClass::DC_Table, TableComponent::Luma).numCodes,
-        jpg.tables->GetTable(TableClass::DC_Table, TableComponent::Chroma).numCodes);
+    REQUIRE_LOG(jpg.tables->GetTable(TableClass::DC_TABLE, TableComponent::LUMA).numCodes == MAX_NUM_DC_HUFFCODE &&
+        jpg.tables->GetTable(TableClass::DC_TABLE, TableComponent::CHROMA).numCodes == MAX_NUM_DC_HUFFCODE,
+        "A complete DC Huffman table is required due to the algorithmic requirements. LUMA DC(%{public}u entries) "
+        "CHROMA DC(%{public}u entries)", jpg.tables->GetTable(TableClass::DC_TABLE, TableComponent::LUMA).numCodes,
+        jpg.tables->GetTable(TableClass::DC_TABLE, TableComponent::CHROMA).numCodes);
     return true;
 }
 
@@ -963,12 +980,14 @@ bool JpegHwRegionDecoder::IsSupport(DecodeContext& dctx, const ExtDecoder* extDe
         static_cast<int32_t>(jpg.dinfo->restart_interval * MCU_WIDTH) : static_cast<int32_t>(MCU_WIDTH);
     int32_t minProbSubJpegWidth = ALIGN_UP(extDecoder->dstSubset_.width(), extensionWidthLength);
     int32_t minProbSubJpegHeight = ALIGN_UP(extDecoder->dstSubset_.height(), static_cast<int32_t>(MCU_HEIGHT));
-    REQUIRE_LOG(hwDecoder->IsHardwareDecodeSupported(IMAGE_JPEG_FORMAT, {minProbSubJpegWidth, minProbSubJpegHeight}),
-        "subJpg min prob resolution not support");
+    REQUIRE_LOG(hwDecoder->IsHardwareDecodeSupported(IMAGE_JPEG_FORMAT,
+                    {minProbSubJpegWidth, minProbSubJpegHeight}),
+                "subJpg min prob resolution not support");
     int32_t maxProbSubJpegWidth = minProbSubJpegWidth + extensionWidthLength;
     int32_t maxProbSubJpegHeight = minProbSubJpegHeight + static_cast<int32_t>(MCU_HEIGHT);
-    REQUIRE_LOG(hwDecoder->IsHardwareDecodeSupported(IMAGE_JPEG_FORMAT, {maxProbSubJpegWidth, maxProbSubJpegHeight}),
-        "subJpg max prob resolution not support");
+    REQUIRE_LOG(hwDecoder->IsHardwareDecodeSupported(IMAGE_JPEG_FORMAT,
+                    {maxProbSubJpegWidth, maxProbSubJpegHeight}),
+                "subJpg max prob resolution not support");
     REQUIRE_LOG(static_cast<uint32_t>(maxProbSubJpegWidth * maxProbSubJpegHeight) <=
         MAX_SUPPORT_IMAGE_AREA, "subJpg max prob area too large");
     return true;
@@ -980,8 +999,7 @@ bool JpegHwRegionDecoder::DoTileDecode()
     ImageFuncTimer imageFuncTimer("%s, decodeSubset: left:%d, top:%d, width:%d, height:%d, sampleSize:%d", __func__,
         decodeSubset.left(), decodeSubset.top(), decodeSubset.width(), decodeSubset.height(),
         static_cast<uint32_t>(const_cast<ExtDecoder*>(subJpg.extDecoder)->GetSoftwareScaledSize(
-        subJpg.extDecoder->regionDesiredSize_.width, subJpg.extDecoder->regionDesiredSize_.height))
-    );
+            subJpg.extDecoder->regionDesiredSize_.width, subJpg.extDecoder->regionDesiredSize_.height)));
     bool ret = false;
     if (RSTBasedDecoder::Init() && SplitRegion() && CombineIntoJpeg() && DecodeSubJpg() && CropTarget()) {
         ret = true;
@@ -1098,9 +1116,9 @@ bool JpegHwRegionDecoder::CombineIntoJpeg()
     streamData[subJpg.streamSize - 1] = MARK_EOI;
     REQUIRE_LOG(subJpg.origSize.width() <= UINT16_MAX || subJpg.origSize.height() <= UINT16_MAX, "subJpg size err");
     streamData[jpg.YPos] = (static_cast<uint32_t>(subJpg.origSize.height()) >> NUM_8) & 0xff;
-    streamData[jpg.YPos + 1] = static_cast<uint32_t>(subJpg.origSize.height()) & 0xff;
-    streamData[jpg.YPos + 2] = (static_cast<uint32_t>(subJpg.origSize.width()) >> NUM_8) & 0xff;
-    streamData[jpg.YPos + 3] = static_cast<uint32_t>(subJpg.origSize.width()) & 0xff;
+    streamData[jpg.YPos + NUM_1] = static_cast<uint32_t>(subJpg.origSize.height()) & 0xff;
+    streamData[jpg.YPos + NUM_2] = (static_cast<uint32_t>(subJpg.origSize.width()) >> NUM_8) & 0xff;
+    streamData[jpg.YPos + NUM_3] = static_cast<uint32_t>(subJpg.origSize.width()) & 0xff;
     if (!isAligned) {
         streamData[jpg.RiPos] = ((static_cast<uint32_t>(subJpg.origSize.width()) / MCU_WIDTH) >> NUM_8) & 0xff;
         streamData[jpg.RiPos + 1] = (static_cast<uint32_t>(subJpg.origSize.width()) / MCU_WIDTH) & 0xff;
@@ -1117,7 +1135,7 @@ bool JpegHwRegionDecoder::DecodeSubJpg()
     subJpg.ctxSizeInfo = jpg.extDecoder->dstInfo_.makeWH(scaledSizeSubJpg.width(), scaledSizeSubJpg.height());
     uint64_t byteCount = subJpg.ctxSizeInfo.computeMinByteSize();
     REQUIRE_LOG(!SkImageInfo::ByteSizeOverflowed(byteCount), "%{public}s too large region size: %{public}llu",
-                                                             __func__, static_cast<unsigned long long>(byteCount));
+        __func__, static_cast<unsigned long long>(byteCount));
     uint32_t res = const_cast<ExtDecoder*>(jpg.extDecoder)->DmaMemAlloc(subJpg.ctx, byteCount, subJpg.ctxSizeInfo);
     REQUIRE_LOG(res == SUCCESS, "subjpgCtx DMA buffer alloc failed");
 
@@ -1126,7 +1144,7 @@ bool JpegHwRegionDecoder::DecodeSubJpg()
     jpg.ctxSizeInfo = jpg.extDecoder->dstInfo_.makeWH(static_cast<int>(scaledCropSize.width()),
                                                       static_cast<int>(scaledCropSize.height()));
     res = const_cast<ExtDecoder*>(jpg.extDecoder)->DmaMemAlloc(*jpg.ctx, jpg.ctxSizeInfo.computeMinByteSize(),
-                                                                jpg.ctxSizeInfo);
+                                                               jpg.ctxSizeInfo);
     REQUIRE_LOG(res == SUCCESS, "dctx DMA buffer alloc failed");
 
     REQUIRE_LOG(hwDecoder->InitDecoder(), "failed to init jpeg hardware decoder");
@@ -1189,7 +1207,8 @@ bool JpegHwFullDecoder::IsSupport16k()
     int32_t subjpgHeight = static_cast<int32_t>(jpg.dinfo->image_height / NUM_2);
     auto hwDecoder = std::make_unique<JpegHardwareDecoder>();
     REQUIRE_LOG(hwDecoder, "create JpegHardwareDecoder failed");
-    REQUIRE_LOG(hwDecoder->IsHardwareDecodeSupported(IMAGE_JPEG_FORMAT, {subjpgWidth, subjpgHeight}),
+    REQUIRE_LOG(hwDecoder->IsHardwareDecodeSupported(IMAGE_JPEG_FORMAT,
+                    {subjpgWidth, subjpgHeight}),
                 "16k subJpg max prob resolution not support");
     REQUIRE_LOG(static_cast<uint32_t>(subjpgWidth * subjpgHeight) <= MAX_SUPPORT_IMAGE_AREA,
                 "16k subJpg area too large");
@@ -1270,15 +1289,15 @@ bool JpegHwFullDecoder::ProcessLastECS()
 }
 
 enum class SplitPattern : uint32_t {
-    SIZE_2NxN = 0, SIZE_Nx2N,
-    SIZE_3NxN, SIZE_Nx3N,
-    SIZE_2Nx2N,
-    SIZE_3Nx2N, SIZE_2Nx3N,
-    SIZE_3Nx3N,
-    SIZE_4Nx2N, SIZE_2Nx4N,
-    SIZE_4Nx3N, SIZE_3Nx4N,
-    SIZE_5Nx3N, SIZE_3Nx5N,
-    SIZE_5Nx5N,
+    SIZE_2N_x_N = 0, SIZE_N_x_2N,
+    SIZE_3N_x_N,     SIZE_N_x_3N,
+    SIZE_2N_x_2N,
+    SIZE_3N_x_2N,    SIZE_2N_x_3N,
+    SIZE_3N_x_3N,
+    SIZE_4N_x_2N,    SIZE_2N_x_4N,
+    SIZE_4N_x_3N,    SIZE_3N_x_4N,
+    SIZE_5N_x_3N,    SIZE_3N_x_5N,
+    SIZE_5N_x_5N,
 };
 
 static SplitPattern CalcPatternNormal(uint32_t width, uint32_t height)
@@ -1287,18 +1306,18 @@ static SplitPattern CalcPatternNormal(uint32_t width, uint32_t height)
     constexpr uint32_t SUB_REGION_HEIGHT = 6 * 1024;
     SplitPattern pattern;
     uint64_t num_sub_img = DIV_ROUND_UP(width * height, SUB_REGION_WIDTH * SUB_REGION_HEIGHT);
-    if (num_sub_img <= 2) {
-        pattern = width >= height ? SplitPattern::SIZE_2NxN : SplitPattern::SIZE_Nx2N;
-    } else if (num_sub_img <= 4) {
-        pattern = SplitPattern::SIZE_2Nx2N;
-    } else if (num_sub_img <= 6) {
-        pattern = width >= height ? SplitPattern::SIZE_3Nx2N : SplitPattern::SIZE_2Nx3N;
-    } else if (num_sub_img <= 8) {
-        pattern = SplitPattern::SIZE_3Nx3N;
-    } else if (num_sub_img <= 12) {
-        pattern = width >= height ? SplitPattern::SIZE_4Nx3N : SplitPattern::SIZE_3Nx4N;
+    if (num_sub_img <= NUM_2) {
+        pattern = width >= height ? SplitPattern::SIZE_2N_x_N : SplitPattern::SIZE_N_x_2N;
+    } else if (num_sub_img <= NUM_4) {
+        pattern = SplitPattern::SIZE_2N_x_2N;
+    } else if (num_sub_img <= NUM_6) {
+        pattern = width >= height ? SplitPattern::SIZE_3N_x_2N : SplitPattern::SIZE_2N_x_3N;
+    } else if (num_sub_img <= NUM_8) {
+        pattern = SplitPattern::SIZE_3N_x_3N;
+    } else if (num_sub_img <= NUM_12) {
+        pattern = width >= height ? SplitPattern::SIZE_4N_x_3N : SplitPattern::SIZE_3N_x_4N;
     } else {
-        pattern = SplitPattern::SIZE_5Nx5N;
+        pattern = SplitPattern::SIZE_5N_x_5N;
     }
     return pattern;
 }
@@ -1309,18 +1328,18 @@ static SplitPattern CalcPatternOneSideOver24k(uint32_t width, uint32_t height)
     constexpr uint32_t SUB_REGION_HEIGHT = 6 * 1024;
     SplitPattern pattern;
     uint64_t num_sub_img = DIV_ROUND_UP(width * height, SUB_REGION_WIDTH * SUB_REGION_HEIGHT);
-    if (num_sub_img <= 2) {
-        pattern = width >= height ? SplitPattern::SIZE_3NxN : SplitPattern::SIZE_Nx3N;
-    } else if (num_sub_img <= 4) {
-        pattern = width >= height ? SplitPattern::SIZE_3Nx2N : SplitPattern::SIZE_2Nx3N;
-    } else if (num_sub_img <= 6) {
-        pattern = width >= height ? SplitPattern::SIZE_4Nx2N : SplitPattern::SIZE_2Nx4N;
-    } else if (num_sub_img <= 8) {
-        pattern = width >= height ? SplitPattern::SIZE_4Nx3N : SplitPattern::SIZE_3Nx4N;
-    } else if (num_sub_img <= 12) {
-        pattern = width >= height ? SplitPattern::SIZE_5Nx3N : SplitPattern::SIZE_3Nx5N;
+    if (num_sub_img <= NUM_2) {
+        pattern = width >= height ? SplitPattern::SIZE_3N_x_N : SplitPattern::SIZE_N_x_3N;
+    } else if (num_sub_img <= NUM_4) {
+        pattern = width >= height ? SplitPattern::SIZE_3N_x_2N : SplitPattern::SIZE_2N_x_3N;
+    } else if (num_sub_img <= NUM_6) {
+        pattern = width >= height ? SplitPattern::SIZE_4N_x_2N : SplitPattern::SIZE_2N_x_4N;
+    } else if (num_sub_img <= NUM_8) {
+        pattern = width >= height ? SplitPattern::SIZE_4N_x_3N : SplitPattern::SIZE_3N_x_4N;
+    } else if (num_sub_img <= NUM_12) {
+        pattern = width >= height ? SplitPattern::SIZE_5N_x_3N : SplitPattern::SIZE_3N_x_5N;
     } else {
-        pattern = SplitPattern::SIZE_5Nx5N;
+        pattern = SplitPattern::SIZE_5N_x_5N;
     }
     return pattern;
 }
@@ -1328,29 +1347,37 @@ static SplitPattern CalcPatternOneSideOver24k(uint32_t width, uint32_t height)
 using Regions = std::vector<std::vector<SkIRect>>;
 static Regions CreateRegions(SplitPattern pattern)
 {
-    if      (pattern == SplitPattern::SIZE_2NxN)  { return Regions(2, std::vector<SkIRect>(1)); }
-    else if (pattern == SplitPattern::SIZE_Nx2N)  { return Regions(1, std::vector<SkIRect>(2)); }
-
-    else if (pattern == SplitPattern::SIZE_3NxN)  { return Regions(3, std::vector<SkIRect>(1)); }
-    else if (pattern == SplitPattern::SIZE_Nx3N)  { return Regions(1, std::vector<SkIRect>(3)); }
-
-    else if (pattern == SplitPattern::SIZE_2Nx2N) { return Regions(2, std::vector<SkIRect>(2)); }
-
-    else if (pattern == SplitPattern::SIZE_3Nx2N) { return Regions(3, std::vector<SkIRect>(2)); }
-    else if (pattern == SplitPattern::SIZE_2Nx3N) { return Regions(2, std::vector<SkIRect>(3)); }
-
-    else if (pattern == SplitPattern::SIZE_3Nx3N) { return Regions(3, std::vector<SkIRect>(3)); }
-
-    else if (pattern == SplitPattern::SIZE_4Nx2N) { return Regions(4, std::vector<SkIRect>(2)); }
-    else if (pattern == SplitPattern::SIZE_2Nx4N) { return Regions(2, std::vector<SkIRect>(4)); }
-
-    else if (pattern == SplitPattern::SIZE_4Nx3N) { return Regions(4, std::vector<SkIRect>(3)); }
-    else if (pattern == SplitPattern::SIZE_3Nx4N) { return Regions(3, std::vector<SkIRect>(4)); }
-
-    else if (pattern == SplitPattern::SIZE_5Nx3N) { return Regions(5, std::vector<SkIRect>(3)); }
-    else if (pattern == SplitPattern::SIZE_3Nx5N) { return Regions(3, std::vector<SkIRect>(5)); }
-
-    else                                          { return Regions(5, std::vector<SkIRect>(5)); }
+    if (pattern == SplitPattern::SIZE_2N_x_N) {
+        return Regions(NUM_2, std::vector<SkIRect>(NUM_1));
+    } else if (pattern == SplitPattern::SIZE_N_x_2N) {
+        return Regions(NUM_1, std::vector<SkIRect>(NUM_2));
+    } else if (pattern == SplitPattern::SIZE_3N_x_N) {
+        return Regions(NUM_3, std::vector<SkIRect>(NUM_1));
+    } else if (pattern == SplitPattern::SIZE_N_x_3N) {
+        return Regions(NUM_1, std::vector<SkIRect>(NUM_3));
+    } else if (pattern == SplitPattern::SIZE_2N_x_2N) {
+        return Regions(NUM_2, std::vector<SkIRect>(NUM_2));
+    } else if (pattern == SplitPattern::SIZE_3N_x_2N) {
+        return Regions(NUM_3, std::vector<SkIRect>(NUM_2));
+    } else if (pattern == SplitPattern::SIZE_2N_x_3N) {
+        return Regions(NUM_2, std::vector<SkIRect>(NUM_3));
+    } else if (pattern == SplitPattern::SIZE_3N_x_3N) {
+        return Regions(NUM_3, std::vector<SkIRect>(NUM_3));
+    } else if (pattern == SplitPattern::SIZE_4N_x_2N) {
+        return Regions(NUM_4, std::vector<SkIRect>(NUM_2));
+    } else if (pattern == SplitPattern::SIZE_2N_x_4N) {
+        return Regions(NUM_2, std::vector<SkIRect>(NUM_4));
+    } else if (pattern == SplitPattern::SIZE_4N_x_3N) {
+        return Regions(NUM_4, std::vector<SkIRect>(NUM_3));
+    } else if (pattern == SplitPattern::SIZE_3N_x_4N) {
+        return Regions(NUM_3, std::vector<SkIRect>(NUM_4));
+    } else if (pattern == SplitPattern::SIZE_5N_x_3N) {
+        return Regions(NUM_5, std::vector<SkIRect>(NUM_3));
+    } else if (pattern == SplitPattern::SIZE_3N_x_5N) {
+        return Regions(NUM_3, std::vector<SkIRect>(NUM_5));
+    } else {
+        return Regions(NUM_5, std::vector<SkIRect>(NUM_5));
+    }
 }
 
 static Regions SplitFull(uint32_t width, uint32_t height)
@@ -1363,7 +1390,7 @@ static Regions SplitFull(uint32_t width, uint32_t height)
                (width <= MAX_SIDE_LENGTH && height > MAX_SIDE_LENGTH)) {
         pattern = CalcPatternOneSideOver24k(width, height);
     } else {
-        pattern = SplitPattern::SIZE_5Nx5N;
+        pattern = SplitPattern::SIZE_5N_x_5N;
     }
 
     auto regions = CreateRegions(pattern);
@@ -1380,16 +1407,16 @@ static Regions SplitFull(uint32_t width, uint32_t height)
     for (uint32_t col = 0; col < num_col - 1; col++) {
         regions[col][num_row - 1] =
             SkIRect::MakeXYWH(col * width_sub_img, (num_row - 1) * height_sub_img,
-                              width_sub_img, height - (num_row - 1) * height_sub_img);
+                width_sub_img, height - (num_row - 1) * height_sub_img);
     }
     for (uint32_t row = 0; row < num_row - 1; row++) {
         regions[num_col - 1][row] =
             SkIRect::MakeXYWH((num_col - 1) * width_sub_img, row * height_sub_img,
-                               width - (num_col - 1) * width_sub_img, height_sub_img);
+                width - (num_col - 1) * width_sub_img, height_sub_img);
     }
     regions[num_col - 1][num_row - 1] =
         SkIRect::MakeXYWH((num_col - 1) * width_sub_img, (num_row - 1) * height_sub_img,
-                           width - (num_col - 1) * width_sub_img, height - (num_row - 1) * height_sub_img);
+            width - (num_col - 1) * width_sub_img, height - (num_row - 1) * height_sub_img);
     return regions;
 }
 
@@ -1416,7 +1443,6 @@ bool JpegHwFullDecoder::AllocDMACtx()
     REQUIRE_LOG(const_cast<ExtDecoder*>(jpg.extDecoder)->DmaMemAlloc(subJpg.ctx, byteCount, subJpg.ctxSizeInfo)
                 == SUCCESS, "subJpg ctx DMA buffer alloc failed");
 
-
     auto scaledFullSize = MapToScaledSize(jpg.dinfo->image_width, jpg.dinfo->image_height, jpg.ctx->info.pixelFormat);
     jpg.ctxSizeInfo = jpg.extDecoder->info_.makeWH(scaledFullSize.width(), scaledFullSize.height());
     if (jpg.ctx->info.pixelFormat == PixelFormat::NV21) {
@@ -1427,9 +1453,9 @@ bool JpegHwFullDecoder::AllocDMACtx()
                     static_cast<uint64_t>(jpg.ctxSizeInfo.bytesPerPixel());
     }
     REQUIRE_LOG(!SkImageInfo::ByteSizeOverflowed(byteCount),
-                "%{public}s too large region size: %{public}llu", __func__, static_cast<unsigned long long>(byteCount));
-    REQUIRE_LOG(const_cast<ExtDecoder*>(jpg.extDecoder)->DmaMemAlloc(*jpg.ctx, byteCount, jpg.ctxSizeInfo)
-                == SUCCESS, "dctx DMA buffer alloc failed");
+        "%{public}s too large region size: %{public}llu", __func__, static_cast<unsigned long long>(byteCount));
+    REQUIRE_LOG(const_cast<ExtDecoder*>(jpg.extDecoder)->DmaMemAlloc(*jpg.ctx, byteCount, jpg.ctxSizeInfo) == SUCCESS,
+        "dctx DMA buffer alloc failed");
     return true;
 }
 
@@ -1455,10 +1481,9 @@ bool JpegHwFullDecoder::DecodeFull()
     for (uint32_t row = 0; row < numRow; row++) {
         for (uint32_t col = 0; col < numCol; col++) {
             auto& region = splittedRegions[col][row];
-            if (CreateSub(region) && RSTBasedDecoder::DoHardWareDecode() && MergeRegion(region)) {}
-            else {
+            if (!(CreateSub(region) && RSTBasedDecoder::DoHardWareDecode() && MergeRegion(region))) {
                 REQUIRE_LOG(false, "[%{public}u, %{public}u, %{public}u, %{public}u]",
-                                    region.x(), region.y(), region.width(), region.height());
+                    region.x(), region.y(), region.width(), region.height());
             }
         }
     }
@@ -1466,8 +1491,8 @@ bool JpegHwFullDecoder::DecodeFull()
     return true;
 }
 
-static std::vector<FullDecInfo::MCULineInfo>
-CreateInfo(const SkIRect& region, uint32_t width, uint32_t height, uint32_t rst)
+static std::vector<FullDecInfo::MCULineInfo> CreateInfo(const SkIRect& region, uint32_t width, uint32_t height,
+                                                        uint32_t rst)
 {
     width = ALIGN_UP(width, MCU_WIDTH);
     height = ALIGN_UP(height, MCU_HEIGHT);
@@ -1536,9 +1561,9 @@ bool JpegHwFullDecoder::CreateSub(const SkIRect& subRegion)
     }
     streamData[streamSize - 1] = MARK_EOI;
     subJpg.origSize = SkISize::Make(numRSTs * jpg.dinfo->restart_interval * MCU_WIDTH, numMCULine * MCU_HEIGHT);
-    streamData[jpg.YPos] = (static_cast<uint32_t>(subJpg.origSize.height()) >> 8) & 0xff;
+    streamData[jpg.YPos] = (static_cast<uint32_t>(subJpg.origSize.height()) >> NUM_8) & 0xff;
     streamData[jpg.YPos + 1] = static_cast<uint32_t>(subJpg.origSize.height()) & 0xff;
-    streamData[jpg.YPos + 2] = (static_cast<uint32_t>(subJpg.origSize.width()) >> 8) & 0xff;
+    streamData[jpg.YPos + 2] = (static_cast<uint32_t>(subJpg.origSize.width()) >> NUM_8) & 0xff;
     streamData[jpg.YPos + 3] = static_cast<uint32_t>(subJpg.origSize.width()) & 0xff;
 
     ImageUtils::DumpDataIfDumpEnabled(reinterpret_cast<char*>(subJpg.streamData), subJpg.streamSize, "subjpeg");
@@ -1562,9 +1587,9 @@ bool JpegHwFullDecoder::MergeRegionNV21(uint8_t* src, uint64_t srcStride, uint8_
     errno_t err;
     for (uint32_t srcRow = srcStartRow, dstRow = 0; srcRow < srcEndRow; srcRow++, dstRow++) {
         err = memcpy_s(dst + dstRow * dstStride, copyLen,
-                        src + srcRow * srcStride +
-                        GetScaledValue(info[srcRow / scaledMCUHeight].cropOffsetX, PixelFormat::NV21),
-                        copyLen);
+                       src + srcRow * srcStride +
+                       GetScaledValue(info[srcRow / scaledMCUHeight].cropOffsetX, PixelFormat::NV21),
+                       copyLen);
         REQUIRE_LOG(err == EOK, "target pixel copy failed. errno:%{public}d", err);
     }
 
@@ -1577,9 +1602,9 @@ bool JpegHwFullDecoder::MergeRegionNV21(uint8_t* src, uint64_t srcStride, uint8_
     srcEndRow /= NUM_2;
     for (uint32_t srcRow = srcStartRow, dstRow = 0; srcRow < srcEndRow; srcRow++, dstRow++) {
         err = memcpy_s(dst + dstRow * dstStride, copyLen,
-                        src + srcRow * srcStride +
-                        GetScaledValue(info[srcRow * NUM_2 / scaledMCUHeight].cropOffsetX, PixelFormat::NV21),
-                        copyLen);
+                       src + srcRow * srcStride +
+                       GetScaledValue(info[srcRow * NUM_2 / scaledMCUHeight].cropOffsetX, PixelFormat::NV21),
+                       copyLen);
         REQUIRE_LOG(err == EOK, "target pixel copy failed. errno:%{public}d", err);
     }
     return true;
@@ -1602,9 +1627,9 @@ bool JpegHwFullDecoder::MergeRegionRGBA(uint8_t* src, uint64_t srcStride, uint8_
     errno_t err;
     for (uint32_t srcRow = srcStartRow, dstRow = 0; srcRow < srcEndRow; srcRow++, dstRow++) {
         err = memcpy_s(dst + dstRow * dstStride, copyLen,
-                        src + srcRow * srcStride +
-                        GetScaledValue(info[srcRow / scaledMCUHeight].cropOffsetX, PixelFormat::RGBA_8888) * NUM_4,
-                        copyLen);
+                       src + srcRow * srcStride +
+                       GetScaledValue(info[srcRow / scaledMCUHeight].cropOffsetX, PixelFormat::RGBA_8888) * NUM_4,
+                       copyLen);
         REQUIRE_LOG(err == EOK, "target pixel copy failed. errno:%{public}d", err);
     }
     return true;

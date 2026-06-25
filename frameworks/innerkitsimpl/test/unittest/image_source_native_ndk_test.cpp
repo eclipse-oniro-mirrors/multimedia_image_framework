@@ -2356,7 +2356,9 @@ HWTEST_F(ImagSourceNdk2Test, ImageRegionDecode019, TestSize.Level3)
         OH_DecodingOptions_SetCropAndScaleStrategy(opts, 2);
         Image_Size desiredSize = { 1111, 888 };
         OH_DecodingOptions_SetDesiredSize(opts, &desiredSize);
-        Image_ErrorCode ret = OH_ImageSourceNative_CreatePixelmapUsingAllocator(imageSource, opts, allocator, &resPixMap);
+        Image_ErrorCode ret = OH_ImageSourceNative_CreatePixelmapUsingAllocator(
+            imageSource, opts, allocator, &resPixMap
+        );
         EXPECT_EQ(ret, IMAGE_SUCCESS);
         EXPECT_NE(resPixMap, nullptr);
         OH_ImageSourceNative_Release(imageSource);
