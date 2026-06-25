@@ -776,11 +776,19 @@ bool ExtDecoder::IsHeifValidCrop(OHOS::Media::Rect &crop, SkImageInfo &info,
         return false;
     }
     if (crop.height > info.height() - crop.top) {
-        heifGridRegionInfo_.heightPadding = gridInfoRows * heifGridRegionInfo_.tileHeight - info.height();
+        int64_t totalHeight = static_cast<int64_t>(gridInfoRows) * heifGridRegionInfo_.tileHeight;
+        if (totalHeight < 0 || totalHeight > INT32_MAX) {
+            return false;
+        }
+        heifGridRegionInfo_.heightPadding = static_cast<int32_t>(totalHeight) - info.height();
         crop.height = info.height() - crop.top;
     }
     if (crop.width > info.width() - crop.left) {
-        heifGridRegionInfo_.widthPadding = gridInfoCols * heifGridRegionInfo_.tileWidth - info.width();
+        int64_t totalWidth = static_cast<int64_t>(gridInfoCols) * heifGridRegionInfo_.tileWidth;
+        if (totalWidth < 0 || totalWidth > INT32_MAX) {
+            return false;
+        }
+        heifGridRegionInfo_.widthPadding = static_cast<int32_t>(totalWidth) - info.width();
         crop.width = info.width() - crop.left;
     }
     desiredRegion_.left = crop.left;
@@ -808,6 +816,12 @@ uint32_t ExtDecoder::ExtractHeifRegion(const PixelDecodeOptions &opts)
             return ERR_IMAGE_DECODE_FAILED;
         }
         GridInfo gridInfo = heifContext->GetGridInfo();
+        if (gridInfo.tileWidth > INT32_MAX || gridInfo.tileHeight > INT32_MAX ||
+            gridInfo.cols > INT32_MAX || gridInfo.rows > INT32_MAX) {
+            IMAGE_LOGE("Invalid heif grid info exceeds INT32_MAX, w=%{public}u h=%{public}u c=%{public}u r=%{public}u",
+                gridInfo.tileWidth, gridInfo.tileHeight, gridInfo.cols, gridInfo.rows);
+            return ERR_IMAGE_INVALID_PARAMETER;
+        }
         if (gridInfo.tileWidth != static_cast<uint32_t>(info_.width()) ||
             gridInfo.tileHeight != static_cast<uint32_t>(info_.height())) {
             heifGridRegionInfo_.isGridType = true;

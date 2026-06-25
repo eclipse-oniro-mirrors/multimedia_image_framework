@@ -36,7 +36,7 @@ constexpr uint32_t HEADER_LEAST_SIZE = 8;
 constexpr size_t HEADER_NEXT_SIZE = 16;
 constexpr uint32_t OFFSET_SIZE = 8;
 
-constexpr uint32_t SHIFT_BASE = 8;
+constexpr uint32_t SHIFT_BASE = 8; 
 constexpr uint32_t TIMES_SEVEN = 7;
 constexpr uint32_t TIMES_FIVE = 5;
 constexpr uint32_t TIMES_THREE = 3;
