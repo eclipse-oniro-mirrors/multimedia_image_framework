@@ -1541,9 +1541,6 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMap(uint32_t index, const DecodeOpt
 
         if (finalOutputStep == FinalOutputStep::NO_CHANGE) {
             context.allocatorType = opts_.allocatorType;
-            if (context.allocatorType == AllocatorType::DEFAULT) {
-                context.allocatorType = AllocatorType::SHARE_MEM_ALLOC;
-            }
         } else {
             context.allocatorType = AllocatorType::SHARE_MEM_ALLOC;
         }
