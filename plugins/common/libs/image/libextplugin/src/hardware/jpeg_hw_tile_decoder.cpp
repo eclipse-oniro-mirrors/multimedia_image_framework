@@ -118,14 +118,12 @@ static inline float Max(float a, float b)
     return (a > b) ? a : b;
 }
 
-enum class TableClass : uint8_t
-{
+enum class TableClass : uint8_t {
     DC_TABLE = 0,
     AC_TABLE,
 };
 
-enum class TableComponent : uint8_t
-{
+enum class TableComponent : uint8_t {
     LUMA = 0,
     CHROMA,
 };
