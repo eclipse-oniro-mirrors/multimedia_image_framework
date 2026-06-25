@@ -56,6 +56,10 @@ struct PackingOptionsForTiff {
     int32_t resolutionUnit = 0;   // Resolution unit, 0 means not written, 2=INCH
 };
 
+struct PackingOptionsForAstc {
+    bool enableGPUEncode = false;
+};
+
 struct PackOption {
     /**
      * Specify the file format of the output image.
@@ -143,6 +147,11 @@ struct PackOption {
      * TIFF-specific encoding options.
      */
     PackingOptionsForTiff tiffPackingOption;
+
+    /**
+     * ASTC-specific encoding options.
+     */
+    PackingOptionsForAstc astcPackingOption;
 };
 
 class PackerStream;
