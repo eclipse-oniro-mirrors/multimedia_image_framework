@@ -181,7 +181,7 @@ private:
     uint32_t GetFramePixels(SkImageInfo& info, uint8_t* buffer, uint64_t rowStride, SkCodec::Options options);
     FrameCacheInfo InitFrameCacheInfo(const uint64_t rowStride, SkImageInfo info);
     bool FrameCacheInfoIsEqual(FrameCacheInfo& src, FrameCacheInfo& dst);
-    uint32_t UpdateHardWareDecodeInfo(DecodeContext &context);
+    void UpdateHardWareDecodeInfo(DecodeContext &context, const SkImageInfo& info);
     uint32_t ExtractHeifRegion(const PixelDecodeOptions &opts);
     bool IsHeifValidCrop(OHOS::Media::Rect &crop, SkImageInfo &info, int32_t gridInfoCols, int32_t gridInfoRows);
     void SetHeifDecodeRegion(DecodeContext &context, int32_t gridTileWidth, int32_t gridTileHeight);
@@ -284,6 +284,13 @@ private:
     std::shared_ptr<JpegHardwareDecoder> hwDecoderPtr_ = nullptr;
     bool initJpegErr_ = false;
 #endif
+
+#ifdef JPEG_HW_TILE_DECODE_ENABLE
+    friend class RSTBasedDecoder;
+    friend class JpegHwRegionDecoder;
+    friend class JpegHwFullDecoder;
+#endif
+
 };
 } // namespace ImagePlugin
 } // namespace OHOS
