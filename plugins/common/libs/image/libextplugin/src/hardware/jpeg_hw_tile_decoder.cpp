@@ -584,20 +584,21 @@ public:
         return true;
     }
 
+    std::optional<DataUnit::Code> FindCode(HuffTable& htbl, uint32_t value)
+    {
+        for (uint32_t i = 0; i < htbl.numCodes; i++) {
+            if (htbl.HUFFVAL[i] == value) {
+                return DataUnit::Code {
+                    .bits = htbl.HUFFCODE[i],
+                    .n = htbl.HUFFSIZE[i]
+                };
+            }
+        }
+        return std::nullopt;
+    }
+
     std::optional<MCU> GenerateDummyMCU()
     {
-        std::function findCode = [](HuffTable& htbl, uint32_t value) -> std::optional<DataUnit::Code> {
-            for (uint32_t i = 0; i < htbl.numCodes; i++) {
-                if (htbl.HUFFVAL[i] == value) {
-                    return DataUnit::Code {
-                        .bits = htbl.HUFFCODE[i],
-                        .n = htbl.HUFFSIZE[i]
-                    };
-                }
-            }
-            return std::nullopt;
-        };
-
         MCU mcu;
         for (uint32_t blkIdx = 0; blkIdx < NUM_6; blkIdx++) {
             auto& du = mcu.dus[blkIdx];
