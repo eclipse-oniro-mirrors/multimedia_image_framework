@@ -2298,7 +2298,9 @@ HWTEST_F(ImagSourceNdk2Test, ImageRegionDecode017, TestSize.Level3)
         Image_Region desiredRegion = {0, 0, 1920, 1080};
         OH_DecodingOptions_SetDesiredRegion(opts, &desiredRegion);
         OH_DecodingOptions_SetCropAndScaleStrategy(opts, 2);
-        Image_ErrorCode ret = OH_ImageSourceNative_CreatePixelmapUsingAllocator(imageSource, opts, allocator, &resPixMap);
+        Image_ErrorCode ret = OH_ImageSourceNative_CreatePixelmapUsingAllocator(
+            imageSource, opts, allocator, &resPixMap
+        );
         EXPECT_EQ(ret, IMAGE_SUCCESS);
         EXPECT_NE(resPixMap, nullptr);
         OH_ImageSourceNative_Release(imageSource);

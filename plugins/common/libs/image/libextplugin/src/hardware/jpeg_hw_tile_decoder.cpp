@@ -139,8 +139,7 @@ constexpr uint8_t MAX_NUM_AC_HUFFCODE = 0xA2;
 constexpr uint8_t MAX_NUM_HUFFCODE = MAX_NUM_AC_HUFFCODE;
 }
 
-struct HuffTable
-{
+struct HuffTable {
     TableClass tc;
     TableComponent th;
 
@@ -165,12 +164,11 @@ struct HuffTable
 
     HuffTable()
         : tc(TableClass::DC_TABLE), th(TableComponent::LUMA) {}
-    HuffTable(TableClass tc_, TableComponent th_)
-        : tc(tc_), th(th_) {}
+    HuffTable(TableClass tcParam, TableComponent thParam)
+        : tc(tcParam), th(thParam) {}
 };
 
-struct HuffTables
-{
+struct HuffTables {
     HuffTables() {}
     HuffTable& GetTable(TableClass tc, TableComponent th)
     {
@@ -188,8 +186,7 @@ private:
     HuffTable tables[4];  // 2 DC tables and 2 AC tables in baseline process
 };
 
-class JpegHuff
-{
+class JpegHuff {
 public:
     static bool Parse(uint8_t* jpg, size_t jpgLen, HuffTables& tables)
     {
@@ -309,10 +306,8 @@ static inline uint32_t CLZ(uint32_t a)
 #endif
 }
 
-struct DataUnit  // 8x8 in DCT-based process
-{
-    struct Code
-    {
+struct DataUnit {
+    struct Code {
         uint32_t bits = 0;
         uint32_t n = 0;
     };
@@ -345,8 +340,7 @@ struct DataUnit  // 8x8 in DCT-based process
     }
 };
 
-struct MCU
-{
+struct MCU {
     DataUnit dus[NUM_DATAUNIT];
 
     MCU()
@@ -395,9 +389,9 @@ protected:
         if (comp == 0) {
             return dus[0];
         } else if (comp == 1) {
-            return dus[4];
+            return dus[NUM_4];
         } else {
-            return dus[5];
+            return dus[NUM_5];
         }
     }
 };
@@ -472,8 +466,7 @@ protected:
         }                                                                                   \
     } while (0)
 
-struct Bitstream
-{
+struct Bitstream {
     uint8_t* jpg;
     size_t jpgLen;
     size_t pos;
@@ -602,12 +595,12 @@ public:
         MCU mcu;
         for (uint32_t blkIdx = 0; blkIdx < NUM_6; blkIdx++) {
             auto& du = mcu.dus[blkIdx];
-            auto code = findCode(*dcHtbl[du.comp], 0);
+            auto code = FindCode(*dcHtbl[du.comp], 0);
             if (!code) {
                 return std::nullopt;
             }
             du.dc_code = *code;
-            code = findCode(*acHtbl[du.comp], 0);
+            code = FindCode(*acHtbl[du.comp], 0);
             if (!code) {
                 return std::nullopt;
             }
@@ -815,8 +808,9 @@ bool RSTBasedDecoder::CheckResolution(uint32_t image_width, uint32_t image_heigh
 
     auto hwDecoder = std::make_unique<JpegHardwareDecoder>();
     REQUIRE_LOG(hwDecoder, "create JpegHardwareDecoder failed");
-    REQUIRE_LOG(hwDecoder->IsHardwareDecodeSupported(IMAGE_JPEG_FORMAT, {NUM_8k, NUM_8k}),
-        "the jpeg hardware decoder doesn't support 8192x8192");
+    REQUIRE_LOG(hwDecoder->IsHardwareDecodeSupported(IMAGE_JPEG_FORMAT,
+                    {NUM_8k, NUM_8k}),
+                "the jpeg hardware decoder doesn't support 8192x8192");
 
     constexpr int32_t maxLengthJ = 15 * 1000;
     REQUIRE_LOG(hwDecoder->IsHardwareDecodeSupported(IMAGE_JPEG_FORMAT,
@@ -1290,15 +1284,15 @@ bool JpegHwFullDecoder::ProcessLastECS()
 }
 
 enum class SplitPattern : uint32_t {
-    SIZE_2N_x_N = 0, SIZE_N_x_2N,
-    SIZE_3N_x_N,     SIZE_N_x_3N,
-    SIZE_2N_x_2N,
-    SIZE_3N_x_2N,    SIZE_2N_x_3N,
-    SIZE_3N_x_3N,
-    SIZE_4N_x_2N,    SIZE_2N_x_4N,
-    SIZE_4N_x_3N,    SIZE_3N_x_4N,
-    SIZE_5N_x_3N,    SIZE_3N_x_5N,
-    SIZE_5N_x_5N,
+    SIZE_2NxN = 0, SIZE_Nx2N,
+    SIZE_3NxN,     SIZE_Nx3N,
+    SIZE_2Nx2N,
+    SIZE_3Nx2N,    SIZE_2Nx3N,
+    SIZE_3Nx3N,
+    SIZE_4Nx2N,    SIZE_2Nx4N,
+    SIZE_4Nx3N,    SIZE_3Nx4N,
+    SIZE_5Nx3N,    SIZE_3Nx5N,
+    SIZE_5Nx5N,
 };
 
 static SplitPattern CalcPatternNormal(uint32_t width, uint32_t height)
@@ -1308,17 +1302,17 @@ static SplitPattern CalcPatternNormal(uint32_t width, uint32_t height)
     SplitPattern pattern;
     uint64_t num_sub_img = DIV_ROUND_UP(width * height, SUB_REGION_WIDTH * SUB_REGION_HEIGHT);
     if (num_sub_img <= NUM_2) {
-        pattern = width >= height ? SplitPattern::SIZE_2N_x_N : SplitPattern::SIZE_N_x_2N;
+        pattern = width >= height ? SplitPattern::SIZE_2NxN : SplitPattern::SIZE_Nx2N;
     } else if (num_sub_img <= NUM_4) {
-        pattern = SplitPattern::SIZE_2N_x_2N;
+        pattern = SplitPattern::SIZE_2Nx2N;
     } else if (num_sub_img <= NUM_6) {
-        pattern = width >= height ? SplitPattern::SIZE_3N_x_2N : SplitPattern::SIZE_2N_x_3N;
+        pattern = width >= height ? SplitPattern::SIZE_3Nx2N : SplitPattern::SIZE_2Nx3N;
     } else if (num_sub_img <= NUM_8) {
-        pattern = SplitPattern::SIZE_3N_x_3N;
+        pattern = SplitPattern::SIZE_3Nx3N;
     } else if (num_sub_img <= NUM_12) {
-        pattern = width >= height ? SplitPattern::SIZE_4N_x_3N : SplitPattern::SIZE_3N_x_4N;
+        pattern = width >= height ? SplitPattern::SIZE_4Nx3N : SplitPattern::SIZE_3Nx4N;
     } else {
-        pattern = SplitPattern::SIZE_5N_x_5N;
+        pattern = SplitPattern::SIZE_5Nx5N;
     }
     return pattern;
 }
@@ -1330,17 +1324,17 @@ static SplitPattern CalcPatternOneSideOver24k(uint32_t width, uint32_t height)
     SplitPattern pattern;
     uint64_t num_sub_img = DIV_ROUND_UP(width * height, SUB_REGION_WIDTH * SUB_REGION_HEIGHT);
     if (num_sub_img <= NUM_2) {
-        pattern = width >= height ? SplitPattern::SIZE_3N_x_N : SplitPattern::SIZE_N_x_3N;
+        pattern = width >= height ? SplitPattern::SIZE_3NxN : SplitPattern::SIZE_Nx3N;
     } else if (num_sub_img <= NUM_4) {
-        pattern = width >= height ? SplitPattern::SIZE_3N_x_2N : SplitPattern::SIZE_2N_x_3N;
+        pattern = width >= height ? SplitPattern::SIZE_3Nx2N : SplitPattern::SIZE_2Nx3N;
     } else if (num_sub_img <= NUM_6) {
-        pattern = width >= height ? SplitPattern::SIZE_4N_x_2N : SplitPattern::SIZE_2N_x_4N;
+        pattern = width >= height ? SplitPattern::SIZE_4Nx2N : SplitPattern::SIZE_2Nx4N;
     } else if (num_sub_img <= NUM_8) {
-        pattern = width >= height ? SplitPattern::SIZE_4N_x_3N : SplitPattern::SIZE_3N_x_4N;
+        pattern = width >= height ? SplitPattern::SIZE_4Nx3N : SplitPattern::SIZE_3Nx4N;
     } else if (num_sub_img <= NUM_12) {
-        pattern = width >= height ? SplitPattern::SIZE_5N_x_3N : SplitPattern::SIZE_3N_x_5N;
+        pattern = width >= height ? SplitPattern::SIZE_5Nx3N : SplitPattern::SIZE_3Nx5N;
     } else {
-        pattern = SplitPattern::SIZE_5N_x_5N;
+        pattern = SplitPattern::SIZE_5Nx5N;
     }
     return pattern;
 }
@@ -1348,33 +1342,33 @@ static SplitPattern CalcPatternOneSideOver24k(uint32_t width, uint32_t height)
 using Regions = std::vector<std::vector<SkIRect>>;
 static Regions CreateRegions(SplitPattern pattern)
 {
-    if (pattern == SplitPattern::SIZE_2N_x_N) {
+    if (pattern == SplitPattern::SIZE_2NxN) {
         return Regions(NUM_2, std::vector<SkIRect>(NUM_1));
-    } else if (pattern == SplitPattern::SIZE_N_x_2N) {
+    } else if (pattern == SplitPattern::SIZE_Nx2N) {
         return Regions(NUM_1, std::vector<SkIRect>(NUM_2));
-    } else if (pattern == SplitPattern::SIZE_3N_x_N) {
+    } else if (pattern == SplitPattern::SIZE_3NxN) {
         return Regions(NUM_3, std::vector<SkIRect>(NUM_1));
-    } else if (pattern == SplitPattern::SIZE_N_x_3N) {
+    } else if (pattern == SplitPattern::SIZE_Nx3N) {
         return Regions(NUM_1, std::vector<SkIRect>(NUM_3));
-    } else if (pattern == SplitPattern::SIZE_2N_x_2N) {
+    } else if (pattern == SplitPattern::SIZE_2Nx2N) {
         return Regions(NUM_2, std::vector<SkIRect>(NUM_2));
-    } else if (pattern == SplitPattern::SIZE_3N_x_2N) {
+    } else if (pattern == SplitPattern::SIZE_3Nx2N) {
         return Regions(NUM_3, std::vector<SkIRect>(NUM_2));
-    } else if (pattern == SplitPattern::SIZE_2N_x_3N) {
+    } else if (pattern == SplitPattern::SIZE_2Nx3N) {
         return Regions(NUM_2, std::vector<SkIRect>(NUM_3));
-    } else if (pattern == SplitPattern::SIZE_3N_x_3N) {
+    } else if (pattern == SplitPattern::SIZE_3Nx3N) {
         return Regions(NUM_3, std::vector<SkIRect>(NUM_3));
-    } else if (pattern == SplitPattern::SIZE_4N_x_2N) {
+    } else if (pattern == SplitPattern::SIZE_4Nx2N) {
         return Regions(NUM_4, std::vector<SkIRect>(NUM_2));
-    } else if (pattern == SplitPattern::SIZE_2N_x_4N) {
+    } else if (pattern == SplitPattern::SIZE_2Nx4N) {
         return Regions(NUM_2, std::vector<SkIRect>(NUM_4));
-    } else if (pattern == SplitPattern::SIZE_4N_x_3N) {
+    } else if (pattern == SplitPattern::SIZE_4Nx3N) {
         return Regions(NUM_4, std::vector<SkIRect>(NUM_3));
-    } else if (pattern == SplitPattern::SIZE_3N_x_4N) {
+    } else if (pattern == SplitPattern::SIZE_3Nx4N) {
         return Regions(NUM_3, std::vector<SkIRect>(NUM_4));
-    } else if (pattern == SplitPattern::SIZE_5N_x_3N) {
+    } else if (pattern == SplitPattern::SIZE_5Nx3N) {
         return Regions(NUM_5, std::vector<SkIRect>(NUM_3));
-    } else if (pattern == SplitPattern::SIZE_3N_x_5N) {
+    } else if (pattern == SplitPattern::SIZE_3Nx5N) {
         return Regions(NUM_3, std::vector<SkIRect>(NUM_5));
     } else {
         return Regions(NUM_5, std::vector<SkIRect>(NUM_5));
@@ -1391,7 +1385,7 @@ static Regions SplitFull(uint32_t width, uint32_t height)
                (width <= MAX_SIDE_LENGTH && height > MAX_SIDE_LENGTH)) {
         pattern = CalcPatternOneSideOver24k(width, height);
     } else {
-        pattern = SplitPattern::SIZE_5N_x_5N;
+        pattern = SplitPattern::SIZE_5Nx5N;
     }
 
     auto regions = CreateRegions(pattern);
@@ -1563,9 +1557,9 @@ bool JpegHwFullDecoder::CreateSub(const SkIRect& subRegion)
     streamData[streamSize - 1] = MARK_EOI;
     subJpg.origSize = SkISize::Make(numRSTs * jpg.dinfo->restart_interval * MCU_WIDTH, numMCULine * MCU_HEIGHT);
     streamData[jpg.YPos] = (static_cast<uint32_t>(subJpg.origSize.height()) >> NUM_8) & 0xff;
-    streamData[jpg.YPos + 1] = static_cast<uint32_t>(subJpg.origSize.height()) & 0xff;
-    streamData[jpg.YPos + 2] = (static_cast<uint32_t>(subJpg.origSize.width()) >> NUM_8) & 0xff;
-    streamData[jpg.YPos + 3] = static_cast<uint32_t>(subJpg.origSize.width()) & 0xff;
+    streamData[jpg.YPos + NUM_1] = static_cast<uint32_t>(subJpg.origSize.height()) & 0xff;
+    streamData[jpg.YPos + NUM_2] = (static_cast<uint32_t>(subJpg.origSize.width()) >> NUM_8) & 0xff;
+    streamData[jpg.YPos + NUM_3] = static_cast<uint32_t>(subJpg.origSize.width()) & 0xff;
 
     ImageUtils::DumpDataIfDumpEnabled(reinterpret_cast<char*>(subJpg.streamData), subJpg.streamSize, "subjpeg");
     return true;
