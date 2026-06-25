@@ -309,7 +309,7 @@ static OHOS::Media::PackOption ParsePackOptions(PackingOption const& options)
     packOption.backgroundColor = options.backgroundColor.value_or(0);
     ParsePackOptionOfSizeLimit(options, packOption);
     packOption.needsPackGPS = options.needsPackGPS.value_or(true);
-    packOption.tiffPackingOption = ParseTiffOptions(options.tiffPackingOption);
+    packOption.tiffPackingOption = ParseTiffOptions(options.tiffPackingOptions);
     return packOption;
 }
 
