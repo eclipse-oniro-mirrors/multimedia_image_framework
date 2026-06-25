@@ -52,28 +52,22 @@ using namespace Media;
 
 static bool IsProgressiveJpegCodec(SkCodec *codec)
 {
-    if (codec == nullptr || codec->getEncodedFormat() != SkEncodedImageFormat::kJPEG) {
-        return false;
-    }
+    bool cond = (codec == nullptr) || (codec->getEncodedFormat() != SkEncodedImageFormat::kJPEG);
+    CHECK_ERROR_RETURN_RET(cond, false);
     auto *jpegCodec = static_cast<SkJpegCodec *>(codec);
-    if (jpegCodec->decoderMgr() == nullptr || jpegCodec->decoderMgr()->dinfo() == nullptr) {
-        return false;
-    }
+    cond = (jpegCodec->decoderMgr() == nullptr) || (jpegCodec->decoderMgr()->dinfo() == nullptr);
+    CHECK_ERROR_RETURN_RET(cond, false);
     return jpegCodec->decoderMgr()->dinfo()->progressive_mode;
 }
 
 static bool IsLargeImage(const SkImageInfo &srcInfo)
 {
-    if (srcInfo.isEmpty()) {
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET(srcInfo.isEmpty(), false);
     const int32_t width = srcInfo.width();
     const int32_t height = srcInfo.height();
     // 验证尺寸上限，防止超大图像导致 OOM
-    if (width > BANDJPEG_V1_MAX_LONG_SIDE || height > BANDJPEG_V1_MAX_LONG_SIDE) {
-        IMAGE_LOGE("Image size exceeds max limit: %{public}dx%{public}d", width, height);
-        return false;
-    }
+    bool cond = (width > BANDJPEG_V1_MAX_LONG_SIDE) || (height > BANDJPEG_V1_MAX_LONG_SIDE);
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "Image size exceeds max limit: %{public}dx%{public}d", width, height);
     
     const int32_t longSide = std::max(width, height);
     return longSide >= BANDJPEG_V1_MIN_LONG_SIDE;
@@ -94,25 +88,22 @@ static bool IsYuvOutputFormatSupported(PixelFormat format)
 
 static bool ResolveYuvDecodeSize(const Size &requestedSize, const Size &sourceSize, Size &decodeSize)
 {
-    if (sourceSize.width <= 0 || sourceSize.height <= 0) {
-        return false;
-    }
+    bool cond = (sourceSize.width <= 0) || (sourceSize.height <= 0);
+    CHECK_ERROR_RETURN_RET(cond, false);
     if (requestedSize.width <= 0 || requestedSize.height <= 0) {
         decodeSize = sourceSize;
         return true;
     }
-    if (requestedSize.width > sourceSize.width || requestedSize.height > sourceSize.height) {
-        return false;
-    }
+    cond = (requestedSize.width > sourceSize.width) || (requestedSize.height > sourceSize.height);
+    CHECK_ERROR_RETURN_RET(cond, false);
     decodeSize = requestedSize;
     return true;
 }
 
 static bool ResolveRgbDecodeSize(const Size &requestedSize, const Size &sourceSize, Size &decodeSize)
 {
-    if (sourceSize.width <= 0 || sourceSize.height <= 0) {
-        return false;
-    }
+    bool cond = (sourceSize.width <= 0) || (sourceSize.height <= 0);
+    CHECK_ERROR_RETURN_RET(cond, false);
     if (requestedSize.width <= 0 || requestedSize.height <= 0) {
         decodeSize = sourceSize;
         return true;
@@ -124,10 +115,8 @@ static bool ResolveRgbDecodeSize(const Size &requestedSize, const Size &sourceSi
 
 static bool InitYuvDataInfo(DecodeContext &context, uint32_t width, uint32_t height)
 {
-    if (memset_s(&context.yuvInfo, sizeof(context.yuvInfo), 0, sizeof(context.yuvInfo)) != EOK) {
-        IMAGE_LOGE("InitYuvDataInfo memset failed");
-        return false;
-    }
+    bool cond = (memset_s(&context.yuvInfo, sizeof(context.yuvInfo), 0, sizeof(context.yuvInfo)) != EOK);
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "InitYuvDataInfo memset failed");
     context.yuvInfo.imageSize = { static_cast<int32_t>(width), static_cast<int32_t>(height) };
     context.yuvInfo.yWidth = width;
     context.yuvInfo.yHeight = height;
@@ -138,18 +127,14 @@ static bool InitYuvDataInfo(DecodeContext &context, uint32_t width, uint32_t hei
 #if !defined(CROSS_PLATFORM)
     if (context.allocatorType == AllocatorType::DMA_ALLOC) {
         auto *surfaceBuffer = reinterpret_cast<SurfaceBuffer *>(context.pixelsBuffer.context);
-        if (surfaceBuffer == nullptr) {
-            IMAGE_LOGE("InitYuvDataInfo surfaceBuffer is nullptr");
-            return false;
-        }
+        CHECK_ERROR_RETURN_RET_LOG(surfaceBuffer == nullptr, false, "InitYuvDataInfo surfaceBuffer is nullptr");
         OH_NativeBuffer_Planes *planes = nullptr;
         GSError retVal = surfaceBuffer->GetPlanesInfo(reinterpret_cast<void**>(&planes));
         uint32_t uvIndex = (context.info.pixelFormat == PixelFormat::NV12) ? NUM_1 : NUM_2;
-        if (retVal != OHOS::GSERROR_OK || planes == nullptr || planes->planeCount <= uvIndex) {
-            IMAGE_LOGE("InitYuvDataInfo GetPlanesInfo failed, retVal:%{public}d planeCount:%{public}u",
-                retVal, planes == nullptr ? 0 : planes->planeCount);
-            return false;
-        }
+        cond = (retVal != OHOS::GSERROR_OK) || (planes == nullptr) || (planes->planeCount <= uvIndex);
+        CHECK_ERROR_RETURN_RET_LOG(cond, false,
+            "InitYuvDataInfo GetPlanesInfo failed, retVal:%{public}d planeCount:%{public}u",
+            retVal, planes == nullptr ? 0 : planes->planeCount);
         context.yuvInfo.yStride = planes->planes[0].columnStride;
         context.yuvInfo.uvStride = planes->planes[uvIndex].columnStride;
         context.yuvInfo.yOffset = planes->planes[0].offset;
@@ -176,14 +161,11 @@ struct YuvDecodeDestination {
 
 static bool BuildYuvDestination(DecodeContext &context, const Size &size, YuvDecodeDestination &dstImage)
 {
-    if (context.pixelsBuffer.buffer == nullptr || !IsYuvOutputFormatSupported(context.info.pixelFormat)) {
-        return false;
-    }
+    bool cond = (context.pixelsBuffer.buffer == nullptr) || (!IsYuvOutputFormatSupported(context.info.pixelFormat));
+    CHECK_ERROR_RETURN_RET(cond, false);
     const uint32_t width = static_cast<uint32_t>(size.width);
     const uint32_t height = static_cast<uint32_t>(size.height);
-    if (!InitYuvDataInfo(context, width, height)) {
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET(!InitYuvDataInfo(context, width, height), false);
     auto *base = static_cast<uint8_t *>(context.pixelsBuffer.buffer);
     dstImage.width = width;
     dstImage.height = height;
@@ -218,9 +200,7 @@ uint32_t ProgressiveJpegDecoder::GetJpegInputData(InputDataStream *stream, const
     if (stream->GetStreamType() == ImagePlugin::BUFFER_SOURCE_TYPE) {
         jpegData.buffer = stream->GetDataPtr();
     }
-    if (jpegData.buffer != nullptr) {
-        return SUCCESS;
-    }
+    CHECK_ERROR_RETURN_RET(jpegData.buffer != nullptr, SUCCESS);
 
     jpegData.ownedBuffer.reset(new (std::nothrow) uint8_t[jpegData.bufferSize]);
     CHECK_ERROR_RETURN_RET_LOG(jpegData.ownedBuffer == nullptr, ERR_IMAGE_DECODE_ABNORMAL,
@@ -233,23 +213,17 @@ uint32_t ProgressiveJpegDecoder::GetJpegInputData(InputDataStream *stream, const
 
 bool ProgressiveJpegDecoder::BuildRgbDecodePlan(const RgbDecodeOptions &options, RgbDecodePlan &plan)
 {
-    if (options.codec == nullptr || options.supportRegion || !options.ifSourceCompleted ||
-        !IsRgbOutputFormatSupported(options.pixelFormat) ||
-        options.hasSubset ||
-        options.hasReusePixelmap) {
-        return false;
-    }
-    if (options.pixelFormat == PixelFormat::RGB_888 && options.allocatorType == AllocatorType::DMA_ALLOC) {
-        return false;
-    }
-    if (options.srcInfo.isEmpty() || options.dstInfo.isEmpty() ||
-        options.codec->getEncodedFormat() != SkEncodedImageFormat::kJPEG ||
-        options.dstInfo.refColorSpace().get() != options.srcInfo.refColorSpace().get()) {
-        return false;
-    }
-    if (!IsLargeImage(options.srcInfo) || !IsProgressiveJpegCodec(options.codec)) {
-        return false;
-    }
+    bool cond = (options.codec == nullptr) || (options.supportRegion) || (!options.ifSourceCompleted) ||
+        (!IsRgbOutputFormatSupported(options.pixelFormat)) || (options.hasSubset) || (options.hasReusePixelmap);
+    CHECK_ERROR_RETURN_RET(cond, false);
+    cond = (options.pixelFormat == PixelFormat::RGB_888) && (options.allocatorType == AllocatorType::DMA_ALLOC);
+    CHECK_ERROR_RETURN_RET(cond, false);
+    cond = (options.srcInfo.isEmpty()) || (options.dstInfo.isEmpty()) ||
+        (options.codec->getEncodedFormat() != SkEncodedImageFormat::kJPEG) ||
+        (options.dstInfo.refColorSpace().get() != options.srcInfo.refColorSpace().get());
+    CHECK_ERROR_RETURN_RET(cond, false);
+    cond = (!IsLargeImage(options.srcInfo)) || (!IsProgressiveJpegCodec(options.codec));
+    CHECK_ERROR_RETURN_RET(cond, false);
 
     const Size sourceSize = {
         static_cast<int32_t>(options.srcInfo.width()), static_cast<int32_t>(options.srcInfo.height())
@@ -257,9 +231,7 @@ bool ProgressiveJpegDecoder::BuildRgbDecodePlan(const RgbDecodeOptions &options,
     Size decodeSize = {
         static_cast<int32_t>(options.dstInfo.width()), static_cast<int32_t>(options.dstInfo.height())
     };
-    if (!ResolveRgbDecodeSize(options.desiredSize, sourceSize, decodeSize)) {
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET(!ResolveRgbDecodeSize(options.desiredSize, sourceSize, decodeSize), false);
     plan.useDesiredSize = !options.hasOutputBuffer &&
         (decodeSize.width != options.dstInfo.width() || decodeSize.height != options.dstInfo.height());
     plan.dstInfo = plan.useDesiredSize ? options.dstInfo.makeWH(decodeSize.width, decodeSize.height) :
@@ -285,10 +257,9 @@ uint32_t ProgressiveJpegDecoder::DecodeRgb(const JpegInputData &jpegData, const 
         colorFormat = fast::image::RGBFormat::BGRA8888;
     }
     FASTManager& fastManager = FASTManager::GetInstance();
-    if (!fastManager.IsInitialized()) {
-        IMAGE_LOGE("FASTManager not initialized, fallback to software decode");
-        return ERR_IMAGE_DATA_UNSUPPORT;
-    }
+    bool cond = !fastManager.IsInitialized();
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_DATA_UNSUPPORT,
+        "FASTManager not initialized, fallback to software decode");
     const fast::image::FastErrCode ret = fastManager.DecodeImage(jpegData.buffer, jpegData.bufferSize, dstPixels,
         static_cast<uint32_t>(plan.dstInfo.width()), static_cast<uint32_t>(plan.dstInfo.height()), dstStride,
         colorFormat);
@@ -303,20 +274,14 @@ uint32_t ProgressiveJpegDecoder::DecodeRgb(const JpegInputData &jpegData, const 
 bool ProgressiveJpegDecoder::BuildYuvDecodePlan(const YuvDecodeOptions &options, YuvDecodePlan &plan)
 {
 #if !defined(CROSS_PLATFORM)
-    if (options.codec == nullptr || options.supportRegion || !options.ifSourceCompleted ||
-        options.hasSubset) {
-        return false;
-    }
-    if (!IsYuvOutputFormatSupported(options.pixelFormat) ||
-        options.codec->getEncodedFormat() != SkEncodedImageFormat::kJPEG) {
-        return false;
-    }
-    if (!ResolveYuvDecodeSize(options.desiredSize, options.sourceSize, plan.size)) {
-        return false;
-    }
-    if (!IsProgressiveJpegCodec(options.codec)) {
-        return false;
-    }
+    bool cond = (options.codec == nullptr) || (options.supportRegion) || (!options.ifSourceCompleted) ||
+        (options.hasSubset);
+    CHECK_ERROR_RETURN_RET(cond, false);
+    cond = (!IsYuvOutputFormatSupported(options.pixelFormat)) ||
+        (options.codec->getEncodedFormat() != SkEncodedImageFormat::kJPEG);
+    CHECK_ERROR_RETURN_RET(cond, false);
+    CHECK_ERROR_RETURN_RET(!ResolveYuvDecodeSize(options.desiredSize, options.sourceSize, plan.size), false);
+    CHECK_ERROR_RETURN_RET(!IsProgressiveJpegCodec(options.codec), false);
     plan.bufferSize = JpegDecoderYuv::GetYuvOutSize(static_cast<uint32_t>(plan.size.width),
         static_cast<uint32_t>(plan.size.height));
     return plan.bufferSize != 0;
@@ -330,15 +295,13 @@ uint32_t ProgressiveJpegDecoder::DecodeYuv(const JpegInputData &jpegData, const 
 {
     CHECK_ERROR_RETURN_RET(jpegData.buffer == nullptr || jpegData.bufferSize == 0, ERR_IMAGE_DATA_UNSUPPORT);
     YuvDecodeDestination dstImage = {};
-    if (!BuildYuvDestination(context, plan.size, dstImage)) {
-        IMAGE_LOGE("progressive jpeg yuv decode fallback, build destination failed");
-        return ERR_IMAGE_DATA_UNSUPPORT;
-    }
+    bool cond = !BuildYuvDestination(context, plan.size, dstImage);
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_DATA_UNSUPPORT,
+        "progressive jpeg yuv decode fallback, build destination failed");
     FASTManager& fastManager = FASTManager::GetInstance();
-    if (!fastManager.IsInitialized()) {
-        IMAGE_LOGE("FASTManager not initialized, fallback to software decode");
-        return ERR_IMAGE_DATA_UNSUPPORT;
-    }
+    cond = !fastManager.IsInitialized();
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_DATA_UNSUPPORT,
+        "FASTManager not initialized, fallback to software decode");
     const fast::image::FastErrCode ret = fastManager.DecodeImageYUV(jpegData.buffer, jpegData.bufferSize,
         dstImage.dstY, dstImage.dstUV, dstImage.width, dstImage.height, dstImage.yStride, dstImage.uvStride,
         dstImage.format);
@@ -369,10 +332,7 @@ uint64_t ProgressiveJpegDecoder::GetOutputRowStride(const SkImageInfo &imageInfo
     if (bufferForDecode == static_cast<const uint8_t *>(context.pixelsBuffer.buffer) &&
         context.allocatorType == AllocatorType::DMA_ALLOC) {
         SurfaceBuffer* sbBuffer = reinterpret_cast<SurfaceBuffer*> (context.pixelsBuffer.context);
-        if (sbBuffer == nullptr) {
-            IMAGE_LOGE("%{public}s: surface buffer is nullptr", __func__);
-            return 0;
-        }
+        CHECK_ERROR_RETURN_RET_LOG(sbBuffer == nullptr, 0, "%{public}s: surface buffer is nullptr", __func__);
         rowStride = static_cast<uint64_t>(sbBuffer->GetStride());
     }
 #endif
