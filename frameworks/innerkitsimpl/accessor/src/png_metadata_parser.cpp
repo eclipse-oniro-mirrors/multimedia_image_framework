@@ -338,7 +338,8 @@ bool PngMetadataParser::GetPropertyString(const std::string &key, std::string &v
 {
     bool cond = (pngStructPtr_ == nullptr) || (pngInfoPtr_ == nullptr);
     CHECK_ERROR_RETURN_RET_LOG(cond, false, "%{public}s: pngStructPtr_ or pngInfoPtr_ is null", __func__);
-    CHECK_ERROR_RETURN_RET_LOG(SafeSetJmp(pngStructPtr_), false, "%{public}s: PNG lib error during property get", __func__);
+    CHECK_ERROR_RETURN_RET_LOG(SafeSetJmp(pngStructPtr_), false,
+        "%{public}s: PNG lib error during property get", __func__);
     if (key == PNG_METADATA_KEY_CHROMATICITIES) {
         return GetChromaticitiesProperty(value);
     } else {
