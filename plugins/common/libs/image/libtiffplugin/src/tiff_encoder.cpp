@@ -239,7 +239,7 @@ uint32_t TiffEncoder::ValidatePixelBufferInfo(const PixelBufferInfo &bufferInfo)
     bool cond = (bufferInfo.width == 0) || (bufferInfo.height == 0);
     CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER,
         "[TiffEncoder] ValidatePixelBufferInfo failed, invalid width or height: "
-        "%{public}ux%{public}u",
+        "%{public}ux%{public}u" PRIu64,
         bufferInfo.width, bufferInfo.height);
 
     uint64_t rowBytes = GetDefaultRowBytes(bufferInfo.width, bufferInfo.bytesPerRow);
@@ -247,7 +247,7 @@ uint32_t TiffEncoder::ValidatePixelBufferInfo(const PixelBufferInfo &bufferInfo)
     cond = (rowBytes > std::numeric_limits<uint64_t>::max() / bufferInfo.height);
     CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER,
         "[TiffEncoder] ValidatePixelBufferInfo failed, size calculation overflow: "
-        "rowBytes=%{public}lu, height=%{public}u",
+        "rowBytes=%{public}lu, height=%{public}u" PRIu64,
         rowBytes, bufferInfo.height);
     uint64_t requiredSize = static_cast<uint64_t>(rowBytes) * bufferInfo.height;
     CHECK_ERROR_RETURN_RET_LOG(bufferInfo.dataSize < requiredSize, ERR_IMAGE_INVALID_PARAMETER,
