@@ -2133,7 +2133,7 @@ uint32_t ImageSource::CreatExifMetadataByImageSource(bool addFlag)
     cond = (bufferSize == 0);
     CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_SOURCE_DATA,
         "Invalid buffer size. It's zero. Please check the buffer size.");
-    cond = (bufferSize > MAX_BUFFER_SIZE);
+    cond = (bufferSize > MAX_SOURCE_SIZE);
     CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_SOURCE_DATA,
         "Invalid buffer size. It's too big. Please check the buffer size.");
     uint32_t error = SUCCESS;
