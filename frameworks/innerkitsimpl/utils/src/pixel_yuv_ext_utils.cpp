@@ -122,7 +122,7 @@ bool PixelYuvExtUtils::Yuv420ToARGB(const uint8_t *sample, uint8_t *dstArgb,
 {
     if (ImageUtils::CheckMulOverflow(size.width, size.height, NUM_4)) {
         IMAGE_LOGE("Yuv420ToARGB alloc size invalid");
-        return false
+        return false;
     }
     std::unique_ptr<uint8_t[]> temp = std::make_unique<uint8_t[]>(size.width * size.height * NUM_4);
     if (!Yuv420ToBGRA(sample, temp.get(), size, pixelFormat, info)) {
