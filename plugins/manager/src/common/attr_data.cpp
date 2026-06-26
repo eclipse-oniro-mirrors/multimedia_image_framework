@@ -404,9 +404,6 @@ bool AttrData::InRange(const string &value) const
             return value == *(value_.stringValue);
         }
         case AttrDataType::ATTR_DATA_STRING_SET: {
-            if (value_.uint32Set == nullptr) {
-                return false;
-            }
             return value_.stringSet->find(value) != value_.stringSet->end();
         }
         default: {
@@ -521,9 +518,6 @@ uint32_t AttrData::GetMinValue(const string *&value) const
             return SUCCESS;
         }
         case AttrDataType::ATTR_DATA_STRING_SET: {
-            if (value_.uint32Set == nullptr) {
-                return ERR_GENERAL;
-            }
             auto iter = value_.stringSet->begin();
             if (iter == value_.stringSet->end()) {
                 IMAGE_LOGE("GetMinValue: stringSet is empty.");
@@ -548,9 +542,6 @@ uint32_t AttrData::GetMaxValue(const string *&value) const
             return SUCCESS;
         }
         case AttrDataType::ATTR_DATA_STRING_SET: {
-            if (value_.uint32Set == nullptr) {
-                return ERR_GENERAL;
-            }
             auto iter = value_.stringSet->rbegin();
             if (iter == value_.stringSet->rend()) {
                 IMAGE_LOGE("GetMaxValue: stringSet is empty.");
