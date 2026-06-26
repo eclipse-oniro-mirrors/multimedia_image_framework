@@ -248,7 +248,7 @@ uint32_t TiffEncoder::ValidatePixelBufferInfo(const PixelBufferInfo &bufferInfo)
     CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER,
         "[TiffEncoder] ValidatePixelBufferInfo failed, size calculation overflow: "
         "rowBytes=%{public}lu, height=%{public}u",
-        rowBytes, bufferInfo.height); 
+        rowBytes, bufferInfo.height);
     uint64_t requiredSize = static_cast<uint64_t>(rowBytes) * bufferInfo.height;
     CHECK_ERROR_RETURN_RET_LOG(bufferInfo.dataSize < requiredSize, ERR_IMAGE_INVALID_PARAMETER,
         "[TiffEncoder] ValidatePixelBufferInfo failed, dataSize too small: "

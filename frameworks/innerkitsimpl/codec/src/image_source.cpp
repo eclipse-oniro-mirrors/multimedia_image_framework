@@ -7238,7 +7238,8 @@ uint32_t ImageSource::CreateXMPMetadataByImageSource(const std::string &mimeType
 
     uint32_t bufferSize = sourceStreamPtr_->GetStreamSize();
     bool cond = (bufferSize == 0 || bufferSize > MAX_SOURCE_SIZE);
-    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_SOURCE_DATA, "%{public}s invalid stream size: %{public}u", __func__, bufferSize);
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_SOURCE_DATA,
+        "%{public}s invalid stream size: %{public}u", __func__, bufferSize);
 
     auto bufferPtr = sourceStreamPtr_->GetDataPtr();
     std::unique_ptr<uint8_t[]> tmpGuard;
