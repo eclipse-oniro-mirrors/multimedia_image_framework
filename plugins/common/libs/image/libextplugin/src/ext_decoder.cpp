@@ -79,6 +79,10 @@
 #include "bandjpeg/fast_manager.h"
 #include "bandjpeg/progressive_jpeg_decoder.h"
 
+#ifdef JPEG_HW_TILE_DECODE_ENABLE
+#include "hardware/jpeg_hw_tile_decoder.h"
+#endif
+
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 #define DMA_BUF_SET_TYPE _IOW(DMA_BUF_BASE, 2, const char *)
 #endif
@@ -1417,6 +1421,15 @@ bool ExtDecoder::IsHeifRegionDecode()
 
 uint32_t ExtDecoder::DoRegionDecode(DecodeContext &context)
 {
+#ifdef JPEG_HW_TILE_DECODE_ENABLE
+    JPEGHWTILE_SCOPE_EXECUTE(
+        JpegHwRegionDecoder jpegHwRegionDecoder;
+        if (jpegHwRegionDecoder.IsSupport(context, this) && jpegHwRegionDecoder.DoTileDecode()) {
+            return SUCCESS;
+        }
+    );
+#endif
+
 #ifdef SK_ENABLE_OHOS_CODEC
     auto skOHOSCodec = SkOHOSCodec::MakeFromCodec(std::move(codec_));
     // Ask the codec for a scaled subset
@@ -1766,6 +1779,14 @@ uint32_t ExtDecoder::Decode(uint32_t index, DecodeContext &context)
         context.isHardDecode = true;
         return SUCCESS;
     }
+#ifdef JPEG_HW_TILE_DECODE_ENABLE
+    JPEGHWTILE_SCOPE_EXECUTE(
+        JpegHwFullDecoder jpegHwFullDecoder;
+        if (jpegHwFullDecoder.IsSupport(context, this) && jpegHwFullDecoder.DoTileDecode()) {
+            return SUCCESS;
+        }
+    );
+#endif
 #endif
     uint32_t res = PreDecodeCheck(index);
     CHECK_ERROR_RETURN_RET(res != SUCCESS, res);
@@ -2213,11 +2234,8 @@ uint32_t ExtDecoder::ApplyDesiredColorSpace(DecodeContext &context)
     return SUCCESS;
 }
 
-uint32_t ExtDecoder::UpdateHardWareDecodeInfo(DecodeContext &context)
+void ExtDecoder::UpdateHardWareDecodeInfo(DecodeContext &context, const SkImageInfo& info)
 {
-    if (context.pixelsBuffer.context == nullptr) {
-        return ERR_IMAGE_PROPERTY_NOT_EXIST;
-    }
     SurfaceBuffer* sbuffer = static_cast<SurfaceBuffer*>(context.pixelsBuffer.context);
     if (sbuffer && sbuffer->GetFormat() != GRAPHIC_PIXEL_FMT_RGBA_8888) {
         OH_NativeBuffer_Planes *planes = nullptr;
@@ -2229,25 +2247,15 @@ uint32_t ExtDecoder::UpdateHardWareDecodeInfo(DecodeContext &context)
             context.yuvInfo.uvStride = planes->planes[1].columnStride;
             context.yuvInfo.yOffset = planes->planes[0].offset;
             context.yuvInfo.uvOffset = planes->planes[1].offset - 1;
-            context.yuvInfo.imageSize = {hwDstInfo_.width(), hwDstInfo_.height()};
-            context.yuvInfo.yWidth = static_cast<uint32_t>(hwDstInfo_.width());
-            context.yuvInfo.yHeight = static_cast<uint32_t>(hwDstInfo_.height());
-            context.yuvInfo.uvWidth = static_cast<uint32_t>((hwDstInfo_.width() + 1) / NUM_2);
-            context.yuvInfo.uvHeight = static_cast<uint32_t>((hwDstInfo_.height() + 1) / NUM_2);
+            context.yuvInfo.imageSize = {info.width(), info.height()};
+            context.yuvInfo.yWidth = static_cast<uint32_t>(info.width());
+            context.yuvInfo.yHeight = static_cast<uint32_t>(info.height());
+            context.yuvInfo.uvWidth = static_cast<uint32_t>((info.width() + 1) / NUM_2);
+            context.yuvInfo.uvHeight = static_cast<uint32_t>((info.height() + 1) / NUM_2);
         }
     }
-    context.outInfo.size.width = hwDstInfo_.width();
-    context.outInfo.size.height = hwDstInfo_.height();
-#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
-    if (sbuffer && (sbuffer->GetUsage() & BUFFER_USAGE_MEM_MMZ_CACHE)) {
-        GSError err = sbuffer->InvalidateCache();
-        if (err != GSERROR_OK) {
-            IMAGE_LOGE("InvalidateCache failed, GSError=%{public}d", err);
-        }
-        return ERR_IMAGE_PROPERTY_NOT_EXIST;
-    }
-#endif
-    return SUCCESS;
+    context.outInfo.size.width = info.width();
+    context.outInfo.size.height = info.height();
 }
 
 uint32_t ExtDecoder::HardWareDecode(DecodeContext &context)
@@ -2292,12 +2300,8 @@ uint32_t ExtDecoder::HardWareDecode(DecodeContext &context)
             return ERR_IMAGE_DECODE_ABNORMAL;
         }
     }
-    ret = UpdateHardWareDecodeInfo(context);
-    if (ret != SUCCESS) {
-        IMAGE_LOGE("failed to UpdateHardWareDecodeInfo when hardware decode, err=%{public}d", ret);
-        ReleaseOutputBuffer(context, tmpAllocatorType);
-        return ERR_IMAGE_DECODE_ABNORMAL;
-    }
+    UpdateHardWareDecodeInfo(context, hwDstInfo_);
+    ImageUtils::InvalidateContextSurfaceBuffer(context);
     return SUCCESS;
 }
 #endif

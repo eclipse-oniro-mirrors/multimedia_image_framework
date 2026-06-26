@@ -479,6 +479,10 @@
     <target name="picture_ext_test">
         <preparer>
             <option name="push" value="images/test_jpeg.jpg -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/test_jpeg_16k_32rst.jpg -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/test_jpeg_16k_32rst_append.jpg -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/test_jpeg_16k_32rst_add_stuffed_ff.jpg -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/test_jpeg_rst_non-aligned.jpg -> /data/local/tmp/image" src="res"/>
             <option name="push" value="images/test_jpeg_out.jpg -> /data/local/tmp/image" src="res"/>
             <option name="push" value="images/test_heif.heic -> /data/local/tmp/image" src="res"/>
             <option name="push" value="images/test_heif_out.heic -> /data/local/tmp/image" src="res"/>

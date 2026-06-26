@@ -41,6 +41,11 @@ public:
 };
 
 static constexpr int32_t TestLength = 2;
+static const std::string IMAGE_JPEG_16K_32RST_PATH = "/data/local/tmp/image/test_jpeg_16k_32rst.jpg";
+static const std::string IMAGE_JPEG_16K_32RST_APPEND_PATH = "/data/local/tmp/image/test_jpeg_16k_32rst_append.jpg";
+static const std::string IMAGE_JPEG_16K_32RST_ADD_STUFFED_FF_PATH =
+    "/data/local/tmp/image/test_jpeg_16k_32rst_add_stuffed_ff.jpg";
+static const std::string IMAGE_JPEG_RST_NON_ALIGNED_PATH = "/data/local/tmp/image/test_jpeg_rst_non-aligned.jpg";
 static const std::string IMAGE_JPEG_PATH_TEST = "/data/local/tmp/image/test.jpg";
 static const std::string IMAGE_ICO_PATH_TEST = "/data/local/tmp/image/test.ico";
 static const std::string IMAGE_JPEG_EXIF_TEST = "/data/local/tmp/image/test_exif.jpg";
@@ -2263,6 +2268,394 @@ HWTEST_F(ImagSourceNdk2Test, ImageRegionDecode016, TestSize.Level3)
     OH_DecodingOptions_SetCropAndScaleStrategy(opts, cropAndScaleStrategy);
     Image_Size desiredSize = {1920, 1080};
     OH_DecodingOptions_SetDesiredSize(opts, &desiredSize);
+    Image_ErrorCode ret = OH_ImageSourceNative_CreatePixelmapUsingAllocator(imageSource, opts, allocator, &resPixMap);
+    EXPECT_EQ(ret, IMAGE_SUCCESS);
+    EXPECT_NE(resPixMap, nullptr);
+    OH_ImageSourceNative_Release(imageSource);
+    OH_DecodingOptions_Release(opts);
+    OH_PixelmapNative_Release(resPixMap);
+}
+
+/**
+ * @tc.name: ImageRegionDecode017
+ * @tc.desc: Test Region decode, CropAndScaleStrategy is CROP_FIRST, Showing the original image.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagSourceNdk2Test, ImageRegionDecode017, TestSize.Level3)
+{
+    std::vector<std::string> images = {
+        IMAGE_JPEG_16K_32RST_PATH,
+        IMAGE_JPEG_RST_NON_ALIGNED_PATH,
+    };
+    for (auto& image : images) {
+        OH_ImageSourceNative *imageSource = CreateImageSourceNative(image);
+        ASSERT_NE(imageSource, nullptr);
+        OH_DecodingOptions *opts = nullptr;
+        OH_DecodingOptions_Create(&opts);
+        ASSERT_NE(opts, nullptr);
+        OH_PixelmapNative* resPixMap = nullptr;
+        IMAGE_ALLOCATOR_TYPE allocator = IMAGE_ALLOCATOR_TYPE::IMAGE_ALLOCATOR_TYPE_DMA;
+        Image_Region desiredRegion = {0, 0, 1920, 1080};
+        OH_DecodingOptions_SetDesiredRegion(opts, &desiredRegion);
+        OH_DecodingOptions_SetCropAndScaleStrategy(opts, 2);
+        Image_ErrorCode ret = OH_ImageSourceNative_CreatePixelmapUsingAllocator(
+            imageSource, opts, allocator, &resPixMap
+        );
+        EXPECT_EQ(ret, IMAGE_SUCCESS);
+        EXPECT_NE(resPixMap, nullptr);
+        OH_ImageSourceNative_Release(imageSource);
+        OH_DecodingOptions_Release(opts);
+        OH_PixelmapNative_Release(resPixMap);
+    }
+}
+
+/**
+ * @tc.name: ImageRegionDecode018
+ * @tc.desc: Test Region decode, CropAndScaleStrategy is CROP_FIRST, Showing the original image.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagSourceNdk2Test, ImageRegionDecode018, TestSize.Level3)
+{
+    OH_ImageSourceNative *imageSource = CreateImageSourceNative(IMAGE_JPEG_16K_32RST_PATH);
+    ASSERT_NE(imageSource, nullptr);
+    OH_DecodingOptions *opts = nullptr;
+    OH_DecodingOptions_Create(&opts);
+    ASSERT_NE(opts, nullptr);
+    OH_PixelmapNative* resPixMap = nullptr;
+    IMAGE_ALLOCATOR_TYPE allocator = IMAGE_ALLOCATOR_TYPE::IMAGE_ALLOCATOR_TYPE_SHARE_MEMORY;
+    Image_Region desiredRegion = {0, 0, 1920, 1080};
+    OH_DecodingOptions_SetDesiredRegion(opts, &desiredRegion);
+    OH_DecodingOptions_SetCropAndScaleStrategy(opts, 2);
+    Image_ErrorCode ret = OH_ImageSourceNative_CreatePixelmapUsingAllocator(imageSource, opts, allocator, &resPixMap);
+    EXPECT_EQ(ret, IMAGE_SUCCESS);
+    EXPECT_NE(resPixMap, nullptr);
+    OH_ImageSourceNative_Release(imageSource);
+    OH_DecodingOptions_Release(opts);
+    OH_PixelmapNative_Release(resPixMap);
+}
+
+/**
+ * @tc.name: ImageRegionDecode019
+ * @tc.desc: Test Region decode, CropAndScaleStrategy is CROP_FIRST, Showing the original image.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagSourceNdk2Test, ImageRegionDecode019, TestSize.Level3)
+{
+    std::vector<std::string> images = {
+        IMAGE_JPEG_16K_32RST_PATH,
+        IMAGE_JPEG_RST_NON_ALIGNED_PATH,
+    };
+    for (auto& image : images) {
+        OH_ImageSourceNative *imageSource = CreateImageSourceNative(image);
+        ASSERT_NE(imageSource, nullptr);
+        OH_DecodingOptions *opts = nullptr;
+        OH_DecodingOptions_Create(&opts);
+        ASSERT_NE(opts, nullptr);
+        OH_PixelmapNative* resPixMap = nullptr;
+        IMAGE_ALLOCATOR_TYPE allocator = IMAGE_ALLOCATOR_TYPE::IMAGE_ALLOCATOR_TYPE_DMA;
+        Image_Region desiredRegion = {0, 0, 1920, 1080};
+        OH_DecodingOptions_SetDesiredRegion(opts, &desiredRegion);
+        OH_DecodingOptions_SetCropAndScaleStrategy(opts, 2);
+        Image_Size desiredSize = { 1111, 888 };
+        OH_DecodingOptions_SetDesiredSize(opts, &desiredSize);
+        Image_ErrorCode ret = OH_ImageSourceNative_CreatePixelmapUsingAllocator(
+            imageSource, opts, allocator, &resPixMap
+        );
+        EXPECT_EQ(ret, IMAGE_SUCCESS);
+        EXPECT_NE(resPixMap, nullptr);
+        OH_ImageSourceNative_Release(imageSource);
+        OH_DecodingOptions_Release(opts);
+        OH_PixelmapNative_Release(resPixMap);
+    }
+}
+
+/**
+ * @tc.name: ImageRegionDecode020
+ * @tc.desc: Test Region decode, CropAndScaleStrategy is CROP_FIRST, Showing the original image.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagSourceNdk2Test, ImageRegionDecode020, TestSize.Level3)
+{
+    OH_ImageSourceNative *imageSource = CreateImageSourceNative(IMAGE_JPEG_16K_32RST_APPEND_PATH);
+    ASSERT_NE(imageSource, nullptr);
+    OH_DecodingOptions *opts = nullptr;
+    OH_DecodingOptions_Create(&opts);
+    ASSERT_NE(opts, nullptr);
+    OH_PixelmapNative* resPixMap = nullptr;
+    IMAGE_ALLOCATOR_TYPE allocator = IMAGE_ALLOCATOR_TYPE::IMAGE_ALLOCATOR_TYPE_DMA;
+    Image_Region desiredRegion = {407, 861, 1923, 1081};
+    OH_DecodingOptions_SetDesiredRegion(opts, &desiredRegion);
+    OH_DecodingOptions_SetCropAndScaleStrategy(opts, 2);
+    Image_Size desiredSize = { 1111, 888 };
+    OH_DecodingOptions_SetDesiredSize(opts, &desiredSize);
+    Image_ErrorCode ret = OH_ImageSourceNative_CreatePixelmapUsingAllocator(imageSource, opts, allocator, &resPixMap);
+    EXPECT_EQ(ret, IMAGE_SUCCESS);
+    EXPECT_NE(resPixMap, nullptr);
+    OH_ImageSourceNative_Release(imageSource);
+    OH_DecodingOptions_Release(opts);
+    OH_PixelmapNative_Release(resPixMap);
+}
+
+/**
+ * @tc.name: OH_ImageSourceNative_CreatePixelmapUsingAllocatorTest16KJPEG001
+ * @tc.desc: Test create Pixelmap use DMA target NV21.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceNative_CreatePixelmapUsingAllocatorTest16KJPEG001, TestSize.Level1)
+{
+    std::vector<std::string> images = {
+        IMAGE_JPEG_16K_32RST_PATH,
+        IMAGE_JPEG_RST_NON_ALIGNED_PATH,
+    };
+    for (auto& image : images) {
+        OH_ImageSourceNative *imageSource = CreateImageSourceNative(image);
+        ASSERT_NE(imageSource, nullptr);
+        OH_DecodingOptions *opts = nullptr;
+        OH_DecodingOptions_Create(&opts);
+        ASSERT_NE(opts, nullptr);
+        OH_PixelmapNative* resPixMap = nullptr;
+        Image_ErrorCode ret = OH_DecodingOptions_SetPixelFormat(opts, PIXEL_FORMAT_NV21);
+        EXPECT_EQ(ret, IMAGE_SUCCESS);
+        IMAGE_ALLOCATOR_TYPE allocator = IMAGE_ALLOCATOR_TYPE::IMAGE_ALLOCATOR_TYPE_DMA;
+        ret = OH_ImageSourceNative_CreatePixelmapUsingAllocator(imageSource, opts, allocator, &resPixMap);
+        EXPECT_EQ(ret, IMAGE_SUCCESS);
+        EXPECT_NE(resPixMap, nullptr);
+        OH_ImageSourceNative_Release(imageSource);
+        OH_DecodingOptions_Release(opts);
+        OH_PixelmapNative_Release(resPixMap);
+    }
+}
+
+/**
+ * @tc.name: OH_ImageSourceNative_CreatePixelmapUsingAllocatorTest16KJPEG002
+ * @tc.desc: Test create Pixelmap use DMA target NV21 with even desired size.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceNative_CreatePixelmapUsingAllocatorTest16KJPEG002, TestSize.Level1)
+{
+    std::vector<std::string> images = {
+        IMAGE_JPEG_16K_32RST_PATH,
+        IMAGE_JPEG_RST_NON_ALIGNED_PATH,
+    };
+    for (auto& image : images) {
+        OH_ImageSourceNative *imageSource = CreateImageSourceNative(image);
+        ASSERT_NE(imageSource, nullptr);
+        OH_DecodingOptions *opts = nullptr;
+        OH_DecodingOptions_Create(&opts);
+        ASSERT_NE(opts, nullptr);
+        OH_PixelmapNative* resPixMap = nullptr;
+        Image_ErrorCode ret = OH_DecodingOptions_SetPixelFormat(opts, PIXEL_FORMAT_NV21);
+        EXPECT_EQ(ret, IMAGE_SUCCESS);
+        IMAGE_ALLOCATOR_TYPE allocator = IMAGE_ALLOCATOR_TYPE::IMAGE_ALLOCATOR_TYPE_DMA;
+        Image_Size desiredSize = {3888, 2888};
+        OH_DecodingOptions_SetDesiredSize(opts, &desiredSize);
+        ret = OH_ImageSourceNative_CreatePixelmapUsingAllocator(imageSource, opts, allocator, &resPixMap);
+        EXPECT_EQ(ret, IMAGE_SUCCESS);
+        EXPECT_NE(resPixMap, nullptr);
+        OH_ImageSourceNative_Release(imageSource);
+        OH_DecodingOptions_Release(opts);
+        OH_PixelmapNative_Release(resPixMap);
+    }
+}
+
+/**
+ * @tc.name: OH_ImageSourceNative_CreatePixelmapUsingAllocatorTest16KJPEG003
+ * @tc.desc: Test create Pixelmap use DMA  target NV21 with odd desired size.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceNative_CreatePixelmapUsingAllocatorTest16KJPEG003, TestSize.Level1)
+{
+    OH_ImageSourceNative *imageSource = CreateImageSourceNative(IMAGE_JPEG_16K_32RST_PATH);
+    ASSERT_NE(imageSource, nullptr);
+    OH_DecodingOptions *opts = nullptr;
+    OH_DecodingOptions_Create(&opts);
+    ASSERT_NE(opts, nullptr);
+    OH_PixelmapNative* resPixMap = nullptr;
+    Image_ErrorCode ret = OH_DecodingOptions_SetPixelFormat(opts, PIXEL_FORMAT_NV21);
+    EXPECT_EQ(ret, IMAGE_SUCCESS);
+    IMAGE_ALLOCATOR_TYPE allocator = IMAGE_ALLOCATOR_TYPE::IMAGE_ALLOCATOR_TYPE_DMA;
+    Image_Size desiredSize = {3777, 2777};
+    ret = OH_DecodingOptions_SetDesiredSize(opts, &desiredSize);
+    EXPECT_EQ(ret, IMAGE_SUCCESS);
+    ret = OH_ImageSourceNative_CreatePixelmapUsingAllocator(imageSource, opts, allocator, &resPixMap);
+    EXPECT_EQ(ret, IMAGE_SUCCESS);
+    EXPECT_NE(resPixMap, nullptr);
+    OH_ImageSourceNative_Release(imageSource);
+    OH_DecodingOptions_Release(opts);
+    OH_PixelmapNative_Release(resPixMap);
+}
+
+/**
+ * @tc.name: OH_ImageSourceNative_CreatePixelmapUsingAllocatorTest16KJPEG004
+ * @tc.desc: Test create Pixelmap use DMA target RGBA_8888.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceNative_CreatePixelmapUsingAllocatorTest16KJPEG004, TestSize.Level1)
+{
+    std::vector<std::string> images = {
+        IMAGE_JPEG_16K_32RST_PATH,
+        IMAGE_JPEG_RST_NON_ALIGNED_PATH,
+    };
+    for (auto& image : images) {
+        OH_ImageSourceNative *imageSource = CreateImageSourceNative(image);
+        ASSERT_NE(imageSource, nullptr);
+        OH_DecodingOptions *opts = nullptr;
+        OH_DecodingOptions_Create(&opts);
+        ASSERT_NE(opts, nullptr);
+        OH_PixelmapNative* resPixMap = nullptr;
+        Image_ErrorCode ret = OH_DecodingOptions_SetPixelFormat(opts, PIXEL_FORMAT_RGBA_8888);
+        EXPECT_EQ(ret, IMAGE_SUCCESS);
+        IMAGE_ALLOCATOR_TYPE allocator = IMAGE_ALLOCATOR_TYPE::IMAGE_ALLOCATOR_TYPE_DMA;
+        ret = OH_ImageSourceNative_CreatePixelmapUsingAllocator(imageSource, opts, allocator, &resPixMap);
+        EXPECT_EQ(ret, IMAGE_SUCCESS);
+        EXPECT_NE(resPixMap, nullptr);
+        OH_ImageSourceNative_Release(imageSource);
+        OH_DecodingOptions_Release(opts);
+        OH_PixelmapNative_Release(resPixMap);
+    }
+}
+
+/**
+ * @tc.name: OH_ImageSourceNative_CreatePixelmapUsingAllocatorTest16KJPEG005
+ * @tc.desc: Test create Pixelmap use DMA target RGBA_8888 with desired size.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceNative_CreatePixelmapUsingAllocatorTest16KJPEG005, TestSize.Level1)
+{
+    OH_ImageSourceNative *imageSource = CreateImageSourceNative(IMAGE_JPEG_16K_32RST_PATH);
+    ASSERT_NE(imageSource, nullptr);
+    OH_DecodingOptions *opts = nullptr;
+    OH_DecodingOptions_Create(&opts);
+    ASSERT_NE(opts, nullptr);
+    OH_PixelmapNative* resPixMap = nullptr;
+    IMAGE_ALLOCATOR_TYPE allocator = IMAGE_ALLOCATOR_TYPE::IMAGE_ALLOCATOR_TYPE_DMA;
+    Image_ErrorCode ret = OH_DecodingOptions_SetPixelFormat(opts, PIXEL_FORMAT_RGBA_8888);
+    EXPECT_EQ(ret, IMAGE_SUCCESS);
+    Image_Size desiredSize = {6666, 4444};
+    ret = OH_DecodingOptions_SetDesiredSize(opts, &desiredSize);
+    EXPECT_EQ(ret, IMAGE_SUCCESS);
+    ret = OH_ImageSourceNative_CreatePixelmapUsingAllocator(imageSource, opts, allocator, &resPixMap);
+    EXPECT_EQ(ret, IMAGE_SUCCESS);
+    EXPECT_NE(resPixMap, nullptr);
+    OH_ImageSourceNative_Release(imageSource);
+    OH_DecodingOptions_Release(opts);
+    OH_PixelmapNative_Release(resPixMap);
+}
+
+/**
+ * @tc.name: OH_ImageSourceNative_CreatePixelmapUsingAllocatorTest16KJPEG006
+ * @tc.desc: Test create Pixelmap use DMA target RGBA_8888 with desired size.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceNative_CreatePixelmapUsingAllocatorTest16KJPEG006, TestSize.Level1)
+{
+    OH_ImageSourceNative *imageSource = CreateImageSourceNative(IMAGE_JPEG_16K_32RST_PATH);
+    ASSERT_NE(imageSource, nullptr);
+    OH_DecodingOptions *opts = nullptr;
+    OH_DecodingOptions_Create(&opts);
+    ASSERT_NE(opts, nullptr);
+    OH_PixelmapNative* resPixMap = nullptr;
+    IMAGE_ALLOCATOR_TYPE allocator = IMAGE_ALLOCATOR_TYPE::IMAGE_ALLOCATOR_TYPE_DMA;
+    Image_ErrorCode ret = OH_DecodingOptions_SetPixelFormat(opts, PIXEL_FORMAT_RGBA_8888);
+    EXPECT_EQ(ret, IMAGE_SUCCESS);
+    Image_Size desiredSize = {3777, 2888};
+    ret = OH_DecodingOptions_SetDesiredSize(opts, &desiredSize);
+    EXPECT_EQ(ret, IMAGE_SUCCESS);
+    ret = OH_ImageSourceNative_CreatePixelmapUsingAllocator(imageSource, opts, allocator, &resPixMap);
+    EXPECT_EQ(ret, IMAGE_SUCCESS);
+    EXPECT_NE(resPixMap, nullptr);
+    OH_ImageSourceNative_Release(imageSource);
+    OH_DecodingOptions_Release(opts);
+    OH_PixelmapNative_Release(resPixMap);
+}
+
+/**
+ * @tc.name: OH_ImageSourceNative_CreatePixelmapUsingAllocatorTest16KJPEG007
+ * @tc.desc: Test create Pixelmap use DMA target RGBA_8888 with desired size.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceNative_CreatePixelmapUsingAllocatorTest16KJPEG007, TestSize.Level1)
+{
+    OH_ImageSourceNative *imageSource = CreateImageSourceNative(IMAGE_JPEG_16K_32RST_PATH);
+    ASSERT_NE(imageSource, nullptr);
+    OH_DecodingOptions *opts = nullptr;
+    OH_DecodingOptions_Create(&opts);
+    ASSERT_NE(opts, nullptr);
+    OH_PixelmapNative* resPixMap = nullptr;
+    IMAGE_ALLOCATOR_TYPE allocator = IMAGE_ALLOCATOR_TYPE::IMAGE_ALLOCATOR_TYPE_DMA;
+    Image_ErrorCode ret = OH_DecodingOptions_SetPixelFormat(opts, PIXEL_FORMAT_RGBA_8888);
+    EXPECT_EQ(ret, IMAGE_SUCCESS);
+    Image_Size desiredSize = {2000, 1500};
+    ret = OH_DecodingOptions_SetDesiredSize(opts, &desiredSize);
+    EXPECT_EQ(ret, IMAGE_SUCCESS);
+    ret = OH_ImageSourceNative_CreatePixelmapUsingAllocator(imageSource, opts, allocator, &resPixMap);
+    EXPECT_EQ(ret, IMAGE_SUCCESS);
+    EXPECT_NE(resPixMap, nullptr);
+    OH_ImageSourceNative_Release(imageSource);
+    OH_DecodingOptions_Release(opts);
+    OH_PixelmapNative_Release(resPixMap);
+}
+
+/**
+ * @tc.name: OH_ImageSourceNative_CreatePixelmapUsingAllocatorTest16KJPEG008
+ * @tc.desc: Test create Pixelmap with stuffed ff jpeg
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceNative_CreatePixelmapUsingAllocatorTest16KJPEG008, TestSize.Level1)
+{
+    OH_ImageSourceNative *imageSource = CreateImageSourceNative(IMAGE_JPEG_16K_32RST_ADD_STUFFED_FF_PATH);
+    ASSERT_NE(imageSource, nullptr);
+    OH_DecodingOptions *opts = nullptr;
+    OH_DecodingOptions_Create(&opts);
+    ASSERT_NE(opts, nullptr);
+    OH_PixelmapNative* resPixMap = nullptr;
+    IMAGE_ALLOCATOR_TYPE allocator = IMAGE_ALLOCATOR_TYPE::IMAGE_ALLOCATOR_TYPE_DMA;
+    Image_ErrorCode ret = OH_DecodingOptions_SetPixelFormat(opts, PIXEL_FORMAT_RGBA_8888);
+    EXPECT_EQ(ret, IMAGE_SUCCESS);
+    ret = OH_ImageSourceNative_CreatePixelmapUsingAllocator(imageSource, opts, allocator, &resPixMap);
+    EXPECT_EQ(ret, IMAGE_SUCCESS);
+    EXPECT_NE(resPixMap, nullptr);
+    OH_ImageSourceNative_Release(imageSource);
+    OH_DecodingOptions_Release(opts);
+    OH_PixelmapNative_Release(resPixMap);
+}
+
+/**
+ * @tc.name: OH_ImageSourceNative_CreatePixelmapUsingAllocatorTest16KJPEG009
+ * @tc.desc: Test create Pixelmap use SHARE_MEMORY
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceNative_CreatePixelmapUsingAllocatorTest16KJPEG009, TestSize.Level1)
+{
+    OH_ImageSourceNative *imageSource = CreateImageSourceNative(IMAGE_JPEG_16K_32RST_PATH);
+    ASSERT_NE(imageSource, nullptr);
+    OH_DecodingOptions *opts = nullptr;
+    OH_DecodingOptions_Create(&opts);
+    ASSERT_NE(opts, nullptr);
+    OH_PixelmapNative* resPixMap = nullptr;
+    IMAGE_ALLOCATOR_TYPE allocator = IMAGE_ALLOCATOR_TYPE::IMAGE_ALLOCATOR_TYPE_SHARE_MEMORY;
+    Image_ErrorCode ret = OH_ImageSourceNative_CreatePixelmapUsingAllocator(imageSource, opts, allocator, &resPixMap);
+    EXPECT_EQ(ret, IMAGE_SUCCESS);
+    EXPECT_NE(resPixMap, nullptr);
+    OH_ImageSourceNative_Release(imageSource);
+    OH_DecodingOptions_Release(opts);
+    OH_PixelmapNative_Release(resPixMap);
+}
+
+/**
+ * @tc.name: OH_ImageSourceNative_CreatePixelmapUsingAllocatorTest16KJPEG010
+ * @tc.desc: Test the creation of a pixelmap using AUTO allocator for JPEG image format, expecting success.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceNative_CreatePixelmapUsingAllocatorTest16KJPEG010, TestSize.Level1)
+{
+    OH_ImageSourceNative *imageSource = CreateImageSourceNative(IMAGE_JPEG_16K_32RST_PATH);
+    ASSERT_NE(imageSource, nullptr);
+    OH_DecodingOptions *opts = nullptr;
+    OH_DecodingOptions_Create(&opts);
+    ASSERT_NE(opts, nullptr);
+    OH_PixelmapNative* resPixMap = nullptr;
+    IMAGE_ALLOCATOR_TYPE allocator = IMAGE_ALLOCATOR_TYPE::IMAGE_ALLOCATOR_TYPE_AUTO;
     Image_ErrorCode ret = OH_ImageSourceNative_CreatePixelmapUsingAllocator(imageSource, opts, allocator, &resPixMap);
     EXPECT_EQ(ret, IMAGE_SUCCESS);
     EXPECT_NE(resPixMap, nullptr);
