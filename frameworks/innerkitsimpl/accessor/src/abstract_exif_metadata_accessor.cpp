@@ -68,6 +68,9 @@ uint32_t AbstractExifMetadataAccessor::GetFilterArea(const std::vector<std::stri
     uint32_t ret = Read();
     bool cond = ret != SUCCESS;
     CHECK_DEBUG_RETURN_RET_LOG(cond, E_NO_EXIF_TAG, "Failed to read the exif info.");
+    if (exifMetadata_ == nullptr) {
+        return E_NO_EXIF_TAG;
+    }
     exifMetadata_->GetFilterArea(exifKeys, ranges);
     cond = ranges.empty();
     CHECK_ERROR_RETURN_RET(cond, E_NO_EXIF_TAG);
