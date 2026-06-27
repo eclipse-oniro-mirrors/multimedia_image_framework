@@ -105,10 +105,10 @@ bool HeifBufferInputStream::Seek(int64_t position)
 HeifStreamReader::HeifStreamReader(std::shared_ptr<HeifInputStream> stream, int64_t start, size_t length)
     : inputStream_(std::move(stream)), start_(start)
 {
-    if (length > 0 && start > INT64_MAX - static_cast<int64_t>(length)) {
+    if (static_cast<uint64_t>(length) > INT64_MAX || start_ < 0) {
         end_ = -1;
-    } else {
-        end_ = start_ + static_cast<int64_t>(length);
+    } else if (__builtin_add_overflow(start_, static_cast<int64_t>(length), &end_)) {
+        end_ = -1;
     }
 }
 

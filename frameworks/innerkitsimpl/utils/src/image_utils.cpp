@@ -836,7 +836,7 @@ bool ImageUtils::CopyYuvPixelMapToSurfaceBuffer(PixelMap* pixelmap,
     sptr<SurfaceBuffer> surfaceBuffer)
 {
     CHECK_ERROR_RETURN_RET(pixelmap == nullptr || surfaceBuffer == nullptr, false);
-    uint8_t* src = const_cast<uint8_t*>(pixelmap->GetPixels());
+    uint8_t* srcBase = const_cast<uint8_t*>(pixelmap->GetPixels());
     uint8_t* dst = static_cast<uint8_t*>(surfaceBuffer->GetVirAddr());
     uint32_t dstSize = surfaceBuffer->GetSize();
 
@@ -847,25 +847,24 @@ bool ImageUtils::CopyYuvPixelMapToSurfaceBuffer(PixelMap* pixelmap,
     bool cond = !ImageUtils::GetYuvInfoFromSurfaceBuffer(yuvDstInfo, surfaceBuffer);
     CHECK_ERROR_RETURN_RET_LOG(cond, false, "Get YUVInfo from SurfaceBuffer failed");
 
+    uint8_t* src = srcBase + yuvSrcInfo.yOffset;
     for (uint32_t i = 0; i < yuvSrcInfo.yHeight; ++i) {
         if (memcpy_s(dst, dstSize, src, yuvSrcInfo.yWidth) != EOK) {
             return false;
         }
         dst += yuvDstInfo.yStride;
         dstSize -= yuvDstInfo.yStride;
-        src += yuvSrcInfo.yWidth;
+        src += yuvSrcInfo.yStride;
     }
 
-    uint64_t uvWidth = yuvSrcInfo.uvWidth * NUM_2;
     dst = static_cast<uint8_t*>(surfaceBuffer->GetVirAddr()) + yuvDstInfo.uvOffset;
-
     for (uint32_t i = 0; i < yuvSrcInfo.uvHeight; ++i) {
-        if (memcpy_s(dst, dstSize, src, uvWidth) != EOK) {
+        if (memcpy_s(dst, dstSize, src, yuvSrcInfo.uvWidth * NUM_2) != EOK) {
             return false;
         }
         dst += yuvDstInfo.uvStride;
         dstSize -= yuvDstInfo.uvStride;
-        src += uvWidth;
+        src += yuvSrcInfo.uvStride;
     }
 
     return true;

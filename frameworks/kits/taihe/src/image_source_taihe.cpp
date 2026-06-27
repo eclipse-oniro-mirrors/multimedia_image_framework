@@ -1534,7 +1534,7 @@ void ImageSourceImpl::ReleaseSync()
 
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 static bool ParseDecodingOptionsForPicture(DecodingOptionsForPicture const& options,
-    OHOS::Media::DecodingOptionsForPicture &dst)
+    OHOS::Media::DecodingOptionsForPicture &dst, std::string &errMsg)
 {
     constexpr size_t maxAuxTypeCnt = 32U;
     size_t auxPicTypeCount = std::min(options.desiredAuxiliaryPictures.size(), maxAuxTypeCnt);
@@ -1548,6 +1548,18 @@ static bool ParseDecodingOptionsForPicture(DecodingOptionsForPicture const& opti
             return false;
         }
     }
+
+    if (!ParsePixelFormat(options.desiredPixelFormat, dst.desiredPixelFormat, "desiredPixelFormat", errMsg)) {
+        return false;
+    }
+
+    if (options.desiredSize.has_value()) {
+        dst.desiredSizeForMainPixelMap.width = options.desiredSize.value().width;
+        dst.desiredSizeForMainPixelMap.height = options.desiredSize.value().height;
+        IMAGE_LOGD("desiredSize: %{public}d, %{public}d",
+            dst.desiredSizeForMainPixelMap.width, dst.desiredSizeForMainPixelMap.height);
+    }
+
     return true;
 }
 
@@ -1596,7 +1608,8 @@ optional<Picture> ImageSourceImpl::CreatePictureSync(optional_view<DecodingOptio
             ImageTaiheUtils::GetTaiheSupportedAuxTypes().end()
         };
     } else {
-        if (!ParseDecodingOptionsForPicture(options.value(), taiheContext->decodingOptsForPicture)) {
+        if (!ParseDecodingOptionsForPicture(options.value(), taiheContext->decodingOptsForPicture,
+            taiheContext->errMsg)) {
             ImageTaiheUtils::ThrowExceptionError(IMAGE_BAD_PARAMETER, "DecodingOptionsForPicture mismatch");
             return optional<Picture>(std::nullopt);
         }

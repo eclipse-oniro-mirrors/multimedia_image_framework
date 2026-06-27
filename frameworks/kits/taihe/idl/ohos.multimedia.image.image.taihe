@@ -706,6 +706,8 @@ enum XMPTagType: i32 {
 
 struct DecodingOptionsForPicture {
   desiredAuxiliaryPictures: Array<AuxiliaryPictureType>;
+  desiredPixelFormat: Optional<PixelMapFormat>;
+  desiredSize: Optional<Size>;
 }
 
 struct DecodingOptionsForThumbnail {
