@@ -96,10 +96,8 @@ uint32_t ImagePacker::GetSupportedFormats(std::set<std::string> &formats)
     std::vector<ClassInfo> classInfos;
     uint32_t ret =
         pluginServer_.PluginServerGetClassInfo<AbsImageEncoder>(AbsImageEncoder::SERVICE_DEFAULT, classInfos);
-    if (ret != SUCCESS) {
-        IMAGE_LOGE("get class info from plugin server failed, ret:%{public}u.", ret);
-        return ret;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(ret != SUCCESS, ret,
+        "get class info from plugin server failed, ret:%{public}u.", ret);
     for (auto &info : classInfos) {
         std::map<std::string, AttrData> &capbility = info.capabilities;
         auto iter = capbility.find(IMAGE_ENCODE_FORMAT);
@@ -155,15 +153,11 @@ uint32_t ImagePacker::StartPacking(uint8_t *outputData, uint32_t maxSize, const 
         return ERR_IMAGE_INVALID_PARAMETER;
     }
 
-    if (outputData == nullptr) {
-        IMAGE_LOGE("output buffer is null.");
-        return ERR_IMAGE_INVALID_PARAMETER;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(outputData == nullptr,
+        ERR_IMAGE_INVALID_PARAMETER, "output buffer is null.");
     BufferPackerStream *stream = new (std::nothrow) BufferPackerStream(outputData, maxSize);
-    if (stream == nullptr) {
-        IMAGE_LOGE("make buffer packer stream failed.");
-        return ERR_IMAGE_DATA_ABNORMAL;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(stream == nullptr,
+        ERR_IMAGE_DATA_ABNORMAL, "make buffer packer stream failed.");
     FreeOldPackerStream();
     packerStream_ = std::unique_ptr<BufferPackerStream>(stream);
     return StartPackingImpl(option);
@@ -178,10 +172,8 @@ uint32_t ImagePacker::StartPacking(const std::string &filePath, const PackOption
         return ERR_IMAGE_INVALID_PARAMETER;
     }
     FilePackerStream *stream = new (std::nothrow) FilePackerStream(filePath);
-    if (stream == nullptr) {
-        IMAGE_LOGE("make file packer stream failed.");
-        return ERR_IMAGE_DATA_ABNORMAL;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(stream == nullptr,
+        ERR_IMAGE_DATA_ABNORMAL, "make file packer stream failed.");
     FreeOldPackerStream();
     packerStream_ = std::unique_ptr<FilePackerStream>(stream);
     return StartPackingImpl(option);
@@ -211,10 +203,8 @@ uint32_t ImagePacker::StartPacking(std::ostream &outputStream, const PackOption 
         return ERR_IMAGE_INVALID_PARAMETER;
     }
     OstreamPackerStream *stream = new (std::nothrow) OstreamPackerStream(outputStream);
-    if (stream == nullptr) {
-        IMAGE_LOGE("make ostream packer stream failed.");
-        return ERR_IMAGE_DATA_ABNORMAL;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(stream == nullptr,
+        ERR_IMAGE_DATA_ABNORMAL, "make ostream packer stream failed.");
     FreeOldPackerStream();
     packerStream_ = std::unique_ptr<OstreamPackerStream>(stream);
     return StartPackingImpl(option);
@@ -239,10 +229,9 @@ uint32_t ImagePacker::AddImage(PixelMap &pixelMap)
     ImageUtils::DumpPixelMapBeforeEncode(pixelMap);
     ImageTrace imageTrace("ImagePacker::AddImage by pixelMap");
 
-    if (pixelMap.GetPixelFormat() == PixelFormat::Y8 && format_ != IMAGE_TIFF_FORMAT) {
-        IMAGE_LOGE("Y8 format only supported via TIFF plugin.");
-        return ERR_IMAGE_INVALID_PARAMETER;
-    }
+    bool cond = pixelMap.GetPixelFormat() == PixelFormat::Y8 && format_ != IMAGE_TIFF_FORMAT;
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER,
+        "Y8 format only supported via TIFF plugin.");
 
     return DoEncodingFunc([this, &pixelMap](ImagePlugin::AbsImageEncoder* encoder) {
         return encoder->AddImage(pixelMap);
@@ -281,10 +270,8 @@ uint32_t ImagePacker::AddImage(ImageSource &source, uint32_t index)
         pixelMap_.reset();  // release old inner pixelmap
     }
     pixelMap_ = source.CreatePixelMapEx(index, decodeOpts, ret);
-    if (ret != SUCCESS) {
-        IMAGE_LOGE("image source create pixel map failed.");
-        return ret;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(ret != SUCCESS, ret,
+        "image source create pixel map failed.");
     bool cond = pixelMap_ == nullptr || pixelMap_.get() == nullptr;
     CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_MALLOC_ABNORMAL, "create the pixel map unique_ptr fail.");
 
@@ -428,41 +415,33 @@ uint32_t ImagePacker::DoEncodingFunc(std::function<uint32_t(ImagePlugin::AbsImag
 #if defined(SUPPORT_LIBTIFF)
 uint32_t ImagePacker::ValidateBinaryImageBufferInfo(const PixelBufferInfo &bufferInfo, const char *funcName)
 {
-    if (bufferInfo.data == nullptr || bufferInfo.dataSize == 0) {
-        IMAGE_LOGE("[ImagePacker] %{public}s failed, invalid buffer data", funcName);
-        return ERR_IMAGE_INVALID_PARAMETER;
-    }
-
-    if (bufferInfo.width == 0 || bufferInfo.height == 0) {
-        IMAGE_LOGE("[ImagePacker] %{public}s failed, invalid dimensions: width or height cannot be zero", funcName);
-        return ERR_IMAGE_INVALID_PARAMETER;
-    }
+    bool cond = (bufferInfo.data == nullptr) || (bufferInfo.dataSize == 0);
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER,
+        "[ImagePacker] %{public}s failed, invalid buffer data", funcName);
+    cond = (bufferInfo.width == 0) || (bufferInfo.height == 0);
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER,
+        "[ImagePacker] %{public}s failed, invalid dimensions: width or height cannot be zero", funcName);
 
     // Validate data size for Y1 format (1 bit per pixel, packed into bytes)
     uint32_t rowBytes = (bufferInfo.bytesPerRow > 0) ? bufferInfo.bytesPerRow :
                         (bufferInfo.width + 7) / 8;
     // Check for overflow when calculating required size
-    if (static_cast<uint64_t>(rowBytes) > std::numeric_limits<uint64_t>::max() / bufferInfo.height) {
-        IMAGE_LOGE("[ImagePacker] %{public}s failed, dimensions cause overflow: %{public}ux%{public}u",
-                   funcName, bufferInfo.width, bufferInfo.height);
-        return ERR_IMAGE_INVALID_PARAMETER;
-    }
+    cond = static_cast<uint64_t>(rowBytes) > std::numeric_limits<uint64_t>::max() / bufferInfo.height;
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER,
+        "[ImagePacker] %{public}s failed, dimensions cause overflow: %{public}ux%{public}u",
+        funcName, bufferInfo.width, bufferInfo.height);
     uint64_t requiredSize = static_cast<uint64_t>(rowBytes) * bufferInfo.height;
     static constexpr uint64_t maxDataSize = std::numeric_limits<uint32_t>::max();
-    if (bufferInfo.dataSize < requiredSize) {
-        IMAGE_LOGE("[ImagePacker] %{public}s failed, dataSize too small: %{public}llu < required %{public}llu",
-                   funcName,
-                   static_cast<unsigned long long>(bufferInfo.dataSize),
-                   static_cast<unsigned long long>(requiredSize));
-        return ERR_IMAGE_INVALID_PARAMETER;
-    }
-    if (bufferInfo.dataSize > maxDataSize) {
-        IMAGE_LOGE("[ImagePacker] %{public}s failed, dataSize too large: %{public}llu > max %{public}llu",
-                   funcName,
-                   static_cast<unsigned long long>(bufferInfo.dataSize),
-                   static_cast<unsigned long long>(maxDataSize));
-        return ERR_IMAGE_INVALID_PARAMETER;
-    }
+    cond = bufferInfo.dataSize < requiredSize;
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER,
+        "[ImagePacker] %{public}s failed, dataSize too small: %{public}llu < required %{public}llu",
+        funcName, static_cast<unsigned long long>(bufferInfo.dataSize),
+        static_cast<unsigned long long>(requiredSize));
+    cond = bufferInfo.dataSize > maxDataSize;
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER,
+        "[ImagePacker] %{public}s failed, dataSize too large: %{public}llu > max %{public}llu",
+        funcName, static_cast<unsigned long long>(bufferInfo.dataSize),
+        static_cast<unsigned long long>(maxDataSize));
     return SUCCESS;
 }
 
@@ -491,22 +470,16 @@ uint32_t ImagePacker::PackBinaryImageToTiffFile(const PixelBufferInfo &bufferInf
 {
 #if defined(SUPPORT_LIBTIFF)
     uint32_t ret = ValidateBinaryImageBufferInfo(bufferInfo, "PackBinaryImageToTiffFile");
-    if (ret != SUCCESS) {
-        return ret;
-    }
-    if (fd < 0) {
-        IMAGE_LOGE("[ImagePacker] PackBinaryImageToTiffFile failed, invalid fd: %{public}d", fd);
-        return ERR_IMAGE_INVALID_PARAMETER;
-    }
+    CHECK_ERROR_RETURN_RET(ret != SUCCESS, ret);
+    CHECK_ERROR_RETURN_RET_LOG(fd < 0, ERR_IMAGE_INVALID_PARAMETER,
+        "[ImagePacker] PackBinaryImageToTiffFile failed, invalid fd: %{public}d", fd);
 
     FilePackerStream *packerStream = new (std::nothrow) FilePackerStream(fd);
     CHECK_ERROR_RETURN_RET_LOG(!packerStream, ERR_IMAGE_INVALID_PARAMETER, "make file packer stream failed");
     FreeOldPackerStream();
     packerStream_ = std::unique_ptr<FilePackerStream>(packerStream);
     ret = EncodeBinaryImageToTiffStream(bufferInfo, *packerStream_, option, "PackBinaryImageToTiffFile");
-    if (ret != SUCCESS) {
-        return ret;
-    }
+    CHECK_ERROR_RETURN_RET(ret != SUCCESS, ret);
 
     return SUCCESS;
 #else
