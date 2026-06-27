@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 
+
 #ifndef INTERFACES_INNERKITS_INCLUDE_EXIF_METADATA_H
 #define INTERFACES_INNERKITS_INCLUDE_EXIF_METADATA_H
 
