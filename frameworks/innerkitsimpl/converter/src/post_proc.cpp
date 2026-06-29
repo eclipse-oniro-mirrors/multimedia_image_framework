@@ -248,8 +248,8 @@ bool PostProc::CenterDisplay(PixelMap &pixelMap, int32_t srcWidth, int32_t srcHe
         int32_t left = std::max(0, srcWidth - targetWidth) / HALF;
         int32_t top = std::max(0, srcHeight - targetHeight) / HALF;
         Rect rect = {left, top, targetWidth, targetHeight};
-        cond = (pixelMap.Crop(rect) != SUCCESS);
-        CHECK_ERROR_RETURN_RET_LOG(cond, false, "CenterDisplay failed, ret: %{public}d", ret);
+        uint32_t ret = pixelMap.Crop(rect);
+        CHECK_ERROR_RETURN_RET_LOG(ret != SUCCESS, false, "CenterDisplay failed, ret: %{public}d", ret);
         ImageUtils::UpdateYUVDataInfo(pixelMap);
         return true;
     }
