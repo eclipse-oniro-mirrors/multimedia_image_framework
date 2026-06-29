@@ -4228,10 +4228,15 @@ bool ProcessAstcMetadata(PixelAstc* pixelAstc, size_t astcSize, const AstcMetada
                                   pixelAstc->GetPixelFormat() };
         memoryData.usage = pixelAstc->GetNoPaddingUsage();
         auto dstMemory = MemoryManager::CreateMemory(AllocatorType::DMA_ALLOC, memoryData);
-        cond = (!dstMemory || dstMemory->data.data == nullptr);
-        CHECK_ERROR_RETURN_RET_LOG(cond, false, "%{public}s CreateMemory failed", __func__);
-        cond = (memcpy_s(dstMemory->data.data, astcSize, pixelAstc->GetPixels(), astcSize) != 0);
-        CHECK_ERROR_RETURN_RET_LOG(cond, false, "%{public}s memcpy failed", __func__);
+        if (!dstMemory || dstMemory->data.data == nullptr) {
+            IMAGE_LOGE("%{public}s CreateMemory failed", __func__);
+            return false;
+        }
+        if (memcpy_s(dstMemory->data.data, astcSize, pixelAstc->GetPixels(), astcSize) != 0) {
+            IMAGE_LOGE("%{public}s memcpy failed", __func__);
+            dstMemory->Release();
+            return false;
+        }
         pixelAstc->SetPixelsAddr(dstMemory->data.data, dstMemory->extend.data,
                                  dstMemory->data.size, dstMemory->GetType(), nullptr);
     }

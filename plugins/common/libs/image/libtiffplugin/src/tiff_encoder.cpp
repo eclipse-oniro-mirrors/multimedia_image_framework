@@ -235,25 +235,29 @@ uint32_t TiffEncoder::EncodeBinaryImageToTiff(const PixelBufferInfo* bufferInfo,
 uint32_t TiffEncoder::ValidatePixelBufferInfo(const PixelBufferInfo &bufferInfo)
 {
     CHECK_ERROR_RETURN_RET_LOG(bufferInfo.data == nullptr, ERR_IMAGE_INVALID_PARAMETER,
-        "[TiffEncoder] ValidatePixelBufferInfo failed, data is null");
-    bool cond = (bufferInfo.width == 0) || (bufferInfo.height == 0);
-    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER,
-        "[TiffEncoder] ValidatePixelBufferInfo failed, invalid width or height: "
-        "%{public}ux%{public}u" PRIu64,
-        bufferInfo.width, bufferInfo.height);
+ 	        "[TiffEncoder] ValidatePixelBufferInfo failed, data is null");	 
+    if (bufferInfo.width == 0 || bufferInfo.height == 0) {	 
+        IMAGE_LOGE("[TiffEncoder] ValidatePixelBufferInfo failed, invalid width or height: "	 
+                "%{public}ux%{public}u",	 
+                bufferInfo.width, bufferInfo.height); 
+        return ERR_IMAGE_INVALID_PARAMETER; 
+    }
 
     uint64_t rowBytes = GetDefaultRowBytes(bufferInfo.width, bufferInfo.bytesPerRow);
     // Check for overflow before multiplication
-    cond = (rowBytes > std::numeric_limits<uint64_t>::max() / bufferInfo.height);
-    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER,
-        "[TiffEncoder] ValidatePixelBufferInfo failed, size calculation overflow: "
-        "rowBytes=%{public}lu, height=%{public}u" PRIu64,
-        rowBytes, bufferInfo.height);
+    if (rowBytes > std::numeric_limits<uint64_t>::max() / bufferInfo.height) {	 
+        IMAGE_LOGE("[TiffEncoder] ValidatePixelBufferInfo failed, size calculation overflow: "	 
+                "[rowBytes=%{public}" PRIu64 "], height=%{public}u",	 
+                rowBytes, bufferInfo.height);	 
+        return ERR_IMAGE_INVALID_PARAMETER;	 
+    }
     uint64_t requiredSize = static_cast<uint64_t>(rowBytes) * bufferInfo.height;
-    CHECK_ERROR_RETURN_RET_LOG(bufferInfo.dataSize < requiredSize, ERR_IMAGE_INVALID_PARAMETER,
-        "[TiffEncoder] ValidatePixelBufferInfo failed, dataSize too small: "
-        "%{public}llu < required %{public}lu" PRIu64,
-        static_cast<unsigned long long>(bufferInfo.dataSize), requiredSize);
+    if (bufferInfo.dataSize < requiredSize) {	 
+        IMAGE_LOGE("[TiffEncoder] ValidatePixelBufferInfo failed, dataSize too small: "	 
+                "%{public}llu < required %{public}" PRIu64,	 
+                static_cast<unsigned long long>(bufferInfo.dataSize), requiredSize);	 
+        return ERR_IMAGE_INVALID_PARAMETER; 
+    }
 
     return SUCCESS;
 }

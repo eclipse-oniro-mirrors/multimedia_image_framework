@@ -272,8 +272,10 @@ static bool I420Param(uint32_t width, uint32_t height, I420Info &i420Info)
 static bool YuvToI420ToRGBParam(const YUVDataInfo &yuvInfo, SrcConvertParam &srcParam, I420Info &i420Info,
                                 DestConvertParam &destParam, DestConvertInfo &destInfo)
 {
-    bool cond = !YuvToRGBParam(yuvInfo, srcParam, destParam, destInfo);
-    CHECK_ERROR_RETURN_RET_LOG(cond, false, "Yuv conversion to RGB failed!");
+    if (!YuvToRGBParam(yuvInfo, srcParam, destParam, destInfo)) {
+        IMAGE_LOGE("Yuv conversion to RGB failed!");
+        return false;
+    }
     return I420Param(yuvInfo.yWidth, yuvInfo.yHeight, i420Info);
 }
 
@@ -292,8 +294,10 @@ static bool YuvTo420ToRGB(const uint8_t *srcBuffer, const YUVDataInfo &yuvInfo, 
 
     I420Info i420Info = {yuvInfo.yWidth, yuvInfo.yHeight};
 
-    cond = !YuvToRGBParam(yuvInfo, srcParam, destParam, destInfo);
-    CHECK_ERROR_RETURN_RET_LOG(cond, false, "YuvToRGB Param failed!");
+    if (!YuvToI420ToRGBParam(yuvInfo, srcParam, i420Info, destParam, destInfo)) {
+        IMAGE_LOGE("YuvToI420ToRGB Param failed!");
+        return false;
+    }
     auto bRet = YuvToI420(srcParam, i420Info);
     if (!bRet) {
         delete[] i420Info.I420Y;
