@@ -107,11 +107,28 @@ image_native_ios_sources = [
   "//foundation/multimedia/image_framework/plugins/common/libs/image/formatagentplugin/src/wbmp_format_agent.cpp",
   "//foundation/multimedia/image_framework/plugins/common/libs/image/formatagentplugin/src/webp_format_agent.cpp",
 
+  # gif
+  "//foundation/multimedia/image_framework/plugins/common/libs/image/libgifplugin/src/gif_encoder.cpp",
+
+  # jpeg
+  "//foundation/multimedia/image_framework/plugins/common/libs/image/libjpegplugin/src/icc_profile_info.cpp",
+  "//foundation/multimedia/image_framework/plugins/common/libs/image/libjpegplugin/src/jpeg_decoder.cpp",
+  "//foundation/multimedia/image_framework/plugins/common/libs/image/libjpegplugin/src/jpeg_encoder.cpp",
+  "//foundation/multimedia/image_framework/plugins/common/libs/image/libjpegplugin/src/jpeg_utils.cpp",
+
+  # png
+  "//foundation/multimedia/image_framework/plugins/common/libs/image/libpngplugin/src/nine_patch_listener.cpp",
+  "//foundation/multimedia/image_framework/plugins/common/libs/image/libpngplugin/src/png_decoder.cpp",
+  "//foundation/multimedia/image_framework/plugins/common/libs/image/libpngplugin/src/png_ninepatch_res.cpp",
+
   # raw
+  "//foundation/multimedia/image_framework/plugins/common/libs/image/librawplugin/src/raw_decoder.cpp",
   "//foundation/multimedia/image_framework/plugins/common/libs/image/librawplugin/src/raw_stream.cpp",
 
   # svg
   "//foundation/multimedia/image_framework/plugins/common/libs/image/libsvgplugin/src/svg_decoder.cpp",
+  "//foundation/multimedia/image_framework/plugins/common/libs/image/libwebpplugin/src/webp_decoder.cpp",
+  "//foundation/multimedia/image_framework/plugins/common/libs/image/libwebpplugin/src/webp_encoder.cpp",
 
   # ext
   "//foundation/multimedia/image_framework/plugins/common/libs/image/libextplugin/src/ext_decoder.cpp",
@@ -147,6 +164,7 @@ image_native_ios_include_dirs = [
   "//foundation/multimedia/image_framework/plugins/manager/include",
   "//foundation/multimedia/image_framework/plugins/manager/include/image",
   "//foundation/multimedia/image_framework/plugins/manager/include/pluginbase",
+  "//foundation/multimedia/image_framework/plugins/common/libs/image/libjpegplugin/include",
   "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/include",
   "//foundation/graphic/graphic_2d/utils/color_manager/export",
   "$third_party_skia_root/third_party/externals/libjpeg-turbo",
@@ -161,6 +179,7 @@ image_native_ios_include_dirs = [
   "$third_party_skia_root/third_party/skcms",
 
   # webp
+  "//foundation/multimedia/image_framework/plugins/common/libs/image/libwebpplugin/include",
   "$third_party_skia_root/third_party/externals/libwebp/src",
   "$third_party_skia_root/include/encode",
   "$third_party_skia_root/src/ports/skia_ohos",
@@ -177,9 +196,18 @@ image_native_ios_include_dirs = [
   "//foundation/multimedia/image_framework/plugins/common/libs/image/librawplugin/include",
   "$third_party_skia_root",
 
+  # png
+  "//foundation/multimedia/image_framework/plugins/common/libs/image/libpngplugin/include",
+  "//third_party/zlib",
+  "//third_party/libpng",
+
   # formatagent
   "//foundation/multimedia/image_framework/plugins/common/libs/image/formatagentplugin/include",
   "//foundation/multimedia/image_framework/plugins/manager/include/utils",
+
+  # gif
+  "//foundation/multimedia/image_framework/plugins/common/libs/image/libgifplugin/include",
+  "//third_party/giflib",
 
   # jpeg
   "$third_party_skia_root/third_party/libjpeg-turbo",
@@ -195,6 +223,7 @@ image_native_ios_include_dirs = [
   "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/common/include",
   "//foundation/multimedia/image_framework/frameworks/kits/js/common/include",
   "//foundation/multimedia/image_framework/interfaces/kits/js/common/include",
+  "//foundation/multimedia/image_framework/plugins/common/libs/image/libjpegplugin",
   "//foundation/multimedia/image_framework/interfaces/kits/native/include",
   "//foundation/multimedia/image_framework/interfaces/kits/native/include/image",
   "//utils/jni/jnikit/include",
