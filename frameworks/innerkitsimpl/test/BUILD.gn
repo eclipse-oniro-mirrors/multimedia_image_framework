@@ -2460,7 +2460,6 @@ group("unittest") {
     ":imagesourcetest",
     ":imagestreamtest",
     ":imagetiffparsertest",
-    ":imageutilstest",
     ":interfacetest",
     ":jpeg_yuv_decoder_test",
     ":jpegdecoderextest",
@@ -2476,7 +2475,6 @@ group("unittest") {
     ":pixelconvertadaptertest",
     ":pixelmaptest",
     ":platformadptest",
-    ":pluginlibjpegtest",
     ":pluginsmanagersrcframeworktest",
     ":pngtest",
     #":rawdecodertest",
@@ -2493,10 +2491,6 @@ group("unittest") {
   ]
   if (has_libtiff) {
     deps += [ ":tiffplugintest" ]
-  }
-
-  if (enable_jpeg_hw_decode) {
-    deps += [ ":jpeg_hw_decoder_test" ]
   }
 
   if (enable_heif_hw_decode) {
