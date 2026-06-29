@@ -235,7 +235,7 @@ uint32_t TiffEncoder::EncodeBinaryImageToTiff(const PixelBufferInfo* bufferInfo,
 uint32_t TiffEncoder::ValidatePixelBufferInfo(const PixelBufferInfo &bufferInfo)
 {
     CHECK_ERROR_RETURN_RET_LOG(bufferInfo.data == nullptr, ERR_IMAGE_INVALID_PARAMETER,
- 	    "[TiffEncoder] ValidatePixelBufferInfo failed, data is null");
+        "[TiffEncoder] ValidatePixelBufferInfo failed, data is null");
     if (bufferInfo.width == 0 || bufferInfo.height == 0) {
         IMAGE_LOGE("[TiffEncoder] ValidatePixelBufferInfo failed, invalid width or height: "
                    "%{public}ux%{public}u",
