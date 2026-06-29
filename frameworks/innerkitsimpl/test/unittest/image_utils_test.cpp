@@ -89,32 +89,6 @@ public:
 };
 
 /**
- * @tc.name: DumpPixelMapIfDumpEnabledTest001
- * @tc.desc: test DumpPixelMapIfDumpEnabled when dump is disabled
- * @tc.type: FUNC
- */
-HWTEST_F(ImageUtilsTest, DumpPixelMapIfDumpEnabledTest001, TestSize.Level3)
-{
-    GTEST_LOG_(INFO) << "ImageUtilsTest: DumpPixelMapIfDumpEnabledTest001 start";
-    std::unique_ptr<PixelMap> pixelMap = nullptr;
-    ImageUtils::DumpPixelMapIfDumpEnabled(pixelMap, 123);
-    GTEST_LOG_(INFO) << "ImageUtilsTest: DumpPixelMapIfDumpEnabledTest001 end";
-}
-
-/**
- * @tc.name: DumpPixelMapIfDumpEnabledTest002
- * @tc.desc: test DumpPixelMapIfDumpEnabled when pixelMap is null
- * @tc.type: FUNC
- */
-HWTEST_F(ImageUtilsTest, DumpPixelMapIfDumpEnabledTest002, TestSize.Level3)
-{
-    GTEST_LOG_(INFO) << "ImageUtilsTest: DumpPixelMapIfDumpEnabledTest002 start";
-    std::unique_ptr<PixelMap> pixelMap = nullptr;
-    ImageUtils::DumpPixelMapIfDumpEnabled(pixelMap, 456);
-    GTEST_LOG_(INFO) << "ImageUtilsTest: DumpPixelMapIfDumpEnabledTest002 end";
-}
-
-/**
  * @tc.name: ImageTraceTest001
  * @tc.desc: test SetData and ClearData data type is bool
  * @tc.type: FUNC

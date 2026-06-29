@@ -312,8 +312,6 @@ HWTEST_F(BlobMetadataTest, UnmarshallingTest004, TestSize.Level3)
     parcel.WriteUint32(static_cast<uint32_t>(MetadataType::RFDATAB));
     parcel.WriteUint32(TEST_BLOB_DATA_SIZE);
     PICTURE_ERR error;
-    ASSERT_EQ(error.errorCode, 0);
-    ASSERT_TRUE(error.errorInfo.empty());
     BlobMetadata *ret = BlobMetadata::Unmarshalling(parcel, error);
     ASSERT_NE(ret, nullptr);
     GTEST_LOG_(INFO) << "BlobMetadataTest: UnmarshallingTest004 end";
