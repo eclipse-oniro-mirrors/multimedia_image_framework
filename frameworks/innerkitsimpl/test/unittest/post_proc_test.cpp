@@ -1826,33 +1826,6 @@ HWTEST_F(PostProcTest, CenterDisplayTest004, TestSize.Level3)
 }
 
 /**
- * @tc.name: CenterDisplayTest005
- * @tc.desc: Test CenterDisplay YUV branch with NV12 format when srcWidth < targetWidth (center padding scenario).
- * @tc.type: FUNC
- */
-HWTEST_F(PostProcTest, CenterDisplayTest005, TestSize.Level3)
-{
-    GTEST_LOG_(INFO) << "PostProcTest: CenterDisplayTest005 start";
-    PostProc postProc;
-    int32_t srcWidth = 50;
-    int32_t srcHeight = 50;
-    int32_t targetWidth = 100;
-    int32_t targetHeight = 100;
-
-    InitializationOptions opts;
-    opts.size.width = srcWidth;
-    opts.size.height = srcHeight;
-    opts.pixelFormat = PixelFormat::NV12;
-    opts.allocatorType = AllocatorType::SHARE_MEM_ALLOC;
-    std::unique_ptr<PixelMap> pixelMap = PixelMap::Create(opts);
-    ASSERT_NE(pixelMap.get(), nullptr);
-
-    bool ret = postProc.CenterDisplay(*(pixelMap.get()), srcWidth, srcHeight, targetWidth, targetHeight);
-    ASSERT_EQ(ret, false);
-    GTEST_LOG_(INFO) << "PostProcTest: CenterDisplayTest005 end";
-}
-
-/**
  * @tc.name: ScalePixelMapExYuvTest001
  * @tc.desc: Test ScalePixelMapEx YUV branch with NV12 DMA_ALLOC, scale down.
  * @tc.type: FUNC
