@@ -75,6 +75,8 @@ private:
                     int srcRowStride = 0, int targetRowStride = 0);
     bool ProcessScanlineFilter(ScanlineFilter &scanlineFilter, const Rect &cropRect, PixelMap &pixelMap,
                                uint8_t *resultData, uint32_t rowBytes);
+    bool ScalePixelMapYuv(const Size &desiredSize, PixelMap &pixelMap, ImageInfo &imgInfo,
+                          const AntiAliasingOption &option);
 private:
     DecodeOptions decodeOpts_;
 };

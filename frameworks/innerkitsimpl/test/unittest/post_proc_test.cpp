@@ -1770,5 +1770,178 @@ HWTEST_F(PostProcTest, TransformTest002, TestSize.Level3)
     ASSERT_EQ(ret, false);
     GTEST_LOG_(INFO) << "PostProcTest: TransformTest002 end";
 }
+
+/**
+ * @tc.name: CenterDisplayTest003
+ * @tc.desc: Test CenterDisplay YUV branch with NV12 format when srcWidth > targetWidth.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PostProcTest, CenterDisplayTest003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PostProcTest: CenterDisplayTest003 start";
+    PostProc postProc;
+    int32_t srcWidth = 100;
+    int32_t srcHeight = 100;
+    int32_t targetWidth = 50;
+    int32_t targetHeight = 50;
+
+    InitializationOptions opts;
+    opts.size.width = srcWidth;
+    opts.size.height = srcHeight;
+    opts.pixelFormat = PixelFormat::NV12;
+    opts.allocatorType = AllocatorType::SHARE_MEM_ALLOC;
+    std::unique_ptr<PixelMap> pixelMap = PixelMap::Create(opts);
+    ASSERT_NE(pixelMap.get(), nullptr);
+
+    bool ret = postProc.CenterDisplay(*(pixelMap.get()), srcWidth, srcHeight, targetWidth, targetHeight);
+    ASSERT_EQ(ret, true);
+    GTEST_LOG_(INFO) << "PostProcTest: CenterDisplayTest003 end";
+}
+
+/**
+ * @tc.name: CenterDisplayTest004
+ * @tc.desc: Test CenterDisplay YUV branch with NV12 format when srcWidth == targetWidth (left=0, top=0).
+ * @tc.type: FUNC
+ */
+HWTEST_F(PostProcTest, CenterDisplayTest004, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PostProcTest: CenterDisplayTest004 start";
+    PostProc postProc;
+    int32_t srcWidth = 100;
+    int32_t srcHeight = 100;
+    int32_t targetWidth = 100;
+    int32_t targetHeight = 100;
+
+    InitializationOptions opts;
+    opts.size.width = srcWidth;
+    opts.size.height = srcHeight;
+    opts.pixelFormat = PixelFormat::NV12;
+    opts.allocatorType = AllocatorType::DMA_ALLOC;
+    std::unique_ptr<PixelMap> pixelMap = PixelMap::Create(opts);
+    ASSERT_NE(pixelMap.get(), nullptr);
+
+    bool ret = postProc.CenterDisplay(*(pixelMap.get()), srcWidth, srcHeight, targetWidth, targetHeight);
+    ASSERT_EQ(ret, true);
+    GTEST_LOG_(INFO) << "PostProcTest: CenterDisplayTest004 end";
+}
+
+/**
+ * @tc.name: CenterDisplayTest005
+ * @tc.desc: Test CenterDisplay YUV branch with NV12 format when srcWidth < targetWidth (center padding scenario).
+ * @tc.type: FUNC
+ */
+HWTEST_F(PostProcTest, CenterDisplayTest005, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PostProcTest: CenterDisplayTest005 start";
+    PostProc postProc;
+    int32_t srcWidth = 50;
+    int32_t srcHeight = 50;
+    int32_t targetWidth = 100;
+    int32_t targetHeight = 100;
+
+    InitializationOptions opts;
+    opts.size.width = srcWidth;
+    opts.size.height = srcHeight;
+    opts.pixelFormat = PixelFormat::NV12;
+    opts.allocatorType = AllocatorType::SHARE_MEM_ALLOC;
+    std::unique_ptr<PixelMap> pixelMap = PixelMap::Create(opts);
+    ASSERT_NE(pixelMap.get(), nullptr);
+
+    bool ret = postProc.CenterDisplay(*(pixelMap.get()), srcWidth, srcHeight, targetWidth, targetHeight);
+    ASSERT_EQ(ret, false);
+    GTEST_LOG_(INFO) << "PostProcTest: CenterDisplayTest005 end";
+}
+
+/**
+ * @tc.name: ScalePixelMapExYuvTest001
+ * @tc.desc: Test ScalePixelMapEx YUV branch with NV12 DMA_ALLOC, scale down.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PostProcTest, ScalePixelMapExYuvTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PostProcTest: ScalePixelMapExYuvTest001 start";
+    PostProc postProc;
+    InitializationOptions opts;
+    opts.size = {100, 100};
+    opts.pixelFormat = PixelFormat::NV12;
+    opts.allocatorType = AllocatorType::DMA_ALLOC;
+    std::unique_ptr<PixelMap> pixelMap = PixelMap::Create(opts);
+    ASSERT_NE(pixelMap, nullptr);
+
+    Size desiredSize = {50, 50};
+    AntiAliasingOption option = AntiAliasingOption::NONE;
+    bool ret = postProc.ScalePixelMapEx(desiredSize, *(pixelMap.get()), option);
+    ASSERT_EQ(ret, true);
+    GTEST_LOG_(INFO) << "PostProcTest: ScalePixelMapExYuvTest001 end";
+}
+
+/**
+ * @tc.name: ScalePixelMapExYuvTest002
+ * @tc.desc: Test ScalePixelMapEx YUV branch with NV12 zero desiredSize, expect false.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PostProcTest, ScalePixelMapExYuvTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PostProcTest: ScalePixelMapExYuvTest002 start";
+    PostProc postProc;
+    InitializationOptions opts;
+    opts.size = {100, 100};
+    opts.pixelFormat = PixelFormat::NV12;
+    opts.allocatorType = AllocatorType::SHARE_MEM_ALLOC;
+    std::unique_ptr<PixelMap> pixelMap = PixelMap::Create(opts);
+    ASSERT_NE(pixelMap, nullptr);
+
+    Size desiredSize = {0, 0};
+    AntiAliasingOption option = AntiAliasingOption::NONE;
+    bool ret = postProc.ScalePixelMapEx(desiredSize, *(pixelMap.get()), option);
+    ASSERT_EQ(ret, false);
+    GTEST_LOG_(INFO) << "PostProcTest: ScalePixelMapExYuvTest002 end";
+}
+
+/**
+ * @tc.name: ScalePixelMapExYuvTest003
+ * @tc.desc: Test ScalePixelMapEx YUV branch with NV12 SHARE_MEM_ALLOC, scale down.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PostProcTest, ScalePixelMapExYuvTest003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PostProcTest: ScalePixelMapExYuvTest003 start";
+    PostProc postProc;
+    InitializationOptions opts;
+    opts.size = {100, 100};
+    opts.pixelFormat = PixelFormat::NV12;
+    opts.allocatorType = AllocatorType::SHARE_MEM_ALLOC;
+    std::unique_ptr<PixelMap> pixelMap = PixelMap::Create(opts);
+    ASSERT_NE(pixelMap, nullptr);
+
+    Size desiredSize = {50, 50};
+    AntiAliasingOption option = AntiAliasingOption::NONE;
+    bool ret = postProc.ScalePixelMapEx(desiredSize, *(pixelMap.get()), option);
+    ASSERT_EQ(ret, true);
+    GTEST_LOG_(INFO) << "PostProcTest: ScalePixelMapExYuvTest003 end";
+}
+
+/**
+ * @tc.name: ScalePixelMapExYuvTest004
+ * @tc.desc: Test ScalePixelMapEx YUV branch with NV12, scale down with HIGH anti-aliasing option.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PostProcTest, ScalePixelMapExYuvTest004, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PostProcTest: ScalePixelMapExYuvTest004 start";
+    PostProc postProc;
+    InitializationOptions opts;
+    opts.size = {100, 100};
+    opts.pixelFormat = PixelFormat::NV12;
+    opts.allocatorType = AllocatorType::DMA_ALLOC;
+    std::unique_ptr<PixelMap> pixelMap = PixelMap::Create(opts);
+    ASSERT_NE(pixelMap, nullptr);
+
+    Size desiredSize = {50, 50};
+    AntiAliasingOption option = AntiAliasingOption::HIGH;
+    bool ret = postProc.ScalePixelMapEx(desiredSize, *(pixelMap.get()), option);
+    ASSERT_EQ(ret, true);
+    GTEST_LOG_(INFO) << "PostProcTest: ScalePixelMapExYuvTest004 end";
+}
 }
 }

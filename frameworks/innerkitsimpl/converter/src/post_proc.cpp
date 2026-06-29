@@ -26,6 +26,7 @@
 #include "image_utils.h"
 #include "media_errors.h"
 #include "memory_manager.h"
+#include "pixel_yuv_utils.h"
 #include "pixel_convert_adapter.h"
 #ifndef _WIN32
 #include "securec.h"
@@ -73,6 +74,8 @@ static const map<PixelFormat, AVPixelFormat> PIXEL_FORMAT_MAP = {
     { PixelFormat::ARGB_8888, AVPixelFormat::AV_PIX_FMT_ARGB },
     { PixelFormat::BGRA_8888, AVPixelFormat::AV_PIX_FMT_BGRA },
     { PixelFormat::RGBA_F16, AVPixelFormat::AV_PIX_FMT_RGBA64BE },
+    { PixelFormat::NV21, AVPixelFormat::AV_PIX_FMT_NV21 },
+    { PixelFormat::NV12, AVPixelFormat::AV_PIX_FMT_NV12 },
 };
 #endif
 
@@ -241,6 +244,16 @@ bool PostProc::CenterDisplay(PixelMap &pixelMap, int32_t srcWidth, int32_t srcHe
     dstImageInfo.size.height = targetHeight;
     bool cond = false;
     CHECK_ERROR_RETURN_RET_LOG(pixelMap.SetImageInfo(dstImageInfo, true) != SUCCESS, false, "update ImageInfo failed");
+    if (dstImageInfo.pixelFormat == PixelFormat::NV12 || dstImageInfo.pixelFormat == PixelFormat::NV21) {
+        int32_t left = std::max(0, srcWidth - targetWidth) / HALF;
+        int32_t top = std::max(0, srcHeight - targetHeight) / HALF;
+        Rect rect = {left, top, targetWidth, targetHeight};
+        cond = (pixelMap.Crop(rect) != SUCCESS);
+        CHECK_ERROR_RETURN_RET_LOG(cond, false, "CenterDisplay failed, ret: %{public}d", ret);
+        ImageUtils::UpdateYUVDataInfo(pixelMap);
+        return true;
+    }
+
     int32_t bufferSize = pixelMap.GetByteCount();
     uint8_t *dstPixels = nullptr;
     void *nativeBuffer = nullptr;
@@ -1163,6 +1176,9 @@ bool PostProc::ScalePixelMapEx(const Size &desiredSize, PixelMap &pixelMap, cons
         static_cast<uint64_t>(desiredSize.width) * static_cast<uint64_t>(desiredSize.height) *
         static_cast<uint64_t>(ImageUtils::GetPixelBytes(imgInfo.pixelFormat));
     CHECK_ERROR_RETURN_RET_LOG(dstBufferSizeOverflow > UINT_MAX, false, "ScalePixelMapEx target size too large");
+    if (ImageUtils::IsYuvFormat(imgInfo.pixelFormat)) {
+        return ScalePixelMapYuv(desiredSize, pixelMap, imgInfo, option);
+    }
     uint32_t dstBufferSize = static_cast<uint32_t>(dstBufferSizeOverflow);
     MemoryData memoryData = {nullptr, dstBufferSize, "ScalePixelMapEx ImageData", desiredSize};
     memoryData.usage = pixelMap.GetNoPaddingUsage();
@@ -1231,6 +1247,54 @@ bool PostProc::ScalePixelMapEx(const Size &desiredSize, PixelMap &pixelMap, cons
     pixelMap.SetPixelsAddr(mem->data.data, mem->extend.data, dstBufferSize, mem->GetType(), nullptr);
     imgInfo.size = desiredSize;
     pixelMap.SetImageInfo(imgInfo, true);
+    ImageUtils::FlushSurfaceBuffer(&pixelMap);
+    return true;
+}
+
+bool PostProc::ScalePixelMapYuv(const Size &desiredSize, PixelMap &pixelMap, ImageInfo &imgInfo,
+                                const AntiAliasingOption &option)
+{
+    bool cond = !ImageUtils::IsYuvFormat(imgInfo.pixelFormat);
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "ScalePixelMapYuv unsupport pixelformat");
+    int32_t srcWidth = pixelMap.GetWidth();
+    int32_t srcHeight = pixelMap.GetHeight();
+    cond = (srcWidth == 0 || srcHeight == 0 || desiredSize.width == 0 || desiredSize.height == 0);
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "ScalePixelMapYuv invalid image size or desiredSize");
+
+    YUVStrideInfo dstStrides;
+    auto dstMemory = PixelYuvUtils::CreateYuvMemory(imgInfo.pixelFormat, "ScalePixelMapEx YUV ImageData",
+        desiredSize.width, desiredSize.height, pixelMap.GetAllocatorType(), pixelMap.GetNoPaddingUsage(),
+        nullptr, dstStrides);
+    CHECK_ERROR_RETURN_RET_LOG(dstMemory == nullptr || dstMemory->data.data == nullptr, false,
+        "ScalePixelMapEx CreateMemory failed");
+
+    uint8_t *dstYuvData = reinterpret_cast<uint8_t *>(dstMemory->data.data);
+    YUVDataInfo srcYuvDataInfo;
+    pixelMap.GetImageYUVInfo(srcYuvDataInfo);
+    YuvImageInfo srcInfo = {PixelYuvUtils::ConvertFormat(imgInfo.pixelFormat), 
+        srcWidth, srcHeight, imgInfo.pixelFormat, srcYuvDataInfo};
+    YUVDataInfo dstYuvDataInfo;
+    if (pixelMap.GetAllocatorType() == AllocatorType::DMA_ALLOC && dstMemory->extend.data != nullptr) {
+        auto surfaceBuffer = reinterpret_cast<SurfaceBuffer*>(dstMemory->extend.data);
+        ImageUtils::GetYuvInfoFromDmaBuffer(surfaceBuffer, dstYuvDataInfo);
+    } else {
+        ImageUtils::GetYuvInfoFromNonDmaBuffer(desiredSize.width, desiredSize.height, imgInfo.pixelFormat, dstYuvDataInfo);
+    }
+    YuvImageInfo dstInfo = {PixelYuvUtils::ConvertFormat(imgInfo.pixelFormat),
+        desiredSize.width, desiredSize.height, imgInfo.pixelFormat, dstYuvDataInfo};
+
+    int32_t scaleRet = PixelYuvUtils::YuvScale(const_cast<uint8_t *>(pixelMap.GetPixels()),
+        srcInfo, dstYuvData, dstInfo, PixelYuvUtils::YuvConvertOption(option));
+    if (scaleRet != SUCCESS) {
+        IMAGE_LOGE("ScalePixelMapEx YuvScale failed, ret: %{public}d", scaleRet);
+        dstMemory->Release();
+        return false;
+    }
+    pixelMap.SetPixelsAddr(dstMemory->data.data, dstMemory->extend.data, dstMemory->data.size,
+        dstMemory->GetType(), nullptr);
+    imgInfo.size = desiredSize;
+    pixelMap.SetImageInfo(imgInfo, true);
+    ImageUtils::UpdateYUVDataInfo(pixelMap);
     ImageUtils::FlushSurfaceBuffer(&pixelMap);
     return true;
 }
