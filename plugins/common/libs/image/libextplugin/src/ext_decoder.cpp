@@ -2527,6 +2527,7 @@ bool ExtDecoder::DecodeHeader()
         if (decoder && decoder->GetHeifsFrameCount(frameCount)) {
             frameCount_ = static_cast<int32_t>(frameCount);
             decoder->GetAnimationSize(animationSize_);
+            info_.makeWH(animationSize_.width, animationSize_.height);
         }
     }
 #endif

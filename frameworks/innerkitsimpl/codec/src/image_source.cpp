@@ -1080,6 +1080,9 @@ bool ImageSource::CheckDecodeOptions(const DecodeOptions &opts)
 
 void ImageSource::SetAnimationSize(uint32_t index, const DecodeOptions &opts, ImageInfo &info)
 {
+    if (info.encodedFormat == IMAGE_HEIFS_FORMAT) {
+        opts_.isAnimationDecode = true;
+    }
     if (mainDecoder_ && info.encodedFormat == IMAGE_HEIFS_FORMAT && (opts.isAnimationDecode || index > 0)) {
         info.size = mainDecoder_->GetAnimationImageSize();
     }
