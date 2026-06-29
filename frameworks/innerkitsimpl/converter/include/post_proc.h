@@ -78,7 +78,7 @@ private:
     bool ScalePixelMapYuv(const Size &desiredSize, PixelMap &pixelMap, ImageInfo &imgInfo,
                           const AntiAliasingOption &option);
     bool CenterDisplayYuv(PixelMap &pixelMap, int32_t srcWidth, int32_t srcHeight, int32_t targetWidth,
-                          int32_t targetHeight)
+                          int32_t targetHeight);
 private:
     DecodeOptions decodeOpts_;
 };
