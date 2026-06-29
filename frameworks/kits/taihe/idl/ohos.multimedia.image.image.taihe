@@ -344,7 +344,7 @@ struct PackingOption {
   backgroundColor: Optional<i32>;
   sizeLimit: Optional<PackingSizeLimit>;
   needsPackGPS: Optional<bool>;
-  tiffPackingOption: Optional<PackingOptionsForTiff>;
+  tiffPackingOptions: Optional<PackingOptionsForTiff>;
 }
 
 struct PackingOptionsForSequence {
