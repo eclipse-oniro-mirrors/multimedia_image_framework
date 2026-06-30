@@ -587,6 +587,10 @@ bool PostProc::ScalePixelMap(const Size &size, PixelMap &pixelMap)
     bool cond = srcWidth <= 0 || srcHeight <= 0;
     CHECK_ERROR_RETURN_RET_LOG(cond, false,
         "[PostProc]src width:%{public}d, height:%{public}d is invalid.", srcWidth, srcHeight);
+    uint64_t dstBufferSizeOverflow =
+        static_cast<uint64_t>(size.width) * static_cast<uint64_t>(size.height) *
+        static_cast<uint64_t>(ImageUtils::GetPixelBytes(pixelMap.GetPixelFormat()));
+    CHECK_ERROR_RETURN_RET_LOG(dstBufferSizeOverflow > UINT_MAX, false, "[PostProc]target size too large");
     float scaleX = static_cast<float>(size.width) / static_cast<float>(srcWidth);
     float scaleY = static_cast<float>(size.height) / static_cast<float>(srcHeight);
     return ScalePixelMap(scaleX, scaleY, pixelMap);

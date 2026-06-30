@@ -1964,8 +1964,10 @@ uint32_t DecomposeDualVivid(VpeSurfaceBuffers& buffers, Media::PixelMap* pixelma
     const int halfSizeDenominator = 2;
     sptr<SurfaceBuffer> gainmapSptr = AllocSurfaceBuffer(hdrSurfaceBuffer->GetWidth() / halfSizeDenominator,
         hdrSurfaceBuffer->GetHeight() / halfSizeDenominator);
-    bool cond = baseSptr == nullptr || gainmapSptr == nullptr;
-    CHECK_ERROR_RETURN_RET(cond, IMAGE_RESULT_CREATE_SURFAC_FAILED);
+    if (baseSptr == nullptr || gainmapSptr == nullptr) {
+        FreeBaseAndGainMapSurfaceBuffer(baseSptr, gainmapSptr);
+        return IMAGE_RESULT_CREATE_SURFAC_FAILED;
+    }
     CM_ColorSpaceType colorspaceType;
     VpeUtils::GetSbColorSpaceType(hdrSurfaceBuffer, colorspaceType);
     if ((colorspaceType & CM_PRIMARIES_MASK) != COLORPRIMARIES_BT2020) {
