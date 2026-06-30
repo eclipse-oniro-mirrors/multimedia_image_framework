@@ -16,6 +16,7 @@
 #include "pixel_yuv_ext_utils.h"
 
 #include "image_log.h"
+#include "image_utils.h"
 #include "ios"
 #include "istream"
 #include "image_trace.h"
@@ -119,6 +120,10 @@ bool PixelYuvExtUtils::Yuv420ToBGRA(const uint8_t *sample, uint8_t *dstArgb,
 bool PixelYuvExtUtils::Yuv420ToARGB(const uint8_t *sample, uint8_t *dstArgb,
     Size &size, PixelFormat pixelFormat, YUVDataInfo &info)
 {
+    if (ImageUtils::CheckMulOverflow(size.width, size.height, NUM_4)) {
+        IMAGE_LOGE("Yuv420ToARGB alloc size invalid");
+        return false;
+    }
     std::unique_ptr<uint8_t[]> temp = std::make_unique<uint8_t[]>(size.width * size.height * NUM_4);
     if (!Yuv420ToBGRA(sample, temp.get(), size, pixelFormat, info)) {
         IMAGE_LOGE("Yuv420ToBGRA failed");
@@ -262,74 +267,6 @@ void PixelYuvExtUtils::ConvertYuvMode(OpenSourceLibyuv::FilterMode &filterMode, 
         default:
             break;
     }
-}
-
-static void ScaleUVPlane(const uint8_t *src, uint8_t*dst, OpenSourceLibyuv::FilterMode filterMode,
-    YuvImageInfo &yuvInfo, uint32_t dstYStride, uint32_t dstYHeight, uint32_t dstYWidth)
-{
-    uint32_t srcUWidth = static_cast<uint32_t>(GetUStride(yuvInfo.width));
-    uint32_t srcUHeight = static_cast<uint32_t>(GetUVHeight(yuvInfo.height));
-    uint32_t dstUWidth = static_cast<uint32_t>(GetUStride(dstYWidth));
-    uint32_t dstUHeight = static_cast<uint32_t>(GetUVHeight(dstYHeight));
-    // Split VUplane
-    std::unique_ptr<uint8_t[]> uvData = std::make_unique<uint8_t[]>(NUM_2 * srcUWidth * srcUHeight);
-    if (uvData == nullptr) {
-        IMAGE_LOGE("ScaleUVPlane make unique ptr for uvData failed.");
-        return;
-    }
-    uint8_t *uData = nullptr;
-    uint8_t *vData = nullptr;
-    uint32_t dstSplitStride = srcUWidth;
-    const uint8_t *srcUV = src + yuvInfo.yuvDataInfo.uvOffset;
-    uint32_t uvStride = yuvInfo.yuvDataInfo.uvStride;
-    auto converter = ConverterHandle::GetInstance().GetHandle();
-    if (yuvInfo.yuvFormat == PixelFormat::NV12) {
-        uData = uvData.get();
-        vData = uvData.get() + srcUWidth * srcUHeight;
-        converter.SplitUVPlane(srcUV, uvStride, uData, dstSplitStride, vData, dstSplitStride, srcUWidth, srcUHeight);
-    } else if (yuvInfo.yuvFormat == PixelFormat::NV21) {
-        vData = uvData.get();
-        uData = uvData.get() + srcUWidth * srcUHeight;
-        converter.SplitUVPlane(srcUV, uvStride, vData, dstSplitStride, uData, dstSplitStride, srcUWidth, srcUHeight);
-    }
-    // malloc memory to store temp u v
-    std::unique_ptr<uint8_t[]> tempUVData = std::make_unique<uint8_t[]>(NUM_2 * dstUWidth * dstUHeight);
-    if (tempUVData == nullptr) {
-        IMAGE_LOGE("ScaleUVPlane make unique ptr for tempUVData failed.");
-        return;
-    }
-    uint8_t *tempUData = nullptr;
-    uint8_t *tempVData = nullptr;
-    if (yuvInfo.yuvFormat == PixelFormat::NV12) {
-        tempUData = tempUVData.get();
-        tempVData = tempUVData.get() + dstUWidth * dstUHeight;
-    } else if (yuvInfo.yuvFormat == PixelFormat::NV21) {
-        tempVData = tempUVData.get();
-        tempUData = tempUVData.get() + dstUWidth * dstUHeight;
-    }
-
-    // resize u* and v
-    converter.ScalePlane(uData, dstSplitStride, srcUWidth, srcUHeight,
-                         tempUData, dstUWidth, dstUWidth, dstUHeight, filterMode);
-
-    converter.ScalePlane(vData, dstSplitStride, srcUWidth, srcUHeight,
-                         tempVData, dstUWidth, dstUWidth, dstUHeight, filterMode);
-    // Merge  the UV
-    uint8_t *dstUV = dst + GetYSize(dstYStride, dstYHeight);
-
-    int32_t dstUVStride = static_cast<int32_t>(dstUWidth * NUM_2);
-    //AllocatorType DMA_ALLOC
-    if (dstYStride != dstYWidth) {
-        dstUVStride = static_cast<int32_t>(dstYStride);
-    }
-    if (yuvInfo.yuvFormat == PixelFormat::NV12) {
-        converter.MergeUVPlane(tempUData, dstUWidth, tempVData, dstUWidth, dstUV, dstUVStride, dstUWidth, dstUHeight);
-    } else if (yuvInfo.yuvFormat == PixelFormat::NV21) {
-        converter.MergeUVPlane(tempVData, dstUWidth, tempUData, dstUWidth, dstUV, dstUVStride, dstUWidth, dstUHeight);
-    }
-
-    uData = vData = nullptr;
-    tempUData = tempVData = nullptr;
 }
 
 static bool CopyP010Pixels(
