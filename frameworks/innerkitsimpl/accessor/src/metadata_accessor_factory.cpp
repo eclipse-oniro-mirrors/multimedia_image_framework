@@ -47,7 +47,7 @@ const byte TIFF_LITTLE_ENDIAN_HEADER[] = { 0x49, 0x49, 0x2A, 0x00 };
 const byte TIFF_BIG_ENDIAN_HEADER[] = { 0x4D, 0x4D, 0x00, 0x2A };
 const ssize_t STREAM_READ_ERROR = -1;
 
-constexpr size_t TIFF_HEADER_SIZE = 8;
+constexpr ssize_t TIFF_HEADER_SIZE = 8;
 constexpr size_t TIFF_IFD_ENTRY_SIZE = 12;
 
 // Skia DngTypeChecker: requires at least 2 of these 5 DNG-specific tags in IFD0

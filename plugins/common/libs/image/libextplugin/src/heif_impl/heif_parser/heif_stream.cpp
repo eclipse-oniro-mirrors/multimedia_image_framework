@@ -15,6 +15,7 @@
 
 #include "heif_stream.h"
 #include "heif_constant.h"
+#include "image_log.h"
 #include "securec.h"
 
 #include <sstream>
@@ -30,8 +31,18 @@ namespace ImagePlugin {
 HeifBufferInputStream::HeifBufferInputStream(const uint8_t *data, size_t size, bool needCopy)
     : length_(size), pos_(0), copied_(needCopy)
 {
+    if (data == nullptr || length_ == 0) {
+        data_ = nullptr;
+        length_ = 0;
+        return;
+    }
     if (copied_) {
-        auto *copiedData = new uint8_t[length_];
+        auto *copiedData = new (std::nothrow) uint8_t[length_];
+        if (copiedData == nullptr) {
+            data_ = nullptr;
+            length_ = 0;
+            return;
+        }
         memcpy_s(copiedData, length_, data, length_);
         data_ = copiedData;
     } else {
@@ -65,6 +76,8 @@ bool HeifBufferInputStream::CheckSize(size_t target_size, int64_t end)
 
 bool HeifBufferInputStream::Read(void *data, size_t size)
 {
+    CHECK_ERROR_RETURN_RET(!data || !data_, false);
+
     if (pos_ < 0 || static_cast<size_t>(pos_) > length_) {
         return false;
     }
@@ -92,7 +105,11 @@ bool HeifBufferInputStream::Seek(int64_t position)
 HeifStreamReader::HeifStreamReader(std::shared_ptr<HeifInputStream> stream, int64_t start, size_t length)
     : inputStream_(std::move(stream)), start_(start)
 {
-    end_ = start_ + static_cast<int64_t>(length);
+    if (static_cast<uint64_t>(length) > INT64_MAX || start_ < 0) {
+        end_ = -1;
+    } else if (__builtin_add_overflow(start_, static_cast<int64_t>(length), &end_)) {
+        end_ = -1;
+    }
 }
 
 uint8_t HeifStreamReader::Read8()
@@ -167,6 +184,7 @@ uint64_t HeifStreamReader::Read64()
 
 bool HeifStreamReader::ReadData(uint8_t *data, size_t size)
 {
+    CHECK_ERROR_RETURN_RET(!data || !GetStream(), false);
     if (!CheckSize(size)) {
         return false;
     }
@@ -184,6 +202,7 @@ std::string HeifStreamReader::ReadString()
     }
     std::stringstream strStream;
     auto stream = GetStream();
+    CHECK_ERROR_RETURN_RET(!stream, {});
     char strChar = UINT8_BYTES_NUM;
     while (strChar != 0) {
         if (!CheckSize(UINT8_BYTES_NUM)) {
@@ -203,6 +222,7 @@ std::string HeifStreamReader::ReadString()
 
 bool HeifStreamReader::CheckSize(size_t size)
 {
+    CHECK_ERROR_RETURN_RET(!inputStream_, false);
     bool res = inputStream_->CheckSize(size, end_);
     if (!res) {
         SetError(true);

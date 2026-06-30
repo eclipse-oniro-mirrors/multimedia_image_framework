@@ -48,21 +48,15 @@ ImageCreator::~ImageCreator()
 GSError ImageCreator::OnBufferRelease(sptr<SurfaceBuffer> &buffer)
 {
     IMAGE_LOGI("OnBufferRelease");
-    if (buffer == nullptr) {
-        return GSERROR_NO_ENTRY;
-    }
+    CHECK_ERROR_RETURN_RET(buffer == nullptr, GSERROR_NO_ENTRY);
     uint8_t* virAddr = static_cast<uint8_t*>(buffer->GetVirAddr());
-    if (virAddr == nullptr) {
-        IMAGE_LOGE("OnBufferRelease: GetVirAddr returned nullptr");
-        return GSERROR_NO_ENTRY;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(virAddr == nullptr, GSERROR_NO_ENTRY,
+        "OnBufferRelease: GetVirAddr returned nullptr");
     std::shared_ptr<SurfaceBufferReleaseListener> listener;
     {
         std::lock_guard<std::mutex> guard(creatorMutex_);
         auto iter = bufferCreatorMap_.find(virAddr);
-        if (iter == bufferCreatorMap_.end()) {
-            return GSERROR_NO_ENTRY;
-        }
+        CHECK_ERROR_RETURN_RET(iter == bufferCreatorMap_.end(), GSERROR_NO_ENTRY);
         // Use weak_ptr to safely check if the ImageCreator object is still alive
         auto weakIcr = iter->second;
         auto icr = weakIcr.lock();
@@ -95,6 +89,7 @@ std::shared_ptr<ImageCreatorContext> ImageCreatorContext ::CreateImageCreatorCon
 void ImageCreatorSurfaceListener ::OnBufferAvailable()
 {
     IMAGE_LOGD("CreatorBufferAvailable");
+    CHECK_ERROR_RETURN_LOG(ic_ == nullptr, "ic_ is nullptr");
     if (ic_->surfaceBufferAvaliableListener_ != nullptr) {
         ic_->surfaceBufferAvaliableListener_->OnSurfaceBufferAvaliable();
     }
@@ -106,10 +101,7 @@ std::shared_ptr<ImageCreator> ImageCreator::CreateImageCreator(int32_t width,
     std::shared_ptr<ImageCreator> iva = std::make_shared<ImageCreator>();
     iva->iraContext_ = ImageCreatorContext::CreateImageCreatorContext();
     iva->creatorConsumerSurface_ = IConsumerSurface::Create();
-    if (iva->creatorConsumerSurface_ == nullptr) {
-        IMAGE_LOGD("SurfaceAsConsumer == nullptr");
-        return iva;
-    }
+    CHECK_DEBUG_RETURN_RET_LOG(iva->creatorConsumerSurface_ == nullptr, iva, "SurfaceAsConsumer == nullptr");
     iva->creatorConsumerSurface_->SetDefaultWidthAndHeight(width, height);
     iva->creatorConsumerSurface_->SetQueueSize(capicity);
     sptr<ImageCreatorSurfaceListener> listener = new ImageCreatorSurfaceListener();
@@ -118,10 +110,7 @@ std::shared_ptr<ImageCreator> ImageCreator::CreateImageCreator(int32_t width,
     RegisterConsumerListener((sptr<IBufferConsumerListener> &)listener);
     auto p = iva->creatorConsumerSurface_->GetProducer();
     iva->creatorProducerSurface_ = Surface::CreateSurfaceAsProducer(p);
-    if (iva->creatorProducerSurface_ == nullptr) {
-        IMAGE_LOGD("SurfaceAsProducer == nullptr");
-        return iva;
-    }
+    CHECK_DEBUG_RETURN_RET_LOG(iva->creatorProducerSurface_ == nullptr, iva, "SurfaceAsProducer == nullptr");
     iva->creatorProducerSurface_->SetQueueSize(capicity);
     iva->iraContext_->SetCreatorBufferConsumer(iva->creatorConsumerSurface_);
     iva->iraContext_->SetCreatorBufferProducer(iva->creatorProducerSurface_);
@@ -247,17 +236,19 @@ int32_t ImageCreator::SaveSenderBufferAsImage(OHOS::sptr<OHOS::SurfaceBuffer> bu
     InitializationOptions initializationOpts)
 {
     int32_t errorcode = 0;
+    CHECK_ERROR_RETURN_RET_LOG(iraContext_ == nullptr, ERR_MEDIA_INVALID_VALUE, "iraContext_ is nullptr");
     if (buffer != nullptr) {
         uint32_t *addr = static_cast<uint32_t *>(buffer->GetVirAddr());
         uint8_t *addr2 = nullptr;
         uint32_t size = buffer->GetSize();
-        if (!AllocHeapBuffer(size, &addr2)) {
-            IMAGE_LOGE("AllocHeapBuffer failed");
-            return ERR_MEDIA_INVALID_VALUE;
-        }
+        CHECK_ERROR_RETURN_RET_LOG(!AllocHeapBuffer(size, &addr2), ERR_MEDIA_INVALID_VALUE,
+            "AllocHeapBuffer failed");
         errorcode = SaveSTP(addr, addr2, size, initializationOpts);
         ReleaseBuffer(AllocatorType::HEAP_ALLOC, &addr2);
-        (iraContext_->GetCreatorBufferConsumer())->ReleaseBuffer(buffer, -1);
+        auto consumer = iraContext_->GetCreatorBufferConsumer();
+        if (consumer != nullptr) {
+            consumer->ReleaseBuffer(buffer, -1);
+        }
         IMAGE_LOGI("start release");
     } else {
         IMAGE_LOGD("SaveBufferAsImage buffer == nullptr");
@@ -267,9 +258,11 @@ int32_t ImageCreator::SaveSenderBufferAsImage(OHOS::sptr<OHOS::SurfaceBuffer> bu
 
 OHOS::sptr<OHOS::SurfaceBuffer> ImageCreator::DequeueImage()
 {
+    CHECK_ERROR_RETURN_RET_LOG(iraContext_ == nullptr, nullptr, "iraContext_ is nullptr");
     int32_t flushFence = 0;
     OHOS::sptr<OHOS::SurfaceBuffer> buffer;
     sptr<Surface> creatorSurface = iraContext_->GetCreatorBufferProducer();
+    CHECK_ERROR_RETURN_RET_LOG(creatorSurface == nullptr, nullptr, "creatorSurface is nullptr");
     BufferRequestConfig config;
     config.width = iraContext_->GetWidth();
     config.height = iraContext_->GetHeight();
@@ -295,11 +288,17 @@ OHOS::sptr<OHOS::SurfaceBuffer> ImageCreator::DequeueImage()
 void ImageCreator::QueueImage(OHOS::sptr<OHOS::SurfaceBuffer> &buffer)
 {
     IMAGE_LOGI("start Queue Image");
+    CHECK_ERROR_RETURN_LOG(iraContext_ == nullptr, "iraContext_ is nullptr");
+    CHECK_ERROR_RETURN_LOG(buffer == nullptr, "buffer is nullptr");
     int32_t flushFence = -1;
     BufferFlushConfig config;
     config.damage.w = iraContext_->GetWidth();
     config.damage.h = iraContext_->GetHeight();
     sptr<Surface> creatorSurface = iraContext_->GetCreatorBufferProducer();
+    if (creatorSurface == nullptr) {
+        IMAGE_LOGE("creatorSurface is nullptr");
+        return;
+    }
     SurfaceError surfaceError = creatorSurface->FlushBuffer(buffer, flushFence, config);
     IMAGE_LOGI("finish Queue Image");
     if (surfaceError != SURFACE_ERROR_OK) {
@@ -308,6 +307,7 @@ void ImageCreator::QueueImage(OHOS::sptr<OHOS::SurfaceBuffer> &buffer)
 }
 sptr<IConsumerSurface> ImageCreator::GetCreatorSurface()
 {
+    CHECK_ERROR_RETURN_RET_LOG(iraContext_ == nullptr, nullptr, "iraContext_ is nullptr");
     return iraContext_->GetCreatorBufferConsumer();
 }
 
@@ -328,21 +328,15 @@ std::shared_ptr<IBufferProcessor> ImageCreator::GetBufferProcessor()
 }
 std::shared_ptr<NativeImage> ImageCreator::DequeueNativeImage()
 {
-    if (GetBufferProcessor() == nullptr) {
-        return nullptr;
-    }
+    CHECK_ERROR_RETURN_RET(GetBufferProcessor() == nullptr, nullptr);
 
     auto surfaceBuffer = DequeueImage();
-    if (surfaceBuffer == nullptr) {
-        return nullptr;
-    }
+    CHECK_ERROR_RETURN_RET(GetBufferProcessor() == nullptr, nullptr);
     return std::make_shared<NativeImage>(surfaceBuffer, GetBufferProcessor());
 }
 void ImageCreator::QueueNativeImage(std::shared_ptr<NativeImage> image)
 {
-    if (image == nullptr || image->GetBuffer() == nullptr) {
-        return;
-    }
+    CHECK_ERROR_RETURN(image == nullptr || image->GetBuffer() == nullptr);
     auto buffer = image->GetBuffer();
     QueueImage(buffer);
 }

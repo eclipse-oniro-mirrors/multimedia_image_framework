@@ -929,18 +929,9 @@ STATIC_EXEC_FUNC(CreateAuxiliaryPictureUsingAllocator)
         pixelMap = OHOS::Media::PixelMap::Create(opts);
     } else {
         IMAGE_LOGD("Create auxiliary picture using allocator");
-        if (opts.pixelFormat == PixelFormat::NV21 || opts.pixelFormat == PixelFormat::NV12) {
-            pixelMap = OHOS::Media::PixelMap::Create(opts);
-            auto dataTmp = reinterpret_cast<uint8_t*>(context->arrayBuffer);
-            auto dataLengthTmp = static_cast<uint32_t>(context->arrayBufferSize);
-            Rect region = {0, 0, opts.size.width, opts.size.height};
-            RWPixelsOptions option = {dataTmp, dataLengthTmp, 0, opts.srcRowStride, region, opts.pixelFormat};
-            pixelMap->WritePixels(option);
-        } else {
-            auto dataTmp = reinterpret_cast<uint32_t*>(context->arrayBuffer);
-            auto dataLengthTmp = static_cast<uint32_t>(context->arrayBufferSize);
-            pixelMap = OHOS::Media::PixelMap::Create(dataTmp, dataLengthTmp, opts);
-        }
+        auto dataTmp = reinterpret_cast<uint32_t*>(context->arrayBuffer);
+        auto dataLengthTmp = static_cast<uint32_t>(context->arrayBufferSize);
+        pixelMap = OHOS::Media::PixelMap::Create(dataTmp, dataLengthTmp, opts);
     }
     std::shared_ptr<OHOS::Media::PixelMap> pixelMapPtr = std::move(pixelMap);
     if (!pixelMapPtr) {
@@ -1047,6 +1038,11 @@ napi_value AuxiliaryPictureNapi::CreateAuxiliaryPictureUsingAllocator(napi_env e
         ImageUtils::GetPixelBytes(asyncContext->auxiliaryPictureInfo.pixelFormat);
     if (asyncContext->arrayBufferSize != 0 && dstLength > asyncContext->arrayBufferSize) {
         ImageNapiUtils::ThrowExceptionError(env, IMAGE_INVALID_PARAMETER, "Parameter error.");
+    }
+    if (asyncContext->auxiliaryPictureInfo.rowStride <= asyncContext->auxiliaryPictureInfo.size.width *
+        ImageUtils::GetPixelBytes(asyncContext->auxiliaryPictureInfo.pixelFormat)) {
+        asyncContext->auxiliaryPictureInfo.rowStride = asyncContext->auxiliaryPictureInfo.size.width *
+            ImageUtils::GetPixelBytes(asyncContext->auxiliaryPictureInfo.pixelFormat);
     }
     CreateAuxiliaryPictureUsingAllocatorExec(env, static_cast<void*>((asyncContext).get()));
     status = napi_get_reference_value(env, sConstructor_, &constructor);

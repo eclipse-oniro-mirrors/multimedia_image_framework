@@ -270,11 +270,37 @@ FFI_EXPORT CImageInfoV2 FfiOHOSImageSourceGetImageInfoV2(int64_t id, uint32_t in
     return ret;
 }
 
-void FreeArrayPtr(char** ptr, int count)
+void FreeArrayPtr(char** ptr, size_t count)
 {
-    for (int i = 0; i < count; i++) {
+    for (size_t i = 0; i < count; i++) {
         free(ptr[i]);
     }
+}
+
+static CArrString ConvertStringSetToCArrString(const std::set<std::string>& formats)
+{
+    CArrString ret = { .head = nullptr, .size = 0 };
+    size_t size = formats.size();
+    if (size == 0 || size > SIZE_MAX / sizeof(char*)) {
+        return ret;
+    }
+    auto arr = static_cast<char**>(malloc(sizeof(char*) * size));
+    if (!arr) {
+        return ret;
+    }
+    size_t i = 0;
+    for (const std::string& str : formats) {
+        auto temp = Utils::MallocCString(str);
+        if (!temp) {
+            FreeArrayPtr(arr, i);
+            free(arr);
+            return ret;
+        }
+        arr[i++] = temp;
+    }
+    ret.head = arr;
+    ret.size = static_cast<int64_t>(size);
+    return ret;
 }
 
 FFI_EXPORT CArrString FfiOHOSGetSupportedFormats(int64_t id, uint32_t* errCode)
@@ -297,6 +323,12 @@ FFI_EXPORT CArrString FfiOHOSGetSupportedFormats(int64_t id, uint32_t* errCode)
             return ret;
         }
 
+        if (size > SIZE_MAX / sizeof(char*)) {
+            IMAGE_LOGE("[ImageSource] FfiOHOSGetSupportedFormats size overflow detected.");
+            *errCode = ERR_IMAGE_MALLOC_ABNORMAL;
+            return ret;
+        }
+
         auto arr = static_cast<char**>(malloc(sizeof(char*) * size));
         if (!arr) {
             IMAGE_LOGE("[ImageSource] FfiOHOSGetSupportedFormats failed to malloc arr.");
@@ -304,7 +336,7 @@ FFI_EXPORT CArrString FfiOHOSGetSupportedFormats(int64_t id, uint32_t* errCode)
             return ret;
         }
 
-        int32_t i = 0;
+        size_t i = 0;
         for (const std::string& str : formats) {
             auto temp = Utils::MallocCString(str);
             if (!temp) {
@@ -498,6 +530,11 @@ FFI_EXPORT CArrI64 FfiOHOSImageSourceCreatePixelMapList(
             IMAGE_LOGE("[ImageSource] FfiOHOSImageSourceCreatePixelMapList size error.");
             return ret;
         }
+        if (size > SIZE_MAX / sizeof(int64_t)) {
+            IMAGE_LOGE("[ImageSource] FfiOHOSImageSourceCreatePixelMapList size overflow detected.");
+            *errorCode = ERR_IMAGE_MALLOC_ABNORMAL;
+            return ret;
+        }
 
         auto arr = static_cast<int64_t*>(malloc(sizeof(int64_t) * size));
         if (!arr) {
@@ -505,7 +542,7 @@ FFI_EXPORT CArrI64 FfiOHOSImageSourceCreatePixelMapList(
             *errorCode = ERR_IMAGE_MALLOC_ABNORMAL;
             return ret;
         }
-        for (int i = 0; i < static_cast<int>(size); ++i) {
+        for (size_t i = 0; i < size; ++i) {
             arr[i] = data[i];
         }
         ret.head = arr;
@@ -531,13 +568,18 @@ FFI_EXPORT CArrI64 FfiOHOSImageSourceCreatePixelMapListV2(
     if (*errorCode == SUCCESS_CODE) {
         auto size = data.size();
         if (size > 0) {
+            if (size > SIZE_MAX / sizeof(int64_t)) {
+                IMAGE_LOGE("[ImageSource] FfiOHOSImageSourceCreatePixelMapListV2 size overflow detected.");
+                *errorCode = ERR_IMAGE_MALLOC_ABNORMAL;
+                return ret;
+            }
             auto arr = static_cast<int64_t*>(malloc(sizeof(int64_t) * size));
             if (!arr) {
                 IMAGE_LOGE("[ImageSource] FfiOHOSImageSourceCreatePixelMapListV2 failed to malloc arr.");
                 *errorCode = ERR_IMAGE_MALLOC_ABNORMAL;
                 return ret;
             }
-            for (int i = 0; i < static_cast<int>(size); ++i) {
+            for (size_t i = 0; i < size; ++i) {
                 arr[i] = data[i];
             }
             ret.head = arr;
@@ -563,10 +605,15 @@ FFI_EXPORT CArrI32 FfiOHOSImageSourceGetDelayTime(int64_t id, uint32_t* errorCod
         return ret;
     }
     auto data = instance->GetDelayTime(*errorCode);
-    if (*errorCode == SUCCESS_CODE) {
+    if (*errorCode == SUCCESS_CODE && data != nullptr) {
         auto size = data->size();
-        if (size <= 0) {
-            IMAGE_LOGE("[ImageSource] FfiOHOSImageSourceGetDelayTime size cannot be less than or equal to 0.");
+        if (size == 0) {
+            IMAGE_LOGE("[ImageSource] FfiOHOSImageSourceGetDelayTime size cannot be equal to 0.");
+            *errorCode = ERR_IMAGE_MALLOC_ABNORMAL;
+            return ret;
+        }
+        if (size > SIZE_MAX / sizeof(int32_t)) {
+            IMAGE_LOGE("[ImageSource] FfiOHOSImageSourceGetDelayTime size overflow detected.");
             *errorCode = ERR_IMAGE_MALLOC_ABNORMAL;
             return ret;
         }
@@ -576,7 +623,7 @@ FFI_EXPORT CArrI32 FfiOHOSImageSourceGetDelayTime(int64_t id, uint32_t* errorCod
             *errorCode = ERR_IMAGE_MALLOC_ABNORMAL;
             return ret;
         }
-        for (int i = 0; i < static_cast<int>(size); ++i) {
+        for (size_t i = 0; i < size; ++i) {
             arr[i] = data->operator[](i);
         }
         ret.head = arr;
@@ -599,7 +646,12 @@ FFI_EXPORT CArrI32 FfiImageImageSourceImplGetDisposalTypeList(int64_t id, uint32
     std::unique_ptr<std::vector<int32_t>> data = instance->GetDisposalTypeList(*errorCode);
     if (*errorCode == SUCCESS_CODE && data != nullptr) {
         auto size = data->size();
-        if (size <= 0) {
+        if (size == 0) {
+            return ret;
+        }
+        if (size > SIZE_MAX / sizeof(int32_t)) {
+            IMAGE_LOGE("[ImageSource] FfiImageImageSourceImplGetDisposalTypeList size overflow detected.");
+            *errorCode = ERR_IMAGE_MALLOC_ABNORMAL;
             return ret;
         }
         int32_t* arr = static_cast<int32_t*>(malloc(sizeof(int32_t) * size));
@@ -608,7 +660,7 @@ FFI_EXPORT CArrI32 FfiImageImageSourceImplGetDisposalTypeList(int64_t id, uint32
             *errorCode = ERR_IMAGE_MALLOC_ABNORMAL;
             return ret;
         }
-        for (int i = 0; i < static_cast<int>(size); ++i) {
+        for (size_t i = 0; i < size; ++i) {
             arr[i] = data->operator[](i);
         }
         ret.head = arr;
@@ -1187,59 +1239,36 @@ FFI_EXPORT RetDataCArrUI8 FfiImageImagePackerImplPackingPicture(int64_t id, int6
     return ret;
 }
 
-FFI_EXPORT RetDataCArrString FfiOHOSImagePackerGetSupportedFormats(int64_t id)
+static CArrString GetImagePackerSupportedFormats(int64_t id)
 {
-    RetDataCArrString ret = { .code = ERR_IMAGE_INIT_ABNORMAL, .data = { .head = nullptr, .size = 0 } };
     auto imagePackerImpl = FFIData::GetData<ImagePackerImpl>(id);
     if (!imagePackerImpl) {
         IMAGE_LOGE("Packing failed, invalid id of ImagePackerImpl");
-        return ret;
+        return { .head = nullptr, .size = 0 };
     }
-
     auto imagePacker = imagePackerImpl->GetImagePacker();
     if (!imagePacker) {
         IMAGE_LOGE("fail to get ImagePacker");
-        return ret;
+        return { .head = nullptr, .size = 0 };
     }
-
     std::set<std::string> formats;
-    uint32_t formatsRet = imagePacker->GetSupportedFormats(formats);
-    if (formatsRet != SUCCESS_CODE) {
+    if (imagePacker->GetSupportedFormats(formats) != SUCCESS_CODE) {
         IMAGE_LOGE("fail to get supported formats");
-        return ret;
+        return { .head = nullptr, .size = 0 };
     }
+    return ConvertStringSetToCArrString(formats);
+}
 
-    CArrString arrInfo { .head = nullptr, .size = 0 };
-    auto size = formats.size();
-    if (size == 0) {
-        IMAGE_LOGE("[ImageSource] FfiOHOSImagePackerGetSupportedFormats size cannot be equal to 0.");
+FFI_EXPORT RetDataCArrString FfiOHOSImagePackerGetSupportedFormats(int64_t id)
+{
+    RetDataCArrString ret = { .code = ERR_IMAGE_INIT_ABNORMAL, .data = { .head = nullptr, .size = 0 } };
+    CArrString arrInfo = GetImagePackerSupportedFormats(id);
+    if (arrInfo.head == nullptr) {
         ret.code = ERR_SHAMEM_NOT_EXIST;
         return ret;
     }
-    auto arr = static_cast<char**>(malloc(sizeof(char*) * size));
-    if (!arr) {
-        IMAGE_LOGE("[ImageSource] FfiOHOSImagePackerGetSupportedFormats failed to malloc arr.");
-        ret.code = ERR_SHAMEM_NOT_EXIST;
-        return ret;
-    }
-
-    uint32_t i = 0;
-    for (const auto& format : formats) {
-        auto temp = ::Utils::MallocCString(format);
-        if (!temp) {
-            FreeArrayPtr(arr, i);
-            free(arr);
-            ret.code = ERR_SHAMEM_NOT_EXIST;
-            return ret;
-        }
-        arr[i++] = temp;
-    }
-
-    arrInfo.head = arr;
-    arrInfo.size = static_cast<int64_t>(formats.size());
     ret.code = SUCCESS_CODE;
     ret.data = arrInfo;
-
     return ret;
 }
 
@@ -1545,7 +1574,7 @@ FFI_EXPORT int64_t FfiImagePictureImplCreatePicture(int64_t id, uint32_t* errCod
 FFI_EXPORT uint32_t FfiImagePictureImplSetMetadata(int64_t id, int32_t metadataType, int64_t metadataId)
 {
     IMAGE_LOGD("[Picture] FfiImagePictureImplSetMetadata in");
-    if (metadataType != static_cast<int32_t>(MetadataType::EXIF)) {
+    if (!Picture::IsValidPictureMetadataType(static_cast<MetadataType>(metadataType))) {
         IMAGE_LOGE("Unsupport MetadataType");
         return IMAGE_UNSUPPORTED_METADATA;
     }
@@ -1566,7 +1595,7 @@ FFI_EXPORT uint32_t FfiImagePictureImplSetMetadata(int64_t id, int32_t metadataT
 FFI_EXPORT int64_t FfiImagePictureImplGetMetadata(int64_t id, int32_t metadataType, uint32_t* errCode)
 {
     IMAGE_LOGD("[Picture] FfiImagePictureImplGetMetadata in");
-    if (metadataType != static_cast<int32_t>(MetadataType::EXIF)) {
+    if (!Picture::IsValidPictureMetadataType(static_cast<MetadataType>(metadataType))) {
         IMAGE_LOGE("Unsupport MetadataType");
         *errCode = IMAGE_UNSUPPORTED_METADATA;
         return 0;
@@ -1580,7 +1609,6 @@ FFI_EXPORT int64_t FfiImagePictureImplGetMetadata(int64_t id, int32_t metadataTy
     auto metadata = picture->GetMetadata(MetadataType(metadataType), errCode);
     if (!metadata) {
         IMAGE_LOGE("[Picture] metadata is nullptr");
-        *errCode = IMAGE_BAD_PARAMETER;
         return 0;
     }
     auto native = FFIData::Create<MetadataImpl>(metadata);
@@ -1609,11 +1637,12 @@ FFI_EXPORT CjProperties FfiImageMetadataImplGetAllProperties(int64_t id, uint32_
         return res;
     }
     size_t size = vec.size();
-    if (size < 0) {
-        *errCode = IMAGE_BAD_PARAMETER;
+    if (size == 0) {
         return res;
     }
-    if (size == 0) {
+    if (size > SIZE_MAX / sizeof(char*)) {
+        IMAGE_LOGE("[Metadata] size overflow detected.");
+        *errCode = IMAGE_BAD_PARAMETER;
         return res;
     }
     char** keyArr = static_cast<char**>(malloc(sizeof(char*) * size));

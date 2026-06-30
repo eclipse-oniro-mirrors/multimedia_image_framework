@@ -143,6 +143,20 @@ NullablePixelMap PictureImpl::GetGainmapPixelmap()
     }
 }
 
+void PictureImpl::HdrComposeToMainPixelmapSync()
+{
+    IMAGE_LOGD("HdrComposeToMainPixelmapSync IN");
+    if (nativePicture_ == nullptr) {
+        ImageTaiheUtils::ThrowExceptionError(OHOS::Media::ERR_MEDIA_UNKNOWN, "Picture is a null pointer");
+        return;
+    }
+    bool result = nativePicture_->HdrComposeToMainPixel();
+    if (!result) {
+        ImageTaiheUtils::ThrowExceptionError(IMAGE_UNSUPPORTED_OPERATION, "HdrComposeToMainPixel failed");
+    }
+    IMAGE_LOGD("HdrComposeToMainPixelmapSync OUT");
+}
+
 static OHOS::Media::AuxiliaryPictureType ParseAuxiliaryPictureType(int32_t val)
 {
     if (!ImageTaiheUtils::GetTaiheSupportedAuxTypes().count(static_cast<OHOS::Media::AuxiliaryPictureType>(val))) {
@@ -372,9 +386,16 @@ Picture CreatePictureByPtr(int64_t aniPtr)
     return make_holder<PictureImpl, Picture>(aniPtr);
 }
 
-Picture CreatePictureByHdrAndSdrPixelMapSync(weak::PixelMap hdrPixelMap, weak::PixelMap sdrPixelMap)
+Picture CreatePictureByHdrAndSdrPixelMapWithGainmapParamsSync(
+    weak::PixelMap hdrPixelMap, weak::PixelMap sdrPixelMap, const GainmapParams &params)
 {
-    IMAGE_LOGD("CreatePictureByHdrAndSdrPixelMap IN");
+    IMAGE_LOGD("CreatePictureByHdrAndSdrPixelMapWithGainmapParamsSync IN");
+    if (!OHOS::Media::ImageSystemProperties::IsSystemApp()) {
+        IMAGE_LOGE("This interface can be called only by system apps");
+        ImageTaiheUtils::ThrowExceptionError(
+            IMAGE_PERMISSIONS_FAILED, "This interface can be called only by system apps ");
+        return make_holder<PictureImpl, Picture>();
+    }
     if (hdrPixelMap.is_error()) {
         ImageTaiheUtils::ThrowExceptionError(IMAGE_BAD_PARAMETER, "Get arg hdr Pixelmap failed");
         return make_holder<PictureImpl, Picture>();
@@ -397,17 +418,81 @@ Picture CreatePictureByHdrAndSdrPixelMapSync(weak::PixelMap hdrPixelMap, weak::P
 
     auto nativeHdrPixelMap = hdrPixelMapImpl->GetNativePtr();
     auto nativeSdrPixelMap = sdrPixelMapImpl->GetNativePtr();
-    auto picture = OHOS::Media::Picture::CreatePictureByHdrAndSdrPixelMap(nativeHdrPixelMap, nativeSdrPixelMap);
+    OHOS::Media::GainmapParams gainmapParams;
+    gainmapParams.isFullSizeGainmap = params.isFullSizeGainmap;
+    auto picture = OHOS::Media::Picture::CreatePictureByHdrAndSdrPixelMap(
+        nativeHdrPixelMap, nativeSdrPixelMap, gainmapParams);
     if (picture == nullptr) {
         IMAGE_LOGE("fail to create picture sync");
         return make_holder<PictureImpl, Picture>();
     }
-    IMAGE_LOGD("CreatePictureByHdrAndSdrPixelMap OUT");
+    IMAGE_LOGD("CreatePictureByHdrAndSdrPixelMapWithGainmapParamsSync OUT");
     return make_holder<PictureImpl, Picture>(std::move(picture));
 }
+
+Picture CreatePictureByHdrAndSdrPixelMapSync(weak::PixelMap hdrPixelMap, weak::PixelMap sdrPixelMap)
+{
+    GainmapParams params;
+    params.isFullSizeGainmap = false;
+    return CreatePictureByHdrAndSdrPixelMapWithGainmapParamsSync(hdrPixelMap, sdrPixelMap, params);
+}
+
+Picture DecomposeToPicture(weak::PixelMap hdrPixelMap, const HdrDecomposeOptions &options)
+{
+    IMAGE_LOGD("DecomposeToPicture IN");
+    if (!OHOS::Media::ImageSystemProperties::IsSystemApp()) {
+        IMAGE_LOGE("This interface can be called only by system apps");
+        ImageTaiheUtils::ThrowExceptionError(
+            IMAGE_PERMISSIONS_FAILED, "This interface can be called only by system apps");
+        return make_holder<PictureImpl, Picture>();
+    }
+    if (hdrPixelMap.is_error()) {
+        ImageTaiheUtils::ThrowExceptionError(IMAGE_BAD_PARAMETER, "Get arg hdr Pixelmap failed");
+        return make_holder<PictureImpl, Picture>();
+    }
+    PixelMapImpl* hdrPixelMapImpl = reinterpret_cast<PixelMapImpl*>(hdrPixelMap->GetImplPtr());
+    if (hdrPixelMapImpl == nullptr) {
+        ImageTaiheUtils::ThrowExceptionError(IMAGE_BAD_PARAMETER, "Get arg hdr Pixelmap failed");
+        return make_holder<PictureImpl, Picture>();
+    }
+    auto nativeHdrPixelMap = hdrPixelMapImpl->GetNativePtr();
+    OHOS::Media::HdrDecomposeOption params;
+    if (options.desiredPixelFormat.has_value()) {
+        params.desiredPixelFormat =
+            static_cast<OHOS::Media::PixelFormat>(static_cast<int32_t>(options.desiredPixelFormat.value()));
+    }
+    if (options.isFullSizeGainmap.has_value()) {
+        params.isFullSizeGainmap = options.isFullSizeGainmap.value();
+    }
+    int32_t errCode = OHOS::Media::SUCCESS;
+    auto picture = OHOS::Media::Picture::DecomposeToPicture(nativeHdrPixelMap, params, errCode);
+    if (errCode == OHOS::Media::ERR_IMAGE_INVALID_PARAM) {
+        ImageTaiheUtils::ThrowExceptionError(IMAGE_INVALID_PARAMETER, "Invalid parameter");
+        return make_holder<PictureImpl, Picture>();
+    }
+    if (errCode == OHOS::Media::ERR_MEDIA_UNSUPPORT_OPERATION) {
+        ImageTaiheUtils::ThrowExceptionError(IMAGE_UNSUPPORTED_OPERATION, "Unsupported operation");
+        return make_holder<PictureImpl, Picture>();
+    }
+    if (errCode == OHOS::Media::ERR_MEDIA_MEMORY_ALLOC_FAILED) {
+        ImageTaiheUtils::ThrowExceptionError(IMAGE_ALLOC_FAILED, "Memory alloc failed");
+        return make_holder<PictureImpl, Picture>();
+    }
+    if (picture == nullptr) {
+        IMAGE_LOGE("DecomposeToPicture failed, errCode=%{public}d", errCode);
+        ImageTaiheUtils::ThrowExceptionError(IMAGE_DECOMPOSE_FAILED, "DecomposeToPicture failed");
+        return make_holder<PictureImpl, Picture>();
+    }
+    IMAGE_LOGD("DecomposeToPicture OUT");
+    return make_holder<PictureImpl, Picture>(std::move(picture));
+}
+
 } // namespace ANI::Image
 
 TH_EXPORT_CPP_API_CreatePictureByPixelMap(CreatePictureByPixelMap);
 TH_EXPORT_CPP_API_CreatePictureFromParcel(CreatePictureFromParcel);
 TH_EXPORT_CPP_API_CreatePictureByPtr(CreatePictureByPtr);
 TH_EXPORT_CPP_API_CreatePictureByHdrAndSdrPixelMapSync(CreatePictureByHdrAndSdrPixelMapSync);
+TH_EXPORT_CPP_API_CreatePictureByHdrAndSdrPixelMapWithGainmapParamsSync(
+    CreatePictureByHdrAndSdrPixelMapWithGainmapParamsSync);
+TH_EXPORT_CPP_API_DecomposeToPicture(DecomposeToPicture);

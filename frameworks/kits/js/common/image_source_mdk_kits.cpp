@@ -140,6 +140,10 @@ static int32_t ImageSourceNativeCreate(struct OhosImageSource* source,
         resource.type = ImageResourceType::IMAGE_RESOURCE_FD;
         resource.fd = source->fd;
     } else if (source->buffer != nullptr && source->bufferSize != SIZE_ZERO) {
+        if (source->bufferSize > UINT32_MAX) {
+            IMAGE_LOGE("ImageSourceNativeCreate bufferSize is too large");
+            return IMAGE_RESULT_BAD_PARAMETER;
+        }
         IMAGE_LOGD("ImageSourceNativeCreate by buffer");
         nativeImageSource = ImageSource::CreateImageSource(source->buffer,
             source->bufferSize, opts, errorCode);

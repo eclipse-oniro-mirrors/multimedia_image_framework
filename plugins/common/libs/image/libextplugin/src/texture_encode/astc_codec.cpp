@@ -15,6 +15,9 @@
 
 #include <charconv>
 #include <dlfcn.h>
+#include <atomic>
+#include <mutex>
+#include <thread>
 #ifdef USE_M133_SKIA
 #include <unistd.h>
 #endif
@@ -67,6 +70,10 @@ constexpr uint8_t UINT32_3TH_BYTES = 24;
 #ifdef ENABLE_ASTC_ENCODE_BASED_GPU
 constexpr int32_t WIDTH_CL_THRESHOLD = 256;
 constexpr int32_t HEIGHT_CL_THRESHOLD = 256;
+constexpr char ASTC_CL_PREBUILT_BIN_PATH[] = "/sys_prod/etc/graphic/AstcEncShader_ALN-AL00.bin";
+constexpr char ASTC_CL_RUNTIME_BIN_PATH[] = "/data/storage/el1/base/AstcEncShader.bin";
+std::atomic<bool> g_astcClCompileInProgress = false;
+std::mutex g_astcClCompileMutex;
 #endif
 constexpr int32_t WIDTH_MAX_ASTC = 8192;
 constexpr int32_t HEIGHT_MAX_ASTC = 8192;
@@ -82,6 +89,55 @@ static bool CheckClBinIsExistWithLock(const std::string &name)
 {
     std::lock_guard<std::mutex> lock(checkClBinPathMutex);
     return (access(name.c_str(), F_OK) != -1); // -1 means that the file is  not exist
+}
+
+bool AstcCodec::ResolveAstcClBinPath(const std::string &prebuiltBinPath, const std::string &runtimeBinPath,
+    std::string &clBinPath)
+{
+    clBinPath = prebuiltBinPath;
+    if (CheckClBinIsExistWithLock(clBinPath)) {
+        return true;
+    }
+    clBinPath = runtimeBinPath;
+    return CheckClBinIsExistWithLock(clBinPath);
+}
+
+bool AstcCodec::TryStartAstcClWarmup()
+{
+    bool expected = false;
+    return g_astcClCompileInProgress.compare_exchange_strong(expected, true);
+}
+
+void AstcCodec::FinishAstcClWarmup()
+{
+    g_astcClCompileInProgress.store(false);
+}
+
+void AstcCodec::DoAstcClBinWarmup(const std::string &clBinPath)
+{
+    std::lock_guard<std::mutex> lock(g_astcClCompileMutex);
+    if (!CheckClBinIsExistWithLock(clBinPath)) {
+        AstcEncBasedCl::ClAstcHandle *astcClEncoder = nullptr;
+        bool warmupSuccess = AstcClCreate(&astcClEncoder, clBinPath) == CL_ASTC_ENC_SUCCESS;
+        if (warmupSuccess) {
+            (void)AstcClClose(astcClEncoder);
+        }
+        IMAGE_LOGI("astc warmup build bin result: %{public}d, path: %{public}s",
+            static_cast<int32_t>(warmupSuccess), clBinPath.c_str());
+    }
+    FinishAstcClWarmup();
+}
+
+bool AstcCodec::TriggerAstcClBinWarmup(const std::string &clBinPath)
+{
+    if (!TryStartAstcClWarmup()) {
+        return false;
+    }
+    std::thread astcClWarmupThread([clBinPath]() {
+        AstcCodec::DoAstcClBinWarmup(clBinPath);
+    });
+    astcClWarmupThread.detach();
+    return true;
 }
 #endif
 
@@ -384,6 +440,11 @@ bool AstcCodec::AstcSoftwareEncodeCore(TextureEncodeOptions &param, uint8_t *pix
         IMAGE_LOGE("pixmapIn or astcBuffer is nullptr");
         return false;
     }
+    if (param.astcBytes < TEXTURE_HEAD_BYTES || param.width_ <= 0 || param.height_ <= 0) {
+        IMAGE_LOGE("AstcSoftwareEncodeCore invalid param astcBytes %{public}d, w %{public}d, h %{public}d!",
+                   param.astcBytes, param.width_, param.height_);
+        return false;
+    }
     AstcEncoder work;
     if (!InitMem(&work, param)) {
         FreeMem(&work);
@@ -491,7 +552,7 @@ static bool FillAstcSutInfo(AstcInInfo &astcInfo, SutOutInfo &sutInfo, TextureEn
     return true;
 }
 
-static bool SutEncode(TextureEncodeOptions &param, uint8_t *astcBuffer)
+static bool SutEncode(TextureEncodeOptions &param, uint8_t *astcBuffer, size_t astcBufferCapacity)
 {
     bool invalidSutEnc = !g_sutEncSoManager.LoadSutEncSo() || g_sutEncSoManager.sutEncSoEncFunc_ == nullptr;
     if (invalidSutEnc) {
@@ -511,7 +572,7 @@ static bool SutEncode(TextureEncodeOptions &param, uint8_t *astcBuffer)
         IMAGE_LOGE("SutOutInfo memset failed!");
         return false;
     }
-    
+
     if (!FillAstcSutInfo(astcInfo, sutInfo, param, astcBuffer)) {
         IMAGE_LOGE("FillAstcSutInfo fail");
         return false;
@@ -522,7 +583,13 @@ static bool SutEncode(TextureEncodeOptions &param, uint8_t *astcBuffer)
         free(sutInfo.sutBuf);
         return false;
     }
-    if (memcpy_s(astcBuffer, param.astcBytes, sutInfo.sutBuf, sutInfo.sutBytes) < 0) {
+    if (static_cast<size_t>(sutInfo.sutBytes) > astcBufferCapacity) {
+        IMAGE_LOGE("SutEncode sutBytes %{public}d > astcBufferCapacity %{public}zu!",
+                   sutInfo.sutBytes, astcBufferCapacity);
+        free(sutInfo.sutBuf);
+        return false;
+    }
+    if (memcpy_s(astcBuffer, astcBufferCapacity, sutInfo.sutBuf, sutInfo.sutBytes) != 0) {
         IMAGE_LOGE("sut sutbuffer is failed to be copied to astcBuffer!");
         free(sutInfo.sutBuf);
         return false;
@@ -534,7 +601,7 @@ static bool SutEncode(TextureEncodeOptions &param, uint8_t *astcBuffer)
     return true;
 }
 
-bool AstcCodec::TryTextureSuperCompress(TextureEncodeOptions &param, uint8_t *astcBuffer)
+bool AstcCodec::TryTextureSuperCompress(TextureEncodeOptions &param, uint8_t *astcBuffer, size_t astcBufferCapacity)
 {
     bool skipSutEnc = (param.sutProfile == SutProfile::SKIP_SUT) ||
         ((!param.hardwareFlag) && (param.privateProfile_ != HIGH_SPEED_PROFILE)) ||
@@ -559,7 +626,7 @@ bool AstcCodec::TryTextureSuperCompress(TextureEncodeOptions &param, uint8_t *as
             return false;
     }
 
-    return SutEncode(param, astcBuffer);
+    return SutEncode(param, astcBuffer, astcBufferCapacity);
 }
 #endif
 
@@ -659,6 +726,7 @@ static bool InitAstcEncPara(TextureEncodeOptions &param,
     param.stride_ = stride;
     param.privateProfile_ = qualityProfile;
     param.outIsSut = false;
+    param.enableGPUEncode = astcOpts.astcPackingOption.enableGPUEncode;
     extractDimensions(astcOpts.format, param);
     if (!CheckParamBlockSize(param)) { // DEFAULT_DIM = 4
         IMAGE_LOGE("InitAstcEncPara failed %{public}dx%{public}d is invalid!", param.blockX_, param.blockY_);
@@ -692,7 +760,7 @@ static bool CheckAstcEncInput(TextureEncodeOptions &param, AstcEncCheckInfo chec
                    param.width_, param.height_, WIDTH_MAX_ASTC, HEIGHT_MAX_ASTC);
         return false;
     }
-    uint64_t allocByteCount = static_cast<uint32_t>(param.height_) * pixmapStride;
+    uint64_t allocByteCount = static_cast<uint64_t>(param.height_) * static_cast<uint64_t>(pixmapStride);
     if (allocByteCount > std::numeric_limits<uint32_t>::max()) {
         IMAGE_LOGE("CheckAstcEncInput height %{public}d stride %{public}d overflow!",
                     param.height_, pixmapStride);
@@ -763,19 +831,24 @@ static bool AstcEncProcess(TextureEncodeOptions &param, uint8_t *pixmapIn, uint8
     bool openClEnc = param.width_ >= WIDTH_CL_THRESHOLD && param.height_ >= HEIGHT_CL_THRESHOLD &&
         param.privateProfile_ == QualityProfile::HIGH_SPEED_PROFILE;
     bool enableClEnc = openClEnc && ImageSystemProperties::GetGenThumbWithGpu() &&
+        param.enableGPUEncode &&
         (param.blockX_ == DEFAULT_DIM) && (param.blockY_ == DEFAULT_DIM); // HardWare only support 4x4 now
     if (enableClEnc) {
         IMAGE_LOGI("astc hardware encode begin");
-        std::string clBinPath = "/sys_prod/etc/graphic/AstcEncShader_ALN-AL00.bin";
-        if (!CheckClBinIsExistWithLock(clBinPath)) {
-            clBinPath = "/data/storage/el1/base/AstcEncShader.bin";
-        }
+        std::string clBinPath;
+        bool hasClBin = AstcCodec::ResolveAstcClBinPath(ASTC_CL_PREBUILT_BIN_PATH, ASTC_CL_RUNTIME_BIN_PATH,
+            clBinPath);
         IMAGE_LOGI("AstcEncProcess size: %{public}d, %{public}d, block: %{public}d, %{public}d, stride: %{public}d,"\
             "privateProfile: %{public}d, blocksNum: %{public}d, astcBytes: %{public}d",
             param.width_, param.height_,  param.blockX_, param.blockY_, param.stride_, param.privateProfile_,
             param.blocksNum, param.astcBytes);
-        param.hardwareFlag = AstcCodec::TryAstcEncBasedOnCl(param, pixmapIn, astcBuffer, clBinPath);
-        IMAGE_LOGI("AstcEncProcess hardwareFlag: %{public}d", param.hardwareFlag);
+        if (hasClBin) {
+            param.hardwareFlag = AstcCodec::TryAstcEncBasedOnCl(param, pixmapIn, astcBuffer, clBinPath);
+            IMAGE_LOGI("AstcEncProcess hardwareFlag: %{public}d", param.hardwareFlag);
+        } else {
+            IMAGE_LOGI("AstcEncProcess cl bin miss, fallback to cpu and trigger warmup");
+            (void)AstcCodec::TriggerAstcClBinWarmup(clBinPath);
+        }
     }
 #endif
     if (!param.hardwareFlag) {
@@ -824,13 +897,14 @@ bool AstcCodec::IsAstcEnc(Media::ImageInfo &info, uint8_t* pixelmapIn, TextureEn
             IMAGE_LOGE("Buffer malloc failed in packing");
             return false;
         }
-        if (memcpy_s(astcBuffer, bufferSize, pixelmapIn, bufferSize) < 0) {
+        if (memcpy_s(astcBuffer, bufferSize, pixelmapIn, bufferSize) != 0) {
             IMAGE_LOGE("Copy data failed in packing");
             free(astcBuffer);
             return false;
         }
-        if (!TryEncSUT(param, astcBuffer, extendInfo)) {
+        if (!TryEncSUT(param, astcBuffer, static_cast<size_t>(bufferSize), extendInfo)) {
             IMAGE_LOGE("Astc encode sut failed in packing");
+            free(astcBuffer);
             return false;
         }
         bufferSize = static_cast<uint32_t>(param.sutBytes);
@@ -864,13 +938,12 @@ bool AstcCodec::InitBeforeAstcEncode(ImageInfo &imageInfo, TextureEncodeOptions 
     return true;
 }
 
-bool AstcCodec::TryEncSUT(TextureEncodeOptions &param, uint8_t* astcBuffer, AstcExtendInfo &extendInfo)
+bool AstcCodec::TryEncSUT(TextureEncodeOptions &param, uint8_t* astcBuffer, size_t astcBufferCapacity,
+    AstcExtendInfo &extendInfo)
 {
 #ifdef SUT_ENCODE_ENABLE
-    if (!TryTextureSuperCompress(param, astcBuffer)) {
+    if (!TryTextureSuperCompress(param, astcBuffer, astcBufferCapacity)) {
         IMAGE_LOGE("astc TryTextureSuperCompress failed!");
-        ReleaseExtendInfoMemory(extendInfo);
-        free(astcBuffer);
         return false;
     }
     return true;
@@ -894,11 +967,20 @@ uint32_t AstcCodec::ASTCEncode() __attribute__((no_sanitize("cfi")))
     if (!InitAstcExtendInfo(extendInfo)) {
         return ERROR;
     }
-    uint32_t packSize = static_cast<uint32_t>(param.astcBytes) + extendInfo.extendBufferSumBytes + ASTC_NUM_4;
+    uint64_t packSizeCalc = static_cast<uint64_t>(param.astcBytes) +
+        static_cast<uint64_t>(extendInfo.extendBufferSumBytes) + ASTC_NUM_4;
+    if (packSizeCalc > UINT32_MAX) {
+        IMAGE_LOGE("ASTCEncode packSize overflow!");
+        ReleaseExtendInfoMemory(extendInfo);
+        return ERROR;
+    }
+    uint32_t packSize = static_cast<uint32_t>(packSizeCalc);
     if (astcPixelMap_->IsAstc()) {
         if (!IsAstcEnc(imageInfo, pixmapIn, param, extendInfo)) {
+            ReleaseExtendInfoMemory(extendInfo);
             return ERROR;
         }
+        ReleaseExtendInfoMemory(extendInfo);
         return SUCCESS;
     }
     uint8_t *astcBuffer = static_cast<uint8_t *>(malloc(packSize));
@@ -914,7 +996,9 @@ uint32_t AstcCodec::ASTCEncode() __attribute__((no_sanitize("cfi")))
         free(astcBuffer);
         return ERROR;
     }
-    if (!TryEncSUT(param, astcBuffer, extendInfo)) {
+    if (!TryEncSUT(param, astcBuffer, static_cast<size_t>(packSize), extendInfo)) {
+        ReleaseExtendInfoMemory(extendInfo);
+        free(astcBuffer);
         return ERROR;
     }
     if (!param.outIsSut) { // only support astc for color space

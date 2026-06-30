@@ -78,6 +78,7 @@ static std::unique_ptr<Image_MimeType[], FreeDeleter> IMAGE_SOURCE_SUPPORTED_FOR
 static const size_t MAX_DOUBLE_ARRAY_SIZE = 8 * 1024;
 static const size_t MAX_INT_ARRAY_SIZE = 16 * 1024;
 static const size_t MAX_EXIF_SIZE = 64 * 1024;
+static const uint8_t PIXEL_FORMAT_ARGB_8888 = 1;
 
 struct OH_DecodingOptions {
     int32_t pixelFormat;
@@ -153,6 +154,16 @@ static Image_AuxiliaryPictureType AuxTypeInnerToNative(OHOS::Media::AuxiliaryPic
 static OHOS::Media::AuxiliaryPictureType AuxTypeNativeToInner(Image_AuxiliaryPictureType type)
 {
     return static_cast<OHOS::Media::AuxiliaryPictureType>(static_cast<int>(type));
+}
+
+static PIXEL_FORMAT PixelFormatInnerToNative(OHOS::Media::PixelFormat type)
+{
+    return static_cast<PIXEL_FORMAT>(static_cast<int>(type));
+}
+ 
+static OHOS::Media::PixelFormat PixelFormatNativeToInner(PIXEL_FORMAT type)
+{
+    return static_cast<OHOS::Media::PixelFormat>(static_cast<int>(type));
 }
 
 static DecodeDynamicRange ParseImageDynamicRange(int32_t val)
@@ -1509,8 +1520,19 @@ Image_ErrorCode OH_ImageSourceNative_Release(OH_ImageSourceNative *source)
     if (source == nullptr) {
         return IMAGE_BAD_PARAMETER;
     }
-    delete source;
+    source->~OH_ImageSourceNative();
     source = nullptr;
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_ImageSourceNative_Destroy(OH_ImageSourceNative **source)
+{
+    if (source == nullptr || *source == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
+    delete *source;
+    *source = nullptr;
     return IMAGE_SUCCESS;
 }
 
@@ -1573,6 +1595,115 @@ Image_ErrorCode OH_DecodingOptionsForPicture_SetDesiredAuxiliaryPictures(OH_Deco
 }
 
 MIDK_EXPORT
+Image_ErrorCode OH_DecodingOptionsForPicture_GetNeedsDecodeDfxData(OH_DecodingOptionsForPicture *options,
+    bool *needsDecodeDfxData)
+{
+    if (!ImageUtils::IsSystemApp()) {
+        IMAGE_LOGE("This interface can be called only by system apps.");
+        return IMAGE_PERMISSIONS_FAILED;
+    }
+    if (options == nullptr || !options->GetInnerDecodingOptForPicture()) {
+        return IMAGE_SOURCE_INVALID_PARAMETER;
+    }
+    auto innerDecodingOptionsForPicture = options->GetInnerDecodingOptForPicture().get();
+    *needsDecodeDfxData = innerDecodingOptionsForPicture->needsDecodeDfxData;
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_DecodingOptionsForPicture_SetNeedsDecodeDfxData(OH_DecodingOptionsForPicture *options,
+    bool needsDecodeDfxData)
+{
+    if (!ImageUtils::IsSystemApp()) {
+        IMAGE_LOGE("This interface can be called only by system apps.");
+        return IMAGE_PERMISSIONS_FAILED;
+    }
+    if (options == nullptr || !options->GetInnerDecodingOptForPicture()) {
+        return IMAGE_SOURCE_INVALID_PARAMETER;
+    }
+    auto innerDecodingOptionsForPicture = options->GetInnerDecodingOptForPicture().get();
+    innerDecodingOptionsForPicture->needsDecodeDfxData = needsDecodeDfxData;
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_DecodingOptionsForPicture_GetDesiredSizeForMainPixelmap(OH_DecodingOptionsForPicture *options,
+    Image_Size *desiredSizeForMainPixelmap)
+{
+    if (!ImageUtils::IsSystemApp()) {
+        IMAGE_LOGE("This interface can be called only by system apps.");
+        return IMAGE_PERMISSIONS_FAILED;
+    }
+    if (options == nullptr || !options->GetInnerDecodingOptForPicture() ||
+        desiredSizeForMainPixelmap == nullptr) {
+        return IMAGE_SOURCE_INVALID_PARAMETER;
+    }
+    auto innerDecodingOptionsForPicture = options->GetInnerDecodingOptForPicture().get();
+    desiredSizeForMainPixelmap->width =
+        static_cast<uint32_t>(innerDecodingOptionsForPicture->desiredSizeForMainPixelMap.width);
+    desiredSizeForMainPixelmap->height =
+        static_cast<uint32_t>(innerDecodingOptionsForPicture->desiredSizeForMainPixelMap.height);
+    return IMAGE_SUCCESS;
+}
+ 
+MIDK_EXPORT
+Image_ErrorCode OH_DecodingOptionsForPicture_SetDesiredSizeForMainPixelmap(OH_DecodingOptionsForPicture *options,
+    Image_Size desiredSizeForMainPixelmap)
+{
+    if (!ImageUtils::IsSystemApp()) {
+        IMAGE_LOGE("This interface can be called only by system apps.");
+        return IMAGE_PERMISSIONS_FAILED;
+    }
+    if (options == nullptr || !options->GetInnerDecodingOptForPicture()) {
+        return IMAGE_SOURCE_INVALID_PARAMETER;
+    }
+    auto innerDecodingOptionsForPicture = options->GetInnerDecodingOptForPicture().get();
+    innerDecodingOptionsForPicture->desiredSizeForMainPixelMap.width =
+        static_cast<int32_t>(desiredSizeForMainPixelmap.width);
+    innerDecodingOptionsForPicture->desiredSizeForMainPixelMap.height =
+        static_cast<int32_t>(desiredSizeForMainPixelmap.height);
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_DecodingOptionsForPicture_GetDesiredPixelFormat(OH_DecodingOptionsForPicture *options,
+    PIXEL_FORMAT *desiredPixelFormat)
+{
+    if (!ImageUtils::IsSystemApp()) {
+        IMAGE_LOGE("This interface can be called only by system apps.");
+        return IMAGE_PERMISSIONS_FAILED;
+    }
+    if (options == nullptr || !options->GetInnerDecodingOptForPicture() ||
+        desiredPixelFormat == nullptr) {
+        return IMAGE_SOURCE_INVALID_PARAMETER;
+    }
+    auto innerDecodingOptionsForPicture = options->GetInnerDecodingOptForPicture().get();
+    *desiredPixelFormat = PixelFormatInnerToNative(innerDecodingOptionsForPicture->desiredPixelFormat);
+    return IMAGE_SUCCESS;
+}
+ 
+MIDK_EXPORT
+Image_ErrorCode OH_DecodingOptionsForPicture_SetDesiredPixelFormat(OH_DecodingOptionsForPicture *options,
+    PIXEL_FORMAT desiredPixelFormat)
+{
+    if (!ImageUtils::IsSystemApp()) {
+        IMAGE_LOGE("This interface can be called only by system apps.");
+        return IMAGE_PERMISSIONS_FAILED;
+    }
+    if (options == nullptr || !options->GetInnerDecodingOptForPicture()) {
+        return IMAGE_SOURCE_INVALID_PARAMETER;
+    }
+    if (desiredPixelFormat < PIXEL_FORMAT::PIXEL_FORMAT_UNKNOWN ||
+        desiredPixelFormat > PIXEL_FORMAT::PIXEL_FORMAT_YCRCB_P010 ||
+        desiredPixelFormat == PIXEL_FORMAT_ARGB_8888) {
+        return IMAGE_SOURCE_INVALID_PARAMETER;
+    }
+    auto innerDecodingOptionsForPicture = options->GetInnerDecodingOptForPicture().get();
+    innerDecodingOptionsForPicture->desiredPixelFormat = PixelFormatNativeToInner(desiredPixelFormat);
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
 Image_ErrorCode OH_DecodingOptionsForPicture_Release(OH_DecodingOptionsForPicture *options)
 {
     if (options == nullptr) {
@@ -1625,16 +1756,19 @@ Image_ErrorCode OH_ImageSourceNative_GetSupportedFormats(Image_MimeType** suppor
 
 MIDK_EXPORT
 Image_ErrorCode OH_ImageSourceNative_ReadImageMetadataByType(OH_ImageSourceNative *source, uint32_t index,
-    Image_MetadataType *metadataTypes, size_t typeCount, OH_PictureMetadata **metadatas, size_t *metadataCount)
+    Image_MetadataType *metadataTypes, size_t typeCount, OH_PictureMetadata **outMetadataArray, size_t *metadataCount)
 {
-    if (source == nullptr || source->GetInnerImageSource() == nullptr || metadatas == nullptr ||
+    if (!ImageUtils::IsSystemApp()) {
+        IMAGE_LOGE("This interface can be called only by system apps.");
+        return IMAGE_PERMISSIONS_FAILED;
+    }
+    if (source == nullptr || source->GetInnerImageSource() == nullptr || outMetadataArray == nullptr ||
         metadataCount == nullptr) {
         return IMAGE_SOURCE_INVALID_PARAMETER;
     }
     uint32_t errorCode;
     uint32_t frameCount = source->GetInnerImageSource()->GetFrameCount(errorCode);
-    CHECK_ERROR_RETURN_RET((errorCode != SUCCESS) || index >= frameCount,
-        IMAGE_SOURCE_INVALID_PARAMETER);
+    CHECK_ERROR_RETURN_RET((errorCode != SUCCESS) || index >= frameCount, IMAGE_SOURCE_INVALID_PARAMETER);
     std::vector<std::shared_ptr<OHOS::Media::ImageMetadata>> validMetadatas;
     if (metadataTypes == nullptr || typeCount == 0) {
         IMAGE_LOGD("Get all metadata.");
@@ -1660,17 +1794,15 @@ Image_ErrorCode OH_ImageSourceNative_ReadImageMetadataByType(OH_ImageSourceNativ
             validMetadatas.push_back(metadata);
         }
     }
-    if (validMetadatas.size() == 0) {
-        return IMAGE_SOURCE_UNSUPPORTED_MIMETYPE;
-    }
+    CHECK_ERROR_RETURN_RET((validMetadatas.size() == 0), IMAGE_SOURCE_UNSUPPORTED_METADATA);
     *metadataCount = validMetadatas.size();
-    *metadatas = new OH_PictureMetadata[*metadataCount];
-    if (*metadatas == nullptr) {
+    *outMetadataArray = new OH_PictureMetadata[*metadataCount];
+    if (*outMetadataArray == nullptr) {
         IMAGE_LOGE("Allocate metadata memory failed.");
-        return IMAGE_SOURCE_UNSUPPORTED_MIMETYPE;
+        return IMAGE_SOURCE_ALLOC_FAILED;
     }
     for (uint32_t i = 0; i < validMetadatas.size(); ++i) {
-        (*metadatas)[i] = OH_PictureMetadata(validMetadatas[i]);
+        (*outMetadataArray)[i] = OH_PictureMetadata(validMetadatas[i]);
     }
     return IMAGE_SUCCESS;
 }

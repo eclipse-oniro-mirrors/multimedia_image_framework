@@ -124,7 +124,7 @@ static constexpr uint8_t NUM_5 = 5;
 static constexpr uint8_t NUM_6 = 6;
 static constexpr uint8_t NUM_7 = 7;
 static constexpr uint8_t NUM_8 = 8;
-static constexpr float ALPHA_F16_MAX_VALUE = 255.0f;
+static constexpr float ALPHA_F16_MAX_VALUE = 1.0f;
 
 static uint8_t AlphaF16ToUInt8(const uint8_t *pixel);
 static void UInt8ToAlphaF16(uint8_t alpha, uint8_t *pixel);
@@ -543,7 +543,7 @@ static void SetYUVDataInfoToPixelMap(unique_ptr<PixelMap> &dstPixelMap)
 }
 
 static int AllocPixelMapMemory(std::unique_ptr<AbsMemory> &dstMemory, int32_t &dstRowStride,
-    const ImageInfo &dstImageInfo, const InitializationOptions &opts)
+    const ImageInfo &dstImageInfo, const InitializationOptions &opts, bool &isUseDefaultDmaNopadding)
 {
     int64_t rowDataSize = ImageUtils::GetRowDataSizeByPixelFormat(dstImageInfo.size.width, dstImageInfo.pixelFormat);
     if (rowDataSize <= 0) {
@@ -563,7 +563,7 @@ static int AllocPixelMapMemory(std::unique_ptr<AbsMemory> &dstMemory, int32_t &d
         dstImageInfo.pixelFormat};
     AllocatorType allocType = opts.allocatorType == AllocatorType::DEFAULT ?
         ImageUtils::GetPixelMapAllocatorType(dstImageInfo.size, dstImageInfo.pixelFormat, opts.useDMA,
-            memoryData.usage) : opts.allocatorType;
+            memoryData.usage, isUseDefaultDmaNopadding) : opts.allocatorType;
     dstMemory = MemoryManager::CreateMemory(allocType, memoryData);
     if (dstMemory == nullptr) {
         IMAGE_LOGE("[PixelMap]Create: allocate memory failed");
@@ -615,7 +615,8 @@ unique_ptr<PixelMap> PixelMap::Create(const uint32_t *colors, uint32_t colorLeng
 
     std::unique_ptr<AbsMemory> dstMemory = nullptr;
     int32_t dstRowStride = 0;
-    errorCode = AllocPixelMapMemory(dstMemory, dstRowStride, dstImageInfo, opts);
+    errorCode = AllocPixelMapMemory(dstMemory, dstRowStride, dstImageInfo, opts,
+        dstPixelMap->isUseDefaultDmaNopadding_);
     if (errorCode != IMAGE_RESULT_SUCCESS) {
         return nullptr;
     }
@@ -682,7 +683,8 @@ pair<unique_ptr<PixelMap>, int32_t> PixelMap::CreateFromPixels(const uint8_t *pi
 
     unique_ptr<AbsMemory> dstMemory = nullptr;
     int32_t dstRowStride = 0;
-    errorCode = AllocPixelMapMemory(dstMemory, dstRowStride, dstImageInfo, options);
+    errorCode = AllocPixelMapMemory(dstMemory, dstRowStride, dstImageInfo, options,
+        dstPixelMap->isUseDefaultDmaNopadding_);
     if (errorCode != IMAGE_RESULT_SUCCESS) {
         return {nullptr, errorCode};
     }
@@ -945,7 +947,8 @@ unique_ptr<PixelMap> PixelMap::Create(const InitializationOptions &opts)
 
     std::unique_ptr<AbsMemory> dstMemory = nullptr;
     int32_t dstRowStride = 0;
-    int errorCode = AllocPixelMapMemory(dstMemory, dstRowStride, dstImageInfo, opts);
+    int errorCode = AllocPixelMapMemory(dstMemory, dstRowStride, dstImageInfo, opts,
+        dstPixelMap->isUseDefaultDmaNopadding_);
     if (errorCode != IMAGE_RESULT_SUCCESS) {
         return nullptr;
     }
@@ -1293,7 +1296,7 @@ bool PixelMap::CopyPixelMap(PixelMap &source, PixelMap &dstPixelMap, int32_t &er
     if (source.GetAllocatorType() == AllocatorType::DEFAULT ||
         source.GetAllocatorType() == AllocatorType::CUSTOM_ALLOC) {
         allocType = ImageUtils::GetPixelMapAllocatorType(dstImageInfo.size, dstImageInfo.pixelFormat, false,
-            memoryData.usage);
+            memoryData.usage, dstPixelMap.isUseDefaultDmaNopadding_);
     }
     unique_ptr<AbsMemory> memory = MemoryManager::CreateMemory(allocType, memoryData);
     if (memory == nullptr) {
@@ -1375,6 +1378,11 @@ static unique_ptr<PixelMap> CloneAstc(PixelMap *srcAstc, int32_t &errorCode)
 }
 
 unique_ptr<PixelMap> PixelMap::Clone(int32_t &errorCode)
+{
+    return clone(errorCode);
+}
+
+unique_ptr<PixelMap> PixelMap::clone(int32_t &errorCode)
 {
     if (!CheckImageInfo(imageInfo_, errorCode, allocatorType_, rowDataSize_)) {
         return nullptr;
@@ -1548,7 +1556,7 @@ uint32_t PixelMap::SetRowDataSizeForImageInfo(ImageInfo info)
 uint32_t PixelMap::SetImageInfo(ImageInfo &info, bool isReused)
 {
     if (info.size.width <= 0 || info.size.height <= 0) {
-        IMAGE_LOGE("pixel map width or height invalid.");
+        IMAGE_LOGE("PixelMap width (%{public}d) or height (%{public}d) invalid.", info.size.width, info.size.height);
         return ERR_IMAGE_DATA_ABNORMAL;
     }
 
@@ -1557,20 +1565,20 @@ uint32_t PixelMap::SetImageInfo(ImageInfo &info, bool isReused)
     }
     if (pixelBytes_ <= 0) {
         ResetPixelMap();
-        IMAGE_LOGE("pixel map bytes is invalid.");
+        IMAGE_LOGE("PixelMap pixel bytes (%{public}d) invalid.", pixelBytes_);
         return ERR_IMAGE_DATA_ABNORMAL;
     }
 
     uint32_t ret = SetRowDataSizeForImageInfo(info);
     if (ret != SUCCESS) {
-        IMAGE_LOGE("pixel map set rowDataSize error.");
+        IMAGE_LOGE("PixelMap set rowDataSize error (%{public}d).", ret);
         return ret;
     }
 
     int64_t totalSize = static_cast<int64_t>(std::max(rowDataSize_, GetRowStride())) * info.size.height;
     if (totalSize > (allocatorType_ == AllocatorType::HEAP_ALLOC ? PIXEL_MAP_MAX_RAM_SIZE : INT32_MAX)) {
         ResetPixelMap();
-        IMAGE_LOGE("pixel map size (byte count) out of range.");
+        IMAGE_LOGE("PixelMap total size (%{public}lld) out of range.", static_cast<long long>(totalSize));
         return ERR_IMAGE_TOO_LARGE;
     }
 
@@ -1748,7 +1756,7 @@ bool PixelMap::ALPHAF16ToARGB(const uint8_t *in, uint32_t inCount, uint32_t *out
     for (uint32_t i = 0; i < outCount; i++) {
         float alpha = HalfTranslate(src);
         alpha = std::clamp(alpha, 0.0f, ALPHA_F16_MAX_VALUE);
-        *out++ = GetColorARGB(static_cast<uint8_t>(alpha + HALF_ONE), BYTE_ZERO, BYTE_ZERO, BYTE_ZERO);
+        *out++ = GetColorARGB(static_cast<uint8_t>(alpha * UINT8_MAX + HALF_ONE), BYTE_ZERO, BYTE_ZERO, BYTE_ZERO);
         src += ALPHA_F16_BYTES;
     }
     return true;
@@ -3067,7 +3075,7 @@ bool PixelMap::Marshalling(Parcel &parcel) const
         return false;
     }
 
-    if (isMemoryDirty_) {
+    if (isMemoryDirty_ || isUseDefaultDmaNopadding_) {
         ImageUtils::FlushSurfaceBuffer(const_cast<PixelMap*>(this));
         isMemoryDirty_ = false;
     }
@@ -3330,9 +3338,18 @@ bool ReadDmaMemInfoFromParcel(Parcel &parcel, PixelMemInfo &pixelMemInfo,
     }
 
     void* nativeBuffer = surfaceBuffer.GetRefPtr();
-    ImageUtils::SurfaceBuffer_Reference(nativeBuffer);
+    int32_t refRet = ImageUtils::SurfaceBuffer_Reference(nativeBuffer);
+    if (refRet != SUCCESS) {
+        IMAGE_LOGE("SurfaceBuffer reference failed");
+        return false;
+    }
     if (!pixelMemInfo.displayOnly || !isDisplay) {
         pixelMemInfo.base = static_cast<uint8_t*>(surfaceBuffer->GetVirAddr());
+        if (pixelMemInfo.base == nullptr) {
+            IMAGE_LOGE("ReadDmaMemInfoFromParcel GetVirAddr is nullptr for non-displayOnly");
+            ImageUtils::SurfaceBuffer_Unreference(nativeBuffer);
+            return false;
+        }
     }
     pixelMemInfo.context = nativeBuffer;
     return true;
@@ -4083,8 +4100,8 @@ static float HalfTranslate(const uint8_t* ui)
 static void HalfTranslate(const float pixel, uint8_t* ui)
 {
     uint16_t val = FloatToHalf(pixel);
-    ui[HALF_LOW_BYTE] = static_cast<uint8_t>((val >> SHIFT_8_BIT) & UINT8_MAX);
-    ui[HALF_HIGH_BYTE] = static_cast<uint8_t>(val & UINT8_MAX);
+    ui[HALF_LOW_BYTE] = static_cast<uint8_t>(val & UINT8_MAX);
+    ui[HALF_HIGH_BYTE] = static_cast<uint8_t>((val >> SHIFT_8_BIT) & UINT8_MAX);
 }
 
 static uint8_t AlphaF16ToUInt8(const uint8_t *pixel)
@@ -4094,7 +4111,7 @@ static uint8_t AlphaF16ToUInt8(const uint8_t *pixel)
     }
     float alpha = HalfTranslate(pixel);
     alpha = std::clamp(alpha, 0.0f, ALPHA_F16_MAX_VALUE);
-    return static_cast<uint8_t>(alpha + HALF_ONE);
+    return static_cast<uint8_t>(alpha * UINT8_MAX + HALF_ONE);
 }
 
 static void UInt8ToAlphaF16(uint8_t alpha, uint8_t *pixel)
@@ -4102,7 +4119,7 @@ static void UInt8ToAlphaF16(uint8_t alpha, uint8_t *pixel)
     if (pixel == nullptr) {
         return;
     }
-    HalfTranslate(static_cast<float>(alpha), pixel);
+    HalfTranslate(static_cast<float>(alpha) / UINT8_MAX, pixel);
 }
 
 constexpr uint8_t RGBA_F16_R_OFFSET = 0;
@@ -4452,7 +4469,7 @@ uint32_t PixelMap::SetAlpha(const float percent)
         for (int j = 0; j < GetRowStride(); j += pixelBytes_) {
             uint8_t* pixel = data_ + GetRowStride() * i + j;
             if (pixelFormat == PixelFormat::ALPHA_F16) {
-                UInt8ToAlphaF16(static_cast<uint8_t>(UINT8_MAX * percent + HALF_ONE), pixel);
+                HalfTranslate(percent, pixel);
             } else if (pixelFormat == PixelFormat::RGBA_F16) {
                 SetF16PixelAlpha(pixel, percent, isPixelPremul);
             } else if (pixelFormat == PixelFormat::RGBA_1010102) {

@@ -15,7 +15,9 @@
 
 #include "image_system_properties.h"
 
-#if !defined(IOS_PLATFORM) &&!defined(ANDROID_PLATFORM)
+#if !defined(CROSS_PLATFORM)
+#include "tokenid_kit.h"
+#include "ipc_skeleton.h"
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -261,6 +263,50 @@ bool ImageSystemProperties::IsImageSubSample()
 #if !defined(CROSS_PLATFORM)
     bool ret = system::GetBoolParameter("persist.resourceschedule.imagesubsample", false);
     return ret;
+#else
+    return false;
+#endif
+}
+
+bool ImageSystemProperties::GetDecodeDfxDataEnabled()
+{
+#if !defined(CROSS_PLATFORM)
+    static bool ret = system::GetBoolParameter("persist.multimedia.image.DecodeDfxData.enabled", false);
+    return ret;
+#else
+    return false;
+#endif
+}
+
+bool ImageSystemProperties::GetEncodeDfxDataEnabled()
+{
+#if !defined(CROSS_PLATFORM)
+    static bool ret = system::GetBoolParameter("persist.multimedia.image.EncodeDfxData.enabled", false);
+    return ret;
+#else
+    return false;
+#endif
+}
+
+static bool g_isSystemAppForTest = false;
+
+void ImageSystemProperties::SetIsSystemAppForTest(bool isSystemApp)
+{
+    g_isSystemAppForTest = isSystemApp;
+}
+
+bool ImageSystemProperties::IsSystemApp()
+{
+    if (g_isSystemAppForTest) {
+        return true;
+    }
+#if !defined(CROSS_PLATFORM)
+    if (system::GetBoolParameter("persist.multimedia.image.isSystemApp.enabled", false)) {
+        return true;
+    }
+    static bool isSys =
+        Security::AccessToken::TokenIdKit::IsSystemAppByFullTokenID(IPCSkeleton::GetSelfTokenID());
+    return isSys;
 #else
     return false;
 #endif

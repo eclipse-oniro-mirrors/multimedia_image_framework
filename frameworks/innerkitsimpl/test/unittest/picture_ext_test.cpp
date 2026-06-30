@@ -201,6 +201,7 @@ static std::shared_ptr<PixelMap> CreatePixelMapInner(std::string srcFormat, std:
     }
 
     DecodeOptions dstOpts;
+    dstOpts.desiredDynamicRange = DecodeDynamicRange::AUTO;
     dstOpts.desiredPixelFormat = pixelFormat;
     dstOpts.allocatorType = allocatorType;
     std::shared_ptr<PixelMap> pixelmap = imageSource->CreatePixelMapEx(0, dstOpts, errorCode);
@@ -3204,5 +3205,731 @@ HWTEST_F(PictureExtTest, PictureEncodeControlParamsTest013, TestSize.Level3)
     ASSERT_EQ(packedInfo.size.height, dstHeight);
     GTEST_LOG_(INFO) << "PictureExtTest: PictureEncodeControlParamsTest013 end";
 }
+
+/**
+ * @tc.name: DecomposeToPictureTest001
+ * @tc.desc: Test DecomposeToPicture with actual HDR image and half-size gainmap.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureExtTest, DecomposeToPictureTest001, TestSize.Level1)
+{
+    std::shared_ptr<PixelMap> pixelmap = CreatePixelMapInner("image/jpeg", IMAGE_JPEGHDR_SRC,
+        PixelFormat::RGBA_1010102, AllocatorType::DMA_ALLOC);
+    ASSERT_NE(pixelmap, nullptr);
+    EXPECT_TRUE(pixelmap->IsHdr());
+    ImageInfo info;
+    pixelmap->GetImageInfo(info);
+    EXPECT_EQ(info.pixelFormat, PixelFormat::RGBA_1010102);
+    int32_t errCode = SUCCESS;
+    std::unique_ptr<Picture> picture = Picture::DecomposeToPicture(pixelmap, errCode);
+    if (picture == nullptr) {
+        EXPECT_EQ(errCode, ERR_IMAGE_DECOMPOSE_FAILED);
+    } else {
+        EXPECT_EQ(errCode, SUCCESS);
+        EXPECT_NE(picture->GetMainPixel(), nullptr);
+        auto gainmapPixelMap = picture->GetGainmapPixelMap();
+        ASSERT_NE(gainmapPixelMap, nullptr);
+        int32_t expectedWidth = pixelmap->GetWidth() / 2;
+        int32_t expectedHeight = pixelmap->GetHeight() / 2;
+        expectedWidth = expectedWidth > 0 ? expectedWidth : 1;
+        expectedHeight = expectedHeight > 0 ? expectedHeight : 1;
+        EXPECT_EQ(gainmapPixelMap->GetWidth(), expectedWidth);
+        EXPECT_EQ(gainmapPixelMap->GetHeight(), expectedHeight);
+    }
+}
+ 
+/**
+ * @tc.name: DecomposeToPictureTest004
+ * @tc.desc: Test DecomposeToPicture with RGBA_1010102 input, isFullSizeGainmap=true.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureExtTest, DecomposeToPictureTest004, TestSize.Level1)
+{
+    std::shared_ptr<PixelMap> pixelmap = CreatePixelMapInner("image/jpeg", IMAGE_JPEGHDR_SRC,
+        PixelFormat::RGBA_1010102, AllocatorType::DMA_ALLOC);
+    ASSERT_NE(pixelmap, nullptr);
+    EXPECT_TRUE(pixelmap->IsHdr());
+ 
+    HdrDecomposeOption params;
+    params.isFullSizeGainmap = true;
+    int32_t errCode = SUCCESS;
+    std::unique_ptr<Picture> picture = Picture::DecomposeToPicture(pixelmap, params, errCode);
+    if (picture == nullptr) {
+        EXPECT_EQ(errCode, ERR_IMAGE_DECOMPOSE_FAILED);
+    } else {
+        EXPECT_EQ(errCode, SUCCESS);
+        EXPECT_NE(picture->GetMainPixel(), nullptr);
+        auto gainmapPixelMap = picture->GetGainmapPixelMap();
+        ASSERT_NE(gainmapPixelMap, nullptr);
+        EXPECT_EQ(gainmapPixelMap->GetWidth(), pixelmap->GetWidth());
+        EXPECT_EQ(gainmapPixelMap->GetHeight(), pixelmap->GetHeight());
+    }
+}
+ 
+/**
+ * @tc.name: DecomposeToPictureTest005
+ * @tc.desc: Test DecomposeToPicture with RGBA_1010102 input, desiredPixelFormat=RGBA_8888.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureExtTest, DecomposeToPictureTest005, TestSize.Level1)
+{
+    std::shared_ptr<PixelMap> pixelmap = CreatePixelMapInner("image/jpeg", IMAGE_JPEGHDR_SRC,
+        PixelFormat::RGBA_1010102, AllocatorType::DMA_ALLOC);
+    ASSERT_NE(pixelmap, nullptr);
+    EXPECT_TRUE(pixelmap->IsHdr());
+ 
+    HdrDecomposeOption params;
+    params.desiredPixelFormat = PixelFormat::RGBA_8888;
+    int32_t errCode = SUCCESS;
+    std::unique_ptr<Picture> picture = Picture::DecomposeToPicture(pixelmap, params, errCode);
+    if (picture == nullptr) {
+        EXPECT_EQ(errCode, ERR_IMAGE_DECOMPOSE_FAILED);
+    } else {
+        EXPECT_EQ(errCode, SUCCESS);
+        EXPECT_NE(picture->GetMainPixel(), nullptr);
+        auto mainPixelMap = picture->GetMainPixel();
+        ASSERT_NE(mainPixelMap, nullptr);
+        ImageInfo info;
+        mainPixelMap->GetImageInfo(info);
+        EXPECT_EQ(info.pixelFormat, PixelFormat::RGBA_8888);
+        auto gainmapPixelMap = picture->GetGainmapPixelMap();
+        ASSERT_NE(gainmapPixelMap, nullptr);
+        gainmapPixelMap->GetImageInfo(info);
+        EXPECT_EQ(info.pixelFormat, PixelFormat::RGBA_8888);
+    }
+}
+ 
+/**
+ * @tc.name: DecomposeToPictureTest006
+ * @tc.desc: Test DecomposeToPicture with RGBA_1010102 input, desiredPixelFormat=NV12.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureExtTest, DecomposeToPictureTest006, TestSize.Level1)
+{
+    std::shared_ptr<PixelMap> pixelmap = CreatePixelMapInner("image/jpeg", IMAGE_JPEGHDR_SRC,
+        PixelFormat::RGBA_1010102, AllocatorType::DMA_ALLOC);
+    ASSERT_NE(pixelmap, nullptr);
+    EXPECT_TRUE(pixelmap->IsHdr());
+ 
+    HdrDecomposeOption params;
+    params.desiredPixelFormat = PixelFormat::NV12;
+    int32_t errCode = SUCCESS;
+    std::unique_ptr<Picture> picture = Picture::DecomposeToPicture(pixelmap, params, errCode);
+    if (picture == nullptr) {
+        EXPECT_EQ(errCode, ERR_IMAGE_DECOMPOSE_FAILED);
+    } else {
+        EXPECT_EQ(errCode, SUCCESS);
+        EXPECT_NE(picture->GetMainPixel(), nullptr);
+        auto mainPixelMap = picture->GetMainPixel();
+        ASSERT_NE(mainPixelMap, nullptr);
+        ImageInfo info;
+        mainPixelMap->GetImageInfo(info);
+        EXPECT_EQ(info.pixelFormat, PixelFormat::NV12);
+        auto gainmapPixelMap = picture->GetGainmapPixelMap();
+        ASSERT_NE(gainmapPixelMap, nullptr);
+        gainmapPixelMap->GetImageInfo(info);
+        EXPECT_EQ(info.pixelFormat, PixelFormat::NV12);
+    }
+}
+ 
+/**
+ * @tc.name: DecomposeToPictureTest007
+ * @tc.desc: Test DecomposeToPicture with RGBA_1010102 input, desiredPixelFormat=NV21.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureExtTest, DecomposeToPictureTest007, TestSize.Level1)
+{
+    std::shared_ptr<PixelMap> pixelmap = CreatePixelMapInner("image/jpeg", IMAGE_JPEGHDR_SRC,
+        PixelFormat::RGBA_1010102, AllocatorType::DMA_ALLOC);
+    ASSERT_NE(pixelmap, nullptr);
+    EXPECT_TRUE(pixelmap->IsHdr());
+ 
+    HdrDecomposeOption params;
+    params.desiredPixelFormat = PixelFormat::NV21;
+    int32_t errCode = SUCCESS;
+    std::unique_ptr<Picture> picture = Picture::DecomposeToPicture(pixelmap, params, errCode);
+    if (picture == nullptr) {
+        EXPECT_EQ(errCode, ERR_IMAGE_DECOMPOSE_FAILED);
+    } else {
+        EXPECT_EQ(errCode, SUCCESS);
+        EXPECT_NE(picture->GetMainPixel(), nullptr);
+        auto mainPixelMap = picture->GetMainPixel();
+        ASSERT_NE(mainPixelMap, nullptr);
+        ImageInfo info;
+        mainPixelMap->GetImageInfo(info);
+        EXPECT_EQ(info.pixelFormat, PixelFormat::NV21);
+        auto gainmapPixelMap = picture->GetGainmapPixelMap();
+        ASSERT_NE(gainmapPixelMap, nullptr);
+        gainmapPixelMap->GetImageInfo(info);
+        EXPECT_EQ(info.pixelFormat, PixelFormat::NV21);
+    }
+}
+ 
+/**
+ * @tc.name: DecomposeToPictureTest008
+ * @tc.desc: Test DecomposeToPicture with YCBCR_P010 input, default HdrDecomposeOption.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureExtTest, DecomposeToPictureTest008, TestSize.Level1)
+{
+    uint32_t res = 0;
+    SourceOptions sourceOpts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_JPEGHDR_SRC.c_str(),
+                                                                              sourceOpts, res);
+    ASSERT_NE(imageSource, nullptr);
+    DecodingOptionsForPicture opts;
+    opts.desireAuxiliaryPictures.insert(AuxiliaryPictureType::GAINMAP);
+    uint32_t error_code;
+    std::unique_ptr<Picture> pictureObj = imageSource->CreatePicture(opts, error_code);
+    ASSERT_NE(pictureObj, nullptr);
+    std::unique_ptr<PixelMap> tmpPixelmap = pictureObj->GetHdrComposedPixelMap(PixelFormat::YCBCR_P010);
+    ASSERT_NE(tmpPixelmap, nullptr);
+    EXPECT_TRUE(tmpPixelmap->IsHdr());
+    ImageInfo info;
+    tmpPixelmap->GetImageInfo(info);
+    EXPECT_EQ(info.pixelFormat, PixelFormat::YCBCR_P010);
+    std::shared_ptr<PixelMap> pixelmap = std::move(tmpPixelmap);
+    int32_t errCode = SUCCESS;
+    std::unique_ptr<Picture> picture = Picture::DecomposeToPicture(pixelmap, errCode);
+    if (picture == nullptr) {
+        EXPECT_EQ(errCode, ERR_IMAGE_DECOMPOSE_FAILED);
+    } else {
+        EXPECT_EQ(errCode, SUCCESS);
+        EXPECT_NE(picture->GetMainPixel(), nullptr);
+        auto gainmapPixelMap = picture->GetGainmapPixelMap();
+        ASSERT_NE(gainmapPixelMap, nullptr);
+        int32_t expectedWidth = pixelmap->GetWidth() / 2;
+        int32_t expectedHeight = pixelmap->GetHeight() / 2;
+        expectedWidth = expectedWidth > 0 ? expectedWidth : 1;
+        expectedHeight = expectedHeight > 0 ? expectedHeight : 1;
+        EXPECT_EQ(gainmapPixelMap->GetWidth(), expectedWidth);
+        EXPECT_EQ(gainmapPixelMap->GetHeight(), expectedHeight);
+    }
+}
+ 
+/**
+ * @tc.name: DecomposeToPictureTest009
+ * @tc.desc: Test DecomposeToPicture with YCBCR_P010 input, isFullSizeGainmap=true.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureExtTest, DecomposeToPictureTest009, TestSize.Level1)
+{
+    uint32_t res = 0;
+    SourceOptions sourceOpts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_JPEGHDR_SRC.c_str(),
+                                                                              sourceOpts, res);
+    ASSERT_NE(imageSource, nullptr);
+    DecodingOptionsForPicture opts;
+    opts.desireAuxiliaryPictures.insert(AuxiliaryPictureType::GAINMAP);
+    uint32_t error_code;
+    std::unique_ptr<Picture> pictureObj = imageSource->CreatePicture(opts, error_code);
+    ASSERT_NE(pictureObj, nullptr);
+    std::unique_ptr<PixelMap> tmpPixelmap = pictureObj->GetHdrComposedPixelMap(PixelFormat::YCBCR_P010);
+    ASSERT_NE(tmpPixelmap, nullptr);
+    EXPECT_TRUE(tmpPixelmap->IsHdr());
+    std::shared_ptr<PixelMap> pixelmap = std::move(tmpPixelmap);
+ 
+    HdrDecomposeOption params;
+    params.isFullSizeGainmap = true;
+    int32_t errCode = SUCCESS;
+    std::unique_ptr<Picture> picture = Picture::DecomposeToPicture(pixelmap, params, errCode);
+    if (picture == nullptr) {
+        EXPECT_EQ(errCode, ERR_IMAGE_DECOMPOSE_FAILED);
+    } else {
+        EXPECT_EQ(errCode, SUCCESS);
+        EXPECT_NE(picture->GetMainPixel(), nullptr);
+        auto gainmapPixelMap = picture->GetGainmapPixelMap();
+        ASSERT_NE(gainmapPixelMap, nullptr);
+        EXPECT_EQ(gainmapPixelMap->GetWidth(), pixelmap->GetWidth());
+        EXPECT_EQ(gainmapPixelMap->GetHeight(), pixelmap->GetHeight());
+    }
+}
+ 
+/**
+ * @tc.name: DecomposeToPictureTest010
+ * @tc.desc: Test DecomposeToPicture with YCBCR_P010 input, desiredPixelFormat=RGBA_8888.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureExtTest, DecomposeToPictureTest010, TestSize.Level1)
+{
+    uint32_t res = 0;
+    SourceOptions sourceOpts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_JPEGHDR_SRC.c_str(),
+                                                                              sourceOpts, res);
+    ASSERT_NE(imageSource, nullptr);
+    DecodingOptionsForPicture opts;
+    opts.desireAuxiliaryPictures.insert(AuxiliaryPictureType::GAINMAP);
+    uint32_t error_code;
+    std::unique_ptr<Picture> pictureObj = imageSource->CreatePicture(opts, error_code);
+    ASSERT_NE(pictureObj, nullptr);
+    std::unique_ptr<PixelMap> tmpPixelmap = pictureObj->GetHdrComposedPixelMap(PixelFormat::YCBCR_P010);
+    ASSERT_NE(tmpPixelmap, nullptr);
+    EXPECT_TRUE(tmpPixelmap->IsHdr());
+    std::shared_ptr<PixelMap> pixelmap = std::move(tmpPixelmap);
+ 
+    HdrDecomposeOption params;
+    params.desiredPixelFormat = PixelFormat::RGBA_8888;
+    int32_t errCode = SUCCESS;
+    std::unique_ptr<Picture> picture = Picture::DecomposeToPicture(pixelmap, params, errCode);
+    if (picture == nullptr) {
+        EXPECT_EQ(errCode, ERR_IMAGE_DECOMPOSE_FAILED);
+    } else {
+        EXPECT_EQ(errCode, SUCCESS);
+        EXPECT_NE(picture->GetMainPixel(), nullptr);
+        auto mainPixelMap = picture->GetMainPixel();
+        ASSERT_NE(mainPixelMap, nullptr);
+        ImageInfo info;
+        mainPixelMap->GetImageInfo(info);
+        EXPECT_EQ(info.pixelFormat, PixelFormat::RGBA_8888);
+        auto gainmapPixelMap = picture->GetGainmapPixelMap();
+        ASSERT_NE(gainmapPixelMap, nullptr);
+        gainmapPixelMap->GetImageInfo(info);
+        EXPECT_EQ(info.pixelFormat, PixelFormat::RGBA_8888);
+    }
+}
+ 
+/**
+ * @tc.name: DecomposeToPictureTest011
+ * @tc.desc: Test DecomposeToPicture with YCBCR_P010 input, desiredPixelFormat=NV12.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureExtTest, DecomposeToPictureTest011, TestSize.Level1)
+{
+    uint32_t res = 0;
+    SourceOptions sourceOpts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_JPEGHDR_SRC.c_str(),
+                                                                              sourceOpts, res);
+    ASSERT_NE(imageSource, nullptr);
+    DecodingOptionsForPicture opts;
+    opts.desireAuxiliaryPictures.insert(AuxiliaryPictureType::GAINMAP);
+    uint32_t error_code;
+    std::unique_ptr<Picture> pictureObj = imageSource->CreatePicture(opts, error_code);
+    ASSERT_NE(pictureObj, nullptr);
+    std::unique_ptr<PixelMap> tmpPixelmap = pictureObj->GetHdrComposedPixelMap(PixelFormat::YCBCR_P010);
+    ASSERT_NE(tmpPixelmap, nullptr);
+    EXPECT_TRUE(tmpPixelmap->IsHdr());
+    std::shared_ptr<PixelMap> pixelmap = std::move(tmpPixelmap);
+ 
+    HdrDecomposeOption params;
+    params.desiredPixelFormat = PixelFormat::NV12;
+    int32_t errCode = SUCCESS;
+    std::unique_ptr<Picture> picture = Picture::DecomposeToPicture(pixelmap, params, errCode);
+    if (picture == nullptr) {
+        EXPECT_EQ(errCode, ERR_IMAGE_DECOMPOSE_FAILED);
+    } else {
+        EXPECT_EQ(errCode, SUCCESS);
+        EXPECT_NE(picture->GetMainPixel(), nullptr);
+        auto mainPixelMap = picture->GetMainPixel();
+        ASSERT_NE(mainPixelMap, nullptr);
+        ImageInfo info;
+        mainPixelMap->GetImageInfo(info);
+        EXPECT_EQ(info.pixelFormat, PixelFormat::NV12);
+        auto gainmapPixelMap = picture->GetGainmapPixelMap();
+        ASSERT_NE(gainmapPixelMap, nullptr);
+        gainmapPixelMap->GetImageInfo(info);
+        EXPECT_EQ(info.pixelFormat, PixelFormat::NV12);
+    }
+}
+ 
+/**
+ * @tc.name: DecomposeToPictureTest012
+ * @tc.desc: Test DecomposeToPicture with YCBCR_P010 input, desiredPixelFormat=NV21.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureExtTest, DecomposeToPictureTest012, TestSize.Level1)
+{
+    uint32_t res = 0;
+    SourceOptions sourceOpts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_JPEGHDR_SRC.c_str(),
+                                                                              sourceOpts, res);
+    ASSERT_NE(imageSource, nullptr);
+    DecodingOptionsForPicture opts;
+    opts.desireAuxiliaryPictures.insert(AuxiliaryPictureType::GAINMAP);
+    uint32_t error_code;
+    std::unique_ptr<Picture> pictureObj = imageSource->CreatePicture(opts, error_code);
+    ASSERT_NE(pictureObj, nullptr);
+    std::unique_ptr<PixelMap> tmpPixelmap = pictureObj->GetHdrComposedPixelMap(PixelFormat::YCBCR_P010);
+    ASSERT_NE(tmpPixelmap, nullptr);
+    EXPECT_TRUE(tmpPixelmap->IsHdr());
+    std::shared_ptr<PixelMap> pixelmap = std::move(tmpPixelmap);
+ 
+    HdrDecomposeOption params;
+    params.desiredPixelFormat = PixelFormat::NV21;
+    int32_t errCode = SUCCESS;
+    std::unique_ptr<Picture> picture = Picture::DecomposeToPicture(pixelmap, params, errCode);
+    if (picture == nullptr) {
+        EXPECT_EQ(errCode, ERR_IMAGE_DECOMPOSE_FAILED);
+    } else {
+        EXPECT_EQ(errCode, SUCCESS);
+        EXPECT_NE(picture->GetMainPixel(), nullptr);
+        auto mainPixelMap = picture->GetMainPixel();
+        ASSERT_NE(mainPixelMap, nullptr);
+        ImageInfo info;
+        mainPixelMap->GetImageInfo(info);
+        EXPECT_EQ(info.pixelFormat, PixelFormat::NV21);
+        auto gainmapPixelMap = picture->GetGainmapPixelMap();
+        ASSERT_NE(gainmapPixelMap, nullptr);
+        gainmapPixelMap->GetImageInfo(info);
+        EXPECT_EQ(info.pixelFormat, PixelFormat::NV21);
+    }
+}
+ 
+/**
+ * @tc.name: DecomposeToPictureTest013
+ * @tc.desc: Test DecomposeToPicture with YCRCB_P010 input, default HdrDecomposeOption.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureExtTest, DecomposeToPictureTest013, TestSize.Level1)
+{
+    uint32_t res = 0;
+    SourceOptions sourceOpts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_JPEGHDR_SRC.c_str(),
+                                                                              sourceOpts, res);
+    ASSERT_NE(imageSource, nullptr);
+    DecodingOptionsForPicture opts;
+    opts.desireAuxiliaryPictures.insert(AuxiliaryPictureType::GAINMAP);
+    uint32_t error_code;
+    std::unique_ptr<Picture> pictureObj = imageSource->CreatePicture(opts, error_code);
+    ASSERT_NE(pictureObj, nullptr);
+    std::unique_ptr<PixelMap> tmpPixelmap = pictureObj->GetHdrComposedPixelMap(PixelFormat::YCRCB_P010);
+    ASSERT_NE(tmpPixelmap, nullptr);
+    EXPECT_TRUE(tmpPixelmap->IsHdr());
+    ImageInfo info;
+    tmpPixelmap->GetImageInfo(info);
+    EXPECT_EQ(info.pixelFormat, PixelFormat::YCRCB_P010);
+    std::shared_ptr<PixelMap> pixelmap = std::move(tmpPixelmap);
+    int32_t errCode = SUCCESS;
+    std::unique_ptr<Picture> picture = Picture::DecomposeToPicture(pixelmap, errCode);
+    if (picture == nullptr) {
+        EXPECT_EQ(errCode, ERR_IMAGE_DECOMPOSE_FAILED);
+    } else {
+        EXPECT_EQ(errCode, SUCCESS);
+        EXPECT_NE(picture->GetMainPixel(), nullptr);
+        auto gainmapPixelMap = picture->GetGainmapPixelMap();
+        ASSERT_NE(gainmapPixelMap, nullptr);
+        int32_t expectedWidth = pixelmap->GetWidth() / 2;
+        int32_t expectedHeight = pixelmap->GetHeight() / 2;
+        expectedWidth = expectedWidth > 0 ? expectedWidth : 1;
+        expectedHeight = expectedHeight > 0 ? expectedHeight : 1;
+        EXPECT_EQ(gainmapPixelMap->GetWidth(), expectedWidth);
+        EXPECT_EQ(gainmapPixelMap->GetHeight(), expectedHeight);
+    }
+}
+ 
+/**
+ * @tc.name: DecomposeToPictureTest014
+ * @tc.desc: Test DecomposeToPicture with YCRCB_P010 input, isFullSizeGainmap=true.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureExtTest, DecomposeToPictureTest014, TestSize.Level1)
+{
+    uint32_t res = 0;
+    SourceOptions sourceOpts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_JPEGHDR_SRC.c_str(),
+                                                                              sourceOpts, res);
+    ASSERT_NE(imageSource, nullptr);
+    DecodingOptionsForPicture opts;
+    opts.desireAuxiliaryPictures.insert(AuxiliaryPictureType::GAINMAP);
+    uint32_t error_code;
+    std::unique_ptr<Picture> pictureObj = imageSource->CreatePicture(opts, error_code);
+    ASSERT_NE(pictureObj, nullptr);
+    std::unique_ptr<PixelMap> tmpPixelmap = pictureObj->GetHdrComposedPixelMap(PixelFormat::YCRCB_P010);
+    ASSERT_NE(tmpPixelmap, nullptr);
+    EXPECT_TRUE(tmpPixelmap->IsHdr());
+    std::shared_ptr<PixelMap> pixelmap = std::move(tmpPixelmap);
+ 
+    HdrDecomposeOption params;
+    params.isFullSizeGainmap = true;
+    int32_t errCode = SUCCESS;
+    std::unique_ptr<Picture> picture = Picture::DecomposeToPicture(pixelmap, params, errCode);
+    if (picture == nullptr) {
+        EXPECT_EQ(errCode, ERR_IMAGE_DECOMPOSE_FAILED);
+    } else {
+        EXPECT_EQ(errCode, SUCCESS);
+        EXPECT_NE(picture->GetMainPixel(), nullptr);
+        auto gainmapPixelMap = picture->GetGainmapPixelMap();
+        ASSERT_NE(gainmapPixelMap, nullptr);
+        EXPECT_EQ(gainmapPixelMap->GetWidth(), pixelmap->GetWidth());
+        EXPECT_EQ(gainmapPixelMap->GetHeight(), pixelmap->GetHeight());
+    }
+}
+ 
+/**
+ * @tc.name: DecomposeToPictureTest015
+ * @tc.desc: Test DecomposeToPicture with YCRCB_P010 input, desiredPixelFormat=RGBA_8888.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureExtTest, DecomposeToPictureTest015, TestSize.Level1)
+{
+    uint32_t res = 0;
+    SourceOptions sourceOpts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_JPEGHDR_SRC.c_str(),
+                                                                              sourceOpts, res);
+    ASSERT_NE(imageSource, nullptr);
+    DecodingOptionsForPicture opts;
+    opts.desireAuxiliaryPictures.insert(AuxiliaryPictureType::GAINMAP);
+    uint32_t error_code;
+    std::unique_ptr<Picture> pictureObj = imageSource->CreatePicture(opts, error_code);
+    ASSERT_NE(pictureObj, nullptr);
+    std::unique_ptr<PixelMap> tmpPixelmap = pictureObj->GetHdrComposedPixelMap(PixelFormat::YCRCB_P010);
+    ASSERT_NE(tmpPixelmap, nullptr);
+    EXPECT_TRUE(tmpPixelmap->IsHdr());
+    std::shared_ptr<PixelMap> pixelmap = std::move(tmpPixelmap);
+ 
+    HdrDecomposeOption params;
+    params.desiredPixelFormat = PixelFormat::RGBA_8888;
+    int32_t errCode = SUCCESS;
+    std::unique_ptr<Picture> picture = Picture::DecomposeToPicture(pixelmap, params, errCode);
+    if (picture == nullptr) {
+        EXPECT_EQ(errCode, ERR_IMAGE_DECOMPOSE_FAILED);
+    } else {
+        EXPECT_EQ(errCode, SUCCESS);
+        EXPECT_NE(picture->GetMainPixel(), nullptr);
+        auto mainPixelMap = picture->GetMainPixel();
+        ASSERT_NE(mainPixelMap, nullptr);
+        ImageInfo info;
+        mainPixelMap->GetImageInfo(info);
+        EXPECT_EQ(info.pixelFormat, PixelFormat::RGBA_8888);
+        auto gainmapPixelMap = picture->GetGainmapPixelMap();
+        ASSERT_NE(gainmapPixelMap, nullptr);
+        gainmapPixelMap->GetImageInfo(info);
+        EXPECT_EQ(info.pixelFormat, PixelFormat::RGBA_8888);
+    }
+}
+ 
+/**
+ * @tc.name: DecomposeToPictureTest016
+ * @tc.desc: Test DecomposeToPicture with YCRCB_P010 input, desiredPixelFormat=NV12.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureExtTest, DecomposeToPictureTest016, TestSize.Level1)
+{
+    uint32_t res = 0;
+    SourceOptions sourceOpts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_JPEGHDR_SRC.c_str(),
+                                                                              sourceOpts, res);
+    ASSERT_NE(imageSource, nullptr);
+    DecodingOptionsForPicture opts;
+    opts.desireAuxiliaryPictures.insert(AuxiliaryPictureType::GAINMAP);
+    uint32_t error_code;
+    std::unique_ptr<Picture> pictureObj = imageSource->CreatePicture(opts, error_code);
+    ASSERT_NE(pictureObj, nullptr);
+    std::unique_ptr<PixelMap> tmpPixelmap = pictureObj->GetHdrComposedPixelMap(PixelFormat::YCRCB_P010);
+    ASSERT_NE(tmpPixelmap, nullptr);
+    EXPECT_TRUE(tmpPixelmap->IsHdr());
+    std::shared_ptr<PixelMap> pixelmap = std::move(tmpPixelmap);
+ 
+    HdrDecomposeOption params;
+    params.desiredPixelFormat = PixelFormat::NV12;
+    int32_t errCode = SUCCESS;
+    std::unique_ptr<Picture> picture = Picture::DecomposeToPicture(pixelmap, params, errCode);
+    if (picture == nullptr) {
+        EXPECT_EQ(errCode, ERR_IMAGE_DECOMPOSE_FAILED);
+    } else {
+        EXPECT_EQ(errCode, SUCCESS);
+        EXPECT_NE(picture->GetMainPixel(), nullptr);
+        auto mainPixelMap = picture->GetMainPixel();
+        ASSERT_NE(mainPixelMap, nullptr);
+        ImageInfo info;
+        mainPixelMap->GetImageInfo(info);
+        EXPECT_EQ(info.pixelFormat, PixelFormat::NV12);
+        auto gainmapPixelMap = picture->GetGainmapPixelMap();
+        ASSERT_NE(gainmapPixelMap, nullptr);
+        gainmapPixelMap->GetImageInfo(info);
+        EXPECT_EQ(info.pixelFormat, PixelFormat::NV12);
+    }
+}
+ 
+/**
+ * @tc.name: DecomposeToPictureTest017
+ * @tc.desc: Test DecomposeToPicture with YCRCB_P010 input, desiredPixelFormat=NV21.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureExtTest, DecomposeToPictureTest017, TestSize.Level1)
+{
+    uint32_t res = 0;
+    SourceOptions sourceOpts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_JPEGHDR_SRC.c_str(),
+                                                                              sourceOpts, res);
+    ASSERT_NE(imageSource, nullptr);
+    DecodingOptionsForPicture opts;
+    opts.desireAuxiliaryPictures.insert(AuxiliaryPictureType::GAINMAP);
+    uint32_t error_code;
+    std::unique_ptr<Picture> pictureObj = imageSource->CreatePicture(opts, error_code);
+    ASSERT_NE(pictureObj, nullptr);
+    std::unique_ptr<PixelMap> tmpPixelmap = pictureObj->GetHdrComposedPixelMap(PixelFormat::YCRCB_P010);
+    ASSERT_NE(tmpPixelmap, nullptr);
+    EXPECT_TRUE(tmpPixelmap->IsHdr());
+    std::shared_ptr<PixelMap> pixelmap = std::move(tmpPixelmap);
+ 
+    HdrDecomposeOption params;
+    params.desiredPixelFormat = PixelFormat::NV21;
+    int32_t errCode = SUCCESS;
+    std::unique_ptr<Picture> picture = Picture::DecomposeToPicture(pixelmap, params, errCode);
+    if (picture == nullptr) {
+        EXPECT_EQ(errCode, ERR_IMAGE_DECOMPOSE_FAILED);
+    } else {
+        EXPECT_EQ(errCode, SUCCESS);
+        EXPECT_NE(picture->GetMainPixel(), nullptr);
+        auto mainPixelMap = picture->GetMainPixel();
+        ASSERT_NE(mainPixelMap, nullptr);
+        ImageInfo info;
+        mainPixelMap->GetImageInfo(info);
+        EXPECT_EQ(info.pixelFormat, PixelFormat::NV21);
+        auto gainmapPixelMap = picture->GetGainmapPixelMap();
+        ASSERT_NE(gainmapPixelMap, nullptr);
+        gainmapPixelMap->GetImageInfo(info);
+        EXPECT_EQ(info.pixelFormat, PixelFormat::NV21);
+    }
+}
+ 
+/**
+ * @tc.name: DecomposeToPictureTest018
+ * @tc.desc: Test DecomposeToPicture with BGRA_8888 format pixelmap (8bit).
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureExtTest, DecomposeToPictureTest018, TestSize.Level1)
+{
+    InitializationOptions options;
+    options.size.width = 100;
+    options.size.height = 100;
+    options.pixelFormat = PixelFormat::BGRA_8888;
+    options.alphaType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
+    std::unique_ptr<PixelMap> tmpPixelmap = PixelMap::Create(options);
+    ASSERT_NE(tmpPixelmap, nullptr);
+    std::shared_ptr<PixelMap> pixelmap = std::move(tmpPixelmap);
+    int32_t errCode = SUCCESS;
+    std::unique_ptr<Picture> picture = Picture::DecomposeToPicture(pixelmap, errCode);
+    EXPECT_EQ(picture, nullptr);
+    EXPECT_EQ(errCode, ERR_MEDIA_UNSUPPORT_OPERATION);
+}
+ 
+/**
+ * @tc.name: DecomposeToPictureTest019
+ * @tc.desc: Test DecomposeToPicture with Ashmem allocated pixelmap.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureExtTest, DecomposeToPictureTest019, TestSize.Level1)
+{
+    InitializationOptions options;
+    options.size.width = 100;
+    options.size.height = 100;
+    options.pixelFormat = PixelFormat::RGBA_1010102;
+    options.alphaType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
+    std::unique_ptr<PixelMap> tmpPixelmap = PixelMap::Create(options);
+    ASSERT_NE(tmpPixelmap, nullptr);
+    std::shared_ptr<PixelMap> pixelmap = std::move(tmpPixelmap);
+    EXPECT_EQ(pixelmap->GetAllocatorType(), AllocatorType::SHARE_MEM_ALLOC);
+    int32_t errCode = SUCCESS;
+    std::unique_ptr<Picture> picture = Picture::DecomposeToPicture(pixelmap, errCode);
+    EXPECT_EQ(picture, nullptr);
+    EXPECT_EQ(errCode, ERR_MEDIA_UNSUPPORT_OPERATION);
+}
+
+/**
+ * @tc.name: DecomposeToPictureTest020
+ * @tc.desc: Test DecomposeToPicture with null pixelmap.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureExtTest, DecomposeToPictureTest020, TestSize.Level3)
+{
+    std::shared_ptr<PixelMap> pixelmap = nullptr;
+    int32_t errCode = SUCCESS;
+    std::unique_ptr<Picture> picture = Picture::DecomposeToPicture(pixelmap, errCode);
+    EXPECT_EQ(picture, nullptr);
+    EXPECT_EQ(errCode, ERR_IMAGE_INVALID_PARAM);
+}
+
+/**
+ * @tc.name: DecomposeToPictureTest021
+ * @tc.desc: Test DecomposeToPicture with null pixelmap and explicit HdrDecomposeOption.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureExtTest, DecomposeToPictureTest021, TestSize.Level3)
+{
+    std::shared_ptr<PixelMap> pixelmap = nullptr;
+    HdrDecomposeOption params;
+    params.isFullSizeGainmap = true;
+    int32_t errCode = SUCCESS;
+    std::unique_ptr<Picture> picture = Picture::DecomposeToPicture(pixelmap, params, errCode);
+    EXPECT_EQ(picture, nullptr);
+    EXPECT_EQ(errCode, ERR_IMAGE_INVALID_PARAM);
+}
+
+/**
+ * @tc.name: DecomposeToPictureTest022
+ * @tc.desc: Test DecomposeToPicture with desiredPixelFormat=RGBA_1010102 (illegal).
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureExtTest, DecomposeToPictureTest022, TestSize.Level1)
+{
+    std::shared_ptr<PixelMap> pixelmap = CreatePixelMapInner("image/jpeg", IMAGE_JPEGHDR_SRC,
+        PixelFormat::RGBA_1010102, AllocatorType::DMA_ALLOC);
+    ASSERT_NE(pixelmap, nullptr);
+    HdrDecomposeOption params;
+    params.desiredPixelFormat = PixelFormat::RGBA_1010102;
+    int32_t errCode = SUCCESS;
+    std::unique_ptr<Picture> picture = Picture::DecomposeToPicture(pixelmap, params, errCode);
+    EXPECT_EQ(picture, nullptr);
+    EXPECT_EQ(errCode, ERR_MEDIA_UNSUPPORT_OPERATION);
+}
+
+/**
+ * @tc.name: DecomposeToPictureTest023
+ * @tc.desc: Test DecomposeToPicture with desiredPixelFormat=BGRA_8888 (illegal).
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureExtTest, DecomposeToPictureTest023, TestSize.Level1)
+{
+    std::shared_ptr<PixelMap> pixelmap = CreatePixelMapInner("image/jpeg", IMAGE_JPEGHDR_SRC,
+        PixelFormat::RGBA_1010102, AllocatorType::DMA_ALLOC);
+    ASSERT_NE(pixelmap, nullptr);
+    HdrDecomposeOption params;
+    params.desiredPixelFormat = PixelFormat::BGRA_8888;
+    int32_t errCode = SUCCESS;
+    std::unique_ptr<Picture> picture = Picture::DecomposeToPicture(pixelmap, params, errCode);
+    EXPECT_EQ(picture, nullptr);
+    EXPECT_EQ(errCode, ERR_MEDIA_UNSUPPORT_OPERATION);
+}
+
+/**
+ * @tc.name: DecomposeToPictureTest024
+ * @tc.desc: Test DecomposeToPicture with desiredPixelFormat=RGBA_F16 (illegal).
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureExtTest, DecomposeToPictureTest024, TestSize.Level1)
+{
+    std::shared_ptr<PixelMap> pixelmap = CreatePixelMapInner("image/jpeg", IMAGE_JPEGHDR_SRC,
+        PixelFormat::RGBA_1010102, AllocatorType::DMA_ALLOC);
+    ASSERT_NE(pixelmap, nullptr);
+    HdrDecomposeOption params;
+    params.desiredPixelFormat = PixelFormat::RGBA_F16;
+    int32_t errCode = SUCCESS;
+    std::unique_ptr<Picture> picture = Picture::DecomposeToPicture(pixelmap, params, errCode);
+    EXPECT_EQ(picture, nullptr);
+    EXPECT_EQ(errCode, ERR_MEDIA_UNSUPPORT_OPERATION);
+}
+
+/**
+ * @tc.name: DecomposeToPictureTest025
+ * @tc.desc: Test DecomposeToPicture with RGBA_8888 input (not 10-bit, not HDR).
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureExtTest, DecomposeToPictureTest025, TestSize.Level1)
+{
+    InitializationOptions options;
+    options.size.width = 100;
+    options.size.height = 100;
+    options.pixelFormat = PixelFormat::RGBA_8888;
+    options.alphaType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
+    std::unique_ptr<PixelMap> tmpPixelmap = PixelMap::Create(options);
+    ASSERT_NE(tmpPixelmap, nullptr);
+    std::shared_ptr<PixelMap> pixelmap = std::move(tmpPixelmap);
+    int32_t errCode = SUCCESS;
+    std::unique_ptr<Picture> picture = Picture::DecomposeToPicture(pixelmap, errCode);
+    EXPECT_EQ(picture, nullptr);
+    EXPECT_EQ(errCode, ERR_MEDIA_UNSUPPORT_OPERATION);
+}
+
 } // namespace Multimedia
 } // namespace OHOS

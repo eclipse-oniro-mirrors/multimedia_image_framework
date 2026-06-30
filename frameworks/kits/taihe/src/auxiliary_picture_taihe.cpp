@@ -411,7 +411,7 @@ static void ParseAuxiliaryPictureOptions(const AuxiliaryPictureInfo &info,
     opts.useDMA = true;
     opts.srcPixelFormat = static_cast<OHOS::Media::PixelFormat>(info.pixelFormat.get_value());
     opts.pixelFormat = opts.srcPixelFormat;
-    opts.srcRowStride = static_cast<uint32_t>(info.rowStride);
+    opts.srcRowStride = static_cast<int32_t>(info.rowStride);
 
     opts.allocatorType = OHOS::Media::AllocatorType::DMA_ALLOC;
     if (allocatorType.has_value() && allocatorType.value().get_value() ==
@@ -467,11 +467,16 @@ AuxiliaryPicture CreateAuxiliaryPictureUsingAllocator(const AuxiliaryPictureInfo
     }
     int dstLenth = auxiliaryPictureInfo.size.width * auxiliaryPictureInfo.size.height *
         OHOS::Media::ImageUtils::GetPixelBytes(opts.pixelFormat);
-    if (pixels.has_value() && pixels.value().size() != 0 && dstLenth > pixels.value().size()) {
+    if (pixels.has_value() && pixels.value().size() != 0 && static_cast<size_t>(dstLenth) > pixels.value().size()) {
         ImageTaiheUtils::ThrowExceptionError(IMAGE_INVALID_PARAMETER, "Parameter error.");
         return make_holder<AuxiliaryPictureImpl, AuxiliaryPicture>();
     }
 
+    if (auxiliaryPictureInfo.rowStride <= auxiliaryPictureInfo.size.width *
+        OHOS::Media::ImageUtils::GetPixelBytes(opts.pixelFormat)) {
+        opts.srcRowStride = auxiliaryPictureInfo.size.width *
+            OHOS::Media::ImageUtils::GetPixelBytes(opts.pixelFormat);
+    }
     auto pixelMapPtr = CreatePixelMapExec(opts, pixels);
     if (pixelMapPtr == nullptr) {
         ImageTaiheUtils::ThrowExceptionError(IMAGE_INVALID_PARAMETER, "Parameter error.");

@@ -33,6 +33,14 @@ namespace OHOS {
 
 namespace OHOS {
 namespace Media {
+struct GainmapParams {
+    bool isFullSizeGainmap = false;
+};
+
+struct HdrDecomposeOption {
+    bool isFullSizeGainmap = false;
+    PixelFormat desiredPixelFormat = PixelFormat::RGBA_8888;
+};
 
 class ExifMetadata;
 class ImageMetadata;
@@ -45,10 +53,16 @@ public:
     NATIVEEXPORT static std::unique_ptr<Picture> Create(sptr<SurfaceBuffer> &surfaceBuffer);
     NATIVEEXPORT static std::unique_ptr<Picture> CreatePictureByHdrAndSdrPixelMap(
         std::shared_ptr<PixelMap> &hdrPixelMap, std::shared_ptr<PixelMap> &sdrPixelMap);
+    NATIVEEXPORT static std::unique_ptr<Picture> CreatePictureByHdrAndSdrPixelMap(
+        std::shared_ptr<PixelMap> &hdrPixelMap, std::shared_ptr<PixelMap> &sdrPixelMap, GainmapParams params);
     NATIVEEXPORT static std::unique_ptr<Picture> DeepCopy(std::shared_ptr<Picture> srcPicture,
         std::vector<AuxiliaryPictureType> &srcAuxiliaryPictures, std::vector<MetadataType> &srcMetadatas,
         std::vector<AuxiliaryPictureType> &dstAuxiliaryPictures, std::vector<MetadataType> &dstMetadatas,
         AuxiliaryPictureType mainPixelMapKey);
+    NATIVEEXPORT static std::unique_ptr<Picture> DecomposeToPicture(
+        std::shared_ptr<PixelMap> &hdrPixelMap, int32_t& errCode);
+    NATIVEEXPORT static std::unique_ptr<Picture> DecomposeToPicture(
+        std::shared_ptr<PixelMap> &hdrPixelMap, HdrDecomposeOption params, int32_t& errCode);
     NATIVEEXPORT static std::unique_ptr<PixelMap> SurfaceBuffer2PixelMap(sptr<SurfaceBuffer> &surfaceBuffer);
     NATIVEEXPORT std::shared_ptr<PixelMap> GetMainPixel();
     NATIVEEXPORT void SetMainPixel(std::shared_ptr<PixelMap> PixelMap);
@@ -87,6 +101,7 @@ public:
     NATIVEEXPORT uint32_t SetBlobMetadataByType(const std::vector<uint8_t>& metadata, MetadataType type);
     NATIVEEXPORT std::vector<MetadataType> GetMetadataTypes();
     NATIVEEXPORT static bool IsValidPictureMetadataType(MetadataType metadataType);
+    NATIVEEXPORT bool HdrComposeToMainPixel();
 
 private:
     std::shared_ptr<PixelMap> mainPixelMap_;

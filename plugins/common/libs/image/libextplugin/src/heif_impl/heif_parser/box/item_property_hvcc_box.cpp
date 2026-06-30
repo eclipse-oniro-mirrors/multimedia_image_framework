@@ -48,7 +48,7 @@ static uint32_t HEIF_BASE_DELTA_FlAG = 1;
 static const uint8_t MAX_NAL_ARRAY_NUM = 32;
 static const uint16_t MAX_NAL_UNIT_NUM_PER_ARRAY = 1024;
 static const uint32_t MAX_NUM_SHORT_TERM_REF_PIC_SETS = 64;
-static const uint8_t MAX_LEADING_ZEROS = 32;
+static const uint8_t MAX_LEADING_ZEROS = 31;
 
 namespace OHOS {
 namespace ImagePlugin {
@@ -125,6 +125,7 @@ heif_error HeifHvccBox::ParseContent(HeifStreamReader& reader)
 
 bool HeifHvccBox::GetHeaders(std::vector<uint8_t>* outData) const
 {
+    CHECK_ERROR_RETURN_RET(!outData, false);
     for (const auto& array : nalArrays_) {
         for (const auto& unit : array.nalUnits) {
             outData->push_back((unit.size() >> THREE_BYTES_SHIFT) & 0xFF);

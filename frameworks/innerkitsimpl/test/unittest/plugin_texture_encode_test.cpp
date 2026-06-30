@@ -12,10 +12,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include <chrono>
+#include <cstdio>
 #include <cstdlib>
+#include <fstream>
 #include <gtest/gtest.h>
 #include <securec.h>
 #include <sys/time.h>
+#include <thread>
 
 #define private public
 #define protected public
@@ -41,6 +45,8 @@ using namespace AstcEncBasedCl;
 constexpr uint8_t RGBA_BYTES_PIXEL_LOG2 = 2;
 constexpr int32_t RGBA_MAX_WIDTH = 8192;
 constexpr int32_t RGBA_MAX_HEIGHT = 8192;
+constexpr int32_t ASTC_CL_WARMUP_RETRY_TIMES = 100;
+constexpr int32_t ASTC_CL_WARMUP_RETRY_INTERVAL_MS = 1;
 #endif
 
 constexpr int32_t RGBA_TEST0001_WIDTH = 256;
@@ -726,6 +732,87 @@ HWTEST_F(PluginTextureEncodeTest, AstcEncBasedOnCl003, TestSize.Level3)
 
     GTEST_LOG_(INFO) << "PluginTextureEncodeTest: AstcEncBasedOnCl003 end";
 }
+
+static void RemoveAstcClTestFile(const std::string &path)
+{
+    (void)std::remove(path.c_str());
+}
+
+static bool CreateAstcClTestFile(const std::string &path)
+{
+    std::ofstream outFile(path, std::ios::binary | std::ios::trunc);
+    if (!outFile.is_open()) {
+        return false;
+    }
+    outFile.put('\0');
+    return outFile.good();
+}
+
+/**
+ * @tc.name: AstcEncBasedOnCl004
+ * @tc.desc: Test ASTC CL bin path selection.
+ * @tc.type: branch coverage
+ */
+HWTEST_F(PluginTextureEncodeTest, AstcEncBasedOnCl004, TestSize.Level3)
+{
+    const std::string prebuiltPath = "/data/local/tmp/astc_cl_prebuilt_for_unit_test.bin";
+    const std::string runtimePath = "/data/local/tmp/astc_cl_runtime_for_unit_test.bin";
+    RemoveAstcClTestFile(prebuiltPath);
+    RemoveAstcClTestFile(runtimePath);
+
+    std::string clBinPath;
+    EXPECT_FALSE(AstcCodec::ResolveAstcClBinPath(prebuiltPath, runtimePath, clBinPath));
+    EXPECT_EQ(runtimePath, clBinPath);
+
+    ASSERT_TRUE(CreateAstcClTestFile(runtimePath));
+    EXPECT_TRUE(AstcCodec::ResolveAstcClBinPath(prebuiltPath, runtimePath, clBinPath));
+    EXPECT_EQ(runtimePath, clBinPath);
+
+    ASSERT_TRUE(CreateAstcClTestFile(prebuiltPath));
+    EXPECT_TRUE(AstcCodec::ResolveAstcClBinPath(prebuiltPath, runtimePath, clBinPath));
+    EXPECT_EQ(prebuiltPath, clBinPath);
+
+    RemoveAstcClTestFile(prebuiltPath);
+    RemoveAstcClTestFile(runtimePath);
+}
+
+/**
+ * @tc.name: AstcEncBasedOnCl005
+ * @tc.desc: Test ASTC CL warmup state and detached thread finish.
+ * @tc.type: branch coverage
+ */
+HWTEST_F(PluginTextureEncodeTest, AstcEncBasedOnCl005, TestSize.Level3)
+{
+    AstcCodec::FinishAstcClWarmup();
+    EXPECT_TRUE(AstcCodec::TryStartAstcClWarmup());
+    EXPECT_FALSE(AstcCodec::TryStartAstcClWarmup());
+    EXPECT_FALSE(AstcCodec::TriggerAstcClBinWarmup("/"));
+    AstcCodec::FinishAstcClWarmup();
+
+    EXPECT_TRUE(AstcCodec::TriggerAstcClBinWarmup("/"));
+    bool isWarmupFinished = false;
+    for (int32_t retry = 0; retry < ASTC_CL_WARMUP_RETRY_TIMES; retry++) {
+        if (AstcCodec::TryStartAstcClWarmup()) {
+            AstcCodec::FinishAstcClWarmup();
+            isWarmupFinished = true;
+            break;
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(ASTC_CL_WARMUP_RETRY_INTERVAL_MS));
+    }
+    EXPECT_TRUE(isWarmupFinished);
+
+    AstcCodec::FinishAstcClWarmup();
+    AstcCodec::DoAstcClBinWarmup("/");
+    EXPECT_TRUE(AstcCodec::TryStartAstcClWarmup());
+    AstcCodec::FinishAstcClWarmup();
+
+    const std::string warmupPath = "/data/local/tmp/astc_cl_warmup_for_unit_test.bin";
+    RemoveAstcClTestFile(warmupPath);
+    AstcCodec::DoAstcClBinWarmup(warmupPath);
+    EXPECT_TRUE(AstcCodec::TryStartAstcClWarmup());
+    AstcCodec::FinishAstcClWarmup();
+    RemoveAstcClTestFile(warmupPath);
+}
 #endif
 
 static bool FillEncodeOptions(TextureEncodeOptions &param,
@@ -1155,7 +1242,7 @@ TestEncRet EncodeMutiFramesCL(AstcEncTestPara &testPara, const string shaderPath
 #ifdef SUT_ENCODE_ENABLE
         testPara.param.sutProfile = testPara.sutEncEnable ? SutProfile::EXTREME_SPEED : SutProfile::SKIP_SUT;
         testPara.param.hardwareFlag = true;
-        if (!AstcCodec::TryTextureSuperCompress(testPara.param, astcBuf)) {
+        if (!AstcCodec::TryTextureSuperCompress(testPara.param, astcBuf, testPara.param.astcBytes)) {
             GTEST_LOG_(ERROR) << "TryTextureSuperCompress failed";
             FreeMem(pixelMap, astcBuf);
             return TestEncRet::ERR_ENC_FAILED;
@@ -1209,14 +1296,14 @@ HWTEST_F(PluginTextureEncodeTest, SutEncoderBoundCheck_012, TestSize.Level3)
 {
     // test condition: width 64, height 64, block 4x4 , frames 1, isBasedOnGpu: false
     AstcEncTestPara testPara = CreateAstcEncTestPara(64, 64, 4, 1, false); // 64x64 block 4x4 , frames 1
-    ASSERT_EQ(AstcCodec::TryTextureSuperCompress(testPara.param, nullptr), true);
+    ASSERT_EQ(AstcCodec::TryTextureSuperCompress(testPara.param, nullptr, 0), true);
     uint8_t astcBuf;
     testPara.param.astcBytes = 0;
     testPara.param.sutProfile = SutProfile::EXTREME_SPEED;
     testPara.param.hardwareFlag = true;
     testPara.param.blockX_ = ASTC_BLOCK_WIDTH;
     testPara.param.blockY_ = ASTC_BLOCK_HEIGHT;
-    ASSERT_EQ(AstcCodec::TryTextureSuperCompress(testPara.param, &astcBuf), false);
+    ASSERT_EQ(AstcCodec::TryTextureSuperCompress(testPara.param, &astcBuf, sizeof(astcBuf)), false);
 }
 #endif
 
@@ -1341,7 +1428,7 @@ HWTEST_F(PluginTextureEncodeTest, TryEncSUTTest001, TestSize.Level3)
     TextureEncodeOptions param;
     uint8_t *astcBuffer = nullptr;
     AstcExtendInfo extendInfo;
-    bool ret = codec.TryEncSUT(param, astcBuffer, extendInfo);
+    bool ret = codec.TryEncSUT(param, astcBuffer, 0, extendInfo);
     EXPECT_TRUE(ret);
 }
 

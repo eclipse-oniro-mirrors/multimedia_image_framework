@@ -72,9 +72,7 @@ heif_error Cr3Box::MakeCr3FromReader(HeifStreamReader &reader,
         return reader.GetError();
     }
     std::shared_ptr<Cr3Box> box = Cr3Box::MakeCr3Box(headerBox.GetBoxType());
-    if (box == nullptr) {
-        return heif_error_no_data;
-    }
+    CHECK_ERROR_RETURN_RET(!box, heif_error_no_data);
     box->SetHeaderInfo(headerBox);
     if (box->GetBoxSize() < box->GetHeaderSize()) {
         return heif_error_invalid_box_size;
@@ -99,9 +97,7 @@ heif_error Cr3Box::MakeCr3FromReader(HeifStreamReader &reader,
 heif_error Cr3Box::ReadData(const std::shared_ptr<HeifInputStream> &stream,
     uint64_t start, uint64_t length, std::vector<uint8_t> &outData) const
 {
-    if (stream == nullptr) {
-        return heif_error_no_data;
-    }
+    CHECK_ERROR_RETURN_RET(!stream, heif_error_no_data);
     uint64_t boxStartPos = static_cast<uint64_t>(startPos_);
     uint64_t tmpValue;
     if (__builtin_add_overflow(start, length, &tmpValue)) {

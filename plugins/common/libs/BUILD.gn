@@ -29,8 +29,6 @@ group("multimediaplugin") {
       "image/librawplugin:rawpluginmetadata",
       "image/libsvgplugin:svgplugin",
       "image/libsvgplugin:svgpluginmetadata",
-      "//foundation/multimedia/image_framework/adapter/frameworks/libbmpplugin:bmpplugin",
-      "//foundation/multimedia/image_framework/adapter/frameworks/libbmpplugin:bmppluginmetadata",
       "//foundation/multimedia/image_framework/adapter/frameworks/libwbmpplugin:wbmpplugin",
       "//foundation/multimedia/image_framework/adapter/frameworks/libwbmpplugin:wbmppluginmetadata",
     ]
@@ -48,10 +46,6 @@ group("multimediaplugin") {
       "image/libgifplugin:gifplugin",
       "image/libgifplugin:gifpluginmetadata",
 
-      #      "image/libheifplugin:heifplugin",
-      #      "image/libheifplugin:heifpluginmetadata",
-      # "image/libbmpplugin:bmpplugin",
-      # "image/libbmpplugin:bmppluginmetadata",
       "image/libextplugin:extplugin",
       "image/libextplugin:extpluginmetadata",
       "image/libjpegplugin:jpegplugin",
@@ -77,12 +71,6 @@ group("multimediaplugin") {
     }
     if (DUAL_ADAPTER) {
       deps += [
-        #        "//foundation/multimedia/image_framework/adapter/frameworks/libbmpplugin:bmpplugin",
-        #        "//foundation/multimedia/image_framework/adapter/frameworks/libbmpplugin:bmppluginmetadata",
-        #        "//foundation/multimedia/image_framework/adapter/frameworks/librawplugin:rawplugin",
-        #        "//foundation/multimedia/image_framework/adapter/frameworks/librawplugin:rawpluginmetadata",
-        #        "//foundation/multimedia/image_framework/adapter/frameworks/libwbmpplugin:wbmpplugin",
-        #        "//foundation/multimedia/image_framework/adapter/frameworks/libwbmpplugin:wbmppluginmetadata",
       ]
     }
   }

@@ -126,6 +126,10 @@ ImagePlugin::OutputStreamType FilePackerStream::GetType()
 
 int FilePackerStream::GetFd()
 {
+    if (file_ == nullptr) {
+        IMAGE_LOGE("[FilePackerStream] file_ is nullptr");
+        return -1;
+    }
     return fileno(file_);
 }
 

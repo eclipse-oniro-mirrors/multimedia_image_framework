@@ -264,14 +264,7 @@ std::unique_ptr<AbsMemory> PixelYuv::CreateMemory(PixelFormat pixelFormat, std::
             return m;
         }
         auto sb = reinterpret_cast<SurfaceBuffer*>(m->extend.data);
-        OH_NativeBuffer_Planes *planes = nullptr;
-        GSError retVal = sb->GetPlanesInfo(reinterpret_cast<void**>(&planes));
-        if (retVal != OHOS::GSERROR_OK || planes == nullptr) {
-            IMAGE_LOGE("CreateMemory Get planesInfo failed, retVal:%{public}d", retVal);
-        } else if (planes->planeCount >= NUM_2) {
-            int32_t pixelFmt = sb->GetFormat();
-            ImageUtils::GetYUVStrideInfo(pixelFmt, planes, dstStrides);
-        }
+        ImageUtils::GetYUVStrideInfo(sb, dstStrides);
         sptr<SurfaceBuffer> sourceSurfaceBuffer(reinterpret_cast<SurfaceBuffer*>(GetFd()));
         sptr<SurfaceBuffer> dstSurfaceBuffer(reinterpret_cast<SurfaceBuffer*>(sb));
         VpeUtils::CopySurfaceBufferInfo(sourceSurfaceBuffer, dstSurfaceBuffer);
@@ -431,6 +424,19 @@ void PixelYuv::scale(float xAxis, float yAxis, const AntiAliasingOption &option)
     }
 }
 
+static void SetDstYuvDataInfo(Size size, YUVStrideInfo dstStrides, YUVDataInfo &dstYuvDataInfo)
+{
+    dstYuvDataInfo.imageSize = {size.width, size.height};
+    dstYuvDataInfo.yWidth = static_cast<uint32_t>(size.width);
+    dstYuvDataInfo.yHeight = static_cast<uint32_t>(size.height);
+    dstYuvDataInfo.uvWidth = static_cast<uint32_t>((size.width + 1) / NUM_2);
+    dstYuvDataInfo.uvHeight = static_cast<uint32_t>(GetUVHeight(size.height));
+    dstYuvDataInfo.yStride = dstStrides.yStride;
+    dstYuvDataInfo.uvStride = dstStrides.uvStride;
+    dstYuvDataInfo.yOffset = dstStrides.yOffset;
+    dstYuvDataInfo.uvOffset = dstStrides.uvOffset;
+}
+
 uint32_t PixelYuv::Scale(float xAxis, float yAxis, AntiAliasingOption option)
 {
     if (!IsYuvFormat()) {
@@ -460,8 +466,10 @@ uint32_t PixelYuv::Scale(float xAxis, float yAxis, AntiAliasingOption option)
     GetImageYUVInfo(yuvDataInfo);
     YuvImageInfo srcInfo = {PixelYuvUtils::ConvertFormat(imageInfo.pixelFormat),
         imageInfo.size.width, imageInfo.size.height, imageInfo_.pixelFormat, yuvDataInfo};
+    YUVDataInfo dstYuvDataInfo;
+    SetDstYuvDataInfo({dstW, dstH}, dstStrides, dstYuvDataInfo);
     YuvImageInfo dstInfo = {PixelYuvUtils::ConvertFormat(imageInfo.pixelFormat),
-        dstW, dstH, imageInfo_.pixelFormat, yuvDataInfo};
+        dstW, dstH, imageInfo_.pixelFormat, dstYuvDataInfo};
     if (PixelYuvUtils::YuvScale(data_, srcInfo, yuvData, dstInfo, PixelYuvUtils::YuvConvertOption(option)) != SUCCESS) {
         IMAGE_LOGE("ScaleYuv failed");
         dstMemory->Release();
@@ -508,8 +516,10 @@ uint32_t PixelYuv::Scale(int32_t dstW, int32_t dstH, AntiAliasingOption option)
     GetImageYUVInfo(yuvDataInfo);
     YuvImageInfo srcInfo = {PixelYuvUtils::ConvertFormat(imageInfo.pixelFormat),
         imageInfo.size.width, imageInfo.size.height, imageInfo_.pixelFormat, yuvDataInfo};
+    YUVDataInfo dstYuvDataInfo;
+    SetDstYuvDataInfo({dstW, dstH}, dstStrides, dstYuvDataInfo);
     YuvImageInfo dstInfo = {PixelYuvUtils::ConvertFormat(imageInfo.pixelFormat),
-        dstW, dstH, imageInfo_.pixelFormat, yuvDataInfo};
+        dstW, dstH, imageInfo_.pixelFormat, dstYuvDataInfo};
     if (PixelYuvUtils::YuvScale(data_, srcInfo, yuvData, dstInfo, PixelYuvUtils::YuvConvertOption(option)) != SUCCESS) {
         IMAGE_LOGE("ScaleYuv failed");
         dstMemory->Release();
@@ -1192,46 +1202,45 @@ static bool CopyYuvPlanes(PixelMap &source, PixelMap &dstPixelMap)
     return true;
 }
 
-std::unique_ptr<PixelMap> PixelYuv::CloneYuv(PixelMap &source, int32_t &errorCode)
+std::unique_ptr<PixelMap> PixelYuv::clone(int32_t &errorCode)
 {
-    ImageInfo imageInfo;
-    source.GetImageInfo(imageInfo);
-    if (!ImageUtils::IsYuvFormat(imageInfo.pixelFormat)) {
+    if (!IsYuvFormat()) {
         errorCode = ERR_IMAGE_READ_PIXELMAP_FAILED;
         return nullptr;
     }
-    if (imageInfo.size.width <= 0 || imageInfo.size.height <= 0) {
+    if (imageInfo_.size.width <= 0 || imageInfo_.size.height <= 0) {
         errorCode = ERR_IMAGE_INVALID_PARAMETER;
         return nullptr;
     }
 
     InitializationOptions opts;
-    opts.srcPixelFormat = imageInfo.pixelFormat;
-    opts.pixelFormat = imageInfo.pixelFormat;
-    opts.alphaType = imageInfo.alphaType;
-    opts.size = imageInfo.size;
-    opts.editable = source.IsEditable();
-    opts.useDMA = (source.GetAllocatorType() == AllocatorType::DMA_ALLOC);
+    opts.srcPixelFormat = imageInfo_.pixelFormat;
+    opts.pixelFormat = imageInfo_.pixelFormat;
+    opts.alphaType = imageInfo_.alphaType;
+    opts.size = imageInfo_.size;
+    opts.srcRowStride = rowStride_;
+    opts.editable = IsEditable();
+    opts.useDMA = (GetAllocatorType() == AllocatorType::DMA_ALLOC);
     auto dstPixelMap = PixelMap::Create(opts);
     if (dstPixelMap == nullptr) {
         errorCode = ERR_IMAGE_INVALID_PARAMETER;
         return nullptr;
     }
 
-    if (!CopyYuvPlanes(source, *dstPixelMap.get())) {
+    if (!CopyYuvPlanes(*this, *dstPixelMap.get())) {
         errorCode = ERR_IMAGE_MALLOC_ABNORMAL;
         return nullptr;
     }
 
-    dstPixelMap->SetTransformered(source.IsTransformered());
+    dstPixelMap->SetTransformered(IsTransformered());
     TransformData transformData;
-    source.GetTransformData(transformData);
+    GetTransformData(transformData);
     dstPixelMap->SetTransformData(transformData);
-    dstPixelMap->SetHdrType(source.GetHdrType());
-    dstPixelMap->SetHdrMetadata(source.GetHdrMetadata());
+    dstPixelMap->SetHdrType(GetHdrType());
+    dstPixelMap->SetHdrMetadata(GetHdrMetadata());
 
 #ifdef IMAGE_COLORSPACE_FLAG
-    OHOS::ColorManager::ColorSpace colorspace = source.InnerGetGrColorSpace();
+    OHOS::ColorManager::ColorSpace colorspace = InnerGetGrColorSpace();
     dstPixelMap->InnerSetColorSpace(colorspace);
 #endif
 
@@ -1250,15 +1259,8 @@ static void GetYuvDataInfo(PixelMap &source, YUVDataInfo &yuvDataInfo)
     SurfaceBuffer *sb = reinterpret_cast<SurfaceBuffer *>(source.GetFd());
     CHECK_ERROR_RETURN_LOG(sb == nullptr, "GetYuvDataInfo source pixelMap etFd failed");
 
-    OH_NativeBuffer_Planes *planes = nullptr;
-    GSError retVal = sb->GetPlanesInfo(reinterpret_cast<void**>(&planes));
-
-    CHECK_ERROR_RETURN_LOG(retVal != OHOS::GSERROR_OK || planes == nullptr || planes->planeCount < NUM_2,
-        "GetYuvDataInfo GetPlanesInfo failed, retVal:%{public}d", retVal);
-
-    int32_t pixelFmt = sb->GetFormat();
     YUVStrideInfo strideInfo;
-    ImageUtils::GetYUVStrideInfo(pixelFmt, planes, strideInfo);
+    ImageUtils::GetYUVStrideInfo(sb, strideInfo);
     if (strideInfo.yStride > 0 && strideInfo.uvStride > 0) {
         yuvDataInfo.yStride = strideInfo.yStride;
         yuvDataInfo.uvStride = strideInfo.uvStride;
@@ -1268,19 +1270,6 @@ static void GetYuvDataInfo(PixelMap &source, YUVDataInfo &yuvDataInfo)
             yuvDataInfo.yStride, yuvDataInfo.uvStride);
     }
 #endif
-}
-
-static void SetDstYuvDataInfo(Size size, YUVStrideInfo dstStrides, YUVDataInfo &dstYuvDataInfo)
-{
-    dstYuvDataInfo.imageSize = {size.width, size.height};
-    dstYuvDataInfo.yWidth = static_cast<uint32_t>(size.width);
-    dstYuvDataInfo.yHeight = static_cast<uint32_t>(size.height);
-    dstYuvDataInfo.uvWidth = static_cast<uint32_t>((size.width + 1) / NUM_2);
-    dstYuvDataInfo.uvHeight = static_cast<uint32_t>(GetUVHeight(size.height));
-    dstYuvDataInfo.yStride = dstStrides.yStride;
-    dstYuvDataInfo.uvStride = dstStrides.uvStride;
-    dstYuvDataInfo.yOffset = dstStrides.yOffset;
-    dstYuvDataInfo.uvOffset = dstStrides.uvOffset;
 }
 
 std::unique_ptr<PixelMap> CreateDstPixelMap(PixelMap &source, Size targetSize, std::unique_ptr<AbsMemory> dstMemory,
@@ -1343,7 +1332,7 @@ std::unique_ptr<PixelMap> PixelYuv::CreateThumbnailPixelMap(PixelMap &source, in
     errorCode = static_cast<int32_t>(err);
     CHECK_ERROR_RETURN_RET(errorCode != SUCCESS, nullptr);
     if (ImageUtils::FloatEqual(scale, 1.0f)) {
-        return CloneYuv(source, errorCode);
+        return source.clone(errorCode);
     }
     targetSize.width = targetSize.width - (targetSize.width % NUM_2);
     targetSize.height = targetSize.height - (targetSize.height % NUM_2);

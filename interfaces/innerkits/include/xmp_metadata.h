@@ -40,7 +40,6 @@ public:
     uint32_t SetValue(const std::string &path, const XMPTagType &tagType, const std::string &value);
     uint32_t GetTag(const std::string &path, XMPTag &tag);
     uint32_t RemoveTag(const std::string &path);
-    uint32_t RemoveAllTags();
 
     // Callback type for EnumerateTags
     // Returns true to continue enumeration, false to stop

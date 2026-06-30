@@ -69,13 +69,18 @@ ohos_unittest("pixelmaptest") {
     "resource_management:librawfile",
     "graphic_2d:GLESv3",
     "napi:ace_napi",
+    "egl:libEGL",
+    "opengles:libGLES",
   ]
 
   defines = []
   if (memory_utils_purgeable_ashmem_enable && defined(global_parts_info) &&
       defined(global_parts_info.resourceschedule_memmgr_override)) {
     defines += [ "IMAGE_PURGEABLE_PIXELMAP" ]
-    external_deps += [ "memmgr_override:libpurgeablemem_plugin" ]
+    external_deps += [ 
+      "memmgr:libpurgeablemem_plugin",
+      "memory_utils:libpurgeablemem"
+    ]
   }
 
   if (defined(global_parts_info) &&
@@ -237,14 +242,17 @@ ohos_unittest("xmpmetadatatest") {
   ]
 
   sources = [
-    "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/xmp_metadata.cpp",
+    "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/xmp/xmp_buffer_io.cpp",
+    "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/xmp/xmp_fd_io.cpp",
+    "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/xmp/xmp_metadata.cpp",
     "${image_subsystem}/frameworks/innerkitsimpl/test/unittest/metadata_test/xmp_metadata_test.cpp",
     "${image_subsystem}/frameworks/innerkitsimpl/test/unittest/xmp_helper_test.cpp",
+    "${image_subsystem}/frameworks/innerkitsimpl/test/unittest/xmp_io_test.cpp",
   ]
 
   deps = [
-    "${image_subsystem}/frameworks/innerkitsimpl/utils:image_utils",
     "${image_subsystem}/interfaces/innerkits:image_native",
+    "${image_subsystem}/frameworks/innerkitsimpl/accessor:image_accessor",
     "${image_subsystem}/interfaces/kits/js/common:image_error_convert",
   ]
 
@@ -332,6 +340,7 @@ ohos_unittest("imagesourcetest") {
   ]
   cflags = [
     "-Dprivate=public",
+    "-DIMAGE_COLORSPACE_FLAG",
   ]
   sources = [
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_packer_test.cpp",
@@ -345,7 +354,7 @@ ohos_unittest("imagesourcetest") {
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_source_util.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_source_xmp_test.cpp",
 
-    # "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_source_webp_test.cpp",
+    "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_source_webp_test.cpp",
     "$image_subsystem/plugins/common/libs/image/libextplugin/src/ext_stream.cpp",
     "$image_subsystem/plugins/common/libs/image/libextplugin/src/hdr/hdr_helper.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest/hdr_helper_test.cpp",
@@ -361,7 +370,6 @@ ohos_unittest("imagesourcetest") {
 
   if (DUAL_ADAPTER) {
     sources += [
-      "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_source_bmp_test.cpp",
       "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_source_raw_test.cpp",
       "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_source_wbmp_test.cpp",
     ]
@@ -393,7 +401,10 @@ ohos_unittest("imagesourcetest") {
   if (memory_utils_purgeable_ashmem_enable && defined(global_parts_info) &&
       defined(global_parts_info.resourceschedule_memmgr_override)) {
     defines = [ "IMAGE_PURGEABLE_PIXELMAP" ]
-    external_deps += [ "memmgr_override:libpurgeablemem_plugin" ]
+    external_deps += [ 
+      "memmgr:libpurgeablemem_plugin",
+      "memory_utils:libpurgeablemem"
+    ]
   }
 
   if (defined(global_parts_info) &&
@@ -795,6 +806,8 @@ ohos_unittest("convertertest") {
     "hilog:libhilog",
     "graphic_2d:GLESv3",
     "graphic_surface:surface",
+    "egl:libEGL",
+    "opengles:libGLES",
   ]
 }
 
@@ -1103,38 +1116,6 @@ ohos_unittest("rawdecodertest") {
     "hilog:libhilog",
     "skia:piexm133",
     "ipc:ipc_single",
-  ]
-}
-
-ohos_unittest("bmpplugintest") {
-  module_out_path = module_output_path
-
-  include_dirs = [
-    "$image_subsystem/frameworks/innerkitsimpl/test/unittest/mock",
-    "//foundation/multimedia/image_framework/plugins/manager/test/unittest/common/plugin_example/interface/vision",
-    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/include",
-    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/pixelconverter/include",
-    "//foundation/multimedia/image_framework/plugins/manager/include",
-    "//foundation/multimedia/image_framework/plugins/manager/include/image",
-    "//foundation/multimedia/image_framework/plugins/manager/include/pluginbase",
-    "//foundation/multimedia/image_framework/plugins/common/libs/image/libbmpplugin/include",
-    "//foundation/multimedia/image_framework/interfaces/innerkits/include",
-    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/stream/include",
-    "//foundation/multimedia/image_framework/adapter/frameworks/bitmapconverter/native/include",
-  ]
-  sources = [ "$image_subsystem/frameworks/innerkitsimpl/test/unittest/plugin_test/bmp_decoder_test.cpp" ]
-
-  deps = [
-    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/pixelconverter:pixelconvertadapter",
-    "//foundation/multimedia/image_framework/interfaces/innerkits:image_native",
-    "//foundation/multimedia/image_framework/plugins/common/libs/image/libbmpplugin:bmpplugin",
-    "//foundation/multimedia/image_framework/plugins/manager:pluginmanager",
-  ]
-
-  external_deps = [
-    "c_utils:utils",
-    "googletest:gmock_main",
-    "googletest:gtest_main",
   ]
 }
 
@@ -1520,7 +1501,10 @@ ohos_unittest("pixelastctest") {
   if (memory_utils_purgeable_ashmem_enable && defined(global_parts_info) &&
       defined(global_parts_info.resourceschedule_memmgr_override)) {
     defines = [ "IMAGE_PURGEABLE_PIXELMAP" ]
-    external_deps += [ "memmgr_override:libpurgeablemem_plugin" ]
+    external_deps += [ 
+      "memmgr:libpurgeablemem_plugin",
+      "memory_utils:libpurgeablemem"
+    ]
   }
 
   resource_config_file = "$image_subsystem/test/resource/image/ohos_test.xml"
@@ -1602,6 +1586,8 @@ ohos_unittest("eglimagetest") {
     "graphic_2d:color_manager",
     "graphic_surface:surface",
     "hilog:libhilog",
+    "egl:libEGL",
+    "opengles:libGLES",
   ]
 }
 
@@ -1647,6 +1633,8 @@ ohos_unittest("eglimagetest2") {
     "hitrace:hitrace_meter",
     "ipc:ipc_single",
     "skia:skia_canvaskit",
+    "egl:libEGL",
+    "opengles:libGLES",
   ]
 }
 
@@ -1795,6 +1783,7 @@ ohos_unittest("imageaccessortest") {
 
   include_dirs = [
     "${image_subsystem}/frameworks/innerkitsimpl/accessor/include",
+    "${image_subsystem}/frameworks/innerkitsimpl/accessor/include/xmp",
     "${image_subsystem}/interfaces/innerkits/include",
   ]
 
@@ -1832,6 +1821,13 @@ ohos_unittest("imageaccessortest") {
   ]
   if (enable_libexif) {
     external_deps += [ "libexif:libexif" ]
+  }
+  if (has_libtiff) {
+    defines += [ "SUPPORT_LIBTIFF" ]
+    sources += [
+      "${image_subsystem}/frameworks/innerkitsimpl/test/unittest/tiff_exif_metadata_test.cpp",
+    ]
+    external_deps += [ "libtiff:libtiff" ]
   }
 }
 
@@ -2067,6 +2063,7 @@ ohos_unittest("imageformatconverttest") {
     "graphic_2d:color_manager",
     "hilog:libhilog",
     "ipc:ipc_core",
+    "graphic_surface:surface",
   ]
   resource_config_file = "${image_subsystem}/test/resource/image/ohos_test.xml"
 }
@@ -2569,11 +2566,9 @@ group("unittest") {
     ":imagepixelmapparceltest",
     ":imagepixelmaptest",
     ":imagesourcetest",
-    ":imagestreamtest",
     ":imagetiffparsertest",
     ":imageutilstest",
     ":interfacetest",
-    ":jpeg_yuv_decoder_test",
     ":jpegdecoderextest",
     ":jpegutilstest",
     ":jpgyuvtest",
@@ -2584,7 +2579,6 @@ group("unittest") {
     ":ndktest2",
     ":picturetest",
     ":pixelastctest",
-    ":pixelconvertadaptertest",
     ":pixelmaptest",
     ":platformadptest",
     ":pluginlibjpegtest",
@@ -2595,17 +2589,12 @@ group("unittest") {
     ":sk_ohoscodec_test",
     ":streamtest",
     ":textureencodetest",
-    ":transformtest",
 
     ":cr3_parser_test",
     ":itempropertybasicboxtest",
     ":imagedfxtest",
-    ":heifsmetadatatest",
-    ":xmpmetadatatest"
+    ":heifsmetadatatest"
   ]
-  if (has_libtiff) {
-    deps += [ ":tiffplugintest" ]
-  }
 
   if (enable_jpeg_hw_decode) {
     deps += [ ":jpeg_hw_decoder_test" ]

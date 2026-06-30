@@ -48,6 +48,7 @@ using namespace ImagePlugin;
 constexpr int INVALID_POSITION = -1;
 constexpr int IOCTL_SUCCESS = 0;
 constexpr int LOCAL_FILE_POSITION = 1;
+const static uint64_t FILE_SOURCE_FDSAN_TAG = LOG_TAG_DOMAIN_ID_IMAGE;
 
 FileSourceStream::FileSourceStream(std::FILE *file, size_t size, size_t offset, size_t original,
                                    bool useMmap, int originalFd)
@@ -346,6 +347,9 @@ static bool DupFd(FILE *f, int &res)
         IMAGE_LOGE("[FileSourceStream]Fail to dup fd.");
         return false;
     }
+#if !defined(CROSS_PLATFORM)
+    fdsan_exchange_owner_tag(res, 0, FILE_SOURCE_FDSAN_TAG);
+#endif
     return true;
 }
 
@@ -396,7 +400,7 @@ uint8_t *FileSourceStream::GetDataPtr(bool populate)
         populate ? MAP_SHARED | MAP_POPULATE : MAP_SHARED, mmapFd_, fileOriginalOffset_);
     if (mmptr == MAP_FAILED) {
         IMAGE_LOGE("[FileSourceStream] mmap failed, errno:%{public}d", errno);
-        close(mmapFd_);
+        fdsan_close_with_tag(mmapFd_, FILE_SOURCE_FDSAN_TAG);
         return nullptr;
     }
     fileData_ = static_cast<uint8_t*>(mmptr);
@@ -418,7 +422,7 @@ void FileSourceStream::ResetReadBuffer()
     if (fileData_ != nullptr && !mmapFdPassedOn_ && useMmap_) {
 #ifdef SUPPORT_MMAP
         ::munmap(fileData_, fileSize_ - fileOriginalOffset_);
-        close(mmapFd_);
+        fdsan_close_with_tag(mmapFd_, FILE_SOURCE_FDSAN_TAG);
 #endif
     }
     if (!useMmap_) {

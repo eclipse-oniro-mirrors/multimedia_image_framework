@@ -36,6 +36,7 @@ namespace {
     constexpr uint32_t NUM_0 = 0;
     constexpr uint32_t NUM_1 = 1;
     constexpr uint32_t NUM_2 = 2;
+    constexpr uint32_t NUM_3 = 3;
 }
 
 namespace OHOS {
@@ -68,6 +69,8 @@ struct PictureAsyncContext {
     MetadataType metadataType = MetadataType::EXIF;
     PixelFormat hdrFormat = PixelFormat::UNKNOWN;
     bool withOptions = false;
+    GainmapParams gainmapParams;
+    HdrDecomposeOption decomposeOption;
 };
 
 using PictureAsyncContextPtr = std::unique_ptr<PictureAsyncContext>;
@@ -79,6 +82,7 @@ static std::vector<struct ImageEnum> auxiliaryPictureTypeMap = {
     {"LINEAR_MAP", static_cast<uint32_t>(AuxiliaryPictureType::LINEAR_MAP), ""},
     {"FRAGMENT_MAP", static_cast<uint32_t>(AuxiliaryPictureType::FRAGMENT_MAP), ""},
     {"THUMBNAIL", static_cast<uint32_t>(AuxiliaryPictureType::THUMBNAIL), ""},
+    {"LHDR_GAINMAP", static_cast<uint32_t>(AuxiliaryPictureType::LHDR_GAINMAP), ""},
 };
 
 static std::vector<struct ImageEnum> metadataTypeMap = {
@@ -246,11 +250,13 @@ napi_value PictureNapi::Init(napi_env env, napi_value exports)
         DECLARE_NAPI_FUNCTION("marshalling", Marshalling),
         DECLARE_NAPI_FUNCTION("getMetadata", GetMetadata),
         DECLARE_NAPI_FUNCTION("setMetadata", SetMetadata),
+        DECLARE_NAPI_FUNCTION("hdrComposeToMainPixelmap", HdrComposeToMainPixelmap),
     };
     napi_property_descriptor static_prop[] = {
         DECLARE_NAPI_STATIC_FUNCTION("createPicture", CreatePicture),
         DECLARE_NAPI_STATIC_FUNCTION("createPictureFromParcel", CreatePictureFromParcel),
         DECLARE_NAPI_STATIC_FUNCTION("createPictureByHdrAndSdrPixelMap", CreatePictureByHdrAndSdrPixelMap),
+        DECLARE_NAPI_STATIC_FUNCTION("decomposeToPicture", DecomposeToPicture),
         DECLARE_NAPI_PROPERTY("AuxiliaryPictureType",
             ImageNapiUtils::CreateEnumTypeObject(env, napi_number, auxiliaryPictureTypeMap)),
         DECLARE_NAPI_PROPERTY("MetadataType",
@@ -598,7 +604,8 @@ STATIC_EXEC_FUNC(CreatePictureByHdrAndSdrPixelMap)
 {
     IMAGE_LOGD("CreatePictureByHdrAndSdrPixelMapEX IN");
     auto context = static_cast<PictureAsyncContext*>(data);
-    auto picture = Picture::CreatePictureByHdrAndSdrPixelMap(context->rHdrPixelMap, context->rPixelMap);
+    auto picture =
+        Picture::CreatePictureByHdrAndSdrPixelMap(context->rHdrPixelMap, context->rPixelMap, context->gainmapParams);
     context->rPicture = std::move(picture);
     IMAGE_LOGD("CreatePictureByHdrAndSdrPixelMapEX OUT");
     if (IMG_NOT_NULL(context->rPicture)) {
@@ -608,9 +615,95 @@ STATIC_EXEC_FUNC(CreatePictureByHdrAndSdrPixelMap)
     }
 }
 
+bool ParseGainmapParams(napi_env env, napi_value root, GainmapParams *gainmapParams)
+{
+    if (root == nullptr || gainmapParams == nullptr) {
+        IMAGE_LOGE("ParseGainmapParams: invalid input parameters");
+        return false;
+    }
+    // Check if root is a valid object
+    napi_valuetype valueType;
+    napi_status status = napi_typeof(env, root, &valueType);
+    if (status != napi_ok || valueType != napi_object) {
+        IMAGE_LOGE("ParseGainmapParams: root is not a valid object");
+        return false;
+    }
+    // Use GET_BOOL_BY_NAME macro to get isFullSizeGainmap
+    bool isFullSizeGainmap = false;
+    bool getSuccess = GET_BOOL_BY_NAME(root, "isFullSizeGainmap", isFullSizeGainmap);
+    if (getSuccess) {
+        gainmapParams->isFullSizeGainmap = isFullSizeGainmap;
+        IMAGE_LOGD("ParseGainmapParams: isFullSizeGainmap = %{public}d", isFullSizeGainmap);
+    } else {
+        // Property not found or wrong type, use default value false
+        gainmapParams->isFullSizeGainmap = false;
+        IMAGE_LOGD("ParseGainmapParams: isFullSizeGainmap not found, using default false");
+    }
+    return true;
+}
+ 
+bool ParseDecomposeOptions(napi_env env, napi_value root, HdrDecomposeOption *decomposeOption)
+{
+    if (root == nullptr || decomposeOption == nullptr) {
+        IMAGE_LOGE("ParseDecomposeOptions: invalid input parameters");
+        return false;
+    }
+    // Check if root is a valid object
+    napi_valuetype valueType;
+    napi_status status = napi_typeof(env, root, &valueType);
+    if (status != napi_ok || valueType != napi_object) {
+        IMAGE_LOGE("ParseDecomposeOptions: root is not a valid object");
+        return false;
+    }
+    // Use GET_BOOL_BY_NAME macro to get isFullSizeGainmap
+    bool isFullSizeGainmap = false;
+    bool getSuccess = GET_BOOL_BY_NAME(root, "isFullSizeGainmap", isFullSizeGainmap);
+    if (getSuccess) {
+        decomposeOption->isFullSizeGainmap = isFullSizeGainmap;
+        IMAGE_LOGD("ParseDecomposeOptions: isFullSizeGainmap = %{public}d", isFullSizeGainmap);
+    } else {
+        // Property not found, use default value false
+        decomposeOption->isFullSizeGainmap = false;
+        IMAGE_LOGD("ParseDecomposeOptions: isFullSizeGainmap not found, using default false");
+    }
+ 
+    // Get desiredPixelFormat
+    uint32_t desiredPixelFormat = 3; // RGBA_8888
+    getSuccess = GET_UINT32_BY_NAME(root, "desiredPixelFormat", desiredPixelFormat);
+    if (getSuccess) {
+        decomposeOption->desiredPixelFormat = static_cast<PixelFormat>(desiredPixelFormat);
+        IMAGE_LOGD("ParseDecomposeOptions: desiredPixelFormat = %{public}d", desiredPixelFormat);
+    } else {
+        // Property not found, use default value RGBA_8888
+        decomposeOption->desiredPixelFormat = PixelFormat::RGBA_8888;
+        IMAGE_LOGD("ParseDecomposeOptions: desiredPixelFormat not found, using default RGBA_8888");
+    }
+    return true;
+}
+
+bool ParsePixelMapParameter(
+    napi_env env, napi_value arg, const char *paramName, std::shared_ptr<PixelMap> &outputPixelMap)
+{
+    if (ParserImageType(env, arg) != ImageType::TYPE_PIXEL_MAP) {
+        IMAGE_LOGE("ParsePixelMapParameter: Input %s image type mismatch", paramName);
+        return false;
+    }
+    outputPixelMap = PixelMapNapi::GetPixelMap(env, arg);
+    if (outputPixelMap == nullptr) {
+        IMAGE_LOGE("ParsePixelMapParameter: Get %s Pixelmap failed", paramName);
+        return false;
+    }
+    return true;
+}
+
 napi_value PictureNapi::CreatePictureByHdrAndSdrPixelMap(napi_env env, napi_callback_info info)
 {
     IMAGE_LOGD("CreatePictureByHdrAndSdrPixelMap IN");
+    if (!ImageSystemProperties::IsSystemApp()) {
+        IMAGE_LOGE("This interface can be called only by system apps");
+        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_PERMISSIONS_FAILED,
+            "This interface can be called only by system apps");
+    }
     if (sConstructor_ == nullptr) {
         napi_value exports = nullptr;
         napi_create_object(env, &exports);
@@ -621,31 +714,29 @@ napi_value PictureNapi::CreatePictureByHdrAndSdrPixelMap(napi_env env, napi_call
     napi_value constructor = nullptr;
     napi_status status;
     napi_value thisVar = nullptr;
-    napi_value argValue[NUM_2] = {0};
-    size_t argCount = NUM_2;
+    napi_value argValue[NUM_3] = {0};
+    size_t argCount = NUM_3;
     IMAGE_LOGD("CreatePictureByHdrAndSdrPixelMap IN");
     IMG_JS_ARGS(env, info, status, argCount, argValue, thisVar);
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER,
         "Invalid args"), IMAGE_LOGE("fail to napi_get_cb_info"));
-    IMG_NAPI_CHECK_RET_D(argCount == NUM_2, ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER,
-        "Invalid args count"), IMAGE_LOGE("Invalid args count %{public}zu", argCount));
+    IMG_NAPI_CHECK_RET_D(argCount >= NUM_2 && argCount <= NUM_3,
+        ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER, "Invalid args count"),
+        IMAGE_LOGE("Invalid args count %{public}zu", argCount));
     std::unique_ptr<PictureAsyncContext> asyncContext = std::make_unique<PictureAsyncContext>();
-    if (ParserImageType(env, argValue[NUM_0]) == ImageType::TYPE_PIXEL_MAP) {
-        asyncContext->rHdrPixelMap = PixelMapNapi::GetPixelMap(env, argValue[NUM_0]);
-        if (asyncContext->rHdrPixelMap == nullptr) {
-            return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER, "Get arg hdr Pixelmap failed");
-        }
-    } else {
-        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER, "Input hdr image type mismatch");
+    if (!ParsePixelMapParameter(env, argValue[NUM_0], "hdr", asyncContext->rHdrPixelMap)) {
+        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER, "Invalid hdr PixelMap parameter");
     }
-    if (ParserImageType(env, argValue[NUM_1]) == ImageType::TYPE_PIXEL_MAP) {
-        asyncContext->rPixelMap = PixelMapNapi::GetPixelMap(env, argValue[NUM_1]);
-        if (asyncContext->rPixelMap == nullptr) {
-            return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER, "Get arg sdr Pixelmap failed");
-        }
-    } else {
-        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER, "Input sdr image type mismatch");
+    if (!ParsePixelMapParameter(env, argValue[NUM_1], "sdr", asyncContext->rPixelMap)) {
+        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER, "Invalid sdr PixelMap parameter");
     }
+    GainmapParams gainmapParams;
+    if (argCount == NUM_3) {
+        if (!ParseGainmapParams(env, argValue[NUM_2], &gainmapParams)) {
+            return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER, "Invalid gainmap params");
+        }
+    }
+    asyncContext->gainmapParams = gainmapParams;
     CreatePictureByHdrAndSdrPixelMapExec(env, static_cast<void*>((asyncContext).get()));
     status = napi_get_reference_value(env, sConstructor_, &constructor);
     if (IMG_IS_OK(status)) {
@@ -654,6 +745,116 @@ napi_value PictureNapi::CreatePictureByHdrAndSdrPixelMap(napi_env env, napi_call
     }
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, IMAGE_LOGE("fail to create picture sync"));
     IMAGE_LOGD("CreatePictureByHdrAndSdrPixelMap OUT");
+    return result;
+}
+
+STATIC_EXEC_FUNC(DecomposeToPicture)
+{
+    IMAGE_LOGD("DecomposeToPictureExec IN");
+    auto context = static_cast<PictureAsyncContext*>(data);
+    if (context == nullptr) {
+        IMAGE_LOGE("DecomposeToPictureExec: context is nullptr");
+        return;
+    }
+ 
+    int32_t errCode = SUCCESS;
+    auto picture = Picture::DecomposeToPicture(context->rHdrPixelMap, context->decomposeOption, errCode);
+    context->rPicture = std::move(picture);
+    if (errCode != SUCCESS) {
+        context->status = static_cast<uint32_t>(errCode);
+    } else if (context->rPicture == nullptr) {
+        context->status = ERR_IMAGE_DECOMPOSE_FAILED;
+    } else {
+        context->status = SUCCESS;
+    }
+    IMAGE_LOGD("DecomposeToPictureExec OUT");
+}
+
+static void CreateDecomposeToPictureComplete(napi_env env, napi_status status, void *data)
+{
+    napi_value result = nullptr;
+    napi_get_undefined(env, &result);
+    auto context = static_cast<PictureAsyncContext*>(data);
+
+    if (context == nullptr) {
+        IMAGE_LOGE("CreateDecomposeToPictureComplete: context is nullptr");
+        return;
+    }
+
+    if (!IMG_IS_OK(status)) {
+        IMAGE_LOGE("CreateDecomposeToPictureComplete: async work failed");
+        context->status = ERROR;
+        CommonCallbackRoutine(env, context, result);
+        return;
+    }
+
+    if (context->status == SUCCESS && context->rPicture != nullptr) {
+        result = PictureNapi::CreatePicture(env, context->rPicture);
+    } else if (context->status == SUCCESS) {
+        context->status = ERR_IMAGE_DECOMPOSE_FAILED;
+    }
+
+    if (context->status != SUCCESS && context->error == nullptr) {
+        napi_value errorObj;
+        napi_value codeValue;
+        napi_value msgValue;
+        napi_create_int32(env, static_cast<int32_t>(context->status), &codeValue);
+        napi_create_string_utf8(env, "HDR image decomposition failed",
+            NAPI_AUTO_LENGTH, &msgValue);
+        napi_create_error(env, nullptr, msgValue, &errorObj);
+        napi_set_named_property(env, errorObj, "code", codeValue);
+        napi_create_reference(env, errorObj, 1, &context->error);
+    }
+
+    CommonCallbackRoutine(env, context, result);
+}
+ 
+napi_value PictureNapi::DecomposeToPicture(napi_env env, napi_callback_info info)
+{
+    IMAGE_LOGD("DecomposeToPicture IN");
+    if (!ImageSystemProperties::IsSystemApp()) {
+        IMAGE_LOGE("PictureNapi::DecomposeToPicture can be called only by system apps");
+        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_PERMISSIONS_FAILED,
+            "DecomposeToPicture can be called only by system apps");
+    }
+ 
+    if (sConstructor_ == nullptr) {
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        PictureNapi::Init(env, exports);
+    }
+ 
+    napi_value result = nullptr;
+    napi_get_undefined(env, &result);
+    napi_status status;
+    napi_value thisVar = nullptr;
+    napi_value argValue[NUM_2] = {0};
+    size_t argCount = NUM_2;
+    IMG_JS_ARGS(env, info, status, argCount, argValue, thisVar);
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER,
+        "Invalid args"), IMAGE_LOGE("fail to napi_get_cb_info"));
+    IMG_NAPI_CHECK_RET_D(argCount >= NUM_1 && argCount <= NUM_2,
+        ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER, "Invalid args count"),
+        IMAGE_LOGE("Invalid args count %{public}zu", argCount));
+ 
+    std::unique_ptr<PictureAsyncContext> asyncContext = std::make_unique<PictureAsyncContext>();
+    if (!ParsePixelMapParameter(env, argValue[NUM_0], "hdr", asyncContext->rHdrPixelMap)) {
+        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_INVALID_PARAMETER,
+            "hdrPixelMap is empty");
+    }
+    if (argCount == NUM_2 && !ParseDecomposeOptions(env, argValue[NUM_1], &asyncContext->decomposeOption)) {
+        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER, "Invalid DecomposeOptions parameter");
+    }
+ 
+    napi_create_promise(env, &(asyncContext->deferred), &result);
+    asyncContext->status = SUCCESS;
+ 
+    IMG_CREATE_CREATE_ASYNC_WORK(env, status, "DecomposeToPicture",
+        DecomposeToPictureExec, CreateDecomposeToPictureComplete, asyncContext, asyncContext->work);
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status),
+        nullptr, IMAGE_LOGE("Fail to create DecomposeToPicture async work"));
+ 
+    IMAGE_LOGD("DecomposeToPicture OUT");
     return result;
 }
 
@@ -1053,6 +1254,57 @@ napi_value PictureNapi::SetMetadata(napi_env env, napi_callback_info info)
     CreateSetMetadataAsyncWork(env, status, asyncContext, result, metadataType);
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status),
         nullptr, IMAGE_LOGE("Fail to create async work"));
+    return result;
+}
+
+static void HdrComposeToMainPixelmapComplete(napi_env env, napi_status status, void *data)
+{
+    napi_value result = nullptr;
+    napi_get_undefined(env, &result);
+    auto context = static_cast<PictureAsyncContext*>(data);
+    if (!IMG_IS_OK(status)) {
+        context->status = IMAGE_UNSUPPORTED_OPERATION;
+        IMAGE_LOGE("HdrComposeToMainPixelmapComplete failed!");
+    } else {
+        context->status = SUCCESS;
+    }
+    CommonCallbackRoutine(env, context, result);
+}
+
+napi_value PictureNapi::HdrComposeToMainPixelmap(napi_env env, napi_callback_info info)
+{
+    napi_value result = nullptr;
+    napi_get_undefined(env, &result);
+    napi_status status;
+    napi_value thisVar = nullptr;
+    IMAGE_LOGD("HdrComposeToMainPixelmap IN");
+    IMG_JS_NO_ARGS(env, info, status, thisVar);
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), result, IMAGE_LOGE("Fail to get arguments from info"));
+
+    std::unique_ptr<PictureAsyncContext> asyncContext = std::make_unique<PictureAsyncContext>();
+    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->nConstructor));
+    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->nConstructor),
+        result, IMAGE_LOGE("Fail to unwrap context"));
+    asyncContext->rPicture = asyncContext->nConstructor->nativePicture_;
+    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->rPicture), result, IMAGE_LOGE("Empty native picture"));
+    if (asyncContext->rPicture->GetAuxiliaryPicture(AuxiliaryPictureType::GAINMAP) == nullptr) {
+        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_UNSUPPORTED_OPERATION, "There is no GAINMAP");
+    }
+    if (asyncContext->rPicture->GetMainPixel()->GetAllocatorType() != AllocatorType::DMA_ALLOC ||
+        asyncContext->rPicture->GetGainmapPixelMap()->GetAllocatorType() != AllocatorType::DMA_ALLOC) {
+        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_UNSUPPORTED_OPERATION, "Pixelmap is not DMA");
+    }
+    napi_create_promise(env, &(asyncContext->deferred), &result);
+
+    IMG_CREATE_CREATE_ASYNC_WORK(env, status, "HdrComposeToMainPixelmap",
+        [](napi_env env, void* data) {
+            auto context = static_cast<PictureAsyncContext*>(data);
+            bool result = context->rPicture->HdrComposeToMainPixel();
+            context->status = result ? SUCCESS : IMAGE_UNSUPPORTED_OPERATION;
+        }, HdrComposeToMainPixelmapComplete, asyncContext, asyncContext->work);
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), result, IMAGE_LOGE("Fail to create async work"));
+
+    IMAGE_LOGD("HdrComposeToMainPixelmap OUT");
     return result;
 }
 

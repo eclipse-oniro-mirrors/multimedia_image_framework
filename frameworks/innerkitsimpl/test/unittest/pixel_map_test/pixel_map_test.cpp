@@ -151,7 +151,8 @@ std::unique_ptr<PixelMap> ConstructPixmap(int32_t width, int32_t height, PixelFo
     return pixelMap;
 }
 
-std::unique_ptr<PixelMap> ConstructPixmap(PixelFormat format, AlphaType alphaType)
+std::unique_ptr<PixelMap> ConstructPixmap(PixelFormat format, AlphaType alphaType,
+                                          AllocatorType type = AllocatorType::SHARE_MEM_ALLOC)
 {
     int32_t width = 200;
     int32_t height = 300;
@@ -160,6 +161,7 @@ std::unique_ptr<PixelMap> ConstructPixmap(PixelFormat format, AlphaType alphaTyp
     opts.size.height = height;
     opts.pixelFormat = format;
     opts.alphaType = alphaType;
+    opts.allocatorType = type;
     std::unique_ptr<PixelMap> pixelMap = PixelMap::Create(opts);
 
     return pixelMap;
@@ -4181,7 +4183,8 @@ HWTEST_F(PixelMapTest, ReadARGBPixelsTest004, TestSize.Level3)
 HWTEST_F(PixelMapTest, UnMapPixelMapTest, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "PixelMapTest: UnMapPixelMapTest start";
-    auto pixelMap_sharedMem = ConstructPixmap(PixelFormat::RGBA_8888, AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN);
+    auto pixelMap_sharedMem =
+        ConstructPixmap(PixelFormat::RGBA_8888, AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN, AllocatorType::SHARE_MEM_ALLOC);
     EXPECT_NE(pixelMap_sharedMem, nullptr);
     EXPECT_EQ(pixelMap_sharedMem->GetAllocatorType(), AllocatorType::SHARE_MEM_ALLOC);
     EXPECT_NE(true, pixelMap_sharedMem->UnMap());
@@ -4506,7 +4509,7 @@ HWTEST_F(PixelMapTest, CreateColorsAlphaF16ToYUVTest001, TestSize.Level3)
     uint8_t buffer[colorLength] = {0};
     const uint8_t alphaValues[width * height] = {0x10, 0x40, 0x80, 0xFF};
     for (int32_t i = 0; i < width * height; ++i) {
-        uint16_t half = FloatToHalf(static_cast<float>(alphaValues[i]));
+        uint16_t half = FloatToHalf(static_cast<float>(alphaValues[i]) / 255.0f);
         buffer[i * 2] = static_cast<uint8_t>(half & 0xFF);
         buffer[i * 2 + 1] = static_cast<uint8_t>((half >> 8) & 0xFF);
     }
@@ -4544,7 +4547,7 @@ HWTEST_F(PixelMapTest, CreateColorsAlphaF16ToP010Test001, TestSize.Level3)
     uint8_t buffer[colorLength] = {0};
     const uint8_t alphaValues[width * height] = {0x11, 0x33, 0x77, 0xFF};
     for (int32_t i = 0; i < width * height; ++i) {
-        uint16_t half = FloatToHalf(static_cast<float>(alphaValues[i]));
+        uint16_t half = FloatToHalf(static_cast<float>(alphaValues[i]) / 255.0f);
         buffer[i * 2] = static_cast<uint8_t>(half & 0xFF);
         buffer[i * 2 + 1] = static_cast<uint8_t>((half >> 8) & 0xFF);
     }
@@ -4586,7 +4589,7 @@ HWTEST_F(PixelMapTest, CreateColorsAlphaF16WithOffsetStrideTest001, TestSize.Lev
     uint8_t buffer[colorLength] = {0};
     const uint8_t alphaValues[width * height] = {0x10, 0x20, 0x90, 0xF0};
     for (int32_t i = 0; i < width * height; ++i) {
-        uint16_t half = FloatToHalf(static_cast<float>(alphaValues[i]));
+        uint16_t half = FloatToHalf(static_cast<float>(alphaValues[i]) / 255.0f);
         buffer[i * 2] = static_cast<uint8_t>(half & 0xFF);
         buffer[i * 2 + 1] = static_cast<uint8_t>((half >> 8) & 0xFF);
     }
@@ -4621,7 +4624,7 @@ HWTEST_F(PixelMapTest, CreateColorsAlphaF16ToYUVOddWidthTest001, TestSize.Level3
     constexpr int32_t width = 1;
     constexpr int32_t height = 2;
     constexpr uint32_t colorLength = width * height * 2;
-    uint8_t buffer[colorLength] = {0x00, 0x48, 0x00, 0x58};
+    uint8_t buffer[colorLength] = {0x00, 0x00, 0x00, 0x3C};
 
     InitializationOptions opts;
     opts.size.width = width;
@@ -4649,7 +4652,7 @@ HWTEST_F(PixelMapTest, CreateColorsAlphaF16ToP010OddHeightTest001, TestSize.Leve
     constexpr int32_t width = 2;
     constexpr int32_t height = 1;
     constexpr uint32_t colorLength = width * height * 2;
-    uint8_t buffer[colorLength] = {0x00, 0x48, 0x00, 0x58};
+    uint8_t buffer[colorLength] = {0x00, 0x38, 0x00, 0x3C};
 
     InitializationOptions opts;
     opts.size.width = width;
@@ -5015,6 +5018,43 @@ HWTEST_F(PixelMapTest, AlphaF16PublicApiSerializeAndCloneTest001, TestSize.Level
     EXPECT_EQ(tlvPixelMap->GetPixelFormat(), PixelFormat::ALPHA_F16);
     EXPECT_TRUE(CompareAlphaF16Pixels(*pixelMap, *tlvPixelMap));
     GTEST_LOG_(INFO) << "PixelMapTest: AlphaF16PublicApiSerializeAndCloneTest001 end";
+}
+
+/**
+ * @tc.name: AlphaF16ValueRangeRoundtripTest001
+ * @tc.desc: Test ALPHA_F16 stores alpha in 0~1 range and conversions to/from uint8 are correct.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, AlphaF16ValueRangeRoundtripTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelMapTest: AlphaF16ValueRangeRoundtripTest001 start";
+    std::unique_ptr<PixelMap> pixelMap = CreateAlphaF16PixelMap(2, 2);
+    ASSERT_NE(pixelMap, nullptr);
+
+    EXPECT_EQ(pixelMap->WritePixel({0, 0}, 0xFF000000), SUCCESS);
+    EXPECT_EQ(pixelMap->WritePixel({1, 0}, 0x80000000), SUCCESS);
+
+    const uint16_t *pixelFull = pixelMap->GetPixel16(0, 0);
+    const uint16_t *pixelHalf = pixelMap->GetPixel16(1, 0);
+    ASSERT_NE(pixelFull, nullptr);
+    ASSERT_NE(pixelHalf, nullptr);
+
+    EXPECT_EQ(*pixelFull, FloatToHalf(1.0f));
+    float halfVal = HalfToFloat(*pixelHalf);
+    EXPECT_NEAR(halfVal, 128.0f / 255.0f, 0.01f);
+
+    uint32_t dst = 0;
+    EXPECT_EQ(pixelMap->ReadPixel({0, 0}, dst), SUCCESS);
+    EXPECT_EQ((dst >> ARGB_A_SHIFT) & 0xFF, 0xFF);
+    EXPECT_EQ(pixelMap->ReadPixel({1, 0}, dst), SUCCESS);
+    EXPECT_NEAR(static_cast<float>((dst >> ARGB_A_SHIFT) & 0xFF), 128.0f, 2.0f);
+
+    EXPECT_EQ(pixelMap->SetAlpha(0.5f), SUCCESS);
+    const uint16_t *setPixel = pixelMap->GetPixel16(0, 0);
+    ASSERT_NE(setPixel, nullptr);
+    EXPECT_EQ(*setPixel, FloatToHalf(0.5f));
+
+    GTEST_LOG_(INFO) << "PixelMapTest: AlphaF16ValueRangeRoundtripTest001 end";
 }
 
 /**
@@ -5472,8 +5512,8 @@ HWTEST_F(PixelMapTest, HdrPixelMapTlvTest005, TestSize.Level3)
     ASSERT_EQ(pixelMap->EncodeTlv(buff), true);
     std::unique_ptr<PixelMap> tlvPixelMap(PixelMap::DecodeTlv(buff));
     ASSERT_NE(tlvPixelMap, nullptr);
-    ASSERT_NE(tlvPixelMap->GetAllocatorType(), pixelMap->GetAllocatorType());
-    ASSERT_EQ(tlvPixelMap->GetAllocatorType(), AllocatorType::HEAP_ALLOC);
+    ASSERT_EQ(tlvPixelMap->GetAllocatorType(), pixelMap->GetAllocatorType());
+    ASSERT_EQ(tlvPixelMap->GetAllocatorType(), AllocatorType::DMA_ALLOC);
 }
 
 /**
@@ -6138,6 +6178,132 @@ HWTEST_F(PixelMapTest, Y8FormatSupportSerializeTest001, TestSize.Level3)
     EXPECT_TRUE(newPixelMap->IsYuvFormat());
 
     GTEST_LOG_(INFO) << "PixelMapTest: Y8FormatSupportSerializeTest001 end";
+}
+
+HWTEST_F(PixelMapTest, AllocPixelMapMemory001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelMapTest: AllocPixelMapMemory001 start";
+    InitializationOptions opts;
+    opts.size.width = SIZE_WIDTH;
+    opts.size.height = SIZE_HEIGHT;
+    opts.pixelFormat = PixelFormat::RGBA_8888;
+    opts.alphaType = AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN;
+    opts.allocatorType = AllocatorType::DEFAULT;
+    std::unique_ptr<PixelMap> pixelMap = PixelMap::Create(opts);
+    ASSERT_NE(pixelMap, nullptr);
+    ASSERT_EQ(pixelMap->GetAllocatorType(), AllocatorType::DMA_ALLOC);
+    GTEST_LOG_(INFO) << "PixelMapTest: AllocPixelMapMemory001 end";
+}
+
+HWTEST_F(PixelMapTest, AllocPixelMapMemory002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelMapTest: AllocPixelMapMemory002 start";
+    InitializationOptions opts;
+    opts.size.width = SIZE_WIDTH;
+    opts.size.height = SIZE_HEIGHT;
+    opts.pixelFormat = PixelFormat::RGBA_8888;
+    opts.alphaType = AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN;
+    opts.allocatorType = AllocatorType::SHARE_MEM_ALLOC;
+    std::unique_ptr<PixelMap> pixelMap = PixelMap::Create(opts);
+    ASSERT_NE(pixelMap, nullptr);
+    ASSERT_EQ(pixelMap->GetAllocatorType(), AllocatorType::SHARE_MEM_ALLOC);
+    GTEST_LOG_(INFO) << "PixelMapTest: AllocPixelMapMemory002 end";
+}
+
+HWTEST_F(PixelMapTest, AllocPixelMapMemory003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelMapTest: AllocPixelMapMemory003 start";
+    InitializationOptions opts;
+    opts.size.width = SIZE_WIDTH;
+    opts.size.height = SIZE_HEIGHT;
+    opts.pixelFormat = PixelFormat::RGBA_8888;
+    opts.alphaType = AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN;
+    opts.allocatorType = AllocatorType::DMA_ALLOC;
+    std::unique_ptr<PixelMap> pixelMap = PixelMap::Create(opts);
+    ASSERT_NE(pixelMap, nullptr);
+    ASSERT_EQ(pixelMap->GetAllocatorType(), AllocatorType::DMA_ALLOC);
+    GTEST_LOG_(INFO) << "PixelMapTest: AllocPixelMapMemory003 end";
+}
+
+HWTEST_F(PixelMapTest, AllocPixelMapMemory004, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelMapTest: AllocPixelMapMemory004 start";
+    InitializationOptions opts;
+    opts.size.width = 600;
+    opts.size.height = 600;
+    opts.pixelFormat = PixelFormat::RGBA_8888;
+    opts.alphaType = AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN;
+    opts.allocatorType = AllocatorType::DEFAULT;
+    std::unique_ptr<PixelMap> pixelMap = PixelMap::Create(opts);
+    ASSERT_NE(pixelMap, nullptr);
+    ASSERT_EQ(pixelMap->GetAllocatorType(), AllocatorType::DMA_ALLOC);
+    GTEST_LOG_(INFO) << "PixelMapTest: AllocPixelMapMemory004 end";
+}
+
+HWTEST_F(PixelMapTest, AllocPixelMapMemory005, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelMapTest: AllocPixelMapMemory005 start";
+    InitializationOptions opts;
+    opts.size.width = 600;
+    opts.size.height = 600;
+    opts.pixelFormat = PixelFormat::RGBA_F16;
+    opts.alphaType = AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN;
+    opts.allocatorType = AllocatorType::DEFAULT;
+    std::unique_ptr<PixelMap> pixelMap = PixelMap::Create(opts);
+    ASSERT_NE(pixelMap, nullptr);
+    ASSERT_EQ(pixelMap->GetAllocatorType(), AllocatorType::SHARE_MEM_ALLOC);
+    GTEST_LOG_(INFO) << "PixelMapTest: AllocPixelMapMemory005 end";
+}
+
+HWTEST_F(PixelMapTest, CopyPixMapToDst001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelMapTest: CopyPixMapToDst001 start";
+    auto srcPixelMap = ConstructPixelMap(SIZE_WIDTH, SIZE_HEIGHT, PixelFormat::RGBA_8888,
+        AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN, AllocatorType::DEFAULT);
+    ASSERT_NE(srcPixelMap, nullptr);
+    auto dstPixelMap = ConstructPixelMap(SIZE_WIDTH, SIZE_HEIGHT, PixelFormat::RGBA_8888,
+        AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN, AllocatorType::DMA_ALLOC);
+    ASSERT_NE(dstPixelMap, nullptr);
+    bool ret = PixelMap::CopyPixelMap(*(srcPixelMap.get()), *(dstPixelMap.get()));
+    EXPECT_TRUE(ret);
+    srcPixelMap->data_ = nullptr;
+    ret = PixelMap::CopyPixelMap(*(srcPixelMap.get()), *(dstPixelMap.get()));
+    EXPECT_FALSE(ret);
+    GTEST_LOG_(INFO) << "PixelMapTest: CopyPixMapToDst001 end";
+}
+
+HWTEST_F(PixelMapTest, SetDstPixelMapInfo001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelMapTest: SetDstPixelMapInfo001 start";
+    auto srcPixelMap = ConstructPixelMap(SIZE_WIDTH, SIZE_HEIGHT, PixelFormat::RGBA_8888,
+        AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN, AllocatorType::DMA_ALLOC);
+    ASSERT_NE(srcPixelMap, nullptr);
+    auto dstPixelMap = ConstructPixelMap(SIZE_WIDTH, SIZE_HEIGHT, PixelFormat::RGBA_8888,
+        AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN, AllocatorType::DMA_ALLOC);
+    ASSERT_NE(dstPixelMap, nullptr);
+    bool ret = PixelMap::CopyPixelMap(*(srcPixelMap.get()), *(dstPixelMap.get()));
+    EXPECT_TRUE(ret);
+    srcPixelMap->data_ = nullptr;
+    ret = PixelMap::CopyPixelMap(*(srcPixelMap.get()), *(dstPixelMap.get()));
+    EXPECT_FALSE(ret);
+    GTEST_LOG_(INFO) << "PixelMapTest: CopyPixMapToDst001 end";
+}
+
+HWTEST_F(PixelMapTest, CheckTlvImageInfo001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelMapTest: CheckTlvImageInfo001 start";
+    InitializationOptions opts;
+    opts.size.width = 100;
+    opts.size.height = 100;
+    opts.pixelFormat = PixelFormat::RGBA_8888;
+    std::unique_ptr<PixelMap> pixelMap = PixelMap::Create(opts);
+    ASSERT_NE(pixelMap, nullptr);
+    std::vector<uint8_t> buff;
+
+    ASSERT_EQ(pixelMap->EncodeTlv(buff), true);
+    ASSERT_NE(PixelMap::DecodeTlv(buff), nullptr);
+
+    GTEST_LOG_(INFO) << "PixelMapTest: CheckTlvImageInfo001 end";
 }
 
 }

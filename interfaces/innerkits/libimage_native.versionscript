@@ -47,7 +47,6 @@
     *ImageKvMetadata*;
     *MemoryManager*;
     *FilePackerStream*;
-    *XMPMetadata*;
   local:
     *;
 };

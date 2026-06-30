@@ -18,7 +18,6 @@
 #include "image_log.h"
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 #include <charconv>
-#include <regex>
 
 #include "pixel_map_from_surface.h"
 #include "sync_fence.h"
@@ -368,9 +367,9 @@ static bool GetSurfaceSize(size_t argc, Rect& region, std::string fd)
         return false;
     }
     if (region.width <= 0 || region.height <= 0) {
-        unsigned long numberFd = 0;
+        uint64_t numberFd = 0;
         auto res = std::from_chars(fd.c_str(), fd.c_str() + fd.size(), numberFd);
-        if (res.ec != std::errc()) {
+        if (res.ec != std::errc() || res.ptr != fd.c_str() + fd.size()) {
             IMAGE_LOGE("GetSurfaceSize invalid fd");
             return false;
         }
@@ -409,10 +408,6 @@ std::shared_ptr<PixelMap> PixelMapImpl::CreatePixelMapFromSurface(
     IMAGE_LOGD("CreatePixelMapFromSurface IN");
     IMAGE_LOGD("CreatePixelMapFromSurface id:%{public}s,area:%{public}d,%{public}d,%{public}d,%{public}d", surfaceId,
         region.left, region.top, region.height, region.width);
-    if (!std::regex_match(surfaceId, std::regex("\\d+"))) {
-        IMAGE_LOGE("CreatePixelMapFromSurface empty or invalid surfaceId");
-        return nullptr;
-    }
     if (!GetSurfaceSize(argc, region, surfaceId)) {
         return nullptr;
     }
@@ -423,9 +418,10 @@ std::shared_ptr<PixelMap> PixelMapImpl::CreatePixelMapFromSurface(
         .w = region.width,
         .h = region.height,
     };
-    unsigned long newSurfaceId = 0;
-    auto res = std::from_chars(surfaceId, surfaceId + std::string(surfaceId).size(), newSurfaceId);
-    if (res.ec != std::errc()) {
+    uint64_t newSurfaceId = 0;
+    std::string surfaceIdStr(surfaceId);
+    auto res = std::from_chars(surfaceIdStr.data(), surfaceIdStr.data() + surfaceIdStr.size(), newSurfaceId);
+    if (res.ec != std::errc() || res.ptr != surfaceIdStr.data() + surfaceIdStr.size()) {
         IMAGE_LOGE("CreatePixelMapFromSurface invalid surfaceId");
         errCode = ERR_IMAGE_PIXELMAP_CREATE_FAILED;
         return nullptr;
@@ -433,8 +429,8 @@ std::shared_ptr<PixelMap> PixelMapImpl::CreatePixelMapFromSurface(
     std::shared_ptr<PixelMap> pixelMap = rsClient.CreatePixelMapFromSurfaceId(newSurfaceId, r);
 #ifndef EXT_PIXEL
     if (pixelMap == nullptr) {
-        res = std::from_chars(surfaceId, surfaceId + std::string(surfaceId).size(), newSurfaceId);
-        if (res.ec != std::errc()) {
+        res = std::from_chars(surfaceIdStr.data(), surfaceIdStr.data() + surfaceIdStr.size(), newSurfaceId);
+        if (res.ec != std::errc() || res.ptr != surfaceIdStr.data() + surfaceIdStr.size()) {
             IMAGE_LOGE("CreatePixelMapFromSurface invalid surfaceId");
             errCode = ERR_IMAGE_PIXELMAP_CREATE_FAILED;
             return nullptr;

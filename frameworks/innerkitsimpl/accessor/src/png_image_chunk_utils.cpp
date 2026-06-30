@@ -51,6 +51,11 @@ constexpr auto HEX_STRING_UNIT_SIZE = 2;
 constexpr auto EXIF_INFO_LENGTH_TWO = 2;
 constexpr auto CHUNKDATA_KEYSIZE_OFFSET_ONE = 1;
 constexpr auto CHUNKDATA_KEYSIZE_OFFSET_THREE = 3;
+
+bool IsHexAscii(char value)
+{
+    return (value >= '0' && value <= '9') || (value >= 'a' && value <= 'f');
+}
 }
 
 int PngImageChunkUtils::ParseTextChunk(const DataBuf &chunkData, TextChunkType chunkType,
@@ -404,8 +409,7 @@ int PngImageChunkUtils::ConvertAsciiToInt(const char *sourcePtr, size_t exifInfo
     size_t sourceLength = exifInfoLength * 2;
     size_t sourcePtrCount = 0;
     for (size_t i = 0; i < sourceLength && sourcePtrCount < sourceLength; i++) {
-        while (sourcePtrCount < sourceLength &&
-            ((*sourcePtr < '0') || ((*sourcePtr > '9') && (*sourcePtr < 'a')) || (*sourcePtr > 'f'))) {
+        while (sourcePtrCount < sourceLength && !IsHexAscii(*sourcePtr)) {
             if (*sourcePtr == '\0') {
                 IMAGE_LOGE("Unexpected null character encountered while converting Exif ASCII string. "
                     "Position: %{public}zu, Expected length: %{public}zu",
@@ -416,12 +420,22 @@ int PngImageChunkUtils::ConvertAsciiToInt(const char *sourcePtr, size_t exifInfo
             sourcePtrCount++;
         }
 
-        if ((i % HEX_STRING_UNIT_SIZE) == 0) {
-            *destPtr = static_cast<unsigned char>(HEX_BASE * hexAsciiToInt[static_cast<size_t>(*sourcePtr++)]);
+        if (sourcePtrCount < sourceLength) {
+            if (!IsHexAscii(*sourcePtr)) {
+                IMAGE_LOGE("Invalid hex character encountered while converting Exif ASCII string.");
+                return ERR_IMAGE_SOURCE_DATA_INCOMPLETE;
+            }
+
+            if ((i % HEX_STRING_UNIT_SIZE) == 0) {
+                *destPtr = static_cast<unsigned char>(HEX_BASE * hexAsciiToInt[static_cast<size_t>(*sourcePtr++)]);
+            } else {
+                (*destPtr++) += hexAsciiToInt[static_cast<size_t>(*sourcePtr++)];
+            }
+            sourcePtrCount++;
         } else {
-            (*destPtr++) += hexAsciiToInt[static_cast<size_t>(*sourcePtr++)];
+            IMAGE_LOGE("sourcePtr has reached the end point");
+            return ERR_IMAGE_SOURCE_DATA_INCOMPLETE;
         }
-        sourcePtrCount++;
     }
     return SUCCESS;
 }

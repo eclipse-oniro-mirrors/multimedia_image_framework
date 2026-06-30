@@ -84,6 +84,7 @@ ohos_shared_library("textureEncoderCL") {
   } else if (use_clang_mac) {
     configs += [ ":mac_config" ]
   } else {
+    deps = [ "${image_subsystem}/frameworks/innerkitsimpl/utils:image_utils" ]
     external_deps = [
       "c_utils:utils",
       "hilog:libhilog",
@@ -129,7 +130,8 @@ ohos_shared_library("extplugin") {
   if (enable_jpeg_hw_decode) {
     sources += [
       "src/hardware/jpeg_hw_decoder.cpp",
-      "src/hardware/jpeg_dma_pool.cpp"
+      "src/hardware/jpeg_dma_pool.cpp",
+      "src/hardware/jpeg_hw_tile_decoder.cpp",
     ]
   }
   configs = [
@@ -234,6 +236,7 @@ ohos_shared_library("extplugin") {
         "ipc:ipc_single",
       ]
       defines += [ "JPEG_HW_DECODE_ENABLE" ]
+      defines += [ "JPEG_HW_TILE_DECODE_ENABLE" ]
     }
 
     if (enable_heif_hw_decode) {

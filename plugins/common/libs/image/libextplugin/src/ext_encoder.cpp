@@ -198,6 +198,8 @@ static const std::map<AuxiliaryPictureType, HeifEncodeItemInfo> HEIF_AUX_PIC_INF
         { PAN_MAP_ITEM_ID, PAN_MAP_ITEM_NAME, HEIF_AUXTTYPE_ID_PAN_MAP } },
     { AuxiliaryPictureType::PAN_GAINMAP,
         { PAN_GAINMAP_ITEM_ID, PAN_GAINMAP_ITEM_NAME, HEIF_AUXTTYPE_ID_PAN_GAINMAP } },
+    { AuxiliaryPictureType::LHDR_GAINMAP,
+        { LHDR_GAINMAP_ITEM_ID, LHDR_GAINMAP_ITEM_NAME, HEIF_AUXTTYPE_ID_LHDR_GAINMAP } },
 #endif
 };
 
@@ -224,6 +226,7 @@ static const std::map<AuxiliaryPictureType, std::string> DEFAULT_AUXILIARY_TAG_M
     {AuxiliaryPictureType::PAN_MAP, AUXILIARY_TAG_PAN_MAP},
     {AuxiliaryPictureType::PAN_GAINMAP, AUXILIARY_TAG_PAN_GAINMAP},
     {AuxiliaryPictureType::THUMBNAIL, AUXILIARY_TAG_THUMBNAIL},
+    {AuxiliaryPictureType::LHDR_GAINMAP, AUXILIARY_TAG_LHDR_GAINMAP},
 };
 
 static const uint8_t NUM_2 = 2;
@@ -419,7 +422,7 @@ static uint32_t YuvToRgbaSkInfo(ImageInfo info, SkImageInfo &skInfo, uint8_t * d
     auto cs = ToSkColorSpace(pixelMap);
     skInfo = SkImageInfo::Make(info.size.width, info.size.height, SkColorType::kRGBA_8888_SkColorType, alphaType, cs);
     IMAGE_LOGD(" YuvToSkInfo: width:%{public}d, height:%{public}d, alpha:%{public}d \n ",
-        info.size.width, info.size.height, (int32_t)alphaType);
+        info.size.width, info.size.height, static_cast<int32_t>(alphaType));
     return SUCCESS;
 }
 
@@ -563,7 +566,7 @@ uint32_t ExtEncoder::FinalizeEncode()
         return processRet;
     }
 
-    if (picture_ != nullptr) {
+    if (picture_ != nullptr && picture_->GetMainPixel() != nullptr) {
         return EncodePicture();
     }
 #endif
@@ -793,7 +796,8 @@ uint32_t ExtEncoder::EncodeHeifByPixelmap(PixelMap* pixelmap, const PlEncodeOpti
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM) && \
     defined(HEIF_HW_ENCODE_ENABLE)
     sptr<SurfaceBuffer> surfaceBuffer;
-    bool needConvertToSurfaceBuffer = pixelmap->GetAllocatorType() != AllocatorType::DMA_ALLOC;
+    bool needConvertToSurfaceBuffer = pixelmap->GetAllocatorType() != AllocatorType::DMA_ALLOC ||
+        pixelmap->GetNoPaddingUsage();
     if (needConvertToSurfaceBuffer) {
         surfaceBuffer = ConvertToSurfaceBuffer(pixelmap);
         cond = surfaceBuffer == nullptr;
@@ -856,8 +860,9 @@ uint32_t ExtEncoder::ProcessEncodeControlParams()
                 return ERR_IMAGE_ENCODE_FAILED;
             }
             picture_ = dstPicture_.get();
+            return ProcessPictureEncodeControlParams();
         }
-        return ProcessPictureEncodeControlParams();
+        IMAGE_LOGD("ExtEncoder::ProcessEncodeControlParams no need for copy picture, skip");
     }
     if (pixelmap_ != nullptr) {
         if (NeedDeepCopy()) {
@@ -867,8 +872,9 @@ uint32_t ExtEncoder::ProcessEncodeControlParams()
                 return ERR_IMAGE_ENCODE_FAILED;
             }
             pixelmap_ = dstPixelmap_.get();
+            return ProcessPixelmapEncodeControlParams();
         }
-        return ProcessPixelmapEncodeControlParams();
+        IMAGE_LOGD("ExtEncoder::ProcessEncodeControlParams no need for copy pixelmap, skip");
     }
     IMAGE_LOGD("ExtEncoder::ProcessEncodeControlParams no pixelmap or picture for encoding, skip");
     return SUCCESS;
@@ -919,14 +925,7 @@ bool ExtEncoder::NeedDeepCopy()
 std::unique_ptr<PixelMap> ExtEncoder::DeepCopyPixelmap()
 {
     int32_t errorCode = SUCCESS;
-    std::unique_ptr<PixelMap> clonedPixelmap = nullptr;
-
-    if (ImageUtils::IsYuvFormat(pixelmap_->GetPixelFormat())) {
-        clonedPixelmap = PixelYuv::CloneYuv(*pixelmap_, errorCode);
-    } else {
-        clonedPixelmap = pixelmap_->Clone(errorCode);
-    }
-
+    std::unique_ptr<PixelMap> clonedPixelmap = pixelmap_->clone(errorCode);
     if (errorCode != SUCCESS || clonedPixelmap == nullptr) {
         IMAGE_LOGE("ExtEncoder::DeepCopyPixelmap copy failed, errorCode=%{public}d", errorCode);
         return nullptr;
@@ -1100,14 +1099,10 @@ uint32_t ExtEncoder::ProcessPictureMaxSize()
     IMAGE_LOGI("ExtEncoder::ProcessPictureMaxSize scale image from (%{public}d, %{public}d) "
         "to fit maxSize(%{public}d, %{public}d), scale=%{public}f", srcWidth, srcHeight, maxWidth, maxHeight, scale);
 
-    if (!mainPixelmap->resize(scale, scale)) {
-        IMAGE_LOGE("ExtEncoder::ProcessPictureMaxSize mainPixelmap resize failed");
-        return ERR_IMAGE_ENCODE_FAILED;
-    }
-    auto gainmapPixelmap = picture_->GetGainmapPixelMap();
-    if (gainmapPixelmap != nullptr && !gainmapPixelmap->resize(scale, scale)) {
-        IMAGE_LOGE("ExtEncoder::ProcessPictureMaxSize gainmapPixelmap resize failed");
-        return ERR_IMAGE_ENCODE_FAILED;
+    uint32_t scaleRet = mainPixelmap->Scale(scale, scale, opts_.sizeLimit.antiAliasingLevel);
+    if (scaleRet != SUCCESS) {
+        IMAGE_LOGE("ExtEncoder::ProcessPictureMaxSize mainPixelmap scale failed %{public}u", scaleRet);
+        return scaleRet;
     }
 
     const auto& auxTypes = ImageUtils::GetAllAuxiliaryPictureType();
@@ -1115,9 +1110,12 @@ uint32_t ExtEncoder::ProcessPictureMaxSize()
         auto auxPicture = picture_->GetAuxiliaryPicture(auxType);
         if (auxPicture == nullptr) continue;
         auto auxPixelmap = auxPicture->GetContentPixel();
-        if (auxPixelmap != nullptr && !auxPixelmap->resize(scale, scale)) {
-            IMAGE_LOGE("ExtEncoder::ProcessPictureMaxSize aux resize failed, type %{public}d", auxType);
-            return ERR_IMAGE_ENCODE_FAILED;
+        if (auxPixelmap != nullptr) {
+            scaleRet = auxPixelmap->Scale(scale, scale, opts_.sizeLimit.antiAliasingLevel);
+            if (scaleRet != SUCCESS) {
+                IMAGE_LOGE("ExtEncoder::ProcessPictureMaxSize auxPixelmap scale failed, type %{public}d", auxType);
+                return ERR_IMAGE_ENCODE_FAILED;
+            }
         }
     }
     return SUCCESS;
@@ -1275,7 +1273,7 @@ sptr<SurfaceBuffer> ExtEncoder::ConvertToSurfaceBuffer(PixelMap* pixelmap)
 sptr<SurfaceBuffer> ExtEncoder::ConvertPixelMapToDmaBuffer(std::shared_ptr<PixelMap> pixelmap)
 {
     sptr<SurfaceBuffer> surfaceBuffer;
-    if (pixelmap->GetAllocatorType() != AllocatorType::DMA_ALLOC) {
+    if (pixelmap->GetAllocatorType() != AllocatorType::DMA_ALLOC || pixelmap->GetNoPaddingUsage()) {
         surfaceBuffer = ConvertToSurfaceBuffer(pixelmap.get());
     } else {
         surfaceBuffer = sptr<SurfaceBuffer>(reinterpret_cast<SurfaceBuffer*>(pixelmap->GetFd()));
@@ -1716,6 +1714,7 @@ uint32_t ExtEncoder::AssembleHeifThumbnail(std::vector<ImageItem>& inputImgs)
 
 uint32_t ExtEncoder::AssembleHeifAuxiliaryPicture(std::vector<ImageItem>& inputImgs, std::vector<ItemRef>& refs)
 {
+    ImageFuncTimer imageFuncTimer("%s enter", __func__);
     bool cond = !picture_;
     CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER, "picture_ is nullptr");
     if (picture_->HasAuxiliaryPicture(AuxiliaryPictureType::DEPTH_MAP) &&
@@ -1737,6 +1736,7 @@ uint32_t ExtEncoder::AssembleHeifAuxiliaryPicture(std::vector<ImageItem>& inputI
     static constexpr AuxiliaryPictureType TARGET_AUX_TYPES[] = {
         AuxiliaryPictureType::SNAP_MAP, AuxiliaryPictureType::SNAP_GAINMAP,
         AuxiliaryPictureType::PAN_MAP, AuxiliaryPictureType::PAN_GAINMAP,
+        AuxiliaryPictureType::LHDR_GAINMAP,
     };
     for (auto type : TARGET_AUX_TYPES) {
         if (!picture_->HasAuxiliaryPicture(type)) {
@@ -1964,8 +1964,10 @@ uint32_t DecomposeDualVivid(VpeSurfaceBuffers& buffers, Media::PixelMap* pixelma
     const int halfSizeDenominator = 2;
     sptr<SurfaceBuffer> gainmapSptr = AllocSurfaceBuffer(hdrSurfaceBuffer->GetWidth() / halfSizeDenominator,
         hdrSurfaceBuffer->GetHeight() / halfSizeDenominator);
-    bool cond = baseSptr == nullptr || gainmapSptr == nullptr;
-    CHECK_ERROR_RETURN_RET(cond, IMAGE_RESULT_CREATE_SURFAC_FAILED);
+    if (baseSptr == nullptr || gainmapSptr == nullptr) {
+        FreeBaseAndGainMapSurfaceBuffer(baseSptr, gainmapSptr);
+        return IMAGE_RESULT_CREATE_SURFAC_FAILED;
+    }
     CM_ColorSpaceType colorspaceType;
     VpeUtils::GetSbColorSpaceType(hdrSurfaceBuffer, colorspaceType);
     if ((colorspaceType & CM_PRIMARIES_MASK) != COLORPRIMARIES_BT2020) {
@@ -2065,6 +2067,8 @@ uint32_t ExtEncoder::Encode10bitSdrPixelMap(Media::PixelMap* pixelmap, ExtWStrea
         return ERR_IMAGE_ENCODE_FAILED;
     }
 
+    bool cond = buffers.hdr == nullptr;
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_ENCODE_FAILED, "buffers.hdr is nullptr");
     PixelFormat pixelFormat = ImageUtils::SbFormat2PixelFormat(buffers.hdr->GetFormat());
     std::unique_ptr<PixelMap> encodePixelmap;
     if (ImageUtils::IsYuvFormat(pixelFormat)) {
@@ -2380,6 +2384,9 @@ uint32_t ExtEncoder::EncodePicture()
     bool cond = (encodeFormat_ != SkEncodedImageFormat::kJPEG && encodeFormat_ != SkEncodedImageFormat::kHEIF);
     CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER,
         "%{public}s: unsupported encode format: %{public}s", __func__, opts_.format.c_str());
+    cond = ImageUtils::Is10Bit(picture_->GetMainPixel()->GetPixelFormat());
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER, "unsupported 10bit encode, format: %{public}d",
+        picture_->GetMainPixel()->GetPixelFormat());
     if (ShouldGenerateThumbnail() && !GenerateThumbnailForPicture(picture_, opts_.maxEmbedThumbnailDimension)) {
         IMAGE_LOGW("%{public}s: Generate thumbnail for picture failed", __func__);
     }
@@ -2484,6 +2491,7 @@ uint32_t ExtEncoder::EncodeCameraScenePicture(SkWStream& skStream)
 
 uint32_t ExtEncoder::EncodeEditScenePicture()
 {
+    ImageFuncTimer imageFuncTimer("%s enter", __func__);
     bool cond = !picture_;
     CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_DATA_ABNORMAL, "picture_ is nullptr");
     auto mainPixelMap = picture_->GetMainPixel();
@@ -2510,12 +2518,13 @@ void ExtEncoder::EncodeHeifMetadata(std::vector<ItemRef> &refs, std::vector<Meta
     }
     for (const auto& info : HEIF_BLOB_INFOS) {
         auto metaType = MetadataTypeConvertFromHeif(info.type);
-        if (!opts_.needsPackProperties && metaType != MetadataType::DFXDATA) {
+        if (metaType == MetadataType::DFXDATA) {
+            if (!ImageSystemProperties::GetEncodeDfxDataEnabled() && !opts_.needsPackDfxData) {
+                IMAGE_LOGI("no need encode DfxData");
+                continue;
+            }
+        } else if (!opts_.needsPackProperties) {
             IMAGE_LOGD("no need encode blob: %{public}d", metaType);
-            continue;
-        }
-        if (metaType == MetadataType::DFXDATA && !opts_.needsPackDfxData) {
-            IMAGE_LOGD("no need encode DfxData");
             continue;
         }
         if (AssembleBlobMetaItem(metaType, inputMetas)) {
@@ -2777,14 +2786,19 @@ void ExtEncoder::EncodeJpegAllBlobMetadata(SkWStream& skStream)
     if (picture_ == nullptr) {
         return;
     }
-    if (opts_.needsPackDfxData == false) {
-        IMAGE_LOGD("no need encode DfxData");
-        picture_->DropMetadata(MetadataType::DFXDATA);
-    }
     for (const auto& iter : BLOB_METADATA_TAG_MAP) {
         auto metadataPtr = picture_->GetMetadata(iter.first);
-        if (metadataPtr == nullptr || (iter.first != MetadataType::DFXDATA && opts_.needsPackProperties == false)) {
-            IMAGE_LOGD("no need encode blob: %{public}d or don't have this blob", iter.first);
+        if (metadataPtr == nullptr) {
+            IMAGE_LOGD("Don't have this blob %{public}d", iter.first);
+            continue;
+        }
+        if (iter.first == MetadataType::DFXDATA) {
+            if (!ImageSystemProperties::GetEncodeDfxDataEnabled() && !opts_.needsPackDfxData) {
+                IMAGE_LOGI("no need encode DfxData");
+                continue;
+            }
+        } else if (!opts_.needsPackProperties) {
+            IMAGE_LOGD("no need encode blob: %{public}d", iter.first);
             continue;
         }
         uint8_t* bytes = metadataPtr->GetBlobPtr();
@@ -3187,6 +3201,7 @@ void ExtEncoder::AssembleDualHdrRefItem(std::vector<ItemRef>& refs)
 uint32_t ExtEncoder::DoHeifEncode(std::vector<ImageItem>& inputImgs, std::vector<MetaItem>& inputMetas,
     std::vector<ItemRef>& refs)
 {
+    ImageFuncTimer imageFuncTimer("%s enter", __func__);
     SharedBuffer outputBuffer {};
     std::shared_ptr<AbsMemory> outputAshmem;
     bool tempRes = AssembleOutputSharedBuffer(outputBuffer, outputAshmem);

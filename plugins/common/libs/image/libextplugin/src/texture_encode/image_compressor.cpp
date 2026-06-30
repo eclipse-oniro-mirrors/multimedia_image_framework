@@ -22,6 +22,7 @@
 #include "securec.h"
 #include "media_errors.h"
 #include "image_log.h"
+#include "image_trace.h"
 
 #undef LOG_DOMAIN
 #define LOG_DOMAIN LOG_TAG_DOMAIN_ID_PLUGIN
@@ -830,6 +831,7 @@ static CL_ASTC_STATUS AstcCreateClKernel(ClAstcHandle *clAstcHandle, const std::
 
 CL_ASTC_SHARE_LIB_API CL_ASTC_STATUS AstcClCreate(ClAstcHandle **handle, const std::string &clBinPath)
 {
+    Media::ImageTrace imageTrace("AstcClCreate");
     ClAstcHandle *clAstcHandle = static_cast<ClAstcHandle *>(calloc(1, sizeof(ClAstcHandle)));
     if (clAstcHandle == nullptr) {
         IMAGE_LOGE("astc AstcClCreate handle calloc failed!");
@@ -864,6 +866,15 @@ static CL_ASTC_STATUS AstcClEncImageCheckImageOption(const ClAstcImageOption *im
             imageIn->width, MAX_WIDTH, imageIn->height, MAX_HEIGHT);
         return CL_ASTC_ENC_FAILED;
     }
+    if (imageIn->data == nullptr) {
+        IMAGE_LOGE("astc AstcClEncImage data is nullptr!");
+        return CL_ASTC_ENC_FAILED;
+    }
+    if (imageIn->stride > MAX_WIDTH) {
+        IMAGE_LOGE("astc AstcClEncImage stride[%{public}d] exceeds MAX_WIDTH[%{public}d]!",
+            imageIn->stride, MAX_WIDTH);
+        return CL_ASTC_ENC_FAILED;
+    }
     return CL_ASTC_ENC_SUCCESS;
 }
 
@@ -872,6 +883,10 @@ CL_ASTC_SHARE_LIB_API CL_ASTC_STATUS AstcClFillImage(ClAstcImageOption *imageIn,
 {
     if (imageIn == nullptr) {
         IMAGE_LOGE("astc AstcClFillImage imageIn is  nullptr!");
+        return CL_ASTC_ENC_FAILED;
+    }
+    if (data == nullptr) {
+        IMAGE_LOGE("astc AstcClFillImage data is nullptr!");
         return CL_ASTC_ENC_FAILED;
     }
     imageIn->data = data;

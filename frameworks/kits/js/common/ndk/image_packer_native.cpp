@@ -18,6 +18,7 @@
 #include "common_utils.h"
 #include "image_log.h"
 #include "image_packer.h"
+#include "image_utils.h"
 #include "image_packer_native_impl.h"
 #include "image_source_native_impl.h"
 #include "media_errors.h"
@@ -301,8 +302,12 @@ Image_ErrorCode OH_PackingOptions_SetNeedsPackProperties(OH_PackingOptions *opti
 MIDK_EXPORT
 Image_ErrorCode OH_PackingOptions_GetNeedsPackDfxData(OH_PackingOptions *options, bool *needsPackDfxData)
 {
+    if (!OHOS::Media::ImageUtils::IsSystemApp()) {
+        IMAGE_LOGE("This interface can be called only by system apps.");
+        return IMAGE_PERMISSIONS_FAILED;
+    }
     if (options == nullptr || needsPackDfxData == nullptr) {
-        return IMAGE_BAD_PARAMETER;
+        return IMAGE_PACKER_INVALID_PARAMETER;
     }
     *needsPackDfxData = options->needsPackDfxData;
     return IMAGE_SUCCESS;
@@ -311,8 +316,12 @@ Image_ErrorCode OH_PackingOptions_GetNeedsPackDfxData(OH_PackingOptions *options
 MIDK_EXPORT
 Image_ErrorCode OH_PackingOptions_SetNeedsPackDfxData(OH_PackingOptions *options, bool needsPackDfxData)
 {
+    if (!OHOS::Media::ImageUtils::IsSystemApp()) {
+        IMAGE_LOGE("This interface can be called only by system apps.");
+        return IMAGE_PERMISSIONS_FAILED;
+    }
     if (options == nullptr) {
-        return IMAGE_BAD_PARAMETER;
+        return IMAGE_PACKER_INVALID_PARAMETER;
     }
     options->needsPackDfxData = needsPackDfxData;
     return IMAGE_SUCCESS;

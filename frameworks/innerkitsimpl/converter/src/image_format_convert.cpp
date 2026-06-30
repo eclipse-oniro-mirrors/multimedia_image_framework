@@ -517,37 +517,6 @@ bool ImageFormatConvert::IsSupport(PixelFormat format)
     }
 }
 
-#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
-static void GetYUVStrideInfo(int32_t pixelFmt, OH_NativeBuffer_Planes *planes, YUVStrideInfo &dstStrides)
-{
-    if (pixelFmt == GRAPHIC_PIXEL_FMT_YCBCR_420_SP) {
-        auto yStride = planes->planes[PLANE_Y].columnStride;
-        auto uvStride = planes->planes[PLANE_U].columnStride;
-        auto yOffset = planes->planes[PLANE_Y].offset;
-        auto uvOffset = planes->planes[PLANE_U].offset;
-        dstStrides = {yStride, uvStride, yOffset, uvOffset};
-    } else if (pixelFmt == GRAPHIC_PIXEL_FMT_YCRCB_420_SP) {
-        auto yStride = planes->planes[PLANE_Y].columnStride;
-        auto uvStride = planes->planes[PLANE_V].columnStride;
-        auto yOffset = planes->planes[PLANE_Y].offset;
-        auto uvOffset = planes->planes[PLANE_V].offset;
-        dstStrides = {yStride, uvStride, yOffset, uvOffset};
-    } else if (pixelFmt == GRAPHIC_PIXEL_FMT_YCBCR_P010) {
-        auto yStride = planes->planes[PLANE_Y].columnStride / 2;
-        auto uvStride = planes->planes[PLANE_U].columnStride / 2;
-        auto yOffset = planes->planes[PLANE_Y].offset / 2;
-        auto uvOffset = planes->planes[PLANE_U].offset / 2;
-        dstStrides = {yStride, uvStride, yOffset, uvOffset};
-    } else if (pixelFmt == GRAPHIC_PIXEL_FMT_YCRCB_P010) {
-        auto yStride = planes->planes[PLANE_Y].columnStride / 2;
-        auto uvStride = planes->planes[PLANE_V].columnStride / 2;
-        auto yOffset = planes->planes[PLANE_Y].offset / 2;
-        auto uvOffset = planes->planes[PLANE_V].offset / 2;
-        dstStrides = {yStride, uvStride, yOffset, uvOffset};
-    }
-}
-#endif
-
 std::unique_ptr<AbsMemory> ImageFormatConvert::CreateMemory(PixelFormat pixelFormat, AllocatorType allocatorType,
     Size size, YUVStrideInfo &strides, uint64_t usage)
 {
@@ -581,16 +550,8 @@ std::unique_ptr<AbsMemory> ImageFormatConvert::CreateMemory(PixelFormat pixelFor
     }
     CHECK_ERROR_RETURN_RET_LOG(m->extend.data == nullptr, m, "CreateMemory get surfacebuffer failed");
     auto sb = reinterpret_cast<SurfaceBuffer*>(m->extend.data);
-    OH_NativeBuffer_Planes *planes = nullptr;
-    GSError retVal = sb->GetPlanesInfo(reinterpret_cast<void**>(&planes));
-    auto stride = sb->GetStride();
-    strides = {stride, 0, 0, 0};
-    if (retVal != OHOS::GSERROR_OK || planes == nullptr) {
-        IMAGE_LOGE("CreateMemory Get planesInfo failed, retVal:%{public}d", retVal);
-    } else if (planes->planeCount >= NUM_2) {
-        int32_t pixelFmt = sb->GetFormat();
-        GetYUVStrideInfo(pixelFmt, planes, strides);
-    }
+    strides = {sb->GetStride(), 0, 0, 0};
+    ImageUtils::GetYUVStrideInfo(sb, strides);
 #endif
     return m;
 }
@@ -735,6 +696,7 @@ uint32_t ImageFormatConvert::RGBConvertImageFormatOptionUnique(
     #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     if (allocType == AllocatorType::DMA_ALLOC) {
         auto sb = reinterpret_cast<SurfaceBuffer*>(srcPixelMap->GetFd());
+        CHECK_ERROR_RETURN_RET(sb == nullptr, ERR_IMAGE_INVALID_PARAMETER);
         stride = sb->GetStride();
         sptr<SurfaceBuffer> sourceSurfaceBuffer(sb);
         sptr<SurfaceBuffer> dstSurfaceBuffer(reinterpret_cast<SurfaceBuffer*>(memory->extend.data));

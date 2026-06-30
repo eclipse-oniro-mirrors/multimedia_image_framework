@@ -208,8 +208,9 @@ static bool I420ToRGB(I420Info &i420, DestConvertParam &destParam, [[maybe_unuse
                 destParam.width, destParam.height);
             break;
         case PixelFormat::BGRA_8888:
-            converter.I420ToARGB(i420.I420Y, i420.yStride, i420.I420U, i420.uStride, i420.I420V, i420.vStride,
-                destParam.slice[0], destParam.stride[0], destParam.width, destParam.height);
+            converter.I420ToARGBMatrix(i420.I420Y, i420.yStride, i420.I420U, i420.uStride, i420.I420V, i420.vStride,
+                destParam.slice[0], destParam.stride[0], OHOS::OpenSourceLibyuv::YuvConstants::YuvJPEG,
+                destParam.width, destParam.height);
             break;
         case PixelFormat::RGB_888:
             converter.I420ToRAW(i420.I420Y, i420.yStride, i420.I420U, i420.uStride, i420.I420V, i420.vStride,
@@ -555,10 +556,8 @@ static bool YuvToI420ToI010ToRGB10(const uint8_t *srcBuffer, const YUVDataInfo &
 
     I420Info i420Info = {yuvInfo.yWidth, yuvInfo.yHeight};
 
-    if (!YuvToI420ToRGBParam(yuvInfo, srcParam, i420Info, destParam, destInfo)) {
-        IMAGE_LOGE("YuvToI420ToRGB Param failed!");
-        return false;
-    }
+    bool cond = !YuvToI420ToRGBParam(yuvInfo, srcParam, i420Info, destParam, destInfo);
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "YuvToI420ToRGB Param failed!");
 
     I010Info i010Info = {yuvInfo.yWidth, yuvInfo.yHeight};
 
@@ -838,10 +837,8 @@ static bool P010ToI010ToI420ToRGB(const uint8_t *srcBuffer, const YUVDataInfo &y
 
     I420Info i420Info = {yuvInfo.yWidth, yuvInfo.yHeight};
 
-    if (!YuvP010ToI420ToRGBParam(yuvInfo, srcParam, i420Info, destParam, destInfo)) {
-        IMAGE_LOGE("YuvP010ToI420ToRGB Param failed!");
-        return false;
-    }
+    bool cond = !YuvP010ToI420ToRGBParam(yuvInfo, srcParam, i420Info, destParam, destInfo);
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "YuvP010ToI420ToRGB Param failed!");
 
     I010Info i010Info = {yuvInfo.yWidth, yuvInfo.yHeight};
 
@@ -881,17 +878,15 @@ static bool P010ToI010ToI420ToRGB(const uint8_t *srcBuffer, const YUVDataInfo &y
 static bool P010ToI010ToRGB10Param(const YUVDataInfo &yuvInfo, SrcConvertParam &srcParam, I010Info &i010Info,
                                    DestConvertParam &destParam, DestConvertInfo &destInfo)
 {
-    if (!YuvP010ToRGBParam(yuvInfo, srcParam, destParam, destInfo)) {
-        IMAGE_LOGE("YuvP010 conversion to RGB failed!");
-        return false;
-    }
+    bool cond = !YuvP010ToRGBParam(yuvInfo, srcParam, destParam, destInfo);
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "YuvP010 conversion to RGB failed!");
     i010Info.yStride = yuvInfo.yWidth;
     i010Info.uStride = (yuvInfo.yWidth + NUM_1) / NUM_2;
     i010Info.vStride = (yuvInfo.yWidth + NUM_1) / NUM_2;
     i010Info.uvHeight = ((i010Info.height + NUM_1) / NUM_2);
     const uint32_t i010BufferSize = static_cast<size_t>(i010Info.yStride * i010Info.height +
         i010Info.uStride * i010Info.uvHeight * NUM_2);
-    bool cond = i010BufferSize <= NUM_0 || i010BufferSize > PIXEL_MAP_MAX_RAM_SIZE;
+    cond = i010BufferSize <= NUM_0 || i010BufferSize > PIXEL_MAP_MAX_RAM_SIZE;
     CHECK_ERROR_RETURN_RET_LOG(cond, false, "Invalid destination buffer size calculation!");
     uint16_t *i010Buffer = new (std::nothrow) uint16_t[i010BufferSize];
     CHECK_ERROR_RETURN_RET_LOG(i010Buffer == nullptr, false, "apply space for I420 buffer failed!");
@@ -914,10 +909,8 @@ static bool P010ToI010ToRGB10(const uint8_t *srcBuffer, const YUVDataInfo &yuvIn
 
     I010Info i010Info = {yuvInfo.yWidth, yuvInfo.yHeight};
 
-    if (!P010ToI010ToRGB10Param(yuvInfo, srcParam, i010Info, destParam, destInfo)) {
-        IMAGE_LOGE("P010ToI010ToRGB10 Param failed!");
-        return false;
-    }
+    bool cond = !P010ToI010ToRGB10Param(yuvInfo, srcParam, i010Info, destParam, destInfo);
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "P010ToI010ToRGB10 Param failed!");
 
     auto bRet = P010ToI010(srcParam, i010Info);
     if (!bRet) {
@@ -1230,7 +1223,6 @@ bool ImageFormatConvertExtUtils::NV21ToRGBA(const uint8_t *srcBuffer, const YUVD
                                             DestConvertInfo &destInfo,
                                             [[maybe_unused]]ColorSpace colorSpace)
 {
-    destInfo.format = PixelFormat::RGBA_8888;
     return YuvTo420ToRGB(srcBuffer, yDInfo, PixelFormat::NV21, destInfo, colorSpace);
 }
 
@@ -1238,7 +1230,6 @@ bool ImageFormatConvertExtUtils::NV12ToRGBA(const uint8_t *srcBuffer, const YUVD
                                             DestConvertInfo &destInfo,
                                             [[maybe_unused]]ColorSpace colorSpace)
 {
-    destInfo.format = PixelFormat::RGBA_8888;
     return YuvTo420ToRGB(srcBuffer, yDInfo, PixelFormat::NV12, destInfo, colorSpace);
 }
 
@@ -1246,21 +1237,20 @@ bool ImageFormatConvertExtUtils::NV21ToBGRA(const uint8_t *srcBuffer, const YUVD
                                             DestConvertInfo &destInfo,
                                             [[maybe_unused]]ColorSpace colorSpace)
 {
-    return YuvToRGB(srcBuffer, yDInfo, PixelFormat::NV21, destInfo, PixelFormat::BGRA_8888);
+    return YuvTo420ToRGB(srcBuffer, yDInfo, PixelFormat::NV21, destInfo, colorSpace);
 }
 
 bool ImageFormatConvertExtUtils::NV12ToBGRA(const uint8_t *srcBuffer, const YUVDataInfo &yDInfo,
                                             DestConvertInfo &destInfo,
                                             [[maybe_unused]]ColorSpace colorSpace)
 {
-    return YuvToRGB(srcBuffer, yDInfo, PixelFormat::NV12, destInfo, PixelFormat::BGRA_8888);
+    return YuvTo420ToRGB(srcBuffer, yDInfo, PixelFormat::NV12, destInfo, colorSpace);
 }
 
 bool ImageFormatConvertExtUtils::NV21ToRGB565(const uint8_t *srcBuffer, const YUVDataInfo &yDInfo,
                                               DestConvertInfo &destInfo,
                                               [[maybe_unused]]ColorSpace colorSpace)
 {
-    destInfo.format = PixelFormat::RGB_565;
     return YuvTo420ToRGB(srcBuffer, yDInfo, PixelFormat::NV21, destInfo, colorSpace);
 }
 
@@ -1268,7 +1258,6 @@ bool ImageFormatConvertExtUtils::NV12ToRGB565(const uint8_t *srcBuffer, const YU
                                               DestConvertInfo &destInfo,
                                               [[maybe_unused]]ColorSpace colorSpace)
 {
-    destInfo.format = PixelFormat::RGB_565;
     return YuvTo420ToRGB(srcBuffer, yDInfo, PixelFormat::NV12, destInfo, colorSpace);
 }
 } // namespace Media

@@ -40,6 +40,9 @@ namespace {
 
 namespace OHOS {
 namespace ImagePlugin {
+
+const static uint32_t MAX_CHILDREN_PER_BOX = 1000;
+
 heif_error HeifBox::ParseHeader(HeifStreamReader &reader)
 {
     // box size bytes + box type bytes
@@ -294,6 +297,9 @@ heif_error HeifBox::ReadChildren(HeifStreamReader &reader, uint32_t &recursionCo
         if (error != heif_error_ok) {
             return error;
         }
+        if (children_.size() >= MAX_CHILDREN_PER_BOX) {
+            return heif_error_too_many_boxes;
+        }
         if (box != nullptr) {
             children_.push_back(std::move(box));
         }
@@ -304,6 +310,9 @@ heif_error HeifBox::ReadChildren(HeifStreamReader &reader, uint32_t &recursionCo
 heif_error HeifBox::WriteChildren(HeifStreamWriter &writer) const
 {
     for (const auto &child: children_) {
+        if (child == nullptr) {
+            continue;
+        }
         if (child->GetBoxType() == BOX_TYPE_GRPL) {
             continue;
         }

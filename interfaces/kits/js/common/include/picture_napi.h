@@ -50,11 +50,13 @@ private:
     static napi_value SetAuxiliaryPicture(napi_env env, napi_callback_info info);
     static napi_value GetMetadata(napi_env env, napi_callback_info info);
     static napi_value SetMetadata(napi_env env, napi_callback_info info);
+    static napi_value HdrComposeToMainPixelmap(napi_env env, napi_callback_info info);
 
     /* static method */
     static napi_value CreatePicture(napi_env env, napi_callback_info info);
     static napi_value CreatePictureFromParcel(napi_env env, napi_callback_info info);
     static napi_value CreatePictureByHdrAndSdrPixelMap(napi_env env, napi_callback_info info);
+    static napi_value DecomposeToPicture(napi_env env, napi_callback_info info);
     static napi_value ThrowExceptionError(napi_env env,
         const std::string &tag, const std::uint32_t &code, const std::string &info);
     void release();

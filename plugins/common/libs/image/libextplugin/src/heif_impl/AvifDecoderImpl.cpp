@@ -55,6 +55,7 @@ static constexpr uint32_t MAX_STREAM_LEN = 300 * 1024 * 1024;
 #ifdef AVIF_DECODE_ENABLE
 static constexpr int BITS_8 = 8;
 static constexpr int BITS_10 = 10;
+static constexpr int FFMPEG_NUM_DATA_POINTERS = 8;
 static constexpr uint32_t Y_PLANE_INDEX = 0;
 static constexpr uint32_t U_PLANE_INDEX = 1;
 static constexpr uint32_t V_PLANE_INDEX = 2;
@@ -125,11 +126,13 @@ bool Dav1dDecoder::ConvertToRGB(SwsContext *ctx, Dav1dPicture &pic, ConvertInfo 
     uint8_t* srcY = reinterpret_cast<uint8_t*>((pic).data[Y_PLANE_INDEX]);
     uint8_t* srcU = reinterpret_cast<uint8_t*>((pic).data[U_PLANE_INDEX]);
     uint8_t* srcV = reinterpret_cast<uint8_t*>((pic).data[V_PLANE_INDEX]);
-    uint8_t* srcData[] = { srcY, srcU, srcV };
-    int32_t srcLinesize[] = { pic.stride[Y_STRIDE_INDEX], pic.stride[U_STRIDE_INDEX], pic.stride[V_STRIDE_INDEX] };
+    uint8_t* srcData[FFMPEG_NUM_DATA_POINTERS] = { srcY, srcU, srcV };
+    int32_t srcLinesize[FFMPEG_NUM_DATA_POINTERS] = {
+        pic.stride[Y_STRIDE_INDEX], pic.stride[U_STRIDE_INDEX], pic.stride[V_STRIDE_INDEX]
+    };
 
-    uint8_t* dstData[] = { info.dstBuffer };
-    int32_t dstLinesize[] = { info.rowStride };
+    uint8_t* dstData[FFMPEG_NUM_DATA_POINTERS] = { info.dstBuffer };
+    int32_t dstLinesize[FFMPEG_NUM_DATA_POINTERS] = { info.rowStride };
 
     int ret = sws_scale(ctx, srcData, srcLinesize, 0, pic.p.h, dstData, dstLinesize);
     IMAGE_LOGD("%{public}s sws scale ret : %{public}d", __func__, ret);
@@ -527,7 +530,7 @@ bool AvifDecoderImpl::IsMemoryExceed(uint32_t groupNum)
         "%{public}s av_image_get_buffer_size failed.", __func__);
     CHECK_DEBUG_RETURN_RET_LOG(ImageUtils::CheckMulOverflow<uint64_t>(groupNum, perPicMemorySize), true,
         "%{public}s group memory size is exceed.", __func__);
-    groupMemorySize = groupNum * perPicMemorySize;
+    groupMemorySize = groupNum * static_cast<uint64_t>(perPicMemorySize);
     return ImageUtils::HasOverflowed64(groupMemorySize, dstMemorySize_);
 }
 

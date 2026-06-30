@@ -41,7 +41,7 @@ constexpr uint32_t TIMES_SEVEN = 7;
 constexpr uint32_t TIMES_FIVE = 5;
 constexpr uint32_t TIMES_THREE = 3;
 constexpr uint32_t TIMES_TWO = 2;
-constexpr uint32_t MAX_LOOP_SIZE = 5;
+constexpr uint32_t MAX_LOOP_SIZE = 4;
 
 std::string HeifFormatAgent::GetFormatType()
 {
@@ -73,6 +73,7 @@ bool HeifFormatAgent::CheckFormat(const void *headerData, uint32_t dataSize)
         return false;
     }
     uint32_t tmpBuff[HEADER_SIZE];
+    // only the first 32 bytes are initialized
     if (memcpy_s(tmpBuff, HEADER_SIZE, headerData, dataSize) != 0) {
         IMAGE_LOGE("memcpy headerData data size:[%{public}d] error.", dataSize);
         return false;
@@ -101,7 +102,7 @@ bool HeifFormatAgent::CheckFormat(const void *headerData, uint32_t dataSize)
                 // Skip this index, it refers to the minorVersion, not a brand.
                 continue;
             }
-            // When numCompatibleBrands is 4, i equals 5, and there is no heif brand, it will be read out of bounds.
+            // When numCompatibleBrands is 4, i equals 4, and there is no heif brand, it will be read out of bounds.
             CHECK_ERROR_RETURN_RET_LOG(i == MAX_LOOP_SIZE, false,
                 "check heif format failed, the number of cycles exceeded expectations");
             auto *brandPtr = static_cast<const uint32_t *>(tmpBuff) + (numCompatibleBrands + i);

@@ -775,6 +775,7 @@ HWTEST_F(HeifParserBoxTest, AppendNalDataTest001, TestSize.Level3)
     HeifHvccBox heifHvccBox;
     std::vector<uint8_t> nalData = {0x01, 0x02, 0x03, 0x04};
     heifHvccBox.AppendNalData(nalData);
+    ASSERT_EQ(heifHvccBox.nalArrays_.size(), 1);
     GTEST_LOG_(INFO) << "HeifParserBoxTest: AppendNalDataTest001 end";
 }
 

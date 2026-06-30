@@ -161,6 +161,7 @@ const std::set<OHOS::Media::AuxiliaryPictureType> &ImageTaiheUtils::GetTaiheSupp
         OHOS::Media::AuxiliaryPictureType::UNREFOCUS_MAP,
         OHOS::Media::AuxiliaryPictureType::LINEAR_MAP,
         OHOS::Media::AuxiliaryPictureType::FRAGMENT_MAP,
+        OHOS::Media::AuxiliaryPictureType::LHDR_GAINMAP,
     };
     return auxTypes;
 }
@@ -195,6 +196,7 @@ array<uint8_t> ImageTaiheUtils::CreateTaiheArrayBuffer(uint8_t* src, size_t srcL
 uintptr_t ImageTaiheUtils::GetUndefinedPtr(ani_env *env)
 {
     ani_ref undefinedRef {};
+    CHECK_ERROR_RETURN_RET_LOG(env == nullptr, 0, "env is nullptr");
     CHECK_ERROR_RETURN_RET_LOG(env->GetUndefined(&undefinedRef) != ANI_OK, 0, "GetUndefined failed");
     ani_object undefinedObj = static_cast<ani_object>(undefinedRef);
     return reinterpret_cast<uintptr_t>(undefinedObj);
@@ -260,14 +262,5 @@ bool ImageTaiheUtils::IsValidPtr<weak::ImageSource>(weak::ImageSource data);
 template
 bool ImageTaiheUtils::IsValidPtr<weak::Picture>(weak::Picture data);
 
-bool ImageTaiheUtils::IsSystemApp()
-{
-#if !defined(CROSS_PLATFORM)
-    static bool isSys = OHOS::Security::AccessToken::TokenIdKit::IsSystemAppByFullTokenID(
-        OHOS::IPCSkeleton::GetSelfTokenID());
-    return isSys;
-#else
-    return false;
-#endif
-}
+
 } // namespace ANI::Image

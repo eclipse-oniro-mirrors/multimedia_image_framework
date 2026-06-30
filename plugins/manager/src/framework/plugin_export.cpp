@@ -14,7 +14,6 @@
  */
 
 #include "plugin_export.h"
-#include "bmp_decoder.h"
 #include "bmp_format_agent.h"
 #include "gif_encoder.h"
 #include "gif_format_agent.h"
@@ -57,8 +56,6 @@ namespace {
 
 // register implement classes of this plugin.
 PLUGIN_EXPORT_REGISTER_CLASS_BEGIN
-PLUGIN_EXPORT_REGISTER_CLASS(OHOS::ImagePlugin::BmpDecoder)
-PLUGIN_EXPORT_REGISTER_CLASS(OHOS::ImagePlugin::BmpFormatAgent)
 PLUGIN_EXPORT_REGISTER_CLASS(OHOS::ImagePlugin::JpegDecoder)
 PLUGIN_EXPORT_REGISTER_CLASS(OHOS::ImagePlugin::JpegEncoder)
 PLUGIN_EXPORT_REGISTER_CLASS(OHOS::ImagePlugin::JpegFormatAgent)

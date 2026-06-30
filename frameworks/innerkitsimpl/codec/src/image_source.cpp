@@ -128,6 +128,12 @@ static const map<PixelFormat, GraphicPixelFormat> SINGLE_HDR_CONVERT_FORMAT_MAP 
     { PixelFormat::YCRCB_P010, GRAPHIC_PIXEL_FMT_YCRCB_420_SP },
     { PixelFormat::YCBCR_P010, GRAPHIC_PIXEL_FMT_YCBCR_420_SP },
 };
+
+static const std::map<PixelFormat, GraphicPixelFormat> SURFACE_FORMAT_MAP = {
+    { PixelFormat::RGBA_8888, GRAPHIC_PIXEL_FMT_RGBA_8888 },
+    { PixelFormat::NV21, GRAPHIC_PIXEL_FMT_YCRCB_420_SP },
+    { PixelFormat::NV12, GRAPHIC_PIXEL_FMT_YCBCR_420_SP },
+};
 #endif
 
 namespace InnerFormat {
@@ -147,6 +153,7 @@ static const std::string DNG_FORMAT = "image/x-adobe-dng";
 static const uint32_t FIRST_FRAME = 0;
 static const int INT_ZERO = 0;
 static const size_t SIZE_ZERO = 0;
+static const uint8_t UINT_255 = 255;
 static const uint8_t NUM_0 = 0;
 static const uint8_t NUM_1 = 1;
 static const uint8_t NUM_2 = 2;
@@ -179,6 +186,9 @@ constexpr size_t ASTC_TLV_SIZE = 10; // 10 is tlv size, colorspace size
 constexpr uint8_t ASTC_OPTION_QUALITY = 85;
 static constexpr uint32_t SINGLE_FRAME_SIZE = 1;
 static constexpr uint8_t ISO_USE_BASE_COLOR = 0x01;
+constexpr int32_t JPEG_DMA_SIZE = 128 * 128;
+constexpr int32_t PNG_DMA_SIZE = 256 * 256;
+constexpr int32_t HEIF_DMA_SIZE = 128 * 128;
 constexpr int32_t DEFAULT_DMA_SIZE = 512 * 512;
 constexpr int32_t DMA_ALLOC = 1;
 constexpr int32_t SHARE_MEMORY_ALLOC = 2;
@@ -187,6 +197,7 @@ static constexpr uint8_t JPEG_SOI[] = { 0xFF, 0xD8, 0xFF };
 constexpr uint8_t PIXEL_BYTES = 4;
 constexpr int32_t WEBP_MIN_FRAME_DURATION = 100;
 constexpr int32_t WEBP_DELAY_TIME_UINT16_MAX = 65535;
+const static uint64_t IMAGESOURCE_FDSAN_TAG = LOG_TAG_DOMAIN_ID_IMAGE;
 
 struct StreamInfo {
     uint8_t* buffer = nullptr;
@@ -433,9 +444,7 @@ static bool IsSupportHeif()
 void ImageSource::InitDecoderForJpeg()
 {
     uint8_t* readBuffer = new (std::nothrow) uint8_t[sizeof(JPEG_SOI)];
-    if (readBuffer == nullptr) {
-        return;
-    }
+    CHECK_ERROR_RETURN(readBuffer == nullptr);
     uint32_t readSize = 0;
     uint32_t savedPosition = sourceStreamPtr_->Tell();
     sourceStreamPtr_->Seek(0);
@@ -585,10 +594,7 @@ unique_ptr<ImageSource> ImageSource::CreateImageSource(const std::string &pathNa
 {
     IMAGE_LOGD("[ImageSource]create Imagesource with pathName.");
     ImageDataStatistics imageDataStatistics("[ImageSource]CreateImageSource with pathName.");
-    if (pathName.size() == SIZE_ZERO) {
-        IMAGE_LOGE("[ImageSource]parameter error.");
-        return nullptr;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(pathName.size() == SIZE_ZERO, nullptr, "[ImageSource]parameter error.");
     auto imageSource = DoImageSourceCreate(
         [&pathName]() {
             auto streamPtr = DecodeBase64(pathName);
@@ -765,9 +771,7 @@ void ImageSource::TransformSizeWithDensity(const Size &srcSize, int32_t srcDensi
 static void NotifyDecodeEvent(set<DecodeListener *> &listeners,
     DecodeEvent event, std::unique_lock<std::recursive_mutex> *guard)
 {
-    if (listeners.size() == SIZE_ZERO) {
-        return;
-    }
+    CHECK_ERROR_RETURN(listeners.size() == SIZE_ZERO);
     for (auto listener : listeners) {
         if (guard != nullptr) {
             guard->unlock();
@@ -777,6 +781,36 @@ static void NotifyDecodeEvent(set<DecodeListener *> &listeners,
             guard->lock();
         }
     }
+}
+
+bool IsWidthAligned(const int32_t &width)
+{
+    CHECK_ERROR_RETURN_RET(width < 0, false);
+    return ((static_cast<uint32_t>(width) * NUM_4) & UINT_255) == 0;
+}
+
+const std::unordered_map<std::string, int32_t> formatThresholds{
+    {IMAGE_JPEG_FORMAT, JPEG_DMA_SIZE},
+    {IMAGE_HEIF_FORMAT, HEIF_DMA_SIZE},
+    {IMAGE_HEIC_FORMAT, HEIF_DMA_SIZE},
+    {IMAGE_PNG_FORMAT, PNG_DMA_SIZE},
+    {IMAGE_WEBP_FORMAT, DEFAULT_DMA_SIZE},
+    {IMAGE_GIF_FORMAT, DEFAULT_DMA_SIZE},
+    {IMAGE_BMP_FORMAT, DEFAULT_DMA_SIZE}
+};
+
+static bool IsSizeSupportDma(const ImageInfo& info)
+{
+    // Check for overflow risk
+    if (info.size.width > 0 && info.size.height > INT_MAX / info.size.width) {
+        return false;
+    }
+    const int64_t area = info.size.width * info.size.height;
+    auto it = formatThresholds.find(info.encodedFormat);
+    if (it != formatThresholds.end()) {
+        return area >= it->second;
+    }
+    return area >= DEFAULT_DMA_SIZE && IsWidthAligned(info.size.width);
 }
 
 bool ImageSource::IsDecodeHdrImage(const DecodeOptions &opts)
@@ -804,7 +838,7 @@ AllocatorType ImageSource::ConvertAutoAllocatorType(const DecodeOptions &opts)
     if (info.encodedFormat == IMAGE_SVG_FORMAT) {
         return AllocatorType::SHARE_MEM_ALLOC;
     }
-    if (ImageUtils::IsSizeSupportDma(info.size)) {
+    if (IsSizeSupportDma(info)) {
         return AllocatorType::DMA_ALLOC;
     }
     return AllocatorType::SHARE_MEM_ALLOC;
@@ -1023,9 +1057,7 @@ bool ImageSource::CheckCropRectValid(const DecodeOptions &opts)
         return true;
     }
     ImageInfo info;
-    if (GetImageInfo(FIRST_FRAME, info) != SUCCESS) {
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET(GetImageInfo(FIRST_FRAME, info) != SUCCESS, false);
     srcRect.width = info.size.width;
     srcRect.height = info.size.height;
     if (opts.cropAndScaleStrategy == CropAndScaleStrategy::SCALE_FIRST &&
@@ -1043,6 +1075,9 @@ bool ImageSource::CheckDecodeOptions(const DecodeOptions &opts)
 
 void ImageSource::SetAnimationSize(uint32_t index, const DecodeOptions &opts, ImageInfo &info)
 {
+    if (info.encodedFormat == IMAGE_HEIFS_FORMAT) {
+        opts_.isAnimationDecode = true;
+    }
     if (mainDecoder_ && info.encodedFormat == IMAGE_HEIFS_FORMAT && (opts.isAnimationDecode || index > 0)) {
         info.size = mainDecoder_->GetAnimationImageSize();
     }
@@ -1736,6 +1771,7 @@ uint32_t ImageSource::GetImageInfo(uint32_t index, ImageInfo &imageInfo)
     CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_DECODE_FAILED,
                                "[ImageSource]get the image size fail on get image info, width:%{public}d,"
                                "height:%{public}d.", info.size.width, info.size.height);
+    info.pixelFormat = sourceOptions_.pixelFormat;
     imageInfo = info;
     return SUCCESS;
 }
@@ -2087,20 +2123,13 @@ bool ImageSource::PrereadSourceStream()
 uint32_t ImageSource::CreatExifMetadataByImageSource(bool addFlag)
 {
     IMAGE_LOGD("CreatExifMetadataByImageSource");
-    if (exifMetadata_ != nullptr) {
-        IMAGE_LOGD("exifMetadata_ exist return SUCCESS");
-        return SUCCESS;
-    }
-
-    if (sourceStreamPtr_ == nullptr) {
-        IMAGE_LOGD("sourceStreamPtr_ not exist return ERR");
-        return ERR_IMAGE_SOURCE_DATA;
-    }
+    bool cond = (exifMetadata_ != nullptr);
+    CHECK_DEBUG_RETURN_RET_LOG(cond, SUCCESS, "exifMetadata_ exist return SUCCESS");
+    cond = (sourceStreamPtr_ == nullptr);
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_SOURCE_DATA, "sourceStreamPtr_ not exist return ERR");
 
     IMAGE_LOGD("sourceStreamPtr create metadataAccessor");
-    if (!PrereadSourceStream()) {
-        return ERR_IMAGE_SOURCE_DATA;
-    }
+    CHECK_ERROR_RETURN_RET(!PrereadSourceStream(), ERR_IMAGE_SOURCE_DATA);
     uint32_t bufferSize = sourceStreamPtr_->GetStreamSize();
     auto bufferPtr = sourceStreamPtr_->GetDataPtr();
     if (bufferPtr != nullptr) {
@@ -2110,20 +2139,16 @@ uint32_t ImageSource::CreatExifMetadataByImageSource(bool addFlag)
         }
     }
 
-    if (bufferSize == 0) {
-        IMAGE_LOGE("Invalid buffer size. It's zero. Please check the buffer size.");
-        return ERR_IMAGE_SOURCE_DATA;
-    }
-
-    if (bufferSize > MAX_SOURCE_SIZE) {
-        IMAGE_LOGE("Invalid buffer size. It's too big. Please check the buffer size.");
-        return ERR_IMAGE_SOURCE_DATA;
-    }
+    cond = (bufferSize == 0);
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_SOURCE_DATA,
+        "Invalid buffer size. It's zero. Please check the buffer size.");
+    cond = (bufferSize > MAX_SOURCE_SIZE);
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_SOURCE_DATA,
+        "Invalid buffer size. It's too big. Please check the buffer size.");
     uint32_t error = SUCCESS;
     auto tmpBuffer = ReadSourceBuffer(bufferSize, error);
-    if (tmpBuffer == nullptr) {
-        return error;
-    }
+    cond = (tmpBuffer == nullptr);
+    CHECK_ERROR_RETURN_RET(cond, error);
     uint32_t result = CreateExifMetadata(tmpBuffer, bufferSize, addFlag);
     if (result == ERR_MEDIA_MMAP_FILE_CHANGED) {
         result = ERR_IMAGE_SOURCE_DATA;
@@ -2169,9 +2194,8 @@ uint32_t ImageSource::CreateExifMetadata(uint8_t *buffer, const uint32_t size, b
 
 uint32_t ImageSource::GetImagePropertyCommon(uint32_t index, const std::string &key, std::string &value)
 {
-    if (isExifReadFailed_ && exifMetadata_ == nullptr) {
-        return exifReadStatus_;
-    }
+    bool cond = (isExifReadFailed_ && exifMetadata_ == nullptr);
+    CHECK_ERROR_RETURN_RET(cond, exifReadStatus_);
     uint32_t ret = CreatExifMetadataByImageSource();
     if (ret != SUCCESS) {
         if (key.substr(0, KEY_SIZE) == "Hw") {
@@ -2394,9 +2418,8 @@ uint32_t ImageSource::GetImagePropertyInt(uint32_t index, const std::string &key
 {
     std::unique_lock<std::recursive_mutex> guard(decodingMutex_);
 
-    if (key.empty()) {
-        return Media::ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
-    }
+    bool cond = key.empty();
+    CHECK_ERROR_RETURN_RET(cond, Media::ERR_IMAGE_DECODE_EXIF_UNSUPPORT);
     if (GIF_INT_PROPERTY_DECODER_KEYS.count(key) != 0) {
         IMAGE_LOGD("GetImagePropertyInt special key: %{public}s", key.c_str());
         CHECK_ERROR_RETURN_RET(mainDecoder_ == nullptr, ERR_IMAGE_SOURCE_DATA);
@@ -2414,19 +2437,16 @@ uint32_t ImageSource::GetImagePropertyInt(uint32_t index, const std::string &key
     }
     IMAGE_LOGD("convert string to int %{public}s", strValue.c_str());
     std::from_chars_result res = std::from_chars(strValue.data(), strValue.data() + strValue.size(), value);
-    if (res.ec != std::errc()) {
-        IMAGE_LOGD("convert string to int failed");
-        return ERR_IMAGE_SOURCE_DATA;
-    }
+    cond = (res.ec != std::errc());
+    CHECK_DEBUG_RETURN_RET_LOG(cond, ERR_IMAGE_SOURCE_DATA, "convert string to int failed");
 
     return ret;
 }
 
 uint32_t ImageSource::GetImagePropertyString(uint32_t index, const std::string &key, std::string &value)
 {
-    if (key.empty()) {
-        return Media::ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
-    }
+    bool cond = key.empty();
+    CHECK_ERROR_RETURN_RET(cond, Media::ERR_IMAGE_DECODE_EXIF_UNSUPPORT);
     uint32_t ret = SUCCESS;
     if (IMAGE_GIFLOOPCOUNT_TYPE.compare(key) == ZERO) {
         IMAGE_LOGD("GetImagePropertyString special key: %{public}s", key.c_str());
@@ -2453,10 +2473,9 @@ static uint32_t ParseUInt32Key(ImageMetadata::PropertyMapPtr propertiesPtr, std:
 {
     const auto& allProperties = *propertiesPtr;
     auto it = allProperties.find(key);
-    if (it == allProperties.end()) {
-        IMAGE_LOGE("Get metadata failed: key '%{public}s' not found", key.c_str());
-        return ERR_IMAGE_PROPERTY_NOT_EXIST;
-    }
+    bool cond = (it == allProperties.end());
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_PROPERTY_NOT_EXIST,
+        "Get metadata failed: key '%{public}s' not found", key.c_str());
     if (!ImageUtils::StrToUint32(it->second, u32num)) {
         return ERR_IMAGE_SOURCE_DATA;
     }
@@ -2500,10 +2519,8 @@ uint32_t ImageSource::GetGifProperty(uint32_t index, const std::string &key, Met
         return ERROR;
     }
     ImageMetadata::PropertyMapPtr propertiesPtr = gifMetadata->GetAllProperties();
-    if (!propertiesPtr) {
-        IMAGE_LOGE("Properties map pointer is null");
-        return ERR_IMAGE_SOURCE_DATA;
-    }
+    bool cond = (!propertiesPtr);
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_SOURCE_DATA, "Properties map pointer is null");
     if (IMAGE_GIF_DELAY_TIME.compare(key) == ZERO) {
         IMAGE_LOGD("GetImagePropertyInt special key: %{public}s", key.c_str());
         return FillGifUInt32Property(propertiesPtr, key, value, true);
@@ -2541,10 +2558,8 @@ uint32_t ImageSource::GetWebPProperty(uint32_t index, const std::string &key, Me
         return ERR_IMAGE_SOURCE_DATA;
     }
     ImageMetadata::PropertyMapPtr propertiesPtr = webpMetadata->GetAllProperties();
-    if (!propertiesPtr) {
-        IMAGE_LOGE("Properties map pointer is null");
-        return ERR_IMAGE_SOURCE_DATA;
-    }
+    bool cond = (!propertiesPtr);
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_SOURCE_DATA, "Properties map pointer is null");
 
     auto iter = ExifMetadata::GetWebPMetadataMap().find(key);
     if (iter != ExifMetadata::GetWebPMetadataMap().end() && iter->second == PropertyValueType::INT) {
@@ -2571,10 +2586,8 @@ uint32_t ImageSource::GetPngProperty(const std::string &key, MetadataValue &valu
         return ERR_IMAGE_SOURCE_DATA;
     }
     ImageMetadata::PropertyMapPtr propertiesPtr = pngMetadata->GetAllProperties();
-    if (!propertiesPtr) {
-        IMAGE_LOGE("Properties map pointer is null");
-        return ERR_IMAGE_SOURCE_DATA;
-    }
+    bool cond = (!propertiesPtr);
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_SOURCE_DATA, "Properties map pointer is null");
     return FillPngMetadataValue(key, propertiesPtr, value);
 #endif
     return ERROR;
@@ -2584,10 +2597,9 @@ uint32_t ImageSource::FillPngMetadataValue(const std::string &key, const ImageMe
     MetadataValue &value)
 {
     auto it = propertiesPtr->find(key);
-    if (it == propertiesPtr->end()) {
-        IMAGE_LOGE("Get metadata failed: key '%{public}s' not found", key.c_str());
-        return ERR_IMAGE_PROPERTY_NOT_EXIST;
-    }
+    bool cond = (it == propertiesPtr->end());
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_PROPERTY_NOT_EXIST,
+        "Get metadata failed: key '%{public}s' not found", key.c_str());
 
     value.key = key;
     value.type = ExifMetadata::GetPropertyValueType(key);
@@ -2614,13 +2626,13 @@ uint32_t ImageSource::FillPngMetadataValue(const std::string &key, const ImageMe
         while (pos < len) {
             size_t commaPos = strValue.find(',', pos);
             commaPos = (commaPos == std::string::npos) ? len : commaPos;
-            std::string token = strValue.substr(pos, commaPos - pos);
+            std::string str = strValue.substr(pos, commaPos - pos);
             char* endPtr = nullptr;
-            double dblValue = strtod(token.c_str(), &endPtr);
-            if (endPtr != token.c_str() && *endPtr == '\0') {
+            double dblValue = strtod(str.c_str(), &endPtr);
+            if (endPtr != str.c_str() && *endPtr == '\0') {
                 value.doubleArrayValue.emplace_back(dblValue);
             } else {
-                IMAGE_LOGE("Failed to convert string to double: %{public}s", token.c_str());
+                IMAGE_LOGE("Failed to convert string to double: %{public}s", str.c_str());
             }
             pos = commaPos + 1;
         }
@@ -2642,10 +2654,8 @@ uint32_t ImageSource::GetFragmentProperty(const std::string &key, MetadataValue 
     }
 
     ImageMetadata::PropertyMapPtr propertiesPtr = fragmentMetadata->GetAllProperties();
-    if (!propertiesPtr) {
-        IMAGE_LOGE("Properties map pointer is null");
-        return ERROR;
-    }
+    bool cond = (!propertiesPtr);
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_SOURCE_DATA, "Properties map pointer is null");
     uint32_t u32num;
     errorCode = ParseUInt32Key(propertiesPtr, key, u32num);
     CHECK_ERROR_RETURN_RET(errorCode != SUCCESS, errorCode);
@@ -2722,10 +2732,8 @@ uint32_t ImageSource::GetAvisProperty(uint32_t index, const std::string &key, Me
         return ERR_IMAGE_SOURCE_DATA;
     }
     ImageMetadata::PropertyMapPtr propertiesPtr = avisMetadata->GetAllProperties();
-    if (!propertiesPtr) {
-        IMAGE_LOGE("Properties map pointer is null");
-        return ERR_IMAGE_SOURCE_DATA;
-    }
+    bool cond = (!propertiesPtr);
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_SOURCE_DATA, "Properties map pointer is null");
 
     auto iter = ExifMetadata::GetAvisMetadataMap().find(key);
     if (iter != ExifMetadata::GetAvisMetadataMap().end() && iter->second == PropertyValueType::INT) {
@@ -2834,18 +2842,16 @@ const SourceInfo &ImageSource::GetSourceInfo(uint32_t &errorCode)
 
 void ImageSource::RegisterListener(PeerListener *listener)
 {
-    if (listener == nullptr) {
-        return;
-    }
+    bool cond = (listener == nullptr);
+    CHECK_ERROR_RETURN(cond);
     std::lock_guard<std::mutex> guard(listenerMutex_);
     listeners_.insert(listener);
 }
 
 void ImageSource::UnRegisterListener(PeerListener *listener)
 {
-    if (listener == nullptr) {
-        return;
-    }
+    bool cond = (listener == nullptr);
+    CHECK_ERROR_RETURN(cond);
     std::lock_guard<std::mutex> guard(listenerMutex_);
     auto iter = listeners_.find(listener);
     if (iter != listeners_.end()) {
@@ -2855,10 +2861,8 @@ void ImageSource::UnRegisterListener(PeerListener *listener)
 
 void ImageSource::AddDecodeListener(DecodeListener *listener)
 {
-    if (listener == nullptr) {
-        IMAGE_LOGE("AddDecodeListener listener null");
-        return;
-    }
+    bool cond = (listener == nullptr);
+    CHECK_ERROR_RETURN_LOG(cond, "AddDecodeListener listener null");
     std::lock_guard<std::mutex> guard(listenerMutex_);
     decodeListeners_.insert(listener);
 }
@@ -2890,7 +2894,11 @@ ImageSource::~ImageSource() __attribute__((no_sanitize("cfi")))
         }
     }
     if (srcFd_ != -1) {
+#if !defined(CROSS_PLATFORM)
+        fdsan_close_with_tag(srcFd_, IMAGESOURCE_FDSAN_TAG);
+#else
         close(srcFd_);
+#endif
     }
 }
 
@@ -3137,10 +3145,8 @@ uint32_t ImageSource::GetFormatExtended(string &format) __attribute__((no_saniti
         return SUCCESS;
     }
 
-    if (sourceStreamPtr_ == nullptr) {
-        IMAGE_LOGE("Source stream pointer is null.");
-        return ERR_MEDIA_NULL_POINTER;
-    }
+    bool cond = (sourceStreamPtr_ == nullptr);
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_MEDIA_NULL_POINTER, "Source stream pointer is null.");
 
     auto imageType = sourceStreamPtr_->Tell();
     uint32_t errorCode = ERR_IMAGE_DECODE_ABNORMAL;
@@ -3151,10 +3157,8 @@ uint32_t ImageSource::GetFormatExtended(string &format) __attribute__((no_saniti
     }
     const static string EXT_ENCODED_FORMAT_KEY = "EncodedFormat";
     auto decoderPtr = unique_ptr<AbsImageDecoder>(codec);
-    if (decoderPtr == nullptr) {
-        IMAGE_LOGE("Decoder pointer is null.");
-        return ERR_MEDIA_NULL_POINTER;
-    }
+    cond = (decoderPtr == nullptr);
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_MEDIA_NULL_POINTER, "Decoder pointer is null.");
     ProgDecodeContext context;
     if (IsIncrementalSource() &&
         decoderPtr->PromoteIncrementalDecode(UINT32_MAX, context) == ERR_IMAGE_DATA_UNSUPPORT) {
@@ -3388,10 +3392,8 @@ uint32_t ImageSource::DecodeImageInfo(uint32_t index, ImageStatusMap::iterator &
             return ERR_IMAGE_DECODE_FAILED;
         }
     }
-    if (mainDecoder_ == nullptr) {
-        IMAGE_LOGE("[ImageSource]get image size, image decode plugin is null.");
-        return ERR_IMAGE_PLUGIN_CREATE_FAILED;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(mainDecoder_ == nullptr, ERR_IMAGE_PLUGIN_CREATE_FAILED,
+        "[ImageSource]get image size, image decode plugin is null.");
     Size size;
     ret = mainDecoder_->GetImageSize(index, size);
     if (ret == SUCCESS) {
@@ -3438,6 +3440,14 @@ AbsImageDecoder *ImageSource::CreateDecoder(uint32_t &errorCode)
     return DoCreateDecoder(encodedFormat, pluginServer_, *sourceStreamPtr_, errorCode);
 }
 
+bool IsVpeSupport10BitOutputFormat(PixelFormat vpePixelFormat)
+{
+    if (vpePixelFormat == PixelFormat::YCBCR_P010 || vpePixelFormat == PixelFormat::YCRCB_P010) {
+        return true;
+    }
+    return false;
+}
+
 uint32_t ImageSource::SetDecodeOptions(std::unique_ptr<AbsImageDecoder> &decoder, uint32_t index,
     const DecodeOptions &opts, ImagePlugin::PlImageInfo &plInfo)
 {
@@ -3453,10 +3463,8 @@ uint32_t ImageSource::SetDecodeOptions(std::unique_ptr<AbsImageDecoder> &decoder
          opts.desiredDynamicRange == DecodeDynamicRange::HDR) {
         plOptions.desiredPixelFormat = PixelFormat::RGBA_8888;
     }
-    if (decoder == nullptr) {
-        IMAGE_LOGE("decoder is nullptr");
-        return ERROR;
-    }
+    bool cond = (decoder == nullptr);
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERROR, "decoder is nullptr");
     
     bool isDecodeHdrImage = (opts.desiredDynamicRange == DecodeDynamicRange::AUTO &&
                             (sourceHdrType_ > ImageHdrType::SDR)) ||
@@ -3609,10 +3617,9 @@ uint32_t ImageSource::AddIncrementalContext(PixelMap &pixelMap, IncrementalRecor
     } else {
         context.decoder = std::unique_ptr<ImagePlugin::AbsImageDecoder>(CreateDecoder(ret));
     }
-    if (context.decoder == nullptr) {
-        IMAGE_LOGE("[ImageSource]failed to create decoder on add incremental context, ret:%{public}u.", ret);
-        return ret;
-    }
+    bool cond = (context.decoder == nullptr);
+    CHECK_ERROR_RETURN_RET_LOG(cond, ret,
+        "[ImageSource]failed to create decoder on add incremental context, ret:%{public}u.", ret);
     // mainDecoder has parsed base info in DecodeImageInfo();
     context.IncrementalState = ImageDecodingState::BASE_INFO_PARSED;
     auto result = incDecodingMap_.insert(IncrementalRecordMap::value_type(&pixelMap, std::move(context)));
@@ -3704,22 +3711,18 @@ uint32_t ImageSource::GetFilterArea(const std::vector<std::string> &exifKeys,
                                     std::vector<std::pair<uint32_t, uint32_t>> &ranges)
 {
     std::unique_lock<std::recursive_mutex> guard(decodingMutex_);
-    if (exifKeys.empty()) {
-        IMAGE_LOGD("GetFilterArea failed, exif key is empty.");
-        return ERR_IMAGE_INVALID_PARAMETER;
-    }
-    if (sourceStreamPtr_ == nullptr) {
-        IMAGE_LOGD("GetFilterArea failed, sourceStreamPtr is not existed.");
-        return ERR_IMAGE_SOURCE_DATA;
-    }
+    bool cond = exifKeys.empty();
+    CHECK_DEBUG_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER,
+        "GetFilterArea failed, exif key is empty.");
+    cond = (sourceStreamPtr_ == nullptr);
+    CHECK_DEBUG_RETURN_RET_LOG(cond, ERR_IMAGE_SOURCE_DATA,
+        "GetFilterArea failed, sourceStreamPtr is not existed.");
     uint32_t bufferSize = sourceStreamPtr_->GetStreamSize();
     auto bufferPtr = sourceStreamPtr_->GetDataPtr();
     if (bufferPtr != nullptr) {
         auto metadataAccessor = MetadataAccessorFactory::Create(bufferPtr, bufferSize);
-        if (metadataAccessor == nullptr) {
-            IMAGE_LOGD("Create metadataAccessor failed.");
-            return E_NO_EXIF_TAG;
-        }
+        cond = (metadataAccessor == nullptr);
+        CHECK_DEBUG_RETURN_RET_LOG(cond, E_NO_EXIF_TAG, "Create metadataAccessor failed.");
         return metadataAccessor->GetFilterArea(exifKeys, ranges);
     }
     uint32_t error = SUCCESS;
@@ -3833,8 +3836,9 @@ char *strnstr(const char *data, const char *base64Url, size_t len)
     size_t base64UrlLen = strlen(base64Url);
     while (len >= base64UrlLen) {
         len--;
-        if (!memcmp(data, base64Url, base64UrlLen))
+        if (!memcmp(data, base64Url, base64UrlLen)) {
             return (char *)data;
+        }
         data++;
     }
     return nullptr;
@@ -3995,11 +3999,10 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapForYUV(uint32_t &errorCode)
     info.pixelFormat = PixelFormat::RGBA_8888;
     info.alphaType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
     errorCode = pixelMap->SetImageInfo(info);
-    if (errorCode != SUCCESS) {
-        IMAGE_LOGE("Error updating pixelmap info. Return code: %{public}u.", errorCode);
-        return nullptr;
-    }
-    bool cond = ImageUtils::CheckMulOverflow(pixelMap->GetWidth(), pixelMap->GetHeight(), pixelMap->GetPixelBytes());
+    bool cond = (errorCode != SUCCESS);
+    CHECK_ERROR_RETURN_RET_LOG(cond, nullptr,
+        "Error updating pixelmap info. Return code: %{public}u.", errorCode);
+    cond = ImageUtils::CheckMulOverflow(pixelMap->GetWidth(), pixelMap->GetHeight(), pixelMap->GetPixelBytes());
     CHECK_ERROR_RETURN_RET_LOG(cond, nullptr, "Invalid pixelmap params width:%{public}d, height:%{public}d",
                                pixelMap->GetWidth(), pixelMap->GetHeight());
     size_t bufferSize = static_cast<size_t>(pixelMap->GetWidth() * pixelMap->GetHeight() * pixelMap->GetPixelBytes());
@@ -4062,14 +4065,10 @@ bool ImageSource::IsASTC(const uint8_t *fileData, size_t fileSize) __attribute__
 bool ImageSource::GetImageInfoForASTC(ImageInfo &imageInfo, const uint8_t *sourceFilePtr)
 {
     ASTCInfo astcInfo;
-    if (!sourceStreamPtr_) {
-        IMAGE_LOGE("[ImageSource] get astc image info null.");
-        return false;
-    }
-    if (!GetASTCInfo(sourceFilePtr, sourceStreamPtr_->GetStreamSize(), astcInfo)) {
-        IMAGE_LOGE("[ImageSource] get astc image info failed.");
-        return false;
-    }
+    bool cond = (!sourceStreamPtr_);
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "[ImageSource] get astc image info null.");
+    cond = !GetASTCInfo(sourceFilePtr, sourceStreamPtr_->GetStreamSize(), astcInfo);
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "[ImageSource] get astc image info failed.");
     imageInfo.size = astcInfo.size;
     switch (astcInfo.blockFootprint.width) {
         case NUM_4: {
@@ -4238,9 +4237,8 @@ bool HandleMetadataCopy(std::vector<uint8_t>& dest, const uint8_t *src, size_t l
 
 bool ProcessAstcMetadata(PixelAstc* pixelAstc, size_t astcSize, const AstcMetadata& astcMetadata)
 {
-    if (pixelAstc == nullptr) {
-        return false;
-    }
+    bool cond = (pixelAstc == nullptr);
+    CHECK_ERROR_RETURN_RET(cond, false);
     if (pixelAstc->GetAllocatorType() != AllocatorType::DMA_ALLOC) {
         Size desiredSize = { astcSize, 1 };
         MemoryData memoryData = { nullptr, astcSize, "CreatePixelMapForASTC Data", desiredSize,
@@ -4345,15 +4343,11 @@ static bool ResolveExtInfo(const uint8_t *sourceFilePtr, size_t astcSize, size_t
     AstcExtendInfo extInfo = {0};
     bool invalidData = (astcSize + ASTC_EXTEND_INFO_SIZE_DEFINITION_LENGTH >= fileSize) ||
         (memset_s(&extInfo, sizeof(AstcExtendInfo), 0, sizeof(AstcExtendInfo)) != 0);
-    if (invalidData) {
-        IMAGE_LOGE("ResolveExtInfo file data is invalid!");
-        return false;
-    }
+    bool cond = invalidData;
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "ResolveExtInfo file data is invalid!");
     extInfo.extendBufferSumBytes = GetDataSize(extInfoBuf);
-    if (!CheckAstcExtInfoBytes(extInfo, astcSize, fileSize)) {
-        IMAGE_LOGE("ResolveExtInfo file size is not equal to astc add ext bytes!");
-        return false;
-    }
+    cond = !CheckAstcExtInfoBytes(extInfo, astcSize, fileSize);
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "ResolveExtInfo file size is not equal to astc add ext bytes!");
     extInfoBuf += ASTC_EXTEND_INFO_SIZE_DEFINITION_LENGTH;
     int32_t leftBytes = static_cast<int32_t>(extInfo.extendBufferSumBytes);
     for (uint8_t idx = 0; leftBytes > 0; idx++) {
@@ -4412,20 +4406,35 @@ static bool FormatIsSUT(const uint8_t *fileData, size_t fileSize)
 }
 #endif
 
+#if !defined(CROSS_PLATFORM)
+AllocatorType CalculateAllocatorType(const AllocatorType& optAllocatorType, const Size& size, uint64_t& usage)
+{
+    if (optAllocatorType != AllocatorType::DEFAULT) {
+        return optAllocatorType;
+    }
+
+    if (ImageSystemProperties::GetAstcEnabled() && size.width * size.height >= ASTC_SIZE) {
+        return AllocatorType::DMA_ALLOC;
+    }
+
+    if (ImageSystemProperties::GetAstcEnabled() && ImageSystemProperties::GetDefaultDmaNoPaddingEnabled() &&
+        ImageSystemProperties::GetNoPaddingEnabled()) {
+        usage |= BUFFER_USAGE_PREFER_NO_PADDING | BUFFER_USAGE_ALLOC_NO_IPC;
+        return AllocatorType::DMA_ALLOC;
+    }
+    return AllocatorType::SHARE_MEM_ALLOC;
+}
+#endif
+
 static bool ReadFileAndResoveAstc(size_t fileSize, size_t astcSize, unique_ptr<PixelAstc> &pixelAstc,
     const uint8_t *sourceFilePtr, const DecodeOptions &opts)
 {
 #if !(defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM))
     Size desiredSize = {astcSize, 1};
     MemoryData memoryData = {nullptr, astcSize, "CreatePixelMapForASTC Data", desiredSize, pixelAstc->GetPixelFormat()};
-    if (ImageSystemProperties::GetNoPaddingEnabled()) {
-        memoryData.usage = BUFFER_USAGE_PREFER_NO_PADDING | BUFFER_USAGE_ALLOC_NO_IPC;
-    }
     ImageInfo pixelAstcInfo;
     pixelAstc->GetImageInfo(pixelAstcInfo);
-    AllocatorType allocatorType = (opts.allocatorType == AllocatorType::DEFAULT) ?
-        (ImageSystemProperties::GetAstcEnabled() ? AllocatorType::DMA_ALLOC : AllocatorType::SHARE_MEM_ALLOC) :
-        opts.allocatorType;
+    AllocatorType allocatorType = CalculateAllocatorType(opts.allocatorType, pixelAstcInfo.size, memoryData.usage);
     std::unique_ptr<AbsMemory> dstMemory = MemoryManager::CreateMemory(allocatorType, memoryData);
     if (dstMemory == nullptr) {
         IMAGE_LOGE("ReadFileAndResoveAstc CreateMemory failed");
@@ -4469,7 +4478,17 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapForASTC(uint32_t &errorCode, con
     ImageTrace imageTrace("CreatePixelMapForASTC");
     unique_ptr<PixelAstc> pixelAstc = make_unique<PixelAstc>();
     ImageInfo info;
+    if (!sourceStreamPtr_) {
+        IMAGE_LOGE("[ImageSource] CreatePixelMapForASTC sourceStreamPtr_ is null.");
+        errorCode = ERR_IMAGE_DATA_ABNORMAL;
+        return nullptr;
+    }
     uint8_t *sourceFilePtr = sourceStreamPtr_->GetDataPtr();
+    if (sourceFilePtr == nullptr) {
+        IMAGE_LOGE("[ImageSource] CreatePixelMapForASTC sourceFilePtr is null.");
+        errorCode = ERR_IMAGE_DATA_ABNORMAL;
+        return nullptr;
+    }
     if (!GetImageInfoForASTC(info, sourceFilePtr)) {
         IMAGE_LOGE("[ImageSource] get astc image info failed.");
         return nullptr;
@@ -4510,10 +4529,8 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapForASTC(uint32_t &errorCode, con
 
 bool ImageSource::GetASTCInfo(const uint8_t *fileData, size_t fileSize, ASTCInfo &astcInfo)
 {
-    if (fileData == nullptr || fileSize < ASTC_HEADER_SIZE) {
-        IMAGE_LOGE("[ImageSource]GetASTCInfo fileData incorrect.");
-        return false;
-    }
+    bool cond = (fileData == nullptr) || (fileSize < ASTC_HEADER_SIZE);
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "[ImageSource]IsASTC fileData incorrect.");
     uint32_t magicVal = static_cast<uint32_t>(fileData[NUM_0]) +
         (static_cast<uint32_t>(fileData[NUM_1]) << NUM_8) +
         (static_cast<uint32_t>(fileData[NUM_2]) << NUM_16) +
@@ -4823,16 +4840,13 @@ static uint32_t AllocSurfaceBuffer(DecodeContext &context, uint32_t format)
         .timeout = 0,
     };
     GSError ret = sb->Alloc(requestConfig);
-    if (ret != GSERROR_OK) {
-        IMAGE_LOGE("SurfaceBuffer Alloc failed, %{public}s", GSErrorStr(ret).c_str());
-        return ERR_DMA_NOT_EXIST;
-    }
+    bool cond = (ret != GSERROR_OK);
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_DMA_NOT_EXIST, "SurfaceBuffer Alloc failed, %{public}s",
+        GSErrorStr(ret).c_str());
     void* nativeBuffer = sb.GetRefPtr();
     int32_t err = ImageUtils::SurfaceBuffer_Reference(nativeBuffer);
-    if (err != OHOS::GSERROR_OK) {
-        IMAGE_LOGE("NativeBufferReference failed");
-        return ERR_DMA_DATA_ABNORMAL;
-    }
+    cond = (err != OHOS::GSERROR_OK);
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_DMA_DATA_ABNORMAL, "NativeBufferReference failed");
     SetContext(context, sb, nativeBuffer, format);
     return SUCCESS;
 #endif
@@ -4928,16 +4942,12 @@ void ImageSource::SetDmaContextYuvInfo(DecodeContext& context)
         return;
     }
     SurfaceBuffer* surfaceBuffer = static_cast<SurfaceBuffer*>(context.pixelsBuffer.context);
-    if (surfaceBuffer == nullptr) {
-        IMAGE_LOGE("SetDmaContextYuvInfo surfacebuffer is nullptr");
-        return;
-    }
+    bool cond = (surfaceBuffer == nullptr);
+    CHECK_ERROR_RETURN_LOG(cond, "SetDmaContextYuvInfo surfacebuffer is nullptr");
     OH_NativeBuffer_Planes *planes = nullptr;
     GSError retVal = surfaceBuffer->GetPlanesInfo(reinterpret_cast<void**>(&planes));
-    if (retVal != OHOS::GSERROR_OK || planes == nullptr) {
-        IMAGE_LOGE("SetDmaContextYuvInfo, GetPlanesInfo failed retVal:%{public}d", retVal);
-        return;
-    }
+    cond = (retVal != OHOS::GSERROR_OK || planes == nullptr);
+    CHECK_ERROR_RETURN_LOG(cond, "SetDmaContextYuvInfo, GetPlanesInfo failed retVal:%{public}d", retVal);
     const OH_NativeBuffer_Plane &planeY = planes->planes[0];
     const OH_NativeBuffer_Plane &planeUV =
         planes->planes[(format == PixelFormat::NV21 || format == PixelFormat::YCRCB_P010) ? NUM_2 : NUM_1];
@@ -5085,19 +5095,15 @@ uint32_t ImageSource::SetGainMapDecodeOption(std::unique_ptr<AbsImageDecoder>& d
 
 bool GetStreamData(std::unique_ptr<SourceStream>& sourceStream, uint8_t* streamBuffer, uint32_t streamSize)
 {
-    if (streamBuffer == nullptr) {
-        IMAGE_LOGE("GetStreamData streamBuffer is nullptr");
-        return false;
-    }
+    bool cond = (streamBuffer == nullptr);
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "GetStreamData streamBuffer is nullptr");
     uint32_t readSize = 0;
     uint32_t savedPosition = sourceStream->Tell();
     sourceStream->Seek(0);
     bool result = sourceStream->Read(streamSize, streamBuffer, streamSize, readSize);
     sourceStream->Seek(savedPosition);
-    if (!result || (readSize != streamSize)) {
-        IMAGE_LOGE("sourceStream read data failed");
-        return false;
-    }
+    cond = (!result || (readSize != streamSize));
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "sourceStream read data failed");
     return true;
 }
 
@@ -5127,15 +5133,12 @@ bool ImageSource::DecodeJpegGainMap(ImageHdrType hdrType, float scale, DecodeCon
     uint32_t errorCode = 0;
     jpegGainmapDecoder_ = std::unique_ptr<AbsImageDecoder>(
         DoCreateDecoder(InnerFormat::IMAGE_EXTENDED_CODEC, pluginServer_, *gainMapStream, errorCode));
-    if (jpegGainmapDecoder_ == nullptr) {
-        IMAGE_LOGE("[ImageSource] create gainmap decoder fail, gainmap offset is %{public}d", gainMapOffset);
-        return false;
-    }
+    cond = (jpegGainmapDecoder_ == nullptr);
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "HDR-IMAGE create gainmap decoder fail");
     PlImageInfo gainMapInfo;
     errorCode = SetGainMapDecodeOption(jpegGainmapDecoder_, gainMapInfo, scale);
-    if (errorCode != SUCCESS) {
-        return false;
-    }
+    cond = (errorCode != SUCCESS);
+    CHECK_ERROR_RETURN_RET(cond, false);
     gainMapCtx.allocatorType = AllocatorType::DMA_ALLOC;
     errorCode = jpegGainmapDecoder_->Decode(FIRST_FRAME, gainMapCtx);
     if (gainMapInfo.size.width != gainMapCtx.outInfo.size.width ||
@@ -5163,6 +5166,9 @@ bool ImageSource::ApplyGainMap(ImageHdrType hdrType, DecodeContext& baseCtx, Dec
     HdrMetadata metadata;
     if (format == IMAGE_HEIF_FORMAT || format == IMAGE_HEIC_FORMAT) {
         ImageTrace imageTrace("ImageSource decode heif gainmap hdrType:%d, scale:%d", hdrType, scale);
+        if (ImageUtils::IsYuvFormat(baseCtx.info.pixelFormat)) {
+            gainMapCtx.info.pixelFormat = baseCtx.info.pixelFormat;
+        }
         bool cond = !mainDecoder_->DecodeHeifGainMap(gainMapCtx);
         CHECK_INFO_RETURN_RET_LOG(cond, false, "[ImageSource] heif get gainmap failed");
         metadata = mainDecoder_->GetHdrMetadata(hdrType);
@@ -5251,14 +5257,12 @@ static uint32_t AllocHdrSurfaceBuffer(DecodeContext& context, ImageHdrType hdrTy
         .timeout = 0,
     };
     GSError ret = sb->Alloc(requestConfig);
-    if (ret != GSERROR_OK) {
-        return ERR_DMA_NOT_EXIST;
-    }
+    bool cond = (ret != GSERROR_OK);
+    CHECK_ERROR_RETURN_RET(cond, ERR_DMA_NOT_EXIST);
     void* nativeBuffer = sb.GetRefPtr();
     int32_t err = ImageUtils::SurfaceBuffer_Reference(nativeBuffer);
-    if (err != OHOS::GSERROR_OK) {
-        return ERR_DMA_DATA_ABNORMAL;
-    }
+    cond = (err != OHOS::GSERROR_OK);
+    CHECK_ERROR_RETURN_RET(cond, ERR_DMA_DATA_ABNORMAL);
     SetContext(context, sb, nativeBuffer, hdrPixelFormat);
     context.grColorSpaceName = ConvertColorSpaceName(color, false);
     CM_HDR_Metadata_Type type;
@@ -5990,12 +5994,8 @@ std::unique_ptr<Picture> ImageSource::CreatePicture(const DecodingOptionsForPict
 {
     ImageInfo info;
     GetImageInfo(info);
-    if (info.encodedFormat != IMAGE_HEIF_FORMAT && info.encodedFormat != IMAGE_JPEG_FORMAT &&
-        info.encodedFormat != IMAGE_HEIC_FORMAT && info.encodedFormat != IMAGE_AVIF_FORMAT) {
-        IMAGE_LOGE("CreatePicture failed, unsupport format: %{public}s", info.encodedFormat.c_str());
-        errorCode = ERR_IMAGE_MISMATCHED_FORMAT;
-        return nullptr;
-    }
+    bool cond = (!CheckSupportedFormat(info.encodedFormat, errorCode));
+    CHECK_ERROR_RETURN_RET(cond, nullptr);
     DecodeOptions dopts;
     if (!ApplyDecodingOptionsForPicture(dopts, opts, errorCode)) {
         errorCode = (errorCode == ERR_IMAGE_DESIRED_PIXELFORMAT_UNSUPPORTED) ?
@@ -6010,16 +6010,14 @@ std::unique_ptr<Picture> ImageSource::CreatePicture(const DecodingOptionsForPict
     std::shared_ptr<PixelMap> mainPixelMap = CreatePixelMap(dopts, errorCode);
     std::unique_ptr<Picture> picture = Picture::Create(mainPixelMap);
     if (picture == nullptr) {
-        IMAGE_LOGE("Picture is nullptr");
         HandleErrorCode(info.encodedFormat, errorCode);
         return nullptr;
     }
     DownSamplingScaleFactor downSamplingScaleFactor;
     GetDownSamplingScaleFactor(downSamplingScaleFactor, info, opts);
-    std::set<AuxiliaryPictureType> auxTypes = (opts.desireAuxiliaryPictures.size() > 0) ?
-            opts.desireAuxiliaryPictures : ImageUtils::GetAllAuxiliaryPictureType();
-    std::set<MetadataType> metadataTypes = (opts.desiredMetadatas.size() > 0) ?
-            opts.desiredMetadatas : ImageUtils::GetAllMetadataType();
+    std::set<AuxiliaryPictureType> auxTypes;
+    std::set<MetadataType> metadataTypes;
+    InitializeAuxiliaryAndMetadataTypes(opts, auxTypes, metadataTypes);
     if (info.encodedFormat == IMAGE_HEIF_FORMAT || info.encodedFormat == IMAGE_HEIC_FORMAT) {
         DecodeHeifAuxiliaryPictures(auxTypes, picture, errorCode, downSamplingScaleFactor);
         DecodeHeifBlobMetadatas(picture, metadataTypes, info, errorCode);
@@ -6037,10 +6035,7 @@ std::unique_ptr<Picture> ImageSource::CreatePicture(const DecodingOptionsForPict
 
 void ImageSource::SetHdrMetadataForPicture(std::unique_ptr<Picture> &picture)
 {
-    if (picture == nullptr) {
-        IMAGE_LOGE("%{public}s picture is nullptr", __func__);
-        return;
-    }
+    CHECK_ERROR_RETURN_LOG(picture == nullptr, "%{public}s picture is nullptr", __func__);
     std::shared_ptr<PixelMap> mainPixelMap = picture->GetMainPixel();
     std::shared_ptr<PixelMap> gainmapPixelMap = picture->GetGainmapPixelMap();
     if (mainPixelMap == nullptr || gainmapPixelMap == nullptr || gainmapPixelMap->GetHdrMetadata() == nullptr) {
@@ -6115,10 +6110,8 @@ static JpegExtendInfo ParsingJpegExtendInfo(uint8_t *stream, uint32_t streamSize
 {
     ImageTrace imageTrace("%s", __func__);
     JpegExtendInfo result;
-    if (stream == nullptr || streamSize == 0) {
-        IMAGE_LOGE("No source stream when parsing JPEG extend info");
-        return result;
-    }
+    bool cond = (stream == nullptr || streamSize == 0);
+    CHECK_ERROR_RETURN_RET_LOG(cond, result, "No source stream when parsing JPEG extend info");
     auto jpegMpfParser = std::make_unique<JpegMpfParser>();
     jpegMpfParser->ParsingExtendInfo(stream, streamSize, false);
     if (hdrType > ImageHdrType::SDR) {
@@ -6144,9 +6137,7 @@ void DecodeJpegAuxiliaryPictures(JpegExtendInfo &extendInfo, std::set<AuxiliaryP
     const std::function<std::unique_ptr<AbsImageDecoder>(InputDataStream&, uint32_t&)> &createDecoder,
     const DownSamplingScaleFactor& downSamplingScaleFactor)
 {
-    if (auxTypes.empty()) {
-        return;
-    }
+    CHECK_ERROR_RETURN(auxTypes.empty());
     for (auto &auxInfo : extendInfo.auxiliaryPictures) {
         if (auxTypes.find(auxInfo.auxType) == auxTypes.end()) {
             continue;
@@ -6187,9 +6178,7 @@ void DecodeJpegAuxiliaryPictures(JpegExtendInfo &extendInfo, std::set<AuxiliaryP
 static void DecodeJpegBlobMetadatas(JpegExtendInfo &extendInfo, std::set<MetadataType> &metadataTypes,
     std::unique_ptr<Picture> &picture, uint32_t &errorCode, StreamInfo &streamInfo)
 {
-    if (metadataTypes.empty()) {
-        return;
-    }
+    CHECK_ERROR_RETURN(metadataTypes.empty());
     std::map<MetadataType, std::vector<uint8_t>> metadataMap;
     for (const auto &blobInfo : extendInfo.blobMetadatas) {
         if (!metadataTypes.count(blobInfo.blobType)) {
@@ -6218,9 +6207,8 @@ void ImageSource::DecodeJpegExtendInfo(std::set<AuxiliaryPictureType> &auxTypes,
     std::set<MetadataType> &metadataTypes, std::unique_ptr<Picture> &picture, uint32_t &errorCode,
     const DownSamplingScaleFactor& downSamplingScaleFactor)
 {
-    if (auxTypes.empty() && metadataTypes.empty()) {
-        return;
-    }
+    bool cond = (auxTypes.empty() && metadataTypes.empty());
+    CHECK_ERROR_RETURN(cond);
     StreamInfo streamInfo;
     if (!CheckJpegSourceStream(streamInfo) || streamInfo.buffer == nullptr || streamInfo.GetCurrentSize() == 0) {
         IMAGE_LOGE("Jpeg source stream is invalid!");
@@ -6257,10 +6245,8 @@ void ImageSource::DecodeJpegExtendInfo(std::set<AuxiliaryPictureType> &auxTypes,
 
 bool ImageSource::CheckJpegSourceStream(StreamInfo &streamInfo)
 {
-    if (sourceStreamPtr_ == nullptr) {
-        IMAGE_LOGE("%{public}s sourceStreamPtr_ is nullptr!", __func__);
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(sourceStreamPtr_ == nullptr, false,
+        "%{public}s sourceStreamPtr_ is nullptr!", __func__);
     streamInfo.size = sourceStreamPtr_->GetStreamSize();
     bool cond = (streamInfo.size == 0);
     CHECK_ERROR_RETURN_RET_LOG(cond, false,
@@ -6450,9 +6436,7 @@ void ImageSource::DecodeHeifBlobMetadatas(std::unique_ptr<Picture> &picture, std
         errorCode = ERR_IMAGE_DATA_ABNORMAL;
         return;
     }
-    if (metadataTypes.empty()) {
-        return;
-    }
+    CHECK_ERROR_RETURN(metadataTypes.empty());
     std::map<MetadataType, std::vector<uint8_t>> metadataMap;
     for (const auto& iter : BLOB_METADATA_TAG_MAP) {
         if (metadataTypes.find(iter.first) == metadataTypes.end()) {
@@ -6488,12 +6472,7 @@ bool ImageSource::CompressToAstcFromPixelmap(const DecodeOptions &opts, unique_p
     Size desiredSize = {allocMemSize, 1};
     MemoryData memoryData = {nullptr, allocMemSize, "CompressToAstcFromPixelmap Data", desiredSize,
         opts.desiredPixelFormat};
-    if (ImageSystemProperties::GetNoPaddingEnabled()) {
-        memoryData.usage = BUFFER_USAGE_PREFER_NO_PADDING | BUFFER_USAGE_ALLOC_NO_IPC;
-    }
-    AllocatorType allocatorType = (opts.allocatorType == AllocatorType::DEFAULT) ?
-        (ImageSystemProperties::GetAstcEnabled() ? AllocatorType::DMA_ALLOC : AllocatorType::SHARE_MEM_ALLOC) :
-        opts.allocatorType;
+    AllocatorType allocatorType = CalculateAllocatorType(opts.allocatorType, rgbaInfo.size, memoryData.usage);
     dstMemory = MemoryManager::CreateMemory(allocatorType, memoryData);
     bool cond = (dstMemory == nullptr);
     CHECK_ERROR_RETURN_RET_LOG(cond, false, "CompressToAstcFromPixelmap CreateMemory failed");
@@ -6583,6 +6562,11 @@ unique_ptr<PixelMap> ImageSource::CreatePixelAstcFromImageFile(uint32_t index, c
 void ImageSource::SetSrcFd(const int& fd)
 {
     srcFd_ = dup(fd);
+#if !defined(CROSS_PLATFORM)
+    if (srcFd_ != -1) {
+        fdsan_exchange_owner_tag(srcFd_, 0, IMAGESOURCE_FDSAN_TAG);
+    }
+#endif
 }
 
 void ImageSource::SetSrcFilePath(const std::string& pathName)
@@ -6616,15 +6600,10 @@ void ImageSource::RefreshImageSourceByFd()
 
 std::string ImageSource::GetPixelMapName(PixelMap* pixelMap)
 {
-    if (pixelMap == nullptr) {
-        IMAGE_LOGE("%{public}s error, pixelMap is null", __func__);
-        return "undefined_";
-    }
+    CHECK_ERROR_RETURN_RET_LOG(pixelMap == nullptr, "undefined_", "%{public}s error, pixelMap is null", __func__);
     ImageInfo info;
-    if (GetImageInfo(info) != SUCCESS) {
-        IMAGE_LOGE("%{public}s error, GetImageInfo failed", __func__);
-        return "undefined_";
-    }
+    bool cond = (GetImageInfo(info) != SUCCESS);
+    CHECK_ERROR_RETURN_RET_LOG(cond, "undefined_", "%{public}s error, GetImageInfo failed", __func__);
 
     std::string pixelMapStr =
         "srcImageSize-" + std::to_string(info.size.width) + "x" + std::to_string(info.size.height) +
@@ -6697,10 +6676,8 @@ bool ImageSource::IsHeifWithoutAlpha()
 #if !defined(CROSS_PLATFORM)
 std::shared_ptr<ImageMetadata> ImageSource::FindMetadataFromMap(MetadataType type)
 {
-    if (metadatas_.find(type) == metadatas_.end()) {
-        IMAGE_LOGD("metadata type(%{public}d) not exist.", static_cast<int32_t>(type));
-        return nullptr;
-    }
+    bool cond = (metadatas_.find(type) == metadatas_.end());
+    CHECK_DEBUG_RETURN_RET_LOG(cond, nullptr, "metadata type(%{public}d) not exist.", static_cast<int32_t>(type));
     return metadatas_[type];
 }
 
@@ -6899,9 +6876,7 @@ uint32_t ImageSource::GetJfifMetadata (std::shared_ptr<JfifMetadata> &jfifMetada
         mainDecoder_ == nullptr, ERR_IMAGE_SOURCE_DATA);
 
     std::shared_ptr<ImageMetadata> metadataTemp = std::make_shared<JfifMetadata>();
-    if (metadataTemp == nullptr) {
-        return ERR_IMAGE_DATA_ABNORMAL;
-    }
+    CHECK_ERROR_RETURN_RET(metadataTemp == nullptr, ERR_IMAGE_DATA_ABNORMAL);
     for (auto const &key : ImageKvMetadata::GetJfifMetadataKeys()) {
         uint32_t errorCode = ERROR;
         int32_t value = 0;
@@ -6997,15 +6972,12 @@ uint32_t ImageSource::GetPngMetadata(std::shared_ptr<PngMetadata> &pngMetadata)
     }
     PngMetadataParser parser;
     pngMetadata = std::make_shared<PngMetadata>();
-    if (pngMetadata == nullptr) {
-        IMAGE_LOGE("[%{public}s] make_shared PngMetadata failed", __func__);
-        return ERR_IMAGE_SOURCE_DATA;
-    }
+    bool cond = (pngMetadata == nullptr);
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_DATA_ABNORMAL,
+        "[%{public}s] make_shared PngMetadata failed", __func__);
     bool decodeRet = parser.SetupPngReading(sourceStreamPtr_.get());
-    if (!decodeRet) {
-        IMAGE_LOGE("Failed to decode PNG header");
-        return ERR_IMAGE_SOURCE_DATA;
-    }
+    cond = (!decodeRet);
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_SOURCE_DATA, "Failed to decode PNG header");
     for (const auto& key : ImageKvMetadata::GetPngMetadataKeys()) {
         int32_t intValue = 0;
         double doubleValue = 0.0;
@@ -7203,10 +7175,8 @@ std::shared_ptr<AvisMetadata> ImageSource::GetAvisMetadata(uint32_t index, uint3
     }
 
     auto avisMetadata = std::make_shared<AvisMetadata>();
-    if (avisMetadata == nullptr) {
-        IMAGE_LOGE("[%{public}s] make_shared avisMetadata failed", __func__);
-        return nullptr;
-    }
+    bool cond = (avisMetadata == nullptr);
+    CHECK_ERROR_RETURN_RET_LOG(cond, nullptr, "[%{public}s] make_shared avisMetadata failed", __func__);
 
     CHECK_ERROR_RETURN_RET_LOG(mainDecoder_ == nullptr, nullptr, "[%{public}s] mainDecoder_ is nullptr", __func__);
     bool ret = false;
@@ -7283,22 +7253,17 @@ uint32_t ImageSource::CreateXMPMetadataByImageSource(const std::string &mimeType
         return SUCCESS;
     }
 
-    if (sourceStreamPtr_ == nullptr) {
-        IMAGE_LOGE("%{public}s sourceStreamPtr is nullptr", __func__);
-        return ERR_IMAGE_SOURCE_DATA;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(sourceStreamPtr_ == nullptr, ERR_IMAGE_SOURCE_DATA,
+        "%{public}s sourceStreamPtr is nullptr", __func__);
 
     // Try to get buffer from sourceStreamPtr first
-    if (!PrereadSourceStream()) {
-        IMAGE_LOGE("%{public}s preread source stream failed", __func__);
-        return ERR_IMAGE_SOURCE_DATA;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(!PrereadSourceStream(), ERR_IMAGE_SOURCE_DATA,
+        "%{public}s preread source stream failed", __func__);
 
     uint32_t bufferSize = sourceStreamPtr_->GetStreamSize();
-    if (bufferSize == 0 || bufferSize > MAX_SOURCE_SIZE) {
-        IMAGE_LOGE("%{public}s invalid stream size: %{public}u", __func__, bufferSize);
-        return ERR_IMAGE_SOURCE_DATA;
-    }
+    bool cond = (bufferSize == 0 || bufferSize > MAX_SOURCE_SIZE);
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_SOURCE_DATA,
+        "%{public}s invalid stream size: %{public}u", __func__, bufferSize);
 
     auto bufferPtr = sourceStreamPtr_->GetDataPtr();
     std::unique_ptr<uint8_t[]> tmpGuard;
@@ -7391,5 +7356,27 @@ uint32_t ImageSource::GetImageRawData(std::vector<uint8_t> &data, uint32_t &bits
 #endif
     return SUCCESS;
 }
+
+#if !defined(CROSS_PLATFORM)
+bool ImageSource::CheckSupportedFormat(const std::string &encodedFormat, uint32_t &errorCode)
+{
+    if (encodedFormat != IMAGE_HEIF_FORMAT && encodedFormat != IMAGE_JPEG_FORMAT &&
+        encodedFormat != IMAGE_HEIC_FORMAT && encodedFormat != IMAGE_AVIF_FORMAT) {
+        IMAGE_LOGE("CreatePicture failed, unsupport format: %{public}s", encodedFormat.c_str());
+        errorCode = ERR_IMAGE_MISMATCHED_FORMAT;
+        return false;
+    }
+    return true;
+}
+
+void ImageSource::InitializeAuxiliaryAndMetadataTypes(const DecodingOptionsForPicture &opts,
+    std::set<AuxiliaryPictureType> &auxTypes, std::set<MetadataType> &metadataTypes)
+{
+    auxTypes = (opts.desireAuxiliaryPictures.size() > 0) ?
+        opts.desireAuxiliaryPictures : ImageUtils::GetAllAuxiliaryPictureType();
+    metadataTypes = (opts.desiredMetadatas.size() > 0) ?
+        opts.desiredMetadatas : ImageUtils::GetAllMetadataType();
+}
+#endif
 } // namespace Media
 } // namespace OHOS

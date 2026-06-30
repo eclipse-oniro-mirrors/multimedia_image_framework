@@ -850,7 +850,8 @@ public:
     NATIVEEXPORT uint32_t GetImagePropertyString(const std::string &key, std::string &value);
     NATIVEEXPORT uint32_t ModifyImageProperty(const std::string &key, const std::string &value);
     NATIVEEXPORT uint32_t SetMemoryName(const std::string &pixelMapName);
-    NATIVEEXPORT virtual std::unique_ptr<PixelMap> Clone(int32_t &errorCode);
+    NATIVEEXPORT std::unique_ptr<PixelMap> Clone(int32_t &errorCode);
+    NATIVEEXPORT virtual std::unique_ptr<PixelMap> clone(int32_t &errorCode);
 
     NATIVEEXPORT bool IsHdr();
     NATIVEEXPORT void SetAstcHdr(bool astcHdr);
@@ -1121,6 +1122,9 @@ private:
 
     // used to mark whether DMA memory should be refreshed
     mutable bool isMemoryDirty_ = false;
+
+    // used to mark is use default DMA nopadding memory
+    mutable bool isUseDefaultDmaNopadding_ = false;
 
     // used to mark whether properties have been refreshed by user
     mutable bool isPropertiesDirty_ = false;

@@ -32,21 +32,30 @@ public:
 #ifdef ENABLE_ASTC_ENCODE_BASED_GPU
     static bool TryAstcEncBasedOnCl(TextureEncodeOptions &param, uint8_t *inData,
         uint8_t *buffer, const std::string &clBinPath);
+    static bool ResolveAstcClBinPath(const std::string &prebuiltBinPath, const std::string &runtimeBinPath,
+        std::string &clBinPath);
+    static bool TriggerAstcClBinWarmup(const std::string &clBinPath);
 #endif
 #ifdef SUT_ENCODE_ENABLE
-    static bool TryTextureSuperCompress(TextureEncodeOptions &param, uint8_t *astcBuffer);
+    static bool TryTextureSuperCompress(TextureEncodeOptions &param, uint8_t *astcBuffer, size_t astcBufferCapacity);
 #endif
     bool InitAstcExtendInfo(AstcExtendInfo &extendInfo);
     void ReleaseExtendInfoMemory(AstcExtendInfo &extendInfo);
     void WriteAstcExtendInfo(uint8_t* outBuffer, uint32_t offset, AstcExtendInfo &extendInfo);
     void InitTextureEncodeOptions(TextureEncodeOptions &param, uint8_t &colorData);
-    bool TryEncSUT(TextureEncodeOptions &param, uint8_t* astcBuffer, AstcExtendInfo &extendInfo);
+    bool TryEncSUT(TextureEncodeOptions &param, uint8_t* astcBuffer, size_t astcBufferCapacity,
+        AstcExtendInfo &extendInfo);
 private:
     bool IsAstcEnc(Media::ImageInfo &info, uint8_t* pixmapIn, TextureEncodeOptions &param,
         AstcExtendInfo &extendInfo);
     bool InitBeforeAstcEncode(ImageInfo &imageInfo, TextureEncodeOptions &param, uint8_t &colorData,
         uint8_t **pixmapIn, uint32_t &stride);
     bool FillMetaData(AstcExtendInfo &extendInfo, PixelMap *astcPixelMap);
+#ifdef ENABLE_ASTC_ENCODE_BASED_GPU
+    static bool TryStartAstcClWarmup();
+    static void FinishAstcClWarmup();
+    static void DoAstcClBinWarmup(const std::string &clBinPath);
+#endif
 private:
     DISALLOW_COPY_AND_MOVE(AstcCodec);
     OutputDataStream* astcOutput_ = nullptr;

@@ -21,7 +21,7 @@ heif_error HeifAuxcBox::ParseContent(HeifStreamReader &reader)
 {
     ParseFullHeader(reader);
     auxType_ = reader.ReadString();
-    while (!reader.IsAtEnd()) {
+    while (!reader.IsAtEnd() && !reader.HasError()) {
         auxSubtypes_.push_back(reader.Read8());
     }
     return reader.GetError();

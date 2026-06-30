@@ -21,6 +21,7 @@
 #include "media_errors.h"
 #include "multimedia_templates.h"
 #include "securec.h"
+#include <limits>
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 #include "surface_buffer.h"
 #endif
@@ -41,6 +42,27 @@ namespace {
 constexpr int32_t WEBP_IMAGE_NUM = 1;
 constexpr int32_t EXTERNAL_MEMORY = 1;
 constexpr size_t DECODE_VP8CHUNK_MIN_SIZE = 4096;
+
+bool GetWebpBufferInfo(const Size &webpSize, int32_t bytesPerPixel, uint32_t &stride, uint32_t &byteCount)
+{
+    if (webpSize.width <= 0 || webpSize.height <= 0 || bytesPerPixel <= 0) {
+        IMAGE_LOGE("Invalid webp size(%{public}d, %{public}d) or bytesPerPixel:%{public}d.",
+            webpSize.width, webpSize.height, bytesPerPixel);
+        return false;
+    }
+    uint64_t stride64 = static_cast<uint64_t>(webpSize.width) * static_cast<uint64_t>(bytesPerPixel);
+    uint64_t byteCount64 = stride64 * static_cast<uint64_t>(webpSize.height);
+    if (stride64 > static_cast<uint64_t>(std::numeric_limits<int32_t>::max()) ||
+        byteCount64 > static_cast<uint64_t>(std::numeric_limits<uint32_t>::max()) ||
+        byteCount64 > static_cast<uint64_t>(PIXEL_MAP_MAX_RAM_SIZE)) {
+        IMAGE_LOGE("overflow check failed. width:%{public}d, height:%{public}d, bytesPerPixel:%{public}d.",
+            webpSize.width, webpSize.height, bytesPerPixel);
+        return false;
+    }
+    stride = static_cast<uint32_t>(stride64);
+    byteCount = static_cast<uint32_t>(byteCount64);
+    return true;
+}
 } // namespace
 
 WebpDecoder::WebpDecoder()
@@ -360,11 +382,11 @@ uint32_t WebpDecoder::DoIncrementalDecode(ProgDecodeContext &context) __attribut
     return SUCCESS;
 }
 
-void WebpDecoder::InitWebpOutput(const DecodeContext &context, WebPDecBuffer &output)
+void WebpDecoder::InitWebpOutput(const DecodeContext &context, WebPDecBuffer &output, int32_t stride)
 {
     output.is_external_memory = EXTERNAL_MEMORY;  // external allocated space
     output.u.RGBA.rgba = static_cast<uint8_t *>(context.pixelsBuffer.buffer);
-    output.u.RGBA.stride = webpSize_.width * bytesPerPixel_;
+    output.u.RGBA.stride = stride;
     output.u.RGBA.size = context.pixelsBuffer.bufferSize;
     output.colorspace = webpMode_;
 }
@@ -375,12 +397,23 @@ bool WebpDecoder::PreDecodeProc(DecodeContext &context, WebPDecoderConfig &confi
         IMAGE_LOGE("init config failed.");
         return false;
     }
-    if (!AllocOutputBuffer(context, isIncremental)) {
+    uint32_t stride = 0;
+    uint32_t byteCount = 0;
+    if (!GetWebpBufferInfo(webpSize_, bytesPerPixel_, stride, byteCount)) {
+        IMAGE_LOGE("check webp buffer info failed.");
+        return false;
+    }
+    if (!AllocOutputBuffer(context, isIncremental, byteCount)) {
         IMAGE_LOGE("get pixels memory failed.");
         return false;
     }
+    if (context.pixelsBuffer.bufferSize < byteCount) {
+        IMAGE_LOGE("invalid webp output buffer size. actual:%{public}u, expected:%{public}u.",
+            context.pixelsBuffer.bufferSize, byteCount);
+        return false;
+    }
 
-    InitWebpOutput(context, config.output);
+    InitWebpOutput(context, config.output, static_cast<int32_t>(stride));
     return true;
 }
 
@@ -505,7 +538,7 @@ static bool DmaMemoryCreate(DecodeContext &context, const uint32_t &byteCount, c
 #endif
 }
 
-bool WebpDecoder::AllocOutputBuffer(DecodeContext &context, bool isIncremental)
+bool WebpDecoder::AllocOutputBuffer(DecodeContext &context, bool isIncremental, uint32_t byteCount)
 {
     if (isIncremental) {
         if (context.pixelsBuffer.buffer != nullptr && context.allocatorType == AllocatorType::HEAP_ALLOC) {
@@ -514,7 +547,6 @@ bool WebpDecoder::AllocOutputBuffer(DecodeContext &context, bool isIncremental)
         }
     }
     if (context.pixelsBuffer.buffer == nullptr) {
-        uint64_t byteCount = static_cast<uint64_t>(webpSize_.width * webpSize_.height * bytesPerPixel_);
         if (context.allocatorType == Media::AllocatorType::SHARE_MEM_ALLOC) {
             return SharedMemoryCreate(context, byteCount);
         } else if (context.allocatorType == Media::AllocatorType::HEAP_ALLOC) {

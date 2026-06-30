@@ -108,6 +108,8 @@ taihe_shared_library("image_taihe") {
     "ipc:ipc_single",
     "napi:ace_napi",
     "runtime_core:ani_helpers",
+    "egl:libEGL",
+    "opengles:libGLES",
   ]
 
   if (enable_libexif) {

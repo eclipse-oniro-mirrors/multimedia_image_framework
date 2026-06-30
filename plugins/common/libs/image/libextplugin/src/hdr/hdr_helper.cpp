@@ -187,7 +187,10 @@ static bool GetVividJpegGainMapOffset(const vector<jpeg_marker_struct*>& markerL
             continue;
         }
         uint32_t originOffset = ImageUtils::BytesToUint32(data, dataOffset, size);
-        offset = originOffset + preOffsets[i];
+        if (__builtin_add_overflow(originOffset, preOffsets[i], &offset)) {
+            IMAGE_LOGE("VividJpegGainMapOffset is overflowed");
+            return false;
+        }
         uint32_t relativeOffset = ImageUtils::BytesToUint32(data, dataOffset, size); // offset minus all app size
         IMAGE_LOGD("vivid base info originOffset=%{public}d, relativeOffset=%{public}d, offset=%{public}d",
             originOffset, relativeOffset, offset);
@@ -323,6 +326,8 @@ static ImageHdrType CheckJpegGainMapHdrType(SkJpegCodec* jpegCodec,
             isoPreMarkerOffset.push_back(allAppSize);
         }
         if (JPEG_MARKER_APP0 == (marker->marker & 0xF0)) {
+            CHECK_ERROR_RETURN_RET_LOG(allAppSize > UINT32_MAX - marker->data_length -
+                JPEG_MARKER_TAG_SIZE - JPEG_MARKER_LENGTH_SIZE, ImageHdrType::SDR, "allAppSize is overflowed");
             allAppSize += marker->data_length + JPEG_MARKER_TAG_SIZE + JPEG_MARKER_LENGTH_SIZE;
         }
         if (JPEG_MARKER_APP11 == marker->marker) {
@@ -437,7 +442,8 @@ static bool ParseVividJpegStaticMetadata(uint8_t* data, uint32_t& offset, uint32
         staticMetaVec.resize(EMPTY_SIZE);
         return true;
     }
-    bool cond = staticMetadataSize > size || staticMetadataSize < VIVID_STATIC_METADATA_SIZE_IN_IMAGE;
+    bool cond = offset > size || staticMetadataSize > size - offset ||
+        staticMetadataSize < VIVID_STATIC_METADATA_SIZE_IN_IMAGE;
     CHECK_ERROR_RETURN_RET(cond, false);
 
     HdrStaticMetadata staticMeta{};
@@ -460,7 +466,11 @@ static bool ParseVividJpegStaticMetadata(uint8_t* data, uint32_t& offset, uint32
         return false;
     }
     if (staticMetadataSize > VIVID_STATIC_METADATA_SIZE_IN_IMAGE) {
-        offset += (staticMetadataSize - VIVID_STATIC_METADATA_SIZE_IN_IMAGE);
+        uint32_t skipBytes = staticMetadataSize - VIVID_STATIC_METADATA_SIZE_IN_IMAGE;
+        if (offset + skipBytes > size) {
+            return false;
+        }
+        offset += skipBytes;
     }
     return true;
 #endif
@@ -717,7 +727,8 @@ static bool GetVividJpegMetadata(jpeg_marker_struct* markerList, HdrMetadata& me
         if (JPEG_MARKER_APP8 != marker->marker) {
             continue;
         }
-        if (memcmp(marker->data, ITUT35_TAG, ITUT35_TAG_SIZE) != 0) {
+        if (marker->data_length <= ITUT35_TAG_SIZE ||
+            memcmp(marker->data, ITUT35_TAG, ITUT35_TAG_SIZE) != 0) {
             continue;
         }
         uint8_t* data = marker->data + ITUT35_TAG_SIZE;
@@ -750,31 +761,33 @@ static void ParseISOExtendInfoMain(uint8_t* data, uint32_t& offset, uint32_t len
     if (minGainmapDenominator == EMPTY_SIZE) {
         info.gainMapMin[index] = EMPTY_SIZE;
     } else {
-        info.gainMapMin[index] = (float)minGainmapNumerator / (float)minGainmapDenominator;
+        info.gainMapMin[index] = static_cast<float>(minGainmapNumerator) / static_cast<float>(minGainmapDenominator);
     }
 
     if (maxGainmapDenominator == EMPTY_SIZE) {
         info.gainMapMax[index] = EMPTY_SIZE;
     } else {
-        info.gainMapMax[index] = (float)maxGainmapNumerator / (float)maxGainmapDenominator;
+        info.gainMapMax[index] = static_cast<float>(maxGainmapNumerator) / static_cast<float>(maxGainmapDenominator);
     }
 
     if (gammaDenominator == EMPTY_SIZE) {
         info.gamma[index] = EMPTY_SIZE;
     } else {
-        info.gamma[index] = (float)gammaNumerator / (float)gammaDenominator;
+        info.gamma[index] = static_cast<float>(gammaNumerator) / static_cast<float>(gammaDenominator);
     }
 
     if (baseImageOffsetDenominator == EMPTY_SIZE) {
         info.baseSdrImageOffset[index] = EMPTY_SIZE;
     } else {
-        info.baseSdrImageOffset[index] = (float)baseImageOffsetNumerator / (float)baseImageOffsetDenominator;
+        info.baseSdrImageOffset[index] = static_cast<float>(baseImageOffsetNumerator) /
+            static_cast<float>(baseImageOffsetDenominator);
     }
 
     if (altImageOffsetDenominator == EMPTY_SIZE) {
         info.altHdrImageOffset[index] = EMPTY_SIZE;
     } else {
-        info.altHdrImageOffset[index] = (float)altImageOffsetNumerator / (float)altImageOffsetDenominator;
+        info.altHdrImageOffset[index] = static_cast<float>(altImageOffsetNumerator) /
+            static_cast<float>(altImageOffsetDenominator);
     }
 }
 
@@ -819,14 +832,16 @@ static bool ParseISOMetadata(uint8_t* data, uint32_t length, HdrMetadata& metada
     uint32_t altHeadroomDenominator = ImageUtils::BytesToUint32(data, dataOffset, length);
 
     if (baseHeadroomDenominator != EMPTY_SIZE) {
-        metadata.extendMeta.metaISO.baseHeadroom = (float)baseHeadroomNumerator / (float)baseHeadroomDenominator;
+        metadata.extendMeta.metaISO.baseHeadroom = static_cast<float>(baseHeadroomNumerator) /
+            static_cast<float>(baseHeadroomDenominator);
     } else {
-        metadata.extendMeta.metaISO.baseHeadroom = (float)EMPTY_SIZE;
+        metadata.extendMeta.metaISO.baseHeadroom = static_cast<float>(EMPTY_SIZE);
     }
     if (altHeadroomDenominator != EMPTY_SIZE) {
-        metadata.extendMeta.metaISO.alternateHeadroom = (float)altHeadroomNumerator / (float)altHeadroomDenominator;
+        metadata.extendMeta.metaISO.alternateHeadroom = static_cast<float>(altHeadroomNumerator) /
+            static_cast<float>(altHeadroomDenominator);
     } else {
-        metadata.extendMeta.metaISO.alternateHeadroom = (float)EMPTY_SIZE;
+        metadata.extendMeta.metaISO.alternateHeadroom = static_cast<float>(EMPTY_SIZE);
     }
     ExtendInfoMain infoMain{};
     ParseISOExtendInfoThreeCom(data, dataOffset, length, metadata.extendMeta.metaISO.gainmapChannelNum, infoMain);
@@ -864,7 +879,8 @@ static bool GetHdrMediaTypeInfo(jpeg_marker_struct* markerList, HdrMetadata& met
         }
         uint8_t* data = marker->data + HDR_MEDIA_TYPE_TAG_SIZE;
         uint32_t dataOffset = 0;
-        uint32_t hdrMediaType = ImageUtils::BytesToUint32(data, dataOffset, marker->data_length);
+        uint32_t length = marker->data_length - HDR_MEDIA_TYPE_TAG_SIZE;
+        uint32_t hdrMediaType = ImageUtils::BytesToUint32(data, dataOffset, length);
         metadata.hdrMetadataType = static_cast<int32_t>(hdrMediaType);
         return true;
     }
@@ -1052,8 +1068,13 @@ vector<uint8_t> HdrJpegPackerHelper::PackBaseMpfMarker(uint32_t baseSize, uint32
         .offset = 0,
         .size = baseSize,
     };
+    const uint32_t MPF_OFFSET_BASE_SIZE = JPEG_MARKER_TAG_SIZE + JPEG_MARKER_LENGTH_SIZE + MPF_TAG_SIZE;
+    if (baseSize < MPF_OFFSET_BASE_SIZE || appOffset > baseSize - MPF_OFFSET_BASE_SIZE) {
+        IMAGE_LOGE("Invalid parameter: baseSize is too small");
+        return {};
+    }
     SingleJpegImage gainmapImage = {
-        .offset = baseSize - appOffset - JPEG_MARKER_TAG_SIZE - JPEG_MARKER_LENGTH_SIZE - MPF_TAG_SIZE,
+        .offset = baseSize - appOffset - MPF_OFFSET_BASE_SIZE,
         .size = gainmapSize,
     };
     return JpegMpfPacker::PackHdrJpegMpfMarker(baseImage, gainmapImage);

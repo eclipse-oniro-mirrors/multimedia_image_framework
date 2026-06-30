@@ -42,6 +42,10 @@ public:
     static bool GetPngSampleDecodeEnabled();
     static bool UseGPUScalingCapabilities();
     static bool IsImageSubSample();
+    static bool GetDecodeDfxDataEnabled();
+    static bool GetEncodeDfxDataEnabled();
+    static bool IsSystemApp();
+    static void SetIsSystemAppForTest(bool isSystemApp);
 private:
     ImageSystemProperties() = default;
 };

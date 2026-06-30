@@ -695,7 +695,7 @@ static bool JsQueueArgs(napi_env env, size_t argc, napi_value* argv,
     return true;
 }
 
-void ImageCreatorNapi::JsQueueImageSendEvent(napi_env env, ImageCreatorAsyncContext* context,
+bool ImageCreatorNapi::JsQueueImageSendEvent(napi_env env, ImageCreatorAsyncContext* context,
                                              napi_event_priority prio, const char* taskName)
 {
     auto task = [env, context]() {
@@ -723,7 +723,9 @@ void ImageCreatorNapi::JsQueueImageSendEvent(napi_env env, ImageCreatorAsyncCont
     };
     if (napi_status::napi_ok != napi_send_event(env, task, prio, taskName)) {
         IMAGE_LOGE("JsQueueImageSendEvent: failed to SendEvent!");
+        return false;
     }
+    return true;
 }
 
 napi_value ImageCreatorNapi::JsQueueImage(napi_env env, napi_callback_info info)
@@ -756,9 +758,9 @@ napi_value ImageCreatorNapi::JsQueueImage(napi_env env, napi_callback_info info)
         napi_create_promise(env, &(context->deferred), &result);
     }
 
-    JsQueueImageSendEvent(env, context.get(), napi_eprio_high, "ImageCreator.queueImage");
-    context.release();
-
+    if (JsQueueImageSendEvent(env, context.get(), napi_eprio_high, "ImageCreator.queueImage")) {
+        context.release();
+    }
     IMAGE_FUNCTION_OUT();
     return result;
 }
@@ -1026,6 +1028,10 @@ napi_value ImageCreatorNapi::JsOffTwoArgs(napi_env env, napi_callback_info info)
     args.callBack = [](napi_env env, napi_status status, Contextc context) {
         IMAGE_LINE_IN();
         napi_value result = nullptr;
+        if (context == nullptr || context->constructor_ == nullptr ||
+            context->constructor_->imageCreator_ == nullptr) {
+            return;
+        }
         napi_get_undefined(env, &result);
         context->constructor_->imageCreator_->UnRegisterBufferReleaseListener();
         context->status = SUCCESS;
@@ -1075,6 +1081,9 @@ napi_value ImageCreatorNapi::JsRelease(napi_env env, napi_callback_info info)
         IMAGE_LINE_IN();
         napi_value result = nullptr;
         napi_get_undefined(env, &result);
+        if (context == nullptr || context->constructor_ == nullptr) {
+            return;
+        }
 
         context->constructor_->NativeRelease();
         context->status = SUCCESS;

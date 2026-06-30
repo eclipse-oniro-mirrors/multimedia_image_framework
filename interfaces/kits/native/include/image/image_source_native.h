@@ -645,6 +645,17 @@ Image_ErrorCode OH_ImageSourceNative_GetFrameCount(OH_ImageSourceNative *source,
 Image_ErrorCode OH_ImageSourceNative_Release(OH_ImageSourceNative *source);
 
 /**
+ * @brief Destroys an <b>OH_ImageSourceNative</b> object.
+ *
+ * @param source Double pointer to the OH_ImageSourceNative to destroy.
+ * @return Image functions result code.
+ *         {@link IMAGE_SUCCESS} if the operation is successful.
+ *         {@link IMAGE_BAD_PARAMETER} if source is null or *source is null.
+ * @since 26
+ */
+Image_ErrorCode OH_ImageSourceNative_Destroy(OH_ImageSourceNative **source);
+
+/**
  * @brief Create a pointer for OH_DecodingOptionsForPicture struct.
  *
  * @param options The OH_DecodingOptionsForPicture pointer will be operated.
@@ -684,6 +695,96 @@ Image_ErrorCode OH_DecodingOptionsForPicture_GetDesiredAuxiliaryPictures(OH_Deco
  */
 Image_ErrorCode OH_DecodingOptionsForPicture_SetDesiredAuxiliaryPictures(OH_DecodingOptionsForPicture *options,
     Image_AuxiliaryPictureType *desiredAuxiliaryPictures, size_t length);
+
+/**
+ * @brief Obtains the **needsDecodeDfxData** parameter in the decoding options.
+ * @systemapi
+ * @param options Pointer to an OH_DecodingOptionsForPicture object.
+ * @param needsDecodeDfxData Whether to decode image DFX data. The values include **true** (yes) and **false** (no).
+ * @return <ul>
+ *         <li>{@link IMAGE_SUCCESS} if the execution is successful.</li>
+ *         <li>202 if a non-system application calls this system API.</li>
+ *         <li>{@link IMAGE_SOURCE_INVALID_PARAMETER} options or needsDecodeDfxData is nullptr.</li>
+ *         </ul>
+ * @since 26.0.0
+ */
+Image_ErrorCode OH_DecodingOptionsForPicture_GetNeedsDecodeDfxData(OH_DecodingOptionsForPicture *options,
+    bool *needsDecodeDfxData);
+ 
+/**
+ * @brief Sets the **needsDecodeDfxData** parameter in the decoding options.
+ * @systemapi
+ * @param options Pointer to an OH_DecodingOptionsForPicture object.
+ * @param needsDecodeDfxData Whether to decode image DFX data. The values include **true** (yes) and **false** (no).
+ * @return <ul>
+ *         <li>{@link IMAGE_SUCCESS} if the execution is successful.</li>
+ *         <li>202 if a non-system application calls this system API.</li>
+ *         <li>{@link IMAGE_SOURCE_INVALID_PARAMETER} options is nullptr.</li>
+ *         </ul>
+ * @since 26.0.0
+ */
+Image_ErrorCode OH_DecodingOptionsForPicture_SetNeedsDecodeDfxData(OH_DecodingOptionsForPicture *options,
+    bool needsDecodeDfxData);
+
+/**
+ * @brief Gets the desiredSizeForMainPixelMap number for DecodingOptionsForPicture struct.
+ * @systemapi
+ * @param options The OH_DecodingOptionsForPicture pointer will be operated.
+ * @param desiredSizeForMainPixelmap On output, the number of main pixelMap desiredSize.
+ * @return <ul>
+ *         <li>{@link IMAGE_SUCCESS} if the execution is successful.</li>
+ *         <li>202 if a non-system application calls this system API.</li>
+ *         <li>{@link IMAGE_SOURCE_INVALID_PARAMETER} options is nullptr.</li>
+ *         </ul>
+ * @since 26.0.0
+ */
+Image_ErrorCode OH_DecodingOptionsForPicture_GetDesiredSizeForMainPixelmap(OH_DecodingOptionsForPicture *options,
+    Image_Size *desiredSizeForMainPixelmap);
+ 
+/**
+ * @brief Sets the desiredSizeForMainPixelMap number for DecodingOptionsForPicture struct.
+ * @systemapi
+ * @param options The OH_DecodingOptionsForPicture pointer will be operated.
+ * @param desiredSizeForMainPixelmap the number of main pixelMap desiredSize.
+ * @return <ul>
+ *         <li>{@link IMAGE_SUCCESS} if the execution is successful.</li>
+ *         <li>202 if a non-system application calls this system API.</li>
+ *         <li>{@link IMAGE_SOURCE_INVALID_PARAMETER} options is nullptr.</li>
+ *         </ul>
+ * @since 26.0.0
+ */
+Image_ErrorCode OH_DecodingOptionsForPicture_SetDesiredSizeForMainPixelmap(OH_DecodingOptionsForPicture *options,
+    Image_Size desiredSizeForMainPixelmap);
+ 
+/**
+ * @brief Get pixelFormat number for DecodingOptionsForPicture struct.
+ * @systemapi
+ * @param options The OH_DecodingOptionsForPicture pointer will be operated.
+ * @param desiredPixelFormat the number of image pixelFormat.
+ * @return <ul>
+ *         <li>{@link IMAGE_SUCCESS} if the execution is successful.</li>
+ *         <li>202 if a non-system application calls this system API.</li>
+ *         <li>{@link IMAGE_SOURCE_INVALID_PARAMETER} options is nullptr.</li>
+ *         </ul>
+ * @since 26.0.0
+ */
+Image_ErrorCode OH_DecodingOptionsForPicture_GetDesiredPixelFormat(OH_DecodingOptionsForPicture *options,
+    PIXEL_FORMAT *desiredPixelFormat);
+ 
+/**
+ * @brief Set pixelFormat number for DecodingOptionsForPicture struct.
+ * @systemapi
+ * @param options The OH_DecodingOptionsForPicture pointer will be operated.
+ * @param desiredPixelFormat Image pixel format.
+ * @return <ul>
+ *         <li>{@link IMAGE_SUCCESS} if the execution is successful.</li>
+ *         <li>202 if a non-system application calls this system API.</li>
+ *         <li>{@link IMAGE_SOURCE_INVALID_PARAMETER} options is nullptr.</li>
+ *         </ul>
+ * @since 26.0.0
+ */
+Image_ErrorCode OH_DecodingOptionsForPicture_SetDesiredPixelFormat(OH_DecodingOptionsForPicture *options,
+    PIXEL_FORMAT desiredPixelFormat);
 
 /**
  * @brief Releases an <b>DecodingOptionsForPicture</b> object.
@@ -942,21 +1043,27 @@ Image_ErrorCode OH_ImageSourceNative_ModifyImagePropertyBlob(OH_ImageSourceNativ
 
 /**
  * @brief Read metadata of the image source, use metadatatype to specify metadata of interest. If metadataType
- *     is not specified, all supported metadata will be returned
+ * is not specified, all supported metadata will be returned.
+ * @systemapi
  * @param source Pointer to the image source.
  * @param index Image index.
  * @param metadataTypes Metadata types of interest.
  * @param typeCount Count of metadataTypes.
- * @param metadatas Double pointer to the Metadataobject obtained, the caller is required to release this object.
- * @param metadataCount
- * @return Result code.
- * {@link IMAGE_SUCCESS}: The execution is successful.
- * {@link IMAGE_SOURCE_UNSUPPORTED_MIMETYPE}: The image format is unsupported.
- * {@link IMAGE_SOURCE_UNSUPPORTED_OPTIONS}: The operationis not supported,for example, invalid index.
- * @since 24
-*/
+ * @param outMetadataArray Output parameter used to receive a metadata array allocated by this function. The caller
+ *     is required to release this object.
+ * @param metadataCount Number of OH_PictureMetadata elements returned in outMetadataArray.
+ * @return <ul>
+ *         <li>{@link IMAGE_SUCCESS} if the execution is successful.</li>
+ *         <li>202 if a non-system application calls this system API.</li>
+ *         <li>{@link IMAGE_SOURCE_INVALID_PARAMETER} if source, outMetadataArray or metadataCount is nullptr.</li>
+ *         <li>{@link IMAGE_SOURCE_UNSUPPORTED_METADATA} if metadata doesn't exist, or types are unsupported.</li>
+ *         <li>{@link IMAGE_SOURCE_ALLOC_FAILED} memory allocation failed.</li>
+ *         </ul>
+ * @release image_common/OH_PictureMetadatas_Release {outMetadataArray}
+ * @since 26.0.0
+ */
 Image_ErrorCode OH_ImageSourceNative_ReadImageMetadataByType(OH_ImageSourceNative *source, uint32_t index,
-    Image_MetadataType *metadataTypes, size_t typeCount, OH_PictureMetadata **metadatas, size_t *metadataCount);
+    Image_MetadataType *metadataTypes, size_t typeCount, OH_PictureMetadata **outMetadataArray, size_t *metadataCount);
 
 /**
  * @brief Defines raw data in an image.

@@ -222,26 +222,21 @@ void JpegDecoderYuv::InitYuvDataOutInfoTo420NV(uint32_t width, uint32_t height, 
     }
     if (context.allocatorType == OHOS::Media::AllocatorType::DMA_ALLOC) {
         SurfaceBuffer* sbBuffer = reinterpret_cast<SurfaceBuffer *>(context.pixelsBuffer.context);
-        if (sbBuffer == nullptr) {
-            IMAGE_LOGE("SurfaceBuffer is null");
+        if (sbBuffer != nullptr && ImageUtils::GetYuvInfoFromSurfaceBuffer(info, sbBuffer)) {
             return;
         }
-        if (!ImageUtils::GetYuvInfoFromSurfaceBuffer(info, sbBuffer)) {
-            IMAGE_LOGE("Get YUVInfo from SurfaceBuffer failed");
-            return;
-        }
-    } else {
-        info.imageSize.width = static_cast<int32_t>(width);
-        info.imageSize.height = static_cast<int32_t>(height);
-        info.yWidth = Get420OutPlaneWidth(YCOM, width);
-        info.yHeight = Get420OutPlaneHeight(YCOM, height);
-        info.uvWidth = Get420OutPlaneWidth(UCOM, width);
-        info.uvHeight = Get420OutPlaneHeight(UCOM, height);
-        info.yStride = info.yWidth;
-        info.uvStride = info.uvWidth + info.uvWidth;
-        info.yOffset = 0;
-        info.uvOffset = info.yHeight * info.yStride;
+        IMAGE_LOGW("DMA planes info unavailable, fallback to default stride");
     }
+    info.imageSize.width = static_cast<int32_t>(width);
+    info.imageSize.height = static_cast<int32_t>(height);
+    info.yWidth = Get420OutPlaneWidth(YCOM, width);
+    info.yHeight = Get420OutPlaneHeight(YCOM, height);
+    info.uvWidth = Get420OutPlaneWidth(UCOM, width);
+    info.uvHeight = Get420OutPlaneHeight(UCOM, height);
+    info.yStride = info.yWidth;
+    info.uvStride = info.uvWidth + info.uvWidth;
+    info.yOffset = 0;
+    info.uvOffset = info.yHeight * info.yStride;
 }
 
 void JpegDecoderYuv::InitYuvDataOutInfo(uint32_t width, uint32_t height, YUVDataInfo &info)

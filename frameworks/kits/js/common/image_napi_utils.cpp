@@ -323,6 +323,11 @@ const std::set<AuxiliaryPictureType> &ImageNapiUtils::GetNapiSupportedAuxiliaryP
         AuxiliaryPictureType::UNREFOCUS_MAP,
         AuxiliaryPictureType::LINEAR_MAP,
         AuxiliaryPictureType::FRAGMENT_MAP,
+        AuxiliaryPictureType::SNAP_MAP,
+        AuxiliaryPictureType::SNAP_GAINMAP,
+        AuxiliaryPictureType::PAN_MAP,
+        AuxiliaryPictureType::PAN_GAINMAP,
+        AuxiliaryPictureType::LHDR_GAINMAP,
     };
     return auxTypes;
 }
@@ -422,16 +427,6 @@ void ImageNapiUtils::CleanUpConstructorContext(void* data)
     ctorContext->env_ = nullptr;
     ctorContext->ref_ = nullptr;
     delete ctorContext;
-}
-
-bool ImageNapiUtils::IsSystemApp()
-{
-#if !defined(CROSS_PLATFORM)
-    static bool isSys = Security::AccessToken::TokenIdKit::IsSystemAppByFullTokenID(IPCSkeleton::GetSelfTokenID());
-    return isSys;
-#else
-    return false;
-#endif
 }
 
 napi_value ImageNapiUtils::CreateEnumTypeObject(napi_env env, napi_valuetype type,

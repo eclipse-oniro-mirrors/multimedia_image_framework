@@ -23,8 +23,7 @@
 #include "image_type.h"
 #include "iosfwd"
 #if !defined(CROSS_PLATFORM)
-#include "surface_type.h"
-#include "surface_buffer.h"
+#include <refbase.h>
 #endif
 
 namespace OHOS { namespace MultimediaPlugin { class PluginServer; } }
@@ -32,6 +31,7 @@ namespace OHOS { namespace ImagePlugin { struct DecodeContext; } }
 namespace OHOS { namespace ColorManager {enum ColorSpaceName: uint32_t; } }
 namespace OHOS { namespace HDI { namespace Display { namespace Graphic { namespace Common {
     namespace V1_0 { enum CM_ColorSpaceType: int32_t; } } } } } }
+namespace OHOS { class SurfaceBuffer; }
 namespace OHOS {
 namespace Media {
 const std::string IMAGE_ENCODE_FORMAT = "encodeFormat";
@@ -130,6 +130,8 @@ public:
     static AlphaType GetValidAlphaTypeByFormat(const AlphaType &dstType, const PixelFormat &format);
     static AllocatorType GetPixelMapAllocatorType(const Size &size, const PixelFormat &format, bool preferDma,
         uint64_t &usage);
+    static AllocatorType GetPixelMapAllocatorType(const Size &size, const PixelFormat &format, bool preferDma,
+        uint64_t &usage, bool &isUseDefaultDmaNopadding);
     static bool IsValidImageInfo(const ImageInfo &info);
     static bool IsValidAuxiliaryInfo(const std::shared_ptr<PixelMap> &pixelMap, const AuxiliaryPictureInfo &info);
     static bool IsAstc(PixelFormat format);
@@ -157,6 +159,8 @@ public:
         uint64_t imageId = 0);
 #if !defined(CROSS_PLATFORM)
     static bool SurfaceBuffer2PixelMap(sptr<SurfaceBuffer> &surfaceBuffer, std::unique_ptr<PixelMap>& Pixelmap);
+    static bool ConvertRGBAF16ToRGBA1010102(
+        const std::shared_ptr<PixelMap>& srcPixelMap, std::unique_ptr<PixelMap>& dstPixelMap);
     static void DumpHdrBufferEnabled(sptr<SurfaceBuffer>& buffer, const std::string& fileName);
     static void DumpHdrExtendMetadataEnabled(sptr<SurfaceBuffer>& buffer, const std::string& fileName);
     static void DumpSurfaceBufferAllKeysEnabled(sptr<SurfaceBuffer>& buffer, const std::string& fileName);
@@ -167,6 +171,7 @@ public:
     static bool GetYuvInfoFromSurfaceBuffer(YUVDataInfo &yuvInfo, sptr<SurfaceBuffer> surfaceBuffer);
 #endif
     static PixelFormat SbFormat2PixelFormat(int32_t sbFormat);
+    static int32_t PixelFormat2GraphicFormat(PixelFormat pixelFormat);
     static uint64_t GetNowTimeMilliSeconds();
     static uint64_t GetNowTimeMicroSeconds();
     static std::string GetCurrentProcessName();
@@ -225,7 +230,6 @@ public:
     static bool IsYuvFormat(PixelFormat format);
     static bool IsRGBX(PixelFormat format);
     static bool IsAlpha8(PixelFormat format);
-    static bool IsGrayScale(PixelFormat format);
     static bool PixelMapCreateCheckFormat(PixelFormat format);
     static bool CheckTlvSupportedFormat(PixelFormat format);
     static uint16_t GetReusePixelRefCount(const std::shared_ptr<PixelMap> &reusePixelmap);
@@ -282,6 +286,7 @@ public:
     static uint8_t GetVarintLen(int32_t value);
     static void WriteVarint(std::vector<uint8_t> &buff, int32_t value);
     static void WriteUint8(std::vector<uint8_t> &buff, uint8_t value);
+    static bool IsSystemApp();
 #if !defined(CROSS_PLATFORM)
     static void FlushSurfaceBuffer(sptr<SurfaceBuffer>& surfaceBuffer);
 #endif
@@ -296,7 +301,7 @@ public:
         return oss.str();
     }
 #if !defined(CROSS_PLATFORM)
-    static void GetYUVStrideInfo(int32_t pixelFmt, OH_NativeBuffer_Planes *planes, YUVStrideInfo &dstStrides);
+    static void GetYUVStrideInfo(SurfaceBuffer* surfaceBuffer, YUVStrideInfo &dstStrides);
 #endif
 private:
     static uint32_t RegisterPluginServer();

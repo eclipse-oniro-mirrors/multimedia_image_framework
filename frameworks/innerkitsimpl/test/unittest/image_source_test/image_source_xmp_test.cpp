@@ -38,7 +38,6 @@ static const std::string IMAGE_PNG_XMP_PATH = "/data/local/tmp/image/png_xmp.png
 static const std::string IMAGE_TIFF_XMP_PATH = "/data/local/tmp/image/tiff_xmp.tiff";
 
 static const uint32_t MAX_SOURCE_SIZE = 300 * 1024 * 1024;
-constexpr int32_t INVALID_FILE_DESCRIPTOR = -1;
 }
 
 class ImageSourceXMPTest : public testing::Test {
@@ -326,31 +325,6 @@ HWTEST_F(ImageSourceXMPTest, WriteXMPMetadataTest002, TestSize.Level1)
     ASSERT_EQ(errorCode, SUCCESS);
 
     GTEST_LOG_(INFO) << "ImageSourceXMPTest: WriteXMPMetadataTest002 end";
-}
-
-/**
- * @tc.name: WriteXMPMetadataTest003
- * @tc.desc: Verify that WriteXMPMetadata works correctly when both file path and file descriptor are invalid.
- * @tc.type: FUNC
- */
-HWTEST_F(ImageSourceXMPTest, WriteXMPMetadataTest003, TestSize.Level1)
-{
-    GTEST_LOG_(INFO) << "ImageSourceXMPTest: WriteXMPMetadataTest003 start";
-    std::unique_ptr<ImageSource> imageSource = CreateImageSourceByPath(IMAGE_JPEG_XMP_PATH);
-    ASSERT_NE(imageSource, nullptr);
-
-    uint32_t errorCode = 0;
-    std::shared_ptr<XMPMetadata> xmpMetadata = imageSource->ReadXMPMetadata(errorCode);
-    ASSERT_NE(xmpMetadata, nullptr);
-    ASSERT_EQ(errorCode, SUCCESS);
-
-    imageSource->srcFilePath_ = "";
-    imageSource->srcFd_ = INVALID_FILE_DESCRIPTOR;
-
-    errorCode = imageSource->WriteXMPMetadata(xmpMetadata);
-    ASSERT_NE(errorCode, SUCCESS);
-
-    GTEST_LOG_(INFO) << "ImageSourceXMPTest: WriteXMPMetadataTest003 end";
 }
 
 /**

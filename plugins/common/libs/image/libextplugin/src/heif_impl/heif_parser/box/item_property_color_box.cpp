@@ -14,6 +14,7 @@
  */
 
 #include "box/item_property_color_box.h"
+#include "image_log.h"
 
 namespace {
     const uint8_t FILL_RANGE_FLAG_SHIFT = 7;
@@ -69,6 +70,7 @@ heif_error HeifColrBox::Write(HeifStreamWriter& writer) const
 {
     size_t boxStart = ReserveHeader(writer);
 
+    CHECK_ERROR_RETURN_RET(!colorProfile_, heif_error_invalid_data);
     writer.Write32(colorProfile_->GetProfileType());
     heif_error err = colorProfile_->Write(writer);
     if (err) {

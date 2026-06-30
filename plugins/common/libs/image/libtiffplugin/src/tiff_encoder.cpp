@@ -99,9 +99,7 @@ tmsize_t TiffEncoder::ReadProc(thandle_t handle, void *data, tmsize_t size)
 tmsize_t TiffEncoder::WriteProc(thandle_t handle, void *data, tmsize_t size)
 {
     auto *stream = static_cast<OutputDataStream *>(handle);
-    if (stream == nullptr) {
-        return 0;
-    }
+    CHECK_ERROR_RETURN_RET(stream == nullptr, 0);
     // Handle large writes exceeding uint32_t range
     tmsize_t totalWritten = 0;
     const uint8_t *ptr = static_cast<const uint8_t *>(data);
@@ -109,9 +107,7 @@ tmsize_t TiffEncoder::WriteProc(thandle_t handle, void *data, tmsize_t size)
     while (size > 0) {
         tmsize_t chunkSize = (size > static_cast<tmsize_t>(UINT32_MAX))
                              ? static_cast<tmsize_t>(UINT32_MAX) : size;
-        if (!stream->Write(ptr, chunkSize)) {
-            return 0;
-        }
+        CHECK_ERROR_RETURN_RET(!stream->Write(ptr, chunkSize), 0);
         ptr += chunkSize;
         size -= chunkSize;
         totalWritten += chunkSize;
@@ -156,9 +152,7 @@ int TiffEncoder::CloseProc(thandle_t handle)
 toff_t TiffEncoder::SizeProc(thandle_t handle)
 {
     auto *stream = static_cast<OutputDataStream *>(handle);
-    if (stream == nullptr) {
-        return 0;
-    }
+    CHECK_ERROR_RETURN_RET(stream == nullptr, 0);
     size_t currentSize = 0;
     stream->GetCurrentSize(currentSize);
     return static_cast<toff_t>(currentSize);
@@ -176,27 +170,22 @@ uint32_t TiffEncoder::StartEncode(OutputDataStream &outputStream, PlEncodeOption
 
 uint32_t TiffEncoder::AddImage(PixelMap &pixelMap)
 {
-    if (!isEncoding_) {
-        IMAGE_LOGE("[TiffEncoder] AddImage failed, not started");
-        return ERR_IMAGE_ENCODE_FAILED;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(!isEncoding_, ERR_IMAGE_ENCODE_FAILED, "[TiffEncoder] AddImage failed, not started");
 
     PixelFormat format = pixelMap.GetPixelFormat();
-    if (!IsSupportedPixelMapFormat(format)) {
-        IMAGE_LOGE("[TiffEncoder] AddImage failed, unsupported pixel format: %{public}d. "
-                   "Only RGB_888 and Y8 are supported via PixelMap", static_cast<int>(format));
-        return ERR_IMAGE_INVALID_PARAMETER;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(!IsSupportedPixelMapFormat(format), ERR_IMAGE_INVALID_PARAMETER,
+        "[TiffEncoder] AddImage failed, unsupported pixel format: "
+        "%{public}d. Only RGB_888 and Y8 are supported via PixelMap",
+        static_cast<int>(format));
 
     int32_t width = pixelMap.GetWidth();
     int32_t height = pixelMap.GetHeight();
     int32_t rowStride = pixelMap.GetRowStride();
-    if (width <= 0 || height <= 0 || rowStride < 0) {
-        IMAGE_LOGE("[TiffEncoder] AddImage failed, invalid dimensions: "
-                   "width=%{public}d, height=%{public}d, rowStride=%{public}d",
-                   width, height, rowStride);
-        return ERR_IMAGE_INVALID_PARAMETER;
-    }
+    bool cond = (width <= 0) || (height <= 0) || (rowStride < 0);
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER,
+        "[TiffEncoder] AddImage failed, invalid dimensions: "
+        "width=%{public}d, height=%{public}d, rowStride=%{public}d",
+        width, height, rowStride);
 
     PixelBufferInfo bufferInfo;
     bufferInfo.width = static_cast<uint32_t>(width);
@@ -221,15 +210,11 @@ uint32_t TiffEncoder::AddPicture(Picture &picture)
 
 uint32_t TiffEncoder::FinalizeEncode()
 {
-    if (!isEncoding_) {
-        IMAGE_LOGE("[TiffEncoder] FinalizeEncode failed, not started");
-        return ERR_IMAGE_ENCODE_FAILED;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(!isEncoding_, ERR_IMAGE_ENCODE_FAILED,
+        "[TiffEncoder] FinalizeEncode failed, not started");
 
-    if (!hasEncodeParams_) {
-        IMAGE_LOGE("[TiffEncoder] FinalizeEncode failed, no images to encode");
-        return ERR_IMAGE_INVALID_PARAMETER;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(!hasEncodeParams_, ERR_IMAGE_INVALID_PARAMETER,
+        "[TiffEncoder] FinalizeEncode failed, no images to encode");
 
     uint32_t ret = DoEncode();
     CHECK_ERROR_RETURN_RET_LOG(ret != SUCCESS, ret, "[TiffEncoder] DoEncode failed");
@@ -242,10 +227,8 @@ uint32_t TiffEncoder::FinalizeEncode()
 uint32_t TiffEncoder::EncodeBinaryImageToTiff(const PixelBufferInfo* bufferInfo, OutputDataStream &outputStream,
                                               const PlPackingOptionsForTiff &option)
 {
-    if (bufferInfo == nullptr) {
-        IMAGE_LOGE("[TiffEncoder] EncodeBinaryImageToTiff failed, bufferInfo is null");
-        return ERR_IMAGE_INVALID_PARAMETER;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(bufferInfo == nullptr, ERR_IMAGE_INVALID_PARAMETER,
+        "[TiffEncoder] EncodeBinaryImageToTiff failed, bufferInfo is null");
 
     outputStream_ = &outputStream;
     tiffPackingOption_ = option;
@@ -262,10 +245,8 @@ uint32_t TiffEncoder::EncodeBinaryImageToTiff(const PixelBufferInfo* bufferInfo,
 
 uint32_t TiffEncoder::ValidatePixelBufferInfo(const PixelBufferInfo &bufferInfo, PixelFormat format)
 {
-    if (bufferInfo.data == nullptr) {
-        IMAGE_LOGE("[TiffEncoder] ValidatePixelBufferInfo failed, data is null");
-        return ERR_IMAGE_INVALID_PARAMETER;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(bufferInfo.data == nullptr, ERR_IMAGE_INVALID_PARAMETER,
+        "[TiffEncoder] ValidatePixelBufferInfo failed, data is null");
     if (bufferInfo.width == 0 || bufferInfo.height == 0) {
         IMAGE_LOGE("[TiffEncoder] ValidatePixelBufferInfo failed, invalid width or height: "
                    "%{public}ux%{public}u",

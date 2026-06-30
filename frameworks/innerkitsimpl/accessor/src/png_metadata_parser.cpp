@@ -57,18 +57,39 @@ static bool IsValidGamma(double gamma)
 
 static bool SafeUint32ToInt32(png_uint_32 value, int32_t& result)
 {
-    if (value > static_cast<png_uint_32>(std::numeric_limits<int32_t>::max())) {
-        IMAGE_LOGE("%{public}s: value %{public}u exceeds int32_t max", __func__, value);
-        return false;
-    }
+    bool cond = (value > static_cast<png_uint_32>(std::numeric_limits<int32_t>::max()));
+    CHECK_ERROR_RETURN_RET_LOG(cond, false,
+        "%{public}s: value %{public}u exceeds int32_t max", __func__, value);
     result = static_cast<int32_t>(value);
     return true;
+}
+
+static jmp_buf* SafePngSetLongjmpFn(png_structp png_ptr)
+{
+#ifdef PNG_SETJMP_SUPPORTED
+    if (png_ptr != nullptr) {
+        return png_set_longjmp_fn(png_ptr, longjmp, sizeof(jmp_buf));
+    }
+#endif
+    return nullptr;
+}
+
+static int SafeSetJmp(png_structp png_ptr) {
+    auto jmpBuf = SafePngSetLongjmpFn(png_ptr);
+    return jmpBuf == nullptr ? -1 : setjmp(*jmpBuf);
+}
+
+static void SafeLongJmp(png_structp png_ptr) {
+    auto jmpBuf = SafePngSetLongjmpFn(png_ptr);
+    if (jmpBuf != nullptr) {
+        longjmp(*jmpBuf, 1);
+    }
 }
 
 static void PngErrorExit(png_structp pngPtr, png_const_charp message)
 {
     IMAGE_LOGE("PNG error: %{public}s", message);
-    longjmp(png_jmpbuf(pngPtr), 1);
+    SafeLongJmp(pngPtr);
 }
 
 static void PngWarning(png_structp pngPtr, png_const_charp message)
@@ -82,19 +103,19 @@ static void PngReadFunc(png_structp pngPtr, png_bytep data, png_size_t length)
         static_cast<OHOS::ImagePlugin::InputDataStream*>(png_get_io_ptr(pngPtr));
     if (stream == nullptr) {
         IMAGE_LOGE("%{public}s: stream is nullptr", __func__);
-        longjmp(png_jmpbuf(pngPtr), 1);
+        SafeLongJmp(pngPtr);
     }
     uint32_t readSize = 0;
     uint32_t desiredSize = static_cast<uint32_t>(length);
     bool ret = stream->Read(desiredSize, reinterpret_cast<uint8_t*>(data), desiredSize, readSize);
     if (!ret) {
         IMAGE_LOGE("%{public}s: Read operation failed, desired=%{public}u", __func__, desiredSize);
-        longjmp(png_jmpbuf(pngPtr), 1);
+        SafeLongJmp(pngPtr);
     }
     if (readSize < desiredSize) {
         IMAGE_LOGE("%{public}s: Unexpected EOF, desired=%{public}u, actual=%{public}u", __func__, desiredSize,
             readSize);
-        longjmp(png_jmpbuf(pngPtr), 1);
+        SafeLongJmp(pngPtr);
     }
 }
 
@@ -111,10 +132,7 @@ PngMetadataParser::~PngMetadataParser()
 
 bool PngMetadataParser::ReadPngInfo(ImagePlugin::InputDataStream *stream)
 {
-    if (setjmp(png_jmpbuf(pngStructPtr_))) {
-        IMAGE_LOGE("PNG lib error during header decode");
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(SafeSetJmp(pngStructPtr_), false, "PNG lib error during header decode");
     png_set_read_fn(pngStructPtr_, stream, PngReadFunc);
     png_read_info(pngStructPtr_, pngInfoPtr_);
     return true;
@@ -122,10 +140,7 @@ bool PngMetadataParser::ReadPngInfo(ImagePlugin::InputDataStream *stream)
 
 bool PngMetadataParser::SetupPngReading(ImagePlugin::InputDataStream *stream)
 {
-    if (stream == nullptr) {
-        IMAGE_LOGE("%{public}s: stream is nullptr", __func__);
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(stream == nullptr, false, "%{public}s: stream is nullptr", __func__);
 
     if (pngStructPtr_ || pngInfoPtr_) {
         png_destroy_read_struct(&pngStructPtr_, &pngInfoPtr_, nullptr);
@@ -174,10 +189,7 @@ bool PngMetadataParser::GetPhysProperty(const std::string &key, int32_t &value)
     png_uint_32 yPixelsPerMeter = 0;
     int unitType = 0;
     bool pHYsRet = png_get_pHYs(pngStructPtr_, pngInfoPtr_, &xPixelsPerMeter, &yPixelsPerMeter, &unitType);
-    if (!pHYsRet) {
-        IMAGE_LOGW("%{public}s: pHYs chunk not found in PNG", __func__);
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(!pHYsRet, false, "%{public}s: pHYs chunk not found in PNG", __func__);
     if (unitType != PNG_UNITS_METER) {
         IMAGE_LOGW("%{public}s: pHYs unit type %{public}d is not meter (PNG_UNITS_METER=%{public}d), ignoring",
             __func__, unitType, PNG_UNITS_METER);
@@ -200,10 +212,7 @@ bool PngMetadataParser::GetGammaPropertyDouble(double &value)
         return false;
     }
     bool validGamma = IsValidGamma(gamma);
-    if (!validGamma) {
-        IMAGE_LOGE("%{public}s: invalid gamma value: %{public}f", __func__, gamma);
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(!validGamma, false, "%{public}s: invalid gamma value: %{public}f", __func__, gamma);
     value = gamma;
     return true;
 }
@@ -228,14 +237,9 @@ bool PngMetadataParser::GetSrgbProperty(int32_t &value)
 
 bool PngMetadataParser::GetPropertyDouble(const std::string &key, double &value)
 {
-    if (pngStructPtr_ == nullptr || pngInfoPtr_ == nullptr) {
-        IMAGE_LOGE("pngStructPtr_ or pngInfoPtr_ is null");
-        return false;
-    }
-    if (setjmp(png_jmpbuf(pngStructPtr_))) {
-        IMAGE_LOGE("PNG lib error during property get");
-        return false;
-    }
+    bool cond = (pngStructPtr_ == nullptr) || (pngInfoPtr_ == nullptr);
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "pngStructPtr_ or pngInfoPtr_ is null");
+    CHECK_ERROR_RETURN_RET_LOG(SafeSetJmp(pngStructPtr_), false, "PNG lib error during property get");
     if (key == PNG_METADATA_KEY_GAMMA) {
         return GetGammaPropertyDouble(value);
     }
@@ -248,7 +252,7 @@ bool PngMetadataParser::GetPropertyInt(const std::string &key, int32_t &value)
         IMAGE_LOGE("pngStructPtr_ or pngInfoPtr_ is null");
         return false;
     }
-    if (setjmp(png_jmpbuf(pngStructPtr_))) {
+    if (SafeSetJmp(pngStructPtr_)) {
         IMAGE_LOGE("PNG lib error during property get");
         return false;
     }
@@ -332,15 +336,10 @@ bool PngMetadataParser::GetTextProperty(const std::string &key, std::string &val
 
 bool PngMetadataParser::GetPropertyString(const std::string &key, std::string &value)
 {
-    if (pngStructPtr_ == nullptr || pngInfoPtr_ == nullptr) {
-        IMAGE_LOGE("%{public}s: pngStructPtr_ or pngInfoPtr_ is null", __func__);
-        return false;
-    }
-
-    if (setjmp(png_jmpbuf(pngStructPtr_))) {
-        IMAGE_LOGE("%{public}s: PNG lib error during property get", __func__);
-        return false;
-    }
+    bool cond = (pngStructPtr_ == nullptr) || (pngInfoPtr_ == nullptr);
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "%{public}s: pngStructPtr_ or pngInfoPtr_ is null", __func__);
+    CHECK_ERROR_RETURN_RET_LOG(SafeSetJmp(pngStructPtr_), false,
+        "%{public}s: PNG lib error during property get", __func__);
     if (key == PNG_METADATA_KEY_CHROMATICITIES) {
         return GetChromaticitiesProperty(value);
     } else {

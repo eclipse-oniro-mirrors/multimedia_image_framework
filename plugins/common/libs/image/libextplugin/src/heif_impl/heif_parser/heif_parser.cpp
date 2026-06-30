@@ -38,6 +38,7 @@ const static uint32_t HEIF_MAX_EXIF_SIZE = 128 * 1024;
 const static uint32_t HEIF_MAX_SAMPLE_SIZE = 20 * 1024 * 1024;
 const static uint32_t FRAME_INDEX_DELTA = 1;
 const static uint32_t MS_PER_SECOND = 1000;
+const static uint32_t MAX_TOP_LEVEL_BOXES = 1000;
 
 static bool HasOverflowed(uint32_t num1, uint32_t num2)
 {
@@ -55,18 +56,14 @@ HeifParser::~HeifParser() = default;
 
 heif_error HeifParser::MakeFromMemory(const void *data, size_t size, bool isNeedCopy, std::shared_ptr<HeifParser> *out)
 {
-    if (data == nullptr) {
-        return heif_error_no_data;
-    }
+    CHECK_ERROR_RETURN_RET(!data, heif_error_no_data);
     auto input_stream = std::make_shared<HeifBufferInputStream>((const uint8_t *) data, size, isNeedCopy);
     return MakeFromStream(input_stream, out);
 }
 
 heif_error HeifParser::MakeFromStream(const std::shared_ptr<HeifInputStream> &stream, std::shared_ptr<HeifParser> *out)
 {
-    if (stream == nullptr) {
-        return heif_error_no_data;
-    }
+    CHECK_ERROR_RETURN_RET(!stream, heif_error_no_data);
     std::shared_ptr<HeifParser> file = std::make_shared<HeifParser>(stream);
 
     auto maxSize = static_cast<uint64_t>(std::numeric_limits<int64_t>::max());
@@ -83,6 +80,7 @@ heif_error HeifParser::MakeFromStream(const std::shared_ptr<HeifInputStream> &st
         return errorAnimationImage != heif_error_not_heifs ? errorAnimationImage : errorImage;
     }
 
+    CHECK_ERROR_RETURN_RET(!out, heif_error_no_data);
     *out = std::move(file);
     return errorBox;
 }
@@ -95,18 +93,23 @@ void HeifParser::Write(HeifStreamWriter &writer)
         box->Write(writer);
     }
 
-    ilocBox_->WriteMdatBox(writer);
+    if (ilocBox_) {
+        ilocBox_->WriteMdatBox(writer);
+    }
 }
 
 heif_item_id HeifParser::GetPrimaryItemId() const
 {
+    CHECK_ERROR_RETURN_RET(!pitmBox_, 0);
     return pitmBox_->GetItemId();
 }
 
 void HeifParser::GetAllItemId(std::vector<heif_item_id> &itemIdList) const
 {
     for (const auto &infeBox: infeBoxes_) {
-        itemIdList.push_back(infeBox.second->GetItemId());
+        if (infeBox.second != nullptr) {
+            itemIdList.push_back(infeBox.second->GetItemId());
+        }
     }
 }
 
@@ -122,8 +125,10 @@ heif_error HeifParser::AssembleBoxes(HeifStreamReader &reader)
         if (error != heif_error_ok) {
             return error;
         }
-        if (box == nullptr) {
-            return heif_error_no_meta;
+        CHECK_ERROR_RETURN_RET(!box, heif_error_no_meta);
+        
+        if (topBoxes_.size() >= MAX_TOP_LEVEL_BOXES) {
+            return heif_error_too_many_boxes;
         }
         topBoxes_.push_back(box);
         if (box->GetBoxType() == BOX_TYPE_META) {
@@ -137,32 +142,22 @@ heif_error HeifParser::AssembleBoxes(HeifStreamReader &reader)
         }
     }
 
-    if (!ftypBox_) {
-        return heif_error_no_ftyp;
-    }
+    CHECK_ERROR_RETURN_RET(!ftypBox_, heif_error_no_ftyp);
 
     if (moovBox_ && isSequenceMajorBrand()) {
         return AssembleMovieBoxes();
     }
 
-    if (!metaBox_) {
-        return heif_error_no_meta;
-    }
+    CHECK_ERROR_RETURN_RET(!metaBox_, heif_error_no_meta);
 
     hdlrBox_ = metaBox_->GetChild<HeifHdlrBox>(BOX_TYPE_HDLR);
-    if (!hdlrBox_ || hdlrBox_->GetHandlerType() != HANDLER_TYPE_PICT) {
-        return heif_error_invalid_handler;
-    }
+    CHECK_ERROR_RETURN_RET(!hdlrBox_ || hdlrBox_->GetHandlerType() != HANDLER_TYPE_PICT, heif_error_invalid_handler);
 
     pitmBox_ = metaBox_->GetChild<HeifPtimBox>(BOX_TYPE_PITM);
-    if (!pitmBox_) {
-        return heif_error_no_pitm;
-    }
+    CHECK_ERROR_RETURN_RET(!pitmBox_, heif_error_no_pitm);
 
     iinfBox_ = metaBox_->GetChild<HeifIinfBox>(BOX_TYPE_IINF);
-    if (!iinfBox_) {
-        return heif_error_no_iinf;
-    }
+    CHECK_ERROR_RETURN_RET(!iinfBox_, heif_error_no_iinf);
     std::vector<std::shared_ptr<HeifInfeBox>> infes = iinfBox_->GetChildren<HeifInfeBox>(BOX_TYPE_INFE);
     for (auto &infe: infes) {
         infeBoxes_.insert(std::make_pair(infe->GetItemId(), infe));
@@ -171,14 +166,10 @@ heif_error HeifParser::AssembleBoxes(HeifStreamReader &reader)
     irefBox_ = metaBox_->GetChild<HeifIrefBox>(BOX_TYPE_IREF);
 
     iprpBox_ = metaBox_->GetChild<HeifIprpBox>(BOX_TYPE_IPRP);
-    if (!iprpBox_) {
-        return heif_error_no_iprp;
-    }
+    CHECK_ERROR_RETURN_RET(!iprpBox_, heif_error_no_iprp);
 
     ipcoBox_ = iprpBox_->GetChild<HeifIpcoBox>(BOX_TYPE_IPCO);
-    if (!ipcoBox_) {
-        return heif_error_no_ipco;
-    }
+    CHECK_ERROR_RETURN_RET(!ipcoBox_, heif_error_no_ipco);
 
     std::vector<std::shared_ptr<HeifIpmaBox>> ipmas = iprpBox_->GetChildren<HeifIpmaBox>(BOX_TYPE_IPMA);
     if (ipmas.empty()) {
@@ -191,9 +182,7 @@ heif_error HeifParser::AssembleBoxes(HeifStreamReader &reader)
     idatBox_ = metaBox_->GetChild<HeifIdatBox>(BOX_TYPE_IDAT);
 
     ilocBox_ = metaBox_->GetChild<HeifIlocBox>(BOX_TYPE_ILOC);
-    if (!ilocBox_) {
-        return heif_error_no_iloc;
-    }
+    CHECK_ERROR_RETURN_RET(!ilocBox_, heif_error_no_iloc);
     return heif_error_ok;
 }
 
@@ -205,39 +194,29 @@ bool HeifParser::HasItemId(heif_item_id itemId) const
 std::string HeifParser::GetItemType(heif_item_id itemId) const
 {
     auto infe_box = GetInfeBox(itemId);
-    if (!infe_box) {
-        return "";
-    }
+    CHECK_ERROR_RETURN_RET(!infe_box, "");
     return infe_box->GetItemType();
 }
 
 std::string HeifParser::GetItemContentType(heif_item_id itemId) const
 {
     auto infe_box = GetInfeBox(itemId);
-    if (!infe_box) {
-        return "";
-    }
+    CHECK_ERROR_RETURN_RET(!infe_box, "");
     return infe_box->GetContentType();
 }
 
 std::string HeifParser::GetItemUriType(heif_item_id itemId) const
 {
     auto infe_box = GetInfeBox(itemId);
-    if (!infe_box) {
-        return "";
-    }
+    CHECK_ERROR_RETURN_RET(!infe_box, "");
     return infe_box->GetItemUriType();
 }
 
 
 heif_error HeifParser::GetAllProperties(heif_item_id itemId, std::vector<std::shared_ptr<HeifBox>> &properties) const
 {
-    if (!ipcoBox_) {
-        return heif_error_no_ipco;
-    }
-    if (!ipmaBox_) {
-        return heif_error_no_ipma;
-    }
+    CHECK_ERROR_RETURN_RET(!ipcoBox_, heif_error_no_ipco);
+    CHECK_ERROR_RETURN_RET(!ipmaBox_, heif_error_no_ipma);
     return ipcoBox_->GetProperties(itemId, ipmaBox_, properties);
 }
 
@@ -246,6 +225,7 @@ heif_error HeifParser::GetGridLength(heif_item_id itemId, size_t &length)
     if (!HasItemId(itemId)) {
         return heif_error_item_not_found;
     }
+    CHECK_ERROR_RETURN_RET(!ilocBox_, heif_error_no_iloc);
     auto items = ilocBox_->GetItems();
     const HeifIlocBox::Item *ilocItem = nullptr;
     auto iter = std::find_if(items.begin(), items.end(), [&itemId](const auto &item) {
@@ -266,9 +246,9 @@ heif_error HeifParser::GetItemData(heif_item_id itemId, std::vector<uint8_t> *ou
     }
 
     auto infe_box = GetInfeBox(itemId);
-    if (!infe_box) {
-        return heif_error_item_not_found;
-    }
+    CHECK_ERROR_RETURN_RET(!infe_box, heif_error_item_not_found);
+
+    CHECK_ERROR_RETURN_RET(!ilocBox_, heif_error_no_iloc);
 
     std::string item_type = infe_box->GetItemType();
     const auto& items = ilocBox_->GetItems();
@@ -285,9 +265,7 @@ heif_error HeifParser::GetItemData(heif_item_id itemId, std::vector<uint8_t> *ou
 
     if (item_type == "hvc1") {
         auto hvcc = GetProperty<HeifHvccBox>(itemId);
-        if (!hvcc) {
-            return heif_error_no_hvcc;
-        }
+        CHECK_ERROR_RETURN_RET(!hvcc, heif_error_no_hvcc);
         if (option != heif_no_header && !hvcc->GetHeaders(out)) {
             return heif_error_item_data_not_found;
         }
@@ -310,12 +288,8 @@ heif_error HeifParser::GetItemData(heif_item_id itemId, std::vector<uint8_t> *ou
 void HeifParser::GetTileImages(heif_item_id gridItemId, std::vector<std::shared_ptr<HeifImage>> &out)
 {
     auto infe = GetInfeBox(gridItemId);
-    if (!infe || infe->GetItemType() != "grid") {
-        return;
-    }
-    if (!irefBox_) {
-        return;
-    }
+    CHECK_ERROR_RETURN(!infe || infe->GetItemType() != "grid");
+    CHECK_ERROR_RETURN(!irefBox_);
     auto toItemIds = irefBox_->GetReferences(gridItemId, BOX_TYPE_DIMG);
     for (heif_item_id toItemId: toItemIds) {
         auto tileImage = GetImage(toItemId);
@@ -328,12 +302,8 @@ void HeifParser::GetTileImages(heif_item_id gridItemId, std::vector<std::shared_
 void HeifParser::GetIdenImage(heif_item_id itemId, std::shared_ptr<HeifImage> &out)
 {
     auto infe = GetInfeBox(itemId);
-    if (!infe || infe->GetItemType() != "iden") {
-        return;
-    }
-    if (!irefBox_) {
-        return;
-    }
+    CHECK_ERROR_RETURN(!infe || infe->GetItemType() != "iden");
+    CHECK_ERROR_RETURN(!irefBox_);
     auto toItemIds = irefBox_->GetReferences(itemId, BOX_TYPE_DIMG);
     for (heif_item_id toItemId: toItemIds) {
         auto idenImage = GetImage(toItemId);
@@ -360,9 +330,7 @@ heif_error HeifParser::AssembleImages()
     std::vector<heif_item_id> allItemIds;
     GetAllItemId(allItemIds);
     ExtractProperties(allItemIds);
-    if (!primaryImage_) {
-        return heif_error_primary_item_not_found;
-    }
+    CHECK_ERROR_RETURN_RET(!primaryImage_, heif_error_primary_item_not_found);
     ExtractGainmap(allItemIds);
     ExtractDerivedImageProperties();
     ExtractNonMasterImages();
@@ -377,9 +345,6 @@ heif_error HeifParser::AssembleAnimationImages()
     bool isHeifs = moovBox_ && isSequenceMajorBrand();
     if (isHeifs) {
         std::shared_ptr<HeifImage> image = std::make_shared<HeifImage>(0);
-        if (!image) {
-            return heif_error_eof;
-        }
         image->SetMovieImage(true);
         ExtractMovieImageProperties(image);
         if (!primaryImage_) {
@@ -411,7 +376,7 @@ void HeifParser::ExtractProperties(const std::vector<heif_item_id> &allItemIds)
             continue;
         }
         images_.insert(std::make_pair(itemId, image));
-        if (!infe->IsHidden() && itemId == GetPrimaryItemId()) {
+        if (pitmBox_ && !infe->IsHidden() && itemId == pitmBox_->GetItemId()) {
             image->SetPrimaryImage(true);
             primaryImage_ = image;
         }
@@ -429,6 +394,7 @@ void HeifParser::ExtractIT35Metadata(const heif_item_id& metadataItemId)
     if (err != heif_error_ok || extendInfo.empty()) {
         return;
     }
+    CHECK_ERROR_RETURN(!primaryImage_);
     primaryImage_->SetUWAInfo(extendInfo);
 }
 
@@ -442,6 +408,7 @@ void HeifParser::ExtractISOMetadata(const heif_item_id& itemId)
     if (err != heif_error_ok || extendInfo.empty()) {
         return ;
     }
+    CHECK_ERROR_RETURN(!primaryImage_);
     primaryImage_->SetISOMetadata(extendInfo);
 }
 
@@ -458,6 +425,7 @@ void HeifParser::ExtractFragmentMetadata(const heif_item_id& itemId)
         extendInfo.horizontalOffset = rloc->GetX();
         extendInfo.verticalOffset = rloc->GetY();
     }
+    CHECK_ERROR_RETURN(!primaryImage_);
     primaryImage_->SetFragmentMetadata(extendInfo);
 }
 
@@ -536,6 +504,9 @@ void HeifParser::ExtractBlobMetadata(const std::vector<heif_item_id>& allItemIds
             std::vector<uint8_t> extendInfo;
             heif_error err = GetItemData(itemId, &(extendInfo));
             if (err != heif_error_ok || extendInfo.empty()) {
+                continue;
+            }
+            if (primaryImage_ == nullptr) {
                 continue;
             }
             primaryImage_->SetBlobMetadata(type, extendInfo);
@@ -630,9 +601,7 @@ void HeifParser::ExtractDerivedImageProperties()
             continue;
         }
         auto &image = pair.second;
-        if (!irefBox_) {
-            return;
-        }
+        CHECK_ERROR_RETURN(!irefBox_);
         auto tileItemIds = irefBox_->GetReferences(itemId, BOX_TYPE_DIMG);
         if (tileItemIds.empty()) {
             continue;
@@ -704,9 +673,7 @@ void HeifParser::ExtractAuxImage(std::shared_ptr<HeifImage> &auxImage, const Hei
 
 void HeifParser::ExtractGainmapImage(const heif_item_id& tmapId)
 {
-    if (!irefBox_) {
-        return;
-    }
+    CHECK_ERROR_RETURN(!irefBox_);
     std::vector<HeifIrefBox::Reference> references = irefBox_->GetReferencesFrom(tmapId);
     for (const HeifIrefBox::Reference &ref : references) {
         uint32_t type = ref.box.GetBoxType();
@@ -729,26 +696,25 @@ void HeifParser::ExtractGainmapImage(const heif_item_id& tmapId)
         const uint8_t baseIndex = 0;
         const uint8_t gainmapIndex = 1;
         heif_item_id baseId = toItemIds[baseIndex];
+        CHECK_ERROR_RETURN(!primaryImage_);
         if (baseId != primaryImage_->GetItemId()) {
             return;
         }
         heif_item_id gainmapId = toItemIds[gainmapIndex];
         auto gainmapImage = GetImage(gainmapId);
-        if (gainmapImage == nullptr) {
-            return;
-        }
+        CHECK_ERROR_RETURN(!gainmapImage);
         gainmapImage->SetGainmapMasterImage(baseId);
         gainmapImage->SetTmapBoxId(tmapId);
-        primaryImage_->AddGainmapImage(gainmapImage);
-        primaryImage_->SetTmapBoxId(tmapId);
+        if (primaryImage_ != nullptr) {
+            primaryImage_->AddGainmapImage(gainmapImage);
+            primaryImage_->SetTmapBoxId(tmapId);
+        }
     }
 }
 
 void HeifParser::ExtractNonMasterImages()
 {
-    if (!irefBox_) {
-        return;
-    }
+    CHECK_ERROR_RETURN(!irefBox_);
     for (auto &pair: images_) {
         auto &image = pair.second;
         std::vector<HeifIrefBox::Reference> references = irefBox_->GetReferencesFrom(image->GetItemId());
@@ -765,9 +731,7 @@ void HeifParser::ExtractNonMasterImages()
 
 void HeifParser::ExtractMetadata(const std::vector<heif_item_id> &allItemIds)
 {
-    if (!irefBox_) {
-        return;
-    }
+    CHECK_ERROR_RETURN(!irefBox_);
 
     for (heif_item_id metadataItemId: allItemIds) {
         std::vector<heif_item_id> toItemIds = irefBox_->GetReferences(metadataItemId, BOX_TYPE_CDSC);
@@ -818,9 +782,7 @@ std::shared_ptr<HeifImage> HeifParser::GetGainmapImage()
 
 std::shared_ptr<HeifImage> HeifParser::GetAuxiliaryMapImage(const std::string type)
 {
-    if (!primaryImage_) {
-        return nullptr;
-    }
+    CHECK_ERROR_RETURN_RET(!primaryImage_, nullptr);
     auto auxImages = primaryImage_->GetAuxImages();
     for (auto image : auxImages) {
         if (image->GetAuxImageType() == type) {
@@ -855,9 +817,7 @@ std::shared_ptr<HeifInfeBox> HeifParser::AddItem(const char *itemType, bool hidd
     auto newInfe = std::make_shared<HeifInfeBox>(newItemId, itemType, false);
     newInfe->SetHidden(hidden);
     infeBoxes_[newItemId] = newInfe;
-    if (iinfBox_ == nullptr) {
-        return nullptr;
-    }
+    CHECK_ERROR_RETURN_RET(!iinfBox_, nullptr);
     iinfBox_->AddChild(newInfe);
     return newInfe;
 }
@@ -871,6 +831,9 @@ void HeifParser::AddIspeProperty(heif_item_id itemId, uint32_t width, uint32_t h
 
 heif_property_id HeifParser::AddProperty(heif_item_id itemId, const std::shared_ptr<HeifBox>& property, bool essential)
 {
+    if (!ipcoBox_ || !ipmaBox_) {
+        return 0;
+    }
     int index = ipcoBox_->AddChild(property);
     ipmaBox_->AddProperty(itemId, PropertyAssociation{essential, uint16_t(index + 1)});
     return index + 1;
@@ -914,17 +877,13 @@ heif_error HeifParser::SetHvccConfig(heif_item_id itemId, const HvccConfig &conf
 
 void HeifParser::AppendIlocData(heif_item_id itemId, const std::vector<uint8_t> &data, uint8_t construction_method)
 {
-    if (!ilocBox_) {
-        return;
-    }
+    CHECK_ERROR_RETURN(!ilocBox_);
     ilocBox_->AppendData(itemId, data, construction_method);
 }
 
 void HeifParser::SetPrimaryItemId(heif_item_id itemId)
 {
-    if (!pitmBox_) {
-        return;
-    }
+    CHECK_ERROR_RETURN(!pitmBox_);
     pitmBox_->SetItemId(itemId);
 }
 
@@ -932,7 +891,9 @@ void HeifParser::AddReference(heif_item_id fromItemId, uint32_t type, const std:
 {
     if (!irefBox_) {
         irefBox_ = std::make_shared<HeifIrefBox>();
-        metaBox_->AddChild(irefBox_);
+        if (metaBox_) {
+            metaBox_->AddChild(irefBox_);
+        }
     }
     irefBox_->AddReferences(fromItemId, type, toItemIds);
 }
@@ -953,6 +914,7 @@ void HeifParser::SetColorProfile(heif_item_id itemId, const std::shared_ptr<cons
 
 void HeifParser::CheckExtentData()
 {
+    CHECK_ERROR_RETURN(!ilocBox_);
     const std::vector<HeifIlocBox::Item>& items = ilocBox_->GetItems();
     for (const HeifIlocBox::Item& item: items) {
         ilocBox_->ReadToExtentData(const_cast<HeifIlocBox::Item &>(item), inputStream_, idatBox_);
@@ -961,10 +923,7 @@ void HeifParser::CheckExtentData()
 
 void HeifParser::SetPrimaryImage(const std::shared_ptr<HeifImage> &image)
 {
-    if (!image) {
-        IMAGE_LOGE("image pointer is nullptr");
-        return;
-    }
+    CHECK_ERROR_RETURN_LOG(!image, "image pointer is nullptr");
     if (primaryImage_) {
         if (primaryImage_->GetItemId() == image->GetItemId()) {
             return;
@@ -1035,6 +994,7 @@ heif_error HeifParser::UpdateExifMetadata(const std::shared_ptr<HeifImage> &mast
 
     uint8_t construction_method = GetConstructMethod(itemId);
 
+    CHECK_ERROR_RETURN_RET(!ilocBox_, heif_error_no_iloc);
     return ilocBox_->UpdateData(itemId, content, construction_method);
 }
 
@@ -1042,9 +1002,7 @@ heif_error HeifParser::SetMetadata(const std::shared_ptr<HeifImage> &image, cons
                                    const char *item_type, const char *content_type)
 {
     auto metadataInfe = AddItem(item_type, true);
-    if (metadataInfe == nullptr) {
-        return heif_invalid_exif_data;
-    }
+    CHECK_ERROR_RETURN_RET(!metadataInfe, heif_invalid_exif_data);
     if (content_type != nullptr) {
         metadataInfe->SetContentType(content_type);
     }
@@ -1060,6 +1018,9 @@ heif_error HeifParser::SetMetadata(const std::shared_ptr<HeifImage> &image, cons
 
 uint8_t HeifParser::GetConstructMethod(const heif_item_id &id)
 {
+    if (!ilocBox_) {
+        return 0;
+    }
     auto items = ilocBox_->GetItems();
     for (const auto &item: items) {
         if (item.itemId == id) {
@@ -1094,6 +1055,8 @@ void HeifParser::SetTiffOffset()
     if (!HasItemId(exifId)) {
         return;
     }
+
+    CHECK_ERROR_RETURN(!ilocBox_);
 
     auto items = ilocBox_->GetItems();
     const HeifIlocBox::Item *ilocItem = nullptr;
@@ -1182,12 +1145,9 @@ void HeifParser::ParseHeifsStaticImageBox()
 
 heif_error HeifParser::IsHeifsImage(bool &isHeifs) const
 {
-    if (!ftypBox_ || ftypBox_->GetMajorBrand() != HEIF_BRAND_TYPE_MSF1) {
-        return heif_error_invalid_major_brand;
-    }
-    if (!hdlrBox_ || hdlrBox_->GetHandlerType() != HANDLER_TYPE_PICT) {
-        return heif_error_invalid_handler;
-    }
+    CHECK_ERROR_RETURN_RET(!ftypBox_ || ftypBox_->GetMajorBrand() != HEIF_BRAND_TYPE_MSF1,
+        heif_error_invalid_major_brand);
+    CHECK_ERROR_RETURN_RET(!hdlrBox_ || hdlrBox_->GetHandlerType() != HANDLER_TYPE_PICT, heif_error_invalid_handler);
     isHeifs = true;
     return heif_error_ok;
 }
@@ -1198,22 +1158,16 @@ heif_error HeifParser::GetHeifsFrameCount(uint32_t &sampleCount) const
     if (IsHeifsImage(isHeifs) != heif_error_ok || !isHeifs) {
         return heif_error_not_heifs;
     }
-    if (!stszBox_) {
-        return heif_error_no_stsz;
-    }
+    CHECK_ERROR_RETURN_RET(!stszBox_, heif_error_no_stsz);
     sampleCount = stszBox_->GetSampleCount();
     return heif_error_ok;
 }
 
 heif_error HeifParser::GetHeifsMovieFrameData(uint32_t index, std::vector<uint8_t> &dest, bool isStatic)
 {
-    if (!stsdBox_) {
-        return heif_error_no_stsd;
-    }
+    CHECK_ERROR_RETURN_RET(!stsdBox_, heif_error_no_stsd);
     auto hvcc = std::dynamic_pointer_cast<HeifHvccBox>(stsdBox_->GetHvccBox(0));
-    if (!hvcc) {
-        return heif_error_no_hvcc;
-    }
+    CHECK_ERROR_RETURN_RET(!hvcc, heif_error_no_hvcc);
     if (isStatic && primaryImage_) {
         return GetItemData(primaryImage_->GetItemId(), &dest, heif_header_option::heif_header_data);
     }
@@ -1229,16 +1183,12 @@ heif_error HeifParser::GetHeifsMovieFrameData(uint32_t index, std::vector<uint8_
 heif_error HeifParser::GetHeifsFrameData(uint32_t index, std::vector<uint8_t> &dest)
 {
     uint32_t chunkOffset = 0;
-    if (!stcoBox_) {
-        return heif_error_no_stco;
-    }
+    CHECK_ERROR_RETURN_RET(!stcoBox_, heif_error_no_stco);
     heif_error res = stcoBox_->GetChunkOffset(0, chunkOffset);
     if (res != heif_error_ok) {
         return res;
     }
-    if (!stszBox_) {
-        return heif_error_no_stsz;
-    }
+    CHECK_ERROR_RETURN_RET(!stszBox_, heif_error_no_stsz);
     uint32_t sampleSize = 0;
     res = stszBox_->GetSampleSize(index, sampleSize);
     if (res != heif_error_ok) {
@@ -1272,12 +1222,8 @@ heif_error HeifParser::GetHeifsFrameData(uint32_t index, std::vector<uint8_t> &d
 
 heif_error HeifParser::GetHeifsDelayTime(uint32_t index, int32_t &value) const
 {
-    if (!sttsBox_) {
-        return heif_error_no_stts;
-    }
-    if (!mdhdBox_) {
-        return heif_error_no_mdhd;
-    }
+    CHECK_ERROR_RETURN_RET(!sttsBox_, heif_error_no_stts);
+    CHECK_ERROR_RETURN_RET(!mdhdBox_, heif_error_no_mdhd);
     uint32_t timeScale = mdhdBox_->GetTimescale();
     uint32_t sampleDelta = 0;
     bool cond = timeScale == 0 || sttsBox_->GetSampleDelta(index, sampleDelta) != heif_error_ok;
@@ -1292,9 +1238,7 @@ heif_error HeifParser::GetHeifsDelayTime(uint32_t index, int32_t &value) const
 
 heif_error HeifParser::GetPreSampleSize(uint32_t index, uint32_t &preSampleSize)
 {
-    if (!stszBox_) {
-        return heif_error_no_stsz;
-    }
+    CHECK_ERROR_RETURN_RET(!stszBox_, heif_error_no_stsz);
     for (uint32_t i = 0; i < index; i++) {
         uint32_t sampleSize = 0;
         auto res = stszBox_->GetSampleSize(i, sampleSize);
@@ -1360,9 +1304,7 @@ heif_error HeifParser::GetHeifsGroupFrameInfo(uint32_t index, HeifsFrameGroup &f
 
 bool HeifParser::IsNeedDecodeHeifsStaticImage() const
 {
-    if (!pitmBox_ || !ilocBox_ || !stcoBox_) {
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET(!pitmBox_ || !ilocBox_ || !stcoBox_, false);
     uint64_t ilocOffset = 0;
     if (ilocBox_->GetPrimaryImageFileOffset(pitmBox_->GetItemId(), ilocOffset, idatBox_) != heif_error_ok) {
         return false;
@@ -1376,12 +1318,8 @@ bool HeifParser::IsNeedDecodeHeifsStaticImage() const
 
 bool HeifParser::IsAvisImage() const
 {
-    if (!ftypBox_ || ftypBox_->GetMajorBrand() != AVIF_BRAND_TYPE_AVIS) {
-        return false;
-    }
-    if (!hdlrBox_ || hdlrBox_->GetHandlerType() != HANDLER_TYPE_PICT) {
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET(!ftypBox_ || ftypBox_->GetMajorBrand() != AVIF_BRAND_TYPE_AVIS, false);
+    CHECK_ERROR_RETURN_RET(!hdlrBox_ || hdlrBox_->GetHandlerType() != HANDLER_TYPE_PICT, false);
     return true;
 }
 
@@ -1420,21 +1358,15 @@ AvifBitDepth HeifParser::GetAvifBitDepth(bool isAnimation) const
 
 heif_error HeifParser::GetAvisFrameData(uint32_t index, std::vector<uint8_t> &dest)
 {
-    if (!stsdBox_) {
-        return heif_error_no_stsd;
-    }
+    CHECK_ERROR_RETURN_RET(!stsdBox_, heif_error_no_stsd);
     auto av1c = std::dynamic_pointer_cast<HeifAv1CBox>(stsdBox_->GetAv1cBox());
-    if (!av1c) {
-        return heif_error_no_av1c;
-    }
+    CHECK_ERROR_RETURN_RET(!av1c, heif_error_no_av1c);
     return GetHeifsFrameData(index, dest);
 }
 
 bool HeifParser::isSequenceMajorBrand() const
 {
-    if (!ftypBox_) {
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET(!ftypBox_, false);
     uint32_t majorBrand = ftypBox_->GetMajorBrand();
     return majorBrand == HEIF_BRAND_TYPE_MSF1 || majorBrand == AVIF_BRAND_TYPE_AVIS;
 }
@@ -1444,18 +1376,14 @@ heif_error HeifParser::GetAvisFrameCount(uint32_t &sampleCount) const
     if (!IsAvisImage()) {
         return heif_error_not_avis;
     }
-    if (!stszBox_) {
-        return heif_error_no_stsz;
-    }
+    CHECK_ERROR_RETURN_RET(!stszBox_, heif_error_no_stsz);
     sampleCount = stszBox_->GetSampleCount();
     return heif_error_ok;
 }
 
 uint32_t HeifParser::GetHeifsCanvasPixelWidthHeight(uint32_t index, uint32_t &width, uint32_t &height)
 {
-    if (!stsdBox_) {
-        return heif_error_no_stsd;
-    }
+    CHECK_ERROR_RETURN_RET(!stsdBox_, heif_error_no_stsd);
     return stsdBox_->GetSampleEntryWidthHeight(index, width, height);
 }
 
