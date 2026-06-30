@@ -1795,6 +1795,8 @@ HWTEST_F(PostProcTest, CenterDisplayTest003, TestSize.Level3)
 
     bool ret = postProc.CenterDisplay(*(pixelMap.get()), srcWidth, srcHeight, targetWidth, targetHeight);
     ASSERT_EQ(ret, true);
+    ASSERT_EQ(pixelMap->GetWidth(), 50);
+    ASSERT_EQ(pixelMap->GetHeight(), 50);
     GTEST_LOG_(INFO) << "PostProcTest: CenterDisplayTest003 end";
 }
 
@@ -1822,6 +1824,8 @@ HWTEST_F(PostProcTest, CenterDisplayTest004, TestSize.Level3)
 
     bool ret = postProc.CenterDisplay(*(pixelMap.get()), srcWidth, srcHeight, targetWidth, targetHeight);
     ASSERT_EQ(ret, true);
+    ASSERT_EQ(pixelMap->GetWidth(), 100);
+    ASSERT_EQ(pixelMap->GetHeight(), 100);
     GTEST_LOG_(INFO) << "PostProcTest: CenterDisplayTest004 end";
 }
 
@@ -1845,6 +1849,8 @@ HWTEST_F(PostProcTest, ScalePixelMapExYuvTest001, TestSize.Level3)
     AntiAliasingOption option = AntiAliasingOption::NONE;
     bool ret = postProc.ScalePixelMapEx(desiredSize, *(pixelMap.get()), option);
     ASSERT_EQ(ret, true);
+    ASSERT_EQ(pixelMap->GetWidth(), 50);
+    ASSERT_EQ(pixelMap->GetHeight(), 50);
     GTEST_LOG_(INFO) << "PostProcTest: ScalePixelMapExYuvTest001 end";
 }
 
@@ -1891,6 +1897,8 @@ HWTEST_F(PostProcTest, ScalePixelMapExYuvTest003, TestSize.Level3)
     AntiAliasingOption option = AntiAliasingOption::NONE;
     bool ret = postProc.ScalePixelMapEx(desiredSize, *(pixelMap.get()), option);
     ASSERT_EQ(ret, true);
+    ASSERT_EQ(pixelMap->GetWidth(), 50);
+    ASSERT_EQ(pixelMap->GetHeight(), 50);
     GTEST_LOG_(INFO) << "PostProcTest: ScalePixelMapExYuvTest003 end";
 }
 
@@ -1914,6 +1922,8 @@ HWTEST_F(PostProcTest, ScalePixelMapExYuvTest004, TestSize.Level3)
     AntiAliasingOption option = AntiAliasingOption::HIGH;
     bool ret = postProc.ScalePixelMapEx(desiredSize, *(pixelMap.get()), option);
     ASSERT_EQ(ret, true);
+    ASSERT_EQ(pixelMap->GetWidth(), 50);
+    ASSERT_EQ(pixelMap->GetHeight(), 50);
     GTEST_LOG_(INFO) << "PostProcTest: ScalePixelMapExYuvTest004 end";
 }
 }
