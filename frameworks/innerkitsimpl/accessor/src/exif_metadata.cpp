@@ -936,10 +936,10 @@ int ExifMetadata::GetValue(const std::string &key, std::string &value) const
         } else {
             tagValueSizeTmp = TAG_VALUE_SIZE;
         }
-        char tagValueChar[tagValueSizeTmp];
+        std::vector<char> tagValueChar(tagValueSizeTmp, 0);
 
-        exif_entry_get_value(entry, tagValueChar, sizeof(tagValueChar));
-        value = tagValueChar;
+        exif_entry_get_value(entry, tagValueChar.data(), tagValueChar.size());
+        value = tagValueChar.data();
     }
     if (ExifMetadatFormatter::IsSensitiveInfo(key)) {
         IMAGE_LOGD("Retrieved value for key: %{public}s success", key.c_str());
@@ -1730,7 +1730,9 @@ bool ExifMetadata::SetRational(ExifEntry *ptrEntry, const ExifByteOrder &order, 
         cond = is.fail();
         CHECK_ERROR_RETURN_RET_LOG(cond, false,
                                    "Failed to read ExifRational from string. Current count: %{public}lu", icount);
-        unsigned long offset = icount * exif_format_get_size(ptrEntry->format);
+        unsigned long formatSize = exif_format_get_size(ptrEntry->format);
+        unsigned long offset = icount * formatSize;
+        CHECK_ERROR_RETURN_RET(offset + formatSize > ptrEntry->size, false);
         exif_set_rational(ptrEntry->data + offset, order, rat);
         icount++;
     }
