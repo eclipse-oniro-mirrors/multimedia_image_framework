@@ -1183,6 +1183,82 @@ static ImageInfo MakeImageInfo(int width, int height, PixelFormat pf, AlphaType 
     return info;
 }
 
+void ImageUtils::GetYuvInfoFromNonDmaBuffer(int32_t width, int32_t height, PixelFormat format, YUVDataInfo &yuvInfo)
+{
+    yuvInfo.imageSize.width = width;
+    yuvInfo.imageSize.height = height;
+    yuvInfo.yWidth = static_cast<uint32_t>(width);
+    yuvInfo.yHeight = static_cast<uint32_t>(height);
+    yuvInfo.yStride = static_cast<uint32_t>(width);
+    if (format != PixelFormat::Y8) {
+        yuvInfo.uvWidth = static_cast<uint32_t>((width + 1) / NUM_2);
+        yuvInfo.uvHeight = static_cast<uint32_t>((height + 1) / NUM_2);
+        yuvInfo.uvStride = static_cast<uint32_t>(((width + 1) / NUM_2) * NUM_2);
+        yuvInfo.uvOffset = static_cast<uint32_t>(width) * static_cast<uint32_t>(height);
+    }
+}
+
+bool ImageUtils::GetYuvInfoFromDmaBuffer(sptr<SurfaceBuffer> surfaceBuffer, YUVDataInfo &yuvInfo)
+{
+    bool cond = surfaceBuffer == nullptr;
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "%{public}s, surfaceBuffer is nullptr", __func__);
+
+    OH_NativeBuffer_Planes* planes = nullptr;
+    GSError retVal = surfaceBuffer->GetPlanesInfo(reinterpret_cast<void**>(&planes));
+    cond = retVal != OHOS::GSERROR_OK || planes == nullptr || planes->planeCount <= NUM_1;
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "%{public}s, get planesInfo failed, retVal:%{public}d", __func__, retVal);
+
+    int32_t width = surfaceBuffer->GetWidth();
+    int32_t height = surfaceBuffer->GetHeight();
+    yuvInfo.imageSize = { width, height };
+    yuvInfo.yWidth = static_cast<uint32_t>(width);
+    yuvInfo.uvWidth = static_cast<uint32_t>((width + NUM_1) / NUM_2);
+    yuvInfo.yHeight = static_cast<uint32_t>(height);
+    yuvInfo.uvHeight = static_cast<uint32_t>((height + NUM_1) / NUM_2);
+    if (planes->planeCount >= NUM_2) {
+        int32_t pixelFmt = surfaceBuffer->GetFormat();
+        bool isYuvP010 = (pixelFmt == GRAPHIC_PIXEL_FMT_YCBCR_P010 || pixelFmt == GRAPHIC_PIXEL_FMT_YCRCB_P010);
+        int uvPlaneIndex = (pixelFmt == GRAPHIC_PIXEL_FMT_YCBCR_420_SP ||
+            pixelFmt == GRAPHIC_PIXEL_FMT_YCBCR_P010) ? NUM_1 : NUM_2;
+        yuvInfo.yStride = isYuvP010 ?
+        (planes->planes[NUM_0].columnStride / NUM_2) : (planes->planes[NUM_0].columnStride);
+        yuvInfo.uvStride = isYuvP010 ?
+            (planes->planes[uvPlaneIndex].columnStride / NUM_2) : (planes->planes[uvPlaneIndex].columnStride);
+        yuvInfo.yOffset = isYuvP010 ?
+            (planes->planes[NUM_0].offset / NUM_2) : (planes->planes[NUM_0].offset);
+        yuvInfo.uvOffset = isYuvP010 ?
+            (planes->planes[uvPlaneIndex].offset / NUM_2) : (planes->planes[uvPlaneIndex].offset);
+        return true;
+    }
+    return false;
+}
+
+void ImageUtils::UpdateYUVDataInfo(PixelMap &pixelMap)
+{
+    PixelFormat format = pixelMap.GetPixelFormat();
+    if (!IsYuvFormat(format)) {
+        return;
+    }
+
+    YUVDataInfo info;
+    if (pixelMap.GetAllocatorType() == AllocatorType::DMA_ALLOC && pixelMap.GetFd() != nullptr) {
+        SurfaceBuffer *surfaceBuffer = reinterpret_cast<SurfaceBuffer *>(pixelMap.GetFd());
+        GetYuvInfoFromDmaBuffer(surfaceBuffer, info);
+    } else {
+        GetYuvInfoFromNonDmaBuffer(pixelMap.GetWidth(), pixelMap.GetHeight(), pixelMap.GetPixelFormat(), info);
+    }
+    pixelMap.SetImageYUVInfo(info);
+}
+
+void ImageUtils::UpdateYUVDataInfo(std::unique_ptr<PixelMap> &pixelMap)
+{
+    if (pixelMap == nullptr) {
+        IMAGE_LOGE("%{public}s pixelMap is nullptr", __func__);
+        return;
+    }
+    UpdateYUVDataInfo(*pixelMap);
+}
+
 void ImageUtils::SetYuvDataInfo(std::unique_ptr<PixelMap> &pixelMap, sptr<OHOS::SurfaceBuffer> &sBuffer)
 {
     bool cond = pixelMap == nullptr || sBuffer == nullptr;

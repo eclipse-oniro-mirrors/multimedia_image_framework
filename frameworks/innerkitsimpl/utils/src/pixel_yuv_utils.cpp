@@ -135,6 +135,8 @@ std::unique_ptr<AbsMemory> PixelYuvUtils::CreateYuvMemory(PixelFormat pixelForma
     int32_t dstWidth, int32_t dstHeight, AllocatorType allocatorType, uint64_t usage, void *srcSurfaceBuffer,
     YUVStrideInfo &dstStrides)
 {
+    bool cond = (ImageUtils::CheckMulOverflow(dstWidth, dstHeight, ImageUtils::GetPixelBytes(pixelFormat)));
+    CHECK_ERROR_RETURN_RET_LOG(cond, nullptr, "CreateYuvMemory alloc size overflow");
     uint32_t pictureSize = GetImageSize(dstWidth, dstHeight, pixelFormat);
     int32_t dst_yStride = dstWidth;
     int32_t dst_uvStride = (dstWidth + 1) / NUM_2 * NUM_2;
