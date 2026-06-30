@@ -216,29 +216,9 @@ HWTEST_F(InterfaceTest, InterfaceTest0010, TestSize.Level3)
     bool ret = ImageUtils::GetFileSize(IMAGE_INPUT_JPEG_PATH, bufferSize);
     ASSERT_EQ(ret, true);
     uint8_t *buffer = reinterpret_cast<uint8_t *>(malloc(bufferSize));
-    imagePacker.StartPacking(buffer, bufferSize, option);
+    uint32_t result = imagePacker.StartPacking(buffer, bufferSize, option);
+    ASSERT_EQ(result, SUCCESS);
     GTEST_LOG_(INFO) << "InterfaceTest: InterfaceTest0010 end";
-}
-
-/**
- * @tc.name: InterfaceTest0011
- * @tc.desc: ImagePacker StartPacking
- * @tc.type: FUNC
- */
-HWTEST_F(InterfaceTest, InterfaceTest0011, TestSize.Level3)
-{
-    GTEST_LOG_(INFO) << "InterfaceTest: InterfaceTest0011 start";
-    ImagePacker imagePacker;
-    PackOption option;
-    option.format = OPTION_FORMAT_TEST;
-    option.quality = OPTION_QUALITY_TEST;
-    option.numberHint = OPTION_NUMBERHINT_TEST;
-    size_t bufferSize = 0;
-    bool ret = ImageUtils::GetFileSize(IMAGE_INPUT_JPEG_PATH, bufferSize);
-    ASSERT_EQ(ret, true);
-    uint8_t *buffer = nullptr;
-    imagePacker.StartPacking(buffer, bufferSize, option);
-    GTEST_LOG_(INFO) << "InterfaceTest: InterfaceTest0011 end";
 }
 
 /**

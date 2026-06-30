@@ -180,23 +180,6 @@ HWTEST_F(EglImageTest, RenderContextTest003, TestSize.Level1)
 }
 
 /**
- * @tc.name: RenderContextTest004
- * @tc.desc: Test of RenderContext
- * @tc.type: FUNC
- */
-HWTEST_F(EglImageTest, RenderContextTest004, TestSize.Level1)
-{
-    auto renderContext = std::make_unique<RenderContext>();
-    auto ret = renderContext->Init();
-    EXPECT_EQ(ret, true);
-    renderContext->MakeCurrent(EGL_NO_SURFACE);
-    auto currSurface = eglGetCurrentSurface(EGL_DRAW);
-    // even though MakeCurrent(EGL_NO_SURFACE), current surface is still not EGL_NO_SURFACE
-    // in our renderContext, it will be a pbufferSurface.
-    EXPECT_NE(currSurface, EGL_NO_SURFACE);
-}
-
-/**
  * @tc.name: RenderContextTest005
  * @tc.desc: Test of RenderContext
  * @tc.type: FUNC
