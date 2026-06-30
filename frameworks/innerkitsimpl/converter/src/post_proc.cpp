@@ -1183,6 +1183,7 @@ bool PostProc::ScalePixelMapEx(const Size &desiredSize, PixelMap &pixelMap, cons
         static_cast<uint64_t>(ImageUtils::GetPixelBytes(imgInfo.pixelFormat));
     CHECK_ERROR_RETURN_RET_LOG(dstBufferSizeOverflow > UINT_MAX, false, "ScalePixelMapEx target size too large");
     if (ImageUtils::IsYuvFormat(imgInfo.pixelFormat)) {
+        ImageUtils::UpdateYUVDataInfo(pixelMap);
         return ScalePixelMapYuv(desiredSize, pixelMap, imgInfo, option);
     }
     uint32_t dstBufferSize = static_cast<uint32_t>(dstBufferSizeOverflow);
