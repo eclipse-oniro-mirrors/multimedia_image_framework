@@ -592,7 +592,7 @@ int JpegDecoderYuv::ConvertFromGray(YuvPlaneInfo &srcPlaneInfo, const DecodeCont
     }
     uint64_t outSize = JpegDecoderYuv::GetYuvOutSize(width, height);
     if (outSize > decodeParameter_.yuvBufferSize_) {
-        IMAGE_LOGE("JpegDecoderYuv ConvertFromGray yuvBufferSize not enough %{public}d", outSize);
+        IMAGE_LOGE("JpegDecoderYuv ConvertFromGray yuvBufferSize not enough %{public}llu", outSize);
         return JpegYuvDecodeError_MemoryNotEnoughToSaveResult;
     }
 
