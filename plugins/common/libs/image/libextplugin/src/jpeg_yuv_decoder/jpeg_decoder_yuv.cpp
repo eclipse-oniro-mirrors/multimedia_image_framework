@@ -161,12 +161,12 @@ uint32_t JpegDecoderYuv::Get420OutPlaneSize(YuvComponentIndex com, int imageWidt
     }
 }
 
-uint32_t JpegDecoderYuv::GetYuvOutSize(uint32_t width, uint32_t height)
+uint64_t JpegDecoderYuv::GetYuvOutSize(uint32_t width, uint32_t height)
 {
     if (width == 0 || height == 0) {
         return 0;
     }
-    uint32_t size = Get420OutPlaneSize(YCOM, width, height);
+    uint64_t size = Get420OutPlaneSize(YCOM, width, height);
     size += Get420OutPlaneSize(UCOM, width, height);
     size += Get420OutPlaneSize(VCOM, width, height);
     return size;
@@ -488,7 +488,7 @@ bool JpegDecoderYuv::ValidateParameter(YuvPlaneInfo &srcPlaneInfo, ConverterPair
         return false;
     }
 
-    uint32_t outSize = JpegDecoderYuv::GetYuvOutSize(width, height);
+    uint64_t outSize = JpegDecoderYuv::GetYuvOutSize(width, height);
     if (outSize > decodeParameter_.yuvBufferSize_) {
         IMAGE_LOGE("JpegDecoderYuv ValidateParameter yuvBufferSize not enough");
         return false;
@@ -590,7 +590,7 @@ int JpegDecoderYuv::ConvertFromGray(YuvPlaneInfo &srcPlaneInfo, const DecodeCont
     if (srcPlaneInfo.planeWidth[YCOM] == 0 || srcPlaneInfo.planeHeight[YCOM] == 0) {
         return JpegYuvDecodeError_ConvertError;
     }
-    uint32_t outSize = JpegDecoderYuv::GetYuvOutSize(width, height);
+    uint64_t outSize = JpegDecoderYuv::GetYuvOutSize(width, height);
     if (outSize > decodeParameter_.yuvBufferSize_) {
         IMAGE_LOGE("JpegDecoderYuv ConvertFromGray yuvBufferSize not enough %{public}d", outSize);
         return JpegYuvDecodeError_MemoryNotEnoughToSaveResult;

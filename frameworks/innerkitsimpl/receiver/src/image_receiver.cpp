@@ -46,7 +46,10 @@ ImageReceiver::~ImageReceiver()
     iraContext_ = nullptr;
     surfaceBufferAvaliableListener_ = nullptr;
     surfaceBufferAvaliableArriveListener_ = nullptr;
-    bufferProcessor_ = nullptr;
+    if (bufferProcessor_ != nullptr) {
+        static_cast<ImageReceiverBufferProcessor*>(bufferProcessor_.get())->InvalidateReceiver();
+        bufferProcessor_ = nullptr;
+    }
 }
 
 enum class Mode {
