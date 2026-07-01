@@ -228,10 +228,7 @@ Image_ErrorCode OH_ImageReceiverNative_ReadLatestImage(OH_ImageReceiverNative* r
     }
 
     auto bufferProcessor = receiver->ptrImgRcv->GetBufferProcessor();
-    if (nullptr == bufferProcessor) {
-        IMAGE_LOGE("Bad data: buffer processor empty.");
-        return IMAGE_UNKNOWN_ERROR;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(nullptr == bufferProcessor, IMAGE_UNKNOWN_ERROR, "Bad data: buffer processor empty.");
 
     int64_t timestamp = 0;
     auto surfaceBuffer = receiver->ptrImgRcv->ReadLastImage(timestamp);
@@ -275,10 +272,7 @@ Image_ErrorCode OH_ImageReceiverNative_ReadNextImage(OH_ImageReceiverNative* rec
     }
 
     auto bufferProcessor = receiver->ptrImgRcv->GetBufferProcessor();
-    if (nullptr == bufferProcessor) {
-        IMAGE_LOGE("Bad data: buffer processor empty.");
-        return IMAGE_UNKNOWN_ERROR;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(nullptr == bufferProcessor, IMAGE_UNKNOWN_ERROR, "Bad data: buffer processor empty.");
 
     int64_t timestamp = 0;
     auto surfaceBuffer = receiver->ptrImgRcv->ReadNextImage(timestamp);
