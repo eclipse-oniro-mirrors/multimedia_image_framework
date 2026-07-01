@@ -1198,6 +1198,7 @@ void ImageUtils::GetYuvInfoFromNonDmaBuffer(int32_t width, int32_t height, Pixel
     }
 }
 
+#if !defined(CROSS_PLATFORM)
 bool ImageUtils::GetYuvInfoFromDmaBuffer(sptr<SurfaceBuffer> surfaceBuffer, YUVDataInfo &yuvInfo)
 {
     bool cond = surfaceBuffer == nullptr;
@@ -1232,6 +1233,7 @@ bool ImageUtils::GetYuvInfoFromDmaBuffer(sptr<SurfaceBuffer> surfaceBuffer, YUVD
     }
     return false;
 }
+#endif
 
 void ImageUtils::UpdateYUVDataInfo(PixelMap &pixelMap)
 {
@@ -1241,12 +1243,14 @@ void ImageUtils::UpdateYUVDataInfo(PixelMap &pixelMap)
     }
 
     YUVDataInfo info;
+#if !defined(CROSS_PLATFORM)
     if (pixelMap.GetAllocatorType() == AllocatorType::DMA_ALLOC && pixelMap.GetFd() != nullptr) {
         SurfaceBuffer *surfaceBuffer = reinterpret_cast<SurfaceBuffer *>(pixelMap.GetFd());
         GetYuvInfoFromDmaBuffer(surfaceBuffer, info);
-    } else {
-        GetYuvInfoFromNonDmaBuffer(pixelMap.GetWidth(), pixelMap.GetHeight(), pixelMap.GetPixelFormat(), info);
     }
+#endif
+    GetYuvInfoFromNonDmaBuffer(pixelMap.GetWidth(), pixelMap.GetHeight(), pixelMap.GetPixelFormat(), info);
+
     pixelMap.SetImageYUVInfo(info);
 }
 
