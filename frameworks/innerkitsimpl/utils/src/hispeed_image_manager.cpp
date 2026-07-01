@@ -93,13 +93,11 @@ bool HispeedImageManager::LoadYuvJpegEncoderSym()
         "HSD_Image_JpegEncoderSetOptimizeCoding"));
     jpegEncoderDestroyFunc_ =
         reinterpret_cast<YuvJpegEncoderDestroyFunc>(dlsym(hispeedImageSoHandle_, "HSD_Image_JpegEncoderDestroy"));
-    if (jpegEncoderCreateFunc_ == nullptr || jpegEncoderSetQualityFunc_ == nullptr ||
+    bool cond = jpegEncoderCreateFunc_ == nullptr || jpegEncoderSetQualityFunc_ == nullptr ||
         jpegEncoderSetSubsamplingFunc_ == nullptr || jpegEncoderSetICCMetadataFunc_ == nullptr ||
         jpegEncoderEncodeFunc_ == nullptr || jpegEncoderDestroyFunc_ == nullptr ||
-        jpegEncoderEncodeWithStrideFunc_ == nullptr || jpegEncoderSetOptimizeCodingFunc_ == nullptr) {
-        IMAGE_LOGE("HispeedImageManager LoadYuvJpegEncoderSym failed");
-        return false;
-    }
+        jpegEncoderEncodeWithStrideFunc_ == nullptr || jpegEncoderSetOptimizeCodingFunc_ == nullptr;
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "HispeedImageManager LoadYuvJpegEncoderSym failed");
     IMAGE_LOGI("HispeedImageManager LoadYuvJpegEncoderSym success");
     return true;
 #else
@@ -111,15 +109,9 @@ bool HispeedImageManager::LoadYuvConvertSym()
 {
 #if !defined(CROSS_PLATFORM)
     yuv10ToRgb10Func_ = reinterpret_cast<Yuv10ToRgb10Func>(dlsym(hispeedImageSoHandle_, "HSD_Image_P010ToAR30"));
-    if (yuv10ToRgb10Func_ == nullptr) {
-        IMAGE_LOGE("yuv10ToRgb10Func_ dlsym failed");
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(yuv10ToRgb10Func_ == nullptr, false, "yuv10ToRgb10Func_ dlsym failed");
     yuv10ToRgb8888Func_ = reinterpret_cast<Yuv10ToRgb8888Func>(dlsym(hispeedImageSoHandle_, "HSD_Image_P010ToARGB"));
-    if (yuv10ToRgb8888Func_ == nullptr) {
-        IMAGE_LOGE("yuv10ToRgb8888Func_ dlsym failed");
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(yuv10ToRgb8888Func_ == nullptr, false, "yuv10ToRgb8888Func_ dlsym failed");
     yuvConstants[HSD_BT601_LIMIT] = reinterpret_cast<int*>(dlsym(hispeedImageSoHandle_, "HSD_IMAGE_YUV_I601"));
     yuvConstants[HSD_BT601_FULL] = reinterpret_cast<int*>(dlsym(hispeedImageSoHandle_, "HSD_IMAGE_YUV_JPEG"));
     yuvConstants[HSD_BT709_LIMIT] = reinterpret_cast<int*>(dlsym(hispeedImageSoHandle_, "HSD_IMAGE_YUV_H709"));
@@ -127,10 +119,7 @@ bool HispeedImageManager::LoadYuvConvertSym()
     yuvConstants[HSD_BT2020_LIMIT] = reinterpret_cast<int*>(dlsym(hispeedImageSoHandle_, "HSD_IMAGE_YUV_2020"));
     yuvConstants[HSD_BT2020_FULL] = reinterpret_cast<int*>(dlsym(hispeedImageSoHandle_, "HSD_IMAGE_YUV_V2020"));
     for (int i = 0; i < NUM_OF_YUV_CONSTANTS; i++) {
-        if (yuvConstants[i] == nullptr) {
-            IMAGE_LOGE("yuvConstants[%d] dlsym failed", i);
-            return false;
-        }
+        CHECK_ERROR_RETURN_RET_LOG(yuvConstants[i] == nullptr, false, "yuvConstants[%d] dlsym failed", i);
     }
     return true;
 #else
@@ -144,10 +133,8 @@ bool HispeedImageManager::LoadHispeedImageSo()
     ImageFuncTimer imageFuncTimer(__func__);
     if (!isHispeedImageSoOpened_) {
         hispeedImageSoHandle_ = dlopen(HISPEED_IMAGE_SO.c_str(), RTLD_LAZY);
-        if (hispeedImageSoHandle_ == nullptr) {
-            IMAGE_LOGE("%{public}s dlopen failed", HISPEED_IMAGE_SO.c_str());
-            return false;
-        }
+        CHECK_ERROR_RETURN_RET_LOG(hispeedImageSoHandle_ == nullptr, false,
+            "%{public}s dlopen failed", HISPEED_IMAGE_SO.c_str());
         if (LoadYuvJpegEncoderSym() == false) {
             UnloadHispeedImageSo();
             return false;
@@ -193,10 +180,8 @@ void HispeedImageManager::UnloadHispeedImageSo()
 YuvJpegEncoder HispeedImageManager::InitJpegEncoder(uint8_t quality)
 {
 #if !defined(CROSS_PLATFORM)
-    if (isHispeedImageSoOpened_ == false && LoadHispeedImageSo() == false) {
-        IMAGE_LOGE("hispeed image so not opened");
-        return nullptr;
-    }
+    bool cond = isHispeedImageSoOpened_ == false && LoadHispeedImageSo() == false;
+    CHECK_ERROR_RETURN_RET_LOG(cond, nullptr, "hispeed image so not opened");
 
     YuvJpegEncoder encoder = jpegEncoderCreateFunc_();
     if (encoder == nullptr) {
@@ -232,6 +217,7 @@ void HispeedImageManager::JpegEncoderAppendICC(YuvJpegEncoder encoder, SkImageIn
         IMAGE_LOGE("JpegEncoderAppendICC: iccProfile is null");
         return;
     }
+    CHECK_ERROR_RETURN_LOG(iccProfile == nullptr, "JpegEncoderAppendICC: iccProfile is null");
 
     static constexpr uint8_t kICCSig[] = {
         'I', 'C', 'C', '_', 'P', 'R', 'O', 'F', 'I', 'L', 'E', '\0',
@@ -288,9 +274,7 @@ uint32_t HispeedImageManager::DoEncodeJpeg(
     struct HispeedYuvInfo hispeedYuvInfo = {imageInfo.size.width, imageInfo.size.height, yDataInfo.yStride,
         yDataInfo.uvStride, yDataInfo.yOffset, yDataInfo.uvOffset};
     int result = jpegEncoderSetOptimizeCodingFunc_(encoder, false);
-    if (result != SUCCESS) {
-        IMAGE_LOGE("jpeg encode set optimize coding failed, result: %{public}d", result);
-    }
+    CHECK_ERROR_PRINT_LOG(result != SUCCESS, "jpeg encode set optimize coding failed, result: %{public}d", result);
     result = jpegEncoderEncodeWithStrideFunc_(encoder, srcData, hispeedYuvInfo, format, writeDef, flushDef, skStream);
     if (result != SUCCESS) {
         IMAGE_LOGE("jpeg encode failed, result: %{public}d", result);
@@ -307,11 +291,8 @@ uint32_t HispeedImageManager::DoEncodeJpeg(
 void HispeedImageManager::DestroyJpegEncoder(YuvJpegEncoder encoder)
 {
 #if !defined(CROSS_PLATFORM)
-    if (isHispeedImageSoOpened_ == false ||
-        jpegEncoderDestroyFunc_ == nullptr) {
-        IMAGE_LOGE("open hispeed image so occurs error");
-        return;
-    }
+    bool cond = isHispeedImageSoOpened_ == false || jpegEncoderDestroyFunc_ == nullptr;
+    CHECK_ERROR_RETURN_LOG(cond, "open hispeed image so occurs error");
 
     jpegEncoderDestroyFunc_(encoder);
 #endif
@@ -378,10 +359,8 @@ const int* HispeedImageManager::GetYuvCoeffFromDest(const DestConvertParam &dest
 bool HispeedImageManager::P010ToARGB(const uint8_t* srcBuffer, const YUVDataInfo& yDInfo, DestConvertInfo& destInfo)
 {
 #if !defined(CROSS_PLATFORM)
-    if (isHispeedImageSoOpened_ == false && LoadHispeedImageSo() == false) {
-        IMAGE_LOGE("hispeed image so not opened");
-        return false;
-    }
+    bool cond = isHispeedImageSoOpened_ == false && LoadHispeedImageSo() == false;
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "hispeed image so not opened");
     SrcConvertParam srcParam = {yDInfo.yWidth, yDInfo.yHeight};
     srcParam.buffer = srcBuffer;
     DestConvertParam destParam = {yDInfo.yWidth, yDInfo.yHeight};
@@ -395,10 +374,7 @@ bool HispeedImageManager::P010ToARGB(const uint8_t* srcBuffer, const YUVDataInfo
         destParam.width,
         destParam.height,
         nullptr);
-    if (ret != SUCCESS) {
-        IMAGE_LOGE("hispeed image so yuv10ToRgb8888 failed");
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(ret != SUCCESS, false, "hispeed image so yuv10ToRgb8888 failed");
     return true;
 #else
     return false;
@@ -408,10 +384,8 @@ bool HispeedImageManager::P010ToARGB(const uint8_t* srcBuffer, const YUVDataInfo
 bool HispeedImageManager::P010ToAR30(const uint8_t* srcBuffer, const YUVDataInfo& yDInfo, DestConvertInfo& destInfo)
 {
 #if !defined(CROSS_PLATFORM)
-    if (isHispeedImageSoOpened_ == false && LoadHispeedImageSo() == false) {
-        IMAGE_LOGE("hispeed image so not opened");
-        return false;
-    }
+    bool cond = isHispeedImageSoOpened_ == false && LoadHispeedImageSo() == false;
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "hispeed image so not opened");
     SrcConvertParam srcParam = {yDInfo.yWidth, yDInfo.yHeight};
     srcParam.buffer = srcBuffer;
     DestConvertParam destParam = {yDInfo.yWidth, yDInfo.yHeight};
@@ -426,10 +400,7 @@ bool HispeedImageManager::P010ToAR30(const uint8_t* srcBuffer, const YUVDataInfo
         destParam.width,
         destParam.height,
         yuvConstantGet);
-    if (ret != SUCCESS) {
-        IMAGE_LOGE("hispeed image so yuv10ToRgb10 failed");
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(ret != SUCCESS, false, "hispeed image so yuv10ToRgb10 failed");
     return true;
 #else
     return false;

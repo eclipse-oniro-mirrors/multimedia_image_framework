@@ -70,10 +70,8 @@ uint32_t JpegExifMetadataAccessor::Read()
 
     ExifData *exifData = nullptr;
     TiffParser::DecodeJpegExif(reinterpret_cast<const unsigned char *>(dataBuf.CData()), dataBuf.Size(), &exifData);
-    if (exifData == nullptr) {
-        IMAGE_LOGE("Failed to decode EXIF data from image stream.");
-        return ERR_EXIF_DECODE_FAILED;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(exifData == nullptr, ERR_EXIF_DECODE_FAILED,
+        "Failed to decode EXIF data from image stream.");
 
     exifMetadata_ = std::make_shared<OHOS::Media::ExifMetadata>(exifData);
 
@@ -214,10 +212,8 @@ bool JpegExifMetadataAccessor::GetExifEncodeBlob(uint8_t **dataBlob, uint32_t &s
     ExifData *exifData = this->Get()->GetExifData();
     TiffParser::EncodeJpegExif(dataBlob, size, exifData);
 
-    if (dataBlob == nullptr || *dataBlob == nullptr) {
-        IMAGE_LOGE("Failed to encode JPEG data.");
-        return false;
-    }
+    bool cond = dataBlob == nullptr || *dataBlob == nullptr;
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "Failed to encode JPEG data.");
 
     return (size > 0);
 }
@@ -258,10 +254,8 @@ std::tuple<size_t, size_t> JpegExifMetadataAccessor::GetInsertPosAndMarkerAPP1()
     imageStream_->Seek(0, SeekPos::BEGIN);
 
     int ret = FindNextMarker();
-    if (ret == EOF) {
-        IMAGE_LOGE("GetInsertPosAndMarkerAPP1 failed to find marker 0xff in image stream.");
-        return std::make_tuple(insertPos, skipExifSeqNum);
-    }
+    CHECK_ERROR_RETURN_RET_LOG(ret == EOF, std::make_tuple(insertPos, skipExifSeqNum),
+        "GetInsertPosAndMarkerAPP1 failed to find marker 0xff in image stream.");
     byte marker = static_cast<byte>(ret);
     while ((marker != JPEG_MARKER_SOS) && (marker != JPEG_MARKER_EOI)) {
         if (marker == JPEG_MARKER_APP0) {
@@ -298,18 +292,13 @@ bool JpegExifMetadataAccessor::WriteData(BufferMetadataStream &bufStream, uint8_
     tmpBuf[0] = JPEG_MARKER_HEADER;
     tmpBuf[1] = JPEG_MARKER_APP1;
 
-    if (size > (JPEG_DATA_MAX_SIZE - APP1_EXIF_LENGTH)) {
-        IMAGE_LOGE("JPEG EXIF size exceeds maximum limit. Size: %{public}u", size);
-        return false;
-    }
+    bool cond = size > (JPEG_DATA_MAX_SIZE - APP1_EXIF_LENGTH);
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "JPEG EXIF size exceeds maximum limit. Size: %{public}u", size);
 
     ssize_t writeHeaderLength = MARKER_LENGTH_SIZE;
     ssize_t exifHeaderLength = EXIF_ID_LENGTH;
 
-    if (dataBlob == nullptr) {
-        IMAGE_LOGE("Failed to write data blob. dataBlob is nullptr");
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(dataBlob == nullptr, false, "Failed to write data blob. dataBlob is nullptr");
     if (size >= EXIF_ID_SIZE && memcmp(reinterpret_cast<char *>(dataBlob), EXIF_ID, EXIF_ID_SIZE) != 0) {
         writeHeaderLength = APP1_HEADER_LENGTH;
         exifHeaderLength = APP1_EXIF_LENGTH;
@@ -384,18 +373,12 @@ bool JpegExifMetadataAccessor::UpdateExifMetadata(BufferMetadataStream &bufStrea
     // Write Exif data segment after 0xFFD8
     insertPos = 0;
 
-    if (!WriteHeader(bufStream)) {
-        IMAGE_LOGE("Failed to write header to output image stream");
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(!WriteHeader(bufStream), false, "Failed to write header to output image stream");
 
     imageStream_->Seek(0, SeekPos::BEGIN);
 
     int ret = FindNextMarker();
-    if (ret == EOF) {
-        IMAGE_LOGE("UpdateExifMetadata failed to find marker 0xff in image stream.");
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(ret == EOF, false, "UpdateExifMetadata failed to find marker 0xff in image stream.");
     byte marker = static_cast<byte>(ret);
     while (marker != JPEG_MARKER_SOS) {
         DataBuf buf = ReadNextSegment(marker);
@@ -429,20 +412,14 @@ bool JpegExifMetadataAccessor::UpdateExifMetadata(BufferMetadataStream &bufStrea
 uint32_t JpegExifMetadataAccessor::UpdateData(uint8_t *dataBlob, uint32_t size)
 {
     BufferMetadataStream tmpBufStream;
-    if (!tmpBufStream.Open(OpenMode::ReadWrite)) {
-        IMAGE_LOGE("Failed to open temporary image stream");
-        return ERR_IMAGE_SOURCE_DATA;
-    }
+    bool cond = !tmpBufStream.Open(OpenMode::ReadWrite);
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_SOURCE_DATA, "Failed to open temporary image stream");
 
-    if (!imageStream_->IsOpen()) {
-        IMAGE_LOGE("The output image stream is not open");
-        return ERR_IMAGE_SOURCE_DATA;
-    }
+    cond = !imageStream_->IsOpen();
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_SOURCE_DATA, "The output image stream is not open");
 
-    if (!UpdateExifMetadata(tmpBufStream, dataBlob, size)) {
-        IMAGE_LOGE("Failed to write to temporary image stream");
-        return ERROR;
-    }
+    cond = !UpdateExifMetadata(tmpBufStream, dataBlob, size);
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERROR, "Failed to write to temporary image stream");
 
     imageStream_->Seek(0, SeekPos::BEGIN);
     imageStream_->CopyFrom(tmpBufStream);

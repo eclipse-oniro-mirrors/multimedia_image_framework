@@ -386,10 +386,7 @@ bool SvgDecoder::AllocBuffer(DecodeContext &context)
     bool ret = true;
     if (context.pixelsBuffer.buffer == nullptr) {
         auto svgSize = svgDom_->containerSize();
-        if (svgSize.isEmpty()) {
-            IMAGE_LOGE("[AllocBuffer] size is empty.");
-            return false;
-        }
+        CHECK_ERROR_RETURN_RET_LOG(svgSize.isEmpty(), false, "[AllocBuffer] size is empty.");
         uint32_t width = Float2UInt32(svgSize.width());
         uint32_t height = Float2UInt32(svgSize.height());
         uint64_t byteCount = static_cast<uint64_t>(width) * height * SVG_BYTES_PER_PIXEL;
@@ -432,9 +429,7 @@ bool SvgDecoder::BuildStream()
 
 static void SetSVGColor(SkSVGNode* node, std::string color, std::string colorAttr)
 {
-    if (node == nullptr) {
-        return;
-    }
+    CHECK_ERROR_RETURN(node == nullptr);
     IMAGE_LOGD("[SetSVGColor] node tag %{public}d %{public}s %{public}s.",
         node->tag(), color.c_str(), colorAttr.c_str());
     node->setAttribute(colorAttr.c_str(), color.c_str());
