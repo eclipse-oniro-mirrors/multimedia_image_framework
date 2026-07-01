@@ -289,11 +289,11 @@ public:
     static bool IsSystemApp();
 #if !defined(CROSS_PLATFORM)
     static void FlushSurfaceBuffer(sptr<SurfaceBuffer>& surfaceBuffer);
-    static bool GetYuvInfoFromDmaBuffer(sptr<SurfaceBuffer> surfaceBuffer, YUVDataInfo &yuvInfo);
-#endif
     static void GetYuvInfoFromNonDmaBuffer(int32_t width, int32_t height, PixelFormat format, YUVDataInfo &yuvInfo);
+    static bool GetYuvInfoFromDmaBuffer(sptr<SurfaceBuffer> surfaceBuffer, YUVDataInfo &yuvInfo);
     static void UpdateYUVDataInfo(PixelMap &pixelMap);
     static void UpdateYUVDataInfo(std::unique_ptr<PixelMap> &pixelMap);
+#endif
     template<typename T>
     static std::string ArrayToString(const std::vector<T>& array)
     {

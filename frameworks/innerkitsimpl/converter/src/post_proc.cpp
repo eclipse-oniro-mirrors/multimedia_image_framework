@@ -234,6 +234,7 @@ bool PostProc::CopyPixels(PixelMap& pixelMap, uint8_t* dstPixels, const Size& ds
     return true;
 }
 
+#if !defined(CROSS_PLATFORM)
 bool PostProc::CenterDisplayYuv(PixelMap &pixelMap, int32_t srcWidth, int32_t srcHeight, int32_t targetWidth,
                                 int32_t targetHeight)
 {
@@ -245,6 +246,7 @@ bool PostProc::CenterDisplayYuv(PixelMap &pixelMap, int32_t srcWidth, int32_t sr
     ImageUtils::UpdateYUVDataInfo(pixelMap);
     return true;
 }
+#endif
 
 bool PostProc::CenterDisplay(PixelMap &pixelMap, int32_t srcWidth, int32_t srcHeight, int32_t targetWidth,
                              int32_t targetHeight)
@@ -256,9 +258,11 @@ bool PostProc::CenterDisplay(PixelMap &pixelMap, int32_t srcWidth, int32_t srcHe
     dstImageInfo.size.height = targetHeight;
     bool cond = false;
     CHECK_ERROR_RETURN_RET_LOG(pixelMap.SetImageInfo(dstImageInfo, true) != SUCCESS, false, "update ImageInfo failed");
+#if !defined(CROSS_PLATFORM)
     if (dstImageInfo.pixelFormat == PixelFormat::NV12 || dstImageInfo.pixelFormat == PixelFormat::NV21) {
         return CenterDisplayYuv(pixelMap, srcWidth, srcHeight, targetWidth, targetHeight);
     }
+#endif
 
     int32_t bufferSize = pixelMap.GetByteCount();
     uint8_t *dstPixels = nullptr;
