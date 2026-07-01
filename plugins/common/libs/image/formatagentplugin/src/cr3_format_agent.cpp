@@ -88,6 +88,9 @@ bool Cr3FormatAgent::CheckFormat(const void *headerData, uint32_t dataSize)
     if (memcmp(u8Ptr + offset, FILE_TYPE_CRX_FLAG, sizeof(FILE_TYPE_CRX_FLAG)) != 0) {
         return false;
     }
+    if (ftypSize < ATOM_SIZE_BYTE_SIZE) {
+        return false;
+    }
     offset += (ftypSize - ATOM_SIZE_BYTE_SIZE);
 
     // Skip bytes: moovSize + moovName + uuidSize + uuidName
