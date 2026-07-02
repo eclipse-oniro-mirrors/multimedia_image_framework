@@ -66,7 +66,7 @@ int64_t PackImage(int &fd, std::unique_ptr<PixelMap> pixelMap)
     bool cond = pixelMap == nullptr;
     CHECK_ERROR_RETURN_RET_LOG(cond, 0, "pixelMap is nullptr");
     uint32_t ret = imagePacker.GetSupportedFormats(formats);
-    CHECK_ERROR_RETURN_RET_LOG(ret != SUCCESS, 0, 
+    CHECK_ERROR_RETURN_RET_LOG(ret != SUCCESS, 0,
         "image packer get supported format failed, ret=%{public}u.", ret);
     IMAGE_LOGD("SUCCESS");
     imagePacker.StartPacking(fd, option);
