@@ -199,10 +199,7 @@ uint32_t DmaMemory::Create()
     }
     void* nativeBuffer = sb.GetRefPtr();
     int32_t err = ImageUtils::SurfaceBuffer_Reference(nativeBuffer);
-    if (err != OHOS::GSERROR_OK) {
-        IMAGE_LOGE("NativeBufferReference failed");
-        return ERR_DMA_DATA_ABNORMAL;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(err != OHOS::GSERROR_OK, ERR_DMA_DATA_ABNORMAL, "NativeBufferReference failed");
     data.data = static_cast<uint8_t*>(sb->GetVirAddr());
     if (data.data == nullptr) {
         IMAGE_LOGE("SurfaceBuffer failed to  GetVirAddr");
