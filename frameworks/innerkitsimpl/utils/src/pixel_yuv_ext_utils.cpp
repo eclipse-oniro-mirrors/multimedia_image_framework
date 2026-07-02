@@ -376,8 +376,7 @@ static bool CopyP010Pixels(
 static void ScaleP010(YuvPixels yuvPixels, OpenSourceLibyuv::ImageYuvConverter &converter,
     OpenSourceLibyuv::FilterMode &filterMode, YuvImageInfo &yuvInfo, YUVStrideInfo &dstStrides)
 {
-    uint32_t height = yuvInfo.yuvDataInfo.yHeight;
-    std::unique_ptr<uint16_t[]> srcPixels = std::make_unique<uint16_t[]>(GetImageSize(yuvInfo.width, height));
+    std::unique_ptr<uint16_t[]> srcPixels = std::make_unique<uint16_t[]>(GetImageSize(yuvInfo.width, yuvInfo.height));
     if (srcPixels == nullptr) {
         IMAGE_LOGE("ScaleP010 srcPixels make unique ptr failed");
         return;
@@ -389,12 +388,12 @@ static void ScaleP010(YuvPixels yuvPixels, OpenSourceLibyuv::ImageYuvConverter &
     IMAGE_LOGI("%{public}s, YuvImageInfo:width:%{public}d, height:%{public}d\n"
         "YUVDataInfo: %{public}s, pixelsSize:%{public}u", __func__, yuvInfo.width,
         yuvInfo.height, yuvInfo.yuvDataInfo.ToString().c_str(), yuvInfo.pixelsSize);
-    YuvCopyInfo yuvCopyInfo = {yuvInfo.yuvDataInfo.yHeight, yuvInfo.pixelsSize};
+    YuvCopyInfo yuvCopyInfo = {yuvInfo.height, yuvInfo.pixelsSize};
     if (!CopyP010Pixels(srcBuffer, srcStrides, srcPixels.get(), dstStride, yuvCopyInfo)) {
         return;
     }
     uint16_t* srcY = srcPixels.get();
-    uint16_t* srcUV = srcPixels.get() + GetYSize(yuvInfo.width, yuvInfo.yuvDataInfo.yHeight);
+    uint16_t* srcUV = srcPixels.get() + GetYSize(yuvInfo.width, yuvInfo.height);
     int32_t srcWidth = yuvInfo.width;
     int32_t srcHeight = yuvInfo.height;
     uint16_t *dstBuffer = reinterpret_cast<uint16_t *>(yuvPixels.dstPixels);
