@@ -970,6 +970,8 @@ bool HeifDecoderImpl::SwDecodeGrids(std::shared_ptr<HeifImage> &image, HevcSoftD
     cond = tileImages.empty();
     CHECK_ERROR_RETURN_RET_LOG(cond, false, "grid image has no tile image");
     size_t numGrid = tileImages.size();
+    cond = numGrid != (param.gridInfo.cols * param.gridInfo.rows);
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "grid count not equal actual decode quantity");
     size_t inputsize = 0;
     std::vector<std::vector<uint8_t>> inputs;
     if (IsRegionDecode()) {

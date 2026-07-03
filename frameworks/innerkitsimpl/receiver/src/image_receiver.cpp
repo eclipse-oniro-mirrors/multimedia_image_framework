@@ -171,6 +171,9 @@ void ImageReceiver::ReleaseBuffer(OHOS::sptr<OHOS::SurfaceBuffer> &buffer) __att
             } else {
                 IMAGE_LOGD("listenerConsumerSurface == nullptr");
             }
+            if (buffer == iraContext_->currentBuffer_) {
+                iraContext_->currentBuffer_ = nullptr;
+            }
         } else {
             IMAGE_LOGD("iraContext_ == nullptr");
         }
