@@ -1526,17 +1526,6 @@ Image_ErrorCode OH_ImageSourceNative_Release(OH_ImageSourceNative *source)
 }
 
 MIDK_EXPORT
-Image_ErrorCode OH_ImageSourceNative_Destroy(OH_ImageSourceNative **source)
-{
-    if (source == nullptr || *source == nullptr) {
-        return IMAGE_BAD_PARAMETER;
-    }
-    delete *source;
-    *source = nullptr;
-    return IMAGE_SUCCESS;
-}
-
-MIDK_EXPORT
 Image_ErrorCode OH_DecodingOptionsForPicture_Create(OH_DecodingOptionsForPicture **options)
 {
     if (options == nullptr) {

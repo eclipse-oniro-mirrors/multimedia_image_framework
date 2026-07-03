@@ -1544,35 +1544,6 @@ HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceNative_GetFrameCount, TestSize.Level3
 }
 
 /**
- * @tc.name: OH_ImageSourceNative_Destroy001
- * @tc.desc: test OH_ImageSourceNative_Destroy
- * @tc.type: FUNC
- */
-HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceNative_Destroy001, TestSize.Level3)
-{
-    GTEST_LOG_(INFO) << "ImagSourceNdk2Test: OH_ImageSourceNative_Destroy001 start";
-    OH_ImageSourceNative *imageSource = CreateImageSourceNative(IMAGE_JPEG_PATH_TEST);
-    Image_ErrorCode ret = OH_ImageSourceNative_Destroy(&imageSource);
-    ASSERT_EQ(ret, IMAGE_SUCCESS);
-    ASSERT_EQ(imageSource, nullptr);
-    GTEST_LOG_(INFO) << "ImagSourceNdk2Test: OH_ImageSourceNative_Destroy001 end";
-}
-
-/**
- * @tc.name: OH_ImageSourceNative_Destroy002
- * @tc.desc: test OH_ImageSourceNative_Destroy
- * @tc.type: FUNC
- */
-HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceNative_Destroy002, TestSize.Level3)
-{
-    GTEST_LOG_(INFO) << "ImagSourceNdk2Test: OH_ImageSourceNative_Destroy002 start";
-    OH_ImageSourceNative *imageSource = nullptr;
-    Image_ErrorCode ret = OH_ImageSourceNative_Destroy(&imageSource);
-    ASSERT_EQ(ret, IMAGE_BAD_PARAMETER);
-    GTEST_LOG_(INFO) << "ImagSourceNdk2Test: OH_ImageSourceNative_Destroy002 end";
-}
-
-/**
  * @tc.name: OH_ImageSourceNative_Release
  * @tc.desc: test OH_ImageSourceNative_Release
  * @tc.type: FUNC
