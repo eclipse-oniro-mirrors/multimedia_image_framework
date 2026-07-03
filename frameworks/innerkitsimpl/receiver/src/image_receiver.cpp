@@ -66,12 +66,9 @@ int64_t PackImage(int &fd, std::unique_ptr<PixelMap> pixelMap)
     bool cond = pixelMap == nullptr;
     CHECK_ERROR_RETURN_RET_LOG(cond, 0, "pixelMap is nullptr");
     uint32_t ret = imagePacker.GetSupportedFormats(formats);
-    if (ret != SUCCESS) {
-        IMAGE_LOGE("image packer get supported format failed, ret=%{public}u.", ret);
-        return 0;
-    } else {
-        IMAGE_LOGD("SUCCESS");
-    }
+    CHECK_ERROR_RETURN_RET_LOG(ret != SUCCESS, 0,
+        "image packer get supported format failed, ret=%{public}u.", ret);
+    IMAGE_LOGD("SUCCESS");
     imagePacker.StartPacking(fd, option);
     imagePacker.AddImage(*pixelMap);
     int64_t packedSize = 0;
@@ -84,10 +81,8 @@ int64_t PackImage(int &fd, std::unique_ptr<PixelMap> pixelMap)
 std::unique_ptr<PixelMap> ImageReceiver::getSurfacePixelMap(InitializationOptions initializationOpts)
 {
     std::lock_guard<std::mutex> guard(imageReceiverMutex_);
-    if (iraContext_ == nullptr || iraContext_->currentBuffer_ == nullptr) {
-        IMAGE_LOGE("getSurfacePixelMap: iraContext_ or currentBuffer_ is nullptr");
-        return nullptr;
-    }
+    bool cond = iraContext_ == nullptr || iraContext_->currentBuffer_ == nullptr;
+    CHECK_ERROR_RETURN_RET_LOG(cond, nullptr, "getSurfacePixelMap: iraContext_ or currentBuffer_ is nullptr");
     uint32_t *addr = reinterpret_cast<uint32_t *>(iraContext_->currentBuffer_->GetVirAddr());
     if (addr == nullptr) {
         IMAGE_LOGE("getSurfacePixelMap: GetVirAddr() returned nullptr");
@@ -147,10 +142,8 @@ int32_t ImageReceiver::SaveBufferAsImage(int &fd,
                                          InitializationOptions initializationOpts)
 {
     std::lock_guard<std::mutex> guard(imageReceiverMutex_);
-    if (iraContext_ == nullptr) {
-        IMAGE_LOGE("SaveBufferAsImage: iraContext_ is nullptr");
-        return ERR_MEDIA_INVALID_VALUE;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(iraContext_ == nullptr, ERR_MEDIA_INVALID_VALUE,
+        "SaveBufferAsImage: iraContext_ is nullptr");
     return SaveBufferAsImageInner(fd, buffer, initializationOpts);
 }
 
@@ -158,10 +151,8 @@ int32_t ImageReceiver::SaveBufferAsImage(int &fd,
                                          InitializationOptions initializationOpts)
 {
     std::lock_guard<std::mutex> guard(imageReceiverMutex_);
-    if (iraContext_ == nullptr) {
-        IMAGE_LOGE("SaveBufferAsImage: iraContext_ is nullptr");
-        return ERR_MEDIA_INVALID_VALUE;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(iraContext_ == nullptr, ERR_MEDIA_INVALID_VALUE,
+        "SaveBufferAsImage: iraContext_ is nullptr");
     if (iraContext_->currentBuffer_ != nullptr) {
         return SaveBufferAsImageInner(fd, iraContext_->currentBuffer_, initializationOpts);
     }
@@ -229,10 +220,8 @@ static std::shared_ptr<ImageReceiver> CreateImageReceiverInner(ImageReceiverOpti
 
     auto p = iva->receiverConsumerSurface_->GetProducer();
     iva->receiverProducerSurface_ = Surface::CreateSurfaceAsProducer(p);
-    if (iva->receiverProducerSurface_ == nullptr) {
-        IMAGE_LOGD("SurfaceAsProducer is nullptr");
-        return nullptr;
-    }
+    CHECK_DEBUG_RETURN_RET_LOG(iva->receiverProducerSurface_ == nullptr, nullptr,
+        "SurfaceAsProducer is nullptr");
     SurfaceUtils* utils = SurfaceUtils::GetInstance();
     if (utils != nullptr) {
         utils->Add(iva->receiverProducerSurface_->GetUniqueId(), iva->receiverProducerSurface_);
@@ -279,18 +268,13 @@ static void DumpSurfaceBufferFromImageReceiver(OHOS::sptr<OHOS::SurfaceBuffer> b
 OHOS::sptr<OHOS::SurfaceBuffer> ImageReceiver::ReadNextImage(int64_t &timestamp)
 {
     std::lock_guard<std::mutex> guard(imageReceiverMutex_);
-    if (iraContext_ == nullptr) {
-        IMAGE_LOGE("ReadNextImage: iraContext_ is nullptr");
-        return nullptr;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(iraContext_ == nullptr, nullptr, "ReadNextImage: iraContext_ is nullptr");
     sptr<SyncFence> flushFence = SyncFence::InvalidFence();
     OHOS::Rect damage = {};
     OHOS::sptr<OHOS::SurfaceBuffer> buffer;
     sptr<IConsumerSurface> listenerConsumerSurface = iraContext_->GetReceiverBufferConsumer();
-    if (listenerConsumerSurface == nullptr) {
-        IMAGE_LOGE("ReadNextImage: GetReceiverBufferConsumer() is nullptr");
-        return nullptr;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(listenerConsumerSurface == nullptr, nullptr,
+        "ReadNextImage: GetReceiverBufferConsumer() is nullptr");
     SurfaceError surfaceError = listenerConsumerSurface->AcquireBuffer(buffer, flushFence, timestamp, damage);
     if (surfaceError == SURFACE_ERROR_OK) {
         uint32_t timeout = 3000;
@@ -317,19 +301,14 @@ OHOS::sptr<OHOS::SurfaceBuffer> ImageReceiver::ReadNextImage()
 OHOS::sptr<OHOS::SurfaceBuffer> ImageReceiver::ReadLastImage(int64_t &timestamp)
 {
     std::lock_guard<std::mutex> guard(imageReceiverMutex_);
-    if (iraContext_ == nullptr) {
-        IMAGE_LOGE("ReadLastImage: iraContext_ is nullptr");
-        return nullptr;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(iraContext_ == nullptr, nullptr, "ReadLastImage: iraContext_ is nullptr");
     sptr<SyncFence> flushFence = SyncFence::InvalidFence();
     OHOS::Rect damage = {};
     OHOS::sptr<OHOS::SurfaceBuffer> buffer;
     OHOS::sptr<OHOS::SurfaceBuffer> bufferBefore;
     sptr<IConsumerSurface> listenerConsumerSurface = iraContext_->GetReceiverBufferConsumer();
-    if (listenerConsumerSurface == nullptr) {
-        IMAGE_LOGE("ReadLastImage: GetReceiverBufferConsumer() is nullptr");
-        return nullptr;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(listenerConsumerSurface == nullptr, nullptr,
+        "ReadLastImage: GetReceiverBufferConsumer() is nullptr");
     SurfaceError surfaceError = listenerConsumerSurface->AcquireBuffer(buffer, flushFence, timestamp, damage);
     while (surfaceError == SURFACE_ERROR_OK) {
         uint32_t timeout = 3000;
@@ -374,9 +353,7 @@ std::shared_ptr<IBufferProcessor> ImageReceiver::GetBufferProcessor()
 
 std::shared_ptr<NativeImage> ImageReceiver::NextNativeImage()
 {
-    if (GetBufferProcessor() == nullptr) {
-        return nullptr;
-    }
+    CHECK_ERROR_RETURN_RET(GetBufferProcessor() == nullptr, nullptr);
     int64_t timestamp = 0;
     auto surfaceBuffer = ReadNextImage(timestamp);
     if (surfaceBuffer == nullptr) {
