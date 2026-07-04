@@ -1080,7 +1080,7 @@ protected:
 #endif
     YUVDataInfo yuvDataInfo_;
     std::shared_ptr<ExifMetadata> exifMetadata_ = nullptr;
-    std::shared_ptr<std::mutex> metadataMutex_ = std::make_shared<std::mutex>();
+    std::shared_ptr<std::shared_mutex> metadataMutex_ = std::make_shared<std::shared_mutex>();
     std::shared_ptr<std::mutex> translationMutex_ = std::make_shared<std::mutex>();
     std::shared_ptr<std::shared_mutex> colorSpaceMutex_ = std::make_shared<std::shared_mutex>();
     bool toSdrColorIsSRGB_ = false;
