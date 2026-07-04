@@ -29,6 +29,9 @@
 #include "hilog/log.h"
 #include "log_tags.h"
 #include "media_errors.h"
+#include "picture.h"
+#include "surface_buffer.h"
+#include "surface_type.h"
 
 #undef LOG_DOMAIN
 #define LOG_DOMAIN LOG_TAG_DOMAIN_ID_IMAGE
@@ -60,6 +63,34 @@ public:
     HeifHwEncoderTest() {}
     ~HeifHwEncoderTest() {}
 };
+
+static std::shared_ptr<Picture> CreateNoPaddingDmaPicture(int32_t width, int32_t height)
+{
+    sptr<SurfaceBuffer> surfaceBuffer = SurfaceBuffer::Create();
+    if (surfaceBuffer == nullptr) {
+        return nullptr;
+    }
+    BufferRequestConfig requestConfig = {
+        .width = width,
+        .height = height,
+        .strideAlignment = 0x8,
+        .format = GraphicPixelFormat::GRAPHIC_PIXEL_FMT_RGBA_8888,
+        .usage = BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA |
+            BUFFER_USAGE_MEM_MMZ_CACHE | BUFFER_USAGE_PREFER_NO_PADDING | BUFFER_USAGE_ALLOC_NO_IPC,
+        .timeout = 0,
+        .colorGamut = GraphicColorGamut::GRAPHIC_COLOR_GAMUT_SRGB,
+        .transform = GraphicTransformType::GRAPHIC_ROTATE_NONE,
+    };
+    GSError ret = surfaceBuffer->Alloc(requestConfig);
+    if (ret != GSERROR_OK) {
+        return nullptr;
+    }
+    std::unique_ptr<Picture> picture = Picture::Create(surfaceBuffer);
+    if (picture == nullptr) {
+        return nullptr;
+    }
+    return std::shared_ptr<Picture>(std::move(picture));
+}
 
 void EncodeHeifWithImage(const std::string& imagePath)
 {
@@ -506,15 +537,41 @@ HWTEST_F(HeifHwEncoderTest, EncodeHeifWithOddImage002, TestSize.Level3)
 }
 
 /**
- * @tc.name: EncodeHeifWithOddImage003
- * @tc.desc: test image with only odd width and encode to heif, NV12
+ * @tc.name: EncodeEditSceneHeifNoPadding001
+ * @tc.desc: test encode edit scene HEIF Picture whose main pixel is a no-padding DMA buffer.
+ *           EncodeEditScenePicture should convert the no-padding buffer to a padded SurfaceBuffer
+ *           (copy pixels + metadata) instead of using the tight-stride fd buffer directly.
  * @tc.type: FUNC
  */
-HWTEST_F(HeifHwEncoderTest, EncodeHeifWithOddImage003, TestSize.Level3)
+HWTEST_F(HeifHwEncoderTest, EncodeEditSceneHeifNoPadding001, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "HeifHwEncoderTest: EncodeHeifWithOddImage003 start";
-    EncodeHeifWithImage(IMAGE_INPUT_ODD_WIDTH_IMAGE_PATH);
-    GTEST_LOG_(INFO) << "HeifHwEncoderTest: EncodeHeifWithOddImage003 end";
+    GTEST_LOG_(INFO) << "HeifHwEncoderTest: EncodeEditSceneHeifNoPadding001 start";
+    const int32_t width = 512;
+    const int32_t height = 512;
+    std::shared_ptr<Picture> picture = CreateNoPaddingDmaPicture(width, height);
+    ASSERT_NE(picture, nullptr);
+
+    auto mainPixelMap = picture->GetMainPixel();
+    ASSERT_NE(mainPixelMap, nullptr);
+    ASSERT_EQ(mainPixelMap->GetAllocatorType(), AllocatorType::DMA_ALLOC);
+    // Precondition of this regression: main pixel must carry the no-padding usage,
+    // so EncodeEditScenePicture takes the newly added convert-and-copy branch.
+    ASSERT_NE(mainPixelMap->GetNoPaddingUsage(), 0);
+
+    const int fileSize = 1024 * 1024 * 35;
+    std::vector<uint8_t> outputData(fileSize);
+    ImagePacker pack;
+    PackOption option;
+    option.format = "image/heif";
+    option.isEditScene = true;
+    uint32_t ret = pack.StartPacking(outputData.data(), fileSize, option);
+    ASSERT_EQ(ret, OHOS::Media::SUCCESS);
+    ret = pack.AddPicture(*picture);
+    ASSERT_EQ(ret, OHOS::Media::SUCCESS);
+    uint32_t retFinalizePacking = pack.FinalizePacking();
+    ASSERT_EQ(retFinalizePacking, OHOS::Media::SUCCESS);
+
+    GTEST_LOG_(INFO) << "HeifHwEncoderTest: EncodeEditSceneHeifNoPadding001 end";
 }
 }
 }
