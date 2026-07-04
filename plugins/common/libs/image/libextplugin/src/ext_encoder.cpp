@@ -2501,11 +2501,25 @@ uint32_t ExtEncoder::EncodeEditScenePicture()
 
     bool sdrIsSRGB = mainPixelMap->GetToSdrColorSpaceIsSRGB();
     SkImageInfo baseInfo = GetSkInfo(mainPixelMap.get(), false, false);
-    sptr<SurfaceBuffer> baseSptr(reinterpret_cast<SurfaceBuffer*>(mainPixelMap->GetFd()));
-    cond = !baseSptr;
-    CHECK_ERROR_RETURN_RET_LOG(cond, IMAGE_RESULT_CREATE_SURFAC_FAILED, "creat main pixels surfaceBuffer error");
-    ImageUtils::FlushSurfaceBuffer(baseSptr);
+    sptr<SurfaceBuffer> baseSptr;
+    bool needConvertToSurfaceBuffer = mainPixelMap->GetNoPaddingUsage();
+    if (needConvertToSurfaceBuffer) {
+        baseSptr = ConvertToSurfaceBuffer(mainPixelMap.get());
+        cond = baseSptr == nullptr;
+        CHECK_ERROR_RETURN_RET_LOG(cond, IMAGE_RESULT_CREATE_SURFAC_FAILED,
+            "EncodeEditScenePicture ConvertToSurfaceBuffer failed");
+        sptr<SurfaceBuffer> srcSptr(reinterpret_cast<SurfaceBuffer*>(mainPixelMap->GetFd()));
+        VpeUtils::CopySurfaceBufferInfo(srcSptr, baseSptr);
+    } else {
+        baseSptr = sptr<SurfaceBuffer>(reinterpret_cast<SurfaceBuffer*>(mainPixelMap->GetFd()));
+        cond = !baseSptr;
+        CHECK_ERROR_RETURN_RET_LOG(cond, IMAGE_RESULT_CREATE_SURFAC_FAILED, "creat main pixels surfaceBuffer error");
+        ImageUtils::FlushSurfaceBuffer(baseSptr);
+    }
     uint32_t errorCode = EncodeHeifPicture(baseSptr, baseInfo, sdrIsSRGB);
+    if (needConvertToSurfaceBuffer) {
+        ImageUtils::SurfaceBuffer_Unreference(baseSptr.GetRefPtr());
+    }
     RecycleResources();
     return errorCode;
 }
