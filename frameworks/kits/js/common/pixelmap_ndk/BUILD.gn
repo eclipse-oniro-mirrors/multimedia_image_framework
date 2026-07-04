@@ -42,6 +42,7 @@ ohos_shared_library("pixelmap_ndk") {
     "ipc:ipc_single",
     "graphic_2d:color_manager",
     "napi:ace_napi",
+    "node:node_header_notice",
   ]
 
   innerapi_tags = [ "ndk" ]
