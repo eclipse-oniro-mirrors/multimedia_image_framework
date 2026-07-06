@@ -2613,7 +2613,7 @@ uint32_t ImageSource::FillPngMetadataValue(const std::string &key, const ImageMe
     } else if (value.type == PropertyValueType::DOUBLE) {
         char* endPtr = nullptr;
         double dblValue = strtod(strValue.c_str(), &endPtr);
-        if (endPtr != strValue.c_str() && *endPtr == '\0') {
+        if (endPtr != strValue.c_str() && *endPtr == '\0' && std::isfinite(dblValue)) {
             value.doubleArrayValue.emplace_back(dblValue);
         } else {
             IMAGE_LOGE("Failed to convert string to double: %{public}s", strValue.c_str());

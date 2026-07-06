@@ -351,7 +351,9 @@ uint8_t *FileSourceStream::GetDataPtr(bool populate)
     }
 
     if (!useMmap_) {
-        uint32_t size = static_cast<uint32_t>(GetStreamSize());
+        size_t streamSize = GetStreamSize();
+        CHECK_ERROR_RETURN_RET_LOG(streamSize > UINT32_MAX, nullptr, "[FileSourceStream] GetStreamSize overflow");
+        uint32_t size = static_cast<uint32_t>(streamSize);
         uint8_t* buffer = new (std::nothrow) uint8_t [size];
         if (buffer == nullptr) {
             IMAGE_LOGE("[FileSourceStream] Failed to new stream buffer.");

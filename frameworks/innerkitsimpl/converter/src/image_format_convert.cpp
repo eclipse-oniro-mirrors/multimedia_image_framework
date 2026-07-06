@@ -576,7 +576,11 @@ std::unique_ptr<AbsMemory> Truncate10BitMemory(std::shared_ptr<PixelMap> &srcPix
     }
 
     VpeSurfaceBuffers buffers;
+    cond = (sdrMemory->extend.data == nullptr);
+    CHECK_ERROR_RETURN_RET_LOG(cond, nullptr, "Truncate10BitMemory sdrMemory get surfacebuffer failed");
     buffers.sdr = sptr<SurfaceBuffer>(reinterpret_cast<SurfaceBuffer*>(sdrMemory->extend.data));
+    cond = (srcPixelmap->GetFd() == nullptr);
+    CHECK_ERROR_RETURN_RET_LOG(cond, nullptr, "Truncate10BitMemory srcPixelmap get fd failed");
     buffers.hdr = sptr<SurfaceBuffer>(reinterpret_cast<SurfaceBuffer*>(srcPixelmap->GetFd()));
     std::unique_ptr<VpeUtils> utils = std::make_unique<VpeUtils>();
     int32_t res = utils->TruncateBuffer(buffers, false);
@@ -640,10 +644,8 @@ uint32_t ImageFormatConvert::RGBConvertImageFormatOption(std::shared_ptr<PixelMa
     YUVStrideInfo dstStrides;
     auto allocType = srcPixelMap->GetAllocatorType();
     auto m = CreateMemory(destFormat, allocType, imageInfo.size, dstStrides, srcPixelMap->GetNoPaddingUsage());
-    if (m == nullptr) {
-        IMAGE_LOGE("CreateMemory failed");
-        return ERR_IMAGE_INVALID_PARAMETER;
-    }
+    bool cond = (m == nullptr);
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER, "CreateMemory failed");
     int32_t stride = srcPixelMap->GetRowStride();
     #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     if (allocType == AllocatorType::DMA_ALLOC) {
@@ -651,6 +653,8 @@ uint32_t ImageFormatConvert::RGBConvertImageFormatOption(std::shared_ptr<PixelMa
         CHECK_ERROR_RETURN_RET(sb == nullptr, ERR_IMAGE_INVALID_PARAMETER);
         stride = sb->GetStride();
         sptr<SurfaceBuffer> sourceSurfaceBuffer(sb);
+        cond = (m->extend.data == nullptr);
+        CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER, "CreateMemory get surfacebuffer failed");
         sptr<SurfaceBuffer> dstSurfaceBuffer(reinterpret_cast<SurfaceBuffer*>(m->extend.data));
         VpeUtils::CopySurfaceBufferInfo(sourceSurfaceBuffer, dstSurfaceBuffer);
     }
@@ -811,13 +815,15 @@ uint32_t ImageFormatConvert::YUVConvertImageFormatOption(std::shared_ptr<PixelMa
     YUVStrideInfo dstStrides;
     auto allocType = GetAllocatorType(srcPixelMap, destFormat);
     DestConvertInfo destInfo = {imageInfo.size.width, imageInfo.size.height, destFormat, allocType};
-    auto m = CreateMemory(destFormat, allocType, imageInfo.size, dstStrides,
-        srcPixelMap->GetNoPaddingUsage());
-    cond = m == nullptr;
-    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER, "CreateMemory failed");
+    auto m = CreateMemory(destFormat, allocType, imageInfo.size, dstStrides, srcPixelMap->GetNoPaddingUsage());
+    CHECK_ERROR_RETURN_RET_LOG(m == nullptr, ERR_IMAGE_INVALID_PARAMETER, "CreateMemory failed");
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     if (allocType == AllocatorType::DMA_ALLOC) {
+        cond = (srcPixelMap->GetFd() == nullptr);
+        CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER, "srcPixelMap get fd failed");
         sptr<SurfaceBuffer> sourceSurfaceBuffer(reinterpret_cast<SurfaceBuffer*>(srcPixelMap->GetFd()));
+        cond = (m->extend.data == nullptr);
+        CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER, "CreateMemory get surfacebuffer failed");
         sptr<SurfaceBuffer> dstSurfaceBuffer(reinterpret_cast<SurfaceBuffer*>(m->extend.data));
         VpeUtils::CopySurfaceBufferInfo(sourceSurfaceBuffer, dstSurfaceBuffer);
         cond = !GetYuvSbConvertDetails(sourceSurfaceBuffer, destInfo);

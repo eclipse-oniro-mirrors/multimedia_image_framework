@@ -206,6 +206,9 @@ sptr<Surface> ImageReceiver::getSurfaceById(std::string id)
 
 static std::shared_ptr<ImageReceiver> CreateImageReceiverInner(ImageReceiverOptions &options)
 {
+    bool cond = (options.width <= 0 || options.height <= 0 || options.capacity <= 0);
+    CHECK_DEBUG_RETURN_RET_LOG(cond, nullptr, "Invalid params, width:%{public}d, height:%{public}d, "
+        "capacity:%{public}d.", options.width, options.height, options.capacity);
     std::shared_ptr<ImageReceiver> iva = std::make_shared<ImageReceiver>();
     iva->iraContext_ = ImageReceiverContext::CreateImageReceiverContext();
     iva->receiverConsumerSurface_ = IConsumerSurface::Create();
