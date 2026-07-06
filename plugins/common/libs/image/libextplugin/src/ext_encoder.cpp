@@ -784,8 +784,8 @@ uint32_t ExtEncoder::EncodeImageByPixelMap(PixelMap* pixelmap, bool needExif, Sk
         }
 #endif
     }
-    cond = !bitmap.installPixels(skInfo, imageData.pixels, rowStride);
-    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_ENCODE_FAILED, "EncodeImageByPixelMap to SkBitmap failed");
+    CHECK_ERROR_RETURN_RET_LOG(!bitmap.installPixels(skInfo, imageData.pixels, rowStride),
+        ERR_IMAGE_ENCODE_FAILED, "ExtEncoder::EncodeImageByPixelMap to SkBitmap failed");
 
     return EncodeImageByBitmap(bitmap, needExif, outputStream);
 }
