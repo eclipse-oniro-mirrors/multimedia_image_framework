@@ -760,7 +760,7 @@ uint32_t ExtEncoder::EncodeImageByPixelMap(PixelMap* pixelmap, bool needExif, Sk
     if (IsYuvImage(imageData.info.pixelFormat)) {
         IMAGE_LOGD("YUV format, convert to RGB");
         cond = ImageUtils::CheckMulOverflow(width, height, RGBA_BIT_DEPTH);
-        CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER,
+        CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_ENCODE_FAILED,
             "EncodeImageByPixelMap RGBA buffer size overflow, width(%{public}d), height(%{public}d)", width, height);
         dstData = std::make_unique<uint8_t[]>(width * height * RGBA_BIT_DEPTH);
         cond = YuvToRgbaSkInfo(imageData.info, skInfo, dstData.get(), pixelmap) != SUCCESS;
@@ -769,7 +769,7 @@ uint32_t ExtEncoder::EncodeImageByPixelMap(PixelMap* pixelmap, bool needExif, Sk
         rowStride = skInfo.minRowBytes64();
     } else {
         cond = ImageUtils::CheckMulOverflow(width, height, NUM_3);
-        CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER,
+        CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_ENCODE_FAILED,
             "EncodeImageByPixelMap RGB buffer size overflow, width(%{public}d), height(%{public}d)", width, height);
         dstData = std::make_unique<uint8_t[]>(width * height * NUM_3);
         imageData.dst = dstData.get();

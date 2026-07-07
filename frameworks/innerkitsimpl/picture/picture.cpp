@@ -270,8 +270,7 @@ std::unique_ptr<PixelMap> Picture::SurfaceBuffer2PixelMap(sptr<OHOS::SurfaceBuff
 
     ImageInfo imageInfo = MakeImageInfo(surfaceBuffer->GetWidth(),
                                         surfaceBuffer->GetHeight(), pixelFormat, alphaType, colorSpace);
-    uint32_t ret = pixelMap->SetImageInfo(imageInfo, true);
-    CHECK_ERROR_RETURN_RET_LOG(ret != SUCCESS, nullptr, "SetImageInfo failed");
+    pixelMap->SetImageInfo(imageInfo, true);
     pixelMap->SetPixelsAddr(surfaceBuffer->GetVirAddr(),
                             nativeBuffer, pixelMap->GetRowBytes() * pixelMap->GetHeight(),
                             AllocatorType::DMA_ALLOC, nullptr);
