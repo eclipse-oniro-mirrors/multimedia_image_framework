@@ -672,7 +672,6 @@ uint32_t ImageFormatConvert::RGBConvertImageFormatOption(std::shared_ptr<PixelMa
     destInfo.yOffset = dstStrides.yOffset;
     destInfo.uvOffset = dstStrides.uvOffset;
     if (!cvtFunc(srcBuffer, rgbDataInfo, destInfo, srcPixelMap->GetColorSpace())) {
-        IMAGE_LOGE("format convert failed!");
         m->Release();
         return IMAGE_RESULT_FORMAT_CONVERT_FAILED;
     }
