@@ -645,8 +645,7 @@ uint32_t ImageFormatConvert::RGBConvertImageFormatOption(std::shared_ptr<PixelMa
     YUVStrideInfo dstStrides;
     auto allocType = srcPixelMap->GetAllocatorType();
     auto m = CreateMemory(destFormat, allocType, imageInfo.size, dstStrides, srcPixelMap->GetNoPaddingUsage());
-    bool cond = (m == nullptr);
-    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER, "CreateMemory failed");
+    CHECK_ERROR_RETURN_RET_LOG(m == nullptr, ERR_IMAGE_INVALID_PARAMETER, "CreateMemory failed");
     int32_t stride = srcPixelMap->GetRowStride();
     #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     if (allocType == AllocatorType::DMA_ALLOC) {
@@ -672,6 +671,7 @@ uint32_t ImageFormatConvert::RGBConvertImageFormatOption(std::shared_ptr<PixelMa
     destInfo.yOffset = dstStrides.yOffset;
     destInfo.uvOffset = dstStrides.uvOffset;
     if (!cvtFunc(srcBuffer, rgbDataInfo, destInfo, srcPixelMap->GetColorSpace())) {
+        IMAGE_LOGE("RGB format convert failed!");
         m->Release();
         return IMAGE_RESULT_FORMAT_CONVERT_FAILED;
     }
@@ -836,6 +836,7 @@ uint32_t ImageFormatConvert::YUVConvertImageFormatOption(std::shared_ptr<PixelMa
     destInfo.yOffset = dstStrides.yOffset;
     destInfo.uvOffset = dstStrides.uvOffset;
     if (!yuvCvtFunc(data, yDInfo, destInfo, srcPixelMap->GetColorSpace())) {
+        IMAGE_LOGE("YUV format convert failed!");
         m->Release();
         return IMAGE_RESULT_FORMAT_CONVERT_FAILED;
     }
