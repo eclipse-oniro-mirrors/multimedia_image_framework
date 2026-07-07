@@ -13,7 +13,6 @@
  * limitations under the License.
  */
 
-
 #include <iostream>
 #include <map>
 #include <numeric>
@@ -2384,6 +2383,32 @@ bool ExifMetadata::RemoveGpsInfo()
         return false;
     }
 
+    return true;
+}
+
+bool ExifMetadata::ParseHdrCanvasFlag(bool& isHdrCanvas) const
+{
+    std::string valueStr;
+    int ret = GetValue("UserComment", valueStr);
+    if (ret != SUCCESS) {
+        IMAGE_LOGD("Exif_metadata: ParseHdrCanvasFlag field not found or read failed");
+        isHdrCanvas = false;
+        return false;
+    }
+ 
+    if (valueStr.empty() || valueStr == "default_exif_value") {
+        IMAGE_LOGD("Exif_metadata: ParseHdrCanvasFlag value is empty or default");
+        isHdrCanvas = false;
+        return false;
+    }
+ 
+    if (valueStr == "abcd1234") {
+        isHdrCanvas = true;
+        IMAGE_LOGD("Exif_metadata: ParseHdrCanvasFlag detected HDR Canvas, value=%{public}s", valueStr.c_str());
+        return true;
+    }
+ 
+    isHdrCanvas = false;
     return true;
 }
 } // namespace Media
