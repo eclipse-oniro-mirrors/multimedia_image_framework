@@ -3019,6 +3019,9 @@ static bool FillImagePropertyItem(const std::shared_ptr<AbsMemory> &mem, const s
     int payloadIntSize = static_cast<int>(payloadSize);
     size_t typeSize = sizeof(type);
     size_t intSize = sizeof(int);
+    size_t totalSize = typeSize + intSize + payloadSize;
+    cond = (offset >= memSize) || (totalSize > memSize - offset);
+    CHECK_INFO_RETURN_RET_LOG(cond, false, "FillImagePropertyItem offset or size overflow");
     bool res = (memcpy_s(memData + offset, memSize - offset, &type, typeSize) == EOK) &&
         (memcpy_s(memData + offset + typeSize, memSize - offset - typeSize, &payloadIntSize, intSize) == EOK) &&
         (memcpy_s(memData + offset + typeSize + intSize, memSize - offset - typeSize - intSize,
