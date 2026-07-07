@@ -805,7 +805,9 @@ uint32_t ImageFormatConvert::YUVConvertImageFormatOption(std::shared_ptr<PixelMa
     CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER, "get convert function by format failed!");
     const_uint8_buffer_type data = srcPixelMap->GetPixels();
     YUVDataInfo yDInfo;
+#if !defined(CROSS_PLATFORM)
     ImageUtils::UpdateYUVDataInfo(*srcPixelMap);
+#endif
     srcPixelMap->GetImageYUVInfo(yDInfo);
     ImageInfo imageInfo;
     srcPixelMap->GetImageInfo(imageInfo);
