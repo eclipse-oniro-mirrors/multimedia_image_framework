@@ -1084,7 +1084,7 @@ void ImageSource::UpdateHdrCanvasFlagFromExif()
 {
     ImageFuncTimer imageFuncTimer("ImageSource::%s", __func__);
     isHdrCanvas_ = false;
-    std::unique_loc<std::recursive_mutex> guard(decodingMutex_);
+    std::unique_lock<std::recursive_mutex> guard(decodingMutex_);
     if(CreatExifMetadataByImageSource() == SUCCESS) {
         if(exifMetadata_ != nullptr) {
             bool isHdrCanvas = false;
