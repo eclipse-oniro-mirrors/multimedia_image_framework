@@ -34,6 +34,7 @@
 #include "ext_stream.h"
 #include "jpeg_mpf_parser.h"
 #include "image_packer.h"
+#include "exif_metadata.h"
 #include "jpeglib.h"
 
 using namespace testing::ext;
