@@ -222,7 +222,7 @@ void PixelMap::SetTransformered(bool isTransformered)
 
 void PixelMap::SetPixelsAddr(void *addr, void *context, uint32_t size, AllocatorType type, CustomFreePixelMap func)
 {
-    std::lock_guard<std::mutex> lock(*metadataMutex_);
+    std::unique_lock<std::shared_mutex> lock(*pixelDataMutex_);
     if (type < AllocatorType::DEFAULT || type > AllocatorType::DMA_ALLOC) {
         IMAGE_LOGE("SetPixelsAddr error invalid allocatorType");
         return;
@@ -2036,6 +2036,7 @@ bool PixelMap::IsSameImage(const PixelMap &other)
 uint32_t PixelMap::ReadPixels(const uint64_t &bufferSize, uint8_t *dst)
 {
     ImageTrace imageTrace("ReadPixels by bufferSize");
+    std::shared_lock<std::shared_mutex> lock(*pixelDataMutex_);
     if (dst == nullptr) {
         IMAGE_LOGE("read pixels by buffer input dst address is null.");
         return ERR_IMAGE_READ_PIXELMAP_FAILED;
@@ -2864,7 +2865,7 @@ bool PixelMap::WriteMemInfoToParcel(Parcel &parcel, const int32_t &bufferSize) c
             return false;
         }
 
-        // Lock ordering: metadataMutex_ must be acquired before unmapMutex_.
+        // Lock ordering: pixelDataMutex_ must be acquired before unmapMutex_.
         std::lock_guard<std::mutex> unmapLock(*unmapMutex_);
         int *fd = static_cast<int *>(context_);
         if (fd == nullptr || *fd < 0) {
@@ -3033,7 +3034,7 @@ bool PixelMap::WriteAstcInfoToParcel(Parcel &parcel) const
 
 bool PixelMap::Marshalling(Parcel &parcel) const
 {
-    std::lock_guard<std::mutex> lock(*metadataMutex_);
+    std::shared_lock<std::shared_mutex> lock(*pixelDataMutex_);
     int32_t PIXEL_MAP_INFO_MAX_LENGTH = 128;
     if (ImageUtils::CheckMulOverflow(imageInfo_.size.height, rowDataSize_)) {
         IMAGE_LOGE("pixelmap invalid params, height:%{public}d, rowDataSize:%{public}d.",
