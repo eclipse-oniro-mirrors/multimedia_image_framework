@@ -121,10 +121,6 @@ struct RWPixelsOptions {
 class ExifMetadata;
 class AbsMemory;
 
-#define PIXELMAP_VERSION_START (1<<16)
-#define PIXELMAP_VERSION_DISPLAY_ONLY (PIXELMAP_VERSION_START + 1)
-#define PIXELMAP_VERSION_LATEST PIXELMAP_VERSION_DISPLAY_ONLY
-
 class PixelMap : public Parcelable, public PIXEL_MAP_ERR {
 public:
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
@@ -936,8 +932,6 @@ public:
     static int32_t GetYUVByteCount(const ImageInfo& info);
     static int32_t GetAllocatedByteCount(const ImageInfo& info);
 
-    NATIVEEXPORT uint32_t GetVersionId();
-    NATIVEEXPORT void AddVersionId();
     uint64_t GetNoPaddingUsage();
 
 protected:
@@ -1034,7 +1028,6 @@ protected:
     static int32_t ConvertPixelAlpha(const void *srcPixels, const int32_t srcLength, const ImageInfo &srcInfo,
         void *dstPixels, const ImageInfo &dstInfo);
     void CopySurfaceBufferInfo(void *data);
-    void SetVersionId(uint32_t versionId);
     std::unique_ptr<AbsMemory> CreateSdrMemory(ImageInfo &imageInfo, PixelFormat format,
                                                AllocatorType dstType, uint32_t &errorCode, bool toSRGB);
     // used to close fd after mmap in RenderService when memory type is shared-mem or dma.
@@ -1084,8 +1077,6 @@ protected:
     std::shared_ptr<std::mutex> translationMutex_ = std::make_shared<std::mutex>();
     std::shared_ptr<std::shared_mutex> colorSpaceMutex_ = std::make_shared<std::shared_mutex>();
     bool toSdrColorIsSRGB_ = false;
-    uint32_t versionId_ = 1;
-    std::shared_ptr<std::shared_mutex> versionMutex_ = std::make_shared<std::shared_mutex>();
 private:
     uint32_t ScaleWithSLR(float xAxis, float yAxis);
 
@@ -1097,16 +1088,6 @@ private:
     NATIVEEXPORT void SetDisplayOnly(bool displayOnly)
     {
         displayOnly_ = displayOnly;
-    }
-
-    NATIVEEXPORT void SetReadVersion(int32_t version)
-    {
-        readVersion_ = version;
-    }
-
-    NATIVEEXPORT int32_t GetReadVersion()
-    {
-        return readVersion_;
     }
 
     void MarkPropertiesDirty()
@@ -1133,8 +1114,6 @@ private:
     // used to mark whether pixelmap is unmarshalling
     bool isUnmarshalling_ = false;
 
-    // pixelmap versioning added since 16th of April 2025
-    int32_t readVersion_ = PIXELMAP_VERSION_LATEST;
     bool displayOnly_ = false;
     bool astcHdr_ = false;
 

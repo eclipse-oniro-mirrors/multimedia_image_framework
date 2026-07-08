@@ -14,11 +14,13 @@
  */
 
 #include <gtest/gtest.h>
+#include <vector>
 
 #include "pixel_map.h"
 #include "pixel_map_parcel.h"
 #include "image_type.h"
 #include "image_utils.h"
+#include "media_errors.h"
 
 using namespace testing::ext;
 using namespace OHOS::Media;
@@ -190,6 +192,49 @@ HWTEST_F(PixelMapParcelTest, MarshallingUnmarshallingRecodeParcelTest003, TestSi
         EXPECT_TRUE(RecodeParcelTest(512, PixelFormat(i), true)); // Test with larger size 512
     }
     GTEST_LOG_(INFO) << "PixelMapParcelTest: MarshallingUnmarshallingRecodeParcelTest003 end";
+}
+
+/**
+ * @tc.name: MarshallingUnmarshallingRecodeParcelTest004
+ * @tc.desc: Test record unmarshalling YUV PixelMap without YUVDataInfo payload
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapParcelTest, MarshallingUnmarshallingRecodeParcelTest004, TestSize.Level3)
+{
+    constexpr int32_t width = 4;
+    constexpr int32_t height = 4;
+    ImageInfo imageInfo;
+    imageInfo.size.width = width;
+    imageInfo.size.height = height;
+    imageInfo.pixelFormat = PixelFormat::NV12;
+    imageInfo.colorSpace = ColorSpace::SRGB;
+    imageInfo.alphaType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
+
+    const int32_t bufferSize = PixelMap::GetYUVByteCount(imageInfo);
+    ASSERT_GT(bufferSize, 0);
+
+    Parcel parcel;
+    ASSERT_TRUE(parcel.WriteInt32(width));
+    ASSERT_TRUE(parcel.WriteInt32(height));
+    ASSERT_TRUE(parcel.WriteInt32(static_cast<int32_t>(imageInfo.pixelFormat)));
+    ASSERT_TRUE(parcel.WriteInt32(static_cast<int32_t>(imageInfo.colorSpace)));
+    ASSERT_TRUE(parcel.WriteInt32(static_cast<int32_t>(imageInfo.alphaType)));
+    ASSERT_TRUE(parcel.WriteInt32(0));
+    ASSERT_TRUE(parcel.WriteString(""));
+    ASSERT_TRUE(parcel.WriteBool(false));
+    ASSERT_TRUE(parcel.WriteBool(false));
+    ASSERT_TRUE(parcel.WriteInt32(static_cast<int32_t>(AllocatorType::HEAP_ALLOC)));
+    ASSERT_TRUE(parcel.WriteInt32(ERR_MEDIA_INVALID_VALUE));
+    ASSERT_TRUE(parcel.WriteInt32(ImageUtils::GetRowDataSizeByPixelFormat(width, imageInfo.pixelFormat)));
+    ASSERT_TRUE(parcel.WriteInt32(bufferSize));
+
+    std::vector<uint8_t> pixels(bufferSize, 0);
+    ASSERT_TRUE(parcel.WriteUnpadBuffer(pixels.data(), pixels.size()));
+
+    PixelMap *pixelMapRecord = PixelMapRecordParcel::UnmarshallingPixelMapForRecord(parcel);
+    ASSERT_NE(pixelMapRecord, nullptr);
+    EXPECT_EQ(pixelMapRecord->GetPixelFormat(), PixelFormat::NV12);
+    delete pixelMapRecord;
 }
 }
 }

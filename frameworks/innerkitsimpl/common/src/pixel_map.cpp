@@ -2317,7 +2317,6 @@ uint32_t PixelMap::WritePixel(const Position &pos, const uint32_t &color)
         IMAGE_LOGE("write pixel by pos call WritePixelsConvert fail.");
         return ERR_IMAGE_WRITE_PIXELMAP_FAILED;
     }
-    AddVersionId();
     return SUCCESS;
 }
 
@@ -2388,7 +2387,6 @@ uint32_t PixelMap::WritePixels(const RWPixelsOptions &opts)
             return ERR_IMAGE_WRITE_PIXELMAP_FAILED;
         }
     }
-    AddVersionId();
     MarkDirty();
     return SUCCESS;
 }
@@ -2444,7 +2442,6 @@ uint32_t PixelMap::WritePixels(const uint8_t *source, const uint64_t &bufferSize
             }
         }
     }
-    AddVersionId();
     MarkDirty();
     return SUCCESS;
 }
@@ -2479,7 +2476,6 @@ bool PixelMap::WritePixels(const uint32_t &color)
         IMAGE_LOGE("erase pixels by color call EraseBitmap fail.");
         return false;
     }
-    AddVersionId();
     return true;
 }
 
@@ -2798,11 +2794,6 @@ bool PixelMap::WritePropertiesToParcel(Parcel &parcel) const
         return false;
     }
 
-    if (!parcel.WriteUint32(versionId_)) {
-        IMAGE_LOGE("write image info versionId_:[%{public}d] to parcel failed.", versionId_);
-        return false;
-    }
-
     if (!WriteAstcInfoToParcel(parcel)) {
         IMAGE_LOGE("write ASTC real size to parcel failed.");
         return false;
@@ -3052,10 +3043,6 @@ bool PixelMap::Marshalling(Parcel &parcel) const
         IMAGE_LOGE("set parcel max capacity:[%{public}zu] failed.", capacityLength);
         return false;
     }
-    if (!parcel.WriteInt32(static_cast<int32_t>(-PIXELMAP_VERSION_LATEST))) {
-        IMAGE_LOGE("write image info pixelmap version to parcel failed.");
-        return false;
-    }
     if (!WritePropertiesToParcel(parcel)) {
         IMAGE_LOGE("write info to parcel failed.");
         return false;
@@ -3207,17 +3194,6 @@ bool PixelMap::ReadAstcInfo(Parcel &parcel, PixelMap *pixelMap)
 
 bool PixelMap::ReadPropertiesFromParcel(Parcel& parcel, PixelMap*& pixelMap, ImageInfo& imgInfo, PixelMemInfo& memInfo)
 {
-    int32_t readVersion = PIXELMAP_VERSION_START;
-    const size_t startReadPosition = parcel.GetReadPosition();
-
-    int32_t firstInt32 = parcel.ReadInt32();
-    if (firstInt32 <= -PIXELMAP_VERSION_START) {
-        // version present in parcel (consider width < -2^16 is not possible), read it first
-        readVersion = -firstInt32;
-    } else {
-        // old way: no version let's consider it's oldest
-        parcel.RewindRead(startReadPosition);
-    }
     if (!ReadImageInfo(parcel, imgInfo)) {
         IMAGE_LOGE("ReadPropertiesFromParcel: read image info failed");
         return false;
@@ -3250,15 +3226,10 @@ bool PixelMap::ReadPropertiesFromParcel(Parcel& parcel, PixelMap*& pixelMap, Ima
     }
     pixelMap->isUnmarshalling_ = true;
 
-    pixelMap->SetReadVersion(readVersion);
     pixelMap->SetEditable(parcel.ReadBool());
     pixelMap->SetAstc(ImageUtils::IsAstc(imgInfo.pixelFormat));
-    if (pixelMap->GetReadVersion() >= PIXELMAP_VERSION_DISPLAY_ONLY) {
-        bool displayOnly = parcel.ReadBool();
-        pixelMap->SetDisplayOnly(displayOnly);
-    } else {
-        pixelMap->SetDisplayOnly(false);
-    }
+    bool displayOnly = parcel.ReadBool();
+    pixelMap->SetDisplayOnly(displayOnly);
     int32_t readAllocatorValue = parcel.ReadInt32();
     if (readAllocatorValue < static_cast<int32_t>(AllocatorType::DEFAULT) ||
         readAllocatorValue > static_cast<int32_t>(AllocatorType::DMA_ALLOC)) {
@@ -3277,8 +3248,6 @@ bool PixelMap::ReadPropertiesFromParcel(Parcel& parcel, PixelMap*& pixelMap, Ima
         OHOS::ColorManager::ColorSpace grColorSpace = OHOS::ColorManager::ColorSpace(colorSpaceName);
         pixelMap->InnerSetColorSpace(grColorSpace);
     }
-
-    pixelMap->SetVersionId(parcel.ReadUint32());
 
     if (!pixelMap->ReadAstcInfo(parcel, pixelMap)) {
         IMAGE_LOGE("ReadPropertiesFromParcel: read ASTC real size failed");
@@ -4479,7 +4448,6 @@ uint32_t PixelMap::SetAlpha(const float percent)
             }
         }
     }
-    AddVersionId();
     return SUCCESS;
 }
 
@@ -4724,7 +4692,6 @@ uint32_t PixelMap::ApplyAffineTransform(TransInfos &infos, AntiAliasingOption op
     SetPixelsAddr(m->data.data, m->extend.data, m->data.size, m->GetType(), nullptr);
     SetImageInfo(imageInfo, true);
     ImageUtils::FlushSurfaceBuffer(this);
-    AddVersionId();
     return SUCCESS;
 }
 
@@ -5020,7 +4987,6 @@ uint32_t PixelMap::Crop(const Rect &rect)
     SetPixelsAddr(m->data.data, m->extend.data, m->data.size, m->GetType(), nullptr);
     SetImageInfo(imageInfo, true);
     ImageUtils::FlushSurfaceBuffer(this);
-    AddVersionId();
     ImageUtils::DumpPixelMapIfDumpEnabled(*this, __func__);
     return SUCCESS;
 }
@@ -5310,24 +5276,6 @@ uint32_t PixelMap::ApplyColorSpace(const OHOS::ColorManager::ColorSpace &grColor
     return SUCCESS;
 }
 #endif
-
-uint32_t PixelMap::GetVersionId()
-{
-    std::shared_lock<std::shared_mutex> lock(*versionMutex_);
-    return versionId_;
-}
-
-void PixelMap::AddVersionId()
-{
-    std::unique_lock<std::shared_mutex> lock(*versionMutex_);
-    versionId_++;
-}
-
-void PixelMap::SetVersionId(uint32_t versionId)
-{
-    std::unique_lock<std::shared_mutex> lock(*versionMutex_);
-    versionId_ = versionId;
-}
 
 bool PixelMap::CloseFd()
 {

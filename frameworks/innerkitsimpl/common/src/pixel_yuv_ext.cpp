@@ -208,7 +208,6 @@ uint32_t PixelYuvExt::Scale(float xAxis, float yAxis, AntiAliasingOption option)
     imageInfo.size.height = dstH;
     SetImageInfo(imageInfo, true);
     UpdateYUVDataInfo(imageInfo.pixelFormat, imageInfo.size.width, imageInfo.size.height, dstStrides);
-    AddVersionId();
     return SUCCESS;
 }
 
@@ -254,7 +253,6 @@ uint32_t PixelYuvExt::Scale(int32_t dstW, int32_t dstH, AntiAliasingOption optio
     imageInfo.size.height = dstH;
     SetImageInfo(imageInfo, true);
     UpdateYUVDataInfo(imageInfo.pixelFormat, imageInfo.size.width, imageInfo.size.height, dstStrides);
-    AddVersionId();
     return SUCCESS;
 }
 
@@ -304,7 +302,6 @@ uint32_t PixelYuvExt::Rotate(float degrees)
     SetImageInfo(imageInfo_, true);
     SetPixelsAddr(dst, m->extend.data, m->data.size, m->GetType(), nullptr);
     UpdateYUVDataInfo(imageInfo_.pixelFormat, dstWidth, dstHeight, dstStrides);
-    AddVersionId();
     return SUCCESS;
 }
 
@@ -359,7 +356,6 @@ uint32_t PixelYuvExt::Flip(bool xAxis, bool yAxis)
     }
     SetPixelsAddr(dst, m->extend.data, m->data.size, m->GetType(), nullptr);
     UpdateYUVDataInfo(imageInfo.pixelFormat, imageInfo.size.width, imageInfo.size.height, dstStrides);
-    AddVersionId();
     return SUCCESS;
 }
 
@@ -403,7 +399,6 @@ int32_t PixelYuvExt::ColorSpaceBGRAToYuv(
     auto grName = grColorSpace.GetColorSpaceName();
     grColorSpace_ = std::make_shared<OHOS ::ColorManager::ColorSpace>(
         dst.info.refColorSpace(), grName);
-    AddVersionId();
     return SUCCESS;
 }
 
