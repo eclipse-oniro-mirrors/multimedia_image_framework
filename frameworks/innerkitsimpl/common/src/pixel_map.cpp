@@ -150,14 +150,32 @@ void PixelMap::FreePixelMap() __attribute__((no_sanitize("cfi")))
     }
 #endif
 
-    if (!isUnMap_ && data_ == nullptr && !displayOnly_) {
+    auto notifyFreePixelMap = [this]() {
+        // SetFreePixelMapProc is a lifecycle hook used by external instrumentation when PixelMap is released.
+        // It must not release allocator-owned memory; allocator-specific code below owns the actual cleanup.
+        if (freePixelMapProc_ != nullptr) {
+            freePixelMapProc_(data_, context_, pixelsSize_);
+        }
+    };
+
+    if (allocatorType_ == AllocatorType::SHARE_MEM_ALLOC) {
+        std::lock_guard<std::mutex> lock(*unmapMutex_);
+        if (!isUnMap_ && data_ == nullptr && !displayOnly_) {
+            return;
+        }
+        notifyFreePixelMap();
+        ReleaseSharedMemory(data_, context_, pixelsSize_);
+        data_ = nullptr;
+        context_ = nullptr;
         return;
     }
 
-    if (freePixelMapProc_ != nullptr) {
-        freePixelMapProc_(data_, context_, pixelsSize_);
+    if (data_ == nullptr && context_ == nullptr) {
+        return;
     }
-    
+
+    notifyFreePixelMap();
+
     switch (allocatorType_) {
         case AllocatorType::HEAP_ALLOC: {
             if (data_ != nullptr) {
@@ -170,12 +188,6 @@ void PixelMap::FreePixelMap() __attribute__((no_sanitize("cfi")))
             if (custFreePixelMap_ != nullptr) {
                 custFreePixelMap_(data_, context_, pixelsSize_);
             }
-            data_ = nullptr;
-            context_ = nullptr;
-            break;
-        }
-        case AllocatorType::SHARE_MEM_ALLOC: {
-            ReleaseSharedMemory(data_, context_, pixelsSize_);
             data_ = nullptr;
             context_ = nullptr;
             break;

@@ -13,6 +13,10 @@
  * limitations under the License.
  */
 
+#include <atomic>
+#include <chrono>
+#include <future>
+
 #define protected public
 #define private public
 #include <gtest/gtest.h>
@@ -71,6 +75,15 @@ constexpr uint32_t SIZE_MAX_HEIGHT = 61440;
 const static std::string EXIF_JPEG_PATH = "/data/local/tmp/image/test_exif.jpg";
 static const std::string IMAGE_INPUT_JPEG_HDR_PATH = "/data/local/tmp/image/hdr.jpg";
 static const std::string IMAGE_INPUT_JPEG_HDR_MEDIA_TYPE_PATH = "/data/local/tmp/image/hdr_media_type_test.jpg";
+std::atomic<uint32_t> g_freePixelMapHookCount = 0;
+
+void CountFreePixelMapHook(void *addr, void *context, uint32_t size)
+{
+    (void)addr;
+    (void)context;
+    (void)size;
+    g_freePixelMapHookCount.fetch_add(1);
+}
 
 struct ImageSize {
     int32_t width = 0;
@@ -4158,6 +4171,41 @@ HWTEST_F(PixelMapTest, UnMapPixelMapTest, TestSize.Level3)
     EXPECT_NE(pixelMap, nullptr);
     EXPECT_NE(true, pixelMap->UnMap());
     GTEST_LOG_(INFO) << "PixelMapTest: UnMapPixelMapTest end";
+}
+
+/**
+ * @tc.name: FreePixelMapShareMemLockTest001
+ * @tc.desc: Test FreePixelMap uses unmapMutex_ when releasing SHARE_MEM_ALLOC context
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, FreePixelMapShareMemLockTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelMapTest: FreePixelMapShareMemLockTest001 start";
+    auto pixelMap =
+        ConstructPixmap(PixelFormat::RGBA_8888, AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN, AllocatorType::SHARE_MEM_ALLOC);
+    ASSERT_NE(pixelMap, nullptr);
+    ASSERT_NE(pixelMap->context_, nullptr);
+    g_freePixelMapHookCount.store(0);
+    pixelMap->SetFreePixelMapProc(CountFreePixelMapHook);
+
+    std::unique_lock<std::mutex> lock(*pixelMap->unmapMutex_);
+    std::promise<void> freeStarted;
+    auto startedFuture = freeStarted.get_future();
+    auto freeTask = std::async(std::launch::async, [&pixelMap, &freeStarted]() {
+        freeStarted.set_value();
+        pixelMap->FreePixelMap();
+        return pixelMap->context_ == nullptr;
+    });
+    EXPECT_EQ(startedFuture.wait_for(std::chrono::seconds(1)), std::future_status::ready);
+    EXPECT_EQ(freeTask.wait_for(std::chrono::milliseconds(100)), std::future_status::timeout);
+    EXPECT_NE(pixelMap->context_, nullptr);
+    EXPECT_EQ(g_freePixelMapHookCount.load(), 0);
+
+    lock.unlock();
+    EXPECT_TRUE(freeTask.get());
+    EXPECT_EQ(pixelMap->context_, nullptr);
+    EXPECT_EQ(g_freePixelMapHookCount.load(), 1);
+    GTEST_LOG_(INFO) << "PixelMapTest: FreePixelMapShareMemLockTest001 end";
 }
  
 /**
