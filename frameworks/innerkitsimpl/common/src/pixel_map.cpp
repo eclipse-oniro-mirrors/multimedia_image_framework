@@ -3296,6 +3296,7 @@ bool PixelMap::ReadBufferSizeFromParcel(Parcel& parcel, const ImageInfo& imgInfo
 static bool CheckDmaSurfaceBufferSize(const ImageInfo &imgInfo, const PixelMemInfo &pixelMemInfo,
     const sptr<SurfaceBuffer> &surfaceBuffer)
 {
+    // YUV and RGBA_F16 DMA buffer sizes are validated later by their format-specific checks.
     if (IsYUV(imgInfo.pixelFormat) || imgInfo.pixelFormat == PixelFormat::RGBA_F16) {
         return true;
     }
