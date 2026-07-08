@@ -2402,7 +2402,7 @@ bool ExifMetadata::ParseHdrCanvasFlag(bool& isHdrCanvas) const
         return false;
     }
  
-    if (valueStr == "abcd1234") {
+    if (valueStr == "HiNoteHDR") {
         isHdrCanvas = true;
         IMAGE_LOGD("Exif_metadata: ParseHdrCanvasFlag detected HDR Canvas, value=%{public}s", valueStr.c_str());
         return true;
