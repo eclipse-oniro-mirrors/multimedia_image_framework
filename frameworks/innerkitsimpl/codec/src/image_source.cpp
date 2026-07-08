@@ -1080,6 +1080,22 @@ bool ImageSource::CheckDecodeOptions(const DecodeOptions &opts)
     return CheckAllocatorTypeValid(opts) && CheckCropRectValid(opts);
 }
 
+void ImageSource::UpdateHdrCanvasFlagFromExif()
+{
+    ImageFuncTimer imageFuncTimer("ImageSource::%s", __func__);
+    isHdrCanvas_ = false;
+    std::unique_loc<std::recursive_mutex> guard(decodingMutex_);
+    if(CreatExifMetadataByImageSource() == SUCCESS) {
+        if(exifMetadata_ != nullptr) {
+            bool isHdrCanvas = false;
+            if(exifMetadata_->ParseHdrCanvasFlag(isHdrCanvas)) {
+                isHdrCanvas_ = isHdrCanvas;
+            }
+            IMAGE_LOGD("ImageSource: UpdateHdrCanvasFlagFromExif isHdrCanvas_=%{public}d", isHdrCanvas_);
+        }
+    }
+}
+
 void ImageSource::SetAnimationSize(uint32_t index, const DecodeOptions &opts, ImageInfo &info)
 {
     if (mainDecoder_ && info.encodedFormat == IMAGE_HEIFS_FORMAT && (opts.isAnimationDecode || index > 0)) {
@@ -1110,6 +1126,7 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index, const D
         OHOS::QOS::SetThreadQos(OHOS::QOS::QosLevel::QOS_USER_INTERACTIVE);
     }
 #endif
+    UpdateHdrCanvasFlagFromExif();
     SetDecodeInfoOptions(index, opts, info, imageEvent);
     std::string pluginType = mainDecoder_->GetPluginType();
     imageEvent.SetPluginType(pluginType);
@@ -5382,6 +5399,10 @@ bool ImageSource::ComposeHdrImage(ImageHdrType hdrType, DecodeContext& baseCtx, 
     };
     std::unique_ptr<VpeUtils> utils = std::make_unique<VpeUtils>();
     int32_t res = utils->ColorSpaceConverterComposeImage(buffers, hdrType == ImageHdrType::HDR_CUVA);
+    string format = GetExtendedCodecMimeType(mainDecoder_.get());
+    if (format == IMAGE_JPEG_FORMAT && isHdrCanvas_) {
+        VpeUtils::SetSbMetadataType(hdrSptr, HDI::Display::Graphic::Common::v2_2:CM_IMAGE_HDR_CANVAS);
+    }
     if (res != VPE_ERROR_OK) {
         IMAGE_LOGE("[ImageSource] composeImage failed, res: %{public}d", res);
         FreeContextBuffer(hdrCtx.freeFunc, hdrCtx.allocatorType, hdrCtx.pixelsBuffer);
