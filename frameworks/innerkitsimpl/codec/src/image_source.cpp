@@ -1085,10 +1085,10 @@ void ImageSource::UpdateHdrCanvasFlagFromExif()
     ImageFuncTimer imageFuncTimer("ImageSource::%s", __func__);
     isHdrCanvas_ = false;
     std::unique_lock<std::recursive_mutex> guard(decodingMutex_);
-    if(CreatExifMetadataByImageSource() == SUCCESS) {
-        if(exifMetadata_ != nullptr) {
+    if (CreatExifMetadataByImageSource() == SUCCESS) {
+        if (exifMetadata_ != nullptr) {
             bool isHdrCanvas = false;
-            if(exifMetadata_->ParseHdrCanvasFlag(isHdrCanvas)) {
+            if (exifMetadata_->ParseHdrCanvasFlag(isHdrCanvas)) {
                 isHdrCanvas_ = isHdrCanvas;
             }
             IMAGE_LOGD("ImageSource: UpdateHdrCanvasFlagFromExif isHdrCanvas_=%{public}d", isHdrCanvas_);
