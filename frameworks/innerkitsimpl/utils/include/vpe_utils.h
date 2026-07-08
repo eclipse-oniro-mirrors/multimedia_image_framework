@@ -13,7 +13,6 @@
  * limitations under the License.
  */
 
-
 #ifndef FRAMEWORKS_INNERKITSIMPL_UTILS_INCLUDE_VPE_UTILS_H
 #define FRAMEWORKS_INNERKITSIMPL_UTILS_INCLUDE_VPE_UTILS_H
 
@@ -25,6 +24,8 @@
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 #include "v1_0/cm_color_space.h"
 #include "v1_0/hdr_static_metadata.h"
+#include "v2_2/cm_color_space.h"
+#include "v2_2/buffer_handle_meta_key_type.h"
 #include "surface_buffer.h"
 #endif
 
@@ -103,6 +104,8 @@ public:
         HDI::Display::Graphic::Common::V1_0::CM_ColorSpaceInfo& colorSpaceInfo);
     static bool SetSbColorSpaceType(sptr<SurfaceBuffer>& buffer,
         const HDI::Display::Graphic::Common::V1_0::CM_ColorSpaceType& colorSpaceType);
+    static bool SetSbMetadataType(sptr<SurfaceBuffer>& buffer,
+        const HDI::Display::Graphic::Common::V2_2::CM_HDR_Metadata_Type& metadataType);
     static bool GetSbColorSpaceType(const sptr<SurfaceBuffer>& buffer,
         HDI::Display::Graphic::Common::V1_0::CM_ColorSpaceType& colorSpaceType);
     static bool SetSbMetadataType(sptr<SurfaceBuffer>& buffer,
