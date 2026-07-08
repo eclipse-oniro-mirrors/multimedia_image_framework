@@ -4207,6 +4207,26 @@ HWTEST_F(PixelMapTest, FreePixelMapShareMemLockTest001, TestSize.Level3)
     EXPECT_EQ(g_freePixelMapHookCount.load(), 1);
     GTEST_LOG_(INFO) << "PixelMapTest: FreePixelMapShareMemLockTest001 end";
 }
+
+/**
+ * @tc.name: FreePixelMapHookTest001
+ * @tc.desc: Test FreePixelMap invokes lifecycle hook before non-shared empty-resource return
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, FreePixelMapHookTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelMapTest: FreePixelMapHookTest001 start";
+    PixelMap pixelMap;
+    pixelMap.allocatorType_ = AllocatorType::HEAP_ALLOC;
+    pixelMap.data_ = nullptr;
+    pixelMap.context_ = nullptr;
+    g_freePixelMapHookCount.store(0);
+    pixelMap.SetFreePixelMapProc(CountFreePixelMapHook);
+
+    pixelMap.FreePixelMap();
+    EXPECT_EQ(g_freePixelMapHookCount.load(), 1);
+    GTEST_LOG_(INFO) << "PixelMapTest: FreePixelMapHookTest001 end";
+}
  
 /**
  * @tc.name: GetImagePropertyIntPixelMapTest

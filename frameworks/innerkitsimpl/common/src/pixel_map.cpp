@@ -170,11 +170,10 @@ void PixelMap::FreePixelMap() __attribute__((no_sanitize("cfi")))
         return;
     }
 
+    notifyFreePixelMap();
     if (data_ == nullptr && context_ == nullptr) {
         return;
     }
-
-    notifyFreePixelMap();
 
     switch (allocatorType_) {
         case AllocatorType::HEAP_ALLOC: {
