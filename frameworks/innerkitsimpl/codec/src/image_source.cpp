@@ -85,6 +85,8 @@
 #include "v1_0/cm_color_space.h"
 #include "v1_0/hdr_static_metadata.h"
 #include "display/graphic/common/v2_1/cm_color_space.h"
+#include "v2_2/cm_color_space.h"
+#include "v2_2/buffer_handle_meta_key_type.h"
 #include "vpe_utils.h"
 #endif
 #ifdef USE_M133_SKIA
@@ -1073,6 +1075,21 @@ bool ImageSource::CheckDecodeOptions(const DecodeOptions &opts)
     return CheckAllocatorTypeValid(opts) && CheckCropRectValid(opts);
 }
 
+void ImageSource::UpdateHdrCanvasFlagFromExif()
+{
+    isHdrCanvas_ = false;
+    std::unique_lock<std::recursive_mutex> guard(decodingMutex_);
+    if (CreatExifMetadataByImageSource() == SUCCESS) {
+        if (exifMetadata_ != nullptr) {
+            bool isHdrCanvas = false;
+            if (exifMetadata_->ParseHdrCanvasFlag(isHdrCanvas)) {
+                isHdrCanvas_ = isHdrCanvas;
+            }
+            IMAGE_LOGD("ImageSource: UpdateHdrCanvasFlagFromExif isHdrCanvas_=%{public}d", isHdrCanvas_);
+        }
+    }
+}
+
 void ImageSource::SetAnimationSize(uint32_t index, const DecodeOptions &opts, ImageInfo &info)
 {
     if (info.encodedFormat == IMAGE_HEIFS_FORMAT) {
@@ -1106,6 +1123,7 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index, const D
         OHOS::QOS::SetThreadQos(OHOS::QOS::QosLevel::QOS_USER_INTERACTIVE);
     }
 #endif
+    UpdateHdrCanvasFlagFromExif();
     SetDecodeInfoOptions(index, opts, info, imageEvent);
     std::string pluginType = mainDecoder_->GetPluginType();
     imageEvent.SetPluginType(pluginType);
@@ -5315,6 +5333,10 @@ bool ImageSource::ComposeHdrImage(ImageHdrType hdrType, DecodeContext& baseCtx, 
     };
     std::unique_ptr<VpeUtils> utils = std::make_unique<VpeUtils>();
     int32_t res = utils->ColorSpaceConverterComposeImage(buffers, hdrType == ImageHdrType::HDR_CUVA);
+    string format = GetExtendedCodecMimeType(mainDecoder_.get());
+    if (format == IMAGE_JPEG_FORMAT && isHdrCanvas_) {
+        VpeUtils::SetSbMetadataType(hdrSptr, HDI::Display::Graphic::Common::V2_2::CM_IMAGE_HDR_CANVAS);
+    }
     if (res != VPE_ERROR_OK) {
         IMAGE_LOGE("[ImageSource] composeImage failed, res: %{public}d", res);
         FreeContextBuffer(hdrCtx.freeFunc, hdrCtx.allocatorType, hdrCtx.pixelsBuffer);
