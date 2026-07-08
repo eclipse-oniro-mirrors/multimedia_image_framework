@@ -1215,5 +1215,71 @@ HWTEST_F(ImageSourceHdrTest, ParsingBigEndianFlagTest001, TestSize.Level3)
     bool res = jpegMpfParser->Parsing(buf, size);
     EXPECT_TRUE(res);
 }
+ 
+/**
+ * @tc.name: UpdateHdrCanvasFlagFromExif001
+ * @tc.desc: Test UpdateHdrCanvasFlagFromExif with SDR image (no HiNoteHDR in UserComment).
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceHdrTest, UpdateHdrCanvasFlagFromExif001, TestSize.Level3)
+{
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_SDR_PATH, opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+ 
+    imageSource->UpdateHdrCanvasFlagFromExif();
+    ASSERT_FALSE(imageSource->isHdrCanvas_);
+}
+ 
+/**
+ * @tc.name: UpdateHdrCanvasFlagFromExif002
+ * @tc.desc: Test UpdateHdrCanvasFlagFromExif with HDR image, verify isHdrCanvas_ is set correctly.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceHdrTest, UpdateHdrCanvasFlagFromExif002, TestSize.Level3)
+{
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_HDR_PATH, opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+ 
+    imageSource->UpdateHdrCanvasFlagFromExif();
+    bool expectedFlag = false;
+    auto metadataPtr = imageSource->exifMetadata_;
+    if (metadataPtr != nullptr) {
+        bool isHdrCanvas = false;
+        if (metadataPtr->ParseHdrCanvasFlag(isHdrCanvas)) {
+            expectedFlag = isHdrCanvas;
+        }
+    }
+    ASSERT_EQ(imageSource->isHdrCanvas_, expectedFlag);
+}
+ 
+/**
+ * @tc.name: UpdateHdrCanvasFlagFromExif003
+ * @tc.desc: Test UpdateHdrCanvasFlagFromExif called multiple times, verify idempotency.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceHdrTest, UpdateHdrCanvasFlagFromExif003, TestSize.Level3)
+{
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_SDR_PATH, opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+ 
+    imageSource->UpdateHdrCanvasFlagFromExif();
+    bool firstResult = imageSource->isHdrCanvas_;
+    imageSource->UpdateHdrCanvasFlagFromExif();
+    bool secondResult = imageSource->isHdrCanvas_;
+    ASSERT_EQ(firstResult, secondResult);
+    ASSERT_FALSE(secondResult);
+}
 }
 }
