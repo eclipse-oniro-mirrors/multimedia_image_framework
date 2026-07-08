@@ -3443,19 +3443,12 @@ static bool CheckYuvPixelMapBufferSize(const ImageInfo& imgInfo, PixelMemInfo& p
     int32_t memBufSizeInt = pixelMemInfo.bufferSize;
     YUVDataInfo yDataInfo;
     pixelMap->GetImageYUVInfo(yDataInfo);
-    uint64_t yPlaneEnd = static_cast<uint64_t>(yDataInfo.yStride) * yDataInfo.yHeight;
-    uint64_t uvPlaneEnd = static_cast<uint64_t>(yDataInfo.uvOffset) +
-                           static_cast<uint64_t>(yDataInfo.uvStride) * yDataInfo.uvHeight;
-    uint64_t dataExtent = (yPlaneEnd > uvPlaneEnd) ? yPlaneEnd : uvPlaneEnd;
-    uint32_t calcSize = 0;
+    uint32_t YuvPlaneSize = yDataInfo.yStride * yDataInfo.yHeight + yDataInfo.uvStride * yDataInfo.uvHeight;
+    uint32_t calcSize = YuvPlaneSize;
     if (IsYuvP010(imgInfo.pixelFormat)) {
-        cond = dataExtent > UINT32_MAX / NUM_2;
+        cond = YuvPlaneSize > UINT32_MAX / NUM_2;
         CHECK_ERROR_RETURN_RET_LOG(cond, false, "Invalid YUV P010 buffer size: overflow (exceeds UINT32_MAX)");
-        calcSize = static_cast<uint32_t>(dataExtent) * NUM_2;
-    } else {
-        cond = dataExtent > UINT32_MAX;
-        CHECK_ERROR_RETURN_RET_LOG(cond, false, "Invalid YUV buffer size: overflow (exceeds UINT32_MAX)");
-        calcSize = static_cast<uint32_t>(dataExtent);
+        calcSize = YuvPlaneSize * NUM_2; // YuvP010 format: 10-bit per pixel (2 bytes actual, need double)
     }
     if (pixelMemInfo.allocatorType == AllocatorType::DMA_ALLOC && pixelMemInfo.context != nullptr) {
         SurfaceBuffer* sb = static_cast<SurfaceBuffer*>(pixelMemInfo.context);
