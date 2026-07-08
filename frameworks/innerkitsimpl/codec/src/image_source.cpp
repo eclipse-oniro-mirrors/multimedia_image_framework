@@ -5401,7 +5401,7 @@ bool ImageSource::ComposeHdrImage(ImageHdrType hdrType, DecodeContext& baseCtx, 
     int32_t res = utils->ColorSpaceConverterComposeImage(buffers, hdrType == ImageHdrType::HDR_CUVA);
     string format = GetExtendedCodecMimeType(mainDecoder_.get());
     if (format == IMAGE_JPEG_FORMAT && isHdrCanvas_) {
-        VpeUtils::SetSbMetadataType(hdrSptr, HDI::Display::Graphic::Common::v2_2::CM_IMAGE_HDR_CANVAS);
+        VpeUtils::SetSbMetadataType(hdrSptr, HDI::Display::Graphic::Common::V2_2::CM_IMAGE_HDR_CANVAS);
     }
     if (res != VPE_ERROR_OK) {
         IMAGE_LOGE("[ImageSource] composeImage failed, res: %{public}d", res);
