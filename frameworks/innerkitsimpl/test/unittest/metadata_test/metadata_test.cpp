@@ -13,7 +13,6 @@
  * limitations under the License.
  */
 
-
 #include <gtest/gtest.h>
 #include <memory>
 #include "libexif/exif-tag.h"
@@ -121,6 +120,92 @@ HWTEST_F(MetadataTest, CloneMetadataTest003, TestSize.Level2)
     ExifMetadata metadata(exifData);
     std::shared_ptr<ImageMetadata> newmetadata = metadata.CloneMetadata();
     ASSERT_EQ(newmetadata, nullptr);
+}
+
+/**
+* @tc.name: ParseHdrCanvasFlagTest001
+* @tc.desc: Test ParseHdrCanvasFlag when UserComment is "HiNoteHDR".
+* @tc.type: FUNC
+*/
+HWTEST_F(MetadataTest, ParseHdrCanvasFlagTest001, TestSize.Level1)
+{
+    std::shared_ptr<ExifMetadata> metadata = std::make_shared<ExifMetadata>();
+    ASSERT_NE(metadata, nullptr);
+    ASSERT_TRUE(metadata->CreateExifdata());
+    ASSERT_TRUE(metadata->SetValue("UserComment", "HiNoteHDR"));
+ 
+    bool isHdrCanvas = false;
+    bool ret = metadata->ParseHdrCanvasFlag(isHdrCanvas);
+    ASSERT_TRUE(ret);
+    ASSERT_TRUE(isHdrCanvas);
+}
+ 
+/**
+* @tc.name: ParseHdrCanvasFlagTest002
+* @tc.desc: Test ParseHdrCanvasFlag when UserComment is a non-HDR value.
+* @tc.type: FUNC
+*/
+HWTEST_F(MetadataTest, ParseHdrCanvasFlagTest002, TestSize.Level1)
+{
+    std::shared_ptr<ExifMetadata> metadata = std::make_shared<ExifMetadata>();
+    ASSERT_NE(metadata, nullptr);
+    ASSERT_TRUE(metadata->CreateExifdata());
+    ASSERT_TRUE(metadata->SetValue("UserComment", "NormalPhoto"));
+ 
+    bool isHdrCanvas = true;
+    bool ret = metadata->ParseHdrCanvasFlag(isHdrCanvas);
+    ASSERT_TRUE(ret);
+    ASSERT_FALSE(isHdrCanvas);
+}
+ 
+/**
+* @tc.name: ParseHdrCanvasFlagTest003
+* @tc.desc: Test ParseHdrCanvasFlag when UserComment is empty.
+* @tc.type: FUNC
+*/
+HWTEST_F(MetadataTest, ParseHdrCanvasFlagTest003, TestSize.Level2)
+{
+    std::shared_ptr<ExifMetadata> metadata = std::make_shared<ExifMetadata>();
+    ASSERT_NE(metadata, nullptr);
+    ASSERT_TRUE(metadata->CreateExifdata());
+ 
+    bool isHdrCanvas = true;
+    bool ret = metadata->ParseHdrCanvasFlag(isHdrCanvas);
+    ASSERT_FALSE(ret);
+    ASSERT_FALSE(isHdrCanvas);
+}
+ 
+/**
+* @tc.name: ParseHdrCanvasFlagTest004
+* @tc.desc: Test ParseHdrCanvasFlag when UserComment is "default_exif_value".
+* @tc.type: FUNC
+*/
+HWTEST_F(MetadataTest, ParseHdrCanvasFlagTest004, TestSize.Level2)
+{
+    std::shared_ptr<ExifMetadata> metadata = std::make_shared<ExifMetadata>();
+    ASSERT_NE(metadata, nullptr);
+    ASSERT_TRUE(metadata->CreateExifdata());
+    ASSERT_TRUE(metadata->SetValue("UserComment", "default_exif_value"));
+ 
+    bool isHdrCanvas = true;
+    bool ret = metadata->ParseHdrCanvasFlag(isHdrCanvas);
+    ASSERT_FALSE(ret);
+    ASSERT_FALSE(isHdrCanvas);
+}
+ 
+/**
+* @tc.name: ParseHdrCanvasFlagTest005
+* @tc.desc: Test ParseHdrCanvasFlag with null exifData.
+* @tc.type: FUNC
+*/
+HWTEST_F(MetadataTest, ParseHdrCanvasFlagTest005, TestSize.Level2)
+{
+    ExifMetadata metadata(nullptr);
+ 
+    bool isHdrCanvas = true;
+    bool ret = metadata.ParseHdrCanvasFlag(isHdrCanvas);
+    ASSERT_FALSE(ret);
+    ASSERT_FALSE(isHdrCanvas);
 }
 } // namespace OHOS
 } // namespace Multimedia
