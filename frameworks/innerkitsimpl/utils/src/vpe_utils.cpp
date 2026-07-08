@@ -449,6 +449,27 @@ bool VpeUtils::SetSbMetadataType(sptr<SurfaceBuffer>& buffer, const CM_HDR_Metad
     return true;
 }
 
+bool VpeUtils::SetSbMetadataType(
+    sptr<SurfaceBuffer> &buffer, const HDI::Display::Graphic::Common::V2_2::CM_HDR_Metadata_Type &metadataType)
+{
+    uint32_t outputMetadataType = static_cast<uint32_t>(metadataType);
+    IMAGE_LOGI("SetSbMetadataType outputMetadataType = %{public}d", outputMetadataType);
+    if (buffer == nullptr) {
+        IMAGE_LOGE("%{public}s failed, buffer is nullptr", __func__);
+        return false;
+    }
+    std::vector<uint8_t> hdrMetadataTypeVec;
+    auto ret = MetadataManager::ConvertMetadataToVec(metadataType, hdrMetadataTypeVec);
+    if (ret != GSERROR_OK) {
+        return false;
+    }
+    ret = buffer->SetMetadata(ATTRKEY_HDR_METADATA_TYPE, hdrMetadataTypeVec);
+    if (ret != GSERROR_OK) {
+        return false;
+    }
+    return true;
+}
+
 bool VpeUtils::GetSbMetadataType(const sptr<SurfaceBuffer>& buffer, CM_HDR_Metadata_Type& metadataType)
 {
     std::vector<uint8_t> hdrMetadataTypeVec;
