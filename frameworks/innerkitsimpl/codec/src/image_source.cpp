@@ -13,7 +13,6 @@
  * limitations under the License.
  */
 
-
 #include "image_source.h"
 #ifdef EXT_PIXEL
 #include "pixel_yuv_ext.h"
@@ -86,6 +85,8 @@
 #include "v1_0/cm_color_space.h"
 #include "v1_0/hdr_static_metadata.h"
 #include "display/graphic/common/v2_1/cm_color_space.h"
+#include "v2_2/cm_color_space.h"
+#include "v2_2/buffer_handle_meta_key_type.h"
 #include "vpe_utils.h"
 #endif
 #ifdef USE_M133_SKIA
