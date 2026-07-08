@@ -13,11 +13,19 @@
  * limitations under the License.
  */
 
+#include <chrono>
+#include <future>
+#include <mutex>
+
 #include <gtest/gtest.h>
 #include <vector>
 
+#define protected public
+#define private public
 #include "pixel_map.h"
 #include "pixel_map_parcel.h"
+#undef protected
+#undef private
 #include "image_type.h"
 #include "image_utils.h"
 #include "media_errors.h"
@@ -248,6 +256,36 @@ HWTEST_F(PixelMapParcelTest, MarshallingUnmarshallingRecodeParcelTest004, TestSi
     ASSERT_NE(pixelMapRecord, nullptr);
     EXPECT_EQ(pixelMapRecord->GetPixelFormat(), PixelFormat::NV12);
     delete pixelMapRecord;
+}
+
+/**
+ * @tc.name: MarshallingUnmarshallingRecodeParcelTest005
+ * @tc.desc: Test record marshalling waits for unmapMutex_ when serializing SHARE_MEM_ALLOC context
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapParcelTest, MarshallingUnmarshallingRecodeParcelTest005, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelMapParcelTest: MarshallingUnmarshallingRecodeParcelTest005 start";
+    constexpr int32_t size = 64;
+    auto pixelMap = CreatePixelmapUsingOpt(size, PixelFormat::RGBA_8888, false);
+    ASSERT_NE(pixelMap, nullptr);
+    ASSERT_EQ(pixelMap->GetAllocatorType(), AllocatorType::SHARE_MEM_ALLOC);
+
+    std::unique_lock<std::mutex> lock(*pixelMap->unmapMutex_);
+    std::promise<void> marshallingStarted;
+    auto startedFuture = marshallingStarted.get_future();
+    Parcel parcel;
+    auto marshallingTask = std::async(std::launch::async, [&pixelMap, &parcel, &marshallingStarted]() {
+        marshallingStarted.set_value();
+        return PixelMapRecordParcelTestHelper::MarshallingPixelMapForRecord(parcel, *pixelMap);
+    });
+
+    EXPECT_EQ(startedFuture.wait_for(std::chrono::seconds(1)), std::future_status::ready);
+    EXPECT_EQ(marshallingTask.wait_for(std::chrono::milliseconds(100)), std::future_status::timeout);
+
+    lock.unlock();
+    EXPECT_TRUE(marshallingTask.get());
+    GTEST_LOG_(INFO) << "PixelMapParcelTest: MarshallingUnmarshallingRecodeParcelTest005 end";
 }
 }
 }

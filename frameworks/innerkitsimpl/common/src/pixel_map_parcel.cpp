@@ -367,6 +367,12 @@ bool PixelMapRecordParcel::WriteMemInfoToParcel(Parcel &parcel, const int32_t &b
 thread_local TransformData gTransformData = {1, 1, 0, 0, 0, 0, 0, 0, 0, false, false};
 bool PixelMapRecordParcel::MarshallingPixelMapForRecord(Parcel& parcel, PixelMap& pixelmap)
 {
+    // Keep the same lock order as PixelMap::Marshalling: pixelDataMutex_ before unmapMutex_.
+    // Record marshalling snapshots PixelMap internals and later dereferences context_, so the locks must
+    // cover both the snapshot and WriteMemInfoToParcel().
+    std::shared_lock<std::shared_mutex> pixelDataLock(*pixelmap.pixelDataMutex_);
+    std::lock_guard<std::mutex> unmapLock(*pixelmap.unmapMutex_);
+
     ImageInfo imageInfo;
     pixelmap.GetImageInfo(imageInfo);
     PixelMapRecordParcel instance;
