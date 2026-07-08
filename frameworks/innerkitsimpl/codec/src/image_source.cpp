@@ -1126,7 +1126,9 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index, const D
         OHOS::QOS::SetThreadQos(OHOS::QOS::QosLevel::QOS_USER_INTERACTIVE);
     }
 #endif
+#if !defined(CROSS_PLATFORM)
     UpdateHdrCanvasFlagFromExif();
+#endif
     SetDecodeInfoOptions(index, opts, info, imageEvent);
     std::string pluginType = mainDecoder_->GetPluginType();
     imageEvent.SetPluginType(pluginType);
