@@ -13,7 +13,6 @@
  * limitations under the License.
  */
 
-
 #define private public
 #include <gtest/gtest.h>
 #include <fstream>
