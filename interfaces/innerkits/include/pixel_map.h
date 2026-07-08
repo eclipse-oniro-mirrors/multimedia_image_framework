@@ -977,7 +977,8 @@ protected:
     bool ReadBufferSizeFromParcel(Parcel& parcel, const ImageInfo& imgInfo, PixelMemInfo& memInfo,
         PIXEL_MAP_ERR& error);
     bool WriteMemInfoToParcel(Parcel &parcel, const int32_t &bufferSize) const;
-    static bool ReadMemInfoFromParcel(Parcel &parcel, PixelMemInfo &pixelMemInfo, PIXEL_MAP_ERR &error,
+    static bool ReadMemInfoFromParcel(Parcel &parcel, const ImageInfo &imgInfo, PixelMemInfo &pixelMemInfo,
+        PIXEL_MAP_ERR &error,
         std::function<int(Parcel &parcel, std::function<int(Parcel&)> readFdDefaultFunc)> readSafeFdFunc = nullptr,
         bool isDisplay = false);
     bool WriteTransformDataToParcel(Parcel &parcel) const;
@@ -1030,8 +1031,6 @@ protected:
     void CopySurfaceBufferInfo(void *data);
     std::unique_ptr<AbsMemory> CreateSdrMemory(ImageInfo &imageInfo, PixelFormat format,
                                                AllocatorType dstType, uint32_t &errorCode, bool toSRGB);
-    // used to close fd after mmap in RenderService when memory type is shared-mem or dma.
-    bool CloseFd();
     uint32_t CheckPixelMapForWritePixels();
 
     uint8_t *data_ = nullptr;

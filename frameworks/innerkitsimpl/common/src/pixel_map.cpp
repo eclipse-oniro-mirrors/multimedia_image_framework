@@ -3293,7 +3293,24 @@ bool PixelMap::ReadBufferSizeFromParcel(Parcel& parcel, const ImageInfo& imgInfo
 }
 
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
-bool ReadDmaMemInfoFromParcel(Parcel &parcel, PixelMemInfo &pixelMemInfo,
+static bool CheckDmaSurfaceBufferSize(const ImageInfo &imgInfo, const PixelMemInfo &pixelMemInfo,
+    const sptr<SurfaceBuffer> &surfaceBuffer)
+{
+    if (IsYUV(imgInfo.pixelFormat) || imgInfo.pixelFormat == PixelFormat::RGBA_F16) {
+        return true;
+    }
+
+    uint32_t surfaceBufferSize = surfaceBuffer->GetSize();
+    if (pixelMemInfo.bufferSize <= 0 || surfaceBufferSize == 0 ||
+        static_cast<uint32_t>(pixelMemInfo.bufferSize) > surfaceBufferSize) {
+        IMAGE_LOGE("ReadDmaMemInfoFromParcel invalid DMA buffer size, bufferSize:%{public}d, sbSize:%{public}u",
+            pixelMemInfo.bufferSize, surfaceBufferSize);
+        return false;
+    }
+    return true;
+}
+
+bool ReadDmaMemInfoFromParcel(Parcel &parcel, const ImageInfo &imgInfo, PixelMemInfo &pixelMemInfo,
     std::function<int(Parcel &parcel, std::function<int(Parcel&)> readFdDefaultFunc)> readSafeFdFunc, bool isDisplay)
 {
     sptr<SurfaceBuffer> surfaceBuffer = SurfaceBuffer::Create();
@@ -3313,6 +3330,10 @@ bool ReadDmaMemInfoFromParcel(Parcel &parcel, PixelMemInfo &pixelMemInfo,
         IMAGE_LOGE("SurfaceBuffer reference failed");
         return false;
     }
+    if (!CheckDmaSurfaceBufferSize(imgInfo, pixelMemInfo, surfaceBuffer)) {
+        ImageUtils::SurfaceBuffer_Unreference(nativeBuffer);
+        return false;
+    }
     if (!pixelMemInfo.displayOnly || !isDisplay) {
         pixelMemInfo.base = static_cast<uint8_t*>(surfaceBuffer->GetVirAddr());
         if (pixelMemInfo.base == nullptr) {
@@ -3326,7 +3347,8 @@ bool ReadDmaMemInfoFromParcel(Parcel &parcel, PixelMemInfo &pixelMemInfo,
 }
 #endif
 
-bool PixelMap::ReadMemInfoFromParcel(Parcel &parcel, PixelMemInfo &pixelMemInfo, PIXEL_MAP_ERR &error,
+bool PixelMap::ReadMemInfoFromParcel(Parcel &parcel, const ImageInfo &imgInfo, PixelMemInfo &pixelMemInfo,
+    PIXEL_MAP_ERR &error,
     std::function<int(Parcel &parcel, std::function<int(Parcel&)> readFdDefaultFunc)> readSafeFdFunc, bool isDisplay)
 {
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
@@ -3357,7 +3379,7 @@ bool PixelMap::ReadMemInfoFromParcel(Parcel &parcel, PixelMemInfo &pixelMemInfo,
         *static_cast<int32_t *>(pixelMemInfo.context) = fd;
         pixelMemInfo.base = static_cast<uint8_t *>(ptr);
     } else if (pixelMemInfo.allocatorType == AllocatorType::DMA_ALLOC) {
-        if (!ReadDmaMemInfoFromParcel(parcel, pixelMemInfo, readSafeFdFunc, isDisplay)) {
+        if (!ReadDmaMemInfoFromParcel(parcel, imgInfo, pixelMemInfo, readSafeFdFunc, isDisplay)) {
             PixelMap::ConstructPixelMapError(error, ERR_IMAGE_GET_DATA_ABNORMAL, "ReadFromMessageParcel failed");
             return false;
         }
@@ -3587,7 +3609,7 @@ PixelMap *PixelMap::Unmarshalling(Parcel &parcel, PIXEL_MAP_ERR &error,
         IMAGE_LOGE("StartUnmarshalling: get pixelmap failed");
         return nullptr;
     }
-    if (!ReadMemInfoFromParcel(parcel, pixelMemInfo, error, readSafeFdFunc, isDisplay)) {
+    if (!ReadMemInfoFromParcel(parcel, imgInfo, pixelMemInfo, error, readSafeFdFunc, isDisplay)) {
         IMAGE_LOGE("Unmarshalling: read memInfo failed");
         delete pixelMap;
         return nullptr;
@@ -5277,34 +5299,6 @@ uint32_t PixelMap::ApplyColorSpace(const OHOS::ColorManager::ColorSpace &grColor
     return SUCCESS;
 }
 #endif
-
-bool PixelMap::CloseFd()
-{
-#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) &&!defined(ANDROID_PLATFORM)
-    if (allocatorType_ != AllocatorType::SHARE_MEM_ALLOC && allocatorType_ != AllocatorType::DMA_ALLOC) {
-        IMAGE_LOGI("[Pixelmap] CloseFd allocatorType is not share_mem or dma");
-        return false;
-    }
-    if (allocatorType_ == AllocatorType::SHARE_MEM_ALLOC) {
-        int *fd = static_cast<int*>(context_);
-        if (fd == nullptr) {
-            IMAGE_LOGE("[Pixelmap] CloseFd fd is nullptr.");
-            return false;
-        }
-        if (*fd < 0) {
-            IMAGE_LOGE("[Pixelmap] CloseFd invilid fd is [%{public}d]", *fd);
-            return false;
-        }
-        ::close(*fd);
-        delete fd;
-        context_ = nullptr;
-    }
-    return true;
-#else
-    IMAGE_LOGE("[Pixelmap] CloseFd is not supported on crossplatform");
-    return false;
-#endif
-}
 
 std::unique_ptr<PixelMap> PixelMap::ConvertFromAstc(PixelMap *source, uint32_t &errorCode, PixelFormat destFormat)
 {

@@ -393,11 +393,16 @@ bool PixelMapRecordParcel::MarshallingPixelMapForRecord(Parcel& parcel, PixelMap
     return instance.Marshalling(parcel, pixelmap);
 }
 
-bool PixelMapRecordParcel::IsYUV(const PixelFormat &format)
+static bool IsRecordYUV(const PixelFormat &format)
 {
     return format == PixelFormat::NV12 || format == PixelFormat::NV21 ||
         format == PixelFormat::YCBCR_P010 || format == PixelFormat::YCRCB_P010 ||
         format == PixelFormat::Y8;
+}
+
+bool PixelMapRecordParcel::IsYUV(const PixelFormat &format)
+{
+    return IsRecordYUV(format);
 }
 
 bool PixelMapRecordParcel::WriteTransformDataToParcel(Parcel &parcel) const
@@ -547,7 +552,7 @@ static bool ReadPropertiesFromParcelCheck(const ImageInfo& imgInfo, PixelMemInfo
         IMAGE_LOGE("[PixelMapRecordParcel] unsupported format");
         return false;
     }
-    if (PixelMapRecordParcel::IsYUV(imgInfo.pixelFormat)) {
+    if (IsRecordYUV(imgInfo.pixelFormat)) {
         int32_t expectedSize = PixelMap::GetYUVByteCount(imgInfo);
         if (expectedSize <= 0 || expectedSize > memInfo.bufferSize) {
             IMAGE_LOGE("[PixelMapRecordParcel] YUV Size invalid, memInfoSize:%{public}d, expectedSize:%{public}d",

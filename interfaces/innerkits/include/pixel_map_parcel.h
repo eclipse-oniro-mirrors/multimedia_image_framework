@@ -24,6 +24,10 @@ namespace OHOS::Rosen {
     class RSProfiler;
 };
 
+namespace OHOS::Multimedia {
+    class PixelMapRecordParcelTestHelper;
+};
+
 namespace OHOS {
 namespace Media {
 class PixelMap;
@@ -65,6 +69,10 @@ public:
     };
     using ParcelInfo = struct ParcelInfo;
 
+private:
+    friend class OHOS::Rosen::PixelMapStorage;
+    friend class OHOS::Rosen::RSProfiler;
+    friend class OHOS::Multimedia::PixelMapRecordParcelTestHelper;
     static bool MarshallingPixelMapForRecord(Parcel& parcel, PixelMap& pixelmap);
     static PixelMap *UnmarshallingPixelMapForRecord(Parcel &parcel,
         std::function<int(Parcel &parcel, std::function<int(Parcel&)> readFdDefaultFunc)> readSafeFdFunc = nullptr);
@@ -75,9 +83,6 @@ public:
         return parcelInfo_;
     }
 
-private:
-    friend class OHOS::Rosen::PixelMapStorage;
-    friend class OHOS::Rosen::RSProfiler;
     bool WriteMemInfoToParcel(Parcel &parcel, const int32_t &bufferSize);
     bool WritePropertiesToParcel(Parcel &parcel);
     bool WriteImageInfo(Parcel &parcel);

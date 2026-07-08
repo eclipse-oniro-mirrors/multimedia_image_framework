@@ -4273,7 +4273,7 @@ HWTEST_F(PixelMapTest, IsUnmarshallingTest001, TestSize.Level3)
     pixelMapOut->SetPixelsAddr(nullptr, nullptr, 0, AllocatorType::SHARE_MEM_ALLOC, nullptr);
     EXPECT_EQ(true, pixelMapOut->isUnmarshalling_);
 
-    EXPECT_TRUE(PixelMap::ReadMemInfoFromParcel(parcel, pixelMemInfo, error, nullptr));
+    EXPECT_TRUE(PixelMap::ReadMemInfoFromParcel(parcel, imgInfo, pixelMemInfo, error, nullptr));
     EXPECT_EQ(true, pixelMapOut->isUnmarshalling_);
 
     pixelMapOut->SetPixelsAddr(nullptr, nullptr, 0, AllocatorType::SHARE_MEM_ALLOC, nullptr);
@@ -4315,7 +4315,7 @@ HWTEST_F(PixelMapTest, IsUnmarshallingTest002, TestSize.Level3)
     EXPECT_EQ(Media::SUCCESS, pixelMapOut->SetImageInfo(imgInfo, true));
     EXPECT_EQ(true, pixelMapOut->isUnmarshalling_);
 
-    EXPECT_TRUE(PixelMap::ReadMemInfoFromParcel(parcel, pixelMemInfo, error, nullptr));
+    EXPECT_TRUE(PixelMap::ReadMemInfoFromParcel(parcel, imgInfo, pixelMemInfo, error, nullptr));
     EXPECT_EQ(true, pixelMapOut->isUnmarshalling_);
 
     EXPECT_EQ(Media::SUCCESS, pixelMapOut->SetImageInfo(imgInfo, true));
@@ -4357,7 +4357,7 @@ HWTEST_F(PixelMapTest, IsUnmarshallingTest003, TestSize.Level3)
     EXPECT_EQ(true, pixelMapOut->isUnmarshalling_);
 #endif
 
-    EXPECT_TRUE(PixelMap::ReadMemInfoFromParcel(parcel, pixelMemInfo, error, nullptr));
+    EXPECT_TRUE(PixelMap::ReadMemInfoFromParcel(parcel, imgInfo, pixelMemInfo, error, nullptr));
     EXPECT_EQ(true, pixelMapOut->isUnmarshalling_);
 
 #ifdef IMAGE_COLORSPACE_FLAG
@@ -5063,17 +5063,6 @@ HWTEST_F(PixelMapTest, ColorTableCoefficientstest, TestSize.Level3)
     GTEST_LOG_(INFO) << "PixelMapTest: ColorTableCoefficientstest end";
 }
  
-// For test closeFd func
-class TestPixelMap : public PixelMap {
-public:
-    TestPixelMap() {}
-    virtual ~TestPixelMap() {}
-    bool CloseFd()
-    {
-        return PixelMap::CloseFd();
-    }
-};
-
 /**
  * @tc.name: pixelmapfd001
  * @tc.desc: Marshalling
@@ -5099,13 +5088,6 @@ HWTEST_F(PixelMapTest, pixelmapfd001, TestSize.Level3)
     EXPECT_TRUE(ret);
     PixelMap *pixelMap2 = PixelMap::Unmarshalling(data);
     EXPECT_EQ(pixelMap1->GetHeight(), pixelMap2->GetHeight());
-
-    std::unique_ptr<PixelMap> pixelMapBase =
-        ConstructPixmap(PixelFormat::RGBA_8888, AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN);
-    EXPECT_NE(nullptr, pixelMapBase);
-    TestPixelMap* testPixelMap = (TestPixelMap*)pixelMapBase.release();
-    EXPECT_EQ(true, testPixelMap->CloseFd());
-    delete testPixelMap;
 
     std::unique_ptr<PixelMap> pixelMap3 = PixelMap::Create(opts);
     std::unique_ptr<PixelMap> pixelMap4 = PixelMap::Create(*(pixelMap3.get()), opts);
@@ -5137,30 +5119,6 @@ HWTEST_F(PixelMapTest, GetPixelTest, TestSize.Level3)
     pixelMapRGBA->SetAstc(false);
     EXPECT_NE(nullptr, pixelMapRGBA->GetPixel(1, 1));
     GTEST_LOG_(INFO) << "PixelMapTest: GetPixelTest end";
-}
-
-/**
- * @tc.name: CloseFdPixelMapTest
- * @tc.desc: Test CloseFd PixelMap
- * @tc.type: FUNC
- */
-HWTEST_F(PixelMapTest, CloseFdPixelMapTest, TestSize.Level3)
-{
-    GTEST_LOG_(INFO) << "PixelMapTest: CloseFdPixelMapTest start";
-    std::unique_ptr<PixelMap> pixelMapBase =
-        ConstructPixmap(PixelFormat::RGBA_8888, AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN);
-    EXPECT_NE(nullptr, pixelMapBase);
-    TestPixelMap* testPixelMap = (TestPixelMap*)pixelMapBase.release();
-    EXPECT_EQ(true, testPixelMap->CloseFd());
- 
-    std::unique_ptr<PixelMap> testHeapPixelMap = ConstructPixmap(AllocatorType::HEAP_ALLOC);
-    EXPECT_NE(nullptr, testHeapPixelMap);
-    TestPixelMap* heapPixelMap = (TestPixelMap*)testHeapPixelMap.release();
-    EXPECT_EQ(false, heapPixelMap->CloseFd());
- 
-    delete testPixelMap;
-    delete heapPixelMap;
-    GTEST_LOG_(INFO) << "PixelMapTest: CloseFdPixelMapTest end";
 }
 
 /**

@@ -32,6 +32,19 @@ public:
     ~PixelMapParcelTest() {}
 };
 
+class PixelMapRecordParcelTestHelper {
+public:
+    static bool MarshallingPixelMapForRecord(Parcel& parcel, PixelMap& pixelMap)
+    {
+        return PixelMapRecordParcel::MarshallingPixelMapForRecord(parcel, pixelMap);
+    }
+
+    static PixelMap *UnmarshallingPixelMapForRecord(Parcel& parcel)
+    {
+        return PixelMapRecordParcel::UnmarshallingPixelMapForRecord(parcel);
+    }
+};
+
 std::unique_ptr<PixelMap> CreatePixelMap(int32_t width, int32_t height, PixelFormat format, AlphaType alphaType,
     AllocatorType type)
 {
@@ -79,9 +92,9 @@ HWTEST_F(PixelMapParcelTest, MarshallingUnmarshallingRecodeParcelTest001, TestSi
         AllocatorType::DEFAULT);
     EXPECT_TRUE(pixelMap != nullptr);
     Parcel parcel;
-    auto ret = PixelMapRecordParcel::MarshallingPixelMapForRecord(parcel, *(pixelMap.get()));
+    auto ret = PixelMapRecordParcelTestHelper::MarshallingPixelMapForRecord(parcel, *(pixelMap.get()));
     EXPECT_TRUE(ret);
-    PixelMap* newPixelMap = PixelMapRecordParcel::UnmarshallingPixelMapForRecord(parcel);
+    PixelMap* newPixelMap = PixelMapRecordParcelTestHelper::UnmarshallingPixelMapForRecord(parcel);
     EXPECT_EQ(newPixelMap->GetAllocatorType(), AllocatorType::HEAP_ALLOC);
 
     GTEST_LOG_(INFO) << "PixelMapParcelTest: MarshallingUnmarshallingRecodeParcelTest001 end";
@@ -114,8 +127,8 @@ HWTEST_F(PixelMapParcelTest, MarshallingUnmarshallingRecodeParcelTest002, TestSi
             continue;
         }
         Parcel dataRecord;
-        EXPECT_TRUE(PixelMapRecordParcel::MarshallingPixelMapForRecord(dataRecord, *(pixelmap.get())));
-        PixelMap *pixelMapRecord = PixelMapRecordParcel::UnmarshallingPixelMapForRecord(dataRecord);
+        EXPECT_TRUE(PixelMapRecordParcelTestHelper::MarshallingPixelMapForRecord(dataRecord, *(pixelmap.get())));
+        PixelMap *pixelMapRecord = PixelMapRecordParcelTestHelper::UnmarshallingPixelMapForRecord(dataRecord);
         EXPECT_NE(pixelMapRecord, nullptr);
         delete pixelMapRecord; // Clean up the unmarshalled PixelMap
     }
@@ -125,8 +138,8 @@ HWTEST_F(PixelMapParcelTest, MarshallingUnmarshallingRecodeParcelTest002, TestSi
             continue;
         }
         Parcel dataRecord;
-        EXPECT_TRUE(PixelMapRecordParcel::MarshallingPixelMapForRecord(dataRecord, *(pixelmap.get())));
-        PixelMap *pixelMapRecord = PixelMapRecordParcel::UnmarshallingPixelMapForRecord(dataRecord);
+        EXPECT_TRUE(PixelMapRecordParcelTestHelper::MarshallingPixelMapForRecord(dataRecord, *(pixelmap.get())));
+        PixelMap *pixelMapRecord = PixelMapRecordParcelTestHelper::UnmarshallingPixelMapForRecord(dataRecord);
         EXPECT_NE(pixelMapRecord, nullptr);
         delete pixelMapRecord; // Clean up the unmarshalled PixelMap
     }
@@ -136,8 +149,8 @@ HWTEST_F(PixelMapParcelTest, MarshallingUnmarshallingRecodeParcelTest002, TestSi
             continue;
         }
         Parcel dataRecord;
-        EXPECT_TRUE(PixelMapRecordParcel::MarshallingPixelMapForRecord(dataRecord, *(pixelmap.get())));
-        PixelMap *pixelMapRecord = PixelMapRecordParcel::UnmarshallingPixelMapForRecord(dataRecord);
+        EXPECT_TRUE(PixelMapRecordParcelTestHelper::MarshallingPixelMapForRecord(dataRecord, *(pixelmap.get())));
+        PixelMap *pixelMapRecord = PixelMapRecordParcelTestHelper::UnmarshallingPixelMapForRecord(dataRecord);
         EXPECT_NE(pixelMapRecord, nullptr);
         delete pixelMapRecord; // Clean up the unmarshalled PixelMap
     }
@@ -147,8 +160,8 @@ HWTEST_F(PixelMapParcelTest, MarshallingUnmarshallingRecodeParcelTest002, TestSi
             continue;
         }
         Parcel dataRecord;
-        EXPECT_TRUE(PixelMapRecordParcel::MarshallingPixelMapForRecord(dataRecord, *(pixelmap.get())));
-        PixelMap *pixelMapRecord = PixelMapRecordParcel::UnmarshallingPixelMapForRecord(dataRecord);
+        EXPECT_TRUE(PixelMapRecordParcelTestHelper::MarshallingPixelMapForRecord(dataRecord, *(pixelmap.get())));
+        PixelMap *pixelMapRecord = PixelMapRecordParcelTestHelper::UnmarshallingPixelMapForRecord(dataRecord);
         EXPECT_NE(pixelMapRecord, nullptr);
         delete pixelMapRecord; // Clean up the unmarshalled PixelMap
     }
@@ -168,8 +181,8 @@ static bool RecodeParcelTest(int32_t size, PixelFormat format, bool useDma)
         return true; // Skip if pixelMap creation fails
     }
     Parcel parcel;
-    PixelMapRecordParcel::MarshallingPixelMapForRecord(parcel, *(pixelMap.get()));
-    PixelMap* newPixelMap = PixelMapRecordParcel::UnmarshallingPixelMapForRecord(parcel);
+    PixelMapRecordParcelTestHelper::MarshallingPixelMapForRecord(parcel, *(pixelMap.get()));
+    PixelMap* newPixelMap = PixelMapRecordParcelTestHelper::UnmarshallingPixelMapForRecord(parcel);
     if (newPixelMap == nullptr) {
         return false; // Return false if unmarshalling fails
     }
@@ -231,7 +244,7 @@ HWTEST_F(PixelMapParcelTest, MarshallingUnmarshallingRecodeParcelTest004, TestSi
     std::vector<uint8_t> pixels(bufferSize, 0);
     ASSERT_TRUE(parcel.WriteUnpadBuffer(pixels.data(), pixels.size()));
 
-    PixelMap *pixelMapRecord = PixelMapRecordParcel::UnmarshallingPixelMapForRecord(parcel);
+    PixelMap *pixelMapRecord = PixelMapRecordParcelTestHelper::UnmarshallingPixelMapForRecord(parcel);
     ASSERT_NE(pixelMapRecord, nullptr);
     EXPECT_EQ(pixelMapRecord->GetPixelFormat(), PixelFormat::NV12);
     delete pixelMapRecord;
