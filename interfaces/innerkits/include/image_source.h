@@ -480,6 +480,7 @@ private:
     bool IsAvisImage();
     bool IsEncodedFormat(const std::string& encodedFormat);
     void SetAnimationSize(uint32_t index, const DecodeOptions &opts, ImageInfo &info);
+    void UpdateHdrCanvasFlagFromExif();
 
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     void SpecialSetComposeBuffer(ImagePlugin::DecodeContext &baseCtx, sptr<SurfaceBuffer>& baseSptr,
@@ -494,7 +495,6 @@ private:
     bool CheckJpegSourceStream(StreamInfo &streamInfo);
     uint32_t CreatePictureAtIndexPreCheck(uint32_t index, const ImageInfo &info);
     uint32_t SetGifMetadataForPicture(std::unique_ptr<Picture> &picture, uint32_t index);
-    void UpdateHdrCanvasFlagFromExif();
     uint32_t SetHeifsMetadataForPicture(std::unique_ptr<Picture> &picture, uint32_t index);
     uint32_t SetAvisMetadataForPicture(std::unique_ptr<Picture> &picture, uint32_t index);
     uint32_t SetJfifMetadataForPicture(std::unique_ptr<Picture> &picture);
