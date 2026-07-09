@@ -2454,6 +2454,9 @@ uint32_t PixelMap::WritePixels(const uint8_t *source, const uint64_t &bufferSize
             }
         }
     }
+    if (isUseDefaultDmaNopadding_) {
+        ImageUtils::FlushSurfaceBuffer(this);
+    }
     MarkDirty();
     return SUCCESS;
 }

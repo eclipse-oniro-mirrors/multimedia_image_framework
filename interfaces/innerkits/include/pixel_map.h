@@ -927,6 +927,11 @@ public:
         editable_ = editable;
     }
 
+    NATIVEEXPORT bool IsUseDefaultDmaNopadding()
+    {
+        return isUseDefaultDmaNopadding_;
+    }
+
     static int32_t GetRGBxRowDataSize(const ImageInfo& info);
     static int32_t GetRGBxByteCount(const ImageInfo& info);
     static int32_t GetYUVByteCount(const ImageInfo& info);
