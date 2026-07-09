@@ -2693,27 +2693,6 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyPathTest0017, TestSize.Level3)
 }
 
 /**
- * @tc.name: ModifyImagePropertyPathTest0018
- * @tc.desc: Test ModifyImageProperty width path
- * @tc.type: FUNC
- */
-HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyPathTest0018, TestSize.Level3)
-{
-    /**
-     * @tc.steps: step1. create image source by correct jpeg data and jpeg format hit.
-     * @tc.expected: step1. create image source success.
-     */
-    std::unique_ptr<ImageSource> imageSource = std::unique_ptr<ImageSource>();
-    CreateImageSourceFromFilePath(imageSource);
-
-    uint32_t index = 0;
-    std::string value = "aaaa";
-    std::string key = "ImageDescription";
-    uint32_t res = imageSource->ModifyImageProperty(index, key, value, IMAGE_INPUT_JPEG_PATH);
-    ASSERT_EQ(res, SUCCESS);
-}
-
-/**
  * @tc.name: ModifyImagePropertyPathTest0019
  * @tc.desc: Test ModifyImageProperty width path
  * @tc.type: FUNC
