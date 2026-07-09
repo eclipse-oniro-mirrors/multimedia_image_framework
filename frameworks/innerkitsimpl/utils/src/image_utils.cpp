@@ -853,7 +853,7 @@ bool ImageUtils::CopyYuvPixelMapToSurfaceBuffer(PixelMap* pixelmap,
         if (memcpy_s(dst, dstSize, src, yuvSrcInfo.yWidth) != EOK) {
             return false;
         }
-        CHECK_ERROR_RETURN_RET_LOG(dstSize < yuvDstInfo.yStride, false);
+        CHECK_ERROR_RETURN_RET(dstSize < yuvDstInfo.yStride, false);
         dst += yuvDstInfo.yStride;
         dstSize -= yuvDstInfo.yStride;
         src += yuvSrcInfo.yStride;
@@ -865,7 +865,7 @@ bool ImageUtils::CopyYuvPixelMapToSurfaceBuffer(PixelMap* pixelmap,
         if (memcpy_s(dst, dstSize, src, yuvSrcInfo.uvWidth * NUM_2) != EOK) {
             return false;
         }
-        CHECK_ERROR_RETURN_RET_LOG(dstSize < yuvDstInfo.uvStride, false);
+        CHECK_ERROR_RETURN_RET(dstSize < yuvDstInfo.uvStride, false);
         dst += yuvDstInfo.uvStride;
         dstSize -= yuvDstInfo.uvStride;
         src += yuvSrcInfo.uvStride;
