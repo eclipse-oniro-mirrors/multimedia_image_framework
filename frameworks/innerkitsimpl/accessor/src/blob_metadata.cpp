@@ -179,9 +179,7 @@ bool BlobMetadata::WriteDataToParcel(Parcel &parcel, size_t size) const
     std::string name = "Parcel Blob, uniqueId: " + std::to_string(getpid()) + '_' + std::to_string(id);
     int fd = AshmemCreate(name.c_str(), size);
     IMAGE_LOGI("Blob AshmemCreate:[%{public}d].", fd);
-    if (fd < 0) {
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET(fd < 0, false);
     int result = AshmemSetProt(fd, PROT_READ | PROT_WRITE);
     IMAGE_LOGD("Blob AshmemSetProt:[%{public}d].", result);
     if (result < 0) {
@@ -256,11 +254,9 @@ bool BlobMetadata::ReadDataFromParcel(Parcel &parcel, std::unique_ptr<BlobMetada
         IMAGE_LOGE("Failed to read data from parcel.");
         return false;
     }
-    if (memcpy_s(blobMetadataPtr->data_, blobMetadataPtr->dataSize_,
-        ptr, blobMetadataPtr->dataSize_) != EOK) {
-        IMAGE_LOGE("memcpy_s failed to copy data.");
-        return false;
-    }
+    bool cond = memcpy_s(blobMetadataPtr->data_, blobMetadataPtr->dataSize_,
+        ptr, blobMetadataPtr->dataSize_) != EOK;
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "memcpy_s failed to copy data.");
     return true;
 }
 
@@ -272,14 +268,9 @@ int BlobMetadata::ReadFileDescriptor(Parcel &parcel)
         return -1;
     }
     int fd = descriptor->GetFd();
-    if (fd < 0) {
-        IMAGE_LOGE("ReadFileDescriptor get fd failed, fd:[%{public}d].", fd);
-        return -1;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(fd < 0, -1, "ReadFileDescriptor get fd failed, fd:[%{public}d].", fd);
     int dupFd = dup(fd);
-    if (dupFd < 0) {
-        return dupFd;
-    }
+    CHECK_ERROR_RETURN_RET(dupFd < 0, dupFd);
     fdsan_exchange_owner_tag(dupFd, 0, BLOB_METADATA_FDSAN_TAG);
     return dupFd;
 }
@@ -305,10 +296,8 @@ bool BlobMetadata::Marshalling(Parcel &parcel) const
         IMAGE_LOGE("%{public}s Blob data is nullptr.", __func__);
         return false;
     }
-    if (dataSize_ > MAX_BLOB_METADATA_LENGTH) {
-        IMAGE_LOGE("The length of Blob metadata exceeds the maximum limit.");
-        return false;
-    }
+    bool cond = dataSize_ > MAX_BLOB_METADATA_LENGTH;
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "The length of Blob metadata exceeds the maximum limit.");
     if (!parcel.WriteUint32(static_cast<uint32_t>(type_))) {
         IMAGE_LOGE("Failed to write Blob data type.");
         return false;
@@ -318,10 +307,8 @@ bool BlobMetadata::Marshalling(Parcel &parcel) const
         return false;
     }
     if (dataSize_ < MAX_MARSHAL_BLOB_DATA_SIZE) {
-        if (!parcel.WriteUnpadBuffer(data_, dataSize_)) {
-            IMAGE_LOGE("Failed to write Blob data buffer.");
-            return false;
-        }
+        cond = !parcel.WriteUnpadBuffer(data_, dataSize_);
+        CHECK_ERROR_RETURN_RET_LOG(cond, false, "Failed to write Blob data buffer.");
     } else if (!WriteDataToParcel(parcel, dataSize_)) {
         IMAGE_LOGE("Failed to write Blob data By Ashmem.");
         return false;

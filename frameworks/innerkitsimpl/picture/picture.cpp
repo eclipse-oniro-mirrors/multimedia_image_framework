@@ -247,9 +247,7 @@ std::unique_ptr<Picture> Picture::Create(sptr<SurfaceBuffer> &surfaceBuffer)
 
 std::unique_ptr<PixelMap> Picture::SurfaceBuffer2PixelMap(sptr<OHOS::SurfaceBuffer> &surfaceBuffer)
 {
-    if (surfaceBuffer == nullptr) {
-        return nullptr;
-    }
+    CHECK_ERROR_RETURN_RET(surfaceBuffer == nullptr, nullptr);
     PixelFormat pixelFormat = SbFormat2PixelFormat(surfaceBuffer->GetFormat());
     ColorSpace colorSpace = CMColorSpaceType2ColorSpace(GetCMColorSpaceType(surfaceBuffer));
     AlphaType alphaType = IsAlphaFormat(pixelFormat) ?

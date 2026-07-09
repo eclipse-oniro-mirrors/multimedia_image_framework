@@ -1186,16 +1186,14 @@ static bool FFMpegConvert(const void *srcPixels, const FFMPEG_CONVERT_INFO& srcI
 
 static bool NV12P010ToNV21P010(const uint16_t *srcBuffer, const ImageInfo &info, uint16_t *destBuffer)
 {
-    if (info.size.width <= 0 || info.size.height <= 0) {
-        IMAGE_LOGE("Invalid Pixelmap size: width = %{public}d, height = %{public}d", info.size.width, info.size.height);
-        return false;
-    }
+    bool cond = (info.size.width <= 0 || info.size.height <= 0);
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "Invalid Pixelmap size: width = %{public}d, height = %{public}d",
+        info.size.width, info.size.height);
     uint32_t width = static_cast<uint32_t>(info.size.width);
     uint32_t height = static_cast<uint32_t>(info.size.height);
-    if (width > UINT32_MAX / height) {
-        IMAGE_LOGE("Image size too large: width = %{public}u, height = %{public}u", width, height);
-        return false;
-    }
+    cond = (width > UINT32_MAX / height);
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "Image size too large: width = %{public}u, height = %{public}u",
+        width, height);
     uint32_t ysize = width * height;
     uint32_t sizeUV = ysize / NUM_2;
     const uint16_t *srcUV = srcBuffer + ysize;
@@ -1236,10 +1234,8 @@ static int64_t GetValidBufferSize(const ImageInfo &dstInfo)
         "[PixelMap] AllocPixelMapMemory: get row data size failed");
 
     int64_t bufferSize;
-    if (__builtin_mul_overflow(rowDataSize, dstInfo.size.height, &bufferSize)) {
-        IMAGE_LOGE("[PixelMap]Create: bufferSize overflowed");
-        return -1;
-    }
+    bool cond = __builtin_mul_overflow(rowDataSize, dstInfo.size.height, &bufferSize);
+    CHECK_ERROR_RETURN_RET_LOG(cond, -1, "[PixelMap]Create: bufferSize overflowed");
     CHECK_ERROR_RETURN_RET_LOG(bufferSize > UINT32_MAX, CONVERT_ERROR,
         "[PixelMap]Create: Pixelmap size too large: width = %{public}d, height = %{public}d",
         dstInfo.size.width, dstInfo.size.height);
@@ -1323,24 +1319,15 @@ static bool P010ConvertRGB565(const uint8_t* srcP010, const ImageInfo& srcInfo,
     void* dstPixels, const ImageInfo& dstInfo)
 {
     int64_t bufferSize = GetValidBufferSize(dstInfo);
-    if (bufferSize <= 0) {
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET(bufferSize <= 0, false);
 
     std::unique_ptr<uint8_t[]> tmpBuffer =
         std::make_unique<uint8_t[]>(bufferSize + RGB565_EXTRA_BYTES); // avoid ffmpeg out-bounds-write
-    if (tmpBuffer == nullptr) {
-        IMAGE_LOGE("P010ConvertRGB565: alloc temp buffer failed");
-        return false;
-    }
-    if (!ConvertForFFMPEG(srcP010, srcInfo.pixelFormat, srcInfo, tmpBuffer.get(), dstInfo.pixelFormat)) {
-        IMAGE_LOGE("P010ConvertRGB565: FFMpeg convert failed");
-        return false;
-    }
-    if (memcpy_s(dstPixels, bufferSize, tmpBuffer.get(), bufferSize) != 0) {
-        IMAGE_LOGE("P010ConvertRGB565: memcpy_s dstPixels failed!");
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(tmpBuffer == nullptr, false, "P010ConvertRGB565: alloc temp buffer failed");
+    CHECK_ERROR_RETURN_RET_LOG(!ConvertForFFMPEG(srcP010, srcInfo.pixelFormat, srcInfo, tmpBuffer.get(),
+        dstInfo.pixelFormat), false, "P010ConvertRGB565: FFMpeg convert failed");
+    CHECK_ERROR_RETURN_RET_LOG(memcpy_s(dstPixels, bufferSize, tmpBuffer.get(), bufferSize) != 0, false,
+        "P010ConvertRGB565: memcpy_s dstPixels failed!");
     return true;
 }
 
@@ -1821,17 +1808,13 @@ PixelConvert::PixelConvert(ProcFuncType funcPtr, ProcFuncExtension extension, bo
 // caller need setting the correct pixelFormat and alphaType
 std::unique_ptr<PixelConvert> PixelConvert::Create(const ImageInfo &srcInfo, const ImageInfo &dstInfo)
 {
-    if (srcInfo.pixelFormat == PixelFormat::UNKNOWN || dstInfo.pixelFormat == PixelFormat::UNKNOWN) {
-        IMAGE_LOGE("source or destination pixel format unknown");
-        return nullptr;
-    }
+    bool cond = (srcInfo.pixelFormat == PixelFormat::UNKNOWN || dstInfo.pixelFormat == PixelFormat::UNKNOWN);
+    CHECK_ERROR_RETURN_RET_LOG(cond, nullptr, "source or destination pixel format unknown");
     uint32_t srcFormat = static_cast<uint32_t>(srcInfo.pixelFormat);
     uint32_t dstFormat = static_cast<uint32_t>(dstInfo.pixelFormat);
     ProcFuncType funcPtr = GetProcFuncType(srcFormat, dstFormat);
-    if (funcPtr == nullptr) {
-        IMAGE_LOGE("not found convert function. pixelFormat %{public}u -> %{public}u", srcFormat, dstFormat);
-        return nullptr;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(funcPtr == nullptr, nullptr,
+        "not found convert function. pixelFormat %{public}u -> %{public}u", srcFormat, dstFormat);
     ProcFuncExtension extension;
     extension.alphaConvertType = GetAlphaConvertType(srcInfo.alphaType, dstInfo.alphaType);
     bool isNeedConvert = true;
@@ -1878,14 +1861,9 @@ bool PixelConvert::IsValidBufferInfo(const BufferInfo &bufferInfo)
 
 void PixelConvert::Convert(void *destinationPixels, const uint8_t *sourcePixels, uint32_t sourcePixelsNum)
 {
-    if ((destinationPixels == nullptr) || (sourcePixels == nullptr)) {
-        IMAGE_LOGE("destinationPixel or sourcePixel is null");
-        return;
-    }
-    if (!isNeedConvert_) {
-        IMAGE_LOGD("no need convert");
-        return;
-    }
+    bool cond = (destinationPixels == nullptr) || (sourcePixels == nullptr);
+    CHECK_ERROR_RETURN_LOG(cond, "destinationPixel or sourcePixel is null");
+    CHECK_ERROR_RETURN_LOG(!isNeedConvert_, "no need convert");
     procFunc_(destinationPixels, sourcePixels, sourcePixelsNum, procFuncExtension_);
 }
 
@@ -1990,10 +1968,8 @@ static bool CheckInputValid(AstcInfo &astcInfo, PixelFormat destFormat)
 {
     bool isInvalidInput = (astcInfo.astcBufSize < ASTC_UNIT_BYTES || astcInfo.astcBuf == nullptr ||
         astcInfo.format != PixelFormat::ASTC_4x4 || destFormat != PixelFormat::RGBA_8888);
-    if (isInvalidInput) {
-        IMAGE_LOGE("DecAstc input astcBuf is null or src is not astc_4x4 or dst is not rgba_8888");
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(isInvalidInput, false,
+        "DecAstc input astcBuf is null or src is not astc_4x4 or dst is not rgba_8888");
     unsigned int dimX = UnpackBytes(astcInfo.astcBuf[BYTE_POS_7], astcInfo.astcBuf[BYTE_POS_8],
         astcInfo.astcBuf[BYTE_POS_9], 0);
     unsigned int dimY = UnpackBytes(astcInfo.astcBuf[BYTE_POS_10], astcInfo.astcBuf[BYTE_POS_11],

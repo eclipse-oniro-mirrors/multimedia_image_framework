@@ -104,6 +104,7 @@ HWTEST_F(ImageDataStatisticsTest, DataStatistics006, TestSize.Level3)
     
     EXPECT_NO_FATAL_FAILURE({
         ImageDataStatistics imageDataStatistics(nullptr);
+        ASSERT_EQ(imageDataStatistics.title_, "ImageDataTraceFmt Param invalid");
     });
     
     GTEST_LOG_(INFO) << "ImageDataStatisticsTest: DataStatistics006 end";
@@ -168,6 +169,7 @@ HWTEST_F(ImageDataStatisticsTest, AddTitleStringTest001, TestSize.Level3)
     EXPECT_NO_FATAL_FAILURE({
         ImageDataStatistics stats("initial title");
         stats.AddTitle(" additional text");
+        ASSERT_EQ(stats.title_, "initial title additional text");
     }) << "Basic AddTitle should not crash";
     
     GTEST_LOG_(INFO) << "ImageDataStatisticsTest: AddTitleStringTest001 end";

@@ -1086,6 +1086,7 @@ protected:
     bool toSdrColorIsSRGB_ = false;
     uint32_t versionId_ = 1;
     std::shared_ptr<std::shared_mutex> versionMutex_ = std::make_shared<std::shared_mutex>();
+    std::shared_ptr<std::shared_mutex> pixelDataMutex_ = std::make_shared<std::shared_mutex>();
 private:
     uint32_t ScaleWithSLR(float xAxis, float yAxis);
 

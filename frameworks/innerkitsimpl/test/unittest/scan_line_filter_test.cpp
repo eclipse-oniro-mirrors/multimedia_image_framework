@@ -82,7 +82,7 @@ HWTEST_F(ScanLineFilterTest, ScanLineFilterTest003, TestSize.Level3)
     ScanlineFilter scanlineFilter;
     PixelFormat srcPixelFormat = PixelFormat::UNKNOWN;
     scanlineFilter.SetSrcPixelFormat(srcPixelFormat);
-    ASSERT_NE(&scanlineFilter, nullptr);
+    ASSERT_EQ(scanlineFilter.srcBpp_, 0);
     GTEST_LOG_(INFO) << "ScanLineFilterTest: ScanLineFilterTest003 end";
 }
 

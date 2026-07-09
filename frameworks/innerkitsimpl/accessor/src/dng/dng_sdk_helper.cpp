@@ -181,9 +181,7 @@ static uint32_t SetPropertyByOptions(const std::unique_ptr<DngSdkInfo>& info, co
 {
     CHECK_ERROR_RETURN_RET(info == nullptr, ERR_IMAGE_GET_DATA_ABNORMAL);
     for (auto const& option : options) {
-        if (info->SetProperty(value, option) == SUCCESS) {
-            return SUCCESS;
-        }
+        CHECK_ERROR_RETURN_RET(info->SetProperty(value, option) == SUCCESS, SUCCESS);
     }
     return ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
 }

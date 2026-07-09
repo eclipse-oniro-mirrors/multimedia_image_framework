@@ -970,6 +970,8 @@ bool HeifDecoderImpl::SwDecodeGrids(std::shared_ptr<HeifImage> &image, HevcSoftD
     cond = tileImages.empty();
     CHECK_ERROR_RETURN_RET_LOG(cond, false, "grid image has no tile image");
     size_t numGrid = tileImages.size();
+    cond = numGrid != (param.gridInfo.cols * param.gridInfo.rows);
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "grid count not equal actual decode quantity");
     size_t inputsize = 0;
     std::vector<std::vector<uint8_t>> inputs;
     if (IsRegionDecode()) {
@@ -1047,13 +1049,30 @@ bool HeifDecoderImpl::SwDecodeAuxiliaryImage(std::shared_ptr<HeifImage> &gainmap
     }
     sptr<SurfaceBuffer> output;
     if (gainmapSrcFmt == PixelFormat::YUV_400) {
-        if (isGainmapDecode_ && gainMapDstHwbuffer_ != nullptr) {
-            output = sptr<SurfaceBuffer>(gainMapDstHwbuffer_);
-        } else if (isAuxiliaryDecode_ && auxiliaryDstHwbuffer_ != nullptr) {
-            output = sptr<SurfaceBuffer>(auxiliaryDstHwbuffer_);
+        if (ImageUtils::IsYuvFormat(outPixelFormat_)) {
+            if (isGainmapDecode_) {
+                output = sptr<SurfaceBuffer>(gainMapDstHwbuffer_);
+            } else if (isAuxiliaryDecode_) {
+                output = sptr<SurfaceBuffer>(auxiliaryDstHwbuffer_);
+            }
+            CHECK_ERROR_RETURN_RET_LOG(!output, false,
+                "YUV_400 gainmap requires dst hw buffer, isGainmapDecode:%{public}d", isGainmapDecode_);
+        } else {
+            uint32_t width = gainmapImage->GetOriginalWidth();
+            uint32_t height = gainmapImage->GetOriginalHeight();
+            output = SurfaceBuffer::Create();
+            BufferRequestConfig config = {
+                .width = width,
+                .height = height,
+                .format = GRAPHIC_PIXEL_FMT_YCBCR_420_SP,
+                .usage = BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA |
+                    BUFFER_USAGE_MEM_MMZ_CACHE,
+                .timeout = 0
+            };
+            GSError ret = output->Alloc(config);
+            bool cond = ret != GSERROR_OK;
+            CHECK_ERROR_RETURN_RET_LOG(cond, false, "output->alloc(config)faild, GSError=%{public}d", ret);
         }
-        CHECK_ERROR_RETURN_RET_LOG(!output, false,
-            "YUV_400 gainmap requires dst hw buffer, isGainmapDecode:%{public}d", isGainmapDecode_);
     }
     if (!DoSwDecodeAuxiliaryImage(gainmapImage, gainmapGridInfo, output, auxiliaryDstMemory)) {
         IMAGE_LOGE("HDR-IMAGE SwDecodeGainmap failed");
@@ -1084,7 +1103,8 @@ bool HeifDecoderImpl::DoSwDecodeAuxiliaryImage(std::shared_ptr<HeifImage> &gainm
         IMAGE_LOGE("HDR-IMAGE Unsupported gainmap default DstFmt");
         return false;
     }
-    PixelFormat gainmapDstFmt = outPixelFormat_;
+    PixelFormat gainmapDstFmt = ImageUtils::IsYuvFormat(outPixelFormat_)
+        ? outPixelFormat_ : PixelFormat::RGBA_8888;
     uint32_t gainmapRowStride = isGainmapDecode_ ?
         static_cast<uint32_t>(gainmapDstRowStride_) : static_cast<uint32_t>(auxiliaryDstRowStride_);
 

@@ -220,7 +220,8 @@ HWTEST_F(ImageSourceJpegTest, TC033, TestSize.Level3)
     uint32_t index = 0;
     int32_t value = 0;
     std::string key;
-    imageSource->GetImagePropertyInt(index, key, value);
+    uint32_t res = imageSource->GetImagePropertyInt(index, key, value);
+    ASSERT_EQ(res, ERR_IMAGE_DECODE_EXIF_UNSUPPORT);
 }
 
 /**

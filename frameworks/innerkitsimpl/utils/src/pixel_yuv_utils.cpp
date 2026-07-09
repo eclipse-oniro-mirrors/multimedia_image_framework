@@ -135,6 +135,8 @@ std::unique_ptr<AbsMemory> PixelYuvUtils::CreateYuvMemory(PixelFormat pixelForma
     int32_t dstWidth, int32_t dstHeight, AllocatorType allocatorType, uint64_t usage, void *srcSurfaceBuffer,
     YUVStrideInfo &dstStrides)
 {
+    bool cond = (ImageUtils::CheckMulOverflow(dstWidth, dstHeight, ImageUtils::GetPixelBytes(pixelFormat)));
+    CHECK_ERROR_RETURN_RET_LOG(cond, nullptr, "CreateYuvMemory alloc size overflow");
     uint32_t pictureSize = GetImageSize(dstWidth, dstHeight, pixelFormat);
     int32_t dst_yStride = dstWidth;
     int32_t dst_uvStride = (dstWidth + 1) / NUM_2 * NUM_2;
@@ -1094,16 +1096,21 @@ static void P010Translate(YuvPixelsP010Translate yuvPixels, YUVDataInfo &yuvInfo
         }
     }
 
+    int32_t xAxis = static_cast<int32_t>(xyAxis.xAxis);
+    int32_t yAxis = static_cast<int32_t>(xyAxis.yAxis);
+    int32_t xOffset = (xAxis % EVEN == 0) ? xAxis : xAxis - 1;
+    int32_t yOffset = yAxis / EVEN;
+    int32_t dstUvStride = static_cast<int32_t>(strides.uvStride);
+    int32_t dstUvHeight = GetUVHeight(info.size.height + yAxis);
     for (int32_t y = 0; y < GetUVHeight(yuvInfo.yHeight); y++) {
         for (int32_t x = 0; x < GetUVStride(yuvInfo.yWidth); x += NUM_2) {
-            int32_t newX = x + GetUVStride(xyAxis.xAxis);
-            int32_t newY = y + GetUVHeight(xyAxis.yAxis);
-            if (newX >= 0 && newX < GetUVStride(strides.yStride + xyAxis.xAxis) && newY >= 0 &&
-                newY < GetUVHeight(yuvInfo.yHeight + xyAxis.yAxis)) {
-                *(dstUV + newY * static_cast<int32_t>(strides.yStride) + newX) =
-                    *(srcUV + y * static_cast<int32_t>(yuvInfo.yStride) + x);
-                *(dstUV + newY * static_cast<int32_t>(strides.yStride) + newX + 1) =
-                    *(srcUV + y * static_cast<int32_t>(yuvInfo.yStride) + x + 1);
+            int32_t newX = x + xOffset;
+            int32_t newY = y + yOffset;
+            if (newX >= 0 && newX + 1 < dstUvStride && newY >= 0 && newY < dstUvHeight) {
+                *(dstUV + newY * dstUvStride + newX) =
+                    *(srcUV + y * static_cast<int32_t>(yuvInfo.uvStride) + x);
+                *(dstUV + newY * dstUvStride + newX + 1) =
+                    *(srcUV + y * static_cast<int32_t>(yuvInfo.uvStride) + x + 1);
             }
         }
     }

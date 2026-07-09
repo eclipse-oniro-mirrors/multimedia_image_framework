@@ -1028,6 +1028,10 @@ napi_value ImageCreatorNapi::JsOffTwoArgs(napi_env env, napi_callback_info info)
     args.callBack = [](napi_env env, napi_status status, Contextc context) {
         IMAGE_LINE_IN();
         napi_value result = nullptr;
+        if (context == nullptr || context->constructor_ == nullptr ||
+            context->constructor_->imageCreator_ == nullptr) {
+            return;
+        }
         napi_get_undefined(env, &result);
         context->constructor_->imageCreator_->UnRegisterBufferReleaseListener();
         context->status = SUCCESS;
@@ -1077,6 +1081,9 @@ napi_value ImageCreatorNapi::JsRelease(napi_env env, napi_callback_info info)
         IMAGE_LINE_IN();
         napi_value result = nullptr;
         napi_get_undefined(env, &result);
+        if (context == nullptr || context->constructor_ == nullptr) {
+            return;
+        }
 
         context->constructor_->NativeRelease();
         context->status = SUCCESS;
