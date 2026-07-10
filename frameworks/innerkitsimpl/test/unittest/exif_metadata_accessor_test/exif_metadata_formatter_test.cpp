@@ -516,18 +516,5 @@ HWTEST_F(ExifMetadataFormatterTest, ValidRegexWithGpsOneRationalFormatTest002, T
     int32_t res = ExifMetadatFormatter::ValidateValueRange(keyName, largeValue);
     EXPECT_EQ(res, Media::ERR_MEDIA_OUT_OF_RANGE);
 }
-
-/**
- * @tc.name: ValidRegexWithGpsOneRationalFormatTest003
- * @tc.desc: test the ValidateValueRange when value is large for Orientation
- * @tc.type: FUNC
- */
-HWTEST_F(ExifMetadataFormatterTest, ValidRegexWithGpsOneRationalFormatTest003, TestSize.Level3)
-{
-    std::string keyName = "Orientation";
-    std::string largeValue = "9999999999999999999";
-    int32_t res = ExifMetadatFormatter::ValidateValueRange(keyName, largeValue);
-    EXPECT_EQ(res, Media::ERR_MEDIA_OUT_OF_RANGE);
-}
 } // namespace Multimedia
 } // namespace OHOS

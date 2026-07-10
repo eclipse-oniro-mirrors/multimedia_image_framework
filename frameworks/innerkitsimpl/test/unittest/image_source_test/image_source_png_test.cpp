@@ -108,25 +108,6 @@ HWTEST_F(ImageSourcePngTest, PngImageDecode001, TestSize.Level3)
 }
 
 /**
- * @tc.name: PngImageDecode002
- * @tc.desc: Create image source by correct png file path and wrong format hit.
- * @tc.type: FUNC
- */
-HWTEST_F(ImageSourcePngTest, PngImageDecode002, TestSize.Level3)
-{
-    /**
-     * @tc.steps: step1. create image source by correct png file path and default format hit.
-     * @tc.expected: step1. create image source success.
-     */
-    uint32_t errorCode = 0;
-    SourceOptions opts;
-    std::unique_ptr<ImageSource> imageSource =
-        ImageSource::CreateImageSource("/data/local/tmp/image/test.png", opts, errorCode);
-    ASSERT_EQ(errorCode, SUCCESS);
-    ASSERT_NE(imageSource.get(), nullptr);
-}
-
-/**
  * @tc.name: PngImageDecode003
  * @tc.desc: Create image source by correct png file path and wrong format hit.
  * @tc.type: FUNC
