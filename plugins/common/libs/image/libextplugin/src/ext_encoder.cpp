@@ -1259,12 +1259,11 @@ sptr<SurfaceBuffer> ExtEncoder::ConvertToSurfaceBuffer(PixelMap* pixelmap)
         uint64_t srcStride = static_cast<uint64_t>(width * NUM_4);
         
         for (uint32_t i = 0; i < height; i++) {
-            if (memcpy_s(dst, dstSize, src, srcStride) != EOK) {
+            if (memcpy_s(dst, dstSize, src, srcStride) != EOK || dstSize < dstStride) {
                 IMAGE_LOGE("ConvertToSurfaceBuffer memcpy failed");
                 ImageUtils::SurfaceBuffer_Unreference(surfaceBuffer.GetRefPtr());
                 return nullptr;
             }
-            CHECK_ERROR_RETURN_RET(dstSize < dstStride, false);
             dst += dstStride;
             dstSize -= dstStride;
             src += srcStride;
