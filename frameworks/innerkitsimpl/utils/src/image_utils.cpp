@@ -850,7 +850,7 @@ bool ImageUtils::CopyYuvPixelMapToSurfaceBuffer(PixelMap* pixelmap,
 
     uint8_t* src = srcBase + yuvSrcInfo.yOffset;
     for (uint32_t i = 0; i < yuvSrcInfo.yHeight; ++i) {
-        cond = (memcpy_s(dst, dstSize, src, yuvSrcInfo.yWidth) != EOK || dstSize < yuvDstInfo.yStride);
+        cond = (memcpy_s(dst, dstSize, src, yuvSrcInfo.yWidth) != EOK) || (dstSize < yuvDstInfo.yStride);
         CHECK_ERROR_RETURN_RET_LOG(cond, false, "CopyYuvPixelMapToSurfaceBuffer memcpy failed");
         dst += yuvDstInfo.yStride;
         dstSize -= yuvDstInfo.yStride;
@@ -859,7 +859,7 @@ bool ImageUtils::CopyYuvPixelMapToSurfaceBuffer(PixelMap* pixelmap,
 
     dst = static_cast<uint8_t*>(surfaceBuffer->GetVirAddr()) + yuvDstInfo.uvOffset;
     for (uint32_t i = 0; i < yuvSrcInfo.uvHeight; ++i) {
-        cond = (memcpy_s(dst, dstSize, src, yuvSrcInfo.uvWidth * NUM_2) != EOK || dstSize < yuvDstInfo.uvStride);
+        cond = (memcpy_s(dst, dstSize, src, yuvSrcInfo.uvWidth * NUM_2) != EOK) || (dstSize < yuvDstInfo.uvStride);
         CHECK_ERROR_RETURN_RET_LOG(cond, false, "CopyYuvPixelMapToSurfaceBuffer memcpy failed");
         dst += yuvDstInfo.uvStride;
         dstSize -= yuvDstInfo.uvStride;
