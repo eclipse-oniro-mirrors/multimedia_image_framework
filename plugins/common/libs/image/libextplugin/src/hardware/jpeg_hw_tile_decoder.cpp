@@ -329,7 +329,7 @@ struct DataUnit {
         if (category == 0) {
             return true;
         } else {
-            uint32_t addlBits = diff > 0 ?  static_cast<uint32_t>(diff) : static_cast<uint32_t>(diff) - 1;
+            uint32_t addlBits = diff > 0 ? static_cast<uint32_t>(diff) : static_cast<uint32_t>(diff) - 1;
             uint32_t mask = (1U << category) - 1;
             dc_code.bits = (dc_code.bits << category) | (addlBits & mask);
             dc_code.n += category;
@@ -1230,7 +1230,7 @@ bool JpegHwFullDecoder::IsSupport(DecodeContext& dctx, const ExtDecoder* extDeco
         auto sampleSize = GetSampleSize(jpg.extDecoder->regionDesiredSize_.width,
                                         jpg.extDecoder->regionDesiredSize_.height,
                                         dinfo->image_width, dinfo->image_height);
-        REQUIRE_LOG(sampleSize > 1, "Area above 16384x16384 onlu support downsampling decoding");
+        REQUIRE_LOG(sampleSize > 1, "Area above 16384x16384 only support downsampling decoding");
     }
     if (Is16k(dinfo->image_width, dinfo->image_height) && dctx.info.pixelFormat == PixelFormat::RGBA_8888) {
         REQUIRE(IsSupport16k());
