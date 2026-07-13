@@ -66,6 +66,7 @@ ohos_shared_library("cj_image_ffi") {
     "napi:ace_napi",
     "napi:cj_bind_ffi",
     "napi:cj_bind_native",
+    "node:node_header_notice",
     "egl:libEGL",
     "opengles:libGLES",
   ]

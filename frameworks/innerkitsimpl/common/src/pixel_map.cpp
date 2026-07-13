@@ -150,14 +150,31 @@ void PixelMap::FreePixelMap() __attribute__((no_sanitize("cfi")))
     }
 #endif
 
-    if (!isUnMap_ && data_ == nullptr && !displayOnly_) {
+    auto notifyFreePixelMap = [this]() {
+        // SetFreePixelMapProc is a lifecycle hook used by external instrumentation when PixelMap is released.
+        // It must not release allocator-owned memory; allocator-specific code below owns the actual cleanup.
+        if (freePixelMapProc_ != nullptr) {
+            freePixelMapProc_(data_, context_, pixelsSize_);
+        }
+    };
+
+    if (allocatorType_ == AllocatorType::SHARE_MEM_ALLOC) {
+        std::lock_guard<std::mutex> lock(*unmapMutex_);
+        if (!isUnMap_ && data_ == nullptr && !displayOnly_) {
+            return;
+        }
+        notifyFreePixelMap();
+        ReleaseSharedMemory(data_, context_, pixelsSize_);
+        data_ = nullptr;
+        context_ = nullptr;
         return;
     }
 
-    if (freePixelMapProc_ != nullptr) {
-        freePixelMapProc_(data_, context_, pixelsSize_);
+    notifyFreePixelMap();
+    if (data_ == nullptr && context_ == nullptr) {
+        return;
     }
-    
+
     switch (allocatorType_) {
         case AllocatorType::HEAP_ALLOC: {
             if (data_ != nullptr) {
@@ -170,12 +187,6 @@ void PixelMap::FreePixelMap() __attribute__((no_sanitize("cfi")))
             if (custFreePixelMap_ != nullptr) {
                 custFreePixelMap_(data_, context_, pixelsSize_);
             }
-            data_ = nullptr;
-            context_ = nullptr;
-            break;
-        }
-        case AllocatorType::SHARE_MEM_ALLOC: {
-            ReleaseSharedMemory(data_, context_, pixelsSize_);
             data_ = nullptr;
             context_ = nullptr;
             break;
@@ -2318,7 +2329,6 @@ uint32_t PixelMap::WritePixel(const Position &pos, const uint32_t &color)
         IMAGE_LOGE("write pixel by pos call WritePixelsConvert fail.");
         return ERR_IMAGE_WRITE_PIXELMAP_FAILED;
     }
-    AddVersionId();
     return SUCCESS;
 }
 
@@ -2389,7 +2399,6 @@ uint32_t PixelMap::WritePixels(const RWPixelsOptions &opts)
             return ERR_IMAGE_WRITE_PIXELMAP_FAILED;
         }
     }
-    AddVersionId();
     MarkDirty();
     return SUCCESS;
 }
@@ -2448,7 +2457,6 @@ uint32_t PixelMap::WritePixels(const uint8_t *source, const uint64_t &bufferSize
     if (isUseDefaultDmaNopadding_) {
         ImageUtils::FlushSurfaceBuffer(this);
     }
-    AddVersionId();
     MarkDirty();
     return SUCCESS;
 }
@@ -2483,7 +2491,6 @@ bool PixelMap::WritePixels(const uint32_t &color)
         IMAGE_LOGE("erase pixels by color call EraseBitmap fail.");
         return false;
     }
-    AddVersionId();
     return true;
 }
 
@@ -2802,11 +2809,6 @@ bool PixelMap::WritePropertiesToParcel(Parcel &parcel) const
         return false;
     }
 
-    if (!parcel.WriteUint32(versionId_)) {
-        IMAGE_LOGE("write image info versionId_:[%{public}d] to parcel failed.", versionId_);
-        return false;
-    }
-
     if (!WriteAstcInfoToParcel(parcel)) {
         IMAGE_LOGE("write ASTC real size to parcel failed.");
         return false;
@@ -3056,10 +3058,6 @@ bool PixelMap::Marshalling(Parcel &parcel) const
         IMAGE_LOGE("set parcel max capacity:[%{public}zu] failed.", capacityLength);
         return false;
     }
-    if (!parcel.WriteInt32(static_cast<int32_t>(-PIXELMAP_VERSION_LATEST))) {
-        IMAGE_LOGE("write image info pixelmap version to parcel failed.");
-        return false;
-    }
     if (!WritePropertiesToParcel(parcel)) {
         IMAGE_LOGE("write info to parcel failed.");
         return false;
@@ -3211,17 +3209,6 @@ bool PixelMap::ReadAstcInfo(Parcel &parcel, PixelMap *pixelMap)
 
 bool PixelMap::ReadPropertiesFromParcel(Parcel& parcel, PixelMap*& pixelMap, ImageInfo& imgInfo, PixelMemInfo& memInfo)
 {
-    int32_t readVersion = PIXELMAP_VERSION_START;
-    const size_t startReadPosition = parcel.GetReadPosition();
-
-    int32_t firstInt32 = parcel.ReadInt32();
-    if (firstInt32 <= -PIXELMAP_VERSION_START) {
-        // version present in parcel (consider width < -2^16 is not possible), read it first
-        readVersion = -firstInt32;
-    } else {
-        // old way: no version let's consider it's oldest
-        parcel.RewindRead(startReadPosition);
-    }
     if (!ReadImageInfo(parcel, imgInfo)) {
         IMAGE_LOGE("ReadPropertiesFromParcel: read image info failed");
         return false;
@@ -3254,15 +3241,10 @@ bool PixelMap::ReadPropertiesFromParcel(Parcel& parcel, PixelMap*& pixelMap, Ima
     }
     pixelMap->isUnmarshalling_ = true;
 
-    pixelMap->SetReadVersion(readVersion);
     pixelMap->SetEditable(parcel.ReadBool());
     pixelMap->SetAstc(ImageUtils::IsAstc(imgInfo.pixelFormat));
-    if (pixelMap->GetReadVersion() >= PIXELMAP_VERSION_DISPLAY_ONLY) {
-        bool displayOnly = parcel.ReadBool();
-        pixelMap->SetDisplayOnly(displayOnly);
-    } else {
-        pixelMap->SetDisplayOnly(false);
-    }
+    bool displayOnly = parcel.ReadBool();
+    pixelMap->SetDisplayOnly(displayOnly);
     int32_t readAllocatorValue = parcel.ReadInt32();
     if (readAllocatorValue < static_cast<int32_t>(AllocatorType::DEFAULT) ||
         readAllocatorValue > static_cast<int32_t>(AllocatorType::DMA_ALLOC)) {
@@ -3281,8 +3263,6 @@ bool PixelMap::ReadPropertiesFromParcel(Parcel& parcel, PixelMap*& pixelMap, Ima
         OHOS::ColorManager::ColorSpace grColorSpace = OHOS::ColorManager::ColorSpace(colorSpaceName);
         pixelMap->InnerSetColorSpace(grColorSpace);
     }
-
-    pixelMap->SetVersionId(parcel.ReadUint32());
 
     if (!pixelMap->ReadAstcInfo(parcel, pixelMap)) {
         IMAGE_LOGE("ReadPropertiesFromParcel: read ASTC real size failed");
@@ -3327,7 +3307,25 @@ bool PixelMap::ReadBufferSizeFromParcel(Parcel& parcel, const ImageInfo& imgInfo
 }
 
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
-bool ReadDmaMemInfoFromParcel(Parcel &parcel, PixelMemInfo &pixelMemInfo,
+static bool CheckDmaSurfaceBufferSize(const ImageInfo &imgInfo, const PixelMemInfo &pixelMemInfo,
+    const sptr<SurfaceBuffer> &surfaceBuffer)
+{
+    // YUV and RGBA_F16 DMA buffer sizes are validated later by their format-specific checks.
+    if (IsYUV(imgInfo.pixelFormat) || imgInfo.pixelFormat == PixelFormat::RGBA_F16) {
+        return true;
+    }
+
+    uint32_t surfaceBufferSize = surfaceBuffer->GetSize();
+    if (pixelMemInfo.bufferSize <= 0 || surfaceBufferSize == 0 ||
+        static_cast<uint32_t>(pixelMemInfo.bufferSize) > surfaceBufferSize) {
+        IMAGE_LOGE("ReadDmaMemInfoFromParcel invalid DMA buffer size, bufferSize:%{public}d, sbSize:%{public}u",
+            pixelMemInfo.bufferSize, surfaceBufferSize);
+        return false;
+    }
+    return true;
+}
+
+bool ReadDmaMemInfoFromParcel(Parcel &parcel, const ImageInfo &imgInfo, PixelMemInfo &pixelMemInfo,
     std::function<int(Parcel &parcel, std::function<int(Parcel&)> readFdDefaultFunc)> readSafeFdFunc, bool isDisplay)
 {
     sptr<SurfaceBuffer> surfaceBuffer = SurfaceBuffer::Create();
@@ -3347,6 +3345,10 @@ bool ReadDmaMemInfoFromParcel(Parcel &parcel, PixelMemInfo &pixelMemInfo,
         IMAGE_LOGE("SurfaceBuffer reference failed");
         return false;
     }
+    if (!CheckDmaSurfaceBufferSize(imgInfo, pixelMemInfo, surfaceBuffer)) {
+        ImageUtils::SurfaceBuffer_Unreference(nativeBuffer);
+        return false;
+    }
     if (!pixelMemInfo.displayOnly || !isDisplay) {
         pixelMemInfo.base = static_cast<uint8_t*>(surfaceBuffer->GetVirAddr());
         if (pixelMemInfo.base == nullptr) {
@@ -3360,7 +3362,8 @@ bool ReadDmaMemInfoFromParcel(Parcel &parcel, PixelMemInfo &pixelMemInfo,
 }
 #endif
 
-bool PixelMap::ReadMemInfoFromParcel(Parcel &parcel, PixelMemInfo &pixelMemInfo, PIXEL_MAP_ERR &error,
+bool PixelMap::ReadMemInfoFromParcel(Parcel &parcel, const ImageInfo &imgInfo, PixelMemInfo &pixelMemInfo,
+    PIXEL_MAP_ERR &error,
     std::function<int(Parcel &parcel, std::function<int(Parcel&)> readFdDefaultFunc)> readSafeFdFunc, bool isDisplay)
 {
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
@@ -3391,7 +3394,7 @@ bool PixelMap::ReadMemInfoFromParcel(Parcel &parcel, PixelMemInfo &pixelMemInfo,
         *static_cast<int32_t *>(pixelMemInfo.context) = fd;
         pixelMemInfo.base = static_cast<uint8_t *>(ptr);
     } else if (pixelMemInfo.allocatorType == AllocatorType::DMA_ALLOC) {
-        if (!ReadDmaMemInfoFromParcel(parcel, pixelMemInfo, readSafeFdFunc, isDisplay)) {
+        if (!ReadDmaMemInfoFromParcel(parcel, imgInfo, pixelMemInfo, readSafeFdFunc, isDisplay)) {
             PixelMap::ConstructPixelMapError(error, ERR_IMAGE_GET_DATA_ABNORMAL, "ReadFromMessageParcel failed");
             return false;
         }
@@ -3621,7 +3624,7 @@ PixelMap *PixelMap::Unmarshalling(Parcel &parcel, PIXEL_MAP_ERR &error,
         IMAGE_LOGE("StartUnmarshalling: get pixelmap failed");
         return nullptr;
     }
-    if (!ReadMemInfoFromParcel(parcel, pixelMemInfo, error, readSafeFdFunc, isDisplay)) {
+    if (!ReadMemInfoFromParcel(parcel, imgInfo, pixelMemInfo, error, readSafeFdFunc, isDisplay)) {
         IMAGE_LOGE("Unmarshalling: read memInfo failed");
         delete pixelMap;
         return nullptr;
@@ -4483,7 +4486,6 @@ uint32_t PixelMap::SetAlpha(const float percent)
             }
         }
     }
-    AddVersionId();
     return SUCCESS;
 }
 
@@ -4728,7 +4730,6 @@ uint32_t PixelMap::ApplyAffineTransform(TransInfos &infos, AntiAliasingOption op
     SetPixelsAddr(m->data.data, m->extend.data, m->data.size, m->GetType(), nullptr);
     SetImageInfo(imageInfo, true);
     ImageUtils::FlushSurfaceBuffer(this);
-    AddVersionId();
     return SUCCESS;
 }
 
@@ -5024,7 +5025,6 @@ uint32_t PixelMap::Crop(const Rect &rect)
     SetPixelsAddr(m->data.data, m->extend.data, m->data.size, m->GetType(), nullptr);
     SetImageInfo(imageInfo, true);
     ImageUtils::FlushSurfaceBuffer(this);
-    AddVersionId();
     ImageUtils::DumpPixelMapIfDumpEnabled(*this, __func__);
     return SUCCESS;
 }
@@ -5314,52 +5314,6 @@ uint32_t PixelMap::ApplyColorSpace(const OHOS::ColorManager::ColorSpace &grColor
     return SUCCESS;
 }
 #endif
-
-uint32_t PixelMap::GetVersionId()
-{
-    std::shared_lock<std::shared_mutex> lock(*versionMutex_);
-    return versionId_;
-}
-
-void PixelMap::AddVersionId()
-{
-    std::unique_lock<std::shared_mutex> lock(*versionMutex_);
-    versionId_++;
-}
-
-void PixelMap::SetVersionId(uint32_t versionId)
-{
-    std::unique_lock<std::shared_mutex> lock(*versionMutex_);
-    versionId_ = versionId;
-}
-
-bool PixelMap::CloseFd()
-{
-#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) &&!defined(ANDROID_PLATFORM)
-    if (allocatorType_ != AllocatorType::SHARE_MEM_ALLOC && allocatorType_ != AllocatorType::DMA_ALLOC) {
-        IMAGE_LOGI("[Pixelmap] CloseFd allocatorType is not share_mem or dma");
-        return false;
-    }
-    if (allocatorType_ == AllocatorType::SHARE_MEM_ALLOC) {
-        int *fd = static_cast<int*>(context_);
-        if (fd == nullptr) {
-            IMAGE_LOGE("[Pixelmap] CloseFd fd is nullptr.");
-            return false;
-        }
-        if (*fd < 0) {
-            IMAGE_LOGE("[Pixelmap] CloseFd invilid fd is [%{public}d]", *fd);
-            return false;
-        }
-        ::close(*fd);
-        delete fd;
-        context_ = nullptr;
-    }
-    return true;
-#else
-    IMAGE_LOGE("[Pixelmap] CloseFd is not supported on crossplatform");
-    return false;
-#endif
-}
 
 std::unique_ptr<PixelMap> PixelMap::ConvertFromAstc(PixelMap *source, uint32_t &errorCode, PixelFormat destFormat)
 {

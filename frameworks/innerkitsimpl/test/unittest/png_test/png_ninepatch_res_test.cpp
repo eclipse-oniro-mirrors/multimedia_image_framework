@@ -33,34 +33,6 @@ public:
 };
 
 /**
- * @tc.name: DeviceToFile001
- * @tc.desc: test DeviceToFile
- * @tc.type: FUNC
- */
-HWTEST_F(PngNinepatchResTest, DeviceToFile001, TestSize.Level3)
-{
-    GTEST_LOG_(INFO) << "PngNinepatchResTest: DeviceToFile001 start";
-    ImagePlugin::PngNinePatchRes pngnp;
-    pngnp.DeviceToFile();
-    ASSERT_NE(&pngnp, nullptr);
-    GTEST_LOG_(INFO) << "PngNinepatchResTest: DeviceToFile001 end";
-}
-
-/**
- * @tc.name: FileToDevice001
- * @tc.desc: test FileToDevice
- * @tc.type: FUNC
- */
-HWTEST_F(PngNinepatchResTest, FileToDevice001, TestSize.Level3)
-{
-    GTEST_LOG_(INFO) << "PngNinepatchResTest: FileToDevice001 start";
-    ImagePlugin::PngNinePatchRes pngnp;
-    pngnp.FileToDevice();
-    ASSERT_NE(&pngnp, nullptr);
-    GTEST_LOG_(INFO) << "PngNinepatchResTest: FileToDevice001 end";
-}
-
-/**
  * @tc.name: SerializedSize001
  * @tc.desc: test SerializedSize
  * @tc.type: FUNC

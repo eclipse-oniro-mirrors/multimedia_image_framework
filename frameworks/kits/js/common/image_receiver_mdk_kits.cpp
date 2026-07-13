@@ -195,16 +195,6 @@ ImageReceiverNapi* ImageReceiver_Unwrap(napi_env env, napi_value value)
     return nullptr;
 }
 
-int32_t ImageReceiverNapiOff(ImageReceiverNapi* native)
-{
-    auto receiver = GetNativeReceiver(native);
-    if (receiver == nullptr) {
-        return IMAGE_RESULT_JNI_ENV_ABNORMAL;
-    }
-    receiver->UnRegisterBufferAvaliableListener();
-    return IMAGE_RESULT_SUCCESS;
-}
-
 #ifdef __cplusplus
 };
 #endif

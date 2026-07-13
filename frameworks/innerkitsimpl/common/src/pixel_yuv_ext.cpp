@@ -410,7 +410,6 @@ int32_t PixelYuvExt::ColorSpaceBGRAToYuv(
     auto grName = grColorSpace.GetColorSpaceName();
     grColorSpace_ = std::make_shared<OHOS ::ColorManager::ColorSpace>(
         dst.info.refColorSpace(), grName);
-    AddVersionId();
     return SUCCESS;
 }
 

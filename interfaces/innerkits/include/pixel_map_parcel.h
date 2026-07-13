@@ -24,6 +24,10 @@ namespace OHOS::Rosen {
     class RSProfiler;
 };
 
+namespace OHOS::Multimedia {
+    class PixelMapRecordParcelTestHelper;
+};
+
 namespace OHOS {
 namespace Media {
 class PixelMap;
@@ -42,7 +46,6 @@ public:
     static constexpr size_t MIN_IMAGEDATA_SIZE = 32 * 1024;         // 32k
 
     struct ParcelInfo {
-        YUVDataInfo yuvDataInfo_;
         ImageInfo imageInfo_;
         Size astcrealSize_;
         AllocatorType allocatorType_;
@@ -51,7 +54,6 @@ public:
 #else
         std::shared_ptr<uint8_t> grColorSpace_ = nullptr;
 #endif
-        uint32_t versionId_ = 1;
         uint8_t *data_ = nullptr;
         int32_t rowDataSize_ = 0;
         int32_t rowStride_ = 0;
@@ -67,6 +69,10 @@ public:
     };
     using ParcelInfo = struct ParcelInfo;
 
+private:
+    friend class OHOS::Rosen::PixelMapStorage;
+    friend class OHOS::Rosen::RSProfiler;
+    friend class OHOS::Multimedia::PixelMapRecordParcelTestHelper;
     static bool MarshallingPixelMapForRecord(Parcel& parcel, PixelMap& pixelmap);
     static PixelMap *UnmarshallingPixelMapForRecord(Parcel &parcel,
         std::function<int(Parcel &parcel, std::function<int(Parcel&)> readFdDefaultFunc)> readSafeFdFunc = nullptr);
@@ -77,9 +83,6 @@ public:
         return parcelInfo_;
     }
 
-private:
-    friend class OHOS::Rosen::PixelMapStorage;
-    friend class OHOS::Rosen::RSProfiler;
     bool WriteMemInfoToParcel(Parcel &parcel, const int32_t &bufferSize);
     bool WritePropertiesToParcel(Parcel &parcel);
     bool WriteImageInfo(Parcel &parcel);
@@ -88,16 +91,14 @@ private:
     bool WriteAshmemDataToParcel(Parcel &parcel, size_t size);
     bool WriteFileDescriptor(Parcel &parcel, int fd);
     bool WriteTransformDataToParcel(Parcel &parcel) const;
-    bool WriteYuvDataInfoToParcel(Parcel &parcel) const;
-    static bool IsYuvFormat(PixelFormat format);
     static PixelMap *Unmarshalling(Parcel &parcel, PIXEL_MAP_ERR &error,
         std::function<int(Parcel &parcel, std::function<int(Parcel&)> readFdDefaultFunc)> readSafeFdFunc);
     static bool ReadPropertiesFromParcel(Parcel& parcel, PixelMap*& pixelMap,
         ImageInfo& imgInfo, PixelMemInfo& memInfo);
     static PixelMap *StartUnmarshalling(Parcel &parcel, ImageInfo &imgInfo,
         PixelMemInfo& pixelMemInfo, PIXEL_MAP_ERR &error);
-    static PixelMap *FinishUnmarshalling(PixelMap *pixelMap, Parcel &parcel,
-        ImageInfo &imgInfo, PixelMemInfo &pixelMemInfo, PIXEL_MAP_ERR &error);
+    static PixelMap *FinishUnmarshalling(PixelMap *pixelMap, Parcel &parcel, ImageInfo &imgInfo,
+        PixelMemInfo &pixelMemInfo, PIXEL_MAP_ERR &error);
     static bool UpdatePixelMapMemInfo(PixelMap *pixelMap, ImageInfo &imgInfo, PixelMemInfo &pixelMemInfo);
     static void ReleaseMemory(AllocatorType allocType, void *addr, void *context, uint32_t size);
     static bool ReadMemInfoFromParcel(Parcel &parcel, PixelMemInfo &pixelMemInfo, PIXEL_MAP_ERR &error,
@@ -111,7 +112,6 @@ private:
         std::function<int(Parcel &parcel, std::function<int(Parcel&)> readFdDefaultFunc)> readSafeFdFunc);
     static int ReadFileDescriptor(Parcel &parcel);
     static bool ReadTransformData(Parcel &parcel, PixelMap *pixelMap);
-    static bool ReadYuvDataInfoFromParcel(Parcel &parcel, PixelMap *pixelMap);
 
     ParcelInfo parcelInfo_;
 };

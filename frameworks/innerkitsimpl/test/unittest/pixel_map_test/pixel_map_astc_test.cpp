@@ -48,6 +48,19 @@ public:
     ~PixelAstcTest() {}
 };
 
+class PixelMapRecordParcelTestHelper {
+public:
+    static bool MarshallingPixelMapForRecord(Parcel& parcel, PixelMap& pixelMap)
+    {
+        return PixelMapRecordParcel::MarshallingPixelMapForRecord(parcel, pixelMap);
+    }
+
+    static PixelMap *UnmarshallingPixelMapForRecord(Parcel& parcel)
+    {
+        return PixelMapRecordParcel::UnmarshallingPixelMapForRecord(parcel);
+    }
+};
+
 static bool GenAstcHeader(uint8_t* header, size_t blockSize, size_t width, size_t height)
 {
     if (header == nullptr) {
@@ -787,8 +800,8 @@ HWTEST_F(PixelAstcTest, PixelAstcTest029, TestSize.Level3)
     ConstructPixelAstc(pixelAstc, &data);
     ASSERT_NE(pixelAstc.get(), nullptr);
     Parcel dataRecord;
-    EXPECT_TRUE(PixelMapRecordParcel::MarshallingPixelMapForRecord(dataRecord, *(pixelAstc.get())));
-    PixelMap *pixelMapRecord = PixelMapRecordParcel::UnmarshallingPixelMapForRecord(dataRecord);
+    EXPECT_TRUE(PixelMapRecordParcelTestHelper::MarshallingPixelMapForRecord(dataRecord, *(pixelAstc.get())));
+    PixelMap *pixelMapRecord = PixelMapRecordParcelTestHelper::UnmarshallingPixelMapForRecord(dataRecord);
     EXPECT_NE(pixelMapRecord, nullptr);
     delete pixelMapRecord;
     pixelMapRecord = nullptr;
@@ -804,8 +817,8 @@ HWTEST_F(PixelAstcTest, PixelAstcTest029, TestSize.Level3)
     ASSERT_EQ(transformData.translateX, 20.0); // 20.0 means x_coordinate value
     ASSERT_EQ(transformData.translateY, 20.0); // 20.0 means y_coordinate value
     Parcel dataRecord2;
-    EXPECT_TRUE(PixelMapRecordParcel::MarshallingPixelMapForRecord(dataRecord2, *(pixelAstc.get())));
-    pixelMapRecord = PixelMapRecordParcel::UnmarshallingPixelMapForRecord(dataRecord2);
+    EXPECT_TRUE(PixelMapRecordParcelTestHelper::MarshallingPixelMapForRecord(dataRecord2, *(pixelAstc.get())));
+    pixelMapRecord = PixelMapRecordParcelTestHelper::UnmarshallingPixelMapForRecord(dataRecord2);
     EXPECT_NE(pixelMapRecord, nullptr);
     delete pixelMapRecord;
     pixelMapRecord = nullptr;
