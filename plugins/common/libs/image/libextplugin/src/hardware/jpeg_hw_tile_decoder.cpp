@@ -329,7 +329,7 @@ struct DataUnit {
         if (category == 0) {
             return true;
         } else {
-            uint32_t addlBits = diff > 0 ? diff : static_cast<uint32_t>(diff) - 1;
+            uint32_t addlBits = diff > 0 ?  static_cast<uint32_t>(diff) : static_cast<uint32_t>(diff) - 1;
             uint32_t mask = (1U << category) - 1;
             dc_code.bits = (dc_code.bits << category) | (addlBits & mask);
             dc_code.n += category;
@@ -1067,6 +1067,20 @@ bool JpegHwRegionDecoder::CombineIntoJpegAligned()
 bool JpegHwRegionDecoder::CombineIntoJpegNonAligned()
 {
     IECS iecs(jpg.streamData.get(), jpg.streamSize + NUM_8, *jpg.tables);
+    constexpr uint32_t protectedDist = 10 * MCU_WIDTH;
+    bool isLTInFirstMCULine = static_cast<uint32_t>(jpg.extDecoder->dstSubset_.y()) < MCU_HEIGHT ? true : false;
+    bool isCrossBoundary = static_cast<uint32_t>(jpg.dinfo->image_width - jpg.extDecoder->dstSubset_.width()) <
+        (jpg.dinfo->restart_interval * MCU_WIDTH + protectedDist) ? true : false;
+    std::unique_ptr<uint8_t[]> tempJpgStream = nullptr;
+    if (isLTInFirstMCULine && isCrossBoundary) {
+        size_t rstIdx = subJpg.regionDecInfo.entries.back().startRstIdx +
+            DIV_ROUND_UP(jpg.dinfo->image_width, jpg.dinfo->restart_interval * MCU_WIDTH) + 1;
+        size_t tempJpgStreamSize = jpg.rstPositions[rstIdx];
+        REQUIRE_LOG(tempJpgStream = std::make_unique<uint8_t[]>(tempJpgStreamSize), "malloc tempJpgStreamSize failed");
+        errno_t err = memcpy_s(tempJpgStream.get(), tempJpgStreamSize, jpg.streamData.get(), tempJpgStreamSize);
+        REQUIRE_LOG(err == EOK, "memcpy_s tempJpgStreamSize failed");
+        iecs = IECS(tempJpgStream.get(), tempJpgStreamSize, *jpg.tables);
+    }
     OECS oecs(jpg.streamData.get(), jpg.streamSize);
     oecs.RePos(jpg.rstPositions[0]);
     uint32_t numMCUs = static_cast<uint32_t>(subJpg.origSize.width()) / MCU_WIDTH;
@@ -1107,7 +1121,7 @@ bool JpegHwRegionDecoder::CombineIntoJpeg()
     auto& streamData = subJpg.streamData;
     REQUIRE_LOG(subJpg.streamSize, "subJpg len should not be 0");
     streamData[subJpg.streamSize - 1] = MARK_EOI;
-    REQUIRE_LOG(subJpg.origSize.width() <= UINT16_MAX || subJpg.origSize.height() <= UINT16_MAX, "subJpg size err");
+    REQUIRE_LOG(subJpg.origSize.width() <= UINT16_MAX && subJpg.origSize.height() <= UINT16_MAX, "subJpg size err");
     streamData[jpg.YPos] = (static_cast<uint32_t>(subJpg.origSize.height()) >> NUM_8) & 0xff;
     streamData[jpg.YPos + NUM_1] = static_cast<uint32_t>(subJpg.origSize.height()) & 0xff;
     streamData[jpg.YPos + NUM_2] = (static_cast<uint32_t>(subJpg.origSize.width()) >> NUM_8) & 0xff;
@@ -1212,6 +1226,12 @@ bool JpegHwFullDecoder::IsSupport(DecodeContext& dctx, const ExtDecoder* extDeco
 {
     REQUIRE(RSTBasedDecoder::IsSupport(dctx, extDecoder));
     auto& dinfo = jpg.dinfo;
+    if (static_cast<uint64_t>(dinfo->image_width * dinfo->image_height) > NUM_16k * NUM_16k) {
+        auto sampleSize = GetSampleSize(jpg.extDecoder->regionDesiredSize_.width,
+                                        jpg.extDecoder->regionDesiredSize_.height,
+                                        dinfo->image_width, dinfo->image_height);
+        REQUIRE_LOG(sampleSize > 1, "Area above 16384x16384 onlu support downsampling decoding");
+    }
     if (Is16k(dinfo->image_width, dinfo->image_height) && dctx.info.pixelFormat == PixelFormat::RGBA_8888) {
         REQUIRE(IsSupport16k());
     } else {
@@ -1255,6 +1275,9 @@ bool JpegHwFullDecoder::ProcessLastECS()
     auto posLastECS = jpg.rstPositions[jpg.rstPositions.size() - 2];
     uint32_t numRemain = (jpg.imageWidthPad16 * jpg.imageHeightPad16) %
                          (MCU_WIDTH * MCU_HEIGHT * jpg.dinfo->restart_interval) / (MCU_WIDTH * MCU_HEIGHT);
+    if (numRemain == 0) {
+        return true;
+    }
     auto mcus = std::make_unique<MCU[]>(numRemain);
     REQUIRE_LOG(mcus, "create mcus failed");
 
