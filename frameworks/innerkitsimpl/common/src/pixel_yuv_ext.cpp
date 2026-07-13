@@ -208,7 +208,6 @@ uint32_t PixelYuvExt::Scale(float xAxis, float yAxis, AntiAliasingOption option)
     imageInfo.size.height = dstH;
     SetImageInfo(imageInfo, true);
     UpdateYUVDataInfo(imageInfo.pixelFormat, imageInfo.size.width, imageInfo.size.height, dstStrides);
-    AddVersionId();
     ImageUtils::DumpPixelMapIfDumpEnabled(*this, std::string("after_") + __func__);
     return SUCCESS;
 }
@@ -256,7 +255,6 @@ uint32_t PixelYuvExt::Scale(int32_t dstW, int32_t dstH, AntiAliasingOption optio
     imageInfo.size.height = dstH;
     SetImageInfo(imageInfo, true);
     UpdateYUVDataInfo(imageInfo.pixelFormat, imageInfo.size.width, imageInfo.size.height, dstStrides);
-    AddVersionId();
     ImageUtils::DumpPixelMapIfDumpEnabled(*this, std::string("after_") + __func__);
     return SUCCESS;
 }
@@ -308,7 +306,6 @@ uint32_t PixelYuvExt::Rotate(float degrees)
     SetImageInfo(imageInfo_, true);
     SetPixelsAddr(dst, m->extend.data, m->data.size, m->GetType(), nullptr);
     UpdateYUVDataInfo(imageInfo_.pixelFormat, dstWidth, dstHeight, dstStrides);
-    AddVersionId();
     ImageUtils::DumpPixelMapIfDumpEnabled(*this, std::string("after_") + __func__);
     return SUCCESS;
 }
@@ -365,7 +362,6 @@ uint32_t PixelYuvExt::Flip(bool xAxis, bool yAxis)
     }
     SetPixelsAddr(dst, m->extend.data, m->data.size, m->GetType(), nullptr);
     UpdateYUVDataInfo(imageInfo.pixelFormat, imageInfo.size.width, imageInfo.size.height, dstStrides);
-    AddVersionId();
     ImageUtils::DumpPixelMapIfDumpEnabled(*this, std::string("after_") + __func__);
     return SUCCESS;
 }
