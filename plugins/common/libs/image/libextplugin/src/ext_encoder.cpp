@@ -1264,6 +1264,7 @@ sptr<SurfaceBuffer> ExtEncoder::ConvertToSurfaceBuffer(PixelMap* pixelmap)
                 ImageUtils::SurfaceBuffer_Unreference(surfaceBuffer.GetRefPtr());
                 return nullptr;
             }
+            CHECK_ERROR_RETURN_RET(dstSize < dstStride, false);
             dst += dstStride;
             dstSize -= dstStride;
             src += srcStride;
