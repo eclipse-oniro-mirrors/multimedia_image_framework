@@ -839,6 +839,7 @@ bool ImageUtils::CopyYuvPixelMapToSurfaceBuffer(PixelMap* pixelmap,
     uint8_t* srcBase = const_cast<uint8_t*>(pixelmap->GetPixels());
     uint8_t* dst = static_cast<uint8_t*>(surfaceBuffer->GetVirAddr());
     uint32_t dstSize = surfaceBuffer->GetSize();
+    CHECK_ERROR_RETURN_RET(dstSize < yuvDstInfo.uvOffset, false);
 
     YUVDataInfo yuvDstInfo;
     YUVDataInfo yuvSrcInfo;
