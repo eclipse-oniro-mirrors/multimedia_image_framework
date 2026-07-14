@@ -235,7 +235,7 @@ void DoTruncateP010ToYUV420(const SurfaceBufferInfo& srcInfo, const SurfaceBuffe
     const int32_t dstYStride = outInfo.yStride > 0 ? outInfo.yStride : outInfo.stride;
     const int32_t dstUVStride = outInfo.uvStride > 0 ? outInfo.uvStride : outInfo.stride;
     cond = !CheckYUVBufferSize(srcInfo, outInfo);
-    CHECK_ERROR_RETURN_LOG(cond, "[VpeUtils] DoTruncateP010ToYUV420 buffer bounds check failed");
+    CHECK_ERROR_RETURN_LOG(cond, "[VpeUtils] DoTruncateP010ToYUV420 buffer size invalid");
     
     // transfer y : p010 (10-bit) - > yuv420 (8-bit)
     for (int32_t y = 0; y < srcInfo.height; y++) {
