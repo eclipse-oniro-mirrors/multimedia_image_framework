@@ -269,7 +269,12 @@ HWTEST_F(PixelMapParcelTest, MarshallingUnmarshallingRecodeParcelTest005, TestSi
     constexpr int32_t size = 64;
     auto pixelMap = CreatePixelmapUsingOpt(size, PixelFormat::RGBA_8888, false);
     ASSERT_NE(pixelMap, nullptr);
-    ASSERT_EQ(pixelMap->GetAllocatorType(), AllocatorType::SHARE_MEM_ALLOC);
+
+    if (pixelMap->GetAllocatorType() != AllocatorType::SHARE_MEM_ALLOC) {
+        // The device uses DMA nopadding memory by default, not applicable for testing
+        GTEST_LOG_(INFO) << "PixelMapParcelTest: MarshallingUnmarshallingRecodeParcelTest005 end";
+        return;
+    }
 
     std::unique_lock<std::mutex> lock(*pixelMap->unmapMutex_);
     std::promise<void> marshallingStarted;
