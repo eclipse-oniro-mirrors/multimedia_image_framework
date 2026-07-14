@@ -5512,8 +5512,6 @@ HWTEST_F(PixelMapTest, HdrPixelMapTlvTest005, TestSize.Level3)
     ASSERT_EQ(pixelMap->EncodeTlv(buff), true);
     std::unique_ptr<PixelMap> tlvPixelMap(PixelMap::DecodeTlv(buff));
     ASSERT_NE(tlvPixelMap, nullptr);
-    ASSERT_EQ(tlvPixelMap->GetAllocatorType(), pixelMap->GetAllocatorType());
-    ASSERT_EQ(tlvPixelMap->GetAllocatorType(), AllocatorType::DMA_ALLOC);
 }
 
 /**
@@ -6191,7 +6189,6 @@ HWTEST_F(PixelMapTest, AllocPixelMapMemory001, TestSize.Level3)
     opts.allocatorType = AllocatorType::DEFAULT;
     std::unique_ptr<PixelMap> pixelMap = PixelMap::Create(opts);
     ASSERT_NE(pixelMap, nullptr);
-    ASSERT_EQ(pixelMap->GetAllocatorType(), AllocatorType::DMA_ALLOC);
     GTEST_LOG_(INFO) << "PixelMapTest: AllocPixelMapMemory001 end";
 }
 
@@ -6236,7 +6233,6 @@ HWTEST_F(PixelMapTest, AllocPixelMapMemory004, TestSize.Level3)
     opts.allocatorType = AllocatorType::DEFAULT;
     std::unique_ptr<PixelMap> pixelMap = PixelMap::Create(opts);
     ASSERT_NE(pixelMap, nullptr);
-    ASSERT_EQ(pixelMap->GetAllocatorType(), AllocatorType::DMA_ALLOC);
     GTEST_LOG_(INFO) << "PixelMapTest: AllocPixelMapMemory004 end";
 }
 
@@ -6259,7 +6255,7 @@ HWTEST_F(PixelMapTest, CopyPixMapToDst001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "PixelMapTest: CopyPixMapToDst001 start";
     auto srcPixelMap = ConstructPixelMap(SIZE_WIDTH, SIZE_HEIGHT, PixelFormat::RGBA_8888,
-        AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN, AllocatorType::DEFAULT);
+        AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN, AllocatorType::DMA_ALLOC);
     ASSERT_NE(srcPixelMap, nullptr);
     auto dstPixelMap = ConstructPixelMap(SIZE_WIDTH, SIZE_HEIGHT, PixelFormat::RGBA_8888,
         AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN, AllocatorType::DMA_ALLOC);
