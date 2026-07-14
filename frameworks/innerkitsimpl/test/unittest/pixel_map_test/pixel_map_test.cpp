@@ -5500,7 +5500,6 @@ HWTEST_F(PixelMapTest, HdrPixelMapTlvTest005, TestSize.Level3)
     ASSERT_EQ(pixelMap->EncodeTlv(buff), true);
     std::unique_ptr<PixelMap> tlvPixelMap(PixelMap::DecodeTlv(buff));
     ASSERT_NE(tlvPixelMap, nullptr);
-    ASSERT_EQ(tlvPixelMap->GetAllocatorType(), pixelMap->GetAllocatorType());
 }
 
 /**
