@@ -33,40 +33,20 @@
 
 改动触达上述依赖的接口、枚举、buffer 语义、错误码或能力查询时，不要只在本仓内闭环；需要检查依赖方公开头文件、运行时能力和调用方假设，并在提交说明中写明跨仓影响和验证方式。
 
-## 构建和验证
+## 验证
 
-构建命令从 OpenHarmony 源码根目录执行，不在本子目录执行。产品、out 目录和可用 target 以当前工程配置为准。
-
-```sh
-./build.sh --product-name <product-name> --build-target image_framework --ccache
-prebuilts/build-tools/linux-x86/bin/ninja -C out/<product-name> image_framework plugins image_test_list
-```
-
-`rk3568` 是常见示例产品，实际产品名和 `out` 目录以当前工程配置为准。产品名可参考 OpenHarmony 源码根目录下 `out/` 已有目录，或以当前任务和 CI 指定产品为准。
-
-按改动范围选择最近的构建或测试目标，具体目标优先参考知识文档和对应 `BUILD.gn`。涉及对外接口或 API 行为时，还需要验证对应 XTS 用例。涉及硬解、surface、DMA、HDR 显示、设备 codec 能力或公开 API 行为时，需要补充真实设备上的验证结果。当前没有真实设备时，不要声称已完成完整验证；应记录缺失原因、已完成的本地验证和仍需补充的真实设备验证项，并等待人工确认是否继续 push。
+按改动范围选择最近的测试目标，具体目标优先参考知识文档。涉及对外接口或 API 行为时，还需要验证对应 XTS 用例。涉及硬解、surface、DMA、HDR 显示、设备 codec 能力或公开 API 行为时，需要补充真实设备上的验证结果。当前没有真实设备时，不要声称已完成完整验证；应记录缺失原因、已完成的本地验证和仍需补充的真实设备验证项，并等待人工确认是否继续 push。
 
 任务级验证参考：
 
 | 改动类型 | 近端验证 | 额外要求 |
 | --- | --- | --- |
-| 文档、知识路由、注释 | 检查链接、路径、术语和代码锚点是否存在 | 不改行为时通常不需要构建；若文档影响工作流，说明未跑构建原因 |
-| C++ 内部实现 | `image_framework` 构建 + 对应模块最近单测 | 关注错误码、日志、资源释放和异常路径 |
+| 文档、知识路由、注释 | 检查链接、路径、术语和代码锚点是否存在 | 不改行为时通常不需要额外验证 |
+| C++ 内部实现 | 对应模块最近单测 | 关注错误码、日志、资源释放和异常路径 |
 | 公开 API 或多语言绑定 | 对应 JS/NDK/CJ/ANI/Taihe 单测 | 必须验证或说明对应 XTS；检查错误码和默认值兼容 |
 | 编解码、插件、metadata 解析 | 对应 codec/plugin/accessor 单测 | 补跑相关 fuzz，覆盖截断、畸形、超大尺寸和异常 metadata |
 | `PixelMap`、Surface、DMA、HDR、硬件 codec | 最近单测 + 相关 fuzz | 需要真实设备验证；没有设备时记录缺口并等待人工确认 |
 | Parcel/TLV、跨进程传输、安全修复 | 最近单测 + 相关 fuzz | 重点检查越界、溢出、fd 泄漏、重复释放和旧数据兼容 |
-
-常用命令模板：
-
-```sh
-./build.sh --product-name <product-name> --build-target image_framework --ccache
-prebuilts/build-tools/linux-x86/bin/ninja -C out/<product-name> <target>
-prebuilts/build-tools/linux-x86/bin/ninja -C out/<product-name> image_test_list
-prebuilts/build-tools/linux-x86/bin/ninja -C out/<product-name> fuzztest
-```
-
-单测 target 以本仓 `BUILD.gn` 中实际存在的 `ohos_unittest("<target>")` 为准；fuzz target 以 `frameworks/innerkitsimpl/test/fuzztest/**/BUILD.gn` 中实际存在的 `ohos_fuzztest("<target>")` 为准。不要凭模块名臆造 target。
 
 XTS 用例不在本仓完整维护。涉及公开 API、错误码、默认值、权限、异常类型、跨语言行为或兼容性时，必须查 OpenHarmony XTS 仓、CI 配置或团队用例映射；查不到时，在最终回复中明确写“XTS 目标未确认”，并列出已跑的本仓单测/fuzz 和需要人工补充确认的 API 场景。
 
@@ -137,7 +117,7 @@ Ask before / 必须人工确认：
 
 - 改公开 API/ABI、枚举值、结构体字段、错误码、默认值或 XTS 预期前，先确认兼容策略。
 - 改 JS/NDK/CJ/ANI/Taihe 绑定、生成代码或接口命名时，先确认所有语言入口是否需要同步。
-- 改插件格式能力、第三方库、license、编译宏或产品裁剪时，先确认插件矩阵和依赖边界。
+- 改插件格式能力、第三方库、license 或产品裁剪时，先确认插件矩阵和依赖边界。
 - 改 `graphic_2d`、`drivers_peripheral`、`ability_runtime`、`napi`、`ipc` 等跨仓接口或 buffer 语义时，先确认依赖方公开头文件、调用方假设和跨仓验证方式。
 - 改 `PixelMap` allocator、surface/native buffer、DMA、HDR 或硬件 codec 行为时，先确认生命周期、释放函数、真实设备验证条件和 fallback 策略。
 - 改安全解析、Parcel/TLV 格式、fuzz 触发样例或历史漏洞修复时，先确认攻击面、兼容策略和回归用例。
@@ -152,6 +132,6 @@ Agent 最终回复必须包含：
 
 - 读取过的知识文档和对应场景。
 - 修改的文件、行为影响面和明确未修改的关键文件。
-- 已执行的构建、单测、fuzz、XTS 或真实设备验证命令；未执行时说明原因。
+- 已执行的单测、fuzz、XTS 或真实设备验证命令；未执行时说明原因。
 - XTS 目标或真实设备验证无法确认时，列出缺口和需要人工确认的问题。
 - 若涉及提交或 push，说明 `stability-code-review` 结果、commit message 是否包含 `Signed-off-by` 和 `Co-Authored-By: Agent`。
