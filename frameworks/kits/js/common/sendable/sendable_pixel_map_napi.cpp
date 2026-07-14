@@ -59,7 +59,6 @@ static const std::map<std::string, std::set<uint32_t>> ETS_API_ERROR_CODE = {
 static const std::string CLASS_NAME = "SendablePixelMap";
 static const std::int32_t NEW_INSTANCE_ARGC = 1;
 thread_local napi_ref SendablePixelMapNapi::sConstructor_ = nullptr;
-NAPI_MessageSequence* napi_messageSequence_sendable = nullptr;
 
 std::shared_mutex SendablePixelMapNapi::mutex_;
 static std::mutex pixelMapCrossThreadMutex_;
@@ -77,6 +76,8 @@ struct PixelMapAsyncContext {
     napi_deferred deferred;
     napi_ref callbackRef;
     napi_ref error = nullptr;
+    NAPI_MessageSequence* messageSequence = nullptr;
+    napi_ref messageSequenceRef = nullptr;
     uint32_t status;
     SendablePixelMapNapi *nConstructor;
     void* colorsBuffer;
@@ -271,8 +272,27 @@ static bool parsePositionArea(napi_env env, napi_value root, PositionArea* area)
     return true;
 }
 
+static void CleanupAsyncContext(napi_env env, PixelMapAsyncContext* &asyncContext)
+{
+    if (asyncContext == nullptr) {
+        return;
+    }
+    NAPI_CHECK_AND_DELETE_REF(env, asyncContext->error);
+    NAPI_CHECK_AND_DELETE_REF(env, asyncContext->callbackRef);
+    NAPI_CHECK_AND_DELETE_REF(env, asyncContext->messageSequenceRef);
+    if (asyncContext->work != nullptr) {
+        napi_delete_async_work(env, asyncContext->work);
+        asyncContext->work = nullptr;
+    }
+    delete asyncContext;
+    asyncContext = nullptr;
+}
+
 static void CommonCallbackRoutine(napi_env env, PixelMapAsyncContext* &asyncContext, const napi_value &valueParam)
 {
+    if (asyncContext == nullptr) {
+        return;
+    }
     napi_value result[NUM_2] = {0};
     napi_value retVal;
     napi_value callback = nullptr;
@@ -281,20 +301,17 @@ static void CommonCallbackRoutine(napi_env env, PixelMapAsyncContext* &asyncCont
     napi_get_undefined(env, &result[NUM_1]);
 
     napi_handle_scope scope = nullptr;
-    napi_open_handle_scope(env, &scope);
-    if (scope == nullptr) {
+    napi_status status = napi_open_handle_scope(env, &scope);
+    if (!IMG_IS_OK(status) || scope == nullptr) {
+        CleanupAsyncContext(env, asyncContext);
         return;
     }
 
-    if (asyncContext == nullptr) {
-        napi_close_handle_scope(env, scope);
-        return;
-    }
     if (asyncContext->status == SUCCESS) {
         result[NUM_1] = valueParam;
     } else if (asyncContext->error != nullptr) {
         napi_get_reference_value(env, asyncContext->error, &result[NUM_0]);
-        napi_delete_reference(env, asyncContext->error);
+        NAPI_CHECK_AND_DELETE_REF(env, asyncContext->error);
     } else {
         napi_create_uint32(env, asyncContext->status, &result[NUM_0]);
     }
@@ -308,14 +325,11 @@ static void CommonCallbackRoutine(napi_env env, PixelMapAsyncContext* &asyncCont
     } else {
         napi_get_reference_value(env, asyncContext->callbackRef, &callback);
         napi_call_function(env, nullptr, callback, NUM_2, result, &retVal);
-        napi_delete_reference(env, asyncContext->callbackRef);
+        NAPI_CHECK_AND_DELETE_REF(env, asyncContext->callbackRef);
     }
 
-    napi_delete_async_work(env, asyncContext->work);
     napi_close_handle_scope(env, scope);
-
-    delete asyncContext;
-    asyncContext = nullptr;
+    CleanupAsyncContext(env, asyncContext);
 }
 
 static void NapiSendEvent(napi_env env, PixelMapAsyncContext *asyncContext,
@@ -1105,9 +1119,24 @@ napi_value SendablePixelMapNapi::CreateSendablePixelMap(napi_env env, std::share
 
 STATIC_EXEC_FUNC(Unmarshalling)
 {
+    if (data == nullptr) {
+        IMAGE_LOGE("UnmarshallingExec invalid parameter: data is null");
+        return;
+    }
     auto context = static_cast<PixelMapAsyncContext*>(data);
 
-    auto messageParcel = napi_messageSequence_sendable->GetMessageParcel();
+    if (context->messageSequence == nullptr) {
+        context->status = ERROR;
+        IMAGE_LOGE("UnmarshallingExec invalid parameter: messageSequence is null");
+        return;
+    }
+    std::lock_guard<std::mutex> lock(ImageNapiUtils::GetMessageSequenceMutex(context->messageSequence));
+    auto messageParcel = context->messageSequence->GetMessageParcel();
+    if (messageParcel == nullptr) {
+        context->status = ERROR;
+        IMAGE_LOGE("UnmarshallingExec invalid parameter: messageParcel is null");
+        return;
+    }
     auto pixelmap = PixelMap::Unmarshalling(*messageParcel);
     std::unique_ptr<OHOS::Media::PixelMap> pixelmap_ptr(pixelmap);
 
@@ -1167,14 +1196,18 @@ napi_value SendablePixelMapNapi::Unmarshalling(napi_env env, napi_callback_info 
     }
     std::unique_ptr<PixelMapAsyncContext> asyncContext = std::make_unique<PixelMapAsyncContext>();
 
-    if (argCount == NUM_3 && ImageNapiUtils::getType(env, argValue[argCount - 1]) == napi_function) {
-        napi_create_reference(env, argValue[argCount - 1], refCount, &asyncContext->callbackRef);
-    }
-
-    NapiUnwrap(env, argValue[NUM_0], (void **)&napi_messageSequence_sendable, false);
-    if (napi_messageSequence_sendable == nullptr) {
+    status = NapiUnwrap(env, argValue[NUM_0], reinterpret_cast<void**>(&asyncContext->messageSequence), false);
+    if (!IMG_IS_READY(status, asyncContext->messageSequence)) {
         return ImageNapiUtils::ThrowExceptionError(
             env, ERROR, "napi_messageSequence_sendable unwrapped is nullptr");
+    }
+    status = napi_create_reference(env, argValue[NUM_0], refCount, &asyncContext->messageSequenceRef);
+    if (!IMG_IS_OK(status)) {
+        return ImageNapiUtils::ThrowExceptionError(env, ERROR, "Fail to retain messageSequence");
+    }
+
+    if (argCount == NUM_3 && ImageNapiUtils::getType(env, argValue[argCount - 1]) == napi_function) {
+        napi_create_reference(env, argValue[argCount - 1], refCount, &asyncContext->callbackRef);
     }
 
     if (asyncContext->callbackRef == nullptr) {
@@ -1187,7 +1220,8 @@ napi_value SendablePixelMapNapi::Unmarshalling(napi_env env, napi_callback_info 
         UnmarshallingExec, UnmarshallingComplete, asyncContext, asyncContext->work);
 
     if (!IMG_IS_OK(status)) {
-        NAPI_CHECK_AND_DELETE_REF(env, asyncContext->callbackRef);
+        PixelMapAsyncContext* context = asyncContext.release();
+        CleanupAsyncContext(env, context);
         return ImageNapiUtils::ThrowExceptionError(
             env, ERROR, "Fail to create async work");
     }
@@ -1224,11 +1258,11 @@ napi_value SendablePixelMapNapi::CreateSendablPixelMapFromParcel(napi_env env, n
         return SendablePixelMapNapi::ThrowExceptionError(env,
             CREATE_PIXEL_MAP_FROM_PARCEL, ERR_IMAGE_INVALID_PARAMETER, "Fail to napi_get_cb_info");
     }
-    std::unique_ptr<PixelMapAsyncContext> asyncContext = std::make_unique<PixelMapAsyncContext>();
-    NapiUnwrap(env, argValue[NUM_0], (void **)&napi_messageSequence_sendable, false);
-    IMG_NAPI_CHECK_RET_D(IMG_NOT_NULL(napi_messageSequence_sendable), result,
+    NAPI_MessageSequence* messageSequence = nullptr;
+    status = NapiUnwrap(env, argValue[NUM_0], reinterpret_cast<void**>(&messageSequence), false);
+    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, messageSequence), result,
         IMAGE_LOGE("CreateSendablPixelMapFromParcel pixmapNapi unwrapped is nullptr"));
-    auto messageParcel = napi_messageSequence_sendable->GetMessageParcel();
+    auto messageParcel = messageSequence->GetMessageParcel();
     if (messageParcel == nullptr) {
         return SendablePixelMapNapi::ThrowExceptionError(env,
             CREATE_PIXEL_MAP_FROM_PARCEL, ERR_IPC, "get pacel failed");
