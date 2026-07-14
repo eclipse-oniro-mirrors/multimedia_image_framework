@@ -199,11 +199,22 @@ int32_t VpeUtils::ColorSpaceConverterDecomposeImage(VpeSurfaceBuffers& sb)
     return res;
 }
 
-static bool IsBufferBoundsValid(uint32_t bufferSize, uint32_t offset, int32_t height, int32_t stride)
+static bool CheckYUVBufferSize(const SurfaceBufferInfo& srcInfo, const SurfaceBufferInfo& dstInfo,
+    int32_t srcYStride, int32_t srcUVStride, int32_t dstYStride, int32_t dstUVStride)
 {
-    CHECK_ERROR_RETURN_RET((stride <= 0 || height <= 0), false);
-    uint64_t endOffset = static_cast<uint64_t>(offset) + static_cast<uint64_t>(height) * stride;
-    return endOffset <= static_cast<uint64_t>(bufferSize);
+    int32_t uvHeight = srcInfo.height / YUV420_CHROMA_DIVIDER;
+    uint64_t srcYEnd = static_cast<uint64_t>(srcInfo.height) * srcYStride;
+    uint64_t srcUVEnd = static_cast<uint64_t>(srcInfo.uvOffset) + static_cast<uint64_t>(uvHeight) * srcUVStride;
+    uint64_t dstYEnd = static_cast<uint64_t>(srcInfo.height) * dstYStride;
+    uint64_t dstUVEnd = static_cast<uint64_t>(dstInfo.uvOffset) + static_cast<uint64_t>(uvHeight) * dstUVStride;
+    bool cond = (srcYEnd > UINT32_MAX || srcUVEnd > UINT32_MAX || dstYEnd > UINT32_MAX || dstUVEnd > UINT32_MAX);
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "[VpeUtils] CheckYUVBufferSize overflow");
+    if (srcYEnd > static_cast<uint64_t>(srcInfo.uvOffset) || srcUVEnd > static_cast<uint64_t>(srcInfo.bufferSize) ||
+        dstYEnd > static_cast<uint64_t>(dstInfo.uvOffset) || dstUVEnd > static_cast<uint64_t>(dstInfo.bufferSize)) {
+        IMAGE_LOGE("[VpeUtils] CheckYUVBufferSize buffer size exceeded");
+        return false;
+    }
+    return true;
 }
 
 void DoTruncateP010ToYUV420(const SurfaceBufferInfo& srcInfo, const SurfaceBufferInfo& outInfo)
@@ -220,12 +231,7 @@ void DoTruncateP010ToYUV420(const SurfaceBufferInfo& srcInfo, const SurfaceBuffe
     const int32_t srcUVStride = srcInfo.uvStride > 0 ? srcInfo.uvStride : srcInfo.stride;
     const int32_t dstYStride = outInfo.yStride > 0 ? outInfo.yStride : outInfo.stride;
     const int32_t dstUVStride = outInfo.uvStride > 0 ? outInfo.uvStride : outInfo.stride;
-    const int32_t uvWidth = srcInfo.width / YUV420_CHROMA_DIVIDER;
-    const int32_t uvHeight = srcInfo.height / YUV420_CHROMA_DIVIDER;
-    cond = (!IsBufferBoundsValid(srcInfo.bufferSize, srcInfo.yOffset, srcInfo.height, srcYStride) ||
-        !IsBufferBoundsValid(srcInfo.bufferSize, srcInfo.uvOffset, uvHeight, srcUVStride) ||
-        !IsBufferBoundsValid(outInfo.bufferSize, outInfo.yOffset, srcInfo.height, dstYStride) ||
-        !IsBufferBoundsValid(outInfo.bufferSize, outInfo.uvOffset, uvHeight, dstUVStride));
+    cond = !CheckYUVBufferSize(srcInfo, outInfo, srcYStride, srcUVStride, dstYStride, dstUVStride);
     CHECK_ERROR_RETURN_LOG(cond, "[VpeUtils] DoTruncateP010ToYUV420 buffer bounds check failed");
     
     // transfer y : p010 (10-bit) - > yuv420 (8-bit)
@@ -239,6 +245,8 @@ void DoTruncateP010ToYUV420(const SurfaceBufferInfo& srcInfo, const SurfaceBuffe
             dstYLine[x] = yuv420Pixel;
         }
     }
+    const int32_t uvWidth = srcInfo.width / YUV420_CHROMA_DIVIDER;
+    const int32_t uvHeight = srcInfo.height / YUV420_CHROMA_DIVIDER;
 
     // tranfer uv : P010 (10-bit) - > YUV420 (8-bit) 420
     for (int32_t y = 0; y < uvHeight; y++) {
@@ -263,9 +271,11 @@ void DoTruncateRGBA1010102ToRGBA8888(const SurfaceBufferInfo& srcInfo, const Sur
 {
     bool cond = srcInfo.buffer == nullptr || dstInfo.buffer == nullptr;
     CHECK_ERROR_RETURN(cond);
-    cond = (!IsBufferBoundsValid(srcInfo.bufferSize, 0, dstInfo.height, srcInfo.stride) ||
-        !IsBufferBoundsValid(dstInfo.bufferSize, 0, dstInfo.height, dstInfo.stride));
-    CHECK_ERROR_RETURN_LOG(cond, "[VpeUtils] DoTruncateRGBA1010102ToRGBA8888 buffer bounds check failed");
+    uint64_t srcPlaneEnd = static_cast<uint64_t>(srcInfo.height) * srcInfo.stride;
+    uint64_t dstPlaneEnd = static_cast<uint64_t>(dstInfo.height) * dstInfo.stride;
+    cond = (srcPlaneEnd > static_cast<uint64_t>(srcInfo.bufferSize) || srcPlaneEnd > UINT32_MAX ||
+        dstPlaneEnd > static_cast<uint64_t>(dstInfo.bufferSize) || dstPlaneEnd > UINT32_MAX);
+    CHECK_ERROR_RETURN_LOG(cond, "[VpeUtils] DoTruncateRGBA1010102ToRGBA8888 buffer size invalid");
     for (int32_t y = 0; y < dstInfo.height; ++y) {
         const uint32_t* srcRow = reinterpret_cast<const uint32_t*>(
             srcInfo.buffer + y * srcInfo.stride);
