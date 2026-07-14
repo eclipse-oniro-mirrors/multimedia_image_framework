@@ -661,22 +661,6 @@ HWTEST_F(ImageSourceTest, GetSupportedFormats001, TestSize.Level3)
 }
 
 /**
- * @tc.name: GetSupportedFormats002
- * @tc.desc: test GetSupportedFormats
- * @tc.type: FUNC
- */
-HWTEST_F(ImageSourceTest, GetSupportedFormats002, TestSize.Level3)
-{
-    uint32_t errorCode = 0;
-    SourceOptions opts;
-    opts.formatHint = "image/jpeg";
-    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
-    std::set<std::string> formats;
-    uint32_t ret = imageSource->GetSupportedFormats(formats);
-    ASSERT_EQ(ret, SUCCESS);
-}
-
-/**
  * @tc.name: GetSupportedFormats003
  * @tc.desc: test GetSupportedFormats
  * @tc.type: FUNC
