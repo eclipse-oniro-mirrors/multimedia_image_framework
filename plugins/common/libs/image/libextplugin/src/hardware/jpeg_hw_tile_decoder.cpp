@@ -1069,7 +1069,7 @@ bool JpegHwRegionDecoder::CombineIntoJpegNonAligned()
     IECS iecs(jpg.streamData.get(), jpg.streamSize + NUM_8, *jpg.tables);
     constexpr uint32_t protectedDist = 10 * MCU_WIDTH;
     bool isLTInFirstMCULine = static_cast<uint32_t>(jpg.extDecoder->dstSubset_.y()) < MCU_HEIGHT ? true : false;
-    bool isCrossBoundary = static_cast<uint32_t>(jpg.dinfo->image_width - jpg.extDecoder->dstSubset_.width()) <
+    bool isCrossBoundary = jpg.dinfo->image_width - static_cast<uint32_t>(jpg.extDecoder->dstSubset_.width()) <
         (jpg.dinfo->restart_interval * MCU_WIDTH + protectedDist) ? true : false;
     std::unique_ptr<uint8_t[]> tempJpgStream = nullptr;
     if (isLTInFirstMCULine && isCrossBoundary) {
