@@ -29,11 +29,6 @@ public:
     {
         receiver_ = nullptr;
     }
-    
-    void InvalidateReceiver()
-    {
-        receiver_ = nullptr;
-    }
 
     void BufferRelease(sptr<SurfaceBuffer>& buffer) override
     {
