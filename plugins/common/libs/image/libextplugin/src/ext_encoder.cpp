@@ -1258,7 +1258,7 @@ sptr<SurfaceBuffer> ExtEncoder::ConvertToSurfaceBuffer(PixelMap* pixelmap)
         uint32_t dstSize = surfaceBuffer->GetSize();
         uint64_t srcStride = static_cast<uint64_t>(width * NUM_4);
         cond = static_cast<uint64_t>(dstSize) < static_cast<uint64_t>(dstStride) * height;
-        CHECK_ERROR_RETURN_RET_LOG(cond, false, "SurfaceBuffer capacity insufficient.");
+        CHECK_ERROR_RETURN_RET_LOG(cond, nullptr, "SurfaceBuffer capacity insufficient.");
 
         for (uint32_t i = 0; i < height; i++) {
             if (memcpy_s(dst, dstSize, src, srcStride) != EOK) {
