@@ -985,7 +985,7 @@ DecodeContext ImageSource::InitDecodeContext(const DecodeOptions &opts, const Im
         plInfo.pixelFormat = format;
     }
     context.isAnimationDecode = opts.isAnimationDecode;
-    if (opts_.isAnimationDecode) {
+    if (opts_.isAnimationDecode && !(info.encodedFormat == IMAGE_HEIFS_FORMAT && hasDesiredSizeOptions)) {
         opts_.desiredSize = plInfo.size;
     }
     return context;
