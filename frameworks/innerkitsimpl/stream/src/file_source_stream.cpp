@@ -402,7 +402,7 @@ void FileSourceStream::ResetReadBuffer()
         free(readBuffer_);
         readBuffer_ = nullptr;
     }
-    if (fileData_ != nullptr && !mmapFdPassedOn_ && useMmap_ && fileOriginalOffset_ > fileSize_) {
+    if (fileData_ != nullptr && !mmapFdPassedOn_ && useMmap_ && fileOriginalOffset_ <= fileSize_) {
 #ifdef SUPPORT_MMAP
         ::munmap(fileData_, fileSize_ - fileOriginalOffset_);
         fdsan_close_with_tag(mmapFd_, FILE_SOURCE_FDSAN_TAG);
