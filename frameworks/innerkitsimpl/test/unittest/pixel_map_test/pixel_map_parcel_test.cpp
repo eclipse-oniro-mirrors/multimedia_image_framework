@@ -108,7 +108,8 @@ HWTEST_F(PixelMapParcelTest, MarshallingUnmarshallingRecodeParcelTest001, TestSi
     GTEST_LOG_(INFO) << "PixelMapParcelTest: MarshallingUnmarshallingRecodeParcelTest001 end";
 }
 
-std::unique_ptr<PixelMap> CreatePixelmapUsingOpt(int32_t size, PixelFormat format, bool useDma)
+std::unique_ptr<PixelMap> CreatePixelmapUsingOpt(int32_t size, PixelFormat format, bool useDma,
+    AllocatorType allocType = AllocatorType::DEFAULT)
 {
     InitializationOptions opts;
     opts.size.width = size;
@@ -116,6 +117,7 @@ std::unique_ptr<PixelMap> CreatePixelmapUsingOpt(int32_t size, PixelFormat forma
     opts.srcPixelFormat = format;
     opts.pixelFormat = format;
     opts.useDMA = useDma;
+    opts.allocatorType = allocType;
     return PixelMap::Create(opts);
 }
 
@@ -267,14 +269,9 @@ HWTEST_F(PixelMapParcelTest, MarshallingUnmarshallingRecodeParcelTest005, TestSi
 {
     GTEST_LOG_(INFO) << "PixelMapParcelTest: MarshallingUnmarshallingRecodeParcelTest005 start";
     constexpr int32_t size = 64;
-    auto pixelMap = CreatePixelmapUsingOpt(size, PixelFormat::RGBA_8888, false);
+    auto pixelMap = CreatePixelmapUsingOpt(size, PixelFormat::RGBA_8888, false, AllocatorType::SHARE_MEM_ALLOC);
     ASSERT_NE(pixelMap, nullptr);
-
-    if (pixelMap->GetAllocatorType() != AllocatorType::SHARE_MEM_ALLOC) {
-        // The device uses DMA nopadding memory by default, not applicable for testing
-        GTEST_LOG_(INFO) << "PixelMapParcelTest: MarshallingUnmarshallingRecodeParcelTest005 end";
-        return;
-    }
+    ASSERT_EQ(pixelMap->GetAllocatorType(), AllocatorType::SHARE_MEM_ALLOC);
 
     std::unique_lock<std::mutex> lock(*pixelMap->unmapMutex_);
     std::promise<void> marshallingStarted;
