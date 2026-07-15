@@ -939,7 +939,7 @@ bool IsSupportDma(const DecodeOptions &opts, const ImageInfo &info, bool hasDesi
 #endif
 }
 
-static void SetAnimationDesiredSize(const ImageInfo &info, bool hasDesiredSizeOptions,
+void ImageSource::SetAnimationDesiredSize(const ImageInfo &info, bool hasDesiredSizeOptions,
     const PlImageInfo &plInfo)
 {
     if (opts_.isAnimationDecode && !(info.encodedFormat == IMAGE_HEIFS_FORMAT && hasDesiredSizeOptions)) {
