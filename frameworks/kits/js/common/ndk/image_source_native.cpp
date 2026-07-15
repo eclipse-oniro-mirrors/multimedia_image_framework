@@ -678,7 +678,7 @@ Image_ErrorCode OH_ImageSourceNative_CreateFromDataWithUserBuffer(uint8_t *data,
 MIDK_EXPORT
 Image_ErrorCode OH_ImageSourceNative_CreateFromRawFile(RawFileDescriptor *rawFile, OH_ImageSourceNative **res)
 {
-    if (rawFile == nullptr) {
+    if (rawFile == nullptr || res == nullptr) {
         return IMAGE_BAD_PARAMETER;
     }
     SourceOptions options;
@@ -699,7 +699,7 @@ MIDK_EXPORT
 Image_ErrorCode OH_ImageSourceNative_CreatePixelmap(OH_ImageSourceNative *source, OH_DecodingOptions *ops,
     OH_PixelmapNative **pixelmap)
 {
-    if (source == nullptr || source->GetInnerImageSource() == nullptr) {
+    if (source == nullptr || source->GetInnerImageSource() == nullptr || pixelmap == nullptr) {
         return IMAGE_BAD_PARAMETER;
     }
     DecodeOptions decOps;

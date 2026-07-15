@@ -64,7 +64,7 @@ public:
     ~JpegDecoderYuv() = default;
     int DoDecode(DecodeContext &context, JpegDecoderYuvParameter &decodeParameter);
     static bool GetScaledSize(uint32_t jpgwidth, uint32_t jpgheight, int32_t &width, int32_t &height);
-    static uint32_t GetYuvOutSize(uint32_t width, uint32_t height);
+    static uint64_t GetYuvOutSize(uint32_t width, uint32_t height);
 
 protected:
     static void InitPlaneOutInfoTo420(uint32_t width, uint32_t height, YuvPlaneInfo &info);
