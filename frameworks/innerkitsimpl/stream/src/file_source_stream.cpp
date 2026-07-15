@@ -224,9 +224,8 @@ bool FileSourceStream::Peek(uint32_t desiredSize, uint8_t *outBuffer, uint32_t b
         IMAGE_LOGI("[FileSourceStream]peek outBuffer fail.");
         return false;
     }
-    if (filePtr_ == nullptr) {
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET(filePtr_ == nullptr, false);
+
     int ret = fseek(filePtr_, fileOffset_, SEEK_SET);
     if (ret != 0) {
         IMAGE_LOGE("[FileSourceStream]go to original position fail, ret:%{public}d.", ret);
@@ -242,9 +241,9 @@ bool FileSourceStream::Seek(uint32_t position)
             position);
         return false;
     }
-    if (filePtr_ == nullptr) {
-        return false;
-    }
+
+    CHECK_ERROR_RETURN_RET(filePtr_ == nullptr, false);
+
     size_t targetPosition = position + fileOriginalOffset_;
     fileOffset_ = ((targetPosition < fileSize_) ? targetPosition : fileSize_);
     int ret = fseek(filePtr_, fileOffset_, SEEK_SET);
@@ -267,9 +266,7 @@ bool FileSourceStream::GetData(uint32_t desiredSize, uint8_t *outBuffer, uint32_
             fileOffset_, fileSize_);
         return false;
     }
-    if (filePtr_ == nullptr) {
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET(filePtr_ == nullptr, false);
     if (desiredSize > (fileSize_ - fileOffset_)) {
         desiredSize = fileSize_ - fileOffset_;
     }
@@ -278,10 +275,7 @@ bool FileSourceStream::GetData(uint32_t desiredSize, uint8_t *outBuffer, uint32_
         IMAGE_LOGD("read outBuffer end, bytesRead:%{public}zu, desiredSize:%{public}u, fileSize_:%{public}zu,"
             "fileOffset_:%{public}zu", bytesRead, desiredSize, fileSize_, fileOffset_);
         int fRes = ferror(filePtr_);
-        if (fRes) {
-            IMAGE_LOGD("fread failed, ferror:%{public}d", fRes);
-            return false;
-        }
+        CHECK_DEBUG_RETURN_RET_LOG(fRes, false, "fread failed, ferror:%{public}d", fRes);
     }
     readSize = bytesRead;
     return true;
@@ -299,9 +293,7 @@ bool FileSourceStream::GetData(uint32_t desiredSize, DataStreamBuffer &outData)
         IMAGE_LOGE("[FileSourceStream]Invalid value, desiredSize out of size.");
         return false;
     }
-    if (filePtr_ == nullptr) {
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET(filePtr_ == nullptr, false);
 
     ResetReadBuffer();
     readBuffer_ = static_cast<uint8_t *>(malloc(desiredSize));
@@ -338,15 +330,9 @@ size_t FileSourceStream::GetStreamSize()
 static bool DupFd(FILE *f, int &res)
 {
     res = fileno(f);
-    if (res < 0) {
-        IMAGE_LOGE("[FileSourceStream]Fail to fileno fd.");
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(res < 0, false, "[FileSourceStream]Fail to fileno fd.");
     res = dup(res);
-    if (res < 0) {
-        IMAGE_LOGE("[FileSourceStream]Fail to dup fd.");
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(res < 0, false, "[FileSourceStream]Fail to dup fd.");
 #if !defined(CROSS_PLATFORM)
     fdsan_exchange_owner_tag(res, 0, FILE_SOURCE_FDSAN_TAG);
 #endif
@@ -365,7 +351,9 @@ uint8_t *FileSourceStream::GetDataPtr(bool populate)
     }
 
     if (!useMmap_) {
-        uint32_t size = static_cast<uint32_t>(GetStreamSize());
+        size_t streamSize = GetStreamSize();
+        CHECK_ERROR_RETURN_RET_LOG(streamSize > UINT32_MAX, nullptr, "[FileSourceStream] GetStreamSize overflow");
+        uint32_t size = static_cast<uint32_t>(streamSize);
         uint8_t* buffer = new (std::nothrow) uint8_t [size];
         if (buffer == nullptr) {
             IMAGE_LOGE("[FileSourceStream] Failed to new stream buffer.");
@@ -390,12 +378,8 @@ uint8_t *FileSourceStream::GetDataPtr(bool populate)
     }
 
 #ifdef SUPPORT_MMAP
-    if (filePtr_ == nullptr) {
-        return nullptr;
-    }
-    if (!DupFd(filePtr_, mmapFd_)) {
-        return nullptr;
-    }
+    CHECK_ERROR_RETURN_RET(filePtr_ == nullptr, nullptr);
+    CHECK_ERROR_RETURN_RET(!DupFd(filePtr_, mmapFd_), nullptr);
     auto mmptr = ::mmap(nullptr, fileSize_ - fileOriginalOffset_, PROT_READ,
         populate ? MAP_SHARED | MAP_POPULATE : MAP_SHARED, mmapFd_, fileOriginalOffset_);
     if (mmptr == MAP_FAILED) {

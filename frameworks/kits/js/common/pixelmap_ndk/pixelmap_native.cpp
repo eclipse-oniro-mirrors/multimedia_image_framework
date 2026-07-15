@@ -1688,6 +1688,10 @@ Image_ErrorCode OH_PixelmapNative_GetNativeBuffer(OH_PixelmapNative *pixelmap, O
         return IMAGE_DMA_NOT_EXIST;
     }
 
+    if (pixelmap->GetInnerPixelmap()->IsUseDefaultDmaNopadding()) {
+        return IMAGE_DMA_NOT_EXIST;
+    }
+
     OHOS::SurfaceBuffer *buffer = reinterpret_cast<OHOS::SurfaceBuffer*>(pixelmap->GetInnerPixelmap()->GetFd());
     if (buffer == nullptr) {
         return IMAGE_BAD_PARAMETER;

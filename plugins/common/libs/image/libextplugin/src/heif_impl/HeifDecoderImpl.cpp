@@ -970,6 +970,8 @@ bool HeifDecoderImpl::SwDecodeGrids(std::shared_ptr<HeifImage> &image, HevcSoftD
     cond = tileImages.empty();
     CHECK_ERROR_RETURN_RET_LOG(cond, false, "grid image has no tile image");
     size_t numGrid = tileImages.size();
+    cond = numGrid != (param.gridInfo.cols * param.gridInfo.rows);
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "grid count not equal actual decode quantity");
     size_t inputsize = 0;
     std::vector<std::vector<uint8_t>> inputs;
     if (IsRegionDecode()) {
@@ -1288,6 +1290,9 @@ bool HeifDecoderImpl::ProcessChunkHead(uint8_t *data, size_t len)
         data[index + CHUNK_HEAD_OFFSET_1] = 0;
         data[index + CHUNK_HEAD_OFFSET_2] = 0;
         data[index + CHUNK_HEAD_OFFSET_3] = 1;
+        if (chunkLen > len - index - CHUNK_HEAD_SIZE) {
+            break;
+        }
         index += (chunkLen + CHUNK_HEAD_SIZE);
     }
     return true;

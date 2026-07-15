@@ -429,6 +429,12 @@ bool ImageFormatConvert::CheckConvertDataInfo(const ConvertDataInfo &convertData
         return false;
     }
 
+    size_t requiredSize = GetBufferSizeByFormat(convertDataInfo.pixelFormat, convertDataInfo.imageSize);
+    if (requiredSize == 0 || requiredSize > convertDataInfo.bufferSize) {
+        IMAGE_LOGE("buffer size is wrong");
+        return false;
+    }
+
     return true;
 }
 
@@ -576,6 +582,11 @@ std::unique_ptr<AbsMemory> Truncate10BitMemory(std::shared_ptr<PixelMap> &srcPix
     }
 
     VpeSurfaceBuffers buffers;
+    if (sdrMemory->extend.data == nullptr || srcPixelmap->GetFd() == nullptr) {
+        IMAGE_LOGE("Truncate10BitMemory srcPixelmap get fd or extend data failed");
+        sdrMemory->Release();
+        return nullptr;
+    }
     buffers.sdr = sptr<SurfaceBuffer>(reinterpret_cast<SurfaceBuffer*>(sdrMemory->extend.data));
     buffers.hdr = sptr<SurfaceBuffer>(reinterpret_cast<SurfaceBuffer*>(srcPixelmap->GetFd()));
     std::unique_ptr<VpeUtils> utils = std::make_unique<VpeUtils>();
@@ -640,10 +651,7 @@ uint32_t ImageFormatConvert::RGBConvertImageFormatOption(std::shared_ptr<PixelMa
     YUVStrideInfo dstStrides;
     auto allocType = srcPixelMap->GetAllocatorType();
     auto m = CreateMemory(destFormat, allocType, imageInfo.size, dstStrides, srcPixelMap->GetNoPaddingUsage());
-    if (m == nullptr) {
-        IMAGE_LOGE("CreateMemory failed");
-        return ERR_IMAGE_INVALID_PARAMETER;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(m == nullptr, ERR_IMAGE_INVALID_PARAMETER, "CreateMemory failed");
     int32_t stride = srcPixelMap->GetRowStride();
     #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     if (allocType == AllocatorType::DMA_ALLOC) {
@@ -651,6 +659,11 @@ uint32_t ImageFormatConvert::RGBConvertImageFormatOption(std::shared_ptr<PixelMa
         CHECK_ERROR_RETURN_RET(sb == nullptr, ERR_IMAGE_INVALID_PARAMETER);
         stride = sb->GetStride();
         sptr<SurfaceBuffer> sourceSurfaceBuffer(sb);
+        if (m->extend.data == nullptr) {
+            IMAGE_LOGE("CreateMemory get surfacebuffer failed");
+            m->Release();
+            return ERR_IMAGE_INVALID_PARAMETER;
+        }
         sptr<SurfaceBuffer> dstSurfaceBuffer(reinterpret_cast<SurfaceBuffer*>(m->extend.data));
         VpeUtils::CopySurfaceBufferInfo(sourceSurfaceBuffer, dstSurfaceBuffer);
     }
@@ -664,7 +677,7 @@ uint32_t ImageFormatConvert::RGBConvertImageFormatOption(std::shared_ptr<PixelMa
     destInfo.yOffset = dstStrides.yOffset;
     destInfo.uvOffset = dstStrides.uvOffset;
     if (!cvtFunc(srcBuffer, rgbDataInfo, destInfo, srcPixelMap->GetColorSpace())) {
-        IMAGE_LOGE("format convert failed!");
+        IMAGE_LOGE("RGB format convert failed!");
         m->Release();
         return IMAGE_RESULT_FORMAT_CONVERT_FAILED;
     }
@@ -797,26 +810,24 @@ uint32_t ImageFormatConvert::YUVConvertImageFormatOption(std::shared_ptr<PixelMa
     CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER, "get convert function by format failed!");
     const_uint8_buffer_type data = srcPixelMap->GetPixels();
     YUVDataInfo yDInfo;
+#if !defined(CROSS_PLATFORM)
+    ImageUtils::UpdateYUVDataInfo(*srcPixelMap);
+#endif
     srcPixelMap->GetImageYUVInfo(yDInfo);
     ImageInfo imageInfo;
     srcPixelMap->GetImageInfo(imageInfo);
-    if ((srcFormat == PixelFormat::NV21 || srcFormat == PixelFormat::YCBCR_P010 ||
-        srcFormat == PixelFormat::YCRCB_P010) &&
-        (yDInfo.yWidth == 0 || yDInfo.yHeight == 0 || yDInfo.uvWidth == 0 || yDInfo.uvHeight == 0)) {
-        yDInfo.yWidth = static_cast<uint32_t>(imageInfo.size.width);
-        yDInfo.yHeight = static_cast<uint32_t>(imageInfo.size.height);
-        yDInfo.uvWidth = static_cast<uint32_t>((imageInfo.size.width + 1) / NUM_2);
-        yDInfo.uvHeight = static_cast<uint32_t>((imageInfo.size.height + 1) / NUM_2);
-    }
     YUVStrideInfo dstStrides;
     auto allocType = GetAllocatorType(srcPixelMap, destFormat);
     DestConvertInfo destInfo = {imageInfo.size.width, imageInfo.size.height, destFormat, allocType};
-    auto m = CreateMemory(destFormat, allocType, imageInfo.size, dstStrides,
-        srcPixelMap->GetNoPaddingUsage());
-    cond = m == nullptr;
-    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER, "CreateMemory failed");
+    auto m = CreateMemory(destFormat, allocType, imageInfo.size, dstStrides, srcPixelMap->GetNoPaddingUsage());
+    CHECK_ERROR_RETURN_RET_LOG(m == nullptr, ERR_IMAGE_INVALID_PARAMETER, "CreateMemory failed");
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     if (allocType == AllocatorType::DMA_ALLOC) {
+        if (srcPixelMap->GetFd() == nullptr || m->extend.data == nullptr) {
+            IMAGE_LOGE("srcPixelMap get fd or extend data is nullptr");
+            m->Release();
+            return ERR_IMAGE_INVALID_PARAMETER;
+        }
         sptr<SurfaceBuffer> sourceSurfaceBuffer(reinterpret_cast<SurfaceBuffer*>(srcPixelMap->GetFd()));
         sptr<SurfaceBuffer> dstSurfaceBuffer(reinterpret_cast<SurfaceBuffer*>(m->extend.data));
         VpeUtils::CopySurfaceBufferInfo(sourceSurfaceBuffer, dstSurfaceBuffer);
@@ -831,6 +842,7 @@ uint32_t ImageFormatConvert::YUVConvertImageFormatOption(std::shared_ptr<PixelMa
     destInfo.yOffset = dstStrides.yOffset;
     destInfo.uvOffset = dstStrides.uvOffset;
     if (!yuvCvtFunc(data, yDInfo, destInfo, srcPixelMap->GetColorSpace())) {
+        IMAGE_LOGE("YUV format convert failed!");
         m->Release();
         return IMAGE_RESULT_FORMAT_CONVERT_FAILED;
     }

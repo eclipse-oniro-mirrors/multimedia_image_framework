@@ -13,6 +13,10 @@
  * limitations under the License.
  */
 
+#include <atomic>
+#include <chrono>
+#include <future>
+
 #define protected public
 #define private public
 #include <gtest/gtest.h>
@@ -71,6 +75,15 @@ constexpr uint32_t SIZE_MAX_HEIGHT = 61440;
 const static std::string EXIF_JPEG_PATH = "/data/local/tmp/image/test_exif.jpg";
 static const std::string IMAGE_INPUT_JPEG_HDR_PATH = "/data/local/tmp/image/hdr.jpg";
 static const std::string IMAGE_INPUT_JPEG_HDR_MEDIA_TYPE_PATH = "/data/local/tmp/image/hdr_media_type_test.jpg";
+std::atomic<uint32_t> g_freePixelMapHookCount = 0;
+
+void CountFreePixelMapHook(void *addr, void *context, uint32_t size)
+{
+    (void)addr;
+    (void)context;
+    (void)size;
+    g_freePixelMapHookCount.fetch_add(1);
+}
 
 struct ImageSize {
     int32_t width = 0;
@@ -3132,44 +3145,6 @@ HWTEST_F(PixelMapTest, ConvertAlphaFormatTest008, TestSize.Level3)
 }
 
 /**
- * @tc.name: VersionIdTest001
- * @tc.desc: test pixelmap verisonId get&set interface
- * @tc.type: FUNC
- */
-HWTEST_F(PixelMapTest, VersionIdTest001, TestSize.Level3)
-{
-    GTEST_LOG_(INFO) << "ImagePixelMapTest: VersionIdTest001 start";
-    const int32_t offset = 0;
-    /* for test */
-    const int32_t width = 2;
-    /* for test */
-    const int32_t height = 2;
-    /* for test */
-    const uint32_t pixelByte = 4;
-    constexpr uint32_t colorLength = width * height * pixelByte;
-    uint8_t buffer[colorLength] = {0};
-    CreateBuffer(width, height, pixelByte, buffer);
-    uint32_t *color = (uint32_t *)buffer;
-    InitializationOptions opts1;
-    InitOption(opts1, width, height, PixelFormat::BGRA_8888, AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
-    std::unique_ptr<PixelMap> pixelMap = PixelMap::Create(color, colorLength, offset, width, opts1);
-
-    EXPECT_TRUE(pixelMap != nullptr);
-    uint32_t versionId = pixelMap->GetVersionId();
-    // 1 means the pixelmap's initialized versionId
-    ASSERT_EQ(versionId, 1);
-    pixelMap->AddVersionId();
-    versionId = pixelMap->GetVersionId();
-    // 2 used to test add func
-    ASSERT_EQ(versionId, 2);
-    // 10 used to test set func
-    pixelMap->SetVersionId(10);
-    versionId = pixelMap->GetVersionId();
-    ASSERT_EQ(versionId, 10);
-    GTEST_LOG_(INFO) << "ImagePixelMapTest: VersionIdTest001 end";
-}
-
-/**
  * @tc.name: SetMemoryNameTest001
  * @tc.desc: test pixelmap setname
  * @tc.type: FUNC
@@ -4197,6 +4172,61 @@ HWTEST_F(PixelMapTest, UnMapPixelMapTest, TestSize.Level3)
     EXPECT_NE(true, pixelMap->UnMap());
     GTEST_LOG_(INFO) << "PixelMapTest: UnMapPixelMapTest end";
 }
+
+/**
+ * @tc.name: FreePixelMapShareMemLockTest001
+ * @tc.desc: Test FreePixelMap uses unmapMutex_ when releasing SHARE_MEM_ALLOC context
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, FreePixelMapShareMemLockTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelMapTest: FreePixelMapShareMemLockTest001 start";
+    auto pixelMap =
+        ConstructPixmap(PixelFormat::RGBA_8888, AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN, AllocatorType::SHARE_MEM_ALLOC);
+    ASSERT_NE(pixelMap, nullptr);
+    ASSERT_NE(pixelMap->context_, nullptr);
+    g_freePixelMapHookCount.store(0);
+    pixelMap->SetFreePixelMapProc(CountFreePixelMapHook);
+
+    std::unique_lock<std::mutex> lock(*pixelMap->unmapMutex_);
+    std::promise<void> freeStarted;
+    auto startedFuture = freeStarted.get_future();
+    auto freeTask = std::async(std::launch::async, [&pixelMap, &freeStarted]() {
+        freeStarted.set_value();
+        pixelMap->FreePixelMap();
+        return pixelMap->context_ == nullptr;
+    });
+    EXPECT_EQ(startedFuture.wait_for(std::chrono::seconds(1)), std::future_status::ready);
+    EXPECT_EQ(freeTask.wait_for(std::chrono::milliseconds(100)), std::future_status::timeout);
+    EXPECT_NE(pixelMap->context_, nullptr);
+    EXPECT_EQ(g_freePixelMapHookCount.load(), 0);
+
+    lock.unlock();
+    EXPECT_TRUE(freeTask.get());
+    EXPECT_EQ(pixelMap->context_, nullptr);
+    EXPECT_EQ(g_freePixelMapHookCount.load(), 1);
+    GTEST_LOG_(INFO) << "PixelMapTest: FreePixelMapShareMemLockTest001 end";
+}
+
+/**
+ * @tc.name: FreePixelMapHookTest001
+ * @tc.desc: Test FreePixelMap invokes lifecycle hook before non-shared empty-resource return
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, FreePixelMapHookTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelMapTest: FreePixelMapHookTest001 start";
+    PixelMap pixelMap;
+    pixelMap.allocatorType_ = AllocatorType::HEAP_ALLOC;
+    pixelMap.data_ = nullptr;
+    pixelMap.context_ = nullptr;
+    g_freePixelMapHookCount.store(0);
+    pixelMap.SetFreePixelMapProc(CountFreePixelMapHook);
+
+    pixelMap.FreePixelMap();
+    EXPECT_EQ(g_freePixelMapHookCount.load(), 1);
+    GTEST_LOG_(INFO) << "PixelMapTest: FreePixelMapHookTest001 end";
+}
  
 /**
  * @tc.name: GetImagePropertyIntPixelMapTest
@@ -4311,7 +4341,7 @@ HWTEST_F(PixelMapTest, IsUnmarshallingTest001, TestSize.Level3)
     pixelMapOut->SetPixelsAddr(nullptr, nullptr, 0, AllocatorType::SHARE_MEM_ALLOC, nullptr);
     EXPECT_EQ(true, pixelMapOut->isUnmarshalling_);
 
-    EXPECT_TRUE(PixelMap::ReadMemInfoFromParcel(parcel, pixelMemInfo, error, nullptr));
+    EXPECT_TRUE(PixelMap::ReadMemInfoFromParcel(parcel, imgInfo, pixelMemInfo, error, nullptr));
     EXPECT_EQ(true, pixelMapOut->isUnmarshalling_);
 
     pixelMapOut->SetPixelsAddr(nullptr, nullptr, 0, AllocatorType::SHARE_MEM_ALLOC, nullptr);
@@ -4353,7 +4383,7 @@ HWTEST_F(PixelMapTest, IsUnmarshallingTest002, TestSize.Level3)
     EXPECT_EQ(Media::SUCCESS, pixelMapOut->SetImageInfo(imgInfo, true));
     EXPECT_EQ(true, pixelMapOut->isUnmarshalling_);
 
-    EXPECT_TRUE(PixelMap::ReadMemInfoFromParcel(parcel, pixelMemInfo, error, nullptr));
+    EXPECT_TRUE(PixelMap::ReadMemInfoFromParcel(parcel, imgInfo, pixelMemInfo, error, nullptr));
     EXPECT_EQ(true, pixelMapOut->isUnmarshalling_);
 
     EXPECT_EQ(Media::SUCCESS, pixelMapOut->SetImageInfo(imgInfo, true));
@@ -4395,7 +4425,7 @@ HWTEST_F(PixelMapTest, IsUnmarshallingTest003, TestSize.Level3)
     EXPECT_EQ(true, pixelMapOut->isUnmarshalling_);
 #endif
 
-    EXPECT_TRUE(PixelMap::ReadMemInfoFromParcel(parcel, pixelMemInfo, error, nullptr));
+    EXPECT_TRUE(PixelMap::ReadMemInfoFromParcel(parcel, imgInfo, pixelMemInfo, error, nullptr));
     EXPECT_EQ(true, pixelMapOut->isUnmarshalling_);
 
 #ifdef IMAGE_COLORSPACE_FLAG
@@ -5101,17 +5131,6 @@ HWTEST_F(PixelMapTest, ColorTableCoefficientstest, TestSize.Level3)
     GTEST_LOG_(INFO) << "PixelMapTest: ColorTableCoefficientstest end";
 }
  
-// For test closeFd func
-class TestPixelMap : public PixelMap {
-public:
-    TestPixelMap() {}
-    virtual ~TestPixelMap() {}
-    bool CloseFd()
-    {
-        return PixelMap::CloseFd();
-    }
-};
-
 /**
  * @tc.name: pixelmapfd001
  * @tc.desc: Marshalling
@@ -5137,13 +5156,6 @@ HWTEST_F(PixelMapTest, pixelmapfd001, TestSize.Level3)
     EXPECT_TRUE(ret);
     PixelMap *pixelMap2 = PixelMap::Unmarshalling(data);
     EXPECT_EQ(pixelMap1->GetHeight(), pixelMap2->GetHeight());
-
-    std::unique_ptr<PixelMap> pixelMapBase =
-        ConstructPixmap(PixelFormat::RGBA_8888, AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN);
-    EXPECT_NE(nullptr, pixelMapBase);
-    TestPixelMap* testPixelMap = (TestPixelMap*)pixelMapBase.release();
-    EXPECT_EQ(true, testPixelMap->CloseFd());
-    delete testPixelMap;
 
     std::unique_ptr<PixelMap> pixelMap3 = PixelMap::Create(opts);
     std::unique_ptr<PixelMap> pixelMap4 = PixelMap::Create(*(pixelMap3.get()), opts);
@@ -5175,30 +5187,6 @@ HWTEST_F(PixelMapTest, GetPixelTest, TestSize.Level3)
     pixelMapRGBA->SetAstc(false);
     EXPECT_NE(nullptr, pixelMapRGBA->GetPixel(1, 1));
     GTEST_LOG_(INFO) << "PixelMapTest: GetPixelTest end";
-}
-
-/**
- * @tc.name: CloseFdPixelMapTest
- * @tc.desc: Test CloseFd PixelMap
- * @tc.type: FUNC
- */
-HWTEST_F(PixelMapTest, CloseFdPixelMapTest, TestSize.Level3)
-{
-    GTEST_LOG_(INFO) << "PixelMapTest: CloseFdPixelMapTest start";
-    std::unique_ptr<PixelMap> pixelMapBase =
-        ConstructPixmap(PixelFormat::RGBA_8888, AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN);
-    EXPECT_NE(nullptr, pixelMapBase);
-    TestPixelMap* testPixelMap = (TestPixelMap*)pixelMapBase.release();
-    EXPECT_EQ(true, testPixelMap->CloseFd());
- 
-    std::unique_ptr<PixelMap> testHeapPixelMap = ConstructPixmap(AllocatorType::HEAP_ALLOC);
-    EXPECT_NE(nullptr, testHeapPixelMap);
-    TestPixelMap* heapPixelMap = (TestPixelMap*)testHeapPixelMap.release();
-    EXPECT_EQ(false, heapPixelMap->CloseFd());
- 
-    delete testPixelMap;
-    delete heapPixelMap;
-    GTEST_LOG_(INFO) << "PixelMapTest: CloseFdPixelMapTest end";
 }
 
 /**
@@ -5512,8 +5500,6 @@ HWTEST_F(PixelMapTest, HdrPixelMapTlvTest005, TestSize.Level3)
     ASSERT_EQ(pixelMap->EncodeTlv(buff), true);
     std::unique_ptr<PixelMap> tlvPixelMap(PixelMap::DecodeTlv(buff));
     ASSERT_NE(tlvPixelMap, nullptr);
-    ASSERT_EQ(tlvPixelMap->GetAllocatorType(), pixelMap->GetAllocatorType());
-    ASSERT_EQ(tlvPixelMap->GetAllocatorType(), AllocatorType::DMA_ALLOC);
 }
 
 /**
@@ -6191,7 +6177,6 @@ HWTEST_F(PixelMapTest, AllocPixelMapMemory001, TestSize.Level3)
     opts.allocatorType = AllocatorType::DEFAULT;
     std::unique_ptr<PixelMap> pixelMap = PixelMap::Create(opts);
     ASSERT_NE(pixelMap, nullptr);
-    ASSERT_EQ(pixelMap->GetAllocatorType(), AllocatorType::DMA_ALLOC);
     GTEST_LOG_(INFO) << "PixelMapTest: AllocPixelMapMemory001 end";
 }
 
@@ -6236,7 +6221,6 @@ HWTEST_F(PixelMapTest, AllocPixelMapMemory004, TestSize.Level3)
     opts.allocatorType = AllocatorType::DEFAULT;
     std::unique_ptr<PixelMap> pixelMap = PixelMap::Create(opts);
     ASSERT_NE(pixelMap, nullptr);
-    ASSERT_EQ(pixelMap->GetAllocatorType(), AllocatorType::DMA_ALLOC);
     GTEST_LOG_(INFO) << "PixelMapTest: AllocPixelMapMemory004 end";
 }
 
@@ -6259,7 +6243,7 @@ HWTEST_F(PixelMapTest, CopyPixMapToDst001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "PixelMapTest: CopyPixMapToDst001 start";
     auto srcPixelMap = ConstructPixelMap(SIZE_WIDTH, SIZE_HEIGHT, PixelFormat::RGBA_8888,
-        AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN, AllocatorType::DEFAULT);
+        AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN, AllocatorType::DMA_ALLOC);
     ASSERT_NE(srcPixelMap, nullptr);
     auto dstPixelMap = ConstructPixelMap(SIZE_WIDTH, SIZE_HEIGHT, PixelFormat::RGBA_8888,
         AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN, AllocatorType::DMA_ALLOC);

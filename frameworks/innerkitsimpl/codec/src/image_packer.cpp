@@ -53,6 +53,7 @@ using namespace MultimediaPlugin;
 static constexpr uint8_t QUALITY_MAX = 100;
 const static std::string EXTENDED_ENCODER = "image/jpeg,image/png,image/webp";
 static constexpr size_t SIZE_ZERO = 0;
+static constexpr uint8_t BITS_PER_BYTE = 8;
 
 PluginServer &ImagePacker::pluginServer_ = ImageUtils::GetPluginServer();
 
@@ -422,15 +423,23 @@ uint32_t ImagePacker::ValidateBinaryImageBufferInfo(const PixelBufferInfo &buffe
     CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER,
         "[ImagePacker] %{public}s failed, invalid dimensions: width or height cannot be zero", funcName);
 
-    // Validate data size for Y1 format (1 bit per pixel, packed into bytes)
-    uint32_t rowBytes = (bufferInfo.bytesPerRow > 0) ? bufferInfo.bytesPerRow :
-                        (bufferInfo.width + 7) / 8;
+    // Get and validate rowBytes for Y1 format (1 bit per pixel, packed into bytes)
+    uint64_t minRowBytes = (static_cast<uint64_t>(bufferInfo.width) + BITS_PER_BYTE - 1) / BITS_PER_BYTE;
+    uint64_t rowBytes = minRowBytes;
+    if (bufferInfo.bytesPerRow > 0) {
+        cond = bufferInfo.bytesPerRow < minRowBytes;
+        CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER,
+            "[ImagePacker] %{public}s failed, bytesPerRow too small: %{public}u < required %{public}llu",
+            funcName, bufferInfo.bytesPerRow, static_cast<unsigned long long>(minRowBytes));
+        rowBytes = bufferInfo.bytesPerRow;
+    }
     // Check for overflow when calculating required size
-    cond = static_cast<uint64_t>(rowBytes) > std::numeric_limits<uint64_t>::max() / bufferInfo.height;
-    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER,
+    CHECK_ERROR_RETURN_RET_LOG(rowBytes > std::numeric_limits<uint64_t>::max() / bufferInfo.height,
+        ERR_IMAGE_INVALID_PARAMETER,
         "[ImagePacker] %{public}s failed, dimensions cause overflow: %{public}ux%{public}u",
         funcName, bufferInfo.width, bufferInfo.height);
-    uint64_t requiredSize = static_cast<uint64_t>(rowBytes) * bufferInfo.height;
+    // Check for buffer size
+    uint64_t requiredSize = rowBytes * bufferInfo.height;
     static constexpr uint64_t maxDataSize = std::numeric_limits<uint32_t>::max();
     cond = bufferInfo.dataSize < requiredSize;
     CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER,

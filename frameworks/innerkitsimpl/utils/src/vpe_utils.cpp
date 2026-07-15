@@ -199,6 +199,26 @@ int32_t VpeUtils::ColorSpaceConverterDecomposeImage(VpeSurfaceBuffers& sb)
     return res;
 }
 
+static bool CheckYUVBufferSize(const SurfaceBufferInfo& srcInfo, const SurfaceBufferInfo& dstInfo)
+{
+    int32_t uvHeight = srcInfo.height / YUV420_CHROMA_DIVIDER;
+    const int32_t srcYStride = srcInfo.yStride > 0 ? srcInfo.yStride : srcInfo.stride;
+    const int32_t srcUVStride = srcInfo.uvStride > 0 ? srcInfo.uvStride : srcInfo.stride;
+    const int32_t dstYStride = dstInfo.yStride > 0 ? dstInfo.yStride : dstInfo.stride;
+    const int32_t dstUVStride = dstInfo.uvStride > 0 ? dstInfo.uvStride : dstInfo.stride;
+    uint64_t srcYEnd = static_cast<uint64_t>(srcInfo.height) * srcYStride;
+    uint64_t srcUVEnd = static_cast<uint64_t>(srcInfo.uvOffset) + static_cast<uint64_t>(uvHeight) * srcUVStride;
+    uint64_t dstYEnd = static_cast<uint64_t>(srcInfo.height) * dstYStride;
+    uint64_t dstUVEnd = static_cast<uint64_t>(dstInfo.uvOffset) + static_cast<uint64_t>(uvHeight) * dstUVStride;
+    bool cond = (srcYEnd > UINT32_MAX || srcUVEnd > UINT32_MAX || dstYEnd > UINT32_MAX || dstUVEnd > UINT32_MAX);
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "[VpeUtils] CheckYUVBufferSize overflow");
+    if (srcYEnd > static_cast<uint64_t>(srcInfo.uvOffset) || srcUVEnd > static_cast<uint64_t>(srcInfo.bufferSize) ||
+        dstYEnd > static_cast<uint64_t>(dstInfo.uvOffset) || dstUVEnd > static_cast<uint64_t>(dstInfo.bufferSize)) {
+        IMAGE_LOGE("[VpeUtils] CheckYUVBufferSize buffer size exceeded");
+        return false;
+    }
+    return true;
+}
 
 void DoTruncateP010ToYUV420(const SurfaceBufferInfo& srcInfo, const SurfaceBufferInfo& outInfo)
 {
@@ -214,7 +234,9 @@ void DoTruncateP010ToYUV420(const SurfaceBufferInfo& srcInfo, const SurfaceBuffe
     const int32_t srcUVStride = srcInfo.uvStride > 0 ? srcInfo.uvStride : srcInfo.stride;
     const int32_t dstYStride = outInfo.yStride > 0 ? outInfo.yStride : outInfo.stride;
     const int32_t dstUVStride = outInfo.uvStride > 0 ? outInfo.uvStride : outInfo.stride;
-
+    cond = !CheckYUVBufferSize(srcInfo, outInfo);
+    CHECK_ERROR_RETURN_LOG(cond, "[VpeUtils] DoTruncateP010ToYUV420 buffer size invalid");
+    
     // transfer y : p010 (10-bit) - > yuv420 (8-bit)
     for (int32_t y = 0; y < srcInfo.height; y++) {
         const uint16_t* srcYLine = reinterpret_cast<const uint16_t*>(srcY + y * srcYStride);
@@ -252,6 +274,10 @@ void DoTruncateRGBA1010102ToRGBA8888(const SurfaceBufferInfo& srcInfo, const Sur
 {
     bool cond = srcInfo.buffer == nullptr || dstInfo.buffer == nullptr;
     CHECK_ERROR_RETURN(cond);
+    uint64_t srcPlaneEnd = static_cast<uint64_t>(srcInfo.height) * srcInfo.stride;
+    uint64_t dstPlaneEnd = static_cast<uint64_t>(dstInfo.height) * dstInfo.stride;
+    cond = (srcPlaneEnd > srcInfo.bufferSize) || (dstPlaneEnd > dstInfo.bufferSize);
+    CHECK_ERROR_RETURN_LOG(cond, "[VpeUtils] DoTruncateRGBA1010102ToRGBA8888 buffer size invalid");
     for (int32_t y = 0; y < dstInfo.height; ++y) {
         const uint32_t* srcRow = reinterpret_cast<const uint32_t*>(
             srcInfo.buffer + y * srcInfo.stride);
@@ -318,7 +344,6 @@ void TruncateP010ToYUV420(VpeSurfaceBuffers& buffers)
 
 int32_t VpeUtils::TruncateBuffer(VpeSurfaceBuffers& buffers, bool shouldCalDiff)
 {
-    int32_t res = VPE_ERROR_OK;
 #ifdef IMAGE_VPE_FLAG
     bool cond = buffers.hdr == nullptr || buffers.sdr == nullptr;
     CHECK_ERROR_RETURN_RET(cond, VPE_ERROR_FAILED);
@@ -326,18 +351,18 @@ int32_t VpeUtils::TruncateBuffer(VpeSurfaceBuffers& buffers, bool shouldCalDiff)
     CHECK_ERROR_RETURN_RET_LOG(cond, VPE_ERROR_FAILED, "TruncateBuffer get input of different sizes");
     GraphicPixelFormat srcPixelFormat = static_cast<GraphicPixelFormat>(buffers.hdr->GetFormat());
     if (shouldCalDiff) {
-        IMAGE_LOGE("do TruncateBuffer with not surpport format");
+        IMAGE_LOGE("do TruncateBuffer with unsupported format");
         return VPE_ERROR_FAILED;
+    }
+    if (srcPixelFormat == GRAPHIC_PIXEL_FMT_YCRCB_P010 || srcPixelFormat == GRAPHIC_PIXEL_FMT_YCBCR_P010) {
+        TruncateP010ToYUV420(buffers);
+    } else if (srcPixelFormat == GRAPHIC_PIXEL_FMT_RGBA_1010102) {
+        TruncateRGBA1010102ToRGBA8888(buffers);
     } else {
-        CHECK_ERROR_RETURN_RET(cond, false);
-        if (srcPixelFormat == GRAPHIC_PIXEL_FMT_YCRCB_P010 || srcPixelFormat == GRAPHIC_PIXEL_FMT_YCBCR_P010) {
-            TruncateP010ToYUV420(buffers);
-        } else if (srcPixelFormat == GRAPHIC_PIXEL_FMT_RGBA_1010102) {
-            TruncateRGBA1010102ToRGBA8888(buffers);
-        }
+        return VPE_ERROR_FAILED;
     }
 #endif
-    return res;
+    return VPE_ERROR_OK;
 }
 
 int32_t VpeUtils::ColorSpaceCalGainmap(VpeSurfaceBuffers& sb)
@@ -433,6 +458,27 @@ bool VpeUtils::GetSbColorSpaceType(const sptr<SurfaceBuffer>& buffer, CM_ColorSp
 
 bool VpeUtils::SetSbMetadataType(sptr<SurfaceBuffer>& buffer, const CM_HDR_Metadata_Type& metadataType)
 {
+    if (buffer == nullptr) {
+        IMAGE_LOGE("%{public}s failed, buffer is nullptr", __func__);
+        return false;
+    }
+    std::vector<uint8_t> hdrMetadataTypeVec;
+    auto ret = MetadataManager::ConvertMetadataToVec(metadataType, hdrMetadataTypeVec);
+    if (ret != GSERROR_OK) {
+        return false;
+    }
+    ret = buffer->SetMetadata(ATTRKEY_HDR_METADATA_TYPE, hdrMetadataTypeVec);
+    if (ret != GSERROR_OK) {
+        return false;
+    }
+    return true;
+}
+
+bool VpeUtils::SetSbMetadataType(
+    sptr<SurfaceBuffer> &buffer, const HDI::Display::Graphic::Common::V2_2::CM_HDR_Metadata_Type &metadataType)
+{
+    uint32_t outputMetadataType = static_cast<uint32_t>(metadataType);
+    IMAGE_LOGI("SetSbMetadataType outputMetadataType = %{public}d", outputMetadataType);
     if (buffer == nullptr) {
         IMAGE_LOGE("%{public}s failed, buffer is nullptr", __func__);
         return false;

@@ -647,6 +647,31 @@ HWTEST_F(TiffEncoderTest, PackBinaryImageToTiffDataZeroSizeTest, TestSize.Level3
 }
 
 /**
+ * @tc.name: PackBinaryImageToTiffDataShortBytesPerRowTest
+ * @tc.desc: Test PackBinaryImageToTiffData rejects bytesPerRow smaller than Y1 scanline bytes
+ * @tc.type: FUNC
+ */
+HWTEST_F(TiffEncoderTest, PackBinaryImageToTiffDataShortBytesPerRowTest, TestSize.Level3)
+{
+    uint8_t inputData[] = {0xFF};
+    PixelBufferInfo bufferInfo;
+    bufferInfo.data = inputData;
+    bufferInfo.dataSize = sizeof(inputData);
+    bufferInfo.width = 16;
+    bufferInfo.height = 1;
+    bufferInfo.bytesPerRow = 1;
+
+    auto outputData = std::make_unique<uint8_t[]>(SMALL_BUFFER_SIZE);
+    uint32_t outputSize = SMALL_BUFFER_SIZE;
+
+    OHOS::Media::PackingOptionsForTiff tiffOpts;
+    OHOS::Media::ImagePacker packer;
+
+    uint32_t ret = packer.PackBinaryImageToTiffData(bufferInfo, tiffOpts, outputData.get(), outputSize);
+    EXPECT_EQ(ret, OHOS::Media::ERR_IMAGE_INVALID_PARAMETER);
+}
+
+/**
  * @tc.name: PackBinaryImageToTiffDataNoMetadataTest
  * @tc.desc: Test PackBinaryImageToTiffData without optional metadata using file-based Y1 data
  * @tc.type: FUNC

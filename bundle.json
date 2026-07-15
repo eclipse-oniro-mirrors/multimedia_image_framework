@@ -41,6 +41,7 @@
           "hisysevent",
           "ipc",
           "napi",
+          "node",
           "zlib",
           "init",
           "memory_utils",
@@ -71,7 +72,8 @@
           "xmp_toolkit_sdk",
           "egl",
           "opengles",
-          "jsoncpp"
+          "jsoncpp",
+          "taihe_ffi_gen"
         ]
       },
       "build": {

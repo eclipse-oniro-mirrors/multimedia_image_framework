@@ -1544,35 +1544,6 @@ HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceNative_GetFrameCount, TestSize.Level3
 }
 
 /**
- * @tc.name: OH_ImageSourceNative_Destroy001
- * @tc.desc: test OH_ImageSourceNative_Destroy
- * @tc.type: FUNC
- */
-HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceNative_Destroy001, TestSize.Level3)
-{
-    GTEST_LOG_(INFO) << "ImagSourceNdk2Test: OH_ImageSourceNative_Destroy001 start";
-    OH_ImageSourceNative *imageSource = CreateImageSourceNative(IMAGE_JPEG_PATH_TEST);
-    Image_ErrorCode ret = OH_ImageSourceNative_Destroy(&imageSource);
-    ASSERT_EQ(ret, IMAGE_SUCCESS);
-    ASSERT_EQ(imageSource, nullptr);
-    GTEST_LOG_(INFO) << "ImagSourceNdk2Test: OH_ImageSourceNative_Destroy001 end";
-}
-
-/**
- * @tc.name: OH_ImageSourceNative_Destroy002
- * @tc.desc: test OH_ImageSourceNative_Destroy
- * @tc.type: FUNC
- */
-HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceNative_Destroy002, TestSize.Level3)
-{
-    GTEST_LOG_(INFO) << "ImagSourceNdk2Test: OH_ImageSourceNative_Destroy002 start";
-    OH_ImageSourceNative *imageSource = nullptr;
-    Image_ErrorCode ret = OH_ImageSourceNative_Destroy(&imageSource);
-    ASSERT_EQ(ret, IMAGE_BAD_PARAMETER);
-    GTEST_LOG_(INFO) << "ImagSourceNdk2Test: OH_ImageSourceNative_Destroy002 end";
-}
-
-/**
  * @tc.name: OH_ImageSourceNative_Release
  * @tc.desc: test OH_ImageSourceNative_Release
  * @tc.type: FUNC
@@ -2659,6 +2630,52 @@ HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceNative_CreatePixelmapUsingAllocatorTe
     Image_ErrorCode ret = OH_ImageSourceNative_CreatePixelmapUsingAllocator(imageSource, opts, allocator, &resPixMap);
     EXPECT_EQ(ret, IMAGE_SUCCESS);
     EXPECT_NE(resPixMap, nullptr);
+    OH_ImageSourceNative_Release(imageSource);
+    OH_DecodingOptions_Release(opts);
+    OH_PixelmapNative_Release(resPixMap);
+}
+
+/**
+ * @tc.name: OH_ImageSourceNative_CreatePixelmapUsingAllocatorTest16KJPEG011
+ * @tc.desc: Test with an exception jpg source
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceNative_CreatePixelmapUsingAllocatorTest16KJPEG011, TestSize.Level1)
+{
+    FILE* file = fopen(IMAGE_JPEG_RST_NON_ALIGNED_PATH.c_str(), "rb");
+    ASSERT_NE(file, nullptr);
+    fseek(file, 0, SEEK_END);
+    size_t fileSize = ftell(file);
+    rewind(file);
+    auto jpgStream = std::make_unique<uint8_t[]>(fileSize + 1);
+    ASSERT_NE(jpgStream, nullptr);
+    size_t res = fread(jpgStream.get(), 1, fileSize, file);
+    ASSERT_EQ(res, fileSize);
+    fclose(file);
+
+    jpgStream[fileSize - 2] = 0x00;
+    jpgStream[fileSize - 1] = 0xFF;
+    jpgStream[fileSize] = 0xD9;
+
+    Image_ErrorCode err;
+
+    OH_ImageSourceNative* imageSource = nullptr;
+    err = OH_ImageSourceNative_CreateFromDataWithUserBuffer(jpgStream.get(), fileSize, &imageSource);
+    ASSERT_EQ(err, IMAGE_SUCCESS);
+    ASSERT_NE(imageSource, nullptr);
+
+    OH_DecodingOptions* opts = nullptr;
+    err = OH_DecodingOptions_Create(&opts);
+    ASSERT_EQ(err, IMAGE_SUCCESS);
+    ASSERT_NE(opts, nullptr);
+
+    OH_PixelmapNative* resPixMap = nullptr;
+    IMAGE_ALLOCATOR_TYPE allocator = IMAGE_ALLOCATOR_TYPE::IMAGE_ALLOCATOR_TYPE_DMA;
+    OH_DecodingOptions_SetPixelFormat(opts, PIXEL_FORMAT_NV21);
+    err = OH_ImageSourceNative_CreatePixelmapUsingAllocator(imageSource, opts, allocator, &resPixMap);
+    EXPECT_EQ(err, IMAGE_SUCCESS);
+    EXPECT_NE(resPixMap, nullptr);
+
     OH_ImageSourceNative_Release(imageSource);
     OH_DecodingOptions_Release(opts);
     OH_PixelmapNative_Release(resPixMap);

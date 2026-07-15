@@ -480,6 +480,7 @@ private:
     bool IsAvisImage();
     bool IsEncodedFormat(const std::string& encodedFormat);
     void SetAnimationSize(uint32_t index, const DecodeOptions &opts, ImageInfo &info);
+    void UpdateHdrCanvasFlagFromExif();
 
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     void SpecialSetComposeBuffer(ImagePlugin::DecodeContext &baseCtx, sptr<SurfaceBuffer>& baseSptr,
@@ -555,6 +556,7 @@ private:
     std::set<std::string> exifUnsupportKeys_;
     XmageCoordinateMetadata coordMetadata_;
     bool hasValidXmageCoords_ = false;
+    bool isHdrCanvas_ = false;
     std::shared_ptr<XMPMetadata> xmpMetadata_ = nullptr;
     bool isSystemApi_ = false;
 };

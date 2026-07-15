@@ -75,9 +75,7 @@ tjscalingfactor JpegDecoderYuv::GetScaledFactor(uint32_t jpgwidth, uint32_t jpgh
 
     int NUMSF = 0;
     tjscalingfactor* sf = tjGetScalingFactors(&NUMSF);
-    if (sf == nullptr || NUMSF == 0) {
-        return factor;
-    }
+    CHECK_ERROR_RETURN_RET(sf == nullptr || NUMSF == 0, factor);
     for (int i = 0; i < NUMSF; i++) {
         uint32_t scaledw = static_cast<uint32_t>(TJSCALED(static_cast<int>(jpgwidth), sf[i]));
         uint32_t scaledh = static_cast<uint32_t>(TJSCALED(static_cast<int>(jpgheight), sf[i]));
@@ -161,12 +159,12 @@ uint32_t JpegDecoderYuv::Get420OutPlaneSize(YuvComponentIndex com, int imageWidt
     }
 }
 
-uint32_t JpegDecoderYuv::GetYuvOutSize(uint32_t width, uint32_t height)
+uint64_t JpegDecoderYuv::GetYuvOutSize(uint32_t width, uint32_t height)
 {
     if (width == 0 || height == 0) {
         return 0;
     }
-    uint32_t size = Get420OutPlaneSize(YCOM, width, height);
+    uint64_t size = Get420OutPlaneSize(YCOM, width, height);
     size += Get420OutPlaneSize(UCOM, width, height);
     size += Get420OutPlaneSize(VCOM, width, height);
     return size;
@@ -222,9 +220,7 @@ void JpegDecoderYuv::InitYuvDataOutInfoTo420NV(uint32_t width, uint32_t height, 
     }
     if (context.allocatorType == OHOS::Media::AllocatorType::DMA_ALLOC) {
         SurfaceBuffer* sbBuffer = reinterpret_cast<SurfaceBuffer *>(context.pixelsBuffer.context);
-        if (sbBuffer != nullptr && ImageUtils::GetYuvInfoFromSurfaceBuffer(info, sbBuffer)) {
-            return;
-        }
+        CHECK_ERROR_RETURN(sbBuffer != nullptr && ImageUtils::GetYuvInfoFromSurfaceBuffer(info, sbBuffer));
         IMAGE_LOGW("DMA planes info unavailable, fallback to default stride");
     }
     info.imageSize.width = static_cast<int32_t>(width);
@@ -307,9 +303,7 @@ int JpegDecoderYuv::DoDecode(DecodeContext &context, JpegDecoderYuvParameter &de
     }
 
     tjhandle dehandle = tjInitDecompress();
-    if (nullptr == dehandle) {
-        return JpegYuvDecodeError_DecodeFailed;
-    }
+    CHECK_ERROR_RETURN_RET(nullptr == dehandle, JpegYuvDecodeError_DecodeFailed);
     int ret = DoDecodeToYuvPlane(context, dehandle, outwidth, outheight);
     tjDestroy(dehandle);
     if (ret == JpegYuvDecodeError_Success) {
@@ -385,14 +379,10 @@ int JpegDecoderYuv::DecodeHeader(tjhandle dehandle, int& retSubsamp)
         IMAGE_LOGE("JpegDecoderYuv tjDecompressHeader3, failed");
         return JpegYuvDecodeError_SubSampleNotSupport;
     }
-    if (width == 0 || height == 0) {
-        IMAGE_LOGE("JpegDecoderYuv tjDecompressHeader3, image size zero");
-        return JpegYuvDecodeError_BadImage;
-    }
-    if (!IsSupportedSubSample(jpegSubsamp)) {
-        IMAGE_LOGE("JpegDecoderYuv tjDecompressHeader3, subsample %{public}d not supported", jpegSubsamp);
-        return JpegYuvDecodeError_SubSampleNotSupport;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(width == 0 || height == 0, JpegYuvDecodeError_BadImage,
+        "JpegDecoderYuv tjDecompressHeader3, image size zero");
+    CHECK_ERROR_RETURN_RET_LOG(!IsSupportedSubSample(jpegSubsamp), JpegYuvDecodeError_SubSampleNotSupport,
+        "JpegDecoderYuv tjDecompressHeader3, subsample %{public}d not supported", jpegSubsamp);
     return JpegYuvDecodeError_Success;
 }
 
@@ -403,10 +393,8 @@ int JpegDecoderYuv::DoDecodeToYuvPlane(DecodeContext &context, tjhandle dehandle
     if (ret != JpegYuvDecodeError_Success) {
         return ret;
     }
-    if (!IsOutSizeValid(outw, outh)) {
-        IMAGE_LOGE("JpegDecoderYuv DoDecodeToYuvPlane, pre calcualted out size wrong");
-        return JpegYuvDecodeError_InvalidParameter;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(!IsOutSizeValid(outw, outh), JpegYuvDecodeError_InvalidParameter,
+        "JpegDecoderYuv DoDecodeToYuvPlane, pre calcualted out size wrong");
     uint32_t width = outw;
     uint32_t height = outh;
     uint32_t totalSizeForDecodeData = GetJpegDecompressedYuvSize(width, height, jpegSubsamp);
@@ -420,10 +408,8 @@ int JpegDecoderYuv::DoDecodeToYuvPlane(DecodeContext &context, tjhandle dehandle
     FillJpgOutYuvInfo(jpegOutYuvInfo, width, height, data, jpegSubsamp);
     ret = tjDecompressToYUVPlanes(dehandle, decodeParameter_.jpegBuffer_, decodeParameter_.jpegBufferSize_,
         jpegOutYuvInfo.planes, width, nullptr, height, 0);
-    if (ret != 0) {
-        IMAGE_LOGE("JpegDecoderYuv tjDecompressToYUVPlanes failed, ret %{public}d", ret);
-        return JpegYuvDecodeError_DecodeFailed;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(ret != 0, JpegYuvDecodeError_DecodeFailed,
+        "JpegDecoderYuv tjDecompressToYUVPlanes failed, ret %{public}d", ret);
     if (jpegSubsamp == TJSAMP_GRAY) {
         return ConvertFromGray(jpegOutYuvInfo, context);
     }
@@ -488,7 +474,7 @@ bool JpegDecoderYuv::ValidateParameter(YuvPlaneInfo &srcPlaneInfo, ConverterPair
         return false;
     }
 
-    uint32_t outSize = JpegDecoderYuv::GetYuvOutSize(width, height);
+    uint64_t outSize = JpegDecoderYuv::GetYuvOutSize(width, height);
     if (outSize > decodeParameter_.yuvBufferSize_) {
         IMAGE_LOGE("JpegDecoderYuv ValidateParameter yuvBufferSize not enough");
         return false;
@@ -502,10 +488,7 @@ void UpdateDestStride(JpegDecoderYuvParameter decodeParameter, const DecodeConte
     unsigned char* outYData = decodeParameter.yuvBuffer_;
     if (context.allocatorType == Media::AllocatorType::DMA_ALLOC) {
         auto surfaceBuffer = reinterpret_cast<SurfaceBuffer *>(context.pixelsBuffer.context);
-        if (surfaceBuffer == nullptr) {
-            IMAGE_LOGE("JpegDecoderYuv surfaceBuffer is nullptr");
-            return;
-        }
+        CHECK_ERROR_RETURN_LOG(surfaceBuffer == nullptr, "JpegDecoderYuv surfaceBuffer is nullptr");
         if (decodeParameter.outfmt_ == JpegYuvFmt::OutFmt_NV12 ||
             decodeParameter.outfmt_ == JpegYuvFmt::OutFmt_NV21) {
             uint32_t stride = static_cast<uint32_t>(surfaceBuffer->GetStride());
@@ -590,9 +573,9 @@ int JpegDecoderYuv::ConvertFromGray(YuvPlaneInfo &srcPlaneInfo, const DecodeCont
     if (srcPlaneInfo.planeWidth[YCOM] == 0 || srcPlaneInfo.planeHeight[YCOM] == 0) {
         return JpegYuvDecodeError_ConvertError;
     }
-    uint32_t outSize = JpegDecoderYuv::GetYuvOutSize(width, height);
+    uint64_t outSize = JpegDecoderYuv::GetYuvOutSize(width, height);
     if (outSize > decodeParameter_.yuvBufferSize_) {
-        IMAGE_LOGE("JpegDecoderYuv ConvertFromGray yuvBufferSize not enough %{public}d", outSize);
+        IMAGE_LOGE("JpegDecoderYuv ConvertFromGray yuvBufferSize not enough %{public}" PRIu64, outSize);
         return JpegYuvDecodeError_MemoryNotEnoughToSaveResult;
     }
 

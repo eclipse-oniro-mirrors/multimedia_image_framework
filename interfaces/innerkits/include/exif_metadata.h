@@ -68,6 +68,7 @@ public:
     bool RemoveExifThumbnail() override;
     bool RemoveGpsInfo();
     bool ExtractXmageCoordinates(XmageCoordinateMetadata &coordMetadata) const;
+    bool ParseHdrCanvasFlag(bool& isHdrCanvas) const;
     uint32_t GetBlobSize() override;
     uint32_t GetBlob(uint32_t bufferSize, uint8_t *dst) override;
     uint32_t SetBlob(const uint8_t *source, const uint32_t bufferSize) override;

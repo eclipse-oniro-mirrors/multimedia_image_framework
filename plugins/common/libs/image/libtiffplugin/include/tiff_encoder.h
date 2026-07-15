@@ -56,11 +56,12 @@ private:
     };
 
     bool IsSupportedPixelMapFormat(PixelFormat format);
-    uint32_t ValidatePixelBufferInfo(const PixelBufferInfo &bufferInfo);
+    uint32_t ValidatePixelBufferInfo(const PixelBufferInfo &bufferInfo, PixelFormat format);
     uint32_t PrepareEncoding(const PixelBufferInfo &bufferInfo, PixelFormat format);
     uint32_t SelectCompression(PixelFormat formatValue, uint16_t &compression);
     static TiffEncodeParam GetEncodeParam(PixelFormat formatValue);
     static uint64_t GetDefaultRowBytes(uint32_t width, uint64_t bytesPerRow);
+    static uint64_t GetMinRowBytes(uint32_t width, PixelFormat format);
 
     uint32_t DoEncode();
     uint32_t ConfigureTiffTags();
