@@ -45,6 +45,7 @@ ohos_shared_library("svgplugin") {
   ]
 
   external_deps = [
+    "bounds_checking_function:libsec_shared",
     "c_utils:utils",
     "graphic_2d:color_manager",
     "graphic_surface:surface",

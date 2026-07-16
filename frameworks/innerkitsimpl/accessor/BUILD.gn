@@ -98,6 +98,7 @@ ohos_shared_library("image_accessor") {
   ]
 
   external_deps = [
+    "bounds_checking_function:libsec_shared",
     "c_utils:utils",
     "graphic_2d:color_manager",
     "hilog:libhilog",
