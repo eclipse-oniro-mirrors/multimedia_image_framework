@@ -96,7 +96,7 @@ Image_ErrorCode OH_ImageNative_GetComponentTypes(OH_ImageNative* image, uint32_t
 
     auto& components = image->imgNative->GetComponents();
     *typeSize = components.size();
-    if (nullptr == types) {
+    if (nullptr == types || nullptr == *types) {
         return IMAGE_SUCCESS;
     }
 

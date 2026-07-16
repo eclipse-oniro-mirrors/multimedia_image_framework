@@ -41,7 +41,7 @@ public:
 #endif
     bool InitAstcExtendInfo(AstcExtendInfo &extendInfo);
     void ReleaseExtendInfoMemory(AstcExtendInfo &extendInfo);
-    void WriteAstcExtendInfo(uint8_t* outBuffer, uint32_t offset, AstcExtendInfo &extendInfo);
+    void WriteAstcExtendInfo(uint8_t* outBuffer, uint32_t offset, AstcExtendInfo &extendInfo, uint32_t packSize);
     void InitTextureEncodeOptions(TextureEncodeOptions &param, uint8_t &colorData);
     bool TryEncSUT(TextureEncodeOptions &param, uint8_t* astcBuffer, size_t astcBufferCapacity,
         AstcExtendInfo &extendInfo);

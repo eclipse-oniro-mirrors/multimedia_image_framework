@@ -380,6 +380,7 @@ uint8_t *FileSourceStream::GetDataPtr(bool populate)
 #ifdef SUPPORT_MMAP
     CHECK_ERROR_RETURN_RET(filePtr_ == nullptr, nullptr);
     CHECK_ERROR_RETURN_RET(!DupFd(filePtr_, mmapFd_), nullptr);
+    CHECK_ERROR_RETURN_RET(fileSize_ < fileOriginalOffset_, nullptr);
     auto mmptr = ::mmap(nullptr, fileSize_ - fileOriginalOffset_, PROT_READ,
         populate ? MAP_SHARED | MAP_POPULATE : MAP_SHARED, mmapFd_, fileOriginalOffset_);
     if (mmptr == MAP_FAILED) {
@@ -403,7 +404,7 @@ void FileSourceStream::ResetReadBuffer()
         free(readBuffer_);
         readBuffer_ = nullptr;
     }
-    if (fileData_ != nullptr && !mmapFdPassedOn_ && useMmap_) {
+    if (fileData_ != nullptr && !mmapFdPassedOn_ && useMmap_ && fileOriginalOffset_ <= fileSize_) {
 #ifdef SUPPORT_MMAP
         ::munmap(fileData_, fileSize_ - fileOriginalOffset_);
         fdsan_close_with_tag(mmapFd_, FILE_SOURCE_FDSAN_TAG);

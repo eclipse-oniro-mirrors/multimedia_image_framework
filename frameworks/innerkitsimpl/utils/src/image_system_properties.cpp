@@ -241,7 +241,7 @@ bool ImageSystemProperties::GetNoPaddingEnabled()
 bool ImageSystemProperties::GetDefaultDmaNoPaddingEnabled()
 {
 #if !defined(CROSS_PLATFORM)
-    static bool ret = system::GetBoolParameter("persist.multimedia.defaultDmaNopadding.enabled", true);
+    static bool ret = system::GetBoolParameter("persist.multimedia.defaultDmaNopadding.enabled", false);
     return ret;
 #else
     return false;

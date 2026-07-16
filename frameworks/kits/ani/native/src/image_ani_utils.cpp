@@ -282,8 +282,10 @@ ani_object ImageAniUtils::CreateAniPixelMap(ani_env* env, std::unique_ptr<PixelM
         return nullptr;
     }
     ani_object aniValue;
-    if (ANI_OK != env->Object_New(cls, ctor, &aniValue, reinterpret_cast<ani_long>(pPixelMapAni.release()))) {
+    PixelMapAni* rawPtr = pPixelMapAni.release();
+    if (ANI_OK != env->Object_New(cls, ctor, &aniValue, reinterpret_cast<ani_long>(rawPtr))) {
         IMAGE_LOGE("New Context Fail");
+        delete rawPtr;
     }
     return aniValue;
 }
@@ -304,8 +306,10 @@ ani_object ImageAniUtils::CreateAniImageSource(ani_env* env, std::unique_ptr<Ima
     }
 
     ani_object aniValue;
-    if (ANI_OK != env->Object_New(cls, ctor, &aniValue, reinterpret_cast<ani_long>(pImageSourceAni.release()))) {
+    ImageSourceAni* rawPtr = pImageSourceAni.release();
+    if (ANI_OK != env->Object_New(cls, ctor, &aniValue, reinterpret_cast<ani_long>(rawPtr))) {
         IMAGE_LOGE("New Context Fail");
+        delete rawPtr;
     }
     return aniValue;
 }
@@ -324,8 +328,10 @@ ani_object ImageAniUtils::CreateAniPicture(ani_env* env, std::unique_ptr<Picture
         return nullptr;
     }
     ani_object aniValue;
-    if (ANI_OK != env->Object_New(cls, ctor, &aniValue, reinterpret_cast<ani_long>(pPictureAni.release()))) {
+    PictureAni* rawPtr = pPictureAni.release();
+    if (ANI_OK != env->Object_New(cls, ctor, &aniValue, reinterpret_cast<ani_long>(rawPtr))) {
         IMAGE_LOGE("New Context Fail");
+        delete rawPtr;
     }
     return aniValue;
 }

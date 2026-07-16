@@ -482,9 +482,10 @@ heif_error HeifIdatBox::ReadData(const std::shared_ptr<HeifInputStream> &stream,
         HasOverflowed64(start, length)) {
         return heif_error_eof;
     }
-    if (start > (uint64_t) startPos_ + GetBoxSize()) {
+    if (start > (GetBoxSize() - GetHeaderSize())) {
         return heif_error_eof;
-    } else if (length > GetBoxSize() || start + length > GetBoxSize()) {
+    } else if (length > (GetBoxSize() - GetHeaderSize()) ||
+               start + length > (GetBoxSize() - GetHeaderSize())) {
         return heif_error_eof;
     }
 

@@ -390,12 +390,14 @@ void TiffDecoder::ParseICCProfile()
         return;
     }
     uint32_t dataLen = 0;
-    void **data = nullptr;
+    void *data = nullptr;
     if (TIFFGetField(tifCodec_, TIFFTAG_ICCPROFILE, &dataLen, &data)) {
         skcms_ICCProfile parsed;
         if (skcms_Parse(data, dataLen, &parsed)) {
             auto colorSpaceName = OHOS::Media::ColorUtils::GetSrcColorSpace(&parsed);
             auto colorSpace = OHOS::ColorManager::ColorSpace(colorSpaceName);
+            IMAGE_LOGI("[TiffDecoder] ICCProfile parsed, colorSpaceName=%{public}d",
+                static_cast<int32_t>(colorSpace.GetColorSpaceName()));
             if (colorSpace.GetColorSpaceName() != OHOS::ColorManager::ColorSpaceName::NONE) {
                 grColorSpace_ = colorSpace;
             } else {

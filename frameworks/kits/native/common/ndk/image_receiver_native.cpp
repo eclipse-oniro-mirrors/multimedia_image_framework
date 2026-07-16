@@ -295,7 +295,7 @@ Image_ErrorCode OH_ImageReceiverNative_ReadNextImage(OH_ImageReceiverNative* rec
     }
 
     *image = rst;
-    IMAGE_LOGD("OH_ImageNative ReadNextImage.");
+    IMAGE_LOGI("OH_ImageNative ReadNextImage.");
     return IMAGE_SUCCESS;
 }
 

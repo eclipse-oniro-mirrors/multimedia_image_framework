@@ -429,6 +429,7 @@ static std::unique_ptr<AuxiliaryPicture> GenerateAuxiliaryPicture(const MainPict
     CHECK_ERROR_RETURN_RET_LOG(cond, nullptr, "%{public}s CreatePixelMapByContext failed!", __func__);
     context.pixelFormat = pixelMap->GetPixelFormat();
     auto auxPicture = AuxiliaryPicture::Create(pixelMap, auxiliaryPictureDecodeInfo.type, context.outInfo.size);
+    CHECK_ERROR_RETURN_RET_LOG(!auxPicture, nullptr, "auxPicture is nullptr");
     auxPicture->SetAuxiliaryPictureInfo(MakeAuxiliaryPictureInfo(auxiliaryPictureDecodeInfo.type,
         context.outInfo.size, pixelMap->GetRowStride(), context.pixelFormat, context.outInfo.colorSpace));
     return auxPicture;
@@ -499,6 +500,7 @@ std::shared_ptr<AuxiliaryPicture> AuxiliaryGenerator::GenerateJpegAuxiliaryPictu
     CHECK_ERROR_RETURN_RET_LOG(cond, nullptr,
         "Convert stream to surface buffer failed! errorCode: %{public}u", errorCode);
     auto auxPicture = AuxiliaryPicture::Create(surfaceBuffer, auxiliaryPictureDecodeInfo.type, size);
+    CHECK_ERROR_RETURN_RET_LOG(!auxPicture, nullptr, "auxPicture is nullptr");
     SetUncodedAuxilaryPictureInfo(auxPicture);
     return auxPicture;
 }

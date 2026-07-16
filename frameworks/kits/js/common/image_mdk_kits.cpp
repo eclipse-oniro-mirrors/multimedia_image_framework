@@ -53,6 +53,10 @@ static int32_t ImageNapiClipRect(ImageNapi* native, struct ImageNapiArgs* args)
         return IMAGE_RESULT_JNI_ENV_ABNORMAL;
     }
 
+    if (args->outRect == nullptr) {
+        return IMAGE_RESULT_JNI_ENV_ABNORMAL;
+    }
+
     if (nativeImage->GetSize(args->outRect->width, args->outRect->height) != NUM_0) {
         return IMAGE_RESULT_JNI_ENV_ABNORMAL;
     }
@@ -66,6 +70,10 @@ static int32_t ImageNapiSize(ImageNapi* native, struct ImageNapiArgs* args)
 {
     auto nativeImage = CheckAndGetImage(native, args);
     if (nativeImage == nullptr) {
+        return IMAGE_RESULT_BAD_PARAMETER;
+    }
+
+    if (args->outSize == nullptr) {
         return IMAGE_RESULT_BAD_PARAMETER;
     }
 
@@ -83,6 +91,9 @@ static int32_t ImageNapiFormat(ImageNapi* native, struct ImageNapiArgs* args)
     }
     int32_t format;
     if (nativeImage->GetFormat(format) != NUM_0) {
+        return IMAGE_RESULT_BAD_PARAMETER;
+    }
+    if (args->outNum0 == nullptr) {
         return IMAGE_RESULT_BAD_PARAMETER;
     }
     *(args->outNum0) = format;
@@ -142,10 +153,10 @@ ImageNapi* ImageNapi_Unwrap(napi_env env, napi_value value)
     if (valueType != napi_object) {
         return nullptr;
     }
-    std::unique_ptr<ImageNapi> imageNapi = nullptr;
-    napi_status status = napi_unwrap(env, value, reinterpret_cast<void**>(&imageNapi));
-    if ((status == napi_ok) && imageNapi != nullptr) {
-        return imageNapi.release();
+    ImageNapi* rawNapi = nullptr;
+    napi_status status = napi_unwrap(env, value, reinterpret_cast<void**>(&rawNapi));
+    if ((status == napi_ok) && rawNapi != nullptr) {
+        return rawNapi;
     }
     return nullptr;
 }

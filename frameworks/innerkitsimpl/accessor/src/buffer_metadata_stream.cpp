@@ -190,6 +190,8 @@ long BufferMetadataStream::Seek(long offset, SeekPos pos)
 
     if (currentOffset_ > bufferSize_) {
         currentOffset_ = bufferSize_;
+    } else if (currentOffset_ < 0) {
+        currentOffset_ = 0;
     }
 
     return currentOffset_;

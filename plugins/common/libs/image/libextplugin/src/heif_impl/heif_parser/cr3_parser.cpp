@@ -105,6 +105,9 @@ std::vector<uint8_t> Cr3Parser::GetCr3BoxData(const std::shared_ptr<Cr3Box> &cr3
     std::vector<uint8_t> exifData;
     if (cr3Box != nullptr) {
         uint64_t start = 0;
+        if (cr3Box->GetBoxSize() < cr3Box->GetHeaderSize()) {
+            return {};
+        }
         uint64_t length = cr3Box->GetBoxSize() - cr3Box->GetHeaderSize();
         if (cr3Box->ReadData(inputStream_, start, length, exifData) != heif_error_ok) {
             std::string boxTypeStr = code_to_fourcc(cr3Box->GetBoxType());
