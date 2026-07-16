@@ -174,7 +174,7 @@ uint32_t PixelYuvExt::Scale(float xAxis, float yAxis, AntiAliasingOption option)
         IMAGE_LOGE("Invalid scale ratio: 0");
         return ERR_IMAGE_INVALID_PARAMETER;
     }
-    
+    ImageUtils::DumpPixelMapIfDumpEnabled(*this, std::string("before_") + __func__);
     ImageTrace imageTrace("PixelMap scale");
     ImageInfo imageInfo;
     GetImageInfo(imageInfo);
@@ -208,6 +208,7 @@ uint32_t PixelYuvExt::Scale(float xAxis, float yAxis, AntiAliasingOption option)
     imageInfo.size.height = dstH;
     SetImageInfo(imageInfo, true);
     UpdateYUVDataInfo(imageInfo.pixelFormat, imageInfo.size.width, imageInfo.size.height, dstStrides);
+    ImageUtils::DumpPixelMapIfDumpEnabled(*this, std::string("after_") + __func__);
     return SUCCESS;
 }
 
@@ -224,6 +225,7 @@ uint32_t PixelYuvExt::Scale(int32_t dstW, int32_t dstH, AntiAliasingOption optio
 {
     ImageTrace imageTrace("PixelMap scale");
     IMAGE_LOGI("%{public}s (%{public}d, %{public}d)", __func__, dstW, dstH);
+    ImageUtils::DumpPixelMapIfDumpEnabled(*this, std::string("before_") + __func__);
     ImageInfo imageInfo;
     GetImageInfo(imageInfo);
 
@@ -253,6 +255,7 @@ uint32_t PixelYuvExt::Scale(int32_t dstW, int32_t dstH, AntiAliasingOption optio
     imageInfo.size.height = dstH;
     SetImageInfo(imageInfo, true);
     UpdateYUVDataInfo(imageInfo.pixelFormat, imageInfo.size.width, imageInfo.size.height, dstStrides);
+    ImageUtils::DumpPixelMapIfDumpEnabled(*this, std::string("after_") + __func__);
     return SUCCESS;
 }
 
@@ -270,6 +273,7 @@ uint32_t PixelYuvExt::Rotate(float degrees)
         return SUCCESS;
     }
     CHECK_ERROR_RETURN_RET(!IsYuvFormat(), ERR_IMAGE_DATA_UNSUPPORT);
+    ImageUtils::DumpPixelMapIfDumpEnabled(*this, std::string("before_") + __func__);
     YUVDataInfo yuvDataInfo;
     GetImageYUVInfo(yuvDataInfo);
 
@@ -302,6 +306,7 @@ uint32_t PixelYuvExt::Rotate(float degrees)
     SetImageInfo(imageInfo_, true);
     SetPixelsAddr(dst, m->extend.data, m->data.size, m->GetType(), nullptr);
     UpdateYUVDataInfo(imageInfo_.pixelFormat, dstWidth, dstHeight, dstStrides);
+    ImageUtils::DumpPixelMapIfDumpEnabled(*this, std::string("after_") + __func__);
     return SUCCESS;
 }
 
@@ -328,6 +333,7 @@ uint32_t PixelYuvExt::Flip(bool xAxis, bool yAxis)
         IMAGE_LOGD("P010 use PixelYuv flip");
         return PixelYuv::Flip(xAxis, yAxis);
     }
+    ImageUtils::DumpPixelMapIfDumpEnabled(*this, std::string("before_") + __func__);
     YUVDataInfo yuvDataInfo;
     GetImageYUVInfo(yuvDataInfo);
 
@@ -356,6 +362,7 @@ uint32_t PixelYuvExt::Flip(bool xAxis, bool yAxis)
     }
     SetPixelsAddr(dst, m->extend.data, m->data.size, m->GetType(), nullptr);
     UpdateYUVDataInfo(imageInfo.pixelFormat, imageInfo.size.width, imageInfo.size.height, dstStrides);
+    ImageUtils::DumpPixelMapIfDumpEnabled(*this, std::string("after_") + __func__);
     return SUCCESS;
 }
 
@@ -408,6 +415,7 @@ uint32_t PixelYuvExt::ApplyColorSpace(const OHOS::ColorManager::ColorSpace &grCo
     CHECK_ERROR_RETURN_RET(cond, ERR_IMAGE_COLOR_CONVERT);
     cond = CheckColorSpace(grColorSpace);
     CHECK_ERROR_RETURN_RET(cond, SUCCESS);
+    ImageUtils::DumpPixelMapIfDumpEnabled(*this, std::string("before_") + __func__);
     /*convert yuV420 to·BRGA */
     PixelFormat format = imageInfo_.pixelFormat;
     YUVDataInfo yuvDataInfo;
@@ -448,6 +456,7 @@ uint32_t PixelYuvExt::ApplyColorSpace(const OHOS::ColorManager::ColorSpace &grCo
     // convert bgra back to·yuv
     cond = ColorSpaceBGRAToYuv(RGBAdataC.get(), dst, imageInfo_, format, grColorSpace) != SUCCESS;
     CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_COLOR_CONVERT, "ColorSpaceBGRAToYuv failed");
+    ImageUtils::DumpPixelMapIfDumpEnabled(*this, std::string("after_") + __func__);
     return SUCCESS;
 }
 #endif

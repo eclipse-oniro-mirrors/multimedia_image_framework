@@ -1290,6 +1290,9 @@ bool HeifDecoderImpl::ProcessChunkHead(uint8_t *data, size_t len)
         data[index + CHUNK_HEAD_OFFSET_1] = 0;
         data[index + CHUNK_HEAD_OFFSET_2] = 0;
         data[index + CHUNK_HEAD_OFFSET_3] = 1;
+        if (chunkLen > len - index - CHUNK_HEAD_SIZE) {
+            break;
+        }
         index += (chunkLen + CHUNK_HEAD_SIZE);
     }
     return true;

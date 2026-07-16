@@ -1002,7 +1002,7 @@ uint32_t AstcCodec::ASTCEncode() __attribute__((no_sanitize("cfi")))
         return ERROR;
     }
     if (!param.outIsSut) { // only support astc for color space
-        WriteAstcExtendInfo(astcBuffer, static_cast<uint32_t>(param.astcBytes), extendInfo);
+        WriteAstcExtendInfo(astcBuffer, static_cast<uint32_t>(param.astcBytes), extendInfo, packSize);
     } else {
         packSize = static_cast<uint32_t>(param.sutBytes);
     }
@@ -1164,11 +1164,18 @@ static void FillDataSize(uint8_t *buf, uint32_t bytes)
     *buf++ = (bytes >> UINT32_3TH_BYTES) & MASKBITS_FOR_8BITS;
 }
 
-void AstcCodec::WriteAstcExtendInfo(uint8_t *buffer, uint32_t offset, AstcExtendInfo &extendInfo)
+static uint32_t UpdateRemainingSize(uint32_t remainingSize, uint32_t consumed)
+{
+    return (remainingSize <= consumed) ? 0 : (remainingSize - consumed);
+}
+
+void AstcCodec::WriteAstcExtendInfo(uint8_t *buffer, uint32_t offset, AstcExtendInfo &extendInfo, uint32_t packSize)
 {
     uint8_t* offsetBuffer = buffer + offset;
+    uint32_t remainingSize = offset > packSize ? 0 : (packSize - offset);
     FillDataSize(offsetBuffer, extendInfo.extendBufferSumBytes);
     offsetBuffer += ASTC_EXTEND_INFO_SIZE_DEFINITION_LENGTH;
+    remainingSize = UpdateRemainingSize(remainingSize, ASTC_EXTEND_INFO_SIZE_DEFINITION_LENGTH);
 #ifdef IMAGE_COLORSPACE_FLAG
     ColorManager::ColorSpace colorspace = astcPixelMap_->InnerGetGrColorSpace();
     ColorManager::ColorSpaceName csName = colorspace.GetColorSpaceName();
@@ -1178,6 +1185,7 @@ void AstcCodec::WriteAstcExtendInfo(uint8_t *buffer, uint32_t offset, AstcExtend
         *offsetBuffer++ = idx;
         FillDataSize(offsetBuffer, extendInfo.extendInfoLength[idx]);
         offsetBuffer += ASTC_EXTEND_INFO_LENGTH_LENGTH;
+        remainingSize = UpdateRemainingSize(remainingSize, ASTC_EXTEND_INFO_LENGTH_LENGTH);
         AstcExtendInfoType type = static_cast<AstcExtendInfoType>(idx);
         switch (type) {
             case AstcExtendInfoType::COLOR_SPACE:
@@ -1187,24 +1195,24 @@ void AstcCodec::WriteAstcExtendInfo(uint8_t *buffer, uint32_t offset, AstcExtend
                 *offsetBuffer = 0;
 #endif
                 offsetBuffer += ASTC_EXTEND_INFO_COLOR_SPACE_VALUE_LENGTH;
+                remainingSize = UpdateRemainingSize(remainingSize, ASTC_EXTEND_INFO_COLOR_SPACE_VALUE_LENGTH);
                 break;
             case AstcExtendInfoType::PIXEL_FORMAT:
                 *offsetBuffer = static_cast<uint8_t>(pixelFormat);
                 offsetBuffer += ASTC_EXTEND_INFO_PIXEL_FORMAT_VALUE_LENGTH;
+                remainingSize = UpdateRemainingSize(remainingSize, ASTC_EXTEND_INFO_PIXEL_FORMAT_VALUE_LENGTH);
                 break;
             case AstcExtendInfoType::HDR_METADATA_TYPE:
             case AstcExtendInfoType::HDR_COLORSPACE_INFO:
             case AstcExtendInfoType::HDR_STATIC_DATA:
-            case AstcExtendInfoType::HDR_DYNAMIC_DATA:
-                if (extendInfo.extendInfoValue[idx] == nullptr||
-                    extendInfo.extendInfoLength[idx] <= 0 ||
-                    memcpy_s(offsetBuffer, extendInfo.extendInfoLength[idx],
-                    extendInfo.extendInfoValue[idx], extendInfo.extendInfoLength[idx]) != 0) {
-                    IMAGE_LOGE("[AstcCodec] WriteAstcExtendInfo memcpy failed!");
-                    return;
-                }
-                offsetBuffer += extendInfo.extendInfoLength[idx];
-                break;
+            case AstcExtendInfoType::HDR_DYNAMIC_DATA: {
+                uint32_t len = extendInfo.extendInfoLength[idx];
+                CHECK_ERROR_RETURN_LOG(extendInfo.extendInfoValue[idx] == nullptr || len <= 0 || remainingSize < len ||
+                    memcpy_s(offsetBuffer, remainingSize, extendInfo.extendInfoValue[idx], len) != 0,
+                    "[AstcCodec] WriteAstcExtendInfo memcpy failed!");
+                offsetBuffer += len;
+                remainingSize -= len;
+                break; }
             default:
                 return;
         }

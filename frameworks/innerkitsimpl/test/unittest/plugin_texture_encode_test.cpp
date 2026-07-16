@@ -1334,7 +1334,8 @@ HWTEST_F(PluginTextureEncodeTest, AstcExtendInfoTest, TestSize.Level3)
     ASSERT_EQ(ret, true);
     ASSERT_EQ(extendInfo.extendBufferSumBytes, EXTEND_BUFFER_SUM_BYTES);
     uint8_t* extendBuffer = static_cast<uint8_t *>(malloc(extendInfo.extendBufferSumBytes + EXTEND_INFO_DEFINITION));
-    astcEncoder.WriteAstcExtendInfo(extendBuffer, 0, extendInfo);
+    astcEncoder.WriteAstcExtendInfo(extendBuffer, 0, extendInfo,
+                                    extendInfo.extendBufferSumBytes + EXTEND_INFO_DEFINITION);
     uint8_t csName = *(extendBuffer + COLOR_SPACE_OFFSET);
     ASSERT_EQ(csName, COLOR_SPACE_NAME);
     astcEncoder.ReleaseExtendInfoMemory(extendInfo);
