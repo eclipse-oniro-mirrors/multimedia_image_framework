@@ -5494,6 +5494,7 @@ HWTEST_F(PixelMapTest, HdrPixelMapTlvTest005, TestSize.Level3)
     opts.size.width = 512;
     opts.size.height = 512;
     opts.pixelFormat = PixelFormat::RGBA_8888;
+    opts.allocatorType = AllocatorType::SHARE_MEM_ALLOC;
     std::unique_ptr<PixelMap> pixelMap = PixelMap::Create(opts);
     ASSERT_NE(pixelMap, nullptr);
     vector<uint8_t> buff;
