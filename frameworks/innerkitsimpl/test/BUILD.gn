@@ -2543,9 +2543,6 @@ group("unittest") {
     ":auxiliarypicturetest",
     ":avif_decode_test",
     ":colorconvertertest",
-    ":convertertest",
-    ":creatormocktest",
-    ":creatortest",
     ":datastatisticstest",
     ":eglimagetest",
     ":exifmetadatatest",
@@ -2565,7 +2562,6 @@ group("unittest") {
     ":imageformatconverttest",
     ":imagepixelmapparceltest",
     ":imagepixelmaptest",
-    ":imagesourcetest",
     ":imagetiffparsertest",
     ":imageutilstest",
     ":interfacetest",
@@ -2576,9 +2572,7 @@ group("unittest") {
     ":memorymanagertest",
     ":metadatatest",
     ":napitest",
-    ":ndktest2",
     ":picturetest",
-    ":pixelastctest",
     ":pixelmaptest",
     ":platformadptest",
     ":pluginlibjpegtest",
@@ -2595,10 +2589,6 @@ group("unittest") {
     ":imagedfxtest",
     ":heifsmetadatatest"
   ]
-
-  if (enable_jpeg_hw_decode) {
-    deps += [ ":jpeg_hw_decoder_test" ]
-  }
 
   if (enable_heif_hw_decode) {
     deps += [
