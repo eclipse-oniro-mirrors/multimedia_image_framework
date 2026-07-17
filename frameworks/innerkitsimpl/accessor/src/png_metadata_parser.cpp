@@ -179,6 +179,15 @@ bool PngMetadataParser::SetupPngReading(ImagePlugin::InputDataStream *stream)
         return handleError("Failed to read PNG info", true);
     }
 
+    // libpng >= 1.6.55 no longer sets PNG_INFO_cHRM from sRGB chunk.
+    // When the PNG has sRGB but no cHRM, populate cHRM via png_set_sRGB_gAMA_and_cHRM()
+    // so that png_get_cHRM() works consistently with older libpng versions.
+    int sRGBIntent = 0;
+    if (png_get_sRGB(pngStructPtr_, pngInfoPtr_, &sRGBIntent) != 0 &&
+        png_get_valid(pngStructPtr_, pngInfoPtr_, PNG_INFO_cHRM) == 0) {
+        png_set_sRGB_gAMA_and_cHRM(pngStructPtr_, pngInfoPtr_, sRGBIntent);
+    }
+
     stream->Seek(savedPos);
     return true;
 }
