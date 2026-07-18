@@ -288,7 +288,8 @@ static void CleanupAsyncContext(napi_env env, SendablePixelMapAsyncContext* &asy
     asyncContext = nullptr;
 }
 
-static void CommonCallbackRoutine(napi_env env, SendablePixelMapAsyncContext* &asyncContext, const napi_value &valueParam)
+static void CommonCallbackRoutine(napi_env env,
+    SendablePixelMapAsyncContext* &asyncContext, const napi_value &valueParam)
 {
     if (asyncContext == nullptr) {
         return;
