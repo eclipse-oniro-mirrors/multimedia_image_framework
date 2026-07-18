@@ -3239,8 +3239,7 @@ bool PixelMap::ReadPropertiesFromParcel(Parcel& parcel, PixelMap*& pixelMap, Ima
     pixelMap->isUnmarshalling_ = true;
 
     pixelMap->SetEditable(parcel.ReadBool());
-    memInfo.isAstc = ImageUtils::IsAstc(imgInfo.pixelFormat);
-    pixelMap->SetAstc(memInfo.isAstc);
+    pixelMap->SetAstc(ImageUtils::IsAstc(imgInfo.pixelFormat));
     bool displayOnly = parcel.ReadBool();
     pixelMap->SetDisplayOnly(displayOnly);
     int32_t readAllocatorValue = parcel.ReadInt32();
