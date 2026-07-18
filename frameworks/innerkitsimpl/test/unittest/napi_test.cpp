@@ -14,6 +14,7 @@
  */
 
 #include <gtest/gtest.h>
+#include "image_napi_utils.h"
 #include "pixel_map_napi.h"
 #include "image_packer_napi.h"
 #include "image_source_napi.h"
@@ -268,6 +269,21 @@ HWTEST_F(NapiTest, NapiTest0015, TestSize.Level3)
 
     GTEST_LOG_(INFO) << "NapiTest: NapiTest0015 end";
 }
-}
-}
 
+/**
+ * @tc.name: NapiTest0016
+ * @tc.desc: The same MessageSequence native object uses the same unmarshalling mutex.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiTest, NapiTest0016, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "NapiTest: NapiTest0016 start";
+    int32_t messageSequence = 0;
+    std::mutex& firstMutex = ImageNapiUtils::GetMessageSequenceMutex(&messageSequence);
+    std::mutex& secondMutex = ImageNapiUtils::GetMessageSequenceMutex(&messageSequence);
+
+    EXPECT_EQ(&firstMutex, &secondMutex);
+    GTEST_LOG_(INFO) << "NapiTest: NapiTest0016 end";
+}
+}
+}
