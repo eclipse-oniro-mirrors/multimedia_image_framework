@@ -778,9 +778,6 @@ public:
     {
         yuvDataInfo_ = yuvinfo;
     }
-    NATIVEEXPORT virtual void AssignYuvDataOnType(PixelFormat format, int32_t width, int32_t height);
-    NATIVEEXPORT virtual void UpdateYUVDataInfo(PixelFormat format, int32_t width, int32_t height,
-        YUVStrideInfo &strides);
     NATIVEEXPORT virtual void GetImageYUVInfo(YUVDataInfo &yuvInfo) const
     {
         yuvInfo = yuvDataInfo_;

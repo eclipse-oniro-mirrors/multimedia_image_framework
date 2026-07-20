@@ -3829,20 +3829,6 @@ bool PixelMap::IsAstcOrY8Format() const
     return isAstc_ || imageInfo_.pixelFormat == PixelFormat::Y8;
 }
 
-void PixelMap::AssignYuvDataOnType(PixelFormat format, int32_t width, int32_t height)
-{
-#if !defined(CROSS_PLATFORM)
-    ImageUtils::UpdateYUVDataInfo(*this);
-#endif
-}
-
-void PixelMap::UpdateYUVDataInfo(PixelFormat format, int32_t width, int32_t height, YUVStrideInfo &strides)
-{
-#if !defined(CROSS_PLATFORM)
-    ImageUtils::UpdateYUVDataInfo(*this);
-#endif
-}
-
 static const string GetNamedAlphaType(const AlphaType alphaType)
 {
     switch (alphaType) {

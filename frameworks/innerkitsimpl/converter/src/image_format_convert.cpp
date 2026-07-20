@@ -891,12 +891,6 @@ uint32_t ImageFormatConvert::MakeDestPixelMap(std::shared_ptr<PixelMap> &destPix
         pixelMap = std::make_unique<PixelYuv>();
 #endif
         CHECK_ERROR_RETURN_RET(pixelMap == nullptr, ERR_IMAGE_PIXELMAP_CREATE_FAILED);
-        if (allcatorType != AllocatorType::DMA_ALLOC) {
-            pixelMap->AssignYuvDataOnType(info.pixelFormat, info.size.width, info.size.height);
-        } else {
-            YUVStrideInfo strides = {destInfo.yStride, destInfo.uvStride, destInfo.yOffset, destInfo.uvOffset};
-            pixelMap->UpdateYUVDataInfo(info.pixelFormat, info.size.width, info.size.height, strides);
-        }
     } else {
         pixelMap = std::make_unique<PixelMap>();
         CHECK_ERROR_RETURN_RET(pixelMap == nullptr, ERR_IMAGE_PIXELMAP_CREATE_FAILED);
@@ -933,12 +927,6 @@ uint32_t ImageFormatConvert::MakeDestPixelMapUnique(std::unique_ptr<PixelMap> &d
         pixelMap = std::make_unique<PixelYuv>();
 #endif
         CHECK_ERROR_RETURN_RET(pixelMap == nullptr, ERR_IMAGE_PIXELMAP_CREATE_FAILED);
-        if (allcatorType != AllocatorType::DMA_ALLOC) {
-            pixelMap->AssignYuvDataOnType(info.pixelFormat, info.size.width, info.size.height);
-        } else {
-            YUVStrideInfo strides = {destInfo.yStride, destInfo.uvStride, destInfo.yOffset, destInfo.uvOffset};
-            pixelMap->UpdateYUVDataInfo(info.pixelFormat, info.size.width, info.size.height, strides);
-        }
     } else {
         pixelMap = std::make_unique<PixelMap>();
         CHECK_ERROR_RETURN_RET(pixelMap == nullptr, ERR_IMAGE_PIXELMAP_CREATE_FAILED);
