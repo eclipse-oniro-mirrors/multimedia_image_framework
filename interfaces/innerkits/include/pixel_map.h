@@ -36,8 +36,8 @@
 #endif
 
 namespace OHOS::Rosen {
-class PixelMapStorage;
 class RSMarshallingHelper;
+class PixelMapStorage;
 class RSProfiler;
 class RSModifiersDraw;
 };
@@ -123,9 +123,6 @@ class AbsMemory;
 
 class PixelMap : public Parcelable, public PIXEL_MAP_ERR {
 public:
-#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
-    friend class PixelMapRecordParcel;
-#endif
     static std::atomic<uint32_t> currentId;
     PixelMap()
     {
@@ -694,13 +691,13 @@ public:
     NATIVEEXPORT virtual void SetTransformered(bool isTransformered);
     NATIVEEXPORT uint32_t ConvertAlphaFormat(PixelMap &wPixelMap, const bool isPremul);
     NATIVEEXPORT bool AttachAddrBySurfaceBuffer();
-    NATIVEEXPORT void SetPixelMapError(uint32_t code, const std::string &info)
+    NATIVEEXPORT void SetPixelMapError(uint32_t code, std::string info)
     {
         errorCode = code;
         errorInfo = info;
     }
 
-    NATIVEEXPORT static void ConstructPixelMapError(PIXEL_MAP_ERR &err, uint32_t code, const std::string &info)
+    NATIVEEXPORT static void ConstructPixelMapError(PIXEL_MAP_ERR &err, uint32_t code, std::string info)
     {
         err.errorCode = code;
         err.errorInfo = info;
@@ -845,7 +842,7 @@ public:
     NATIVEEXPORT uint32_t GetImagePropertyInt(const std::string &key, int32_t &value);
     NATIVEEXPORT uint32_t GetImagePropertyString(const std::string &key, std::string &value);
     NATIVEEXPORT uint32_t ModifyImageProperty(const std::string &key, const std::string &value);
-    NATIVEEXPORT uint32_t SetMemoryName(const std::string &pixelMapName);
+    NATIVEEXPORT uint32_t SetMemoryName(std::string pixelMapName);
     NATIVEEXPORT std::unique_ptr<PixelMap> Clone(int32_t &errorCode);
     NATIVEEXPORT virtual std::unique_ptr<PixelMap> clone(int32_t &errorCode);
 
@@ -932,14 +929,17 @@ public:
     static int32_t GetYUVByteCount(const ImageInfo& info);
     static int32_t GetAllocatedByteCount(const ImageInfo& info);
 
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+    friend class PixelMapRecordParcel;
+#endif
     uint64_t GetNoPaddingUsage();
 
 protected:
     static constexpr size_t MAX_IMAGEDATA_SIZE = 128 * 1024 * 1024; // 128M
     static constexpr size_t MIN_IMAGEDATA_SIZE = 32 * 1024;         // 32k
     friend class ImageSource;
-    friend class OHOS::Rosen::PixelMapStorage;
     friend class OHOS::Rosen::RSMarshallingHelper;
+    friend class OHOS::Rosen::PixelMapStorage;
     friend class OHOS::Rosen::RSProfiler;
     static bool ALPHA8ToARGB(const uint8_t *in, uint32_t inCount, uint32_t *out, uint32_t outCount);
     static bool ALPHAF16ToARGB(const uint8_t *in, uint32_t inCount, uint32_t *out, uint32_t outCount);
@@ -972,21 +972,16 @@ protected:
     static void ReleaseBuffer(AllocatorType allocatorType, int fd, uint64_t dataSize, void **buffer);
     static void *AllocSharedMemory(const uint64_t bufferSize, int &fd, uint32_t uniqueId);
     bool WritePropertiesToParcel(Parcel &parcel) const;
-    static bool ReadPropertiesFromParcel(Parcel& parcel, PixelMap*& pixelMap, ImageInfo& imgInfo,
-        PixelMemInfo& memInfo);
-    bool ReadBufferSizeFromParcel(Parcel& parcel, const ImageInfo& imgInfo, PixelMemInfo& memInfo,
-        PIXEL_MAP_ERR& error);
+    bool ReadPropertiesFromParcel(Parcel &parcel, ImageInfo &imgInfo, AllocatorType &allocatorType,
+                                  int32_t &bufferSize, PIXEL_MAP_ERR &error);
     bool WriteMemInfoToParcel(Parcel &parcel, const int32_t &bufferSize) const;
     static bool ReadMemInfoFromParcel(Parcel &parcel, const ImageInfo &imgInfo, PixelMemInfo &pixelMemInfo,
         PIXEL_MAP_ERR &error,
-        std::function<int(Parcel &parcel, std::function<int(Parcel&)> readFdDefaultFunc)> readSafeFdFunc = nullptr,
-        bool isDisplay = false);
+        std::function<int(Parcel &parcel, std::function<int(Parcel&)> readFdDefaultFunc)> readSafeFdFunc = nullptr);
     bool WriteTransformDataToParcel(Parcel &parcel) const;
     bool ReadTransformData(Parcel &parcel, PixelMap *pixelMap);
     bool WriteAstcInfoToParcel(Parcel &parcel) const;
     bool ReadAstcInfo(Parcel &parcel, PixelMap *pixelMap);
-    bool WriteYuvDataInfoToParcel(Parcel &parcel) const;
-    bool ReadYuvDataInfoFromParcel(Parcel &parcel, PixelMap *pixelMap);
     uint32_t SetRowDataSizeForImageInfo(ImageInfo info);
 
     void ResetPixelMap()
@@ -1003,7 +998,7 @@ protected:
     }
 
     static PixelMap *StartUnmarshalling(Parcel &parcel, ImageInfo &imgInfo,
-        PixelMemInfo &pixelMemInfo, PIXEL_MAP_ERR &error);
+        PixelMemInfo &pixelMemInfo, PIXEL_MAP_ERR &error, bool isDisplay = false);
     static PixelMap *FinishUnmarshalling(PixelMap* pixelMap, Parcel &parcel,
         ImageInfo &imgInfo, PixelMemInfo &pixelMemInfo, PIXEL_MAP_ERR &error);
 
@@ -1074,7 +1069,7 @@ protected:
     std::shared_ptr<ExifMetadata> exifMetadata_ = nullptr;
     std::shared_ptr<std::mutex> metadataMutex_ = std::make_shared<std::mutex>();
     std::shared_ptr<std::mutex> translationMutex_ = std::make_shared<std::mutex>();
-    std::shared_ptr<std::shared_mutex> colorSpaceMutex_ = std::make_shared<std::shared_mutex>();
+    std::shared_ptr<std::mutex> colorSpaceMutex_ = std::make_shared<std::mutex>();
     bool toSdrColorIsSRGB_ = false;
     std::shared_ptr<std::shared_mutex> pixelDataMutex_ = std::make_shared<std::shared_mutex>();
 private:
