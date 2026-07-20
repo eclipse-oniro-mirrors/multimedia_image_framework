@@ -41,9 +41,7 @@ using std::vector;
 
 uint32_t PluginServer::Register(vector<string> &&pluginPaths)
 {
-    if (pluginPaths.empty()) {
-        return pluginFw_.Register(pluginPaths);
-    }
+    CHECK_ERROR_RETURN_RET(pluginPaths.empty(), pluginFw_.Register(pluginPaths));
     vector<string> canonicalPaths;
     vector<string> gstCanonicalPaths;
     for (string &path : pluginPaths) {
@@ -163,9 +161,8 @@ uint32_t PluginServer::PluginServerGetClassInfo(uint16_t interfaceID, uint16_t s
 PluginFWType PluginServer::AnalyzeFWType(const string &canonicalPath)
 {
     // for the current rule, contains the word "/gstreamer" is considered to be the gstreamer plugin directory.
-    if (canonicalPath.find(platformAdp_.DIR_SEPARATOR + "gstreamer") != string::npos) {
-        return PluginFWType::PLUGIN_FW_GSTREAMER;
-    }
+    CHECK_ERROR_RETURN_RET(canonicalPath.find(platformAdp_.DIR_SEPARATOR + "gstreamer") != string::npos,
+        PluginFWType::PLUGIN_FW_GSTREAMER);
 
     return PluginFWType::PLUGIN_FW_GENERAL;
 }

@@ -257,10 +257,8 @@ std::unique_ptr<PixelMap> AuxiliaryGenerator::CreatePixelMapByContext(DecodeCont
     ImageSource::ContextToAddrInfos(context, addrInfos);
     pixelMap->SetPixelsAddr(addrInfos.addr, addrInfos.context, addrInfos.size, addrInfos.type, addrInfos.func);
     TrySetYUVDataInfo(pixelMap);
-    if (!ResizeAuxPixelMap(pixelMap, context)) {
-        IMAGE_LOGE("[ImageSource]Resize auxiliary pixelmap fail.");
-        return nullptr;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(!ResizeAuxPixelMap(pixelMap, context), nullptr,
+        "[ImageSource]Resize auxiliary pixelmap fail.");
 #ifdef IMAGE_COLORSPACE_FLAG
     if (context.hdrType > ImageHdrType::SDR) {
         pixelMap->InnerSetColorSpace(ColorManager::ColorSpace(context.grColorSpaceName));

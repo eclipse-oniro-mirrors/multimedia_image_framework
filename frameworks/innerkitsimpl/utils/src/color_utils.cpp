@@ -502,8 +502,9 @@ OHOS::ColorManager::ColorSpaceName ColorUtils::GetSrcColorSpace(const skcms_ICCP
 
 static uint32_t U8ToU32(const uint8_t* p)
 {
-    return (p[OFFSET_0] << SHIFT_BITS_24) | (p[OFFSET_1] << SHIFT_BITS_16) |
-        (p[OFFSET_2] << SHIFT_BITS_8) | p[OFFSET_3];
+    return (static_cast<uint32_t>(p[OFFSET_0]) << SHIFT_BITS_24) |
+        (static_cast<uint32_t>(p[OFFSET_1]) << SHIFT_BITS_16) |
+        (static_cast<uint32_t>(p[OFFSET_2]) << SHIFT_BITS_8) | p[OFFSET_3];
 }
 
 static bool GetXYZFromTag(const uint8_t* buffer, uint32_t offset, uint32_t size, XYZValues* xyz)
