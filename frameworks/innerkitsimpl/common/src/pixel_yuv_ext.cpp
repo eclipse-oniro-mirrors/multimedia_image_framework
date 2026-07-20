@@ -153,7 +153,7 @@ void PixelYuvExt::scale(float xAxis, float yAxis)
 void PixelYuvExt::scale(float xAxis, float yAxis, const AntiAliasingOption &option)
 {
     uint32_t errCode = Scale(xAxis, yAxis, option);
-    CHECK_ERROR_RETURN_LOG(errCode != SUCCESS, 
+    CHECK_ERROR_RETURN_LOG(errCode != SUCCESS,
         "PixelYuvExt::scale failed, xAxis: %{public}f, yAxis: %{public}f, ret: %{public}u", xAxis, yAxis, errCode);
 }
 
@@ -177,7 +177,7 @@ uint32_t PixelYuvExt::Scale(float xAxis, float yAxis, AntiAliasingOption option)
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     if (allocatorType_ == AllocatorType::DMA_ALLOC) {
         SurfaceBuffer* sbBuffer = static_cast<SurfaceBuffer*>(GetFd());
-        CHECK_ERROR_PRINT_LOG(sbBuffer == nullptr, "PixelYuvExt scale get SurfaceBuffer failed"); 
+        CHECK_ERROR_PRINT_LOG(sbBuffer == nullptr, "PixelYuvExt scale get SurfaceBuffer failed");
         if (sbBuffer != nullptr) {
             pixelsSize = sbBuffer->GetSize();
         }
@@ -222,7 +222,7 @@ uint32_t PixelYuvExt::Scale(int32_t dstW, int32_t dstH, AntiAliasingOption optio
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     if (allocatorType_ == AllocatorType::DMA_ALLOC) {
         SurfaceBuffer* sbBuffer = static_cast<SurfaceBuffer*>(GetFd());
-        CHECK_ERROR_PRINT_LOG(sbBuffer == nullptr, "PixelYuvExt scale get SurfaceBuffer failed"); 
+        CHECK_ERROR_PRINT_LOG(sbBuffer == nullptr, "PixelYuvExt scale get SurfaceBuffer failed");
         if (sbBuffer != nullptr) {
             pixelsSize = sbBuffer->GetSize();
         }
