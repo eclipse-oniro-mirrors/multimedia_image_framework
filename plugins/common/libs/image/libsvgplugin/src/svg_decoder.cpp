@@ -589,7 +589,7 @@ uint32_t SvgDecoder::DoDecode(uint32_t index, DecodeContext &context)
     CHECK_ERROR_RETURN_RET_LOG(!cond, Media::ERR_IMAGE_MALLOC_ABNORMAL, "[DoDecode] alloc buffer failed.");
 
     auto imageInfo = MakeImageInfo(opts_);
-    auto rowBytes = static_cast<uint32_t>(opts_.desiredSize.width * SVG_BYTES_PER_PIXEL);
+    auto rowBytes = static_cast<size_t>(opts_.desiredSize.width) * SVG_BYTES_PER_PIXEL;
     auto pixels = context.pixelsBuffer.buffer;
 
     SkBitmap bitmap;

@@ -475,7 +475,7 @@ bool PostProc::AllocHeapBuffer(uint64_t bufferSize, uint8_t **buffer)
     CHECK_ERROR_RETURN_RET_LOG(*buffer == nullptr, false,
         "[PostProc]alloc covert color buffersize[%{public}llu] failed.", static_cast<unsigned long long>(bufferSize));
 #ifdef _WIN32
-    errno_t backRet = memset_s(*buffer, 0, bufferSize);
+    errno_t backRet = memset_s(*buffer, bufferSize, 0, bufferSize);
     if (backRet != EOK) {
         IMAGE_LOGE("[PostProc]memset convertData fail, errorCode = %{public}d", backRet);
         ReleaseBuffer(AllocatorType::HEAP_ALLOC, 0, 0, buffer);
