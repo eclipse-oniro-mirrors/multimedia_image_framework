@@ -6706,6 +6706,7 @@ std::shared_ptr<ImageMetadata> ImageSource::FindMetadataFromMap(MetadataType typ
 static std::shared_ptr<FragmentMetadata> ParseJpegFragmentMetadata(std::unique_ptr<InputDataStream> &auxStream)
 {
     IMAGE_LOGD("ParseJpegFragmentMetadata IN");
+    CHECK_ERROR_RETURN_RET_LOG(auxStream == nullptr, nullptr, "auxStream is nullptr");
     uint8_t *data = auxStream->GetDataPtr();
     uint32_t size = auxStream->GetStreamSize();
     Rect fragmentRect;
