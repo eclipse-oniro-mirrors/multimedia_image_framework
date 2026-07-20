@@ -190,31 +190,12 @@ Media::YUVDataInfo GetYUVDataInfo()
 }
 
 /*
- * get yuv stride info
- */
-Media::YUVStrideInfo GetYUVStrideInfo()
-{
-    Media::YUVStrideInfo yuvStrideInfo;
-    yuvStrideInfo.yStride = GetData<uint32_t>();
-    yuvStrideInfo.uvStride = GetData<uint32_t>();
-    yuvStrideInfo.yOffset = GetData<uint32_t>();
-    yuvStrideInfo.uvOffset = GetData<uint32_t>();
-    return yuvStrideInfo;
-}
-
-/*
  * test pixelmap setImageInfo
  */
 bool g_pixelMapSetImageInfoTest(std::unique_ptr<Media::PixelMap> &pixelMap)
 {
     Media::YUVDataInfo yuvInfo = GetYUVDataInfo();
     pixelMap->SetImageYUVInfo(yuvInfo);
-    int32_t width = GetData<int32_t>();
-    int32_t height = GetData<int32_t>();
-    Media::PixelFormat pixelFormat = static_cast<Media::PixelFormat>(GetData<int32_t>());
-    pixelMap->AssignYuvDataOnType(pixelFormat, width, height);
-    Media::YUVStrideInfo strides = GetYUVStrideInfo();
-    pixelMap->UpdateYUVDataInfo(pixelFormat, width, height, strides);
     return true;
 }
 
