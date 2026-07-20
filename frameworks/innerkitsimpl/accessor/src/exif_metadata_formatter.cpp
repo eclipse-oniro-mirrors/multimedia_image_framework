@@ -934,9 +934,7 @@ const auto FACE_BLUR_INFO_REGEX = R"(^\d+(?:(?:, ?| )\d+){0,9}$)";
  */
 bool ExifMetadatFormatter::IsValidValue(const TagDetails *array, const size_t &size, const int64_t &key)
 {
-    if (array == nullptr) {
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET(array == nullptr, false);
 
     for (size_t i = 0; i < size; i++) {
         if (array[i].val_ == key) {
@@ -951,10 +949,8 @@ bool ExifMetadatFormatter::ValidRegex(const std::string &value, const std::strin
 {
     IMAGE_LOGD("Validating against regex: %{public}s", regex.c_str());
     std::regex ratPattern(regex);
-    if (!std::regex_match(value, ratPattern)) {
-        IMAGE_LOGD("Validation failed.Regex: %{public}s", regex.c_str());
-        return false;
-    }
+    CHECK_DEBUG_RETURN_RET_LOG(!std::regex_match(value, ratPattern), false,
+        "Validation failed.Regex: %{public}s", regex.c_str());
     return true;
 }
 
@@ -975,9 +971,7 @@ void ExifMetadatFormatter::ReplaceAsContent(std::string &value, const std::strin
 bool ExifMetadatFormatter::ValidRegexWithComma(std::string &value, const std::string &regex)
 {
     IMAGE_LOGD("Validating comma against regex: %{public}s", regex.c_str());
-    if (!ValidRegex(value, regex)) {
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET(!ValidRegex(value, regex), false);
     ReplaceAsSpace(value, COMMA_REGEX);
     return true;
 }
@@ -1008,9 +1002,8 @@ static bool ConvertToDouble(const std::string& str, double& value)
     errno = 0;
     char* endPtr = nullptr;
     value = strtod(str.c_str(), &endPtr);
-    if (errno == ERANGE && *endPtr != '\0') {
-        return false;
-    }
+    bool isOutOfRange = errno == ERANGE && *endPtr != '\0';
+    CHECK_ERROR_RETURN_RET(isOutOfRange, false);
     return true;
 }
 
@@ -1076,9 +1069,7 @@ bool ExifMetadatFormatter::ValidDecimalRationalFormat(std::string &value)
             // segment is decimal call decimalToFraction 2.5 -> 5/2
             bool isOutRange = false;
             auto tmpRes = GetFractionFromStr(match[0], isOutRange);
-            if (isOutRange) {
-                return false;
-            }
+            CHECK_ERROR_RETURN_RET(isOutRange, false);
             result += tmpRes;
         }
         icount++;
@@ -1115,9 +1106,7 @@ bool ExifMetadatFormatter::ValidConvertRationalFormat(std::string &value)
             // segment is decimal call decimalToFraction 2.5 -> 5/2
             bool isOutRange = false;
             auto tmpRes = GetFractionFromStr(match[0], isOutRange);
-            if (isOutRange) {
-                return false;
-            }
+            CHECK_ERROR_RETURN_RET(isOutRange, false);
             result += tmpRes;
         }
         icount++;
@@ -1130,9 +1119,7 @@ bool ExifMetadatFormatter::ValidConvertRationalFormat(std::string &value)
 bool ExifMetadatFormatter::ValidRegexWithRationalFormat(std::string &value, const std::string &regex)
 {
     // 1.validate regex
-    if (!ValidRegex(value, regex)) {
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET(!ValidRegex(value, regex), false);
 
     // 2.convert integer to rational format. 9 9 9 -> 9/1 9/1 9/1
     RationalFormat(value);
@@ -1143,9 +1130,7 @@ bool ExifMetadatFormatter::ValidRegexWithRationalFormat(std::string &value, cons
 bool ExifMetadatFormatter::ValidRegexWithCommaRationalFormat(std::string &value, const std::string &regex)
 {
     // 1.validate regex
-    if (!ValidRegex(value, regex)) {
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET(!ValidRegex(value, regex), false);
 
     // 2.replace comma as a space
     ReplaceAsSpace(value, COMMA_REGEX);
@@ -1159,9 +1144,7 @@ bool ExifMetadatFormatter::ValidRegexWithCommaRationalFormat(std::string &value,
 bool ExifMetadatFormatter::ValidRegexWithColonRationalFormat(std::string &value, const std::string &regex)
 {
     // 1.validate regex
-    if (!ValidRegex(value, regex)) {
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET(!ValidRegex(value, regex), false);
 
     // 2.replace colon as a space
     ReplaceAsSpace(value, COLON_REGEX);
@@ -1174,9 +1157,7 @@ bool ExifMetadatFormatter::ValidRegexWithColonRationalFormat(std::string &value,
 // validate regex & convert value to integer format.
 bool ExifMetadatFormatter::ValidRegexWithDot(std::string &value, const std::string &regex)
 {
-    if (!ValidRegex(value, regex)) {
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET(!ValidRegex(value, regex), false);
     ReplaceAsContent(value, DOT_REGEX, "");
     return true;
 }
@@ -1184,9 +1165,7 @@ bool ExifMetadatFormatter::ValidRegexWithDot(std::string &value, const std::stri
 // regex validation & convert decimal to rational. For example GPSLatitude 2.5,23,3.4 -> 2.5 23 3.4 -> 5/2 23/1 17/5
 bool ExifMetadatFormatter::ValidRegxWithCommaDecimalRationalFormat(std::string &value, const std::string &regex)
 {
-    if (!ValidRegex(value, regex)) {
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET(!ValidRegex(value, regex), false);
 
     // replace comma with a space 1.5,2.5.3 -> 1.5 2.5 3
     ReplaceAsSpace(value, COMMA_REGEX);
@@ -1197,9 +1176,7 @@ bool ExifMetadatFormatter::ValidRegxWithCommaDecimalRationalFormat(std::string &
 
 bool ExifMetadatFormatter::ValidRegxAndConvertRationalFormat(std::string &value, const std::string &regex)
 {
-    if (!ValidRegex(value, regex)) {
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET(!ValidRegex(value, regex), false);
 
     // replace comma with a space 1.5,2.5.3 -> 1.5 2.5 3
     ReplaceAsSpace(value, COMMA_REGEX);
@@ -1214,9 +1191,7 @@ bool ExifMetadatFormatter::ValidRegxAndConvertRationalFormat(std::string &value,
 // regex validation & convert decimal to rational. For example GPSLatitude 2.5 23 3.4 -> 5/2 23/1 17/5
 bool ExifMetadatFormatter::ValidRegexWithDecimalRationalFormat(std::string &value, const std::string &regex)
 {
-    if (!ValidRegex(value, regex)) {
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET(!ValidRegex(value, regex), false);
 
     // convert decimal to rationl 2.5 -> 5/2
     return ValidDecimalRationalFormat(value);
@@ -1224,9 +1199,7 @@ bool ExifMetadatFormatter::ValidRegexWithDecimalRationalFormat(std::string &valu
 
 bool ExifMetadatFormatter::ValidRegexWithVersionFormat(std::string &value, const std::string &regex)
 {
-    if (!ValidRegex(value, regex)) {
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET(!ValidRegex(value, regex), false);
 
     std::string result;
     std::regex parPattern("[0-9]{1,2}");
@@ -1251,9 +1224,7 @@ bool ExifMetadatFormatter::ValidRegexWithVersionFormat(std::string &value, const
 
 bool ExifMetadatFormatter::ValidRegexWithChannelFormat(std::string &value, const std::string &regex)
 {
-    if (!ValidRegex(value, regex)) {
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET(!ValidRegex(value, regex), false);
 
     std::string result;
     std::regex parPattern("[-YCbCrRGB]+");
@@ -1284,9 +1255,7 @@ bool ExifMetadatFormatter::ValidRegexWithChannelFormat(std::string &value, const
 
 bool ExifMetadatFormatter::ValidRegexWithDoubleFormat(std::string &value, const std::string &regex)
 {
-    if (!ValidRegex(value, regex)) {
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET(!ValidRegex(value, regex), false);
 
     ReplaceAsSpace(value, COMMA_REGEX);
     return true;
@@ -1294,9 +1263,7 @@ bool ExifMetadatFormatter::ValidRegexWithDoubleFormat(std::string &value, const 
 
 bool ExifMetadatFormatter::ValidRegexWithIntFormat(std::string &value, const std::string &regex)
 {
-    if (!ValidRegex(value, regex)) {
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET(!ValidRegex(value, regex), false);
     enum class SeparatorType { NONE, COMMA, COMMA_SPACE, SPACE };
     SeparatorType detectedType = SeparatorType::NONE;
     size_t pos = 0;
@@ -1319,14 +1286,14 @@ bool ExifMetadatFormatter::ValidRegexWithIntFormat(std::string &value, const std
             return false;
         }
         size_t nextPos = pos + skipCount;
-        if (nextPos >= value.size() || !std::isdigit(value[nextPos])) {
-            return false;
-        }
+        bool invalidNextPos = nextPos >= value.size() || !std::isdigit(value[nextPos]);
+        CHECK_ERROR_RETURN_RET(invalidNextPos, false);
         
         if (detectedType == SeparatorType::NONE) {
             detectedType = currentType;
-        } else if (detectedType != currentType) {
-            return false;
+        } else {
+            bool separatorMismatch = detectedType != currentType;
+            CHECK_ERROR_RETURN_RET(separatorMismatch, false);
         }
         pos = nextPos;
     }
@@ -1436,15 +1403,10 @@ void ExifMetadatFormatter::InitDelegates()
 bool ExifMetadatFormatter::ValidRegexWithGpsOneRationalFormat(std::string &value, const std::string &regex)
 {
     IMAGE_LOGD("validate gps with one rational.");
-    if (!ValidRegex(value, regex)) {
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET(!ValidRegex(value, regex), false);
     std::vector<std::string> vec;
     SplitStr(value, ",", vec);
-    if (vec.size() != GPS_DEGREE_SIZE) {
-        IMAGE_LOGD("Gps degree data size is invalid.");
-        return false;
-    }
+    CHECK_DEBUG_RETURN_RET_LOG(vec.size() != GPS_DEGREE_SIZE, false, "Gps degree data size is invalid.");
     value = vec[0] + "/" + vec[1] + " 0/1 0/1";
     return true;
 }
@@ -1454,16 +1416,13 @@ int32_t ExifMetadatFormatter::ValidateValueRange(const std::string &keyName, con
 {
     // 1. to find if any value range validation configuration according to exif tag in std::map container
     auto iter = ExifMetadatFormatter::GetInstance().valueRangeValidateConfig_.find(keyName);
-    if (iter == ExifMetadatFormatter::GetInstance().valueRangeValidateConfig_.end()) {
-        // if no range validation for key default is success.
-        return Media::SUCCESS;
-    }
+    bool rangeValidationMissing = iter == ExifMetadatFormatter::GetInstance().valueRangeValidateConfig_.end();
+    // if no range validation for key default is success.
+    CHECK_ERROR_RETURN_RET(rangeValidationMissing, Media::SUCCESS);
 
     // get value range array & size
     auto &[arrRef, arrSize] = iter->second;
-    if (arrRef == nullptr) {
-        return Media::ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
-    }
+    CHECK_ERROR_RETURN_RET(arrRef == nullptr, Media::ERR_IMAGE_DECODE_EXIF_UNSUPPORT);
 
     int32_t ivalue = -1;
 
@@ -1473,9 +1432,7 @@ int32_t ExifMetadatFormatter::ValidateValueRange(const std::string &keyName, con
     if (std::regex_match(value, regNum)) {
         // convert string to integer such as "15" -> 15  and check ll out of range
         auto [p, ec] = std::from_chars(value.data(), value.data() + value.size(), ivalue);
-        if (ec != std::errc()) {
-            return Media::ERR_MEDIA_OUT_OF_RANGE;
-        }
+        CHECK_ERROR_RETURN_RET(ec != std::errc(), Media::ERR_MEDIA_OUT_OF_RANGE);
     }
     if (std::regex_match(value, regChar)) {
         // convert char to integer such as "N" -> 78
@@ -1483,17 +1440,11 @@ int32_t ExifMetadatFormatter::ValidateValueRange(const std::string &keyName, con
     }
 
     // if ivalue is not converted then return FAIL
-    if (ivalue == -1) {
-        return Media::ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
-    }
+    CHECK_ERROR_RETURN_RET(ivalue == -1, Media::ERR_IMAGE_DECODE_EXIF_UNSUPPORT);
 
     // validate the ivalue is in value range array.
     auto isValid = IsValidValue(arrRef, arrSize, ivalue);
-    if (!isValid) {
-        return Media::ERR_MEDIA_OUT_OF_RANGE;
-    } else {
-        return Media::SUCCESS;
-    }
+    CHECK_ERROR_RETURN_RET(!isValid, Media::ERR_MEDIA_OUT_OF_RANGE);
     return Media::SUCCESS;
 }
 
@@ -1504,15 +1455,11 @@ void ExifMetadatFormatter::ConvertRangeValue(const std::string &keyName, std::st
         return;
     }
     auto iter = ExifMetadatFormatter::GetInstance().valueRangeValidateConfig_.find(keyName);
-    if (iter == ExifMetadatFormatter::GetInstance().valueRangeValidateConfig_.end()) {
-        return;
-    }
+    CHECK_ERROR_RETURN(iter == ExifMetadatFormatter::GetInstance().valueRangeValidateConfig_.end());
 
     // get value range array & size
     auto &[arrRef, arrSize] = iter->second;
-    if (arrRef == nullptr) {
-        return;
-    }
+    CHECK_ERROR_RETURN(arrRef == nullptr);
     // iterator arrRef to get value
     for (size_t i = 0; i < arrSize; i++) {
         if (arrRef[i].label_ == value) {
@@ -1544,9 +1491,7 @@ bool ExifMetadatFormatter::IsForbiddenValue(const std::string &value)
 void ExifMetadatFormatter::ExtractValue(const std::string &keyName, std::string &value)
 {
     auto it = ExifMetadatFormatter::GetInstance().valueTemplateConfig_.find(keyName);
-    if (it == ExifMetadatFormatter::GetInstance().valueTemplateConfig_.end()) {
-        return;
-    }
+    CHECK_ERROR_RETURN(it == ExifMetadatFormatter::GetInstance().valueTemplateConfig_.end());
     for (; it != ExifMetadatFormatter::GetInstance().valueTemplateConfig_.end() &&
         it != ExifMetadatFormatter::GetInstance().valueTemplateConfig_.upper_bound(keyName);
         it++) {
@@ -1574,10 +1519,9 @@ int32_t ExifMetadatFormatter::ConvertValueFormat(const std::string &keyName, std
     }
 
     auto it = ExifMetadatFormatter::GetInstance().valueFormatConvertConfig_.find(keyName);
-    if (it == ExifMetadatFormatter::GetInstance().valueFormatConvertConfig_.end()) {
-        IMAGE_LOGD("No format validation needed. Defaulting to success.");
-        return Media::SUCCESS;
-    }
+    bool formatValidationMissing = it == ExifMetadatFormatter::GetInstance().valueFormatConvertConfig_.end();
+    CHECK_DEBUG_RETURN_RET_LOG(formatValidationMissing, Media::SUCCESS,
+        "No format validation needed. Defaulting to success.");
     IMAGE_LOGD("Validating value format. Key: %{public}s", keyName.c_str());
 
     // get first iterator according to keyName
@@ -1591,10 +1535,8 @@ int32_t ExifMetadatFormatter::ConvertValueFormat(const std::string &keyName, std
         // call each value format function with value and regex
         int32_t isValid = func(value, (it->second).second);
         IMAGE_LOGD("Validation result: %{public}d", isValid);
-        if (isValid) {
-            IMAGE_LOGD("Validation successful.");
-            return Media::SUCCESS;
-        }
+        bool validationPassed = isValid != 0;
+        CHECK_DEBUG_RETURN_RET_LOG(validationPassed, Media::SUCCESS, "Validation successful.");
     }
 
     IMAGE_LOGD("Validation failed. Unsupported EXIF format.");
@@ -1634,36 +1576,31 @@ std::pair<int32_t, std::string> ExifMetadatFormatter::Format(const std::string &
     }
     std::string tmpValue = value;
 
-    if (!ExifMetadatFormatter::IsKeySupported(keyName)) {
-        IMAGE_LOGD("Key is not supported.");
-        return std::make_pair(Media::ERR_MEDIA_WRITE_PARCEL_FAIL, "");
-    }
+    bool unsupportedKey = !ExifMetadatFormatter::IsKeySupported(keyName);
+    CHECK_DEBUG_RETURN_RET_LOG(unsupportedKey, std::make_pair(Media::ERR_MEDIA_WRITE_PARCEL_FAIL, ""),
+        "Key is not supported.");
 
-    if (!isSystemApi && !ExifMetadatFormatter::IsModifyAllowed(keyName)) {
-        IMAGE_LOGD("Key is not allowed to modify.");
-        return std::make_pair(Media::ERR_MEDIA_WRITE_PARCEL_FAIL, "");
-    }
+    bool modifyDisallowed = !isSystemApi && !ExifMetadatFormatter::IsModifyAllowed(keyName);
+    CHECK_DEBUG_RETURN_RET_LOG(modifyDisallowed, std::make_pair(Media::ERR_MEDIA_WRITE_PARCEL_FAIL, ""),
+        "Key is not allowed to modify.");
 
-    if (ExifMetadatFormatter::IsForbiddenValue(tmpValue)) {
-        return std::make_pair(Media::ERR_MEDIA_VALUE_INVALID, "");
-    }
+    CHECK_ERROR_RETURN_RET(ExifMetadatFormatter::IsForbiddenValue(tmpValue),
+        std::make_pair(Media::ERR_MEDIA_VALUE_INVALID, ""));
     ExifMetadatFormatter::ConvertRangeValue(keyName, tmpValue);
     ExifMetadatFormatter::ExtractValue(keyName, tmpValue);
 
     // 1.validate value format
-    if (ExifMetadatFormatter::ConvertValueFormat(keyName, tmpValue)) {
-        IMAGE_LOGD("Invalid value format for key: %{public}s.", keyName.c_str());
-        // value format validate does not pass
-        return std::make_pair(Media::ERR_MEDIA_VALUE_INVALID, "");
-    }
+    bool invalidValueFormat = ExifMetadatFormatter::ConvertValueFormat(keyName, tmpValue) != Media::SUCCESS;
+    // value format validate does not pass
+    CHECK_DEBUG_RETURN_RET_LOG(invalidValueFormat, std::make_pair(Media::ERR_MEDIA_VALUE_INVALID, ""),
+        "Invalid value format for key：%{public}s.", keyName.c_str());
     IMAGE_LOGD("Processed format value. Key: %{public}s", keyName.c_str());
 
     // 2.validate value range
-    if (ExifMetadatFormatter::ValidateValueRange(keyName, tmpValue)) {
-        IMAGE_LOGD("Invalid value range for Key: %{public}s.", keyName.c_str());
-        // value range validate does not pass
-        return std::make_pair(Media::ERR_MEDIA_VALUE_INVALID, "");
-    }
+    bool invalidValueRange = ExifMetadatFormatter::ValidateValueRange(keyName, tmpValue) != Media::SUCCESS;
+    // value range validate does not pass
+    CHECK_DEBUG_RETURN_RET_LOG(invalidValueRange, std::make_pair(Media::ERR_MEDIA_VALUE_INVALID, ""),
+        "Invalid value range for Key: %{public}s.", keyName.c_str());
     return std::make_pair(Media::SUCCESS, tmpValue);
 }
 
@@ -1676,29 +1613,18 @@ static bool ConvertToInt(const std::string& str, int& value)
 
 static bool StrToDouble(const std::string &value, double &output)
 {
-    if (value.empty()) {
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET(value.empty(), false);
     size_t slashPos = value.find('/');
-    if (slashPos == std::string::npos) {
-        IMAGE_LOGE("StrToDouble split error");
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(slashPos == std::string::npos, false, "StrToDouble split error");
     std::string numeratorStr = value.substr(0, slashPos);
     std::string denominatorStr = value.substr(slashPos + 1);
     int numerator = 0;
-    if (!ConvertToInt(numeratorStr, numerator)) {
-        IMAGE_LOGI("numeratorStr = %{public}s convert convert string to int failed", numeratorStr.c_str());
-        return false;
-    }
+    CHECK_INFO_RETURN_RET_LOG(!ConvertToInt(numeratorStr, numerator), false,
+        "numeratorStr = %{public}s convert convert string to int failed", numeratorStr.c_str());
     int denominator = 0;
-    if (!ConvertToInt(denominatorStr, denominator)) {
-        IMAGE_LOGI("denominatorStr = %{public}s convert convert string to int failed", denominatorStr.c_str());
-        return false;
-    }
-    if (denominator == 0) {
-        return false;
-    }
+    CHECK_INFO_RETURN_RET_LOG(!ConvertToInt(denominatorStr, denominator), false,
+        "denominatorStr = %{public}s convert convert string to int failed", denominatorStr.c_str());
+    CHECK_ERROR_RETURN_RET(denominator == 0, false);
     output = static_cast<double>(numerator) / denominator;
     return true;
 }
@@ -1713,26 +1639,20 @@ static bool ValidLatLong(const std::string &key, const std::string &value)
 
     std::vector<std::string> tokens;
     SplitStr(value, " ", tokens);
-    if (tokens.size() != GPS_NORMAL_SIZE) {
-        IMAGE_LOGE("value size is not 3. token size %{public}lu", static_cast<unsigned long>(tokens.size()));
-        return false;
-    }
-    if (!StrToDouble(tokens[CONSTANT_0], degree) || !StrToDouble(tokens[CONSTANT_1], minute) ||
-        !StrToDouble(tokens[CONSTANT_2], second)) {
-        IMAGE_LOGE("Convert gps data to double type failed.");
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(tokens.size() != GPS_NORMAL_SIZE, false,
+        "value size is not 3. token size %{public}zu", tokens.size());
+    bool convertFailed = !StrToDouble(tokens[CONSTANT_0], degree) || !StrToDouble(tokens[CONSTANT_1], minute) ||
+        !StrToDouble(tokens[CONSTANT_2], second);
+    CHECK_ERROR_RETURN_RET_LOG(convertFailed, false, "Convert gps data to double type failed.");
     constexpr uint32_t timePeriod = 60;
     double latOrLong = degree + minute / timePeriod + second / (timePeriod * timePeriod);
 
-    if (key == "GPSLatitude" && (latOrLong > GPS_MAX_LATITUDE || latOrLong < GPS_MIN_LATITUDE)) {
-        IMAGE_LOGE("GPSLatitude is out of range.");
-        return false;
-    }
-    if (key == "GPSLongitude" && (latOrLong > GPS_MAX_LONGITUDE || latOrLong < GPS_MIN_LONGITUDE)) {
-        IMAGE_LOGE("GPSLongitude is out of range.");
-        return false;
-    }
+    bool invalidLatitude = key == "GPSLatitude" &&
+        (latOrLong > GPS_MAX_LATITUDE || latOrLong < GPS_MIN_LATITUDE);
+    CHECK_ERROR_RETURN_RET_LOG(invalidLatitude, false, "GPSLatitude is out of range.");
+    bool invalidLongitude = key == "GPSLongitude" &&
+        (latOrLong > GPS_MAX_LONGITUDE || latOrLong < GPS_MIN_LONGITUDE);
+    CHECK_ERROR_RETURN_RET_LOG(invalidLongitude, false, "GPSLongitude is out of range.");
     return true;
 }
 
@@ -1753,22 +1673,16 @@ int32_t ExifMetadatFormatter::Validate(const std::string &keyName, const std::st
         IMAGE_LOGD("Validating. Key: %{public}s, Value: %{public}s.", keyName.c_str(), value.c_str());
     }
     auto result = ExifMetadatFormatter::Format(keyName, value, isSystemApi);
-    if (result.first) {
-        IMAGE_LOGE("Validating Error %{public}d", result.first);
-        return result.first;
-    }
+    bool formatFailed = result.first != Media::SUCCESS;
+    CHECK_ERROR_RETURN_RET_LOG(formatFailed, result.first, "Validating Error %{public}d", result.first);
 
-    if ((keyName == "GPSLatitude" || keyName == "GPSLongitude") &&
-        !ValidLatLong(keyName, result.second)) {
-        IMAGE_LOGE("Validating GPSLatLong Error");
-        return ERR_MEDIA_VALUE_INVALID;
-    }
+    bool invalidGpsLatLong = (keyName == "GPSLatitude" || keyName == "GPSLongitude") &&
+        !ValidLatLong(keyName, result.second);
+    CHECK_ERROR_RETURN_RET_LOG(invalidGpsLatLong, ERR_MEDIA_VALUE_INVALID, "Validating GPSLatLong Error");
 
-    if ((UINT16_KEYS.find(keyName) != UINT16_KEYS.end()) &&
-        !IsUint16(result.second)) {
-        IMAGE_LOGE("Validating uint16 Error %{public}s", result.second.c_str());
-        return ERR_MEDIA_VALUE_INVALID;
-    }
+    bool invalidUint16 = (UINT16_KEYS.find(keyName) != UINT16_KEYS.end()) && !IsUint16(result.second);
+    CHECK_ERROR_RETURN_RET_LOG(invalidUint16, ERR_MEDIA_VALUE_INVALID, "Validating uint16 Error %{public}s",
+        result.second.c_str());
     IMAGE_LOGD("Validate ret: %{public}d", result.first);
     return result.first;
 }
