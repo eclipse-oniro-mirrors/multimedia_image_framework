@@ -263,10 +263,8 @@ static bool CalcRGBStride(PixelFormat format, uint32_t width, uint32_t &stride)
         default:
             pixelBytes = BYTES_PER_PIXEL_RGBA;
     }
-    if (width > UINT32_MAX / pixelBytes) {
-        IMAGE_LOGE("CalcRGBStride error: overflow! format=%{public}d, width=%{public}u", format, width);
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(width > UINT32_MAX / pixelBytes, false,
+        "CalcRGBStride error: overflow! format=%{public}d, width=%{public}u", format, width);
     stride = width * pixelBytes;
     return true;
 }
@@ -472,11 +470,9 @@ size_t ImageFormatConvert::GetBufferSizeByFormat(PixelFormat format, const Size 
             return NUM_0;
     }
 
-    if (result > UINT32_MAX) {
-        IMAGE_LOGE("Buffer size overflow, format=%{public}d, width=%{public}d, height=%{public}d",
-                   format, size.width, size.height);
-        return NUM_0;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(result > UINT32_MAX, NUM_0,
+        "Buffer size overflow, format=%{public}d, width=%{public}d, height=%{public}d",
+        format, size.width, size.height);
 
     return result;
 }
@@ -531,19 +527,14 @@ std::unique_ptr<AbsMemory> ImageFormatConvert::CreateMemory(PixelFormat pixelFor
         return nullptr;
     }
     uint32_t pictureSize = GetBufferSizeByFormat(pixelFormat, size);
-    if (pictureSize == 0) {
-        IMAGE_LOGE("CreateMemory: GetBufferSizeByFormat failed");
-        return nullptr;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(pictureSize == 0, nullptr, "CreateMemory: GetBufferSizeByFormat failed");
 
     if (IsYUVConvert(pixelFormat)) {
         strides = {size.width, (size.width + 1) / NUM_2 * NUM_2, 0, size.width * size.height};
     } else {
         uint32_t stride = 0;
-        if (!CalcRGBStride(pixelFormat, size.width, stride)) {
-            IMAGE_LOGE("CreateMemory CalcRGBStride failed");
-            return nullptr;
-        }
+        CHECK_ERROR_RETURN_RET_LOG(!CalcRGBStride(pixelFormat, size.width, stride), nullptr,
+            "CreateMemory CalcRGBStride failed");
         strides = {stride, 0, 0, 0};
     }
     MemoryData memoryData = {nullptr, pictureSize, "PixelConvert", size, pixelFormat};
@@ -781,13 +772,9 @@ static AllocatorType GetAllocatorType(std::shared_ptr<PixelMap> &srcPixelMap, Pi
 #ifndef CROSS_PLATFORM
 bool GetYuvSbConvertDetails(sptr<SurfaceBuffer> sourceSurfaceBuffer, DestConvertInfo &destInfo)
 {
-    if (sourceSurfaceBuffer == nullptr) {
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET(sourceSurfaceBuffer == nullptr, false);
     CM_ColorSpaceInfo colorSpaceInfo;
-    if (!VpeUtils::GetColorSpaceInfo(sourceSurfaceBuffer, colorSpaceInfo)) {
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET(!VpeUtils::GetColorSpaceInfo(sourceSurfaceBuffer, colorSpaceInfo), false);
     if (colorSpaceInfo.primaries == CM_ColorPrimaries::COLORPRIMARIES_BT709) {
         destInfo.yuvConvertCSDetails.srcYuvConversion = YuvConversion::BT709;
     } else if (colorSpaceInfo.primaries == CM_ColorPrimaries::COLORPRIMARIES_BT2020) {

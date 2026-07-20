@@ -372,9 +372,7 @@ static std::string FormatUndefinedExifString(const dng_string& input)
         return "";
     }
     const uint8_t* raw = buffer.Buffer_uint8();
-    if (raw == nullptr) {
-        return "";
-    }
+    CHECK_ERROR_RETURN_RET(raw == nullptr, "");
 
     uint32_t maxlen;
     if (ImageUtils::HasOverflowed(length, 1) || length + 1 > maxTagValueSizeForStr) {
@@ -389,21 +387,18 @@ static std::string FormatUndefinedExifString(const dng_string& input)
             const char* nullPos = static_cast<const char*>(std::memchr(asciiData, '\0', dataLen));
             return std::string(asciiData, nullPos != nullptr ? nullPos - asciiData : dataLen);
         }
-        if (std::memcmp(raw, undefinedPrefixUnicode, UNDEFINED_PREFIX_LEN) == 0) {
-            return "Unsupported UNICODE string";
-        }
-        if (std::memcmp(raw, undefinedPrefixJis, UNDEFINED_PREFIX_LEN) == 0) {
-            return "Unsupported JIS string";
-        }
+        int32_t ret = std::memcmp(raw, undefinedPrefixUnicode, UNDEFINED_PREFIX_LEN);
+        CHECK_ERROR_RETURN_RET(ret == 0, "Unsupported UNICODE string");
+        
+        ret = std::memcmp(raw, undefinedPrefixJis, UNDEFINED_PREFIX_LEN);
+        CHECK_ERROR_RETURN_RET(ret == 0, "Unsupported JIS string");
     }
 
     // Check if there is really some information in the tag
     const char* data = reinterpret_cast<const char*>(raw);
     size_t i = 0;
     for (; i < length && (data[i] == '\0' || data[i] == ' '); i++) {
-        if (i == length) {
-            return "";
-        }
+        CHECK_ERROR_RETURN_RET(i == length, "");
     }
     // If we reach this point, the tag does not comply with the standard but seems to contain data.
     // Print as much as possible, replacing non-printable characters with '.'
@@ -455,9 +450,7 @@ static uint32_t GetDngReal64Array(const real64* in, uint32_t count, MetadataValu
 {
     out.type = PropertyValueType::DOUBLE_ARRAY;
     out.doubleArrayValue.clear();
-    if (in == nullptr || count == 0) {
-        return SUCCESS;
-    }
+    CHECK_ERROR_RETURN_RET((in == nullptr || count == 0), SUCCESS);
     out.doubleArrayValue.reserve(count);
     for (uint32_t i = 0; i < count; i++) {
         out.doubleArrayValue.push_back(static_cast<double>(in[i]));
@@ -469,9 +462,7 @@ static uint32_t GetDngURationalArray(const dng_urational* in, uint32_t count, Me
 {
     out.type = PropertyValueType::DOUBLE_ARRAY;
     out.doubleArrayValue.clear();
-    if (count == 0 || in == nullptr) {
-        return SUCCESS;
-    }
+    CHECK_ERROR_RETURN_RET((in == nullptr || count == 0), SUCCESS);
     out.doubleArrayValue.reserve(count);
     for (uint32_t i = 0; i < count; i++) {
         out.doubleArrayValue.push_back(in[i].As_real64());

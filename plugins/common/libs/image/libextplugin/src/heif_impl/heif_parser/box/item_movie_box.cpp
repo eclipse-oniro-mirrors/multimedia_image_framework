@@ -58,12 +58,12 @@ static void SkipBytes(HeifStreamReader &reader, uint32_t skipSize)
 
 static std::string ReadFixedString(HeifStreamReader &reader, size_t length)
 {
-    if (length == 0) {
-        return "";
-    }
-    if (!reader.CheckSize(length)) {
-        return "";
-    }
+    bool cond = (length == 0);
+    CHECK_ERROR_RETURN_RET(cond, "");
+
+    cond = (!reader.CheckSize(length));
+    CHECK_ERROR_RETURN_RET(cond, "");
+
     std::string result;
     result.resize(length);
     auto stream = reader.GetStream();
@@ -300,9 +300,7 @@ heif_error HeifDrefBox::ParseContent(HeifStreamReader &reader)
         uint32_t recursionCount = 0;
         std::shared_ptr<HeifBox> entry;
         heif_error error = HeifBox::MakeFromReader(reader, &entry, recursionCount);
-        if (error != heif_error_ok) {
-            return error;
-        }
+        CHECK_ERROR_RETURN_RET(error != heif_error_ok, error);
         entries_.push_back(entry);
     }
     return reader.GetError();
@@ -335,9 +333,7 @@ heif_error HeifStsdBox::ParseContent(HeifStreamReader &reader)
         uint32_t recursionCount = 0;
         std::shared_ptr<HeifBox> entry;
         heif_error error = HeifBox::MakeFromReader(reader, &entry, recursionCount);
-        if (error != heif_error_ok) {
-            return error;
-        }
+        CHECK_ERROR_RETURN_RET(error != heif_error_ok, error);
         entries_.push_back(entry);
     }
     return reader.GetError();
@@ -434,9 +430,7 @@ heif_error HeifSttsBox::Write(HeifStreamWriter &writer) const
 
 heif_error HeifSttsBox::GetSampleDelta(uint32_t index, uint32_t &value) const
 {
-    if (entries_.empty()) {
-        return heif_error_invalid_stts;
-    }
+    CHECK_ERROR_RETURN_RET(entries_.empty(), heif_error_invalid_stts);
     uint32_t preCount = 0;
     for (const auto &entry : entries_) {
         preCount += entry.sampleCount;
@@ -609,9 +603,7 @@ heif_error HeifHvc1Box::ParseContent(HeifStreamReader &reader)
     }
     uint32_t recursionCount = 0;
     heif_error error = HeifBox::MakeFromReader(reader, &hvccBox_, recursionCount);
-    if (error != heif_error_ok) {
-        return error;
-    }
+    CHECK_ERROR_RETURN_RET(error != heif_error_ok, error);
     return reader.GetError();
 }
 
@@ -630,9 +622,7 @@ heif_error HeifAv01Box::ParseContent(HeifStreamReader &reader)
     frameCount_ = reader.Read16();
 
     size_t nameLength = reader.Read8();
-    if (nameLength > COMPRESSOR_NAME_SIZE) {
-        return heif_error_property_not_found;
-    }
+    CHECK_ERROR_RETURN_RET(nameLength > COMPRESSOR_NAME_SIZE, heif_error_property_not_found);
     compressorName_ = ReadFixedString(reader, nameLength);
     SkipBytes(reader, COMPRESSOR_NAME_SIZE - nameLength);
 
@@ -641,9 +631,7 @@ heif_error HeifAv01Box::ParseContent(HeifStreamReader &reader)
 
     uint32_t recursionCount = 0;
     heif_error error = HeifBox::MakeFromReader(reader, &av1cBox_, recursionCount);
-    if (error != heif_error_ok) {
-        return error;
-    }
+    CHECK_ERROR_RETURN_RET(error != heif_error_ok, error);
     return reader.GetError();
 }
 

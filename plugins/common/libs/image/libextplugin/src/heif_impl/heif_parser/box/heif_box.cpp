@@ -27,6 +27,7 @@
 #include "box/item_ref_box.h"
 #include "box/item_property_display_box.h"
 #include "box/item_movie_box.h"
+#include "image_log.h"
 
 #define MAKE_BOX_CASE(box_type, box_class_type)    \
 case fourcc_to_code(box_type):                     \
@@ -64,9 +65,7 @@ heif_error HeifBox::ParseHeader(HeifStreamReader &reader)
     }
 
     if (boxType_ == BOX_TYPE_UUID) {
-        if (!reader.CheckSize(UUID_TYPE_BYTE_NUM)) {
-            return heif_error_eof;
-        }
+        CHECK_ERROR_RETURN_RET(!reader.CheckSize(UUID_TYPE_BYTE_NUM), heif_error_eof);
 
         boxUuidType_.resize(UUID_TYPE_BYTE_NUM);
         reader.GetStream()->Read(reinterpret_cast<char*>(boxUuidType_.data()), UUID_TYPE_BYTE_NUM);
@@ -106,9 +105,7 @@ size_t HeifFullBox::ReserveHeader(HeifStreamWriter &writer) const
 heif_error HeifFullBox::WriteHeader(HeifStreamWriter &writer, size_t boxSize) const
 {
     auto err = HeifBox::WriteHeader(writer, boxSize);
-    if (err) {
-        return err;
-    }
+    CHECK_ERROR_RETURN_RET(err != heif_error_ok, err);
     writer.Write32((GetVersion() << THREE_BYTES_SHIFT) | GetFlags());
     return heif_error_ok;
 }
@@ -246,9 +243,7 @@ heif_error HeifBox::MakeFromReader(HeifStreamReader &reader,
     if (err) {
         return err;
     }
-    if (reader.HasError()) {
-        return reader.GetError();
-    }
+    CHECK_ERROR_RETURN_RET(reader.HasError(), reader.GetError());
     std::shared_ptr<HeifBox> box = HeifBox::MakeBox(headerBox.GetBoxType());
     box->SetHeaderInfo(headerBox);
     if (box->GetBoxSize() < box->GetHeaderSize()) {
@@ -297,9 +292,7 @@ heif_error HeifBox::ReadChildren(HeifStreamReader &reader, uint32_t &recursionCo
         if (error != heif_error_ok) {
             return error;
         }
-        if (children_.size() >= MAX_CHILDREN_PER_BOX) {
-            return heif_error_too_many_boxes;
-        }
+        CHECK_ERROR_RETURN_RET(children_.size() >= MAX_CHILDREN_PER_BOX, heif_error_too_many_boxes);
         if (box != nullptr) {
             children_.push_back(std::move(box));
         }
@@ -344,9 +337,7 @@ void HeifBox::InferAllFullBoxVersion()
 heif_error HeifBox::ParseContentChildrenByReadChildren(HeifStreamReader &reader, uint32_t &recursionCount)
 {
     recursionCount++;
-    if (recursionCount > MAX_RECURSION_COUNT) {
-        return heif_error_too_many_recursion;
-    }
+    CHECK_ERROR_RETURN_RET(recursionCount > MAX_RECURSION_COUNT, heif_error_too_many_recursion);
     return ReadChildren(reader, recursionCount);
 }
 } // namespace ImagePlugin
