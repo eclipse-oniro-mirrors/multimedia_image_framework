@@ -16,6 +16,8 @@
 #ifndef FRAMEWORKS_KITS_JS_COMMON_INCLUDE_IMAGE_NAPI_UTILS_H
 #define FRAMEWORKS_KITS_JS_COMMON_INCLUDE_IMAGE_NAPI_UTILS_H
 
+#include <mutex>
+
 #include "image_type.h"
 #include "image_system_properties.h"
 #include "napi/native_api.h"
@@ -162,6 +164,7 @@ struct ImageEnum {
 
 class ImageNapiUtils {
 public:
+    static std::mutex &GetMessageSequenceMutex(const void *messageSequence);
     static bool GetBufferByName(napi_env env, napi_value root, const char* name, void **res, size_t* len);
     static bool GetUint32ByName(napi_env env, napi_value root, const char* name, uint32_t *res);
     static bool GetInt32ByName(napi_env env, napi_value root, const char* name, int32_t *res);
