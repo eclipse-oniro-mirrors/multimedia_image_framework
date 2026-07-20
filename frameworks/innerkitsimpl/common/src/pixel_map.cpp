@@ -533,7 +533,9 @@ int32_t PixelMap::GetAllocatedByteCount(const ImageInfo& info)
 
 void UpdateYUVDataInfo(PixelFormat format, int32_t width, int32_t height, YUVDataInfo &yuvInfo)
 {
+#if !defined(CROSS_PLATFORM)
     ImageUtils::GetYuvInfoFromNonDmaBuffer(width, height, format, yuvInfo);
+#endif
 }
 
 static bool ChoosePixelmap(unique_ptr<PixelMap> &dstPixelMap, PixelFormat pixelFormat, int &errorCode)
@@ -557,7 +559,9 @@ static bool ChoosePixelmap(unique_ptr<PixelMap> &dstPixelMap, PixelFormat pixelF
 
 static void SetYUVDataInfoToPixelMap(unique_ptr<PixelMap> &dstPixelMap)
 {
+#if !defined(CROSS_PLATFORM)
     ImageUtils::UpdateYUVDataInfo(dstPixelMap);
+#endif
 }
 
 static int AllocPixelMapMemory(std::unique_ptr<AbsMemory> &dstMemory, int32_t &dstRowStride,
@@ -657,7 +661,7 @@ unique_ptr<PixelMap> PixelMap::Create(const uint32_t *colors, uint32_t colorLeng
     dstPixelMap->SetPixelsAddr(dstMemory->data.data, dstMemory->extend.data, dstMemory->data.size, dstMemory->GetType(),
         nullptr);
     ImageUtils::DumpPixelMapIfDumpEnabled(dstPixelMap);
-    ImageUtils::UpdateYUVDataInfo(dstPixelMap);
+    SetYUVDataInfoToPixelMap(dstPixelMap);
     ImageUtils::FlushSurfaceBuffer(const_cast<PixelMap*>(dstPixelMap.get()));
     return dstPixelMap;
 }
@@ -725,7 +729,7 @@ pair<unique_ptr<PixelMap>, int32_t> PixelMap::CreateFromPixels(const uint8_t *pi
     dstPixelMap->SetPixelsAddr(dstMemory->data.data, dstMemory->extend.data, dstMemory->data.size, dstMemory->GetType(),
         nullptr);
     ImageUtils::DumpPixelMapIfDumpEnabled(dstPixelMap);
-    ImageUtils::UpdateYUVDataInfo(dstPixelMap);
+    SetYUVDataInfoToPixelMap(dstPixelMap);
     ImageUtils::FlushSurfaceBuffer(dstPixelMap.get());
     return {std::move(dstPixelMap), SUCCESS};
 }
@@ -3416,7 +3420,11 @@ PixelMap *PixelMap::StartUnmarshalling(Parcel &parcel, ImageInfo &imgInfo,
         pixelMap = new (std::nothrow) PixelYuv();
 #endif
     } else if (ImageUtils::IsAstc(imgInfo.pixelFormat)) {
+#if !defined(CROSS_PLATFORM)
         pixelMap = new (std::nothrow) PixelAstc();
+#else
+        return nullptr;
+#endif
     } else {
         pixelMap = new (std::nothrow) PixelMap();
     }
@@ -3823,12 +3831,16 @@ bool PixelMap::IsAstcOrY8Format() const
 
 void PixelMap::AssignYuvDataOnType(PixelFormat format, int32_t width, int32_t height)
 {
+#if !defined(CROSS_PLATFORM)
     ImageUtils::UpdateYUVDataInfo(*this);
+#endif
 }
 
 void PixelMap::UpdateYUVDataInfo(PixelFormat format, int32_t width, int32_t height, YUVStrideInfo &strides)
 {
+#if !defined(CROSS_PLATFORM)
     ImageUtils::UpdateYUVDataInfo(*this);
+#endif
 }
 
 static const string GetNamedAlphaType(const AlphaType alphaType)
@@ -4821,7 +4833,9 @@ uint32_t PixelMap::Crop(const Rect &rect)
 
     SetPixelsAddr(m->data.data, m->extend.data, m->data.size, m->GetType(), nullptr);
     SetImageInfo(imageInfo, true);
+#if !defined(CROSS_PLATFORM)
     ImageUtils::UpdateYUVDataInfo(*this);
+#endif
     ImageUtils::FlushSurfaceBuffer(this);
     ImageUtils::DumpPixelMapIfDumpEnabled(*this, __func__);
     return SUCCESS;
