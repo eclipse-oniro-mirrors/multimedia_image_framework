@@ -531,13 +531,6 @@ int32_t PixelMap::GetAllocatedByteCount(const ImageInfo& info)
     }
 }
 
-void UpdateYUVDataInfo(PixelFormat format, int32_t width, int32_t height, YUVDataInfo &yuvInfo)
-{
-#if !defined(CROSS_PLATFORM)
-    ImageUtils::GetYuvInfoFromNonDmaBuffer(width, height, format, yuvInfo);
-#endif
-}
-
 static bool ChoosePixelmap(unique_ptr<PixelMap> &dstPixelMap, PixelFormat pixelFormat, int &errorCode)
 {
     if (IsYUV(pixelFormat)) {
