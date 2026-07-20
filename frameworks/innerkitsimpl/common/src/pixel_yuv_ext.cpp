@@ -67,9 +67,7 @@ static SkImageInfo ToSkImageInfo(ImageInfo &info, sk_sp<SkColorSpace> colorSpace
 static sk_sp<SkColorSpace> ToSkColorSpace(PixelMap *pixelmap)
 {
 #ifdef IMAGE_COLORSPACE_FLAG
-    if (pixelmap->InnerGetGrColorSpacePtr() == nullptr) {
-        return nullptr;
-    }
+    CHECK_ERROR_RETURN_RET(pixelmap->InnerGetGrColorSpacePtr() == nullptr, nullptr);
     return pixelmap->InnerGetGrColorSpacePtr()->ToSkColorSpace();
 #else
     return nullptr;
@@ -116,25 +114,22 @@ constexpr int32_t ANTIALIASING_SIZE = 350;
 
 static bool IsSupportAntiAliasing(const ImageInfo &imageInfo, const AntiAliasingOption &option)
 {
-    return option != AntiAliasingOption::NONE &&
-           imageInfo.size.width <= ANTIALIASING_SIZE &&
-           imageInfo.size.height <= ANTIALIASING_SIZE;
+    bool ret = (option != AntiAliasingOption::NONE &&
+                imageInfo.size.width <= ANTIALIASING_SIZE &&
+                imageInfo.size.height <= ANTIALIASING_SIZE);
+    return ret;
 }
 
 void PixelYuvExt::scale(int32_t dstW, int32_t dstH)
 {
-    if (!IsYuvFormat()) {
-        return;
-    }
+    CHECK_ERROR_RETURN(!IsYuvFormat());
     ImageInfo imageInfo;
     GetImageInfo(imageInfo);
     AntiAliasingOption operation = AntiAliasingOption::NONE;
     AntiAliasingOption option = AntiAliasingOption::NONE;
-    if (ImageSystemProperties::GetAntiAliasingEnabled() && IsSupportAntiAliasing(imageInfo, option)) {
-        operation = AntiAliasingOption::MEDIUM;
-    } else {
-        operation = option;
-    }
+    operation = (ImageSystemProperties::GetAntiAliasingEnabled() && IsSupportAntiAliasing(imageInfo, option))
+                ? AntiAliasingOption::MEDIUM
+                : static_cast<decltype(operation)>(option);
     scale(dstW, dstH, operation);
 }
 
@@ -144,36 +139,27 @@ PixelYuvExt::~PixelYuvExt()
 
 void PixelYuvExt::scale(float xAxis, float yAxis)
 {
-    if (!IsYuvFormat()) {
-        return;
-    }
+    CHECK_ERROR_RETURN(!IsYuvFormat());
     ImageInfo imageInfo;
     GetImageInfo(imageInfo);
     AntiAliasingOption operation = AntiAliasingOption::NONE;
     AntiAliasingOption option = AntiAliasingOption::NONE;
-    if (ImageSystemProperties::GetAntiAliasingEnabled() && IsSupportAntiAliasing(imageInfo, option)) {
-        operation = AntiAliasingOption::MEDIUM;
-    } else {
-        operation = option;
-    }
+    operation = (ImageSystemProperties::GetAntiAliasingEnabled() && IsSupportAntiAliasing(imageInfo, option))
+                ? AntiAliasingOption::MEDIUM
+                : static_cast<decltype(operation)>(option);
     scale(xAxis, yAxis, operation);
 }
 
 void PixelYuvExt::scale(float xAxis, float yAxis, const AntiAliasingOption &option)
 {
     uint32_t errCode = Scale(xAxis, yAxis, option);
-    if (errCode != SUCCESS) {
-        IMAGE_LOGE("PixelYuvExt::scale failed, xAxis: %{public}f, yAxis: %{public}f, ret: %{public}u",
-            xAxis, yAxis, errCode);
-    }
+    CHECK_ERROR_RETURN_LOG(errCode != SUCCESS,
+        "PixelYuvExt::scale failed, xAxis: %{public}f, yAxis: %{public}f, ret: %{public}u", xAxis, yAxis, errCode);
 }
 
 uint32_t PixelYuvExt::Scale(float xAxis, float yAxis, AntiAliasingOption option)
 {
-    if (xAxis == 0 || yAxis == 0) {
-        IMAGE_LOGE("Invalid scale ratio: 0");
-        return ERR_IMAGE_INVALID_PARAMETER;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(xAxis == 0 || yAxis == 0, ERR_IMAGE_INVALID_PARAMETER, "Invalid scale ratio: 0");
     ImageUtils::DumpPixelMapIfDumpEnabled(*this, std::string("before_") + __func__);
     ImageTrace imageTrace("PixelMap scale");
     ImageInfo imageInfo;
@@ -191,9 +177,8 @@ uint32_t PixelYuvExt::Scale(float xAxis, float yAxis, AntiAliasingOption option)
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     if (allocatorType_ == AllocatorType::DMA_ALLOC) {
         SurfaceBuffer* sbBuffer = static_cast<SurfaceBuffer*>(GetFd());
-        if (sbBuffer == nullptr) {
-            IMAGE_LOGE("PixelYuvExt scale get SurfaceBuffer failed");
-        } else {
+        CHECK_ERROR_PRINT_LOG(sbBuffer == nullptr, "PixelYuvExt scale get SurfaceBuffer failed");
+        if (sbBuffer != nullptr) {
             pixelsSize = sbBuffer->GetSize();
         }
     }
@@ -215,10 +200,8 @@ uint32_t PixelYuvExt::Scale(float xAxis, float yAxis, AntiAliasingOption option)
 void PixelYuvExt::scale(int32_t dstW, int32_t dstH, const AntiAliasingOption &option)
 {
     uint32_t errCode = Scale(dstW, dstH, option);
-    if (errCode != SUCCESS) {
-        IMAGE_LOGE("PixelYuvExt::scale failed, dstW: %{public}d, dstH: %{public}d, ret: %{public}u",
-            dstW, dstH, errCode);
-    }
+    CHECK_ERROR_PRINT_LOG(errCode != SUCCESS,
+        "PixelYuvExt::scale failed, dstW: %{public}d, dstH: %{public}d, ret: %{public}u", dstW, dstH, errCode);
 }
 
 uint32_t PixelYuvExt::Scale(int32_t dstW, int32_t dstH, AntiAliasingOption option)
@@ -239,9 +222,8 @@ uint32_t PixelYuvExt::Scale(int32_t dstW, int32_t dstH, AntiAliasingOption optio
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     if (allocatorType_ == AllocatorType::DMA_ALLOC) {
         SurfaceBuffer* sbBuffer = static_cast<SurfaceBuffer*>(GetFd());
-        if (sbBuffer == nullptr) {
-            IMAGE_LOGE("PixelYuvExt scale get SurfaceBuffer failed");
-        } else {
+        CHECK_ERROR_PRINT_LOG(sbBuffer == nullptr, "PixelYuvExt scale get SurfaceBuffer failed");
+        if (sbBuffer != nullptr) {
             pixelsSize = sbBuffer->GetSize();
         }
     }
@@ -262,9 +244,8 @@ uint32_t PixelYuvExt::Scale(int32_t dstW, int32_t dstH, AntiAliasingOption optio
 void PixelYuvExt::rotate(float degrees)
 {
     uint32_t errCode = Rotate(degrees);
-    if (errCode != SUCCESS) {
-        IMAGE_LOGE("PixelYuvExt::rotate failed, degrees: %{public}f, ret: %{public}u", degrees, errCode);
-    }
+    CHECK_ERROR_PRINT_LOG(errCode != SUCCESS,
+        "PixelYuvExt::rotate failed, degrees: %{public}f, ret: %{public}u", degrees, errCode);
 }
 
 uint32_t PixelYuvExt::Rotate(float degrees)
@@ -313,10 +294,9 @@ uint32_t PixelYuvExt::Rotate(float degrees)
 void PixelYuvExt::flip(bool xAxis, bool yAxis)
 {
     uint32_t errCode = Flip(xAxis, yAxis);
-    if (errCode != SUCCESS) {
-        IMAGE_LOGE("PixelYuvExt::flip failed, xAxis: %{public}d, yAxis: %{public}d, ret: %{public}u",
-            xAxis, yAxis, errCode);
-    }
+    CHECK_ERROR_PRINT_LOG(errCode != SUCCESS,
+        "PixelYuvExt::flip failed, xAxis: %{public}d, yAxis: %{public}d, ret: %{public}u",
+        xAxis, yAxis, errCode);
 }
 
 uint32_t PixelYuvExt::Flip(bool xAxis, bool yAxis)

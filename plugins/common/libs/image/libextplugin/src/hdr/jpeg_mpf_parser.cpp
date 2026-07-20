@@ -118,9 +118,7 @@ bool JpegMpfParser::Parsing(uint8_t* data, uint32_t size)
     size -= UINT32_BYTE_SIZE;
     uint32_t dataOffset = 0;
     bool isBigEndian = false;
-    if (size < UINT32_BYTE_SIZE) {
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET(size < UINT32_BYTE_SIZE, false);
     if (memcmp(data, BIG_ENDIAN_FLAG, sizeof(BIG_ENDIAN_FLAG)) == 0) {
         isBigEndian = true;
     } else if (memcmp(data, LITTLE_ENDIAN_FLAG, sizeof(LITTLE_ENDIAN_FLAG)) == 0) {
