@@ -123,14 +123,18 @@ bool PngExifMetadataAccessor::ReadBlob(DataBuf &blob)
         return false;
     }
 
-    const size_t imgSize = static_cast<size_t>(imageStream_->GetSize());
+    ssize_t imgSizeRaw = imageStream_->GetSize();
+    CHECK_ERROR_RETURN_RET_LOG(imgSizeRaw <= 0, false, "Failed to get image size");
+    const size_t imgSize = static_cast<size_t>(imgSizeRaw);
     DataBuf chunkHead(PNG_CHUNK_HEAD_SIZE);
 
     while (!imageStream_->IsEof()) {
         CHECK_ERROR_RETURN_RET_LOG(static_cast<size_t>(ReadChunk(chunkHead)) != chunkHead.Size(),
             false, "Failed to read chunk head. Expected size: %{public}zu", chunkHead.Size());
         uint32_t chunkLength = chunkHead.ReadUInt32(0, bigEndian);
-        CHECK_ERROR_RETURN_RET_LOG(chunkLength > imgSize - imageStream_->Tell(),
+        long curPos = imageStream_->Tell();
+        CHECK_ERROR_RETURN_RET_LOG(static_cast<size_t>(curPos) > imgSize ||
+            chunkLength > imgSize - static_cast<size_t>(curPos),
             false, "Chunk length is larger than the remaining image size");
         std::string chunkType(reinterpret_cast<const char *>(chunkHead.CData(PNG_CHUNK_LENGTH_SIZE)),
             PNG_CHUNK_TYPE_SIZE);
@@ -233,7 +237,9 @@ bool PngExifMetadataAccessor::WriteExifData(BufferMetadataStream &bufStream, uin
 
 bool PngExifMetadataAccessor::UpdateExifMetadata(BufferMetadataStream &bufStream, uint8_t *dataBlob, uint32_t size)
 {
-    const size_t imgSize = static_cast<size_t>(imageStream_->GetSize());
+    ssize_t imgSizeRaw = imageStream_->GetSize();
+    CHECK_ERROR_RETURN_RET_LOG(imgSizeRaw <= 0, false, "Failed to get image size");
+    const size_t imgSize = static_cast<size_t>(imgSizeRaw);
     DataBuf chunkHead(PNG_CHUNK_HEAD_SIZE);
 
     CHECK_ERROR_RETURN_RET(!WriteData(bufStream, pngSignature, PNG_SIGN_SIZE), false);
@@ -243,7 +249,9 @@ bool PngExifMetadataAccessor::UpdateExifMetadata(BufferMetadataStream &bufStream
             false, "Read chunk head error.");
 
         uint32_t chunkLength = chunkHead.ReadUInt32(0, bigEndian);
-        CHECK_ERROR_RETURN_RET_LOG(chunkLength > imgSize - imageStream_->Tell(), false, "Read chunk length error.");
+        long curPos = imageStream_->Tell();
+        CHECK_ERROR_RETURN_RET_LOG(static_cast<size_t>(curPos) > imgSize ||
+            chunkLength > imgSize - static_cast<size_t>(curPos), false, "Read chunk length error.");
 
         DataBuf chunkBuf(PNG_CHUNK_HEAD_SIZE + chunkLength + PNG_CHUNK_CRC_SIZE);
         std::copy_n(chunkHead.Begin(), PNG_CHUNK_HEAD_SIZE, chunkBuf.Begin());
