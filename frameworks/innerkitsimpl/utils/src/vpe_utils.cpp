@@ -105,9 +105,7 @@ int32_t VpeUtils::ColorSpaceConverterDestory(void* handle, int32_t* instanceId)
         return VPE_ERROR_FAILED;
     }
     DestoryT destory = (DestoryT)dlsym(handle, "ColorSpaceConverterDestroy");
-    if (!destory) {
-        return VPE_ERROR_FAILED;
-    }
+    CHECK_ERROR_RETURN_RET(!destory, VPE_ERROR_FAILED);
     return destory(instanceId);
 }
 
@@ -129,9 +127,7 @@ int32_t VpeUtils::DetailEnhancerDestory(void* handle, int32_t* instanceId)
         return VPE_ERROR_FAILED;
     }
     DestoryT destory = (DestoryT)dlsym(handle, "DetailEnhancerDestroy");
-    if (!destory) {
-        return VPE_ERROR_FAILED;
-    }
+    CHECK_ERROR_RETURN_RET(!destory, VPE_ERROR_FAILED);
     return destory(instanceId);
 }
 
@@ -139,22 +135,14 @@ int32_t VpeUtils::DetailEnhancerDestory(void* handle, int32_t* instanceId)
 int32_t VpeUtils::ColorSpaceConverterComposeImage(VpeSurfaceBuffers& sb, bool legacy)
 {
     std::lock_guard<std::mutex> lock(vpeMtx_);
-    if (dlHandler_ == nullptr || dlHandler_->GetSoHandle() == nullptr) {
-        return VPE_ERROR_FAILED;
-    }
+    CHECK_ERROR_RETURN_RET((dlHandler_ == nullptr || dlHandler_->GetSoHandle() == nullptr), VPE_ERROR_FAILED);
     int32_t instanceId = VPE_ERROR_FAILED;
     int32_t res = ColorSpaceConverterCreate(dlHandler_->GetSoHandle(), &instanceId);
-    if (instanceId == VPE_ERROR_FAILED || res != VPE_ERROR_OK) {
-        return VPE_ERROR_FAILED;
-    }
+    CHECK_ERROR_RETURN_RET((instanceId == VPE_ERROR_FAILED || res != VPE_ERROR_OK), VPE_ERROR_FAILED);
 
     ComposeImageT composeImage = (ComposeImageT)dlsym(dlHandler_->GetSoHandle(), "ColorSpaceConverterComposeImage");
-    if (!composeImage) {
-        return VPE_ERROR_FAILED;
-    }
-    if (sb.sdr == nullptr || sb.gainmap == nullptr || sb.hdr == nullptr) {
-        return VPE_ERROR_FAILED;
-    }
+    CHECK_ERROR_RETURN_RET(!composeImage, VPE_ERROR_FAILED);
+    CHECK_ERROR_RETURN_RET((sb.sdr == nullptr || sb.gainmap == nullptr || sb.hdr == nullptr), VPE_ERROR_FAILED);
     OHNativeWindowBuffer* sdr = OH_NativeWindow_CreateNativeWindowBufferFromSurfaceBuffer(&sb.sdr);
     OHNativeWindowBuffer* gainmap = OH_NativeWindow_CreateNativeWindowBufferFromSurfaceBuffer(&sb.gainmap);
     OHNativeWindowBuffer* hdr = OH_NativeWindow_CreateNativeWindowBufferFromSurfaceBuffer(&sb.hdr);
@@ -169,25 +157,18 @@ int32_t VpeUtils::ColorSpaceConverterComposeImage(VpeSurfaceBuffers& sb, bool le
 int32_t VpeUtils::ColorSpaceConverterDecomposeImage(VpeSurfaceBuffers& sb)
 {
     std::lock_guard<std::mutex> lock(vpeMtx_);
-    if (dlHandler_ == nullptr || dlHandler_->GetSoHandle() == nullptr) {
-        return VPE_ERROR_FAILED;
-    }
+    CHECK_ERROR_RETURN_RET((dlHandler_ == nullptr || dlHandler_->GetSoHandle() == nullptr), VPE_ERROR_FAILED);
  
     int32_t res;
     int32_t instanceId = VPE_ERROR_FAILED;
     res = ColorSpaceConverterCreate(dlHandler_->GetSoHandle(), &instanceId);
-    if (instanceId == VPE_ERROR_FAILED || res != VPE_ERROR_OK) {
-        return VPE_ERROR_FAILED;
-    }
-    
+    CHECK_ERROR_RETURN_RET((instanceId == VPE_ERROR_FAILED || res != VPE_ERROR_OK), VPE_ERROR_FAILED);
+
     DecomposeImageT decomposeImage = (DecomposeImageT)dlsym(dlHandler_->GetSoHandle(),
         "ColorSpaceConverterDecomposeImage");
-    if (!decomposeImage) {
-        return VPE_ERROR_FAILED;
-    }
-    if (sb.sdr == nullptr || sb.gainmap == nullptr || sb.hdr == nullptr) {
-        return VPE_ERROR_FAILED;
-    }
+    CHECK_ERROR_RETURN_RET(!decomposeImage, VPE_ERROR_FAILED);
+
+    CHECK_ERROR_RETURN_RET((sb.sdr == nullptr || sb.gainmap == nullptr || sb.hdr == nullptr), VPE_ERROR_FAILED);
     OHNativeWindowBuffer* sdr = OH_NativeWindow_CreateNativeWindowBufferFromSurfaceBuffer(&sb.sdr);
     OHNativeWindowBuffer* gainmap = OH_NativeWindow_CreateNativeWindowBufferFromSurfaceBuffer(&sb.gainmap);
     OHNativeWindowBuffer* hdr = OH_NativeWindow_CreateNativeWindowBufferFromSurfaceBuffer(&sb.hdr);
@@ -370,23 +351,15 @@ int32_t VpeUtils::ColorSpaceCalGainmap(VpeSurfaceBuffers& sb)
     int32_t res = VPE_ERROR_OK;
 #ifdef IMAGE_VPE_FLAG
     std::lock_guard<std::mutex> lock(vpeMtx_);
-    if (dlHandler_ == nullptr || dlHandler_->GetSoHandle() == nullptr) {
-        return VPE_ERROR_FAILED;
-    }
+    CHECK_ERROR_RETURN_RET((dlHandler_ == nullptr || dlHandler_->GetSoHandle() == nullptr), VPE_ERROR_FAILED);
     int32_t instanceId = VPE_ERROR_FAILED;
     res = ColorSpaceConverterCreate(dlHandler_->GetSoHandle(), &instanceId);
-    if (instanceId == VPE_ERROR_FAILED || res != VPE_ERROR_OK) {
-        return VPE_ERROR_FAILED;
-    }
+    CHECK_ERROR_RETURN_RET((instanceId == VPE_ERROR_FAILED || res != VPE_ERROR_OK), VPE_ERROR_FAILED);
     
     CalGainmapImageT calGainmapImage = (CalGainmapImageT)dlsym(dlHandler_->GetSoHandle(),
         "ColorSpaceConverterCalGainmap");
-    if (!calGainmapImage) {
-        return VPE_ERROR_FAILED;
-    }
-    if (sb.sdr == nullptr || sb.gainmap == nullptr || sb.hdr == nullptr) {
-        return VPE_ERROR_FAILED;
-    }
+    CHECK_ERROR_RETURN_RET(!calGainmapImage, VPE_ERROR_FAILED);
+    CHECK_ERROR_RETURN_RET((sb.sdr == nullptr || sb.gainmap == nullptr || sb.hdr == nullptr), VPE_ERROR_FAILED);
     OHNativeWindowBuffer* sdr = OH_NativeWindow_CreateNativeWindowBufferFromSurfaceBuffer(&sb.sdr);
     OHNativeWindowBuffer* gainmap = OH_NativeWindow_CreateNativeWindowBufferFromSurfaceBuffer(&sb.gainmap);
     OHNativeWindowBuffer* hdr = OH_NativeWindow_CreateNativeWindowBufferFromSurfaceBuffer(&sb.hdr);
@@ -408,9 +381,7 @@ static GSError SetColorSpaceInfo(sptr<SurfaceBuffer>& buffer, const CM_ColorSpac
     }
     std::vector<uint8_t> colorSpaceInfoVec;
     auto ret = MetadataManager::ConvertMetadataToVec(colorSpaceInfo, colorSpaceInfoVec);
-    if (ret != GSERROR_OK) {
-        return ret;
-    }
+    CHECK_ERROR_RETURN_RET(ret != GSERROR_OK, ret);
     return buffer->SetMetadata(ATTRKEY_COLORSPACE_INFO, colorSpaceInfoVec);
 }
 
@@ -464,13 +435,9 @@ bool VpeUtils::SetSbMetadataType(sptr<SurfaceBuffer>& buffer, const CM_HDR_Metad
     }
     std::vector<uint8_t> hdrMetadataTypeVec;
     auto ret = MetadataManager::ConvertMetadataToVec(metadataType, hdrMetadataTypeVec);
-    if (ret != GSERROR_OK) {
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET(ret != GSERROR_OK, false);
     ret = buffer->SetMetadata(ATTRKEY_HDR_METADATA_TYPE, hdrMetadataTypeVec);
-    if (ret != GSERROR_OK) {
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET(ret != GSERROR_OK, false);
     return true;
 }
 
@@ -499,10 +466,8 @@ bool VpeUtils::GetSbMetadataType(const sptr<SurfaceBuffer>& buffer, CM_HDR_Metad
 {
     std::vector<uint8_t> hdrMetadataTypeVec;
     auto ret = buffer->GetMetadata(ATTRKEY_HDR_METADATA_TYPE, hdrMetadataTypeVec);
-    if (ret != GSERROR_OK) {
-        IMAGE_LOGE("HdrUtils::GetHDRMetadataType GetMetadata failed, return value is %{public}d", ret);
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(ret != GSERROR_OK, false,
+        "HdrUtils::GetHDRMetadataType GetMetadata failed, return value is %{public}d", ret);
     return MetadataManager::ConvertVecToMetadata(hdrMetadataTypeVec, metadataType) == GSERROR_OK;
 }
 
@@ -597,35 +562,24 @@ void VpeUtils::SetSurfaceBufferInfo(sptr<SurfaceBuffer>& buffer, bool isGainmap,
         memCpyRes = memcpy_s(extendMetadataVec.data(), extendMetadataVec.size(),
             &defaultExtendMetadata, sizeof(HDRVividExtendMetadata));
     }
-    if (memCpyRes != EOK) {
-        IMAGE_LOGE("SetSurfaceBufferInfo failed, memcpy_s error:%{public}d", memCpyRes);
-        return;
-    }
+    CHECK_ERROR_RETURN_LOG(memCpyRes != EOK, "SetSurfaceBufferInfo failed, memcpy_s error:%{public}d", memCpyRes);
     VpeUtils::SetSbDynamicMetadata(buffer, extendMetadataVec);
 }
 
 int32_t VpeUtils::ColorSpaceConverterImageProcess(sptr<SurfaceBuffer> &input, sptr<SurfaceBuffer> &output)
 {
     std::lock_guard<std::mutex> lock(vpeMtx_);
-    if (dlHandler_ == nullptr || dlHandler_->GetSoHandle() == nullptr) {
-        return VPE_ERROR_FAILED;
-    }
+    CHECK_ERROR_RETURN_RET((dlHandler_ == nullptr || dlHandler_->GetSoHandle() == nullptr), VPE_ERROR_FAILED);
 
     int32_t res;
     int32_t instanceId = VPE_ERROR_FAILED;
     res = ColorSpaceConverterCreate(dlHandler_->GetSoHandle(), &instanceId);
-    if (instanceId == VPE_ERROR_FAILED || res != VPE_ERROR_OK) {
-        return VPE_ERROR_FAILED;
-    }
+    CHECK_ERROR_RETURN_RET((instanceId == VPE_ERROR_FAILED || res != VPE_ERROR_OK), VPE_ERROR_FAILED);
 
     HdrProcessImageT hdrProcessImage = (HdrProcessImageT)dlsym(dlHandler_->GetSoHandle(),
         "ColorSpaceConverterProcessImage");
-    if (!hdrProcessImage) {
-        return VPE_ERROR_FAILED;
-    }
-    if (input == nullptr || output == nullptr) {
-        return VPE_ERROR_FAILED;
-    }
+    CHECK_ERROR_RETURN_RET(!hdrProcessImage, VPE_ERROR_FAILED);
+    CHECK_ERROR_RETURN_RET((input == nullptr || output == nullptr), VPE_ERROR_FAILED);
     OHNativeWindowBuffer* sdr = OH_NativeWindow_CreateNativeWindowBufferFromSurfaceBuffer(&input);
     OHNativeWindowBuffer* hdr = OH_NativeWindow_CreateNativeWindowBufferFromSurfaceBuffer(&output);
     res = hdrProcessImage(instanceId, sdr, hdr);
@@ -638,24 +592,16 @@ int32_t VpeUtils::ColorSpaceConverterImageProcess(sptr<SurfaceBuffer> &input, sp
 int32_t VpeUtils::DetailEnhancerImageProcess(sptr<SurfaceBuffer> &input, sptr<SurfaceBuffer> &output, int32_t level)
 {
     std::lock_guard<std::mutex> lock(vpeMtx_);
-    if (dlHandler_ == nullptr || dlHandler_->GetSoHandle() == nullptr) {
-        return VPE_ERROR_FAILED;
-    }
+    CHECK_ERROR_RETURN_RET((dlHandler_ == nullptr || dlHandler_->GetSoHandle() == nullptr), VPE_ERROR_FAILED);
 
     int32_t res;
     int32_t instanceId = VPE_ERROR_FAILED;
     res = DetailEnhancerCreate(dlHandler_->GetSoHandle(), &instanceId);
-    if (instanceId == VPE_ERROR_FAILED || res != VPE_ERROR_OK) {
-        return VPE_ERROR_FAILED;
-    }
+    CHECK_ERROR_RETURN_RET((instanceId == VPE_ERROR_FAILED || res != VPE_ERROR_OK), VPE_ERROR_FAILED);
 
     SrProcessImageT srProcessImage = (SrProcessImageT)dlsym(dlHandler_->GetSoHandle(), "DetailEnhancerProcessImage");
-    if (!srProcessImage) {
-        return VPE_ERROR_FAILED;
-    }
-    if (input == nullptr || output == nullptr) {
-        return VPE_ERROR_FAILED;
-    }
+    CHECK_ERROR_RETURN_RET(!srProcessImage, VPE_ERROR_FAILED);
+    CHECK_ERROR_RETURN_RET((input == nullptr || output == nullptr), VPE_ERROR_FAILED);
     OHNativeWindowBuffer* inBuffer = OH_NativeWindow_CreateNativeWindowBufferFromSurfaceBuffer(&input);
     OHNativeWindowBuffer* outBuffer = OH_NativeWindow_CreateNativeWindowBufferFromSurfaceBuffer(&output);
     res = srProcessImage(instanceId, inBuffer, outBuffer, level);
@@ -671,10 +617,8 @@ bool VpeUtils::SetSbColorSpaceDefault(sptr<SurfaceBuffer>& buffer)
         COLORPRIMARIES_BT2020, TRANSFUNC_HLG, MATRIX_BT2020, RANGE_FULL
     };
     auto ret = SetColorSpaceInfo(buffer, outputColorSpaceInfo);
-    if (ret != GSERROR_OK) {
-        IMAGE_LOGE("SetSbColorSpaceDefault GetMetadata failed, return value is %{public}d", ret);
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(ret != GSERROR_OK, false,
+        "SetSbColorSpaceDefault GetMetadata failed, return value is %{public}d", ret);
     return true;
 }
 
@@ -685,10 +629,8 @@ void VpeUtils::SetSurfaceBufferInfo(sptr<SurfaceBuffer>& buffer, CM_ColorSpaceTy
 
 void VpeUtils::CopySurfaceBufferInfo(sptr<SurfaceBuffer>& source, sptr<SurfaceBuffer>& dst)
 {
-    if (source == nullptr || dst == nullptr) {
-        IMAGE_LOGI("VpeUtils CopySurfaceBufferInfo failed, source or dst is nullptr");
-        return;
-    }
+    CHECK_ERROR_RETURN_LOG(source == nullptr || dst == nullptr,
+        "VpeUtils CopySurfaceBufferInfo failed, source or dst is nullptr");
     std::vector<uint8_t> attrInfo{};
     std::vector<uint32_t> keys{};
     if (source->ListMetadataKeys(keys) == GSERROR_OK && !keys.empty()) {

@@ -153,9 +153,7 @@ struct ExtendInfoExtention {
 static bool GetVividJpegGainMapOffset(const vector<jpeg_marker_struct*>& markerList, vector<uint32_t> preOffsets,
     uint32_t& offset)
 {
-    if (markerList.size() == EMPTY_SIZE) {
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET(markerList.size() == EMPTY_SIZE, false);
     for (uint32_t i = 0; i < markerList.size(); i++) {
         jpeg_marker_struct* marker = markerList[i];
         uint32_t size = marker->data_length;
@@ -187,10 +185,8 @@ static bool GetVividJpegGainMapOffset(const vector<jpeg_marker_struct*>& markerL
             continue;
         }
         uint32_t originOffset = ImageUtils::BytesToUint32(data, dataOffset, size);
-        if (__builtin_add_overflow(originOffset, preOffsets[i], &offset)) {
-            IMAGE_LOGE("VividJpegGainMapOffset is overflowed");
-            return false;
-        }
+        bool offsetOverflow = __builtin_add_overflow(originOffset, preOffsets[i], &offset);
+        CHECK_ERROR_RETURN_RET_LOG(offsetOverflow, false, "VividJpegGainMapOffset is overflowed");
         uint32_t relativeOffset = ImageUtils::BytesToUint32(data, dataOffset, size); // offset minus all app size
         IMAGE_LOGD("vivid base info originOffset=%{public}d, relativeOffset=%{public}d, offset=%{public}d",
             originOffset, relativeOffset, offset);
@@ -264,9 +260,7 @@ static bool ParseBaseISOTag(jpeg_marker_struct* marker)
 static bool GetISOJpegGainMapOffset(vector<jpeg_marker_struct*>& markerList,
     vector<uint32_t> preOffsets, uint32_t& offset)
 {
-    if (markerList.size() == EMPTY_SIZE) {
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET(markerList.size() == EMPTY_SIZE, false);
     vector<uint32_t> offsetArray;
     bool isoTag = false;
     for (uint32_t i = 0; i < markerList.size(); i++) {
@@ -292,14 +286,11 @@ static bool GetISOJpegGainMapOffset(vector<jpeg_marker_struct*>& markerList,
 static bool IsVaildHdrMediaType(jpeg_marker_struct* marker)
 {
     IMAGE_LOGD("HDR-IMAGE seek HdrMediaType");
-    if (marker == nullptr || JPEG_MARKER_APP11 != marker->marker) {
-        return false;
-    }
-    if (marker->data_length <= HDR_MEDIA_TYPE_TAG_SIZE ||
-        memcmp(marker->data, HDR_MEDIA_TYPE_TAG, HDR_MEDIA_TYPE_TAG_SIZE) != 0) {
-        IMAGE_LOGE("HDR-IMAGE cmp media marker failed");
-        return false;
-    }
+    bool invalidMarker = marker == nullptr || JPEG_MARKER_APP11 != marker->marker;
+    CHECK_ERROR_RETURN_RET(invalidMarker, false);
+    bool invalidMediaMarker = marker->data_length <= HDR_MEDIA_TYPE_TAG_SIZE ||
+        memcmp(marker->data, HDR_MEDIA_TYPE_TAG, HDR_MEDIA_TYPE_TAG_SIZE) != 0;
+    CHECK_ERROR_RETURN_RET_LOG(invalidMediaMarker, false, "HDR-IMAGE cmp media marker failed");
     return true;
 }
 
@@ -312,7 +303,7 @@ static ImageHdrType CheckJpegGainMapHdrType(SkJpegCodec* jpegCodec,
     vector<jpeg_marker_struct*> isoMarkerList;
     vector<uint32_t> isoPreMarkerOffset;
     vector<uint32_t> vividPreMarkerOffset;
-    jpeg_marker_struct* mediaMarker;
+    jpeg_marker_struct* mediaMarker = nullptr;
     for (jpeg_marker_struct* marker = jpegCodec->decoderMgr()->dinfo()->marker_list; marker; marker = marker->next) {
         if (JPEG_MARKER_APP8 == marker->marker) {
             vividMarkerList.push_back(marker);
@@ -406,29 +397,19 @@ ImageHdrType HdrHelper::CheckHdrType(SkCodec* codec, uint32_t& offset) __attribu
 
 bool HdrHelper::CheckGainmapOffset(ImageHdrType type, InputDataStream* stream, uint32_t& offset)
 {
-    if (type == Media::ImageHdrType::HDR_LOG_DUAL) {
-        return true;
-    }
-    if (stream == nullptr) {
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET(type == Media::ImageHdrType::HDR_LOG_DUAL, true);
+    CHECK_ERROR_RETURN_RET(stream == nullptr, false);
 
     uint32_t streamSize = stream->GetStreamSize();
-    if (offset >= streamSize || JPEG_MARKER_LENGTH > (streamSize - offset)) {
-        IMAGE_LOGE("HDR-IMAGE CheckHdrType invalid offset %{public}d for stream size %{public}d", offset, streamSize);
-        return false;
-    }
+    bool invalidOffset = offset >= streamSize || JPEG_MARKER_LENGTH > (streamSize - offset);
+    CHECK_ERROR_RETURN_RET_LOG(invalidOffset, false,
+        "HDR-IMAGE CheckHdrType invalid offset %{public}d for stream size %{public}d", offset, streamSize);
 
     uint8_t *outBuffer = stream->GetDataPtr();
-    if (outBuffer == nullptr) {
-        IMAGE_LOGE("HDR-IMAGE CheckHdrTYpe null data pointer");
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(outBuffer == nullptr, false, "HDR-IMAGE CheckHdrTYpe null data pointer");
 
-    if (std::memcmp(JPEG_SOI_HEADER, outBuffer + offset, JPEG_MARKER_LENGTH) != 0) {
-        IMAGE_LOGE("HDR-IMAGE CheckHdrType gainmap memcpy SOI error");
-        return false;
-    }
+    bool invalidSoi = std::memcmp(JPEG_SOI_HEADER, outBuffer + offset, JPEG_MARKER_LENGTH) != 0;
+    CHECK_ERROR_RETURN_RET_LOG(invalidSoi, false, "HDR-IMAGE CheckHdrType gainmap memcpy SOI error");
     return true;
 }
 
@@ -462,14 +443,11 @@ static bool ParseVividJpegStaticMetadata(uint8_t* data, uint32_t& offset, uint32
     IMAGE_LOGD("HDR-IMAGE decode maxContentLightLevel = %{public}f", staticMeta.cta861.maxContentLightLevel);
     uint32_t vecSize = sizeof(HdrStaticMetadata);
     staticMetaVec.resize(vecSize);
-    if (memcpy_s(staticMetaVec.data(), vecSize, &staticMeta, vecSize) != EOK) {
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET(memcpy_s(staticMetaVec.data(), vecSize, &staticMeta, vecSize) != EOK, false);
     if (staticMetadataSize > VIVID_STATIC_METADATA_SIZE_IN_IMAGE) {
         uint32_t skipBytes = staticMetadataSize - VIVID_STATIC_METADATA_SIZE_IN_IMAGE;
-        if (offset + skipBytes > size) {
-            return false;
-        }
+        bool invalidSkip = offset + skipBytes > size;
+        CHECK_ERROR_RETURN_RET(invalidSkip, false);
         offset += skipBytes;
     }
     return true;
@@ -501,9 +479,8 @@ static void DuplicateSingleChannelMetadataToTriple(ISOMetadata& metaISO)
 
 static void ValidateAndCorrectISOMetadata(ISOMetadata& metaISO, Media::ImageHdrType type)
 {
-    if (type != ImageHdrType::HDR_VIVID_DUAL && type != ImageHdrType::HDR_VIVID_SINGLE) {
-        return;
-    }
+    bool skipCorrect = type != ImageHdrType::HDR_VIVID_DUAL && type != ImageHdrType::HDR_VIVID_SINGLE;
+    CHECK_ERROR_RETURN(skipCorrect);
     DuplicateSingleChannelMetadataToTriple(metaISO);
 }
 
@@ -576,13 +553,12 @@ static bool ParseTransformInfo(uint8_t* data, uint32_t& offset, uint32_t length,
     if (info.mappingFlag == INDEX_ZERO) {
         info.mapping.resize(EMPTY_SIZE);
         return true;
-    } else if (info.mappingFlag > size - UINT16_BYTE_COUNT) {
-        return false;
     }
+    bool invalidMappingFlag = info.mappingFlag > size - UINT16_BYTE_COUNT;
+    CHECK_ERROR_RETURN_RET(invalidMappingFlag, false);
     info.mapping.resize(info.mappingFlag);
-    if (memcpy_s(info.mapping.data(), info.mappingFlag, data + offset, info.mappingFlag) != EOK) {
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET(memcpy_s(info.mapping.data(), info.mappingFlag, data + offset, info.mappingFlag) != EOK,
+        false);
     offset += info.mappingFlag;
     return true;
 }
@@ -1210,9 +1186,7 @@ static uint16_t GetExtendMetadataSize(bool vividExtendFlag, const HDRVividExtend
 static void PackExtendMetadata(vector<uint8_t>& bytes, uint32_t& index, HDRVividExtendMetadata& metadata)
 {
     uint16_t length = GetExtendMetadataSize(true, metadata);
-    if (index + length > bytes.size()) {
-        return;
-    }
+    CHECK_ERROR_RETURN(index + length > bytes.size());
     ImageUtils::Uint16ToBytes(length, bytes, index);
     bytes[index++] = THREE_COMPONENTS;
     PackExtendInfoMain(bytes, index, metadata);
@@ -1356,9 +1330,8 @@ vector<uint8_t> HdrJpegPackerHelper::PackISOMetadataMarker(HdrMetadata& metadata
     bytes[index++] = JPEG_MARKER_APP2;
     uint32_t storeLength = markerLength - JPEG_MARKER_TAG_SIZE;
     ImageUtils::Uint16ToBytes(storeLength, bytes, index);
-    if (memcpy_s(bytes.data() + index, bytes.size() - index, ISO_GAINMAP_TAG, ISO_GAINMAP_TAG_SIZE) != EOK) {
-        return {};
-    }
+    CHECK_ERROR_RETURN_RET(memcpy_s(bytes.data() + index, bytes.size() - index, ISO_GAINMAP_TAG,
+        ISO_GAINMAP_TAG_SIZE) != EOK, {});
     index += ISO_GAINMAP_TAG_SIZE;
     ImageUtils::Uint32ToBytes(extendMeta.metaISO.writeVersion, bytes, index);
     bytes[index] = 0x00;
@@ -1419,14 +1392,10 @@ static bool WriteJpegPreApp(sk_sp<SkData>& imageData, SkWStream& outputStream, u
 uint32_t HdrJpegPackerHelper::SpliceLogHdrStream(sk_sp<SkData>& baseImage,
     SkWStream& output, Media::HdrMetadata& metadata)
 {
-    if (baseImage == nullptr) {
-        return ERR_IMAGE_ENCODE_FAILED;
-    }
+    CHECK_ERROR_RETURN_RET(baseImage == nullptr, ERR_IMAGE_ENCODE_FAILED);
     uint32_t offset = 0;
     uint32_t jfifSize = 0;
-    if (!WriteJpegPreApp(baseImage, output, offset, jfifSize)) {
-        return ERR_IMAGE_ENCODE_FAILED;
-    }
+    CHECK_ERROR_RETURN_RET(!WriteJpegPreApp(baseImage, output, offset, jfifSize), ERR_IMAGE_ENCODE_FAILED);
     std::vector<uint8_t> HdrMediaTypeInfo = PackHdrMediaTypeMarker(metadata);
     output.write(HdrMediaTypeInfo.data(), HdrMediaTypeInfo.size());
     const uint8_t* baseBytes = reinterpret_cast<const uint8_t*>(baseImage->data());

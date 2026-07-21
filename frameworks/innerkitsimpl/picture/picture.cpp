@@ -358,11 +358,9 @@ static void TryFixGainmapHdrMetadata(sptr<SurfaceBuffer> &gainmapSptr)
 {
     std::vector<uint8_t> gainmapDynamicMetadata;
     VpeUtils::GetSbDynamicMetadata(gainmapSptr, gainmapDynamicMetadata);
-    if (gainmapDynamicMetadata.size() != sizeof(ISOMetadata)) {
-        IMAGE_LOGI("%{public}s no need to fix gainmap dynamic metadata, size: %{public}zu",
-            __func__, gainmapDynamicMetadata.size());
-        return;
-    }
+    CHECK_ERROR_RETURN_LOG(gainmapDynamicMetadata.size() != sizeof(ISOMetadata),
+        "%{public}s no need to fix gainmap dynamic metadata, size: %{public}zu", __func__,
+        gainmapDynamicMetadata.size());
 
     HDRVividExtendMetadata extendMetadata = {};
     int32_t memCpyRes = memcpy_s(&extendMetadata.metaISO, sizeof(ISOMetadata),
@@ -425,10 +423,7 @@ sptr<SurfaceBuffer> CreateGainmapByHdrAndSdr(
     ImageUtils::DumpHdrBufferEnabled(buffers.sdr, "Calgainmap-sdr");
     ImageUtils::DumpHdrBufferEnabled(buffers.hdr, "Calgainmap-hdr");
     int32_t res = VpeUtils().ColorSpaceCalGainmap(buffers);
-    if (res != VPE_ERROR_OK) {
-        IMAGE_LOGE("HDR-IMAGE CalGainmap failed, res: %{public}d", res);
-        return nullptr;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(res != VPE_ERROR_OK, nullptr, "HDR-IMAGE CalGainmap failed, res: %{public}d", res);
     ImageUtils::DumpHdrBufferEnabled(buffers.gainmap, "Calgainmap-gainmap");
     ImageUtils::DumpHdrExtendMetadataEnabled(buffers.gainmap, "Calgainmap-ExtendMetadata-gainmap");
     ImageUtils::DumpSurfaceBufferAllKeysEnabled(buffers.gainmap, "Calgainmap-AllKeys-gainmap");
@@ -465,16 +460,11 @@ std::unique_ptr<Picture> Picture::CreatePictureByHdrAndSdrPixelMap(std::shared_p
 
 static std::shared_ptr<PixelMap> DeepCopyPixelMap(const std::shared_ptr<PixelMap> &srcPixelMap)
 {
-    if (srcPixelMap == nullptr) {
-        IMAGE_LOGE("DeepCopyPixelMap srcPixelMap is nullptr.");
-        return nullptr;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(srcPixelMap == nullptr, nullptr, "DeepCopyPixelMap srcPixelMap is nullptr.");
     int32_t errorCode = SUCCESS;
     std::unique_ptr<PixelMap> tmpPixelMap = srcPixelMap->clone(errorCode);
-    if (errorCode != SUCCESS || tmpPixelMap == nullptr) {
-        IMAGE_LOGE("DeepCopyPixelMap srcPixelMap->clone fail.");
-        return nullptr;
-    }
+    CHECK_ERROR_RETURN_RET_LOG((errorCode != SUCCESS || tmpPixelMap == nullptr), nullptr,
+        "DeepCopyPixelMap srcPixelMap->clone fail.");
     if (srcPixelMap->GetAllocatorType() == AllocatorType::DMA_ALLOC &&
         tmpPixelMap->GetAllocatorType() == AllocatorType::DMA_ALLOC) {
         sptr<SurfaceBuffer> sourceSurfaceBuffer(reinterpret_cast<SurfaceBuffer*>(srcPixelMap->GetFd()));
@@ -498,28 +488,23 @@ static int32_t DeepCopyAuxiliaryPictures(std::shared_ptr<Picture> &srcPicture, s
 {
     for (uint32_t i = 0; i < srcAuxiliaryPictures.size(); i++) {
         std::shared_ptr<AuxiliaryPicture> srcAuxPic = srcPicture->GetAuxiliaryPicture(srcAuxiliaryPictures[i]);
-        if (srcAuxPic == nullptr) {
-            IMAGE_LOGE("Don't have AuxiliaryPicture: %{public}d", srcAuxiliaryPictures[i]);
-            return ERR_MEDIA_INVALID_VALUE;
-        }
+        CHECK_ERROR_RETURN_RET_LOG(srcAuxPic == nullptr, ERR_MEDIA_INVALID_VALUE,
+            "Don't have AuxiliaryPicture: %{public}d", srcAuxiliaryPictures[i]);
         std::shared_ptr<PixelMap> tmpAuxPixelMap = srcAuxPic->GetContentPixel();
-        if (tmpAuxPixelMap == nullptr) {
-            IMAGE_LOGE("Fail to get tmpAuxPixelMap: %{public}d", srcAuxiliaryPictures[i]);
-            return ERR_MEDIA_INVALID_VALUE;
-        }
+        CHECK_ERROR_RETURN_RET_LOG(tmpAuxPixelMap == nullptr, ERR_MEDIA_INVALID_VALUE,
+            "Fail to get tmpAuxPixelMap: %{public}d", srcAuxiliaryPictures[i]);
         std::shared_ptr<PixelMap> auxPixelMap = DeepCopyPixelMap(tmpAuxPixelMap);
-        if (auxPixelMap == nullptr) {
-            IMAGE_LOGE("Fail to copy AuxiliaryPicture PixelMap: %{public}d.", srcAuxiliaryPictures[i]);
-            return ERR_MEDIA_INVALID_VALUE;
-        }
+        CHECK_ERROR_RETURN_RET_LOG(auxPixelMap == nullptr, ERR_MEDIA_INVALID_VALUE,
+            "Fail to copy AuxiliaryPicture PixelMap: %{public}d.", srcAuxiliaryPictures[i]);
         Size size = {auxPixelMap->GetWidth(), auxPixelMap->GetHeight()};
         IMAGE_LOGI("Deepcopy AuxiliaryPicture: %{public}d to %{public}d, size: %{public}dx%{public}d",
             srcAuxiliaryPictures[i], dstAuxiliaryPictures[i], size.width, size.height);
         std::unique_ptr<AuxiliaryPicture> uniPtr =
             AuxiliaryPicture::Create(auxPixelMap, dstAuxiliaryPictures[i], size);
         std::shared_ptr<Media::AuxiliaryPicture> auxPtr = std::move(uniPtr);
-        if (srcAuxiliaryPictures[i] == AuxiliaryPictureType::FRAGMENT_MAP &&
-            dstAuxiliaryPictures[i] == AuxiliaryPictureType::FRAGMENT_MAP) {
+        bool isFragmentMap = srcAuxiliaryPictures[i] == AuxiliaryPictureType::FRAGMENT_MAP &&
+            dstAuxiliaryPictures[i] == AuxiliaryPictureType::FRAGMENT_MAP;
+        if (isFragmentMap) {
                 auto fragmentMetadata = srcPicture->GetMetadata(MetadataType::FRAGMENT);
                 auxPtr->SetMetadata(MetadataType::FRAGMENT, fragmentMetadata);
         }
@@ -532,10 +517,9 @@ static int32_t DeepCopyAuxiliaryPictures(std::shared_ptr<Picture> &srcPicture, s
  
 static bool isSupportedMetadataCopy(MetadataType srcMetadataType, MetadataType dstMetadataType)
 {
-    if (srcMetadataType == MetadataType::EXIF || srcMetadataType == MetadataType::FRAGMENT ||
-        srcMetadataType == MetadataType::GIF) {
-        return dstMetadataType == srcMetadataType;
-    }
+    bool isKeyValueCopy = srcMetadataType == MetadataType::EXIF || srcMetadataType == MetadataType::FRAGMENT ||
+        srcMetadataType == MetadataType::GIF || srcMetadataType == MetadataType::JFIF;
+    CHECK_ERROR_RETURN_RET(isKeyValueCopy, dstMetadataType == srcMetadataType);
     return ImageUtils::isBlobMetadataType(srcMetadataType) && ImageUtils::isBlobMetadataType(dstMetadataType);
 }
  
@@ -544,15 +528,11 @@ static int32_t DeepCopyMetadatas(std::shared_ptr<Picture> &srcPicture, std::uniq
 {
     for (uint32_t i = 0; i < srcMetadatas.size(); i++) {
         auto metadata = srcPicture->GetMetadata(srcMetadatas[i]);
-        if (metadata == nullptr) {
-            IMAGE_LOGE("Don't have Metadata: %{public}d.", srcMetadatas[i]);
-            return ERR_MEDIA_INVALID_VALUE;
-        }
+        CHECK_ERROR_RETURN_RET_LOG(metadata == nullptr, ERR_MEDIA_INVALID_VALUE,
+            "Don't have Metadata: %{public}d.", srcMetadatas[i]);
  
-        if (!isSupportedMetadataCopy(srcMetadatas[i], dstMetadatas[i])) {
-            IMAGE_LOGE("Can not copy Metadata: %{public}d to %{public}d.", srcMetadatas[i], dstMetadatas[i]);
-            return ERR_MEDIA_INVALID_VALUE;
-        }
+        CHECK_ERROR_RETURN_RET_LOG(!isSupportedMetadataCopy(srcMetadatas[i], dstMetadatas[i]), ERR_MEDIA_INVALID_VALUE,
+            "Can not copy Metadata: %{public}d to %{public}d.", srcMetadatas[i], dstMetadatas[i]);
         IMAGE_LOGI("copy MetadataType :%{public}d to MetadataType :%{public}d",
             static_cast<uint32_t>(srcMetadatas[i]), static_cast<uint32_t>(dstMetadatas[i]));
         MetadataType type = dstMetadatas[i];
@@ -560,17 +540,13 @@ static int32_t DeepCopyMetadatas(std::shared_ptr<Picture> &srcPicture, std::uniq
             auto newBlobMetadata = std::make_shared<BlobMetadata>(type);
             uint32_t size = metadata->GetBlobSize();
             uint8_t *data = metadata->GetBlobPtr();
-            if (newBlobMetadata->SetBlob(data, size) != SUCCESS
-                || dstPicture->SetMetadata(type, newBlobMetadata) != SUCCESS) {
-                IMAGE_LOGE("Failed to set blob to metadata: %{public}d to %{public}d.", srcMetadatas[i], type);
-                return ERR_MEDIA_INVALID_VALUE;
-            }
+            CHECK_ERROR_RETURN_RET_LOG((newBlobMetadata->SetBlob(data, size) != SUCCESS ||
+                dstPicture->SetMetadata(type, newBlobMetadata) != SUCCESS), ERR_MEDIA_INVALID_VALUE,
+                "Failed to set blob to metadata: %{public}d to %{public}d.", srcMetadatas[i], type);
         } else {
             auto newMetadata = metadata->CloneMetadata();
-            if (dstPicture->SetMetadata(type, newMetadata) != SUCCESS) {
-                IMAGE_LOGE("Failed to clone metadata: %{public}d to %{public}d.", srcMetadatas[i], type);
-                return ERR_MEDIA_INVALID_VALUE;
-            }
+            CHECK_ERROR_RETURN_RET_LOG(dstPicture->SetMetadata(type, newMetadata) != SUCCESS, ERR_MEDIA_INVALID_VALUE,
+                "Failed to clone metadata: %{public}d to %{public}d.", srcMetadatas[i], type);
         }
         IMAGE_LOGI("Deepcopy Metadata : %{public}d to %{public}d.", srcMetadatas[i], dstMetadatas[i]);
     }
@@ -579,18 +555,14 @@ static int32_t DeepCopyMetadatas(std::shared_ptr<Picture> &srcPicture, std::uniq
  
 static void FixHdrMetadataWithSrcPicture(std::shared_ptr<Picture> &srcPicture, std::unique_ptr<Picture> &dstPicture)
 {
-    if (srcPicture == nullptr || dstPicture == nullptr) {
-        IMAGE_LOGE("%{public}s picture is nullptr", __func__);
-        return;
-    }
+    CHECK_ERROR_RETURN_LOG((srcPicture == nullptr || dstPicture == nullptr),
+        "%{public}s picture is nullptr", __func__);
     std::shared_ptr<PixelMap> srcMainPixelMap = srcPicture->GetMainPixel();
     std::shared_ptr<PixelMap> srcGainMap = srcPicture->GetGainmapPixelMap();
     std::shared_ptr<PixelMap> dstMainPixelMap = dstPicture->GetMainPixel();
     std::shared_ptr<PixelMap> dstGainMap = dstPicture->GetGainmapPixelMap();
-    if (srcMainPixelMap == nullptr || srcGainMap == nullptr || dstMainPixelMap == nullptr || dstGainMap == nullptr) {
-        IMAGE_LOGW("%{public}s mainPixelMap or gainmapPixelMap or hdrMetadata is nullptr", __func__);
-        return;
-    }
+    CHECK_ERROR_RETURN_LOG((srcMainPixelMap == nullptr || srcGainMap == nullptr || dstMainPixelMap == nullptr ||
+        dstGainMap == nullptr), "%{public}s mainPixelMap or gainmapPixelMap or hdrMetadata is nullptr", __func__);
     if (srcMainPixelMap->GetAllocatorType() != AllocatorType::DMA_ALLOC || srcMainPixelMap->GetFd() == nullptr ||
         srcGainMap->GetAllocatorType() != AllocatorType::DMA_ALLOC || srcGainMap->GetFd() == nullptr ||
         dstMainPixelMap->GetAllocatorType() != AllocatorType::DMA_ALLOC || dstMainPixelMap->GetFd() == nullptr ||
@@ -624,21 +596,14 @@ std::unique_ptr<Picture> Picture::DeepCopy(std::shared_ptr<Picture> srcPicture,
         mainPixelMap = DeepCopyPixelMap(srcPicture->GetMainPixel());
     } else {
         auto mainAuxPic = srcPicture->GetAuxiliaryPicture(mainPixelMapKey);
-        if (mainAuxPic == nullptr) {
-            IMAGE_LOGE("Can not set a null AuxiliaryPicture: %{public}d as mainPixelMap.", mainPixelMapKey);
-            return nullptr;
-        }
+        CHECK_ERROR_RETURN_RET_LOG(mainAuxPic == nullptr, nullptr,
+            "Can not set a null AuxiliaryPicture: %{public}d as mainPixelMap.", mainPixelMapKey);
         std::shared_ptr<PixelMap> newMainPixelMap = mainAuxPic->GetContentPixel();
-        if (newMainPixelMap == nullptr) {
-            IMAGE_LOGE("Failed to get newMainPixelMap: %{public}d.", mainPixelMapKey);
-            return nullptr;
-        }
+        CHECK_ERROR_RETURN_RET_LOG(newMainPixelMap == nullptr, nullptr,
+            "Failed to get newMainPixelMap: %{public}d.", mainPixelMapKey);
         mainPixelMap = DeepCopyPixelMap(newMainPixelMap);
     }
-    if (mainPixelMap == nullptr) {
-        IMAGE_LOGE("Failed to deep copy mainPixelMap.");
-        return nullptr;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(mainPixelMap == nullptr, nullptr, "Failed to deep copy mainPixelMap.");
 #ifdef IMAGE_COLORSPACE_FLAG
     ColorManager::ColorSpace colorSpace = srcPicture->GetMainPixel()->InnerGetGrColorSpace();
     mainPixelMap->InnerSetColorSpace(colorSpace);
@@ -646,16 +611,12 @@ std::unique_ptr<Picture> Picture::DeepCopy(std::shared_ptr<Picture> srcPicture,
     IMAGE_LOGI("DeepCopy : replace mainPixelMap with  AuxiliaryPicture: %{public}d", mainPixelMapKey);
     std::unique_ptr<Picture> dstPicture = std::make_unique<Picture>();
     dstPicture->mainPixelMap_ = std::move(mainPixelMap);
-    if (dstPicture->mainPixelMap_ == nullptr) {
-        IMAGE_LOGE("Failed to set MainPixelMap.");
-        return nullptr;
-    }
-    if (DeepCopyAuxiliaryPictures(srcPicture, dstPicture, srcAuxiliaryPictures, dstAuxiliaryPictures) != SUCCESS) {
-        return nullptr;
-    }
-    if (DeepCopyMetadatas(srcPicture, dstPicture, srcMetadatas, dstMetadatas) != SUCCESS) {
-        return nullptr;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(dstPicture->mainPixelMap_ == nullptr, nullptr, "Failed to set MainPixelMap.");
+    CHECK_ERROR_RETURN_RET(
+        DeepCopyAuxiliaryPictures(srcPicture, dstPicture, srcAuxiliaryPictures, dstAuxiliaryPictures) != SUCCESS,
+        nullptr);
+    CHECK_ERROR_RETURN_RET(DeepCopyMetadatas(srcPicture, dstPicture, srcMetadatas, dstMetadatas) != SUCCESS, nullptr);
+
     FixHdrMetadataWithSrcPicture(srcPicture, dstPicture);
     DumpPictureIfDumpEnabled(*dstPicture.get(), "_after_deepcopy");
     return dstPicture;
@@ -718,10 +679,7 @@ static std::unique_ptr<PixelMap> ComposeHdrPixelMap(std::shared_ptr<PixelMap> &m
     ImageUtils::DumpHdrExtendMetadataEnabled(gainmapSptr, "Picture-GAINMAP-ExtendMetadata-tobeComposed");
     ImageUtils::DumpSurfaceBufferAllKeysEnabled(gainmapSptr, "Picture-GAINMAP-AllKeys-tobeComposed");
     int32_t res = VpeUtils().ColorSpaceConverterComposeImage(buffers, isCuva);
-    if (res != VPE_ERROR_OK) {
-        IMAGE_LOGE("Compose HDR image failed, res: %{public}d", res);
-        return nullptr;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(res != VPE_ERROR_OK, nullptr, "Compose HDR image failed, res: %{public}d", res);
     ImageUtils::DumpHdrBufferEnabled(hdrSptr, "Picture-HDR-Composed");
     IMAGE_LOGI("ComposeHdrPixelMap %{public}d success", hdrAllocFormat);
     return Picture::SurfaceBuffer2PixelMap(hdrSptr);
@@ -862,24 +820,19 @@ std::vector<AuxiliaryPictureType> Picture::GetAuxiliaryPictureTypes()
 
 bool Picture::MarshalMetadata(Parcel &data) const
 {
-    if (!data.WriteBool(maintenanceData_ != nullptr)) {
-        IMAGE_LOGE("Failed to write maintenance data existence value.");
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(!data.WriteBool(maintenanceData_ != nullptr), false,
+        "Failed to write maintenance data existence value.");
 
-    if (maintenanceData_ != nullptr &&
-        (maintenanceData_->WriteToMessageParcel(reinterpret_cast<MessageParcel&>(data)) != GSError::GSERROR_OK)) {
-        IMAGE_LOGE("Failed to write maintenance data content.");
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET_LOG((maintenanceData_ != nullptr &&
+        (maintenanceData_->WriteToMessageParcel(reinterpret_cast<MessageParcel&>(data)) != GSError::GSERROR_OK)),
+        false, "Failed to write maintenance data content.");
 
     if (metadatas_.size() > MAX_PICTURE_META_TYPE_COUNT) {
         IMAGE_LOGE("The number of metadatas exceeds the maximum limit.");
         return false;
     }
-    if (!data.WriteUint64(static_cast<uint64_t>(metadatas_.size()))) {
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(!data.WriteUint64(static_cast<uint64_t>(metadatas_.size())), false,
+        "Failed to marshal metadata: %{public}llu.", static_cast<unsigned long long>(metadatas_.size()));
 
     for (const auto &[type, metadata] : metadatas_) {
         int32_t typeInt32 = static_cast<int32_t>(type);
@@ -887,10 +840,8 @@ bool Picture::MarshalMetadata(Parcel &data) const
             IMAGE_LOGE("Metadata %{public}d is nullptr.", typeInt32);
             return false;
         }
-        if (!(data.WriteInt32(typeInt32) && metadata->Marshalling(data))) {
-            IMAGE_LOGE("Failed to marshal metadata: %{public}d.", typeInt32);
-            return false;
-        }
+        CHECK_ERROR_RETURN_RET_LOG(!(data.WriteInt32(typeInt32) && metadata->Marshalling(data)), false,
+            "Failed to marshal metadata: %{public}d.", typeInt32);
     }
 
     return true;
@@ -968,10 +919,8 @@ bool Picture::UnmarshalMetadata(Parcel &parcel, Picture &picture, PICTURE_ERR &e
         if (imagedataPtr == nullptr) {
             return false;
         }
-        if (picture.SetMetadata(type, imagedataPtr) != SUCCESS) {
-            IMAGE_LOGE("SetMetadata %{public}d in picture failed", static_cast<int32_t>(type));
-            return false;
-        }
+        CHECK_ERROR_RETURN_RET_LOG(picture.SetMetadata(type, imagedataPtr) != SUCCESS, false,
+            "SetMetadata %{public}d in picture failed", static_cast<int32_t>(type));
     }
     return true;
 }
@@ -1003,14 +952,11 @@ uint32_t Picture::CreateExifMetadata()
         return SUCCESS;
     }
     auto exifMetadata = std::make_shared<OHOS::Media::ExifMetadata>();
-    if (exifMetadata == nullptr) {
-        IMAGE_LOGE("Failed to create ExifMetadata object");
-        return ERR_IMAGE_MALLOC_ABNORMAL;
-    }
-    if (!exifMetadata->CreateExifdata()) {
-        IMAGE_LOGE("Failed to create exif metadata data");
-        return ERR_IMAGE_INVALID_PARAMETER;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(exifMetadata == nullptr, ERR_IMAGE_MALLOC_ABNORMAL,
+        "Failed to create ExifMetadata object");
+
+    CHECK_ERROR_RETURN_RET_LOG(!exifMetadata->CreateExifdata(), ERR_IMAGE_INVALID_PARAMETER,
+        "Failed to create exif metadata data");
     return SetExifMetadata(exifMetadata);
 }
 
@@ -1228,15 +1174,9 @@ bool Picture::IsValidPictureMetadataType(MetadataType metadataType)
 
 bool Picture::HdrComposeToMainPixel()
 {
-    if (!HasAuxiliaryPicture(AuxiliaryPictureType::GAINMAP)) {
-        IMAGE_LOGE("No Gainmap Compose");
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(!HasAuxiliaryPicture(AuxiliaryPictureType::GAINMAP), false, "No Gainmap Compose");
     auto pixel = GetHdrComposedPixelMap();
-    if (pixel == nullptr) {
-        IMAGE_LOGE("HdrComposeToMainPixel failed");
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(pixel == nullptr, false, "HdrComposeToMainPixel failed");
     std::shared_ptr sharedPixel = std::move(pixel);
     SetMainPixel(sharedPixel);
     DropAuxiliaryPicture(AuxiliaryPictureType::GAINMAP);
