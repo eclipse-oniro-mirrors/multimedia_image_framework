@@ -3084,6 +3084,11 @@ bool PixelMap::ReadAstcInfo(Parcel &parcel, PixelMap *pixelMap)
         Size realSize;
         realSize.width = parcel.ReadInt32();
         realSize.height = parcel.ReadInt32();
+        if (realSize.width <= 0 || realSize.height <= 0) {
+            IMAGE_LOGE("%{public}s invalid astc real size: width=%{public}d, height=%{public}d",
+                __func__, realSize.width, realSize.height);
+            return false;
+        }
         pixelMap->SetAstcRealSize(realSize);
         bool isHdr = parcel.ReadBool();
         pixelMap->SetAstcHdr(isHdr);
