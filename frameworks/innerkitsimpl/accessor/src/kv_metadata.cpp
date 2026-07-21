@@ -231,10 +231,8 @@ bool ImageKvMetadata::Marshalling(Parcel &parcel) const
         IMAGE_LOGE("Failed to marshal metadata: %{public}d.", static_cast<int32_t>(metadataType_));
         return false;
     }
-    if (properties_->size() > MAX_KV_META_COUNT) {
-        IMAGE_LOGE("The number of metadata properties exceeds the maximum limit.");
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(properties_->size() > MAX_KV_META_COUNT, false,
+        "The number of metadata properties exceeds the maximum limit.");
     if (!parcel.WriteUint64(properties_->size())) {
         return false;
     }

@@ -15,6 +15,8 @@
 
 #include "image_log.h"
 #include "image_napi_utils.h"
+#include <array>
+#include <functional>
 #include <securec.h>
 #include <unistd.h>
 #if !defined(CROSS_PLATFORM)
@@ -28,6 +30,7 @@
 namespace {
 constexpr uint32_t NUM_0 = 0;
 constexpr uint32_t NUM_1 = 1;
+constexpr size_t MESSAGE_SEQUENCE_MUTEX_COUNT = 256;
 }
 
 namespace OHOS {
@@ -45,6 +48,13 @@ const int PARAM0 = 0;
 const int PARAM1 = 1;
 const int PARAM2 = 2;
 const int PARAM3 = 3;
+
+std::mutex &ImageNapiUtils::GetMessageSequenceMutex(const void *messageSequence)
+{
+    static std::array<std::mutex, MESSAGE_SEQUENCE_MUTEX_COUNT> mutexes;
+    size_t index = std::hash<const void *>{}(messageSequence) % mutexes.size();
+    return mutexes[index];
+}
 
 bool ImageNapiUtils::GetBufferByName(napi_env env, napi_value root, const char* name, void **res, size_t* len)
 {
