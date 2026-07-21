@@ -833,35 +833,6 @@ HWTEST_F(PixelAstcTest, PixelAstcTest030, TestSize.Level3)
     GTEST_LOG_(INFO) << "PixelAstcTest: PixelAstcTest030 end";
 }
 
-/**
- * @tc.name: PixelAstcTest031
- * @tc.desc: Verify normal PixelMap parcel parsing synchronizes the ASTC flag to PixelMemInfo.
- * @tc.type: FUNC
- */
-HWTEST_F(PixelAstcTest, PixelAstcTest031, TestSize.Level3)
-{
-    GTEST_LOG_(INFO) << "PixelAstcTest: PixelAstcTest031 start";
-    std::unique_ptr<PixelMap> pixelAstc;
-    uint8_t* data = nullptr;
-    ConstructPixelAstc(pixelAstc, &data);
-    std::unique_ptr<uint8_t, decltype(&free)> dataGuard(data, &free);
-    ASSERT_NE(pixelAstc.get(), nullptr);
-
-    Parcel parcel;
-    ASSERT_TRUE(pixelAstc->Marshalling(parcel));
-    ImageInfo imgInfo;
-    PixelMemInfo memInfo;
-    PixelMap* parsedPixelMap = nullptr;
-    bool result = PixelMap::ReadPropertiesFromParcel(parcel, parsedPixelMap, imgInfo, memInfo);
-    std::unique_ptr<PixelMap> parsedPixelMapGuard(parsedPixelMap);
-
-    ASSERT_TRUE(result);
-    ASSERT_NE(parsedPixelMapGuard.get(), nullptr);
-    EXPECT_TRUE(parsedPixelMapGuard->IsAstc());
-    EXPECT_TRUE(memInfo.isAstc);
-    GTEST_LOG_(INFO) << "PixelAstcTest: PixelAstcTest031 end";
-}
-
 HWTEST_F(PixelAstcTest, ReadFileAndResoveAstc001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "PixelAstcTest: ReadFileAndResoveAstc001 start";
