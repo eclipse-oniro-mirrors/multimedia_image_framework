@@ -909,10 +909,8 @@ int ExifMetadata::GetValue(const std::string &key, std::string &value) const
     bool cond = exifData_ == nullptr;
     CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_DECODE_EXIF_UNSUPPORT,
                                "Exif data is null for key: %{public}s", key.c_str());
-    if (!ExifMetadatFormatter::IsKeySupported(key)) {
-        IMAGE_LOGD("Key is not supported.");
-        return ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
-    }
+    bool isUnsupportedKey = !ExifMetadatFormatter::IsKeySupported(key);
+    CHECK_DEBUG_RETURN_RET_LOG(isUnsupportedKey, ERR_IMAGE_DECODE_EXIF_UNSUPPORT, "Key is not supported.");
     if (key == MAKER_NOTE_TAG) {
         return HandleMakerNote(value);
     }
@@ -922,10 +920,9 @@ int ExifMetadata::GetValue(const std::string &key, std::string &value) const
     } else {
         auto tag = exif_tag_from_name(key.c_str());
         ExifEntry *entry = GetEntry(key);
-        if (entry == nullptr) {
-            IMAGE_LOGD("Exif data entry returned null for key: %{public}s, tag: %{public}d", key.c_str(), tag);
-            return ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
-        }
+        cond = entry == nullptr;
+        CHECK_DEBUG_RETURN_RET_LOG(cond, ERR_IMAGE_DECODE_EXIF_UNSUPPORT,
+            "Exif data entry returned null for key: %{public}s, tag: %{public}d", key.c_str(), tag);
         IMAGE_LOGD("Using exif_entry_get_value for key: %{public}s, tag: %{public}d", key.c_str(), entry->tag);
         
         unsigned int tagValueSizeTmp = 0;
@@ -1210,10 +1207,8 @@ int ExifMetadata::GetValueByType(const std::string &key, MetadataValue &value) c
     bool cond = exifData_ == nullptr;
     CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_DECODE_EXIF_UNSUPPORT,
         "Exif data is null for key: %{public}s", key.c_str());
-    if (!ExifMetadatFormatter::IsKeySupported(key)) {
-        IMAGE_LOGD("Key is not supported.");
-        return ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
-    }
+    CHECK_DEBUG_RETURN_RET_LOG(!ExifMetadatFormatter::IsKeySupported(key), ERR_IMAGE_DECODE_EXIF_UNSUPPORT,
+        "Key is not supported.");
     
     if ((key.size() > KEY_SIZE && key.substr(0, KEY_SIZE) == "Hw") || IsSpecialHwKey(key)) {
         int errorCode = HandleHwMnoteByType(key, tmpValue);
@@ -1296,9 +1291,7 @@ int ExifMetadata::HandleMakerNote(std::string &value) const
     std::vector<char> tagValueChar(TAG_VALUE_SIZE, 0);
     ExifMnoteData *md = exif_data_get_mnote_data(exifData_);
     bool cond = false;
-    if (md == nullptr) {
-        IMAGE_LOGD("Exif data mnote data md is a nullptr.");
-    }
+    CHECK_DEBUG_PRINT_LOG(md == nullptr, "Exif data mnote data md is a nullptr.");
     if (!is_huawei_md(md)) {
         return GetUserMakerNote(value);
     }
@@ -1374,10 +1367,7 @@ bool ExifMetadata::CreateExifdata()
         exif_data_unref(exifData_);
         exifData_ = nullptr;
         exifData_ = exif_data_new();
-        if (exifData_ == nullptr) {
-            IMAGE_LOGE("Failed to recreate exif data after unref.");
-            return false;
-        }
+        CHECK_ERROR_RETURN_RET_LOG(exifData_ == nullptr, false, "Failed to recreate exif data after unref.");
 
         // Set the image options
         exif_data_set_option(exifData_, EXIF_DATA_OPTION_FOLLOW_SPECIFICATION);
@@ -1410,9 +1400,7 @@ std::shared_ptr<ExifMetadata> ExifMetadata::Clone()
     unsigned char *dataBlob = nullptr;
     uint32_t size = 0;
     TiffParser::Encode(&dataBlob, size, exifData);
-    if (dataBlob == nullptr) {
-        return nullptr;
-    }
+    CHECK_ERROR_RETURN_RET(dataBlob == nullptr, nullptr);
 
     if (size > MAX_EXIFMETADATA_MAX_SIZE) {
         IMAGE_LOGE("Failed to clone, the size of exif metadata exceeds the maximum limit %{public}llu.",
@@ -1509,10 +1497,7 @@ bool ExifMetadata::DropThumbnail()
 {
     bool cond = exifData_ == nullptr;
     CHECK_ERROR_RETURN_RET_LOG(cond, false, "%{public}s: exifData_ is nullptr", __func__);
-    if (!HasThumbnail()) {
-        IMAGE_LOGD("%{public}s: No thumbnail to drop", __func__);
-        return true;
-    }
+    CHECK_DEBUG_RETURN_RET_LOG(!HasThumbnail(), true, "%{public}s: No thumbnail to drop", __func__);
     ExifMem *mem = exif_data_get_priv_mem(exifData_);
     CHECK_ERROR_RETURN_RET_LOG(mem == nullptr, false, "%{public}s: GetExif mem allocator failed", __func__);
     exif_mem_free(mem, exifData_->data);
@@ -1778,10 +1763,9 @@ bool ExifMetadata::SetMem(ExifEntry *ptrEntry, const std::string &value, const s
     if (UndefinedByte.find(ptrEntry->tag) != UndefinedByte.end()) {
         return SetByte(ptrEntry, value);
     }
-    if (memcpy_s((ptrEntry)->data, valueLen, value.c_str(), valueLen) != 0) {
-        IMAGE_LOGE("Failed to copy memory for ExifEntry. Requested size: %{public}zu", valueLen);
-        return false;
-    }
+    bool copyFailed = memcpy_s((ptrEntry)->data, valueLen, value.c_str(), valueLen) != 0;
+    CHECK_ERROR_RETURN_RET_LOG(copyFailed, false,
+        "Failed to copy memory for ExifEntry. Requested size: %{public}zu", valueLen);
     return true;
 }
 
@@ -1789,15 +1773,11 @@ bool ExifMetadata::SetValue(const std::string &key, const std::string &value)
 {
     bool cond = exifData_ == nullptr;
     CHECK_ERROR_RETURN_RET_LOG(cond, false, "Exif data is null. Cannot set value for key: %{public}s", key.c_str());
-    if (value.empty()) {
-        IMAGE_LOGE("Set empty value.");
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(value.empty(), false, "Set empty value.");
     auto result = ExifMetadatFormatter::Format(key, value, isSystemApi_);
-    if (result.first) {
-        IMAGE_LOGE("Failed to validate and convert value for key: %{public}s", key.c_str());
-        return false;
-    }
+    bool formatFailed = result.first;
+    CHECK_ERROR_RETURN_RET_LOG(formatFailed, false, "Failed to validate and convert value for key: %{public}s",
+        key.c_str());
 
     if ((key.size() > KEY_SIZE && key.substr(0, KEY_SIZE) == "Hw") ||
         IsSpecialHwKey(key)) {
@@ -1837,10 +1817,9 @@ bool ExifMetadata::SetMakerNoteValue(const std::string &value)
     entry = CreateEntry(MAKER_NOTE_TAG, EXIF_TAG_MAKER_NOTE, valueLen);
     cond = entry == nullptr;
     CHECK_ERROR_RETURN_RET_LOG(cond, false, "Create entry is nullptr");
-    if (memcpy_s(entry->data, entry->size, value.c_str(), valueLen) != 0) {
-        IMAGE_LOGE("Failed to copy memory for ExifEntry. Requested size: %{public}zu", valueLen);
-        return false;
-    }
+    bool copyFailed = memcpy_s(entry->data, entry->size, value.c_str(), valueLen) != 0;
+    CHECK_ERROR_RETURN_RET_LOG(copyFailed, false,
+        "Failed to copy memory for ExifEntry. Requested size: %{public}zu", valueLen);
 
     bool isHwHead = entry->size > INIT_HW_DATA_HEAD_LENGTH &&
                         memcmp(entry->data, INIT_HW_DATA + EXIF_HEAD_SIZE, INIT_HW_DATA_HEAD_LENGTH) == 0;
@@ -1903,10 +1882,9 @@ bool ExifMetadata::SetHwMoteValue(const std::string &key, const std::string &val
     }
 
     const char *data = value.c_str();
-    if (value.length() > static_cast<size_t>(std::numeric_limits<int>::max())) {
-        IMAGE_LOGE("Value length inavlid.length = %{public}d", static_cast<int>(value.length()));
-        return false;
-    }
+    bool valueTooLong = value.length() > static_cast<size_t>(std::numeric_limits<int>::max());
+    CHECK_ERROR_RETURN_RET_LOG(valueTooLong, false, "Value length invalid. length = %{public}d",
+        static_cast<int>(value.length()));
     int dataLen = static_cast<int>(value.length());
     int ret = mnote_huawei_entry_set_value(entry, data, dataLen);
     if (ret == 0 && isNewMaker && hwTag != MNOTE_HUAWEI_CAPTURE_MODE) {
@@ -2068,10 +2046,7 @@ bool ExifMetadata::IsSpecialHwKey(const std::string &key) const
 void ExifMetadata::GetFilterArea(const std::vector<std::string> &exifKeys,
                                  std::vector<std::pair<uint32_t, uint32_t>> &ranges)
 {
-    if (exifData_ == nullptr) {
-        IMAGE_LOGD("Exif data is null");
-        return ;
-    }
+    CHECK_DEBUG_RETURN_LOG(exifData_ == nullptr, "Exif data is null");
     auto size = exifKeys.size();
     for (unsigned long keySize = 0; keySize < size; keySize++) {
         ExifTag tag = exif_tag_from_name(exifKeys[keySize].c_str());
@@ -2099,10 +2074,7 @@ void ExifMetadata::FindRanges(const ExifTag &tag, std::vector<std::pair<uint32_t
     int ifd = 0;
     while (ifd < EXIF_IFD_COUNT && !hasRange) {
         ExifContent *content = exifData_->ifd[ifd];
-        if (!content) {
-            IMAGE_LOGD("IFD content is null, ifd: %{public}d.", ifd);
-            return ;
-        }
+        CHECK_DEBUG_RETURN_LOG(content == nullptr, "IFD content is null, ifd: %{public}d.", ifd);
 
         int i = 0;
         while (i < static_cast<int>(content->count) && !hasRange) {
@@ -2121,28 +2093,22 @@ void ExifMetadata::FindRanges(const ExifTag &tag, std::vector<std::pair<uint32_t
 
 bool ExifMetadata::Marshalling(Parcel &parcel) const
 {
-    if (exifData_ == nullptr) {
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET(exifData_ == nullptr, false);
 
     unsigned char *data = nullptr;
     unsigned int size = 0;
     exif_data_save_data(exifData_, &data, &size);
     bool cond = false;
 
-    if (!parcel.WriteBool(data != nullptr && size != 0)) {
-        IMAGE_LOGE("Failed to write exif data buffer existence value.");
-        return false;
-    }
+    bool writeFailed = !parcel.WriteBool(data != nullptr && size != 0);
+    CHECK_ERROR_RETURN_RET_LOG(writeFailed, false, "Failed to write exif data buffer existence value.");
 
     cond = size > MAX_EXIFMETADATA_MAX_SIZE;
     CHECK_ERROR_RETURN_RET_LOG(cond, false, "The size of exif metadata exceeds the maximum limit.");
 
     if (data != nullptr && size != 0) {
         std::unique_ptr<unsigned char[]> exifData(data);
-        if (!parcel.WriteUint32(static_cast<uint32_t>(size))) {
-            return false;
-        }
+        CHECK_ERROR_RETURN_RET(!parcel.WriteUint32(static_cast<uint32_t>(size)), false);
         cond = !parcel.WriteUnpadBuffer(exifData.get(), size);
         CHECK_ERROR_RETURN_RET(cond, false);
         return true;
@@ -2167,17 +2133,13 @@ ExifMetadata *ExifMetadata::Unmarshalling(Parcel &parcel, PICTURE_ERR &error)
     bool cond = false;
     if (hasExifDataBuffer) {
         uint32_t size = 0;
-        if (!parcel.ReadUint32(size)) {
-            return nullptr;
-        }
+        CHECK_ERROR_RETURN_RET(!parcel.ReadUint32(size), nullptr);
 
         cond = size > MAX_EXIFMETADATA_MAX_SIZE;
         CHECK_ERROR_RETURN_RET_LOG(cond, nullptr, "The size of exif metadata exceeds the maximum limit.");
         
         const uint8_t *data = parcel.ReadUnpadBuffer(static_cast<size_t>(size));
-        if (!data) {
-            return nullptr;
-        }
+        CHECK_ERROR_RETURN_RET(data == nullptr, nullptr);
         ExifData *ptrData = exif_data_new();
         cond = ptrData == nullptr;
         CHECK_ERROR_RETURN_RET(cond, nullptr);
@@ -2220,57 +2182,42 @@ bool ExifMetadata::ParseExifCoordinate(const std::string& fieldName, uint32_t& o
     // Use GetValue to read the field as a string
     std::string valueStr;
     int ret = GetValue(fieldName, valueStr);
-    if (ret != SUCCESS) {
-        IMAGE_LOGE("Exif_metadata:ExtractXMageCoordinates Failed to read %s from EXIF metadata",
-            fieldName.c_str());
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(ret != SUCCESS, false,
+        "Exif_metadata:ExtractXMageCoordinates Failed to read %s from EXIF metadata", fieldName.c_str());
     // Log the retrieved value for debugging
     IMAGE_LOGI("Exif_metadata:ExtractXMageCoordinates HDR-IMAGE Exif %s: %{public}s",
         fieldName.c_str(), valueStr.c_str());
     // Check if the value is empty or a known default placeholder
-    if (valueStr.empty() || valueStr == "default_exif_value") {
-        IMAGE_LOGE(
-            "Exif_metadata:ExtractXMageCoordinates Failed to parse %s: value is empty or default",
-            fieldName.c_str());
-        return false;
-    }
+    bool invalidValue = valueStr.empty() || valueStr == "default_exif_value";
+    CHECK_DEBUG_RETURN_RET_LOG(invalidValue, false,
+        "Exif_metadata:ExtractXMageCoordinates Failed to parse %s: value is empty or default", fieldName.c_str());
     // Convert the string to an integer using std::from_chars for robust parsing
     auto result = std::from_chars(valueStr.data(), valueStr.data() + valueStr.size(), outputValue);
-    if (result.ec != std::errc()) {
-        IMAGE_LOGE("Exif_metadata:ExtractXMageCoordinates Failed to parse %s: %s (error code: %{public}d)",
-            fieldName.c_str(), valueStr.c_str(), static_cast<uint32_t>(result.ec));
-        return false;
-    }
+    CHECK_DEBUG_RETURN_RET_LOG(result.ec != std::errc(), false,
+        "Exif_metadata:ExtractXMageCoordinates Failed to parse %s: %s (error code: %{public}d)",
+        fieldName.c_str(), valueStr.c_str(), static_cast<uint32_t>(result.ec));
 
     return true;
 }
 
 bool ExifMetadata::ExtractXmageCoordinates(XmageCoordinateMetadata& coordMetadata) const
 {
-    if (exifData_ == nullptr) {
-        IMAGE_LOGE(
-            "Exif_metadata:ExtractXMageCoordinates HDR-IMAGE Exif metadata is null, cannot read XMAGE coordinates");
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(exifData_ == nullptr, false,
+        "Exif_metadata:ExtractXMageCoordinates HDR-IMAGE Exif metadata is null, cannot read XMAGE coordinates");
     bool allParsedSuccessfully = ParseExifCoordinate("HwMnoteXmageLeft", coordMetadata.left) &&
         ParseExifCoordinate("HwMnoteXmageTop", coordMetadata.top) &&
         ParseExifCoordinate("HwMnoteXmageRight", coordMetadata.right) &&
         ParseExifCoordinate("HwMnoteXmageBottom", coordMetadata.bottom) &&
         ParseExifCoordinate("ImageWidth", coordMetadata.imageWidth) &&
         ParseExifCoordinate("ImageLength", coordMetadata.imageLength);
-    if (allParsedSuccessfully) {
-        IMAGE_LOGI(
-            "Exif_metadata:ExtractXMageCoordinates Successfully extracted XMAGE coordinates: "
-            "left=%{public}d, top=%{public}d, right=%{public}d, bottom=%{public}d",
-            coordMetadata.left, coordMetadata.top, coordMetadata.right, coordMetadata.bottom);
-        return true; // only return true if all fields were parsed successfully
-    } else {
-        IMAGE_LOGE(
-            "Exif_metadata:ExtractXMageCoordinates Failed to extract valid XMAGE coordinates from EXIF data. "
-            "Some fields are missing or invalid.");
-        return false; // If any field is invalid, return false
-    }
+    CHECK_DEBUG_RETURN_RET_LOG(!allParsedSuccessfully, false,
+        "Exif_metadata:ExtractXMageCoordinates Failed to extract valid XMAGE coordinates from EXIF data. "
+        "Some fields are missing or invalid.");
+    IMAGE_LOGD(
+        "Exif_metadata:ExtractXMageCoordinates Successfully extracted XMAGE coordinates: "
+        "left=%{public}d, top=%{public}d, right=%{public}d, bottom=%{public}d",
+        coordMetadata.left, coordMetadata.top, coordMetadata.right, coordMetadata.bottom);
+    return true; // only return true if all fields were parsed successfully
 }
 
 uint32_t ExifMetadata::GetBlobSize()
@@ -2352,16 +2299,10 @@ std::shared_ptr<ExifMetadata> ExifMetadata::InitExifMetadata()
 
 bool ExifMetadata::RemoveGpsInfo()
 {
-    if (exifData_ == nullptr) {
-        IMAGE_LOGD("RemoveGpsInfo: exifData_ is nullptr");
-        return false;
-    }
+    CHECK_DEBUG_RETURN_RET_LOG(exifData_ == nullptr, false, "RemoveGpsInfo: exifData_ is nullptr");
 
     std::shared_ptr<ExifMetadata> backup = Clone();
-    if (backup == nullptr) {
-        IMAGE_LOGE("RemoveGpsInfo: failed to clone exif metadata");
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(backup == nullptr, false, "RemoveGpsInfo: failed to clone exif metadata");
 
     IMAGE_LOGI("RemoveGpsInfo: removing GPS information from EXIF");
     bool hasError = false;

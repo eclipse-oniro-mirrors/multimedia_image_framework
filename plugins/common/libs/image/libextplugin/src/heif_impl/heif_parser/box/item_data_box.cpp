@@ -93,11 +93,9 @@ heif_error HeifIlocBox::ParseContent(HeifStreamReader &reader)
 
     // According to ISO standard
     auto isValidSize = [](int size) { return size == 0 || size == 4 || size == 8; };
-    if (!isValidSize(offsetSize) || !isValidSize(lengthSize) ||
-        !isValidSize(baseOffsetSize) || !isValidSize(indexSize)) {
-        IMAGE_LOGE("HeifParser:: iloc box has invalid size field values");
-        return heif_error_invalid_data;
-    }
+    bool cond = !isValidSize(offsetSize) || !isValidSize(lengthSize) ||
+        !isValidSize(baseOffsetSize) || !isValidSize(indexSize);
+    CHECK_ERROR_RETURN_RET_LOG(cond, heif_error_invalid_data, "HeifParser:: iloc box has invalid size field values");
 
     uint32_t itemCount = GetVersion() < HEIF_BOX_VERSION_TWO ? reader.Read16() : reader.Read32();
     if (itemCount > MAX_HEIF_ITEM_COUNT) {
@@ -147,9 +145,7 @@ heif_error HeifIlocBox::ReadData(const Item &item, const std::shared_ptr<HeifInp
     CHECK_ERROR_RETURN_RET(!stream || !dest, heif_error_eof);
     size_t totalSize = 0;
     for (const auto &extent: item.extents) {
-        if (HasOverflowed64(extent.offset, item.baseOffset)) {
-            return heif_error_eof;
-        }
+        CHECK_ERROR_RETURN_RET(HasOverflowed64(extent.offset, item.baseOffset), heif_error_eof);
 
         if (item.constructionMethod == CONSTRUCTION_METHOD_FILE_OFFSET) {
             bool ret = stream->Seek(extent.offset + item.baseOffset);
@@ -163,14 +159,10 @@ heif_error HeifIlocBox::ReadData(const Item &item, const std::shared_ptr<HeifInp
             }
 
             totalSize += extent.length;
-            if (totalSize > MAX_HEIF_IMAGE_GRID_SIZE) {
-                return heif_error_grid_too_large;
-            }
+            CHECK_ERROR_RETURN_RET(totalSize > MAX_HEIF_IMAGE_GRID_SIZE, heif_error_grid_too_large);
             dest->resize(static_cast<size_t>(oldSize + extent.length));
             ret = stream->Read(reinterpret_cast<char*>(dest->data()) + oldSize, static_cast<size_t>(extent.length));
-            if (!ret) {
-                return heif_error_eof;
-            }
+            CHECK_ERROR_RETURN_RET(!ret, heif_error_eof);
         } else if (item.constructionMethod == CONSTRUCTION_METHOD_IDAT_OFFSET) {
             if (!idat) {
                 return heif_error_no_idat;
@@ -273,9 +265,8 @@ heif_error HeifIlocBox::Write(HeifStreamWriter &writer) const
     }
     if (idatTotalSize > 0) {
         uint32_t tmpValue;
-        if (__builtin_add_overflow(idatTotalSize, UINT64_BYTES_NUM, &tmpValue)) {
-            return heif_error_add_overflow;
-        }
+        CHECK_ERROR_RETURN_RET(__builtin_add_overflow(idatTotalSize, UINT64_BYTES_NUM, &tmpValue),
+            heif_error_add_overflow);
         // need add header bytes size
         writer.Write32(tmpValue);
         writer.Write32(BOX_TYPE_IDAT);
@@ -349,9 +340,7 @@ heif_error HeifIlocBox::ReadToExtentData(Item &item, const std::shared_ptr<HeifI
         if (!extent.data.empty()) {
             continue;
         }
-        if (HasOverflowed64(extent.offset, item.baseOffset)) {
-            return heif_error_eof;
-        }
+        CHECK_ERROR_RETURN_RET(HasOverflowed64(extent.offset, item.baseOffset), heif_error_eof);
         if (item.constructionMethod == CONSTRUCTION_METHOD_FILE_OFFSET) {
             bool ret = stream->Seek(extent.offset + item.baseOffset);
             if (!ret) {
@@ -363,9 +352,7 @@ heif_error HeifIlocBox::ReadToExtentData(Item &item, const std::shared_ptr<HeifI
             }
             extent.data.resize(extent.length);
             ret = stream->Read(extent.data.data(), static_cast<size_t>(extent.length));
-            if (!ret) {
-                return heif_error_eof;
-            }
+            CHECK_ERROR_RETURN_RET(!ret, heif_error_eof);
         } else if (item.constructionMethod == CONSTRUCTION_METHOD_IDAT_OFFSET) {
             if (!idatBox) {
                 return heif_error_no_idat;
@@ -478,10 +465,9 @@ heif_error HeifIdatBox::ReadData(const std::shared_ptr<HeifInputStream> &stream,
     uint64_t start, uint64_t length, std::vector<uint8_t> &outData) const
 {
     auto currSize = outData.size();
-    if (HasOverflowed64(static_cast<uint64_t>(startPos_), GetBoxSize()) ||
-        HasOverflowed64(start, length)) {
-        return heif_error_eof;
-    }
+    bool cond = HasOverflowed64(static_cast<uint64_t>(startPos_), GetBoxSize()) ||
+        HasOverflowed64(start, length);
+    CHECK_ERROR_RETURN_RET(cond, heif_error_eof);
     if (start > (GetBoxSize() - GetHeaderSize())) {
         return heif_error_eof;
     } else if (length > (GetBoxSize() - GetHeaderSize()) ||
@@ -499,9 +485,7 @@ heif_error HeifIdatBox::ReadData(const std::shared_ptr<HeifInputStream> &stream,
         uint8_t *data = &outData[currSize];
 
         ret = stream->Read(reinterpret_cast<char*>(data), static_cast<size_t>(length));
-        if (!ret) {
-            return heif_error_eof;
-        }
+        CHECK_ERROR_RETURN_RET(!ret, heif_error_eof);
     }
 
     return heif_error_ok;

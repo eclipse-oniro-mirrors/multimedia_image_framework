@@ -939,6 +939,14 @@ bool IsSupportDma(const DecodeOptions &opts, const ImageInfo &info, bool hasDesi
 #endif
 }
 
+void ImageSource::SetAnimationDesiredSize(const ImageInfo &info, bool hasDesiredSizeOptions,
+    const PlImageInfo &plInfo)
+{
+    if (opts_.isAnimationDecode && !(info.encodedFormat == IMAGE_HEIFS_FORMAT && hasDesiredSizeOptions)) {
+        opts_.desiredSize = plInfo.size;
+    }
+}
+
 DecodeContext ImageSource::InitDecodeContext(const DecodeOptions &opts, const ImageInfo &info,
     const MemoryUsagePreference &preference, bool hasDesiredSizeOptions, PlImageInfo& plInfo)
 {
@@ -985,9 +993,7 @@ DecodeContext ImageSource::InitDecodeContext(const DecodeOptions &opts, const Im
         plInfo.pixelFormat = format;
     }
     context.isAnimationDecode = opts.isAnimationDecode;
-    if (opts_.isAnimationDecode) {
-        opts_.desiredSize = plInfo.size;
-    }
+    SetAnimationDesiredSize(info, hasDesiredSizeOptions, plInfo);
     return context;
 }
 
@@ -1557,9 +1563,6 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMap(uint32_t index, const DecodeOpt
 
         if (finalOutputStep == FinalOutputStep::NO_CHANGE) {
             context.allocatorType = opts_.allocatorType;
-            if (context.allocatorType == AllocatorType::DEFAULT) {
-                context.allocatorType = AllocatorType::SHARE_MEM_ALLOC;
-            }
         } else {
             context.allocatorType = AllocatorType::SHARE_MEM_ALLOC;
         }

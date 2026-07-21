@@ -127,9 +127,7 @@ heif_error HeifParser::AssembleBoxes(HeifStreamReader &reader)
         }
         CHECK_ERROR_RETURN_RET(!box, heif_error_no_meta);
         
-        if (topBoxes_.size() >= MAX_TOP_LEVEL_BOXES) {
-            return heif_error_too_many_boxes;
-        }
+        CHECK_ERROR_RETURN_RET(topBoxes_.size() >= MAX_TOP_LEVEL_BOXES, heif_error_too_many_boxes);
         topBoxes_.push_back(box);
         if (box->GetBoxType() == BOX_TYPE_META) {
             metaBox_ = std::dynamic_pointer_cast<HeifMetaBox>(box);
@@ -266,9 +264,9 @@ heif_error HeifParser::GetItemData(heif_item_id itemId, std::vector<uint8_t> *ou
     if (item_type == "hvc1") {
         auto hvcc = GetProperty<HeifHvccBox>(itemId);
         CHECK_ERROR_RETURN_RET(!hvcc, heif_error_no_hvcc);
-        if (option != heif_no_header && !hvcc->GetHeaders(out)) {
-            return heif_error_item_data_not_found;
-        }
+        bool cond = (option != heif_no_header && !hvcc->GetHeaders(out));
+        CHECK_ERROR_RETURN_RET(cond, heif_error_item_data_not_found);
+
         if (option != heif_only_header) {
             return ilocBox_->ReadData(*ilocItem, inputStream_, idatBox_, out);
         }
@@ -831,9 +829,8 @@ void HeifParser::AddIspeProperty(heif_item_id itemId, uint32_t width, uint32_t h
 
 heif_property_id HeifParser::AddProperty(heif_item_id itemId, const std::shared_ptr<HeifBox>& property, bool essential)
 {
-    if (!ipcoBox_ || !ipmaBox_) {
-        return 0;
-    }
+    CHECK_ERROR_RETURN_RET((!ipcoBox_ || !ipmaBox_), 0);
+
     int index = ipcoBox_->AddChild(property);
     ipmaBox_->AddProperty(itemId, PropertyAssociation{essential, uint16_t(index + 1)});
     return index + 1;
@@ -964,9 +961,8 @@ heif_error HeifParser::SetExifMetadata(const std::shared_ptr<HeifImage> &image, 
     for (int index = 0; index < UINT32_BYTES_NUM; ++index) {
         content[index] = (uint8_t)offsetFourcc[index];
     }
-    if (memcpy_s(content.data() + UINT32_BYTES_NUM, size, data, size) != EOK) {
-        return heif_invalid_exif_data;
-    }
+    int32_t ret = memcpy_s(content.data() + UINT32_BYTES_NUM, size, data, size);
+        CHECK_ERROR_RETURN_RET(ret != EOK, heif_invalid_exif_data);
     return SetMetadata(image, content, "Exif", nullptr);
 }
 
@@ -988,9 +984,8 @@ heif_error HeifParser::UpdateExifMetadata(const std::shared_ptr<HeifImage> &mast
         content[index] = (uint8_t)offsetFourcc[index];
     }
 
-    if (memcpy_s(content.data() + UINT32_BYTES_NUM, size, data, size) != 0) {
-        return heif_invalid_exif_data;
-    }
+    int32_t ret = memcpy_s(content.data() + UINT32_BYTES_NUM, size, data, size);
+    CHECK_ERROR_RETURN_RET(ret != EOK, heif_invalid_exif_data);
 
     uint8_t construction_method = GetConstructMethod(itemId);
 
@@ -1018,9 +1013,7 @@ heif_error HeifParser::SetMetadata(const std::shared_ptr<HeifImage> &image, cons
 
 uint8_t HeifParser::GetConstructMethod(const heif_item_id &id)
 {
-    if (!ilocBox_) {
-        return 0;
-    }
+    CHECK_ERROR_RETURN_RET(!ilocBox_, 0);
     auto items = ilocBox_->GetItems();
     for (const auto &item: items) {
         if (item.itemId == id) {
@@ -1172,9 +1165,7 @@ heif_error HeifParser::GetHeifsMovieFrameData(uint32_t index, std::vector<uint8_
         return GetItemData(primaryImage_->GetItemId(), &dest, heif_header_option::heif_header_data);
     }
     if (index == 0) {
-        if (!hvcc->GetHeaders(&dest)) {
-            return heif_error_item_data_not_found;
-        }
+        CHECK_ERROR_RETURN_RET(!hvcc->GetHeaders(&dest), heif_error_item_data_not_found);
     }
 
     return GetHeifsFrameData(index, dest);
@@ -1195,9 +1186,7 @@ heif_error HeifParser::GetHeifsFrameData(uint32_t index, std::vector<uint8_t> &d
         return res;
     }
     size_t oldSize = dest.size();
-    if (HasOverflowedSizeT(static_cast<size_t>(sampleSize), oldSize)) {
-        return heif_error_add_overflow;
-    }
+    CHECK_ERROR_RETURN_RET(HasOverflowedSizeT(static_cast<size_t>(sampleSize), oldSize), heif_error_add_overflow);
     size_t newSize = static_cast<size_t>(sampleSize) + oldSize;
     if (newSize > HEIF_MAX_SAMPLE_SIZE) {
         return heif_error_sample_size_too_large;
@@ -1242,12 +1231,8 @@ heif_error HeifParser::GetPreSampleSize(uint32_t index, uint32_t &preSampleSize)
     for (uint32_t i = 0; i < index; i++) {
         uint32_t sampleSize = 0;
         auto res = stszBox_->GetSampleSize(i, sampleSize);
-        if (res != heif_error_ok) {
-            return res;
-        }
-        if (HasOverflowed(preSampleSize, sampleSize)) {
-            return heif_error_add_overflow;
-        }
+        CHECK_ERROR_RETURN_RET(res != heif_error_ok, res);
+        CHECK_ERROR_RETURN_RET(HasOverflowed(preSampleSize, sampleSize), heif_error_add_overflow);
         preSampleSize += sampleSize;
     }
     return heif_error_ok;
@@ -1257,17 +1242,13 @@ heif_error HeifParser::GetHeifsGroupFrameInfo(uint32_t index, HeifsFrameGroup &f
 {
     if (!stssBox_) {
         frameGroup.beginFrameIndex = index;
-        if (HasOverflowed(index, FRAME_INDEX_DELTA)) {
-            return heif_error_add_overflow;
-        }
+        CHECK_ERROR_RETURN_RET(HasOverflowed(index, FRAME_INDEX_DELTA), heif_error_add_overflow);
         frameGroup.endFrameIndex = index + FRAME_INDEX_DELTA;
         return heif_error_ok;
     }
     std::vector<uint32_t> sampleNumbers;
     auto ret = stssBox_->GetSampleNumbers(sampleNumbers);
-    if (ret != heif_error_ok) {
-        return ret;
-    }
+    CHECK_ERROR_RETURN_RET(ret != heif_error_ok, ret);
     uint32_t beginFrameIndex = 0;
     uint32_t endFrameIndex = 0;
     uint32_t frameCount = 0;
@@ -1278,17 +1259,11 @@ heif_error HeifParser::GetHeifsGroupFrameInfo(uint32_t index, HeifsFrameGroup &f
     } else if (IsAvisImage()) {
         ret = GetAvisFrameCount(frameCount);
     }
-    if (ret != heif_error_ok) {
-        return ret;
-    }
-    if (HasOverflowed(frameCount, FRAME_INDEX_DELTA)) {
-            return heif_error_add_overflow;
-    }
+    CHECK_ERROR_RETURN_RET(ret != heif_error_ok, ret);
+    CHECK_ERROR_RETURN_RET(HasOverflowed(frameCount, FRAME_INDEX_DELTA), heif_error_add_overflow);
     sampleNumbers.emplace_back(frameCount + FRAME_INDEX_DELTA);
     for (size_t i = 0; i < sampleNumbers.size(); i++) {
-        if (sampleNumbers[i] < FRAME_INDEX_DELTA) {
-            return heif_error_add_overflow;
-        }
+        CHECK_ERROR_RETURN_RET(sampleNumbers[i] < FRAME_INDEX_DELTA, heif_error_add_overflow);
         uint32_t keyFrameIndex = sampleNumbers[i] - FRAME_INDEX_DELTA;
         if (index >= keyFrameIndex) {
             beginFrameIndex = keyFrameIndex;

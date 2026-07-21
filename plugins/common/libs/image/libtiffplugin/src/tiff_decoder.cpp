@@ -65,17 +65,21 @@ toff_t TiffDecoder::SeekProc(thandle_t handle, toff_t off, int whence)
 {
     InputDataStream* stream = static_cast<InputDataStream*>(handle);
     CHECK_ERROR_RETURN_RET_LOG(!stream, static_cast<toff_t>(-1), "stream is invalid");
+    if (off > UINT32_MAX) {
+        return static_cast<toff_t>(-1);
+    }
+    uint32_t off32 = static_cast<uint32_t>(off);
 
     uint32_t newPos = 0;
     uint32_t currentPos = stream->Tell();
     uint32_t fileSize = stream->GetStreamSize();
 
     if (whence == SEEK_SET) {
-        newPos = static_cast<uint32_t>(off);
-    } else if (whence == SEEK_CUR && !ImageUtils::HasOverflowed(currentPos, static_cast<uint32_t>(off))) {
-        newPos = currentPos + static_cast<uint32_t>(off);
-    } else if (whence == SEEK_END && !ImageUtils::HasOverflowed(currentPos, static_cast<uint32_t>(off))) {
-        newPos = fileSize + static_cast<uint32_t>(off);
+        newPos = off32;
+    } else if (whence == SEEK_CUR && !ImageUtils::HasOverflowed(currentPos, off32)) {
+        newPos = currentPos + off32;
+    } else if (whence == SEEK_END && !ImageUtils::HasOverflowed(fileSize, off32)) {
+        newPos = fileSize + off32;
     } else {
         return static_cast<toff_t>(-1);
     }
@@ -173,6 +177,11 @@ uint32_t TiffDecoder::Decode(uint32_t index, DecodeContext& context)
 
     if (tiffSize_.width == 0 || tiffSize_.height == 0) {
         GetImageSize(0, tiffSize_);
+    }
+    if (tiffSize_.width <= 0 || tiffSize_.height <= 0) {
+        IMAGE_LOGE("[TiffDecoder] invalid size: width=%{public}d, height=%{public}d",
+                   tiffSize_.width, tiffSize_.height);
+        return ERR_IMAGE_INVALID_PARAMETER;
     }
     context.info.size.width = tiffSize_.width;
     context.info.size.height = tiffSize_.height;

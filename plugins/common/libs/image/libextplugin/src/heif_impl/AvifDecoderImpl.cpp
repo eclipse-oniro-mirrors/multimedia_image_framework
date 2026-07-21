@@ -172,7 +172,20 @@ bool Dav1dDecoder::ConvertWithFFmpeg(uint32_t index, ConvertInfo &info)
     AVPixelFormat dstFormat = PixelFormatToAVPixelFormat(info.desiredPixelFormat);
     CHECK_ERROR_RETURN_RET_LOG(dstFormat == AVPixelFormat::AV_PIX_FMT_NONE, false,
         "PixelFormatToAVPixelFormat failed.");
-
+ 
+    uint64_t pixelBytes = static_cast<uint64_t>(ImageUtils::GetPixelBytes(info.desiredPixelFormat));
+    uint64_t w = static_cast<uint64_t>(pic->p.w);
+    uint64_t h = static_cast<uint64_t>(pic->p.h);
+    CHECK_ERROR_RETURN_RET_LOG(
+        ImageUtils::CheckMulOverflow<uint64_t>(w, pixelBytes) || w * pixelBytes > info.rowStride, false,
+        "AVIF row stride mismatch: decoded width(%{public}d) exceeds rowStride(%{public}zu).",
+        pic->p.w, info.rowStride);
+    CHECK_ERROR_RETURN_RET_LOG(
+        ImageUtils::CheckMulOverflow<uint64_t>(h, static_cast<uint64_t>(info.rowStride)) ||
+        h * info.rowStride > info.dstBufferSize, false,
+        "AVIF buffer overflow: decoded(%{public}dx%{public}d) exceeds dstBufferSize(%{public}zu).",
+        pic->p.w, pic->p.h, info.dstBufferSize);
+ 
     SwsContext* ctx = sws_getContext(pic->p.w, pic->p.h, srcFormat,
         pic->p.w, pic->p.h, dstFormat, SWS_POINT, nullptr, nullptr, nullptr);
     CHECK_ERROR_RETURN_RET_LOG(!ctx, false, "SwsContext is nullptr.");

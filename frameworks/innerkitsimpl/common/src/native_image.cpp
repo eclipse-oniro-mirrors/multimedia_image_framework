@@ -136,10 +136,8 @@ int32_t NativeImage::SplitYUV422SPComponent()
 
     struct YUVData yuv;
     uint64_t uvStride = static_cast<uint64_t>((width + NUM_1) / NUM_2);
-    if (ImageUtils::CheckMulOverflow(width, height)) {
-        IMAGE_LOGE("Invalid width %{public}" PRId32 " height %{public}" PRId32, width, height);
-        return ERR_MEDIA_DATA_UNSUPPORT;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(ImageUtils::CheckMulOverflow(width, height), ERR_MEDIA_DATA_UNSUPPORT,
+        "Invalid width %{public}" PRId32 " height %{public}" PRId32, width, height);
     yuv.ySize = static_cast<uint64_t>(width) * static_cast<uint64_t>(height);
     if (__builtin_mul_overflow(uvStride, height, &yuv.uvSize)) {
         IMAGE_LOGE("Invalid uvStride %{public}" PRId64 " height %{public}" PRId32, uvStride, height);
@@ -154,10 +152,8 @@ int32_t NativeImage::SplitYUV422SPComponent()
     NativeComponent* y = CreateComponent(int32_t(ComponentType::YUV_Y), yuv.ySize, width, NUM_1, nullptr);
     NativeComponent* u = CreateComponent(int32_t(ComponentType::YUV_U), yuv.uvSize, uvStride, NUM_2, nullptr);
     NativeComponent* v = CreateComponent(int32_t(ComponentType::YUV_V), yuv.uvSize, uvStride, NUM_2, nullptr);
-    if ((y == nullptr) || (u == nullptr) || (v == nullptr)) {
-        IMAGE_LOGE("Create Component failed");
-        return ERR_MEDIA_DATA_UNSUPPORT;
-    }
+    CHECK_ERROR_RETURN_RET_LOG((y == nullptr) || (u == nullptr) || (v == nullptr),
+        ERR_MEDIA_DATA_UNSUPPORT, "Create Component failed");
     yuv.y = y->raw;
     yuv.u = u->raw;
     yuv.v = v->raw;
@@ -405,10 +401,7 @@ NativeBufferData* NativeImage::GetBufferData()
     }
     uint64_t bufferSize = NUM_0;
     res = GetDataSize(bufferSize);
-    if (res != SUCCESS) {
-        IMAGE_LOGE("GetDataSize failed");
-        return nullptr;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(res != SUCCESS, nullptr, "GetDataSize failed");
     bufferData_->size = static_cast<size_t>(bufferSize);
     bufferData_->virAddr = GetSurfaceBufferAddr();
     if (bufferData_->virAddr == nullptr) {

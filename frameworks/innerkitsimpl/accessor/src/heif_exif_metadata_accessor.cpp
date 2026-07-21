@@ -60,16 +60,11 @@ uint32_t HeifExifMetadataAccessor::Read()
     }
 
     size_t byteOrderPos;
-    if (!CheckTiffPos(const_cast<byte *>(dataBuf.CData()), dataBuf.Size(), byteOrderPos)) {
-        IMAGE_LOGE("Failed to parse Exif metadata: cannot find tiff byte order");
-        return ERR_IMAGE_SOURCE_DATA;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(!CheckTiffPos(const_cast<byte *>(dataBuf.CData()), dataBuf.Size(), byteOrderPos),
+        ERR_IMAGE_SOURCE_DATA, "Failed to parse Exif metadata: cannot find tiff byte order");
     ExifData *exifData = nullptr;
     TiffParser::Decode(dataBuf.CData(byteOrderPos), dataBuf.Size() - byteOrderPos, &exifData);
-    if (exifData == nullptr) {
-        IMAGE_LOGE("Decode tiffBuf error.");
-        return ERR_EXIF_DECODE_FAILED;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(exifData == nullptr, ERR_EXIF_DECODE_FAILED, "Decode tiffBuf error.");
     tiffOffset_ = tiffOffset_ + static_cast<long>(byteOrderPos);
     exifMetadata_ = std::make_shared<ExifMetadata>(exifData);
     return SUCCESS;
@@ -98,10 +93,7 @@ uint32_t HeifExifMetadataAccessor::Write()
     uint32_t size = 0;
     TiffParser::Encode(&dataBlob, size, exifData);
 
-    if (dataBlob == nullptr) {
-        IMAGE_LOGE("Failed to encode exif matatdata.");
-        return ERR_MEDIA_WRITE_PARCEL_FAIL;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(dataBlob == nullptr, ERR_MEDIA_WRITE_PARCEL_FAIL, "Failed to encode exif matatdata.");
 
     size_t byteOrderPos;
     DataBuf dataBuf(dataBlob, size);
@@ -144,15 +136,11 @@ uint32_t HeifExifMetadataAccessor::WriteMetadata(DataBuf &dataBuf)
     HeifStreamWriter writer;
     parser->Write(writer);
     size_t dataSize = writer.GetDataSize();
-    if (dataSize == 0) {
-        IMAGE_LOGE("The EXIF data failed to be written to the file.");
-        return ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(dataSize == 0, ERR_IMAGE_DECODE_EXIF_UNSUPPORT,
+        "The EXIF data failed to be written to the file.");
 
     const uint8_t *buf = writer.GetData().data();
-    if (buf == nullptr) {
-        return ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
-    }
+    CHECK_ERROR_RETURN_RET(buf == nullptr, ERR_IMAGE_DECODE_EXIF_UNSUPPORT);
 
     BufferMetadataStream tmpBufStream;
     tmpBufStream.Write(const_cast<uint8_t *>(buf), dataSize);
@@ -188,9 +176,7 @@ bool HeifExifMetadataAccessor::GetExifItemData(std::shared_ptr<HeifParser> &pars
     }
 
     std::vector<uint8_t> item;
-    if (parser->GetItemData(exifItemId, &item) != heif_error::heif_error_ok) {
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET(parser->GetItemData(exifItemId, &item) != heif_error::heif_error_ok, false);
     tiffOffset_ = parser->GetTiffOffset();
     dataBuf = DataBuf(item.data(), item.size());
     return true;
@@ -232,10 +218,7 @@ uint32_t HeifExifMetadataAccessor::ReadCr3()
 
     ExifData *exifData = nullptr;
     TiffParser::Decode(exifDataSet, &exifData);
-    if (exifData == nullptr) {
-        IMAGE_LOGE("Decode mutiple tiffBuf for cr3 error.");
-        return ERR_EXIF_DECODE_FAILED;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(exifData == nullptr, ERR_EXIF_DECODE_FAILED, "Decode mutiple tiffBuf for cr3 error.");
     exifMetadata_ = std::make_shared<ExifMetadata>(exifData);
     return SUCCESS;
 }

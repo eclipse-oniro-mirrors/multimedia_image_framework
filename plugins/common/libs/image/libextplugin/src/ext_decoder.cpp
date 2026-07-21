@@ -4056,7 +4056,13 @@ uint32_t ExtDecoder::AvifDecode(uint32_t index, DecodeContext &context, uint64_t
     decoder->setDstBuffer(reinterpret_cast<uint8_t *>(context.pixelsBuffer.buffer), rowStride, nullptr);
     decoder->SetAllocatorType(context.allocatorType);
     decoder->SetDesiredPixelFormat(context.info.pixelFormat);
-    decoder->SetBufferSize(context.pixelsBuffer.bufferSize);
+    if (context.allocatorType == Media::AllocatorType::DMA_ALLOC) {
+        SurfaceBuffer* surfaceBuffer = static_cast<SurfaceBuffer*>(context.pixelsBuffer.context);
+        CHECK_ERROR_RETURN_RET_LOG(surfaceBuffer == nullptr, ERR_IMAGE_DATA_UNSUPPORT, "Buffer is nullptr.");
+        decoder->SetBufferSize(surfaceBuffer->GetSize());
+    } else {
+        decoder->SetBufferSize(context.pixelsBuffer.bufferSize);
+    }
     bool decodeRet = false;
     if (decoder->IsAvisImage() && context.isAnimationDecode) {
         decodeRet = decoder->decodeSequence(context.index);

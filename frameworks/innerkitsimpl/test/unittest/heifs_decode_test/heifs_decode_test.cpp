@@ -1110,5 +1110,36 @@ HWTEST_F(HeifsDecodeTest, CreatePixelMapTest001, TestSize.Level1)
 #endif
     GTEST_LOG_(INFO) << "HeifsDecodeTest: CreatePixelMapTest001 end";
 }
+
+/**
+ * @tc.name: HeifsDesiredSizeDecodeTest001
+ * @tc.desc: Decode heif-sequence image with desiredSize and check output pixelmap size.
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifsDecodeTest, HeifsDesiredSizeDecodeTest001, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "HeifsDecodeTest: HeifsDesiredSizeDecodeTest001 start";
+#ifdef HEIF_HW_DECODE_ENABLE
+    SourceOptions sourceOptions;
+    uint32_t errorCode = 0;
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_INPUT_HEIFS_PATH, sourceOptions, errorCode);
+    ASSERT_NE(imageSource, nullptr);
+    ImageInfo imageInfo;
+    errorCode = imageSource->GetImageInfo(0, imageInfo);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_GE(imageInfo.size.width, 2);
+    ASSERT_GE(imageInfo.size.height, 2);
+    DecodeOptions decOpts;
+    decOpts.desiredSize.width = imageInfo.size.width / 2;
+    decOpts.desiredSize.height = imageInfo.size.height / 2;
+    auto pixelMap = imageSource->CreatePixelMap(decOpts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(pixelMap, nullptr);
+    EXPECT_EQ(decOpts.desiredSize.width, static_cast<uint32_t>(pixelMap->GetWidth()));
+    EXPECT_EQ(decOpts.desiredSize.height, static_cast<uint32_t>(pixelMap->GetHeight()));
+#endif
+    GTEST_LOG_(INFO) << "HeifsDecodeTest: HeifsDesiredSizeDecodeTest001 end";
+}
 } // namespace Media
 } // namespace OHOS
