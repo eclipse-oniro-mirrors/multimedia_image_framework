@@ -543,7 +543,6 @@ static int32_t DeepCopyMetadatas(std::shared_ptr<Picture> &srcPicture, std::uniq
             CHECK_ERROR_RETURN_RET_LOG((newBlobMetadata->SetBlob(data, size) != SUCCESS ||
                 dstPicture->SetMetadata(type, newBlobMetadata) != SUCCESS), ERR_MEDIA_INVALID_VALUE,
                 "Failed to set blob to metadata: %{public}d to %{public}d.", srcMetadatas[i], type);
-            }
         } else {
             auto newMetadata = metadata->CloneMetadata();
             CHECK_ERROR_RETURN_RET_LOG(dstPicture->SetMetadata(type, newMetadata) != SUCCESS, ERR_MEDIA_INVALID_VALUE,
