@@ -261,10 +261,7 @@ std::shared_ptr<HeifImage> HeifDecoderImpl::GetThumbnailImage()
 {
     CHECK_ERROR_RETURN_RET_LOG(!primaryImage_, nullptr, "Primary image is not init");
     auto thumbImages = primaryImage_->GetThumbnailImages();
-    if (thumbImages.empty()) {
-        IMAGE_LOGE("Heif parser has not thumbnail Images.");
-        return nullptr;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(thumbImages.empty(), nullptr, "Heif parser has not thumbnail Images.");
     return thumbImages[0];
 }
 
@@ -374,10 +371,8 @@ bool HeifDecodeImpl::SeekRefGridRangeInfo(const std::shared_ptr<HeifImage> &imag
 {
     CHECK_ERROR_RETURN_RET(!parser_ || !image, false);
     std::string imageType = parser_->GetItemType(image->GetItemId());
-    if (imageType != "grid") {
-        IMAGE_LOGE("seek grid error, type is : %{public}s", imageType.c_str());
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(imageType != "grid", false, "seek grid error, type is : %{public}s",
+        imageType.c_str());
     std::vector<std::shared_ptr<HeifImage>> tileImages;
     parser_->GetTileImages(image->GetItemId(), tileImages);
     CHECK_ERROR_RETURN_RET_LOG(tileImages.empty() || !tileImages[0], false, "grid image has no tile image");
@@ -397,10 +392,8 @@ void HeifDecoderImpl::InitGridInfo(const std::shared_ptr<HeifImage> &image, Grid
     GetTileSize(image, gridInfo, recursionCount);
     GetRowColNum(gridInfo);
     if (image->GetColorRangeFlag() == INVALID_GRID_FLAG) {
-        if (!SeekRefGridRangeInfo(image)) {
-            IMAGE_LOGD("HeifDecoderImpl:: InitGridInfo Failed to get range value");
-            return;
-        }
+        CHECK_DEBUG_RETURN_LOG(!SeekRefGridRangeInfo(image),
+            "HeifDecoderImpl:: InitGridInfo Failed to get range value");
     }
     gridInfo.colorRangeFlag = image->GetColorRangeFlag();
     IMAGE_LOGD("HeifDecoderImpl::InitGridInfo gridInfo.colorRangeFlag: %{public}d", gridInfo.colorRangeFlag);
@@ -429,10 +422,8 @@ void HeifDecoderImpl::GetTileSize(const std::shared_ptr<HeifImage> &image,
         }
         return;
     }
-    if (imageType != "grid") {
-        IMAGE_LOGE("GetTileSize unsupported image type: %{public}s", imageType.c_str());
-        return;
-    }
+    CHECK_ERROR_RETURN_LOG(imageType != "grid", "GetTileSize unsupported image type: %{public}s",
+        imageType.c_str());
     std::vector<std::shared_ptr<HeifImage>> tileImages;
     parser_->GetTileImages(image->GetItemId(), tileImages);
     CHECK_ERROR_RETURN_LOG(tileImages.empty() || !tileImages[0], "grid image has no tile image");
@@ -478,10 +469,7 @@ bool HeifDecoderImpl::copyToAshmem(std::vector<std::vector<uint8_t>> &inputs, st
         size_t size = input.size();
         sptr<Ashmem> mem = Ashmem::CreateAshmem(HEIF_SHAREMEM_NAME.c_str(), size);
         CHECK_ERROR_RETURN_RET_LOG(!mem, false, "AshmemCreate failed");
-        if (!mem->MapAshmem(PROT_READ | PROT_WRITE)) {
-            IMAGE_LOGE("Ashmem map failed");
-            return false;
-        }
+        CHECK_ERROR_RETURN_RET_LOG(!mem->MapAshmem(PROT_READ | PROT_WRITE), false, "Ashmem map failed");
         if (!mem->WriteToAshmem(input.data(), size, 0)) {
             IMAGE_LOGE("memcpy_s failed with error");
             hwInputs.clear();
@@ -781,15 +769,11 @@ bool HeifDecoderImpl::HwDecodeGrids(std::shared_ptr<HeifImage> &image,
     CHECK_ERROR_RETURN_RET_LOG(cond, false, "HeifDecoderImpl::DecodeGrids image is nullptr");
     std::vector<std::shared_ptr<HeifImage>> tileImages;
     parser_->GetTileImages(image->GetItemId(), tileImages);
-    if (tileImages.empty()) {
-        IMAGE_LOGE("grid image has no tile image");
-        return false;
-    }
+    cond = tileImages.empty();
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "grid image has no tile image");
     size_t gridCount = tileImages.size();
-    if (gridCount != (gridInfo.cols * gridInfo.rows)) {
-        IMAGE_LOGE("grid count not equal actual decode quantity");
-        return false;
-    }
+    cond = gridCount != (gridInfo.cols * gridInfo.rows);
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "grid count not equal actual decode quantity");
     std::vector<std::vector<uint8_t>> inputs;
     PrepareInput(tileImages, inputs, gridCount);
     GridInfo tempGridInfo = gridInfo;
@@ -798,10 +782,8 @@ bool HeifDecoderImpl::HwDecodeGrids(std::shared_ptr<HeifImage> &image,
         return false;
     }
     auto ret = HwSetColorSpaceData(hwBuffer, gridInfo);
-    if (ret != GSERROR_OK) {
-        IMAGE_LOGE("SetColorSpaceInfo GetMetadata failed, return value is %{public}d", ret);
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(ret != GSERROR_OK, false,
+        "SetColorSpaceInfo GetMetadata failed, return value is %{public}d", ret);
     OHOS::HDI::Codec::Image::V2_1::CodecHeifDecInfo heifDecodeInfo;
     SetHwDecodeInfo(gridInfo, heifDecodeInfo);
     auto output = sptr<HDI::Base::NativeBuffer>::MakeSptr(hwBuffer->GetBufferHandle());
@@ -854,10 +836,8 @@ bool HeifDecoderImpl::HwDecodeSingleImage(std::shared_ptr<HeifImage> &image,
         return false;
     }
     auto ret = HwSetColorSpaceData(hwBuffer, gridInfo);
-    if (ret != GSERROR_OK) {
-        IMAGE_LOGE("SetColorSpaceInfo GetMetadata failed, return value is %{public}d", ret);
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(ret != GSERROR_OK, false,
+        "SetColorSpaceInfo GetMetadata failed, return value is %{public}d", ret);
     OHOS::HDI::Codec::Image::V2_1::CodecHeifDecInfo heifDecodeInfo;
     SetHwDecodeInfo(gridInfo, heifDecodeInfo);
     auto output = sptr<HDI::Base::NativeBuffer>::MakeSptr(hwBuffer->GetBufferHandle());
@@ -883,16 +863,14 @@ bool HeifDecoderImpl::HwDecodeMimeImage(std::shared_ptr<HeifImage> &image)
     parser_->GetItemData(image->GetItemId(), &inputs, heif_only_header);
     ProcessChunkHead(inputs.data(), inputs.size());
 
-    if (auxiliaryDstMemory_ == nullptr || auxiliaryDstMemorySize_ == 0 || inputs.size() == 0) {
-        IMAGE_LOGE("%{public}s: params fail auxiliaryDstMemorySize_ is %{public}zu, input size is %{public}zu",
-            __func__, auxiliaryDstMemorySize_, inputs.size());
-        return false;
-    }
-    if (memcpy_s(auxiliaryDstMemory_, auxiliaryDstMemorySize_, inputs.data(), inputs.size()) != EOK) {
-        IMAGE_LOGE("%{public}s: memcpy failed, auxiliaryDstMemorySize_ is %{public}zu, input size is %{public}ld",
-            __func__, auxiliaryDstMemorySize_, inputs.size());
-        return false;
-    }
+    bool invalidAuxiliaryDst = auxiliaryDstMemory_ == nullptr || auxiliaryDstMemorySize_ == 0 || inputs.size() == 0;
+    CHECK_ERROR_RETURN_RET_LOG(invalidAuxiliaryDst, false,
+        "%{public}s: params fail auxiliaryDstMemorySize_ is %{public}zu, input size is %{public}zu",
+        __func__, auxiliaryDstMemorySize_, inputs.size());
+    CHECK_ERROR_RETURN_RET_LOG(memcpy_s(auxiliaryDstMemory_, auxiliaryDstMemorySize_, inputs.data(),
+        inputs.size()) != EOK, false,
+        "%{public}s: memcpy failed, auxiliaryDstMemorySize_ is %{public}zu, input size is %{public}zu",
+        __func__, auxiliaryDstMemorySize_, inputs.size());
     return true;
 }
 
@@ -900,10 +878,8 @@ bool HeifDecoderImpl::SwDecodeImage(std::shared_ptr<HeifImage> &image, HevcSoftD
     GridInfo &gridInfo, bool isPrimary)
 {
     ImageFuncTimer imageFuncTime("HeifDecoderImpl::%s, desiredpixelformat: %d", __func__, outPixelFormat_);
-    if (outPixelFormat_ == PixelFormat::UNKNOWN) {
-        IMAGE_LOGE("unknown pixel type: %{public}d", outPixelFormat_);
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(outPixelFormat_ == PixelFormat::UNKNOWN, false,
+        "unknown pixel type: %{public}d", outPixelFormat_);
     CHECK_ERROR_RETURN_RET(!image, false);
 
     if (!isPrimary && IsHeifsImage()) {
@@ -1030,10 +1006,7 @@ bool HeifDecoderImpl::SwDecodeSingleImage(std::shared_ptr<HeifImage> &image, Hev
     ProcessChunkHead(inputs[0].data(), inputs[0].size());
 
     int32_t retCode = extManager_.hevcSoftwareDecodeFunc_(inputs, param);
-    if (retCode != 0) {
-        IMAGE_LOGE("SwDecodeSingleImage decode failed: %{public}d", retCode);
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(retCode != 0, false, "SwDecodeSingleImage decode failed: %{public}d", retCode);
     return true;
 }
 
@@ -1211,19 +1184,14 @@ bool HeifDecoderImpl::HwApplyAlphaImage(std::shared_ptr<HeifImage> &masterImage,
     // check alpha image is available
     CHECK_ERROR_RETURN_RET(!masterImage || IsDirectYUVDecode(), false);
     std::shared_ptr<HeifImage> alphaImage = masterImage->GetAlphaImage();
-    if (!IsValidAlphaImage(masterImage, alphaImage, outPixelFormat_, true)) {
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET(!IsValidAlphaImage(masterImage, alphaImage, outPixelFormat_, true), false);
 
     // decode alpha image
     GridInfo alphaGridInfo;
     sptr<SurfaceBuffer> hwBuffer;
     InitGridInfo(alphaImage, alphaGridInfo);
     bool decodeRes = HwDecodeImage(alphaImage, alphaGridInfo, &hwBuffer, false);
-    if (!decodeRes) {
-        IMAGE_LOGE("hw decode alpha image failed");
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(!decodeRes, false, "hw decode alpha image failed");
 
     // merge alpha channel
     return FillAlphaChannel(masterImage, reinterpret_cast<uint8_t *>(hwBuffer->GetVirAddr()),
@@ -1236,31 +1204,27 @@ bool HeifDecoderImpl::SwApplyAlphaImage(std::shared_ptr<HeifImage> &masterImage,
     // check alpha image is available
     CHECK_ERROR_RETURN_RET(!masterImage || IsDirectYUVDecode(), false);
     std::shared_ptr<HeifImage> alphaImage = masterImage->GetAlphaImage();
-    if (!IsValidAlphaImage(masterImage, alphaImage, outPixelFormat_, false)) {
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET(!IsValidAlphaImage(masterImage, alphaImage, outPixelFormat_, false), false);
 
     GridInfo alphaGridInfo;
     InitGridInfo(alphaImage, alphaGridInfo);
     uint32_t tileSpanX = 0;
     uint32_t tileSpanY = 0;
-    if (__builtin_mul_overflow(alphaGridInfo.cols, alphaGridInfo.tileWidth, &tileSpanX) ||
-        __builtin_mul_overflow(alphaGridInfo.rows, alphaGridInfo.tileHeight, &tileSpanY)) {
-        IMAGE_LOGE("Alpha image grid dimensions overflow: cols=%{public}u, tileWidth=%{public}u, "
-                   "rows=%{public}u, tileHeight=%{public}u",
-                   alphaGridInfo.cols, alphaGridInfo.tileWidth, alphaGridInfo.rows, alphaGridInfo.tileHeight);
-        return false;
-    }
+    bool alphaGridOverflow = __builtin_mul_overflow(alphaGridInfo.cols, alphaGridInfo.tileWidth, &tileSpanX) ||
+        __builtin_mul_overflow(alphaGridInfo.rows, alphaGridInfo.tileHeight, &tileSpanY);
+    CHECK_ERROR_RETURN_RET_LOG(alphaGridOverflow, false,
+        "Alpha image grid dimensions overflow: cols=%{public}u, tileWidth=%{public}u, "
+        "rows=%{public}u, tileHeight=%{public}u",
+        alphaGridInfo.cols, alphaGridInfo.tileWidth, alphaGridInfo.rows, alphaGridInfo.tileHeight);
     uint32_t alphaStride = (alphaGridInfo.displayWidth > tileSpanX)
         ? alphaGridInfo.displayWidth : tileSpanX;
     uint32_t alphaHeight = (alphaGridInfo.displayHeight > tileSpanY)
         ? alphaGridInfo.displayHeight : tileSpanY;
     uint32_t alphaMemorySize = 0;
-    if (__builtin_mul_overflow(alphaStride, alphaHeight, &alphaMemorySize) || alphaMemorySize == 0) {
-        IMAGE_LOGE("Alpha image dimensions overflow: stride=%{public}u, height=%{public}u",
-                   alphaStride, alphaHeight);
-        return false;
-    }
+    bool alphaMemoryOverflow = __builtin_mul_overflow(alphaStride, alphaHeight, &alphaMemorySize) ||
+        alphaMemorySize == 0;
+    CHECK_ERROR_RETURN_RET_LOG(alphaMemoryOverflow, false,
+        "Alpha image dimensions overflow: stride=%{public}u, height=%{public}u", alphaStride, alphaHeight);
     PixelFormat alphaDstFmt = PixelFormat::ALPHA_8;
     std::unique_ptr<uint8_t[]> alphaMemory = std::make_unique<uint8_t[]>(alphaMemorySize);
     HevcSoftDecodeParam param {
@@ -1390,7 +1354,8 @@ bool HeifDecoderImpl::IsGainmapGrid()
     if (!regionInfo_.isGainmapImage) {
         return false;
     }
-    CHECK_ERROR_RETURN_RET(!parser_ || !gainmapImage_, false);
+    bool invalidGainmapGrid = !parser_ || !gainmapImage_;
+    CHECK_ERROR_RETURN_RET(invalidGainmapGrid, false);
     std::string imageType = parser_->GetItemType(gainmapImage_->GetItemId());
     if (imageType == "grid") {
         return true;
@@ -1646,7 +1611,9 @@ bool HeifDecoderImpl::SwDecodeHeifsImage(uint32_t index, HevcSoftDecodeParam &pa
 bool HeifDecoderImpl::SwDecodeHeifsFrameImage(uint32_t index, HevcSoftDecodeParam &param, bool isStatic)
 {
     CHECK_ERROR_RETURN_RET(!parser_, false);
-    CHECK_ERROR_RETURN_RET(!extManager_.heifsSoftwareDecodeFunc_ && !extManager_.LoadImageFwkExtNativeSo(), false);
+    bool loadHeifsDecoderFailed =
+        !extManager_.heifsSoftwareDecodeFunc_ && !extManager_.LoadImageFwkExtNativeSo();
+    CHECK_ERROR_RETURN_RET(loadHeifsDecoderFailed, false);
     CHECK_ERROR_RETURN_RET(!CreateHeifsSwDecoder(param), false);
     uint32_t sampleCount = 0;
     CHECK_ERROR_RETURN_RET(!GetHeifsFrameCount(sampleCount), false);
@@ -1730,8 +1697,10 @@ bool HeifDecoderImpl::CreateHeifsSwDecoder(HevcSoftDecodeParam &refParam)
     if (swDecHeifsHandle_) {
         return true;
     }
-    CHECK_ERROR_RETURN_RET_LOG(!extManager_.heifsSoftwareCreateDecoderFunc_ && !extManager_.LoadImageFwkExtNativeSo(),
-        false, "CreateHeifsSwDecoder LoadImageFwkExtNativeSo failed.");
+    bool loadHeifsCreateDecoderFailed =
+        !extManager_.heifsSoftwareCreateDecoderFunc_ && !extManager_.LoadImageFwkExtNativeSo();
+    CHECK_ERROR_RETURN_RET_LOG(loadHeifsCreateDecoderFailed, false,
+        "CreateHeifsSwDecoder LoadImageFwkExtNativeSo failed.");
     auto ret = extManager_.heifsSoftwareCreateDecoderFunc_(swDecHeifsHandle_, refParam);
     CHECK_ERROR_RETURN_RET_LOG(ret != 0, false, "CreateHeifsSwDecoder create decoder failed: %{public}d", ret);
     return true;
@@ -1742,8 +1711,9 @@ void HeifDecoderImpl::DeleteHeifsSwDecoder()
     if (!swDecHeifsHandle_) {
         return;
     }
-    CHECK_ERROR_RETURN_LOG(!extManager_.heifsSoftwareDeleteDecoderFunc_ && !extManager_.LoadImageFwkExtNativeSo(),
-        "DeleteHeifsSwDecoder LoadImageFwkExtNativeSo failed.");
+    bool loadHeifsDeleteDecoderFailed =
+        !extManager_.heifsSoftwareDeleteDecoderFunc_ && !extManager_.LoadImageFwkExtNativeSo();
+    CHECK_ERROR_RETURN_LOG(loadHeifsDeleteDecoderFailed, "DeleteHeifsSwDecoder LoadImageFwkExtNativeSo failed.");
     auto ret = extManager_.heifsSoftwareDeleteDecoderFunc_(swDecHeifsHandle_);
     CHECK_ERROR_RETURN_LOG(ret != 0, "DeleteHeifsSwDecoder delete decoder failed: %{public}d", ret);
     swDecHeifsHandle_ = nullptr;
@@ -1756,9 +1726,11 @@ bool HeifDecoderImpl::HasDecodedFrame(uint32_t index)
 
 bool HeifDecoderImpl::AllocateBufferSize(HevcSoftDecodeParam &param, bool isStatic)
 {
-    CHECK_ERROR_RETURN_RET(isStatic && !primaryImage_, false);
-    CHECK_ERROR_RETURN_RET_LOG(!params_.empty() &&
-        ImageUtils::CheckMulOverflow<uint64_t>(dstBufferSize_, params_.size()), false,
+    bool missingStaticPrimaryImage = isStatic && !primaryImage_;
+    CHECK_ERROR_RETURN_RET(missingStaticPrimaryImage, false);
+    bool paramsSizeOverflow = !params_.empty() &&
+        ImageUtils::CheckMulOverflow<uint64_t>(dstBufferSize_, params_.size());
+    CHECK_ERROR_RETURN_RET_LOG(paramsSizeOverflow, false,
         "%{public}s mul overflow", __func__);
     uint64_t curBufferSize = dstBufferSize_ * params_.size();
     uint64_t addBufferSize = isStatic ? dstPrimaryImageBufferSize_ : dstBufferSize_;
