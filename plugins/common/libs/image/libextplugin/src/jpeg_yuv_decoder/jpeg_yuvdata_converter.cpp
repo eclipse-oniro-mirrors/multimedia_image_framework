@@ -90,6 +90,9 @@ static bool IsValidScaleFactor(uint8_t factor)
 
 static bool CopyLineData(uint8_t *dest, uint32_t destStride, const uint8_t *src, uint32_t srcStride)
 {
+    if (src == nullptr || dest == nullptr) {
+        return false;
+    }
     CHECK_ERROR_RETURN_RET(srcStride == 0 || destStride == 0, false);
     errno_t ret = memcpy_s(dest, destStride, src, std::min(srcStride, destStride));
     CHECK_ERROR_RETURN_RET(ret != EOK, false);
@@ -104,6 +107,9 @@ static bool CopyLineData(uint8_t *dest, uint32_t destStride, const uint8_t *src,
 
 static uint8_t SampleUV(const uint8_t* srcUV, int stride, bool canUseNextRow, bool canUseNextColumn)
 {
+    if (srcUV == nullptr || stride <= 0) {
+        return 0;
+    }
     const uint8_t* srcUVNextLine = nullptr;
     if (canUseNextRow) {
         srcUVNextLine = srcUV + stride;

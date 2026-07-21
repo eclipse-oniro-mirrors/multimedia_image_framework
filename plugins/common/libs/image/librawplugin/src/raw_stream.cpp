@@ -50,6 +50,16 @@ piex::Error RawStream::GetData(const size_t offset, const size_t length, uint8_t
         return piex::kUnsupported;
     }
 
+    if (offset > UINT32_MAX || length > UINT32_MAX) {
+        IMAGE_LOGE("GetData, offset or length exceeds uint32_t range");
+        return piex::kFail;
+    }
+ 
+    if (data == nullptr) {
+        IMAGE_LOGE("GetData, data is null");
+        return piex::kFail;
+    }
+
     uint32_t u32Offset = static_cast<uint32_t>(offset);
     uint32_t u32Length = static_cast<uint32_t>(length);
 

@@ -62,12 +62,16 @@ std::shared_ptr<ImageMetadata> PictureImpl::GetMetadata(MetadataType metadataTyp
     IMAGE_LOGD("GetMetadata IN");
     if (nativePicture_ == nullptr) {
         IMAGE_LOGE("Empty native picture");
-        *errCode = IMAGE_BAD_PARAMETER;
+        if (errCode != nullptr) {
+            *errCode = IMAGE_BAD_PARAMETER;
+        }
         return nullptr;
     }
     auto metadata = nativePicture_->GetMetadata(metadataType);
     if (metadata == nullptr) {
-        *errCode = IMAGE_UNSUPPORTED_METADATA;
+        if (errCode != nullptr) {
+            *errCode = IMAGE_UNSUPPORTED_METADATA;
+        }
         return nullptr;
     }
     return metadata;

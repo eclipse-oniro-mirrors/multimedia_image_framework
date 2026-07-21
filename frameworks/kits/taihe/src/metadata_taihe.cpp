@@ -297,7 +297,12 @@ array<uint8_t> MetadataImpl::GetBlob()
         return array<uint8_t>(0);
     }
 
-    return ImageTaiheUtils::CreateTaiheArrayBuffer(arrayBuffer.release(), arrayBufferSize, true);
+    uint8_t* rawBuffer = arrayBuffer.release();
+    array<uint8_t> result = ImageTaiheUtils::CreateTaiheArrayBuffer(rawBuffer, arrayBufferSize, true);
+    if (result.empty() && rawBuffer != nullptr) {
+        delete[] rawBuffer;
+    }
+    return result;
 }
 
 void MetadataImpl::SetBlob(array_view<uint8_t> blob)
