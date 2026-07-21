@@ -290,7 +290,7 @@ bool PostProc::CenterDisplayYuv(PixelMap &pixelMap, int32_t srcWidth, int32_t sr
         dstMemory->GetType(), nullptr);
     imgInfo.size.width = targetWidth;
     imgInfo.size.height = targetHeight;
-    CHECK_ERROR_RETURN_RET_LOG(pixelMap.SetImageInfo(imgInfo, true) != SUCCESS, false, "CenterDisplayYuv update ImageInfo failed");
+    CHECK_ERROR_RETURN_RET_LOG(pixelMap.SetImageInfo(imgInfo, true) != SUCCESS, false, "update ImageInfo failed");
     ImageUtils::UpdateYUVDataInfo(pixelMap);
     ImageUtils::FlushSurfaceBuffer(&pixelMap);
     return true;
