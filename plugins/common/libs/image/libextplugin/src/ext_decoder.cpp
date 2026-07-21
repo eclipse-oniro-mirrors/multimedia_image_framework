@@ -418,15 +418,11 @@ uint32_t ExtDecoder::DmaAlloc(DecodeContext &context, uint64_t count, const OHOS
 
 static uint32_t HeapMemAlloc(DecodeContext &context, uint64_t count)
 {
-    if (count == 0 || count > PIXEL_MAP_MAX_RAM_SIZE) {
-        IMAGE_LOGE("HeapMemAlloc Invalid value of bufferSize");
-        return ERR_IMAGE_DATA_ABNORMAL;
-    }
+    bool invalidHeapBufferSize = count == 0 || count > PIXEL_MAP_MAX_RAM_SIZE;
+    CHECK_ERROR_RETURN_RET_LOG(invalidHeapBufferSize, ERR_IMAGE_DATA_ABNORMAL,
+        "HeapMemAlloc Invalid value of bufferSize");
     auto out = static_cast<uint8_t *>(malloc(count));
-    if (out == nullptr) {
-        IMAGE_LOGE("HeapMemAlloc malloc memory failed");
-        return ERR_IMAGE_MALLOC_ABNORMAL;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(out == nullptr, ERR_IMAGE_MALLOC_ABNORMAL, "HeapMemAlloc malloc memory failed");
 #ifdef _WIN32
     if (memset_s(out, ZERO, count) != EOK) {
 #else
@@ -445,9 +441,7 @@ uint32_t ExtDecoder::UpdateHeifYuvDataInfo(DecodeContext &context, SkImageInfo &
 {
 #ifdef HEIF_HW_DECODE_ENABLE
     SurfaceBuffer* sbBuffer = static_cast<SurfaceBuffer*>(context.pixelsBuffer.context);
-    if (sbBuffer == nullptr) {
-        return ERR_DMA_DATA_ABNORMAL;
-    }
+    CHECK_ERROR_RETURN_RET(sbBuffer == nullptr, ERR_DMA_DATA_ABNORMAL);
     OH_NativeBuffer_Planes *planes = nullptr;
     GSError retVal = sbBuffer->GetPlanesInfo(reinterpret_cast<void**>(&planes));
     if (retVal != OHOS::GSERROR_OK || planes == nullptr || planes->planeCount < NUM_2) {
@@ -482,9 +476,7 @@ uint32_t ExtDecoder::HeifYUVMemAlloc(OHOS::ImagePlugin::DecodeContext &context, 
 {
 #ifdef HEIF_HW_DECODE_ENABLE
     auto heifContext = reinterpret_cast<HeifDecoderImpl*>(codec_->getHeifContext());
-    if (heifContext == nullptr) {
-        return ERR_IMAGE_INVALID_PARAMETER;
-    }
+    CHECK_ERROR_RETURN_RET(heifContext == nullptr, ERR_IMAGE_INVALID_PARAMETER);
     GridInfo gridInfo = heifContext->GetGridInfo();
     if (IsHeifRegionDecode()) {
         SetHeifDecodeRegion(context, static_cast<int32_t>(gridInfo.tileWidth),
@@ -509,9 +501,7 @@ uint32_t ExtDecoder::HeifYUVMemAlloc(OHOS::ImagePlugin::DecodeContext &context, 
     auto* dstBuffer = static_cast<uint8_t*>(context.pixelsBuffer.buffer);
     auto* sbBuffer = reinterpret_cast<SurfaceBuffer*>(context.pixelsBuffer.context);
     int32_t rowStride = sbBuffer->GetStride();
-    if (rowStride <= 0) {
-        return ERR_DMA_DATA_ABNORMAL;
-    }
+    CHECK_ERROR_RETURN_RET(rowStride <= 0, ERR_DMA_DATA_ABNORMAL);
     IMAGE_LOGI("ExtDecoder::HeifYUVMemAlloc sb stride is %{public}d, height is %{public}d, size is %{public}d",
         sbBuffer->GetStride(), sbBuffer->GetHeight(), sbBuffer->GetSize());
     return UpdateHeifYuvDataInfo(context, heifInfo, gridInfo.tileWidth, gridInfo.tileHeight);
@@ -695,9 +685,7 @@ bool ExtDecoder::IsSupportCropOnDecode(SkIRect &target)
 {
     bool cond = info_.isEmpty() && !DecodeHeader();
     CHECK_ERROR_RETURN_RET(cond, false);
-    if (supportRegionFlag_) {
-        return true;
-    }
+    CHECK_ERROR_RETURN_RET(supportRegionFlag_, true);
     SkIRect orgbounds = info_.bounds();
     SkIRect source = target;
     if (orgbounds.contains(target) && codec_->getValidSubset(&target)) {
@@ -735,10 +723,8 @@ bool ExtDecoder::HasProperty(string key)
 uint32_t ExtDecoder::GetImageSize(uint32_t index, Size &size)
 {
     IMAGE_LOGD("GetImageSize index:%{public}u", index);
-    if (!CheckIndexValied(index)) {
-        IMAGE_LOGE("Invalid index:%{public}u, range:%{public}d", index, frameCount_);
-        return ERR_IMAGE_INVALID_PARAMETER;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(!CheckIndexValied(index), ERR_IMAGE_INVALID_PARAMETER,
+        "Invalid index:%{public}u, range:%{public}d", index, frameCount_);
     IMAGE_LOGD("GetImageSize index:%{public}u, range:%{public}d", index, frameCount_);
     // Info has been get in check process, or empty on get failed.
     CHECK_ERROR_RETURN_RET_LOG(info_.isEmpty(), ERR_IMAGE_DECODE_HEAD_ABNORMAL,
@@ -770,18 +756,15 @@ static inline bool IsValidCrop(const OHOS::Media::Rect &crop, SkImageInfo &info,
 
 static sk_sp<SkColorSpace> getDesiredColorSpace(SkImageInfo &srcInfo, const PixelDecodeOptions &opts)
 {
-    if (opts.plDesiredColorSpace == nullptr) {
-        return srcInfo.refColorSpace();
-    }
+    CHECK_ERROR_RETURN_RET(opts.plDesiredColorSpace == nullptr, srcInfo.refColorSpace());
     return opts.plDesiredColorSpace->ToSkColorSpace();
 }
 
 bool ExtDecoder::IsHeifValidCrop(OHOS::Media::Rect &crop, SkImageInfo &info,
     int32_t gridInfoCols, int32_t gridInfoRows)
 {
-    if (crop.height < ZERO || crop.width < ZERO || crop.left < ZERO || crop.top < ZERO) {
-        return false;
-    }
+    bool invalidHeifCrop = crop.height < ZERO || crop.width < ZERO || crop.left < ZERO || crop.top < ZERO;
+    CHECK_ERROR_RETURN_RET(invalidHeifCrop, false);
     if (crop.height > info.height() - crop.top) {
         int64_t totalHeight = static_cast<int64_t>(gridInfoRows) * heifGridRegionInfo_.tileHeight;
         if (totalHeight < 0 || totalHeight > INT32_MAX) {
@@ -818,10 +801,8 @@ uint32_t ExtDecoder::ExtractHeifRegion(const PixelDecodeOptions &opts)
     SkEncodedImageFormat skEncodeFormat = codec_->getEncodedFormat();
     if (skEncodeFormat == SkEncodedImageFormat::kHEIF) {
         auto heifContext = reinterpret_cast<HeifDecoderImpl*>(codec_->getHeifContext());
-        if (heifContext == nullptr) {
-            IMAGE_LOGE("Decode heifContext is nullptr");
-            return ERR_IMAGE_DECODE_FAILED;
-        }
+        CHECK_ERROR_RETURN_RET_LOG(heifContext == nullptr, ERR_IMAGE_DECODE_FAILED,
+            "Decode heifContext is nullptr");
         GridInfo gridInfo = heifContext->GetGridInfo();
         if (gridInfo.tileWidth > INT32_MAX || gridInfo.tileHeight > INT32_MAX ||
             gridInfo.cols > INT32_MAX || gridInfo.rows > INT32_MAX) {
@@ -836,12 +817,11 @@ uint32_t ExtDecoder::ExtractHeifRegion(const PixelDecodeOptions &opts)
             heifGridRegionInfo_.tileHeight = static_cast<int32_t>(gridInfo.tileHeight);
         }
         PixelDecodeOptions heifOpts = opts;
-        if (!IsHeifValidCrop(heifOpts.CropRect, info_, static_cast<int32_t>(gridInfo.cols),
-            static_cast<int32_t>(gridInfo.rows))) {
-            IMAGE_LOGE("Invalid heif crop rect xy [%{public}d x %{public}d], wh [%{public}d x %{public}d]",
-                opts.CropRect.left, opts.CropRect.top, opts.CropRect.width, opts.CropRect.height);
-            return ERR_IMAGE_INVALID_PARAMETER;
-        }
+        bool invalidHeifCrop = !IsHeifValidCrop(heifOpts.CropRect, info_, static_cast<int32_t>(gridInfo.cols),
+            static_cast<int32_t>(gridInfo.rows));
+        CHECK_ERROR_RETURN_RET_LOG(invalidHeifCrop, ERR_IMAGE_INVALID_PARAMETER,
+            "Invalid heif crop rect xy [%{public}d x %{public}d], wh [%{public}d x %{public}d]",
+            opts.CropRect.left, opts.CropRect.top, opts.CropRect.width, opts.CropRect.height);
     }
     return SUCCESS;
 #else
@@ -1108,13 +1088,10 @@ static void ResetProgressiveBuffer(DecodeContext &context)
 static void FlushProgressiveBuffer(DecodeContext &context)
 {
 #if !defined(CROSS_PLATFORM)
-    if (context.allocatorType != AllocatorType::DMA_ALLOC) {
-        return;
-    }
+    CHECK_ERROR_RETURN(context.allocatorType != AllocatorType::DMA_ALLOC);
     SurfaceBuffer* surfaceBuffer = reinterpret_cast<SurfaceBuffer*>(context.pixelsBuffer.context);
-    if (surfaceBuffer == nullptr || !(surfaceBuffer->GetUsage() & BUFFER_USAGE_MEM_MMZ_CACHE)) {
-        return;
-    }
+    bool skipFlush = surfaceBuffer == nullptr || !(surfaceBuffer->GetUsage() & BUFFER_USAGE_MEM_MMZ_CACHE);
+    CHECK_ERROR_RETURN(skipFlush);
     GSError err = surfaceBuffer->FlushCache();
     if (err != GSERROR_OK) {
         IMAGE_LOGE("FlushCache failed, GSError=%{public}d", err);
@@ -1221,18 +1198,14 @@ bool ExtDecoder::ResetCodec()
 #ifdef JPEG_HW_DECODE_ENABLE
 uint32_t ExtDecoder::DoHardWareDecode(DecodeContext &context)
 {
-    if (HardWareDecode(context) == SUCCESS) {
-        return SUCCESS;
-    }
+    CHECK_ERROR_RETURN_RET(HardWareDecode(context) == SUCCESS, SUCCESS);
     return ERROR;
 }
 #endif
 
 static bool IsAllocatorTypeSupportHwDecode(const DecodeContext &context)
 {
-    if (!context.isAppUseAllocator) {
-        return true;
-    }
+    CHECK_ERROR_RETURN_RET(!context.isAppUseAllocator, true);
     return context.allocatorType == Media::AllocatorType::DMA_ALLOC;
 }
 
@@ -1372,10 +1345,7 @@ void ExtDecoder::UpdateHeifRegionDstInfo(DecodeContext &context)
 {
 #ifdef HEIF_HW_DECODE_ENABLE
     auto heifContext = reinterpret_cast<HeifDecoderImpl*>(codec_->getHeifContext());
-    if (heifContext == nullptr) {
-        IMAGE_LOGE("Decode heifContext is nullptr");
-        return;
-    }
+    CHECK_ERROR_RETURN_LOG(heifContext == nullptr, "Decode heifContext is nullptr");
     GridInfo gridInfo = heifContext->GetGridInfo();
     SetHeifDecodeRegion(context, static_cast<int32_t>(gridInfo.tileWidth), static_cast<int32_t>(gridInfo.tileHeight));
     if (context.allocatorType == Media::AllocatorType::SHARE_MEM_ALLOC) {
@@ -1397,10 +1367,7 @@ void ExtDecoder::UpdateHeifSKInfo(DecodeContext &context, uint64_t &rowStride)
 {
 #ifdef HEIF_HW_DECODE_ENABLE
     auto decoder = reinterpret_cast<HeifDecoderImpl*>(codec_->getHeifContext());
-    if (decoder == nullptr) {
-        IMAGE_LOGE("Decode HeifDecoder is nullptr");
-        return;
-    }
+    CHECK_ERROR_RETURN_LOG(decoder == nullptr, "Decode HeifDecoder is nullptr");
     auto dstBuffer = reinterpret_cast<SurfaceBuffer*>(context.pixelsBuffer.context);
     decoder->SetDecodeRegion(heifGridRegionInfo_.colCount, heifGridRegionInfo_.rowCount,
         desiredRegion_.left, desiredRegion_.top, dstBuffer->GetStride());
@@ -1420,11 +1387,11 @@ bool ExtDecoder::IsHeifRegionDecode()
         auto decoder = reinterpret_cast<HeifDecoderImpl*>(codec_->getHeifContext());
         bool cond = decoder == nullptr;
         CHECK_ERROR_RETURN_RET_LOG(cond, false, "Decode Heifdecoder is nullptr");
-        if (decoder->IsHeifHasAlphaImage() || !decoder->IsHeifGainmapDivisibility(info_.width(), info_.height()) ||
-            decoder->IsHeifGainmapYuv400()) {
-            IMAGE_LOGI("Heif image contains alpha channels, or the size not be an integer multiple of GainMap");
-            return false;
-        }
+        bool unsupportedHeifRegion = decoder->IsHeifHasAlphaImage() ||
+            !decoder->IsHeifGainmapDivisibility(info_.width(), info_.height()) ||
+            decoder->IsHeifGainmapYuv400();
+        CHECK_INFO_RETURN_RET_LOG(unsupportedHeifRegion, false,
+            "Heif image contains alpha channels, or the size not be an integer multiple of GainMap");
         return true;
     }
     return false;
@@ -1518,10 +1485,8 @@ SkCodec::Result ExtDecoder::DoSampleDecode(DecodeContext &context)
     auto SkOHOSCodec = SkOHOSCodec::MakeFromCodec(std::move(codec_));
     SkOHOSCodec::OHOSOptions options;
     options.fSampleSize = softSampleSize_;
-    if (SkOHOSCodec == nullptr) {
-        IMAGE_LOGE("%{public}s failed, SkOHOSCodec is nullptr", __func__);
-        return SkCodec::kErrorInInput;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(SkOHOSCodec == nullptr, SkCodec::kErrorInInput,
+        "%{public}s failed, SkOHOSCodec is nullptr", __func__);
     SkCodec::Result result = SkOHOSCodec->getOHOSPixels(dstInfo_, dstBuffer, rowStride, &options);
     switch (result) {
         case SkCodec::kSuccess:
@@ -1563,21 +1528,15 @@ bool ExtDecoder::IsSupportHeifHardwareDecode(const PixelDecodeOptions &opts)
     bool cond = decoder == nullptr;
     CHECK_ERROR_RETURN_RET_LOG(cond, false, "Decode Heifdecoder is nullptr");
     GridInfo gridInfo = decoder->GetGridInfo();
-    if (!ImageSystemProperties::GetHeifHardwareDecodeEnabled()) {
-        return false;
-    }
-    if (decoder->IsHeifGainmapYuv400() || decoder->IsHeifAlphaYuv400()) {
-        IMAGE_LOGD("The gainmap or alpha channel of the HEIF is not YUV420 format");
-        return false;
-    }
-    if (opts.CropRect.width > ZERO || opts.CropRect.height > ZERO) {
-        IMAGE_LOGD("HEIF regiondecode does not set sampleSize");
-        return false;
-    }
-    if (decoder->GetPrimaryLumaBitNum() == LUMA_10_BIT) {
-        IMAGE_LOGD("HEIF primary image is Luma 10bit, not support set samplesize");
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET(!ImageSystemProperties::GetHeifHardwareDecodeEnabled(), false);
+    bool unsupportedHeifAuxiliary = decoder->IsHeifGainmapYuv400() || decoder->IsHeifAlphaYuv400();
+    CHECK_DEBUG_RETURN_RET_LOG(unsupportedHeifAuxiliary, false,
+        "The gianmp or alpha channel of the HEIF is not YUV420 format");
+
+    bool isHeifRegionDecode = opts.CropRect.width > ZERO && opts.CropRect.height > ZERO;
+    CHECK_DEBUG_RETURN_RET_LOG(isHeifRegionDecode, false, "HEIF regiondecode does not set samplesize");
+    CHECK_DEBUG_RETURN_RET_LOG(decoder->GetPrimaryLumaBitNum() == LUMA_10_BIT, false,
+        "HEIF primary image is Luma 10bit, not support set samplesize");
     return gridInfo.tileWidth >= HEIF_HARDWARE_TILE_MIN_DIM &&
         gridInfo.tileHeight >= HEIF_HARDWARE_TILE_MIN_DIM &&
         gridInfo.tileWidth <= HEIF_HARDWARE_TILE_MAX_DIM &&
@@ -1630,16 +1589,13 @@ bool ExtDecoder::IsDivisibleBySampleSize()
     bool cond = decoder == nullptr;
     CHECK_ERROR_RETURN_RET_LOG(cond, false, "Decode Heifdecoder is nullptr");
     GridInfo gridInfo = decoder->GetGridInfo();
-    if (gridInfo.tileWidth % sampleSize_ != 0 || gridInfo.tileHeight % sampleSize_ != 0) {
-        return false;
-    }
+    bool invalidGridSampleSize = gridInfo.tileWidth % sampleSize_ != 0 || gridInfo.tileHeight % sampleSize_ != 0;
+    CHECK_ERROR_RETURN_RET(invalidGridSampleSize, false);
     if (IsYuv420Format(heifPixelFormat_) &&
         (info_.height() / static_cast<int32_t>(sampleSize_)) % NUM_2 != 0) {
         return false;
     }
-    if (decoder->IsGainmapDivisibleBySampleSize(sampleSize_)) {
-        return true;
-    }
+    CHECK_ERROR_RETURN_RET(decoder->IsGainmapDivisibleBySampleSize(sampleSize_), true);
     return false;
 #else
     return false;
@@ -1779,12 +1735,9 @@ uint32_t ExtDecoder::Decode(uint32_t index, DecodeContext &context)
         DebugInfo(info_, dstInfo_, dstOptions_);
         SkCodec::Result sampleDecodeRes = DoSampleDecode(context);
         ResetCodec();
-        if (SkCodec::kSuccess == sampleDecodeRes) {
-            return SUCCESS;
-        } else {
-            IMAGE_LOGE("do sample decode failed");
-            return ERR_IMAGE_DECODE_FAILED;
-        }
+        CHECK_ERROR_RETURN_RET_LOG(sampleDecodeRes != SkCodec::kSuccess, ERR_IMAGE_DECODE_FAILED,
+            "do sample decode failed");
+        return SUCCESS;
     }
 #endif
 #ifdef JPEG_HW_DECODE_ENABLE
@@ -1972,19 +1925,15 @@ uint32_t ExtDecoder::ProgressiveDecodeYuv(uint32_t index, DecodeContext &context
         supportRegionFlag_, dstOptions_.fSubset != nullptr, sampleSize_, softSampleSize_
     };
     ProgressiveJpegDecoder::YuvDecodePlan plan;
-    if (!ProgressiveJpegDecoder::BuildYuvDecodePlan(options, plan)) {
-        return ERR_IMAGE_DATA_UNSUPPORT;
-    }
+    CHECK_ERROR_RETURN_RET(!ProgressiveJpegDecoder::BuildYuvDecodePlan(options, plan), ERR_IMAGE_DATA_UNSUPPORT);
  
     ProgressiveJpegDecoder::JpegInputData jpegData;
     res = ProgressiveJpegDecoder::GetJpegInputData(stream_,
         [this](uint8_t *jpegBuffer, uint32_t jpegBufferSize) {
             return ReadJpegData(jpegBuffer, jpegBufferSize);
         }, jpegData);
-    if (res != SUCCESS) {
-        IMAGE_LOGI("progressive jpeg yuv decode fallback, get input failed ret=%{public}u", res);
-        return ERR_IMAGE_DATA_UNSUPPORT;
-    }
+    CHECK_INFO_RETURN_RET_LOG(res != SUCCESS, ERR_IMAGE_DATA_UNSUPPORT,
+        "progressive jpeg yuv decode fallback, get input failed ret=%{public}u", res);
  
     const SkImageInfo originalDstInfo = dstInfo_;
     dstInfo_ = dstInfo_.makeWH(plan.size.width, plan.size.height);
@@ -2193,10 +2142,8 @@ bool ExtDecoder::CheckContext(const DecodeContext &context)
         IMAGE_LOGI("yuv hardware decode only support NV21 format");
         return false;
     }
-    if (dstInfo_.colorType() != kRGBA_8888_SkColorType) {
-        IMAGE_LOGI("jpeg hardware decode only support rgba_8888 format");
-        return false;
-    }
+    CHECK_INFO_RETURN_RET_LOG(dstInfo_.colorType() != kRGBA_8888_SkColorType, false,
+        "jpeg hardware decode only support rgba_8888 format");
     return true;
 }
 
@@ -2276,9 +2223,7 @@ uint32_t ExtDecoder::HardWareDecode(DecodeContext &context)
 {
     orgImgSize_.width = info_.width();
     orgImgSize_.height = info_.height();
-    if (!CheckContext(context)) {
-        return ERROR;
-    }
+    CHECK_ERROR_RETURN_RET(!CheckContext(context), ERROR);
     Media::AllocatorType tmpAllocatorType = context.allocatorType;
     OHOS::HDI::Codec::Image::V2_1::CodecImageBuffer outputBuffer;
     uint32_t ret = AllocOutputBuffer(context, outputBuffer);
@@ -2322,9 +2267,8 @@ uint32_t ExtDecoder::HardWareDecode(DecodeContext &context)
 
 uint32_t ExtDecoder::HandleGifCache(uint8_t* src, uint8_t* dst, uint64_t rowStride, int dstHeight)
 {
-    if (src == nullptr || dst == nullptr) {
-        return ERR_IMAGE_DECODE_ABNORMAL;
-    }
+    bool invalidGifCache = src == nullptr || dst == nullptr;
+    CHECK_ERROR_RETURN_RET(invalidGifCache, ERR_IMAGE_DECODE_ABNORMAL);
     uint8_t* srcRow = src;
     uint8_t* dstRow = dst;
     for (int i = 0; i < dstHeight; i++) {
@@ -2477,23 +2421,16 @@ bool ExtDecoder::MakeCr3PreviewStream()
 
 bool ExtDecoder::CheckCodec()
 {
-    if (codec_ != nullptr) {
-        return true;
-    } else if (stream_ == nullptr) {
-        IMAGE_LOGE("create codec: input stream is nullptr.");
-        return false;
-    } else if (stream_->GetStreamSize() == SIZE_ZERO) {
-        IMAGE_LOGD("create codec: input stream size is zero.");
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET(codec_ != nullptr, true);
+    CHECK_ERROR_RETURN_RET_LOG(stream_ == nullptr, false, "create codec: input stream is nullptr.");
+    CHECK_DEBUG_RETURN_RET_LOG(stream_->GetStreamSize() == SIZE_ZERO, false,
+        "create codec: input stream size is zero.");
     std::string encodedFormat;
     if (IsRawFormat(encodedFormat)) {
         codec_ = SkCodec::MakeFromStream(make_unique<ExtStream>(previewStream_.get()), nullptr, nullptr,
             SkCodec::SelectionPolicy::kPreferAnimation);
-        if (codec_ != nullptr) {
-            IMAGE_LOGD("Make Jpeg codec for %{public}s preview", encodedFormat.c_str());
-            return true;
-        }
+        CHECK_DEBUG_RETURN_RET_LOG(codec_ != nullptr, true,
+            "Make Jpeg codec for %{public}s preview", encodedFormat.c_str());
     }
     uint32_t src_offset = stream_->Tell();
 #ifdef USE_M133_SKIA
@@ -2513,10 +2450,7 @@ bool ExtDecoder::CheckCodec()
 
 bool ExtDecoder::DecodeHeader()
 {
-    if (!CheckCodec()) {
-        IMAGE_LOGD("DecodeHeader Check codec failed");
-        return false;
-    }
+    CHECK_DEBUG_RETURN_RET_LOG(!CheckCodec(), false, "DecodeHeader Check codec failed");
     info_ = codec_->getInfo();
     frameCount_ = codec_->getFrameCount();
 #ifdef HEIF_HW_DECODE_ENABLE
@@ -2537,9 +2471,8 @@ bool ExtDecoder::DecodeHeader()
 
 bool ExtDecoder::CheckIndexValied(uint32_t index)
 {
-    if (frameCount_ == ZERO && !DecodeHeader()) {
-        return false;
-    }
+    bool invalidFrameCount = frameCount_ == ZERO && !DecodeHeader();
+    CHECK_ERROR_RETURN_RET(invalidFrameCount, false);
     return static_cast<int32_t>(index) >= ZERO && static_cast<int32_t>(index) < frameCount_;
 }
 
@@ -2587,17 +2520,13 @@ static uint32_t GetFormatName(SkEncodedImageFormat format, std::string &name, Sk
 
 bool ExtDecoder::ConvertInfoToAlphaType(SkAlphaType &alphaType, AlphaType &outputType)
 {
-    if (info_.isEmpty()) {
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET(info_.isEmpty(), false);
     alphaType = info_.alphaType();
     auto findItem = std::find_if(ALPHA_TYPE_MAP.begin(), ALPHA_TYPE_MAP.end(),
         [alphaType](const map<AlphaType, SkAlphaType>::value_type item) {
         return item.second == alphaType;
     });
-    if (findItem == ALPHA_TYPE_MAP.end()) {
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET(findItem == ALPHA_TYPE_MAP.end(), false);
     outputType = findItem->first;
     alphaType = findItem->second;
     return true;
@@ -2605,17 +2534,13 @@ bool ExtDecoder::ConvertInfoToAlphaType(SkAlphaType &alphaType, AlphaType &outpu
 
 bool ExtDecoder::ConvertInfoToColorType(SkColorType &format, PixelFormat &outputFormat)
 {
-    if (info_.isEmpty()) {
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET(info_.isEmpty(), false);
     auto colorType = info_.colorType();
     auto findItem = std::find_if(COLOR_TYPE_MAP.begin(), COLOR_TYPE_MAP.end(),
         [colorType](const map<PixelFormat, ColorTypeOutput>::value_type item) {
         return item.second.skFormat == colorType;
     });
-    if (findItem == COLOR_TYPE_MAP.end()) {
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET(findItem == COLOR_TYPE_MAP.end(), false);
     format = findItem->second.skFormat;
     outputFormat = findItem->second.outFormat;
     return true;
@@ -2730,14 +2655,10 @@ static bool MatchColorSpaceName(const uint8_t* buf, uint32_t size, OHOS::ColorMa
 
 static bool GetColorSpaceName(const skcms_ICCProfile* profile, OHOS::ColorManager::ColorSpaceName &name)
 {
-    if (profile == nullptr || profile->buffer == nullptr || profile->tag_count > MAX_TAG_COUNT) {
-        IMAGE_LOGD("profile is nullptr or too many tagcount");
-        return false;
-    }
+    bool invalidProfile = profile == nullptr || profile->buffer == nullptr || profile->tag_count > MAX_TAG_COUNT;
+    CHECK_DEBUG_RETURN_RET_LOG(invalidProfile, false, "profile is nullptr or too many tagcount");
 #if !defined(CROSS_PLATFORM)
-    if (ColorUtils::MatchColorSpaceByPrimariesAndGamma(profile, name)) {
-        return true;
-    }
+    CHECK_ERROR_RETURN_RET(ColorUtils::MatchColorSpaceByPrimariesAndGamma(profile, name), true);
 #endif
     auto tags = reinterpret_cast<const ICCTag*>(profile->buffer + ICC_HEADER_SIZE);
     for (uint32_t i = SIZE_ZERO; i < profile->tag_count; i++) {
@@ -2762,13 +2683,9 @@ static OHOS::ColorManager::ColorSpaceName GetHeifNclxColor(SkCodec* codec)
 {
 #ifdef HEIF_HW_DECODE_ENABLE
     auto decoder = reinterpret_cast<HeifDecoder *>(codec->getHeifContext());
-    if (decoder == nullptr) {
-        return ColorManager::NONE;
-    }
+    CHECK_ERROR_RETURN_RET(decoder == nullptr, ColorManager::NONE);
     HeifFrameInfo info;
-    if (!decoder->getImageInfo(&info)) {
-        return ColorManager::NONE;
-    }
+    CHECK_ERROR_RETURN_RET(!decoder->getImageInfo(&info), ColorManager::NONE);
     if (info.hasNclxColor) {
         return ColorUtils::CicpToColorSpace(info.nclxColor.colorPrimaries, info.nclxColor.transferCharacteristics,
             info.nclxColor.matrixCoefficients, info.nclxColor.fullRangeFlag);
@@ -2942,10 +2859,8 @@ static uint32_t GetDelayTime(SkCodec * codec, uint32_t index, int32_t &value)
 
 static uint32_t GetDisposalType(SkCodec * codec, uint32_t index, int32_t &value)
 {
-    if (codec->getEncodedFormat() != SkEncodedImageFormat::kGIF) {
-        IMAGE_LOGE("[GetDisposalType] Should not get disposal type in %{public}d", codec->getEncodedFormat());
-        return ERR_MEDIA_INVALID_PARAM;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(codec->getEncodedFormat() != SkEncodedImageFormat::kGIF, ERR_MEDIA_INVALID_PARAM,
+        "[GetDisposalType] Should not get disposal type in %{public}d", codec->getEncodedFormat());
     auto frameInfos = codec->getFrameInfo();
     CHECK_ERROR_RETURN_RET_LOG(index >= frameInfos.size(), ERR_MEDIA_INVALID_PARAM,
         "[GetDisposalType] frame size %{public}zu, index:%{public}d", frameInfos.size(), index);
@@ -2957,10 +2872,9 @@ static uint32_t GetDisposalType(SkCodec * codec, uint32_t index, int32_t &value)
 static uint32_t GetLoopCount(SkCodec *codec, int32_t &value)
 {
     SkEncodedImageFormat format = codec->getEncodedFormat();
-    if (format != SkEncodedImageFormat::kGIF && format != SkEncodedImageFormat::kWEBP) {
-        IMAGE_LOGE("[GetLoopCount] Should not get loop count in %{public}d", codec->getEncodedFormat());
-        return ERR_MEDIA_INVALID_PARAM;
-    }
+    bool invalidLoopCountFormat = format != SkEncodedImageFormat::kGIF && format != SkEncodedImageFormat::kWEBP;
+    CHECK_ERROR_RETURN_RET_LOG(invalidLoopCountFormat, ERR_MEDIA_INVALID_PARAM,
+        "[GetLoopCount] Should not get loop count in %{public}d", codec->getEncodedFormat());
     auto count = codec->getRepetitionCount();
     if (format == SkEncodedImageFormat::kGIF) {
         bool cond = count == LOOP_COUNT_INFINITE || count <= SK_REPETITION_COUNT_ERROR_VALUE;
@@ -2996,15 +2910,14 @@ static uint32_t ReadGifHeaderAndPalette(InputDataStream *stream, std::vector<uin
 
 uint32_t ExtDecoder::ParseGifMetadata()
 {
-    CHECK_ERROR_RETURN_RET(stream_ == nullptr || codec_ == nullptr ||
-        codec_->getEncodedFormat() != SkEncodedImageFormat::kGIF, ERR_MEDIA_INVALID_PARAM);
+    bool invalidGifMetadata = stream_ == nullptr || codec_ == nullptr ||
+        codec_->getEncodedFormat() != SkEncodedImageFormat::kGIF;
+    CHECK_ERROR_RETURN_RET(invalidGifMetadata, ERR_MEDIA_INVALID_PARAM);
 
     CHECK_INFO_RETURN_RET_LOG(gifMetadataParsed_, SUCCESS, "[ParseGifMetadata] GIF metadata already parsed");
     std::vector<uint8_t> gifData(GIF_HEADER_AND_SCREEN_SIZE);
     uint32_t ret = ReadGifHeaderAndPalette(stream_, gifData);
-    if (ret != SUCCESS) {
-        return ret;
-    }
+    CHECK_ERROR_RETURN_RET(ret != SUCCESS, ret);
     const uint8_t *data = gifData.data();
 
     GifFormatAgent agent;
@@ -3021,8 +2934,9 @@ uint32_t ExtDecoder::ParseGifMetadata()
 
 static uint32_t GetGifCanvasDimensions(SkCodec *codec, const std::string &key, int32_t &value)
 {
-    CHECK_ERROR_RETURN_RET_LOG(codec == nullptr || codec->getEncodedFormat() != SkEncodedImageFormat::kGIF,
-        ERR_MEDIA_INVALID_PARAM, "[GetGifCanvasDimensions] Not GIF format");
+    bool invalidGifCodec = codec == nullptr || codec->getEncodedFormat() != SkEncodedImageFormat::kGIF;
+    CHECK_ERROR_RETURN_RET_LOG(invalidGifCodec, ERR_MEDIA_INVALID_PARAM,
+        "[GetGifCanvasDimensions] Not GIF format");
     SkISize size = codec->dimensions();
     if (key == GIF_CANVAS_PIXEL_WIDTH) {
         value = size.width();
@@ -3034,8 +2948,9 @@ static uint32_t GetGifCanvasDimensions(SkCodec *codec, const std::string &key, i
 
 static uint32_t GetGifUnclampedDelayTime(SkCodec *codec, uint32_t index, int32_t &value)
 {
-    CHECK_ERROR_RETURN_RET_LOG(codec == nullptr || codec->getEncodedFormat() != SkEncodedImageFormat::kGIF,
-        ERR_MEDIA_INVALID_PARAM, "[GetGifUnclampedDelayTime] Not GIF format");
+    bool invalidGifCodec = codec == nullptr || codec->getEncodedFormat() != SkEncodedImageFormat::kGIF;
+    CHECK_ERROR_RETURN_RET_LOG(invalidGifCodec, ERR_MEDIA_INVALID_PARAM,
+        "[GetGifUnclampedDelayTime] Not GIF format");
     auto frameInfos = codec->getFrameInfo();
     CHECK_ERROR_RETURN_RET_LOG(index >= frameInfos.size(), ERR_MEDIA_INVALID_PARAM,
         "[GetGifUnclampedDelayTime] frame size %{public}zu, index:%{public}u", frameInfos.size(), index);
@@ -3045,9 +2960,7 @@ static uint32_t GetGifUnclampedDelayTime(SkCodec *codec, uint32_t index, int32_t
 
 uint32_t ExtDecoder::GetJfifProperty(SkCodec *codec, const std::string &key, int32_t &value)
 {
-    if (codec->getEncodedFormat() != SkEncodedImageFormat::kJPEG) {
-        return ERR_IMAGE_SOURCE_DATA;
-    }
+    CHECK_ERROR_RETURN_RET(codec->getEncodedFormat() != SkEncodedImageFormat::kJPEG, ERR_IMAGE_SOURCE_DATA);
     
     SkJpegCodec* jpegCodec = static_cast<SkJpegCodec*>(codec);
     auto cond = (jpegCodec == nullptr || jpegCodec->decoderMgr() == nullptr ||
@@ -3095,13 +3008,10 @@ uint32_t ExtDecoder::GetHeifsProperty(SkCodec *codec, uint32_t index, const std:
 
 uint32_t ExtDecoder::GetGifHasGlobalColorMapInt(int32_t &value)
 {
-    if (codec_.get() == nullptr || codec_.get()->getEncodedFormat() != SkEncodedImageFormat::kGIF) {
-        return ERR_MEDIA_INVALID_PARAM;
-    }
+    bool invalidGifCodec = codec_.get() == nullptr || codec_.get()->getEncodedFormat() != SkEncodedImageFormat::kGIF;
+    CHECK_ERROR_RETURN_RET(invalidGifCodec, ERR_MEDIA_INVALID_PARAM);
     uint32_t parseRet = ParseGifMetadata();
-    if (parseRet != SUCCESS) {
-        return parseRet;
-    }
+    CHECK_ERROR_RETURN_RET(parseRet != SUCCESS, parseRet);
     value = gifHasGlobalColorMap_ ? 1 : 0;
     return SUCCESS;
 }
@@ -3110,9 +3020,7 @@ uint32_t ExtDecoder::GetImagePropertyInt(uint32_t index, const std::string &key,
 {
     IMAGE_LOGD("[GetImagePropertyInt] enter ExtDecoder plugin, key:%{public}s", key.c_str());
     uint32_t res = Media::ERR_IMAGE_DATA_ABNORMAL;
-    if (!GetPropertyCheck(index, key, res)) {
-        return res;
-    }
+    CHECK_ERROR_RETURN_RET(!GetPropertyCheck(index, key, res), res);
     if (IMAGE_DELAY_TIME.compare(key) == ZERO) {
         return GetDelayTime(codec_.get(), index, value);
     }
@@ -3263,44 +3171,39 @@ uint32_t ExtDecoder::GetImagePropertyString(uint32_t index, const std::string &k
         value = std::to_string(loopCount);
         return res;
     }
-    if (res == Media::ERR_IMAGE_DECODE_EXIF_UNSUPPORT) {
-        return res;
-    }
+    CHECK_ERROR_RETURN_RET(res == Media::ERR_IMAGE_DECODE_EXIF_UNSUPPORT, res);
 
     return res;
 }
 
 uint32_t ExtDecoder::GetTopLevelImageNum(uint32_t &num)
 {
-    if (!CheckIndexValied(SIZE_ZERO) && frameCount_ <= ZERO) {
-        return ERR_IMAGE_DECODE_HEAD_ABNORMAL;
-    }
+    bool invalidTopLevelImageNum = !CheckIndexValied(SIZE_ZERO) && frameCount_ <= ZERO;
+    CHECK_ERROR_RETURN_RET(invalidTopLevelImageNum, ERR_IMAGE_DECODE_HEAD_ABNORMAL);
     num = static_cast<uint32_t>(frameCount_);
     return SUCCESS;
 }
 
 bool ExtDecoder::IsSupportHardwareDecode() {
 #ifdef JPEG_HW_DECODE_ENABLE
-    if (info_.isEmpty() && !DecodeHeader()) {
-        return false;
-    }
-    if (!(ImageSystemProperties::GetHardWareDecodeEnabled()
-        && codec_->getEncodedFormat() == SkEncodedImageFormat::kJPEG)) {
-        return false;
-    }
+    bool invalidImageInfo = info_.isEmpty() && !DecodeHeader();
+    CHECK_ERROR_RETURN_RET(invalidImageInfo, false);
+    bool unsupportedHardwareDecode = !(ImageSystemProperties::GetHardWareDecodeEnabled()
+        && codec_->getEncodedFormat() == SkEncodedImageFormat::kJPEG);
+    CHECK_ERROR_RETURN_RET(unsupportedHardwareDecode, false);
     if (!initJpegErr_ && hwDecoderPtr_ == nullptr) {
         InitJpegDecoder();
     }
-    CHECK_ERROR_RETURN_RET_LOG((initJpegErr_ || hwDecoderPtr_ == nullptr), false, "Jpeg hardware decoder error");
+    bool invalidJpegHardwareDecoder = initJpegErr_ || hwDecoderPtr_ == nullptr;
+    CHECK_ERROR_RETURN_RET_LOG(invalidJpegHardwareDecoder, false, "Jpeg hardware decoder error");
     int width = info_.width();
     int height = info_.height();
     if (hwDecoderPtr_->IsHardwareDecodeSupported(IMAGE_JPEG_FORMAT, {width, height})) {
         if (width < HARDWARE_MID_DIM || height < HARDWARE_MID_DIM) {
             int remWidth = width % HARDWARE_ALIGN_SIZE;
             int remHeight = height % HARDWARE_ALIGN_SIZE;
-            if (remWidth == 0 && remHeight == 0) {
-                return true;
-            }
+            bool isHardwareAligned = remWidth == 0 && remHeight == 0;
+            CHECK_ERROR_RETURN_RET(isHardwareAligned, true);
         } else {
             return true;
         }
@@ -3311,9 +3214,8 @@ bool ExtDecoder::IsSupportHardwareDecode() {
 
 bool ExtDecoder::IsYuv420Format(PixelFormat format) const
 {
-    if (format == PixelFormat::NV12 || format == PixelFormat::NV21) {
-        return true;
-    }
+    bool isYuv420Format = format == PixelFormat::NV12 || format == PixelFormat::NV21;
+    CHECK_ERROR_RETURN_RET(isYuv420Format, true);
     return false;
 }
 
