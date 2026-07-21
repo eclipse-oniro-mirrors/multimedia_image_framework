@@ -234,6 +234,11 @@ bool PostProc::CopyPixels(PixelMap& pixelMap, uint8_t* dstPixels, const Size& ds
     return true;
 }
 
+static int32_t GetUVStride(int32_t width)
+{
+    return (width + 1) / HALF * HALF;
+}
+
 bool PostProc::CenterDisplayYuv(PixelMap &pixelMap, int32_t srcWidth, int32_t srcHeight,
                                 int32_t targetWidth, int32_t targetHeight)
 {
@@ -241,9 +246,8 @@ bool PostProc::CenterDisplayYuv(PixelMap &pixelMap, int32_t srcWidth, int32_t sr
     ImageUtils::UpdateYUVDataInfo(pixelMap);
     pixelMap.GetImageYUVInfo(yuvInfo);
 
-    int32_t left = max(0, srcWidth - targetWidth) / HALF;
-    int32_t top = max(0, srcHeight - targetHeight) / HALF;
-
+    ImageInfo imgInfo;
+    pixelMap.GetImageInfo(imgInfo);
     YUVStrideInfo dstStrides;
     void *srcBuffer = nullptr;
 #if !defined(CROSS_PLATFORM)
@@ -251,20 +255,22 @@ bool PostProc::CenterDisplayYuv(PixelMap &pixelMap, int32_t srcWidth, int32_t sr
         srcBuffer = reinterpret_cast<void *>(pixelMap.GetFd());
     }
 #endif
-    auto dstMemory = PixelYuvUtils::CreateYuvMemory(pixelMap.GetPixelFormat(), "CenterDisplayYuv ImageData",
+    auto dstMemory = PixelYuvUtils::CreateYuvMemory(imgInfo.pixelFormat, "CenterDisplayYuv ImageData",
         targetWidth, targetHeight, pixelMap.GetAllocatorType(), pixelMap.GetNoPaddingUsage(), srcBuffer, dstStrides);
     bool cond = (dstMemory == nullptr) || (dstMemory->data.data == nullptr);
     CHECK_ERROR_RETURN_RET_LOG(cond, false, "CenterDisplayYuv CreateYuvMemory failed");
     uint8_t *dstPixels = reinterpret_cast<uint8_t *>(dstMemory->data.data);
     const uint8_t *srcPixels = const_cast<uint8_t *>(pixelMap.GetPixels());
 
+    int32_t left = max(0, srcWidth - targetWidth) / HALF;
+    int32_t top = max(0, srcHeight - targetHeight) / HALF;
     int32_t dstYStride = static_cast<int32_t>(dstStrides.yStride);
     int32_t srcYStride = static_cast<int32_t>(yuvInfo.yStride);
-    uint32_t yCopyBytes = static_cast<uint32_t>(targetWidth);
+    int32_t yCopyBytes = targetWidth;
     for (int32_t row = 0; row < targetHeight; row++) {
         uint8_t *dstRow = dstPixels + row * dstYStride;
         const uint8_t *srcRow = srcPixels + yuvInfo.yOffset + (top + row) * srcYStride + left;
-        cond = memcpy_s(dstRow, yCopyBytes, srcRow, yCopyBytes) != EOK;
+        cond = memcpy_s(dstRow, dstYStride, srcRow, yCopyBytes) != EOK;
         CHECK_ERROR_RETURN_RET_LOG(cond, false, "[PostProc]CenterDisplayYuv Y memcpy failed at row %{public}d", row);
     }
 
@@ -272,16 +278,19 @@ bool PostProc::CenterDisplayYuv(PixelMap &pixelMap, int32_t srcWidth, int32_t sr
     int32_t topUV = top / HALF;
     int32_t dstUvStride = static_cast<int32_t>(dstStrides.uvStride);
     int32_t srcUVStride = static_cast<int32_t>(yuvInfo.uvStride);
-    uint32_t uvCopyBytes = std::min(dstStrides.uvStride, yuvInfo.uvStride - static_cast<uint32_t>(leftAligned));
+    int32_t uvCopyBytes = GetUVStride(targetWidth);
     for (int32_t row = 0; row < (targetHeight + 1) / HALF; row++) {
         uint8_t *dstRow = dstPixels + dstStrides.uvOffset + row * dstUvStride;
         const uint8_t *srcRow = srcPixels + yuvInfo.uvOffset + (topUV + row) * srcUVStride + leftAligned;
-        cond = memcpy_s(dstRow, uvCopyBytes, srcRow, uvCopyBytes) != EOK;
+        cond = memcpy_s(dstRow, dstUvStride, srcRow, uvCopyBytes) != EOK;
         CHECK_ERROR_RETURN_RET_LOG(cond, false, "[PostProc]CenterDisplayYuv UV memcpy failed at row %{public}d", row);
     }
 
     pixelMap.SetPixelsAddr(dstMemory->data.data, dstMemory->extend.data, dstMemory->data.size,
         dstMemory->GetType(), nullptr);
+    imgInfo.size.width = targetWidth;
+    imgInfo.size.height = targetHeight;
+    CHECK_ERROR_RETURN_RET_LOG(pixelMap.SetImageInfo(imgInfo, true) != SUCCESS, false, "CenterDisplayYuv update ImageInfo failed");
     ImageUtils::UpdateYUVDataInfo(pixelMap);
     ImageUtils::FlushSurfaceBuffer(&pixelMap);
     return true;
@@ -292,14 +301,14 @@ bool PostProc::CenterDisplay(PixelMap &pixelMap, int32_t srcWidth, int32_t srcHe
 {
     ImageInfo dstImageInfo;
     pixelMap.GetImageInfo(dstImageInfo);
+    if (dstImageInfo.pixelFormat == PixelFormat::NV12 || dstImageInfo.pixelFormat == PixelFormat::NV21) {
+        return CenterDisplayYuv(pixelMap, srcWidth, srcHeight, targetWidth, targetHeight);
+    }
     int32_t srcRowStride = pixelMap.GetAllocatorType() == AllocatorType::DMA_ALLOC ? pixelMap.GetRowStride() : 0;
     dstImageInfo.size.width = targetWidth;
     dstImageInfo.size.height = targetHeight;
     bool cond = false;
     CHECK_ERROR_RETURN_RET_LOG(pixelMap.SetImageInfo(dstImageInfo, true) != SUCCESS, false, "update ImageInfo failed");
-    if (dstImageInfo.pixelFormat == PixelFormat::NV12 || dstImageInfo.pixelFormat == PixelFormat::NV21) {
-        return CenterDisplayYuv(pixelMap, srcWidth, srcHeight, targetWidth, targetHeight);
-    }
 
     int32_t bufferSize = pixelMap.GetByteCount();
     uint8_t *dstPixels = nullptr;
@@ -1222,8 +1231,10 @@ bool PostProc::ScalePixelMapEx(const Size &desiredSize, PixelMap &pixelMap, cons
     CHECK_ERROR_RETURN_RET_LOG(cond, false,
         "pixelMap param is invalid, src[%{public}d,%{public}d], desired[%{public}d,%{public}d]",
         srcWidth, srcHeight, desiredSize.width, desiredSize.height);
-    cond = srcWidth == desiredSize.width && srcHeight == desiredSize.height;
-    CHECK_ERROR_RETURN_RET_LOG(cond, true, "No need to scale, dstSize is equal to srcSize");
+    if (srcWidth == desiredSize.width && srcHeight == desiredSize.height) {
+        IMAGE_LOGI("No need to scale, dstSize is equal to srcSize.");
+        return true;
+    }
     AVPixelFormat pixelFormat;
     cond = !GetScaleFormat(imgInfo.pixelFormat, pixelFormat);
     CHECK_ERROR_RETURN_RET_LOG(cond, false, "pixelMap format is invalid, format: %{public}d", imgInfo.pixelFormat);

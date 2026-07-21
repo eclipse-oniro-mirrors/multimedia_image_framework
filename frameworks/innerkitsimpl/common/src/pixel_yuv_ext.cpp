@@ -170,9 +170,10 @@ void PixelYuvExt::scale(float xAxis, float yAxis, const AntiAliasingOption &opti
 
 uint32_t PixelYuvExt::Scale(float xAxis, float yAxis, AntiAliasingOption option)
 {
-    if (xAxis == 0 || yAxis == 0) {
-        IMAGE_LOGE("Invalid scale ratio: 0");
-        return ERR_IMAGE_INVALID_PARAMETER;
+    CHECK_ERROR_RETURN_RET_LOG(xAxis == 0 || yAxis == 0, ERR_IMAGE_INVALID_PARAMETER, "Invalid scale ratio: 0");
+    if (xAxis == 1 && yAxis ==1) {
+        IMAGE_LOGI("No need to scale.");
+        return SUCCESS;
     }
     ImageUtils::DumpPixelMapIfDumpEnabled(*this, std::string("before_") + __func__);
     ImageTrace imageTrace("PixelMap scale");
@@ -228,6 +229,10 @@ uint32_t PixelYuvExt::Scale(int32_t dstW, int32_t dstH, AntiAliasingOption optio
     ImageUtils::DumpPixelMapIfDumpEnabled(*this, std::string("before_") + __func__);
     ImageInfo imageInfo;
     GetImageInfo(imageInfo);
+    if (dstW == imageInfo.size.width && dstH == imageInfo.size.height) {
+        IMAGE_LOGI("No need to scale.");
+        return SUCCESS;
+    }
 
     YUVStrideInfo dstStrides;
     auto m = CreateMemory(imageInfo.pixelFormat, "Trans ImageData", dstW, dstH, dstStrides);
