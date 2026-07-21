@@ -231,6 +231,27 @@ static bool ShrinkRGBXToRGB(const std::unique_ptr<AbsMemory>& srcMemory, std::un
     }
     return true;
 }
+
+static bool CheckPixelMapDataSize(PixelMap *pixelMap)
+{
+    if (pixelMap == nullptr) {
+        return false;
+    }
+    if (pixelMap->IsYuvFormat() || pixelMap->IsAstc()) {
+        return true;
+    }
+
+    const int32_t height = pixelMap->GetHeight();
+    const int32_t rowDataSize = pixelMap->GetRowBytes();
+    const int32_t rowStride = pixelMap->GetRowStride();
+    if (height <= 0 || rowDataSize <= 0 || rowStride < rowDataSize) {
+        return false;
+    }
+
+    const uint64_t allocationSize = pixelMap->GetAllocationByteCount();
+    const uint64_t lastRowOffset = static_cast<uint64_t>(height - 1) * static_cast<uint64_t>(rowStride);
+    return lastRowOffset <= allocationSize && static_cast<uint64_t>(rowDataSize) <= allocationSize - lastRowOffset;
+}
 } // namespace Media
 } // namespace OHOS
 

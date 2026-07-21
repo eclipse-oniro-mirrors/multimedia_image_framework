@@ -1488,6 +1488,13 @@ void PixelMap::SetRowStride(uint32_t stride)
     rowStride_ = static_cast<int32_t>(stride);
 }
 
+bool PixelMap::CheckValidParam(int32_t x, int32_t y)
+{
+    return isUnMap_ || data_ == nullptr || x >= imageInfo_.size.width || x < 0 || y >= imageInfo_.size.height ||
+        y < 0 || (pixelsSize_ < static_cast<uint64_t>(rowDataSize_) * imageInfo_.size.height) ||
+        !CheckPixelMapDataSize(this) ? false : true;
+}
+
 void PixelMap::UpdateImageInfo()
 {
     SetImageInfo(imageInfo_, true);
@@ -3455,6 +3462,12 @@ PixelMap *PixelMap::FinishUnmarshalling(PixelMap *pixelMap, Parcel &parcel,
     }
     if (!UpdatePixelMapMemInfo(pixelMap, imgInfo, pixelMemInfo)) {
         IMAGE_LOGE("update pixelMap memInfo fail");
+        delete pixelMap;
+        return nullptr;
+    }
+    if (!CheckPixelMapDataSize(pixelMap)) {
+        PixelMap::ConstructPixelMapError(error, ERR_IMAGE_PIXELMAP_CREATE_FAILED, "pixelMap data size invalid");
+        IMAGE_LOGE("Unmarshalling: pixelMap data size invalid");
         delete pixelMap;
         return nullptr;
     }

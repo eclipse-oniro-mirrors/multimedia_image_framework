@@ -4,7 +4,7 @@
 
 **Goal:** Reject PixelMaps whose linear row-stride addressing exceeds their actual backing allocation while leaving YUV validation unchanged.
 
-**Architecture:** Add a shared `PixelMap` layout validator based on the last accessible row and actual allocator capacity. Invoke it after IPC memory attachment and use exact allocation-aware bounds in `CheckValidParam` as defense in depth.
+**Architecture:** Add a shared free layout validator to `pixel_map_utils.h`, based on the last accessible row and actual allocator capacity. Invoke it after IPC memory attachment and reuse it in `CheckValidParam` as defense in depth.
 
 **Tech Stack:** C++17, OpenHarmony Parcel/SurfaceBuffer, GoogleTest/HWTEST.
 
@@ -24,14 +24,15 @@
 ### Task 2: Implement the shared layout validator
 
 **Files:**
+- Modify: `frameworks/innerkitsimpl/common/include/pixel_map_utils.h`
 - Modify: `interfaces/innerkits/include/pixel_map.h`
 - Modify: `frameworks/innerkitsimpl/common/src/pixel_map.cpp`
 
-1. Declare a reusable PixelMap data-layout validation function.
+1. Add a reusable free PixelMap data-layout validation function to `pixel_map_utils.h`.
 2. Return success immediately for YUV and ASTC special layouts.
 3. For linear layouts, reject non-positive or undersized row strides.
 4. Calculate `(height - 1) * rowStride + rowDataSize` in `uint64_t` and compare it with `GetAllocationByteCount()` using subtraction-safe bounds.
-5. Update `CheckValidParam` to validate the exact pixel end offset against the same actual allocation size.
+5. Update `CheckValidParam` to reuse the same actual-allocation-aware layout validation.
 
 ### Task 3: Enforce the invariant at IPC completion
 

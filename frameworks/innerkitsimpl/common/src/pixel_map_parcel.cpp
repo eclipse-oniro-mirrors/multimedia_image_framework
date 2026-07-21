@@ -773,6 +773,12 @@ PixelMap *PixelMapRecordParcel::FinishUnmarshalling(PixelMap *pixelMap, Parcel &
         delete pixelMap;
         return nullptr;
     }
+    if (!CheckPixelMapDataSize(pixelMap)) {
+        PixelMap::ConstructPixelMapError(error, ERR_IMAGE_PIXELMAP_CREATE_FAILED, "pixelMap data size invalid");
+        IMAGE_LOGE("Unmarshalling: pixelMap data size invalid");
+        delete pixelMap;
+        return nullptr;
+    }
     if (!ReadTransformData(parcel, pixelMap)) {
         IMAGE_LOGE("Unmarshalling: read transformData failed");
         delete pixelMap;

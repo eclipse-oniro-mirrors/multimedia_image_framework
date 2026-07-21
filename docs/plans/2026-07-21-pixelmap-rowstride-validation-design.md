@@ -13,7 +13,7 @@ Reject malformed linear PixelMaps whose row stride makes the last accessible row
 
 ## Design
 
-Add one reusable `PixelMap` validation function. It obtains the actual allocation size through `GetAllocationByteCount()`, so DMA uses `SurfaceBuffer::GetSize()` while other allocators use `pixelsSize_`.
+Add one reusable free validation function in `pixel_map_utils.h`. It reads PixelMap state through public getters and obtains the actual allocation size through `GetAllocationByteCount()`, so DMA uses `SurfaceBuffer::GetSize()` while other allocators use `pixelsSize_`.
 
 For a linear image, require a positive stride no smaller than `rowDataSize_`, then calculate the minimum accessible allocation as:
 
@@ -23,7 +23,7 @@ For a linear image, require a positive stride no smaller than `rowDataSize_`, th
 
 All arithmetic uses `uint64_t` and subtraction-based comparisons to avoid overflow. The IPC unmarshalling completion paths call the helper after `SetPixelsAddr()` has installed the DMA context and refreshed `rowStride_` from the received `SurfaceBuffer`.
 
-`CheckValidParam(x, y)` additionally validates the exact pixel end offset against the actual allocation. This is defense in depth for invalid states created outside IPC, including unrestricted `SetRowStride()` calls.
+`CheckValidParam(x, y)` additionally reuses the full linear-layout validator. This is defense in depth for invalid states created outside IPC, including unrestricted `SetRowStride()` calls.
 
 ## Error Handling
 
