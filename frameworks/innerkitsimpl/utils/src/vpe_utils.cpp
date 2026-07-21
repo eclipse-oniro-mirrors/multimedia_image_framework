@@ -164,7 +164,6 @@ int32_t VpeUtils::ColorSpaceConverterDecomposeImage(VpeSurfaceBuffers& sb)
     res = ColorSpaceConverterCreate(dlHandler_->GetSoHandle(), &instanceId);
     CHECK_ERROR_RETURN_RET((instanceId == VPE_ERROR_FAILED || res != VPE_ERROR_OK), VPE_ERROR_FAILED);
 
-    
     DecomposeImageT decomposeImage = (DecomposeImageT)dlsym(dlHandler_->GetSoHandle(),
         "ColorSpaceConverterDecomposeImage");
     CHECK_ERROR_RETURN_RET(!decomposeImage, VPE_ERROR_FAILED);
