@@ -3617,6 +3617,7 @@ STATIC_EXEC_FUNC(Unmarshalling)
         IMAGE_LOGE("UnmarshallingExec invalid parameter: messageSequence is null");
         return;
     }
+
     std::lock_guard<std::mutex> lock(ImageNapiUtils::GetMessageSequenceMutex(context->messageSequence));
     auto messageParcel = context->messageSequence->GetMessageParcel();
     if (!messageParcel) {
@@ -3765,7 +3766,10 @@ napi_value PixelMapNapi::CreatePixelMapFromParcel(napi_env env, napi_callback_in
     }
     NAPI_MessageSequence* messageSequence = nullptr;
     status = napi_unwrap(env, argValue[NUM_0], reinterpret_cast<void**>(&messageSequence));
-    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, messageSequence), result, IMAGE_LOGE("fail to unwrap context"));
+    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, messageSequence), result,
+        IMAGE_LOGE("Failed to unwrap message sequence"));
+
+    std::lock_guard<std::mutex> messageSequenceLock(ImageNapiUtils::GetMessageSequenceMutex(messageSequence));
     auto messageParcel = messageSequence->GetMessageParcel();
     if (messageParcel == nullptr) {
         return PixelMapNapi::ThrowExceptionError(env,
@@ -6331,9 +6335,10 @@ napi_value PixelMapNapi::Marshalling(napi_env env, napi_callback_info info)
             env, ERR_IMAGE_INVALID_PARAMETER, "Invalid args count");
     }
     NAPI_MessageSequence *napiSequence = nullptr;
-    napi_get_cb_info(env, info, &nVal.argc, nVal.argv, nullptr, nullptr);
     napi_status status = napi_unwrap(env, nVal.argv[0], reinterpret_cast<void**>(&napiSequence));
-    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, napiSequence), nullptr, IMAGE_LOGE("fail to unwrap context"));
+    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, napiSequence), nullptr, IMAGE_LOGE("Failed to unwrap message sequence"));
+
+    std::lock_guard<std::mutex> messageSequenceLock(ImageNapiUtils::GetMessageSequenceMutex(napiSequence));
     auto messageParcel = napiSequence->GetMessageParcel();
     if (messageParcel == nullptr) {
         return ImageNapiUtils::ThrowExceptionError(
