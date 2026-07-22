@@ -301,9 +301,11 @@ bool PostProc::CenterDisplay(PixelMap &pixelMap, int32_t srcWidth, int32_t srcHe
 {
     ImageInfo dstImageInfo;
     pixelMap.GetImageInfo(dstImageInfo);
+#if !defined(CROSS_PLATFORM)
     if (dstImageInfo.pixelFormat == PixelFormat::NV12 || dstImageInfo.pixelFormat == PixelFormat::NV21) {
         return CenterDisplayYuv(pixelMap, srcWidth, srcHeight, targetWidth, targetHeight);
     }
+#endif
     int32_t srcRowStride = pixelMap.GetAllocatorType() == AllocatorType::DMA_ALLOC ? pixelMap.GetRowStride() : 0;
     dstImageInfo.size.width = targetWidth;
     dstImageInfo.size.height = targetHeight;
