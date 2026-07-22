@@ -171,7 +171,7 @@ void PixelYuvExt::scale(float xAxis, float yAxis, const AntiAliasingOption &opti
 uint32_t PixelYuvExt::Scale(float xAxis, float yAxis, AntiAliasingOption option)
 {
     CHECK_ERROR_RETURN_RET_LOG(xAxis == 0 || yAxis == 0, ERR_IMAGE_INVALID_PARAMETER, "Invalid scale ratio: 0");
-    if (xAxis == 1 && yAxis == 1) {
+    if (xAxis == 1 && yAxis ==1) {
         IMAGE_LOGI("No need to scale.");
         return SUCCESS;
     }
