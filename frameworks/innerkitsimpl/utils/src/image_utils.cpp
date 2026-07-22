@@ -1245,16 +1245,12 @@ void ImageUtils::UpdateYUVDataInfo(PixelMap &pixelMap)
     }
 
     YUVDataInfo info;
-#if !defined(CROSS_PLATFORM)
     if (pixelMap.GetAllocatorType() == AllocatorType::DMA_ALLOC && pixelMap.GetFd() != nullptr) {
         SurfaceBuffer *surfaceBuffer = reinterpret_cast<SurfaceBuffer *>(pixelMap.GetFd());
         GetYuvInfoFromDmaBuffer(surfaceBuffer, info);
     } else {
         GetYuvInfoFromNonDmaBuffer(pixelMap.GetWidth(), pixelMap.GetHeight(), pixelMap.GetPixelFormat(), info);
     }
-#else
-    GetYuvInfoFromNonDmaBuffer(pixelMap.GetWidth(), pixelMap.GetHeight(), pixelMap.GetPixelFormat(), info);
-#endif
     pixelMap.SetImageYUVInfo(info);
 }
 

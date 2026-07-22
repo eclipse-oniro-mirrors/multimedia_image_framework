@@ -239,6 +239,7 @@ static int32_t GetUVStride(int32_t width)
     return (width + 1) / HALF * HALF;
 }
 
+#if !defined(CROSS_PLATFORM)
 bool PostProc::CenterDisplayYuv(PixelMap &pixelMap, int32_t srcWidth, int32_t srcHeight,
                                 int32_t targetWidth, int32_t targetHeight)
 {
@@ -250,11 +251,9 @@ bool PostProc::CenterDisplayYuv(PixelMap &pixelMap, int32_t srcWidth, int32_t sr
     pixelMap.GetImageInfo(imgInfo);
     YUVStrideInfo dstStrides;
     void *srcBuffer = nullptr;
-#if !defined(CROSS_PLATFORM)
     if (pixelMap.GetAllocatorType() == AllocatorType::DMA_ALLOC) {
         srcBuffer = reinterpret_cast<void *>(pixelMap.GetFd());
     }
-#endif
     auto dstMemory = PixelYuvUtils::CreateYuvMemory(imgInfo.pixelFormat, "CenterDisplayYuv ImageData",
         targetWidth, targetHeight, pixelMap.GetAllocatorType(), pixelMap.GetNoPaddingUsage(), srcBuffer, dstStrides);
     bool cond = (dstMemory == nullptr) || (dstMemory->data.data == nullptr);
@@ -295,6 +294,7 @@ bool PostProc::CenterDisplayYuv(PixelMap &pixelMap, int32_t srcWidth, int32_t sr
     ImageUtils::FlushSurfaceBuffer(&pixelMap);
     return true;
 }
+#endif
 
 bool PostProc::CenterDisplay(PixelMap &pixelMap, int32_t srcWidth, int32_t srcHeight, int32_t targetWidth,
                              int32_t targetHeight)
