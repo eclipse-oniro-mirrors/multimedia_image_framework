@@ -1490,9 +1490,13 @@ void PixelMap::SetRowStride(uint32_t stride)
 
 bool PixelMap::CheckValidParam(int32_t x, int32_t y)
 {
-    return isUnMap_ || data_ == nullptr || x >= imageInfo_.size.width || x < 0 || y >= imageInfo_.size.height ||
-        y < 0 || (pixelsSize_ < static_cast<uint64_t>(rowDataSize_) * imageInfo_.size.height) ||
-        !CheckPixelMapDataSize(this) ? false : true;
+    const int32_t height = imageInfo_.size.height;
+    if (isUnMap_ || data_ == nullptr || height <= 0 || rowDataSize_ <= 0 || x >= imageInfo_.size.width || x < 0 ||
+        y >= height || y < 0) {
+        return false;
+    }
+    const uint64_t requiredSize = static_cast<uint64_t>(rowDataSize_) * static_cast<uint64_t>(height);
+    return pixelsSize_ >= requiredSize && CheckPixelMapDataSize(this);
 }
 
 void PixelMap::UpdateImageInfo()
