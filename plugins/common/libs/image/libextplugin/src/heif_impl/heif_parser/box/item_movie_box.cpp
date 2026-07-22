@@ -510,9 +510,7 @@ heif_error HeifStszBox::ParseContent(HeifStreamReader &reader)
     ParseFullHeader(reader);
     sampleSize_ = reader.Read32();
     sampleCount_ = reader.Read32();
-    if (sampleCount_ > MAX_STSZ_ENTRYCOUNT) {
-        return heif_error_invalid_stsz;
-    }
+    CHECK_ERROR_RETURN_RET(sampleCount_ > MAX_STSZ_ENTRYCOUNT, heif_error_invalid_stsz);
     if (sampleSize_ == 0) {
         for (uint32_t i = 0; i < sampleCount_; i++) {
             entrySizes_.push_back(reader.Read32());

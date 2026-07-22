@@ -202,9 +202,7 @@ bool Dav1dDecoder::ConvertWithFFmpeg(uint32_t index, ConvertInfo &info)
 
 bool Dav1dDecoder::CreateDecoder()
 {
-    if (ctx_) {
-        return true;
-    }
+    CHECK_ERROR_RETURN_RET(ctx_, true);
     IMAGE_LOGD("%{public}s IN.", __func__);
     dav1d_default_settings(&settings_);
     settings_.n_threads = DEFAULT_THREAD_NUM;
@@ -556,9 +554,7 @@ std::vector<std::vector<uint32_t>> AvifDecoderImpl::CalculateMiniGroup(uint32_t 
         "%{public}s Incorrect group information.", __func__);
     uint32_t groupNum = end - begin;
     while (IsMemoryExceed(groupNum)) {
-        if (groupNum <= MIN_GROUP_NUM) {
-            return result;
-        }
+        CHECK_ERROR_RETURN_RET(groupNum <= MIN_GROUP_NUM, result);
         groupNum /= GROUP_DIVIDE_NUM;
     }
     for (uint32_t i = begin; i <= index; i += groupNum) {
