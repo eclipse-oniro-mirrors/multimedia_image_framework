@@ -26,7 +26,6 @@
 #include "media_errors.h"
 #include "pixel_convert.h"
 #include "pixel_map.h"
-#include "pixel_map_utils.h"
 #include "pixel_convert_adapter.h"
 #include "securec.h"
 
@@ -2594,11 +2593,11 @@ HWTEST_F(PixelMapTest, GetPixelRejectsRowStrideBeyondCapacity, TestSize.Level3)
 }
 
 /**
- * @tc.name: CheckPixelMapDataSizeUsesLastAccessibleRow
+ * @tc.name: GetPixelUsesLastAccessibleRow
  * @tc.desc: Validate the exact allocation boundary without requiring padding after the last row.
  * @tc.type: FUNC
  */
-HWTEST_F(PixelMapTest, CheckPixelMapDataSizeUsesLastAccessibleRow, TestSize.Level3)
+HWTEST_F(PixelMapTest, GetPixelUsesLastAccessibleRow, TestSize.Level3)
 {
     constexpr int32_t width = 3;
     constexpr int32_t height = 100;
@@ -2617,24 +2616,39 @@ HWTEST_F(PixelMapTest, CheckPixelMapDataSizeUsesLastAccessibleRow, TestSize.Leve
     ASSERT_NE(exactBuffer, nullptr);
     pixelMap.SetPixelsAddr(exactBuffer, nullptr, exactBufferSize, AllocatorType::HEAP_ALLOC, nullptr);
     pixelMap.SetRowStride(rowStride);
-    EXPECT_TRUE(CheckPixelMapDataSize(&pixelMap));
+    EXPECT_NE(pixelMap.GetPixel(width - 1, height - 1), nullptr);
 
     void *shortBuffer = malloc(exactBufferSize - 1);
     ASSERT_NE(shortBuffer, nullptr);
     pixelMap.SetPixelsAddr(shortBuffer, nullptr, exactBufferSize - 1, AllocatorType::HEAP_ALLOC, nullptr);
-    EXPECT_FALSE(CheckPixelMapDataSize(&pixelMap));
+    EXPECT_EQ(pixelMap.GetPixel(width - 1, height - 1), nullptr);
 }
 
 /**
- * @tc.name: CheckPixelMapDataSizeSkipsYuv
+ * @tc.name: CheckValidParamSkipsLinearDataSizeForYuv
  * @tc.desc: Keep YUV layouts on their existing plane-aware validation path.
  * @tc.type: FUNC
  */
-HWTEST_F(PixelMapTest, CheckPixelMapDataSizeSkipsYuv, TestSize.Level3)
+HWTEST_F(PixelMapTest, CheckValidParamSkipsLinearDataSizeForYuv, TestSize.Level3)
 {
+    constexpr int32_t width = 2;
+    constexpr int32_t height = 2;
+
     PixelMap pixelMap;
-    pixelMap.imageInfo_.pixelFormat = PixelFormat::NV12;
-    EXPECT_TRUE(CheckPixelMapDataSize(&pixelMap));
+    ImageInfo info;
+    info.size.width = width;
+    info.size.height = height;
+    info.pixelFormat = PixelFormat::NV12;
+    info.colorSpace = ColorSpace::SRGB;
+    ASSERT_EQ(pixelMap.SetImageInfo(info), SUCCESS);
+
+    const uint32_t bufferSize = static_cast<uint32_t>(pixelMap.GetRowBytes() * height);
+    void *buffer = malloc(bufferSize);
+    ASSERT_NE(buffer, nullptr);
+    pixelMap.SetPixelsAddr(buffer, nullptr, bufferSize, AllocatorType::HEAP_ALLOC, nullptr);
+    pixelMap.SetRowStride(1);
+
+    EXPECT_TRUE(pixelMap.CheckValidParam(0, 0));
 }
 
 /**
