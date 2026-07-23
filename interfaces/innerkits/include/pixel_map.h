@@ -988,11 +988,7 @@ protected:
         colorProc_ = nullptr;
     }
 
-    bool CheckValidParam(int32_t x, int32_t y)
-    {
-        return isUnMap_ || data_ == nullptr || x >= imageInfo_.size.width || x < 0 || y >= imageInfo_.size.height ||
-            y < 0 || (pixelsSize_ < static_cast<uint64_t>(rowDataSize_) * imageInfo_.size.height) ? false : true;
-    }
+    bool CheckValidParam(int32_t x, int32_t y);
 
     static PixelMap *StartUnmarshalling(Parcel &parcel, ImageInfo &imgInfo,
         PixelMemInfo &pixelMemInfo, PIXEL_MAP_ERR &error, bool isDisplay = false);

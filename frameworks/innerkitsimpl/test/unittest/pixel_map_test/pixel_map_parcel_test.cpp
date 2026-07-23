@@ -53,6 +53,37 @@ public:
     }
 };
 
+static void WriteAstcRecordParcelPrefix(Parcel &parcel, int32_t realWidth, int32_t realHeight)
+{
+    constexpr int32_t imageSize = 1;
+    ASSERT_TRUE(parcel.WriteInt32(imageSize));
+    ASSERT_TRUE(parcel.WriteInt32(imageSize));
+    ASSERT_TRUE(parcel.WriteInt32(static_cast<int32_t>(PixelFormat::ASTC_4x4)));
+    ASSERT_TRUE(parcel.WriteInt32(static_cast<int32_t>(ColorSpace::SRGB)));
+    ASSERT_TRUE(parcel.WriteInt32(static_cast<int32_t>(AlphaType::IMAGE_ALPHA_TYPE_OPAQUE)));
+    ASSERT_TRUE(parcel.WriteInt32(0));
+    ASSERT_TRUE(parcel.WriteString(""));
+    ASSERT_TRUE(parcel.WriteBool(false));
+    ASSERT_TRUE(parcel.WriteBool(false));
+    ASSERT_TRUE(parcel.WriteInt32(static_cast<int32_t>(AllocatorType::HEAP_ALLOC)));
+    ASSERT_TRUE(parcel.WriteInt32(ERR_MEDIA_INVALID_VALUE));
+    const int32_t rowDataSize = ImageUtils::GetRowDataSizeByPixelFormat(imageSize, PixelFormat::ASTC_4x4);
+    ASSERT_GT(rowDataSize, 0);
+    ASSERT_TRUE(parcel.WriteInt32(rowDataSize));
+    ASSERT_TRUE(parcel.WriteInt32(realWidth));
+    ASSERT_TRUE(parcel.WriteInt32(realHeight));
+    constexpr int32_t astcBufferSize = 16; // ASTC header size when either block count is zero
+    ASSERT_TRUE(parcel.WriteInt32(astcBufferSize));
+    std::vector<uint8_t> pixels(astcBufferSize, 0);
+    ASSERT_TRUE(parcel.WriteUnpadBuffer(pixels.data(), pixels.size()));
+    constexpr int32_t transformFloatCount = 9;
+    for (int32_t i = 0; i < transformFloatCount; ++i) {
+        ASSERT_TRUE(parcel.WriteFloat(0.0f));
+    }
+    ASSERT_TRUE(parcel.WriteBool(false));
+    ASSERT_TRUE(parcel.WriteBool(false));
+}
+
 std::unique_ptr<PixelMap> CreatePixelMap(int32_t width, int32_t height, PixelFormat format, AlphaType alphaType,
     AllocatorType type)
 {
@@ -288,6 +319,53 @@ HWTEST_F(PixelMapParcelTest, MarshallingUnmarshallingRecodeParcelTest005, TestSi
     lock.unlock();
     EXPECT_TRUE(marshallingTask.get());
     GTEST_LOG_(INFO) << "PixelMapParcelTest: MarshallingUnmarshallingRecodeParcelTest005 end";
+}
+
+/**
+ * @tc.name: ReadAstcInfoRejectsNonPositiveSize
+ * @tc.desc: Test that ASTC real sizes read from Parcel must be positive
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapParcelTest, ReadAstcInfoRejectsNonPositiveSize, TestSize.Level3)
+{
+    PixelMap pixelMap;
+    pixelMap.SetAstc(true);
+
+    Parcel zeroWidthParcel;
+    ASSERT_TRUE(zeroWidthParcel.WriteInt32(0));
+    ASSERT_TRUE(zeroWidthParcel.WriteInt32(1));
+    EXPECT_FALSE(pixelMap.ReadAstcInfo(zeroWidthParcel, &pixelMap));
+
+    Parcel negativeHeightParcel;
+    ASSERT_TRUE(negativeHeightParcel.WriteInt32(1));
+    ASSERT_TRUE(negativeHeightParcel.WriteInt32(-1));
+    EXPECT_FALSE(pixelMap.ReadAstcInfo(negativeHeightParcel, &pixelMap));
+
+    Parcel validParcel;
+    ASSERT_TRUE(validParcel.WriteInt32(1));
+    ASSERT_TRUE(validParcel.WriteInt32(1));
+    ASSERT_TRUE(validParcel.WriteBool(false));
+    EXPECT_TRUE(pixelMap.ReadAstcInfo(validParcel, &pixelMap));
+    Size realSize;
+    pixelMap.GetAstcRealSize(realSize);
+    EXPECT_EQ(realSize.width, 1);
+    EXPECT_EQ(realSize.height, 1);
+}
+
+/**
+ * @tc.name: RecordParcelRejectsNonPositiveAstcRealSize
+ * @tc.desc: Test that record Parcel unmarshalling rejects non-positive ASTC real sizes
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapParcelTest, RecordParcelRejectsNonPositiveAstcRealSize, TestSize.Level3)
+{
+    Parcel zeroWidthParcel;
+    WriteAstcRecordParcelPrefix(zeroWidthParcel, 0, 1);
+    EXPECT_EQ(PixelMapRecordParcelTestHelper::UnmarshallingPixelMapForRecord(zeroWidthParcel), nullptr);
+
+    Parcel zeroHeightParcel;
+    WriteAstcRecordParcelPrefix(zeroHeightParcel, 1, 0);
+    EXPECT_EQ(PixelMapRecordParcelTestHelper::UnmarshallingPixelMapForRecord(zeroHeightParcel), nullptr);
 }
 }
 }

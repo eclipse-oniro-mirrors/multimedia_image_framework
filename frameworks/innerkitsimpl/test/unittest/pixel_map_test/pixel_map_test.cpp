@@ -2564,6 +2564,135 @@ HWTEST_F(PixelMapTest, SetAndGetRowStride, TestSize.Level3)
     GTEST_LOG_(INFO) << "ImagePixelMapTest: SetAndGetRowStride end";
 }
 
+/**
+ * @tc.name: GetPixelRejectsRowStrideBeyondCapacity
+ * @tc.desc: Reject a pixel address when row stride makes the last row exceed the backing allocation.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, GetPixelRejectsRowStrideBeyondCapacity, TestSize.Level3)
+{
+    constexpr int32_t width = 3;
+    constexpr int32_t height = 100;
+    constexpr uint32_t bufferSize = 1200;
+    constexpr uint32_t rowStride = 64;
+
+    PixelMap pixelMap;
+    ImageInfo info;
+    info.size.width = width;
+    info.size.height = height;
+    info.pixelFormat = PixelFormat::RGBA_8888;
+    info.colorSpace = ColorSpace::SRGB;
+    ASSERT_EQ(pixelMap.SetImageInfo(info), SUCCESS);
+
+    void *buffer = malloc(bufferSize);
+    ASSERT_NE(buffer, nullptr);
+    pixelMap.SetPixelsAddr(buffer, nullptr, bufferSize, AllocatorType::HEAP_ALLOC, nullptr);
+    pixelMap.SetRowStride(rowStride);
+
+    EXPECT_EQ(pixelMap.GetPixel(width - 1, height - 1), nullptr);
+}
+
+/**
+ * @tc.name: GetPixelUsesLastAccessibleRow
+ * @tc.desc: Validate the exact allocation boundary without requiring padding after the last row.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, GetPixelUsesLastAccessibleRow, TestSize.Level3)
+{
+    constexpr int32_t width = 3;
+    constexpr int32_t height = 100;
+    constexpr uint32_t rowStride = 64;
+    constexpr uint32_t exactBufferSize = 6348;
+
+    PixelMap pixelMap;
+    ImageInfo info;
+    info.size.width = width;
+    info.size.height = height;
+    info.pixelFormat = PixelFormat::RGBA_8888;
+    info.colorSpace = ColorSpace::SRGB;
+    ASSERT_EQ(pixelMap.SetImageInfo(info), SUCCESS);
+
+    void *exactBuffer = malloc(exactBufferSize);
+    ASSERT_NE(exactBuffer, nullptr);
+    pixelMap.SetPixelsAddr(exactBuffer, nullptr, exactBufferSize, AllocatorType::HEAP_ALLOC, nullptr);
+    pixelMap.SetRowStride(rowStride);
+    EXPECT_NE(pixelMap.GetPixel(width - 1, height - 1), nullptr);
+
+    void *shortBuffer = malloc(exactBufferSize - 1);
+    ASSERT_NE(shortBuffer, nullptr);
+    pixelMap.SetPixelsAddr(shortBuffer, nullptr, exactBufferSize - 1, AllocatorType::HEAP_ALLOC, nullptr);
+    EXPECT_EQ(pixelMap.GetPixel(width - 1, height - 1), nullptr);
+}
+
+/**
+ * @tc.name: CheckValidParamSkipsLinearDataSizeForYuv
+ * @tc.desc: Keep YUV layouts on their existing plane-aware validation path.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, CheckValidParamSkipsLinearDataSizeForYuv, TestSize.Level3)
+{
+    constexpr int32_t width = 2;
+    constexpr int32_t height = 2;
+
+    PixelMap pixelMap;
+    ImageInfo info;
+    info.size.width = width;
+    info.size.height = height;
+    info.pixelFormat = PixelFormat::NV12;
+    info.colorSpace = ColorSpace::SRGB;
+    ASSERT_EQ(pixelMap.SetImageInfo(info), SUCCESS);
+
+    const uint32_t bufferSize = static_cast<uint32_t>(pixelMap.GetRowBytes() * height);
+    void *buffer = malloc(bufferSize);
+    ASSERT_NE(buffer, nullptr);
+    pixelMap.SetPixelsAddr(buffer, nullptr, bufferSize, AllocatorType::HEAP_ALLOC, nullptr);
+    pixelMap.SetRowStride(1);
+
+    EXPECT_TRUE(pixelMap.CheckValidParam(0, 0));
+}
+
+/**
+ * @tc.name: FinishUnmarshallingRejectsRowStrideBeyondCapacity
+ * @tc.desc: Reject malformed IPC layout after the received row stride has taken effect.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, FinishUnmarshallingRejectsRowStrideBeyondCapacity, TestSize.Level3)
+{
+    constexpr int32_t width = 3;
+    constexpr int32_t height = 100;
+    constexpr uint32_t bufferSize = 1200;
+    class MalformedStridePixelMap : public PixelMap {
+    public:
+        void SetRowStride(uint32_t stride) override
+        {
+            (void)stride;
+            PixelMap::SetRowStride(64); // Malformed stride supplied by the received buffer metadata.
+        }
+    };
+
+    ImageInfo info;
+    info.size.width = width;
+    info.size.height = height;
+    info.pixelFormat = PixelFormat::RGBA_8888;
+    info.colorSpace = ColorSpace::SRGB;
+
+    PixelMemInfo pixelMemInfo;
+    pixelMemInfo.base = static_cast<uint8_t *>(malloc(bufferSize));
+    ASSERT_NE(pixelMemInfo.base, nullptr);
+    pixelMemInfo.bufferSize = bufferSize;
+    pixelMemInfo.allocatorType = AllocatorType::HEAP_ALLOC;
+
+    Parcel parcel;
+    PIXEL_MAP_ERR error;
+    PixelMap *pixelMap = new MalformedStridePixelMap();
+    ASSERT_NE(pixelMap, nullptr);
+    pixelMap = PixelMap::FinishUnmarshalling(pixelMap, parcel, info, pixelMemInfo, error);
+
+    EXPECT_EQ(pixelMap, nullptr);
+    EXPECT_EQ(error.errorCode, ERR_IMAGE_PIXELMAP_CREATE_FAILED);
+    delete pixelMap;
+}
+
 #ifdef IMAGE_COLORSPACE_FLAG
 /**
  * @tc.name: ImagePixelMap030

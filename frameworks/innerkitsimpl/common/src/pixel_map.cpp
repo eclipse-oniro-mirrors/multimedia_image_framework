@@ -1485,6 +1485,17 @@ void PixelMap::SetRowStride(uint32_t stride)
     rowStride_ = static_cast<int32_t>(stride);
 }
 
+bool PixelMap::CheckValidParam(int32_t x, int32_t y)
+{
+    const int32_t height = imageInfo_.size.height;
+    if (isUnMap_ || data_ == nullptr || height <= 0 || rowDataSize_ <= 0 || x >= imageInfo_.size.width || x < 0 ||
+        y >= height || y < 0) {
+        return false;
+    }
+    const uint64_t requiredSize = static_cast<uint64_t>(rowDataSize_) * static_cast<uint64_t>(height);
+    return pixelsSize_ >= requiredSize && CheckPixelMapDataSize(this);
+}
+
 void PixelMap::UpdateImageInfo()
 {
     SetImageInfo(imageInfo_, true);
@@ -3081,6 +3092,11 @@ bool PixelMap::ReadAstcInfo(Parcel &parcel, PixelMap *pixelMap)
         Size realSize;
         realSize.width = parcel.ReadInt32();
         realSize.height = parcel.ReadInt32();
+        if (realSize.width <= 0 || realSize.height <= 0) {
+            IMAGE_LOGE("%{public}s invalid astc real size: width=%{public}d, height=%{public}d",
+                __func__, realSize.width, realSize.height);
+            return false;
+        }
         pixelMap->SetAstcRealSize(realSize);
         bool isHdr = parcel.ReadBool();
         pixelMap->SetAstcHdr(isHdr);
@@ -3451,6 +3467,12 @@ PixelMap *PixelMap::FinishUnmarshalling(PixelMap *pixelMap, Parcel &parcel,
     }
     if (!UpdatePixelMapMemInfo(pixelMap, imgInfo, pixelMemInfo)) {
         IMAGE_LOGE("update pixelMap memInfo fail");
+        delete pixelMap;
+        return nullptr;
+    }
+    if (!CheckPixelMapDataSize(pixelMap)) {
+        PixelMap::ConstructPixelMapError(error, ERR_IMAGE_PIXELMAP_CREATE_FAILED, "pixelMap data size invalid");
+        IMAGE_LOGE("Unmarshalling: pixelMap data size invalid");
         delete pixelMap;
         return nullptr;
     }
