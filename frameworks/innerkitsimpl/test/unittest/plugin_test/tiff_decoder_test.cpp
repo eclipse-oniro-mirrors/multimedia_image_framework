@@ -592,8 +592,9 @@ HWTEST_F(TiffDecoderTest, AllocBufferTest002, TestSize.Level3)
     TiffDecoder decoder;
     DecodeContext decodeContext;
     decodeContext.pixelsBuffer.buffer = reinterpret_cast<void*>(0x1000);
+    decodeContext.pixelsBuffer.bufferSize = MOCK_SIZE;
     auto ret = decoder.AllocBuffer(decodeContext, MOCK_SIZE);
-    EXPECT_FALSE(ret);
+    EXPECT_TRUE(ret);
     GTEST_LOG_(INFO) << "TiffDecoderTest: AllocBufferTest002 end";
 }
 

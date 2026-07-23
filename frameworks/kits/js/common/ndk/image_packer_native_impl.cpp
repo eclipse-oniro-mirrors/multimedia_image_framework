@@ -200,7 +200,7 @@ int32_t OH_ImagePackerNative::PackToDataFromPicture(OHOS::Media::PackOption *opt
 int32_t OH_ImagePackerNative::PackToFileFromImageSource(OHOS::Media::PackOption *option,
     OH_ImageSourceNative *imageSource, const int fd)
 {
-    if (option == nullptr || imageSource == nullptr) {
+    if (option == nullptr || imageSource == nullptr || fd < 0) {
         return IMAGE_BAD_PARAMETER;
     }
     OHOS::Media::ImagePacker *imagePacker = imagePacker_.get();
@@ -228,7 +228,7 @@ int32_t OH_ImagePackerNative::PackToFileFromImageSource(OHOS::Media::PackOption 
 int32_t OH_ImagePackerNative::PackToFileFromPixelmap(OHOS::Media::PackOption *option, OH_PixelmapNative *pixelmap,
     int32_t fd)
 {
-    if (option == nullptr || pixelmap == nullptr) {
+    if (option == nullptr || pixelmap == nullptr || fd < 0) {
         return IMAGE_BAD_PARAMETER;
     }
     OHOS::Media::ImagePacker *imagePacker = imagePacker_.get();
@@ -256,7 +256,7 @@ int32_t OH_ImagePackerNative::PackToFileFromPixelmap(OHOS::Media::PackOption *op
 int32_t OH_ImagePackerNative::PackToFileMultiFrames(OHOS::Media::PackOption *option,
     std::vector<OH_PixelmapNative*> &pixelmap, int32_t fd)
 {
-    if (option == nullptr || pixelmap.empty()) {
+    if (option == nullptr || pixelmap.empty() || fd < 0) {
         return IMAGE_BAD_PARAMETER;
     }
     OHOS::Media::ImagePacker *imagePacker = imagePacker_.get();
@@ -287,7 +287,7 @@ int32_t OH_ImagePackerNative::PackToFileMultiFrames(OHOS::Media::PackOption *opt
 int32_t OH_ImagePackerNative::PackToFileFromPicture(OHOS::Media::PackOption *option, struct OH_PictureNative *picture,
     const int32_t fd)
 {
-    if (option == nullptr || picture == nullptr) {
+    if (option == nullptr || picture == nullptr || fd < 0) {
         return IMAGE_BAD_PARAMETER;
     }
     OHOS::Media::ImagePacker *imagePacker = imagePacker_.get();

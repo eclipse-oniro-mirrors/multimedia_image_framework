@@ -434,10 +434,8 @@ uint32_t JpegExifMetadataAccessor::UpdateData(uint8_t *dataBlob, uint32_t size)
         return ERR_IMAGE_SOURCE_DATA;
     }
 
-    if (!imageStream_->IsOpen()) {
-        IMAGE_LOGE("The output image stream is not open");
-        return ERR_IMAGE_SOURCE_DATA;
-    }
+    cond = imageStream_ == nullptr || !imageStream_->IsOpen();
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_SOURCE_DATA, "The output image stream is not open");
 
     if (!UpdateExifMetadata(tmpBufStream, dataBlob, size)) {
         IMAGE_LOGE("Failed to write to temporary image stream");

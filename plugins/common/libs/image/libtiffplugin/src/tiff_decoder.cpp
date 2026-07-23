@@ -185,7 +185,10 @@ uint32_t TiffDecoder::Decode(uint32_t index, DecodeContext& context)
     const size_t bufferSize = static_cast<size_t>(tiffSize_.width) *
                               static_cast<size_t>(tiffSize_.height) *
                               sizeof(uint32_t);
-    AllocBuffer(context, bufferSize);
+    if (!AllocBuffer(context, bufferSize)) {
+        IMAGE_LOGE("AllocBuffer failed or buffer is too small");
+        return ERR_IMAGE_MALLOC_ABNORMAL;
+    }
     uint32_t* raster = static_cast<uint32_t*>(context.pixelsBuffer.buffer);
     std::unique_ptr<uint32_t[]> dmaTmpBuffer;
     if (context.allocatorType == AllocatorType::DMA_ALLOC && dmaStride_ > tiffSize_.width) {
@@ -228,8 +231,12 @@ uint32_t TiffDecoder::GetImageSize(uint32_t index, Size& size)
 {
     CHECK_ERROR_RETURN_RET_LOG(!tifCodec_, ERR_IMAGE_DECODE_HEAD_ABNORMAL, "tifCodec_ is nullptr");
 
-    TIFFGetField(tifCodec_, TIFFTAG_IMAGEWIDTH, &size.width);
-    TIFFGetField(tifCodec_, TIFFTAG_IMAGELENGTH, &size.height);
+    if (!TIFFGetField(tifCodec_, TIFFTAG_IMAGEWIDTH, &size.width) ||
+        !TIFFGetField(tifCodec_, TIFFTAG_IMAGELENGTH, &size.height) ||
+        size.width <= 0 || size.height <= 0) {
+        IMAGE_LOGE("[TiffDecoder] invalid image size");
+        return ERR_IMAGE_DECODE_HEAD_ABNORMAL;
+    }
     IMAGE_LOGD("[TiffDecoder] tiff size is %{public}u x %{public}u", size.width, size.height);
     return SUCCESS;
 }
@@ -373,16 +380,19 @@ bool TiffDecoder::AllocHeapBuffer(DecodeContext& context, uint64_t byteCount)
 
 bool TiffDecoder::AllocBuffer(DecodeContext &context, uint64_t byteCount)
 {
-    if (context.pixelsBuffer.buffer == nullptr) {
-        if (context.allocatorType == Media::AllocatorType::SHARE_MEM_ALLOC) {
-            return AllocShareBuffer(context, byteCount);
-        } else if (context.allocatorType == Media::AllocatorType::DMA_ALLOC) {
-            return AllocDmaBuffer(context, byteCount);
-        } else {
-            return AllocHeapBuffer(context, byteCount);
-        }
+    if (context.pixelsBuffer.buffer != nullptr) {
+        return context.pixelsBuffer.bufferSize >= byteCount;
     }
-    return false;
+
+    bool allocated = false;
+    if (context.allocatorType == Media::AllocatorType::SHARE_MEM_ALLOC) {
+        allocated = AllocShareBuffer(context, byteCount);
+    } else if (context.allocatorType == Media::AllocatorType::DMA_ALLOC) {
+        allocated = AllocDmaBuffer(context, byteCount);
+    } else {
+        allocated = AllocHeapBuffer(context, byteCount);
+    }
+    return allocated && context.pixelsBuffer.buffer != nullptr && context.pixelsBuffer.bufferSize >= byteCount;
 }
 
 #ifdef IMAGE_COLORSPACE_FLAG

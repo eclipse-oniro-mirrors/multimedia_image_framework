@@ -272,10 +272,15 @@ static bool P010ToRGBA10101012SoftDecode(const YUVDataInfo &yDInfo, SrcConvertPa
 static bool YuvP010ToRGBParam(const YUVDataInfo &yDInfo, SrcConvertParam &srcParam, DestConvertParam &destParam,
                               DestConvertInfo &destInfo)
 {
+    constexpr uint32_t maxP010Stride = static_cast<uint32_t>(INT_MAX) / TWO_SLICES;
+    if (yDInfo.yStride > maxP010Stride || yDInfo.uvStride > maxP010Stride) {
+        IMAGE_LOGE("Invalid P010 stride");
+        return false;
+    }
     srcParam.slice[0] = srcParam.buffer + yDInfo.yOffset;
     srcParam.slice[1] = srcParam.buffer + yDInfo.uvOffset * TWO_SLICES;
-    srcParam.stride[0] = static_cast<int>(yDInfo.yStride * TWO_SLICES);
-    srcParam.stride[1] = static_cast<int>(yDInfo.uvStride * TWO_SLICES);
+    srcParam.stride[0] = static_cast<int>(yDInfo.yStride) * static_cast<int>(TWO_SLICES);
+    srcParam.stride[1] = static_cast<int>(yDInfo.uvStride) * static_cast<int>(TWO_SLICES);
     int dstStride = 0;
     if (destInfo.allocType == AllocatorType::DMA_ALLOC) {
         dstStride = static_cast<int>(destInfo.yStride);

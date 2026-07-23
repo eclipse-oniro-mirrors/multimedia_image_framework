@@ -118,11 +118,18 @@ toff_t TiffEncoder::SeekProc(thandle_t handle, toff_t off, int whence)
     toff_t pos = 0;
     switch (whence) {
         case SEEK_SET:
+            if (off > UINT32_MAX) {
+                return static_cast<toff_t>(-1);
+            }
             pos = off;
             break;
         case SEEK_CUR:
             return static_cast<toff_t>(-1);
         case SEEK_END:
+            if (currentSize > UINT32_MAX ||
+                off > static_cast<toff_t>(UINT32_MAX - currentSize)) {
+                return static_cast<toff_t>(-1);
+            }
             pos = static_cast<toff_t>(currentSize) + off;
             break;
         default:

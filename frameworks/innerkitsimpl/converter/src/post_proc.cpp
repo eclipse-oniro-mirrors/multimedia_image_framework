@@ -1176,9 +1176,11 @@ bool PostProc::ScalePixelMapEx(const Size &desiredSize, PixelMap &pixelMap, cons
     pixelMap.GetImageInfo(imgInfo);
     int32_t srcWidth = pixelMap.GetWidth();
     int32_t srcHeight = pixelMap.GetHeight();
-    bool cond = srcWidth <= 0 || srcHeight <= 0 || !pixelMap.GetWritablePixels();
-    CHECK_ERROR_RETURN_RET_LOG(cond, false, "pixelMap param is invalid, src width:%{public}d, height:%{public}d",
-        srcWidth, srcHeight);
+    bool cond = srcWidth <= 0 || srcHeight <= 0 || desiredSize.width <= 0 || desiredSize.height <= 0 ||
+        !pixelMap.GetWritablePixels();
+    CHECK_ERROR_RETURN_RET_LOG(cond, false,
+        "pixelMap param is invalid, src size:(%{public}d, %{public}d), desired size:(%{public}d, %{public}d)",
+        srcWidth, srcHeight, desiredSize.width, desiredSize.height);
     AVPixelFormat pixelFormat;
     cond = !GetScaleFormat(imgInfo.pixelFormat, pixelFormat);
     CHECK_ERROR_RETURN_RET_LOG(cond, false, "pixelMap format is invalid, format: %{public}d", imgInfo.pixelFormat);

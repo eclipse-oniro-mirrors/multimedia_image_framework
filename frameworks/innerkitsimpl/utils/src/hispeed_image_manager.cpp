@@ -378,10 +378,9 @@ const int* HispeedImageManager::GetYuvCoeffFromDest(const DestConvertParam &dest
 bool HispeedImageManager::P010ToARGB(const uint8_t* srcBuffer, const YUVDataInfo& yDInfo, DestConvertInfo& destInfo)
 {
 #if !defined(CROSS_PLATFORM)
-    if (isHispeedImageSoOpened_ == false && LoadHispeedImageSo() == false) {
-        IMAGE_LOGE("hispeed image so not opened");
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(srcBuffer == nullptr, false, "source P010 buffer is null");
+    bool cond = isHispeedImageSoOpened_ == false && LoadHispeedImageSo() == false;
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "hispeed image so not opened");
     SrcConvertParam srcParam = {yDInfo.yWidth, yDInfo.yHeight};
     srcParam.buffer = srcBuffer;
     DestConvertParam destParam = {yDInfo.yWidth, yDInfo.yHeight};
@@ -408,6 +407,7 @@ bool HispeedImageManager::P010ToARGB(const uint8_t* srcBuffer, const YUVDataInfo
 bool HispeedImageManager::P010ToAR30(const uint8_t* srcBuffer, const YUVDataInfo& yDInfo, DestConvertInfo& destInfo)
 {
 #if !defined(CROSS_PLATFORM)
+    CHECK_ERROR_RETURN_RET_LOG(srcBuffer == nullptr, false, "source P010 buffer is null");
     if (isHispeedImageSoOpened_ == false && LoadHispeedImageSo() == false) {
         IMAGE_LOGE("hispeed image so not opened");
         return false;

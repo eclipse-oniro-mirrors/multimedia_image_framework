@@ -4413,7 +4413,8 @@ AllocatorType CalculateAllocatorType(const AllocatorType& optAllocatorType, cons
         return optAllocatorType;
     }
 
-    if (ImageSystemProperties::GetAstcEnabled() && size.width * size.height >= ASTC_SIZE) {
+    const int64_t area = static_cast<int64_t>(size.width) * size.height;
+    if (ImageSystemProperties::GetAstcEnabled() && area >= ASTC_SIZE) {
         return AllocatorType::DMA_ALLOC;
     }
 
