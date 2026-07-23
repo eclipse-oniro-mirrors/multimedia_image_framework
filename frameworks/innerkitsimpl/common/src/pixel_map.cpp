@@ -1906,11 +1906,13 @@ int32_t PixelMap::GetHeight()
 
 void PixelMap::GetTransformData(TransformData &transformData)
 {
+    std::lock_guard<std::mutex> lock(*transformMutex_);
     transformData = transformData_;
 }
 
 void PixelMap::SetTransformData(TransformData transformData)
 {
+    std::lock_guard<std::mutex> lock(*transformMutex_);
     transformData_ = transformData;
 }
 
