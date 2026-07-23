@@ -1262,18 +1262,6 @@ bool HeifDecoderImpl::ProcessChunkHead(uint8_t *data, size_t len)
     return true;
 }
 
-bool HeifDecoderImpl::IsHeifAlphaYuv400()
-{
-    CHECK_ERROR_RETURN_RET(!primaryImage_, false);
-    std::shared_ptr<HeifImage> alphaImage = primaryImage_->GetAlphaImage();
-    CHECK_ERROR_RETURN_RET(!alphaImage, false);
-    if (alphaImage->GetDefaultPixelFormat() != HeifPixelFormat::YUV420) {
-        IMAGE_LOGE("heif alphaImage is not YUV420");
-        return true;
-    }
-    return false;
-}
-
 bool HeifDecoderImpl::IsHeifGainmapYuv400()
 {
     CHECK_ERROR_RETURN_RET(!gainmapImage_, false);

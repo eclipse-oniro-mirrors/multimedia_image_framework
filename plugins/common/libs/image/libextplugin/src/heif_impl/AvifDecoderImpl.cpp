@@ -123,6 +123,7 @@ static int32_t AvifColorSpaceToFFmpegColorSpace(const Dav1dPicture &pic)
 
 bool Dav1dDecoder::ConvertToRGB(SwsContext *ctx, Dav1dPicture &pic, ConvertInfo &info)
 {
+    CHECK_ERROR_RETURN_RET_LOG(info.dstBuffer == nullptr, false, "%{public}s dstBuffer is nullptr", __func__);
     uint8_t* srcY = reinterpret_cast<uint8_t*>((pic).data[Y_PLANE_INDEX]);
     uint8_t* srcU = reinterpret_cast<uint8_t*>((pic).data[U_PLANE_INDEX]);
     uint8_t* srcV = reinterpret_cast<uint8_t*>((pic).data[V_PLANE_INDEX]);

@@ -1075,6 +1075,7 @@ bool JpegHwRegionDecoder::CombineIntoJpegNonAligned()
     if (isLTInFirstMCULine && isCrossBoundary) {
         size_t rstIdx = subJpg.regionDecInfo.entries.back().startRstIdx +
             DIV_ROUND_UP(jpg.dinfo->image_width, jpg.dinfo->restart_interval * MCU_WIDTH) + 1;
+        REQUIRE_LOG(rstIdx < jpg.rstPositions.size(), "the region covers almost the entire image");
         size_t tempJpgStreamSize = jpg.rstPositions[rstIdx];
         REQUIRE_LOG(tempJpgStream = std::make_unique<uint8_t[]>(tempJpgStreamSize), "malloc tempJpgStreamSize failed");
         errno_t err = memcpy_s(tempJpgStream.get(), tempJpgStreamSize, jpg.streamData.get(), tempJpgStreamSize);
