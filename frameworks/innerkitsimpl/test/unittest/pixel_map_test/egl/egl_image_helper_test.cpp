@@ -48,6 +48,13 @@ public:
         return Shader::Clear();
     }
 
+    void SetProgramAndShaders(GLuint programId, GLuint vertexShader, GLuint fragmentShader)
+    {
+        programId_ = programId;
+        vShader_ = vertexShader;
+        fShader_ = fragmentShader;
+    }
+
     void SetTargetSize(const Size &targetSize)
     {
         targetSize_ = targetSize;
@@ -330,6 +337,52 @@ HWTEST_F(EglImageHelperTest, PixelMapGlShaderFactoryAndParamsTest001, TestSize.L
     EXPECT_EQ(testShader.GetWriteTexId(), 7U);
     testShader.SetTargetSize(Size { 0, 8 });
     EXPECT_FALSE(testShader.BuildWriteTexture());
+}
+
+/**
+ * @tc.name: PixelMapGlShaderDestructorResourceTest001
+ * @tc.desc: Test shader destructor releases owned GL resources without an explicit Clear call.
+ * @tc.type: FUNC
+ */
+HWTEST_F(EglImageHelperTest, PixelMapGlShaderDestructorResourceTest001, TestSize.Level3)
+{
+    PixelMapGlContext context;
+    if (!context.InitEGLContext()) {
+        SUCCEED();
+        return;
+    }
+
+    const GLuint programId = glCreateProgram();
+    const GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
+    const GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+    GLuint textures[2] = { 0U, 0U };
+    glGenTextures(2, textures);
+    glBindTexture(GL_TEXTURE_2D, textures[0]);
+    glBindTexture(GL_TEXTURE_2D, textures[1]);
+
+    GLuint framebuffer = 0U;
+    {
+        TestShader shader;
+        shader.SetProgramAndShaders(programId, vertexShader, fragmentShader);
+        shader.SetReadTexId(textures[0]);
+        shader.SetWriteTexId(textures[1]);
+        framebuffer = shader.GetWriteFbo();
+        glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
+
+        EXPECT_EQ(glIsProgram(programId), GL_TRUE);
+        EXPECT_EQ(glIsShader(vertexShader), GL_TRUE);
+        EXPECT_EQ(glIsShader(fragmentShader), GL_TRUE);
+        EXPECT_EQ(glIsTexture(textures[0]), GL_TRUE);
+        EXPECT_EQ(glIsTexture(textures[1]), GL_TRUE);
+        EXPECT_EQ(glIsFramebuffer(framebuffer), GL_TRUE);
+    }
+
+    EXPECT_EQ(glIsProgram(programId), GL_FALSE);
+    EXPECT_EQ(glIsShader(vertexShader), GL_FALSE);
+    EXPECT_EQ(glIsShader(fragmentShader), GL_FALSE);
+    EXPECT_EQ(glIsTexture(textures[0]), GL_FALSE);
+    EXPECT_EQ(glIsTexture(textures[1]), GL_FALSE);
+    EXPECT_EQ(glIsFramebuffer(framebuffer), GL_FALSE);
 }
 
 /**

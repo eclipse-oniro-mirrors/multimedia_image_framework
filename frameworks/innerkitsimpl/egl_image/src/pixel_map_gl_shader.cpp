@@ -205,10 +205,16 @@ Shader::Shader()
 
 Shader::~Shader()
 {
+    (void)clearResources();
     PixelMapGlResource::DeleteFramebuffer(writeFbo_);
 }
 
 bool Shader::Clear()
+{
+    return clearResources();
+}
+
+bool Shader::clearResources()
 {
     ImageTrace imageTrace("Shader::Clear");
     glBindTexture(GL_TEXTURE_2D, 0);

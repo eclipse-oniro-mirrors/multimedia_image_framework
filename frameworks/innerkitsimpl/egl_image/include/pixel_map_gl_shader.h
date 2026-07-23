@@ -85,6 +85,7 @@ protected:
     GLuint loadShader(GLenum type, const char *shaderSrc);
     bool buildFromSource();
     bool buildFromBinary(unsigned char*& shaderBinary, GLenum &binaryFormat, GLuint &binarySize);
+    bool clearResources();
 
     ShaderType type_ = SHADER_INVALID;
     GLuint programId_ = 0U;
