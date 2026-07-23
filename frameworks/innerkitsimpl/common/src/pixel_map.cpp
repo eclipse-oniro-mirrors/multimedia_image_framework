@@ -2301,7 +2301,7 @@ uint32_t PixelMap::WritePixel(const Position &pos, const uint32_t &color)
             "Width() %{public}d,  Height() %{public}d, ", pos.x, pos.y, GetWidth(), GetHeight());
         return ERR_IMAGE_INVALID_PARAMETER;
     }
-    if (!IsEditable() || !modifiable_) {
+    if (!IsEditable() || !IsModifiable()) {
         IMAGE_LOGE("write pixel by pos pixelmap is not editable or modifiable.");
         return ERR_IMAGE_PIXELMAP_NOT_ALLOW_MODIFY;
     }
@@ -2338,7 +2338,7 @@ uint32_t PixelMap::WritePixel(const Position &pos, const uint32_t &color)
 
 uint32_t PixelMap::CheckPixelMapForWritePixels()
 {
-    if (!IsEditable() || !modifiable_) {
+    if (!IsEditable() || !IsModifiable()) {
         IMAGE_LOGE("write pixel by rect pixelmap data is not editable or modifiable.");
         return ERR_IMAGE_PIXELMAP_NOT_ALLOW_MODIFY;
     }
@@ -2421,7 +2421,7 @@ uint32_t PixelMap::WritePixels(const uint8_t *source, const uint64_t &bufferSize
             static_cast<unsigned long long>(bufferSize), pixelsSize_);
         return ERR_IMAGE_INVALID_PARAMETER;
     }
-    if (!IsEditable() || !modifiable_) {
+    if (!IsEditable() || !IsModifiable()) {
         IMAGE_LOGE("write pixels by buffer pixelmap data is not editable or modifiable.");
         return ERR_IMAGE_PIXELMAP_NOT_ALLOW_MODIFY;
     }
@@ -2464,7 +2464,7 @@ uint32_t PixelMap::WritePixels(const uint8_t *source, const uint64_t &bufferSize
 
 bool PixelMap::WritePixels(const uint32_t &color)
 {
-    if (!IsEditable() || !modifiable_) {
+    if (!IsEditable() || !IsModifiable()) {
         IMAGE_LOGE("erase pixels by color pixelmap data is not editable or modifiable.");
         return false;
     }
@@ -4362,7 +4362,7 @@ static uint32_t ValidateSetAlpha(float percent, bool modifiable, AlphaType alpha
 uint32_t PixelMap::SetAlpha(const float percent)
 {
     auto alphaType = GetAlphaType();
-    uint32_t retCode = ValidateSetAlpha(percent, modifiable_, alphaType);
+    uint32_t retCode = ValidateSetAlpha(percent, IsModifiable(), alphaType);
     if (retCode != SUCCESS) {
         return retCode;
     }
@@ -4572,7 +4572,7 @@ void DrawImage(bool rectStaysRect, const AntiAliasingOption &option, SkCanvas &c
 
 uint32_t PixelMap::ApplyAffineTransform(TransInfos &infos, AntiAliasingOption option)
 {
-    if (!modifiable_) {
+    if (!IsModifiable()) {
         IMAGE_LOGE("[ApplyAffineTransform] PixelMap is not modifiable");
         return ERR_IMAGE_PIXELMAP_NOT_ALLOW_MODIFY;
     }
@@ -4716,7 +4716,7 @@ uint32_t PixelMap::Scale(float xAxis, float yAxis, AntiAliasingOption option)
 uint32_t PixelMap::ScaleWithSLR(float xAxis, float yAxis)
 {
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
-    if (!modifiable_) {
+    if (!IsModifiable()) {
         IMAGE_LOGE("[PixelMap] scale can't be performed: PixelMap is not modifiable");
         return ERR_IMAGE_PIXELMAP_NOT_ALLOW_MODIFY;
     }
@@ -4858,7 +4858,7 @@ uint32_t PixelMap::crop(const Rect &rect)
 
 uint32_t PixelMap::Crop(const Rect &rect)
 {
-    if (!modifiable_) {
+    if (!IsModifiable()) {
         IMAGE_LOGE("[PixelMap] crop can't be performed: PixelMap is not modifiable");
         return ERR_IMAGE_PIXELMAP_NOT_ALLOW_MODIFY;
     }
