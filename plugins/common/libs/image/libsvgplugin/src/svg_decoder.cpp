@@ -50,6 +50,9 @@ const std::string SVG_STROKE_COLOR_ATTR = "stroke";
 static constexpr uint32_t DEFAULT_RESIZE_PERCENTAGE = 100;
 static constexpr float FLOAT_HALF = 0.5f;
 static constexpr uint32_t SVG_MAX_RECURSION_DEPTH = 300;
+constexpr static uint32_t NUM_0 = 0;
+constexpr static uint32_t NUM_1 = 1;
+constexpr static uint32_t NUM_2 = 2;
 
 static inline uint32_t Float2UInt32(float val)
 {
@@ -406,37 +409,37 @@ bool SvgDecoder::AllocBuffer(DecodeContext &context)
 
 static bool CheckSvgNestingDepth(const uint8_t* data, size_t size)
 {
-    uint32_t depth = 0;
-    size_t i = 0;
+    uint32_t depth = NUM_0;
+    size_t i = NUM_0;
     while (i < size) {
         if (data[i] != '<') {
             i++;
             continue;
         }
-        if (i + 1 >= size) {
+        if (i + NUM_1 >= size) {
             break;
         }
-        char next = data[i + 1];
+        char next = data[i + NUM_1];
         if (next == '!') {
-            i += 2;
+            i += NUM_2;
             continue;
         }
         if (next == '?') {
-            i += 2;
+            i += NUM_2;
             continue;
         }
         if (next == '/') {
-            if (depth > 0) {
+            if (depth > NUM_0) {
                 depth--;
             }
-            i += 2;
+            i += NUM_2;
             continue;
         }
-        size_t j = i + 1;
+        size_t j = i + NUM_1;
         while (j < size && data[j] != '>') {
             j++;
         }
-        bool selfClosing = (j > i + 1) && (j < size) && (data[j - 1] == '/');
+        bool selfClosing = (j > i + NUM_1) && (j < size) && (data[j - NUM_1] == '/');
         if (!selfClosing) {
             depth++;
             if (depth > SVG_MAX_RECURSION_DEPTH) {
@@ -444,7 +447,7 @@ static bool CheckSvgNestingDepth(const uint8_t* data, size_t size)
                 return false;
             }
         }
-        i = (j < size) ? (j + 1) : size;
+        i = (j < size) ? (j + NUM_1) : size;
     }
     return true;
 }
@@ -498,7 +501,7 @@ static void SetSVGColor(SkSVGNode* node, uint32_t color, std::string colorAttr)
     stream.width(SVG_COLOR_ATTR_WIDTH);
     stream << std::hex << (color & SVG_COLOR_MASK);
     std::string newValue(stream.str());
-    SetSVGColor(node, "#" + newValue, colorAttr, 0);
+    SetSVGColor(node, "#" + newValue, colorAttr, NUM_0);
 }
 
 bool SvgDecoder::BuildDom()

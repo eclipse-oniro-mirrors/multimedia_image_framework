@@ -980,7 +980,7 @@ static bool PixelMapPostProcWithGL(PixelMap &sourcePixelMap, GPUTransformData &t
     if (dmaMode.isSourceDma && !dmaMode.isTargetDma) {
         IMAGE_LOGI("slr_gpu PixelMapPostProcWithGL no-padding DMA does not support GPU writeback, fallback output");
     }
-    size_t buffersize = static_cast<size_t>(4 * desiredSize.width * desiredSize.height); // 4: 4 bytes per pixel
+    size_t buffersize = static_cast<uint64_t>(desiredSize.width) * desiredSize.height * 4; // 4: 4 bytes per pixel
     MemoryData memoryData = {nullptr, buffersize, "PixelMapPostProcWithGL", desiredSize};
     memoryData.usage = noPaddingUsage;
     std::unique_ptr<AbsMemory> dstMemory = MemoryManager::CreateMemory(dmaMode.outputAllocType, memoryData);
@@ -990,7 +990,7 @@ static bool PixelMapPostProcWithGL(PixelMap &sourcePixelMap, GPUTransformData &t
     if (dmaMode.isTargetDma) {
         SurfaceBuffer* sbBuffer = reinterpret_cast<SurfaceBuffer*>(dstMemory->extend.data);
         outputStride = sbBuffer->GetStride();
-        buffersize = static_cast<uint32_t>(sbBuffer->GetStride() * desiredSize.height);
+        buffersize = static_cast<uint32_t>(static_cast<uint64_t>(sbBuffer->GetStride()) * desiredSize.height);
     }
     PixelMapProgramManager::BuildShader();
     bool ret = true;
@@ -1016,7 +1016,7 @@ static bool PixelMapPostProcWithGL(PixelMap &sourcePixelMap, GPUTransformData &t
         return false;
     }
     sourcePixelMap.SetPixelsAddr(dstMemory->data.data, dstMemory->extend.data,
-        desiredSize.height * outputStride, dmaMode.outputAllocType, nullptr);
+        static_cast<uint64_t>(desiredSize.height) * outputStride, dmaMode.outputAllocType, nullptr);
     ImageInfo info;
     info.size = desiredSize;
     info.pixelFormat = PixelFormat::RGBA_8888;
