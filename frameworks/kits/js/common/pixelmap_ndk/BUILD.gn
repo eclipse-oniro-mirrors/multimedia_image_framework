@@ -17,6 +17,7 @@ import("//foundation/multimedia/image_framework/ide/image_decode_config.gni")
 SUBSYSTEM_DIR = "//foundation/multimedia/image_framework"
 
 ohos_shared_library("pixelmap_ndk") {
+  branch_protector_ret = "pac_ret"
   sanitize = {
     cfi = true
     cfi_cross_dso = true
@@ -52,6 +53,7 @@ ohos_shared_library("pixelmap_ndk") {
 
 ohos_shared_library("pixelmap") {
   output_extension = "so"
+  branch_protector_ret = "pac_ret"
   sanitize = {
     cfi = true
     cfi_cross_dso = true
