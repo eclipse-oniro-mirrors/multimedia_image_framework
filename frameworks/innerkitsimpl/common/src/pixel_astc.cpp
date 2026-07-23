@@ -183,8 +183,9 @@ uint32_t PixelAstc::Crop(const Rect &rect)
     ImageInfo imageInfo;
     GetImageInfo(imageInfo);
     if (rect.left >= 0 && rect.top >= 0 && rect.width > 0 && rect.height > 0 &&
-        rect.left + rect.width <= imageInfo.size.width &&
-        rect.top + rect.height <= imageInfo.size.height) {
+        rect.left <= imageInfo.size.width && rect.top <= imageInfo.size.height &&
+        rect.width <= imageInfo.size.width - rect.left &&
+        rect.height <= imageInfo.size.height - rect.top) {
         TransformData transformData;
         GetTransformData(transformData);
         transformData.cropLeft = rect.left;

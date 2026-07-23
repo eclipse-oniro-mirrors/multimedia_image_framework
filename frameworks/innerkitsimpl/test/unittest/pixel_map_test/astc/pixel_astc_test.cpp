@@ -15,6 +15,7 @@
 
 #include <gtest/gtest.h>
 #include <securec.h>
+#include <limits>
 #include "image_source.h"
 #include "image_type.h"
 #include "image_utils.h"
@@ -279,6 +280,20 @@ HWTEST_F(PixelAstcTest, PixelAstcTest005, TestSize.Level3)
     ret = pixelAstc->crop(rect);
     EXPECT_EQ(ERR_IMAGE_CROP, ret);
 
+    rect.left = std::numeric_limits<int32_t>::max();
+    rect.top = 0;
+    rect.width = 1;
+    rect.height = 1;
+    ret = pixelAstc->crop(rect);
+    EXPECT_EQ(ERR_IMAGE_CROP, ret);
+
+    rect.left = 0;
+    rect.top = std::numeric_limits<int32_t>::max();
+    ret = pixelAstc->crop(rect);
+    EXPECT_EQ(ERR_IMAGE_CROP, ret);
+
+    rect.left = 1;
+    rect.top = 1;
     rect.height = 1;
     ret = pixelAstc->crop(rect);
     EXPECT_EQ(SUCCESS, ret);
