@@ -101,6 +101,7 @@ private:
 
 protected:
     uint32_t headerSize_ = 0;
+    uint32_t recursionDepth_ = 0;
 
     std::vector<std::shared_ptr<HeifBox>> children_;
 

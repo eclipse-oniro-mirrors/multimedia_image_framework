@@ -254,6 +254,7 @@ heif_error HeifBox::MakeFromReader(HeifStreamReader &reader,
         return heif_error_eof;
     }
     HeifStreamReader contentReader(reader.GetStream(), reader.GetStream()->Tell(), boxContentSize);
+    box->recursionDepth_ = recursionCount;
     if (BoxContentChildren(box)) {
         err = box->ParseContentChildren(contentReader, recursionCount);
     } else {
