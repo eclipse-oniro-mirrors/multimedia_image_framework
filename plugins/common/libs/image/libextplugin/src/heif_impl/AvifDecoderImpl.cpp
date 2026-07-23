@@ -152,6 +152,7 @@ static bool SetColorConfig(SwsContext* ctx, const Dav1dPicture &pic)
     int32_t ret = sws_getColorspaceDetails(ctx, &srcColorTable, &srcRange, &dstColorTable, &dstRange, &brightness,
         &contrast, &saturation);
     CHECK_ERROR_RETURN_RET_LOG(ret != 0, false, "sws_getColorspaceDetails failed.");
+    CHECK_ERROR_RETURN_RET_LOG(pic.seq_hdr == nullptr, false, "SetColorConfig seq_hdr is nullptr.");
     int32_t srcColorSpace = AvifColorSpaceToFFmpegColorSpace(pic);
     srcRange = pic.seq_hdr->color_range == 0 ? 0 : 1;
     ret = sws_setColorspaceDetails(ctx, sws_getCoefficients(srcColorSpace), srcRange, dstColorTable, dstRange,
