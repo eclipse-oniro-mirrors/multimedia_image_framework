@@ -1354,6 +1354,7 @@ bool HeifDecoderImpl::IsGainmapGrid()
 bool HeifDecoderImpl::IsHeifGainmapDivisibility(int32_t primaryDisplayWidth, int32_t primaryDisplayHeight)
 {
     CHECK_ERROR_RETURN_RET(!gainmapImage_, true);
+    CHECK_ERROR_RETURN_RET(gainmapGridInfo_.displayWidth == 0 || gainmapGridInfo_.displayHeight == 0, false);
     bool isMultiple = (primaryDisplayWidth % static_cast<int32_t>(gainmapGridInfo_.displayWidth) == 0 &&
         primaryDisplayHeight % static_cast<int32_t>(gainmapGridInfo_.displayHeight) == 0);
     if (isMultiple) {
