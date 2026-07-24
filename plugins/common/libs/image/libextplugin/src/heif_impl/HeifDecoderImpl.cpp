@@ -225,7 +225,7 @@ bool HeifDecoderImpl::init(HeifStream *stream, HeifFrameInfo *frameInfo)
             IMAGE_LOGE("file size is 0");
             return false;
         }
-        srcMemory_ = new uint8_t[fileLength];
+        srcMemory_ = new (std::nothrow) uint8_t[fileLength];
         CHECK_ERROR_RETURN_RET(!srcMemory_, false);
         stream->read(srcMemory_, fileLength);
     }
@@ -946,7 +946,9 @@ bool HeifDecoderImpl::SwDecodeGrids(std::shared_ptr<HeifImage> &image, HevcSoftD
     cond = tileImages.empty();
     CHECK_ERROR_RETURN_RET_LOG(cond, false, "grid image has no tile image");
     size_t numGrid = tileImages.size();
-    cond = numGrid != (param.gridInfo.cols * param.gridInfo.rows);
+    size_t expectedGridCount = 0;
+    cond = __builtin_mul_overflow(param.gridInfo.cols, param.gridInfo.rows, &expectedGridCount) ||
+        numGrid != expectedGridCount;
     CHECK_ERROR_RETURN_RET_LOG(cond, false, "grid count not equal actual decode quantity");
     size_t inputsize = 0;
     std::vector<std::vector<uint8_t>> inputs;
@@ -1002,7 +1004,8 @@ bool HeifDecoderImpl::SwDecodeSingleImage(std::shared_ptr<HeifImage> &image, Hev
     bool cond = (param.dstBuffer == nullptr || param.dstStride == 0);
     CHECK_ERROR_RETURN_RET(cond, false);
     std::vector<std::vector<uint8_t>> inputs(1);
-    parser_->GetItemData(image->GetItemId(), &inputs[0], heif_header_data);
+    heif_error err = parser_->GetItemData(image->GetItemId(), &inputs[0], heif_header_data);
+    CHECK_ERROR_RETURN_RET(err != heif_error_ok, false);
     ProcessChunkHead(inputs[0].data(), inputs[0].size());
 
     int32_t retCode = extManager_.hevcSoftwareDecodeFunc_(inputs, param);

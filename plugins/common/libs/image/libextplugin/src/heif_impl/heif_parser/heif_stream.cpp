@@ -194,12 +194,12 @@ bool HeifStreamReader::ReadData(uint8_t *data, size_t size)
 
 std::string HeifStreamReader::ReadString()
 {
+    auto stream = GetStream();
+    CHECK_ERROR_RETURN_RET(!stream, {});
     if (IsAtEnd()) {
         return {};
     }
     std::stringstream strStream;
-    auto stream = GetStream();
-    CHECK_ERROR_RETURN_RET(!stream, {});
     char strChar = UINT8_BYTES_NUM;
     while (strChar != 0) {
         if (!CheckSize(UINT8_BYTES_NUM)) {
