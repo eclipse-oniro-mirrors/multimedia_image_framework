@@ -1017,7 +1017,8 @@ static bool PixelMapPostProcWithGL(PixelMap &sourcePixelMap, GPUTransformData &t
         return false;
     }
     sourcePixelMap.SetPixelsAddr(dstMemory->data.data, dstMemory->extend.data,
-        static_cast<uint64_t>(desiredSize.height) * static_cast<uint64_t>(outputStride), dmaMode.outputAllocType, nullptr);
+        static_cast<uint64_t>(desiredSize.height) * static_cast<uint64_t>(outputStride),
+        dmaMode.outputAllocType, nullptr);
     ImageInfo info;
     info.size = desiredSize;
     info.pixelFormat = PixelFormat::RGBA_8888;
