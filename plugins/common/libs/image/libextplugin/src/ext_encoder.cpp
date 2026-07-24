@@ -3340,7 +3340,8 @@ void ExtEncoder::AssembleAuxiliaryRefItem(AuxiliaryPictureType type, std::vector
 {
     auto iter = HEIF_AUX_PIC_INFO_MAPPING.find(type);
     if (iter == HEIF_AUX_PIC_INFO_MAPPING.end()) {
-        IMAGE_LOGE("%{public}s type %{public}d not found in HEIF_AUX_PIC_INFO_MAPPING", __func__, static_cast<int>(type));
+        IMAGE_LOGE("%{public}s type %{public}d not found in HEIF_AUX_PIC_INFO_MAPPING", __func__,
+            static_cast<int>(type));
         return;
     }
     auto info = iter->second;
