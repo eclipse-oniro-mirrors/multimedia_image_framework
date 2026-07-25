@@ -2431,11 +2431,11 @@ uint32_t PixelMap::WritePixels(const uint8_t *source, const uint64_t &bufferSize
     if (IsYUV(imageInfo_.pixelFormat)) {
         uint64_t tmpSize = 0;
         int readSize = MAX_READ_COUNT;
-        while (tmpSize < bufferSize) {
-            if (tmpSize + MAX_READ_COUNT > bufferSize) {
-                readSize = (int)(bufferSize - tmpSize);
+        while (tmpSize < bufferSize && tmpSize < pixelsSize_) {
+            if (tmpSize + MAX_READ_COUNT > pixelsSize_) {
+                readSize = (int)(pixelsSize_ - tmpSize);
             }
-            errno_t ret = memcpy_s(data_ + tmpSize, readSize, source + tmpSize, readSize);
+            errno_t ret = memcpy_s(data_ + tmpSize, pixelsSize_ - tmpSize, source + tmpSize, readSize);
             if (ret != 0) {
                 IMAGE_LOGE("write pixels by buffer memcpy the pixelmap data to dst fail, error:%{public}d", ret);
                 return ERR_IMAGE_WRITE_PIXELMAP_FAILED;
