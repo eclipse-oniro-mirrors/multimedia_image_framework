@@ -246,7 +246,11 @@ static CImageInfoV2 ParseImageSourceImageInfo(ImageInfo info, ImageSource* image
     ret.pixelFormat = static_cast<int32_t>(info.pixelFormat);
     ret.alphaType = static_cast<int32_t>(info.alphaType);
     ret.mimeType = Utils::MallocCString(info.encodedFormat);
-    ret.isHdr = imageSource->IsHdrImage();
+    if (imageSource != nullptr) {
+        ret.isHdr = imageSource->IsHdrImage();
+    } else {
+        ret.isHdr = false;
+    }
     return ret;
 }
 
@@ -670,6 +674,22 @@ FFI_EXPORT CArrI32 FfiImageImageSourceImplGetDisposalTypeList(int64_t id, uint32
     return ret;
 }
 
+static bool MallocCStringArray(char** value, const std::vector<std::string>& valueStrArray)
+{
+    for (size_t i = 0; i < valueStrArray.size(); i++) {
+        value[i] = Utils::MallocCString(valueStrArray[i]);
+        if (value[i] == nullptr) {
+            IMAGE_LOGE("[ImageSource] MallocCString failed at index %{public}zu", i);
+            for (size_t j = 0; j < i; j++) {
+                free(value[j]);
+                value[j] = nullptr;
+            }
+            return false;
+        }
+    }
+    return true;
+}
+
 FFI_EXPORT uint32_t FfiImageImageSourceImplGetImageProperties(int64_t id, CArrString key, char** value)
 {
     IMAGE_LOGD("[ImageSource] FfiImageImageSourceImplGetImageProperties start");
@@ -687,8 +707,8 @@ FFI_EXPORT uint32_t FfiImageImageSourceImplGetImageProperties(int64_t id, CArrSt
     if (errCode != SUCCESS) {
         return errCode;
     }
-    for (size_t i = 0; i < valueStrArray.size(); i++) {
-        value[i] = Utils::MallocCString(valueStrArray[i]);
+    if (!MallocCStringArray(value, valueStrArray)) {
+        return ERR_IMAGE_MALLOC_ABNORMAL;
     }
     IMAGE_LOGD("[ImageSource] FfiImageImageSourceImplGetImageProperties success");
     return errCode;
@@ -724,8 +744,9 @@ FFI_EXPORT ErrorInfo FfiImageImageSourceImplGetImagePropertiesV2(int64_t id, CAr
         errorInfo.code = IMAGE_UNSUPPORTED_METADATA;
         return errorInfo;
     }
-    for (size_t i = 0; i < valueStrArray.size(); i++) {
-        value[i] = Utils::MallocCString(valueStrArray[i]);
+    if (!MallocCStringArray(value, valueStrArray)) {
+        errorInfo.code = ERR_IMAGE_MALLOC_ABNORMAL;
+        return errorInfo;
     }
     IMAGE_LOGD("[ImageSource] FfiImageImageSourceImplGetImageProperties success");
     return errorInfo;
@@ -1622,6 +1643,56 @@ FFI_EXPORT int64_t FfiImagePictureImplGetMetadata(int64_t id, int32_t metadataTy
 }
 
 // Metadata
+static bool CreateCjProperties(CjProperties& res,
+    const std::vector<std::pair<std::string, std::string>>& vec)
+{
+    res.key = nullptr;
+    res.value = nullptr;
+    size_t size = vec.size();
+    if (size > SIZE_MAX / sizeof(char*)) {
+        IMAGE_LOGE("[Metadata] size overflow detected.");
+        return false;
+    }
+    char** keyArr = static_cast<char**>(malloc(sizeof(char*) * size));
+    if (keyArr == nullptr) {
+        IMAGE_LOGE("[Metadata] keyArr is nullptr");
+        return false;
+    }
+    char** valueArr = static_cast<char**>(malloc(sizeof(char*) * size));
+    if (valueArr == nullptr) {
+        IMAGE_LOGE("[Metadata] valueArr is nullptr");
+        free(keyArr);
+        return false;
+    }
+    for (size_t i = 0; i < size; i++) {
+        keyArr[i] = Utils::MallocCString(vec[i].first);
+        if (keyArr[i] == nullptr) {
+            for (size_t j = 0; j < i; j++) {
+                free(keyArr[j]);
+                free(valueArr[j]);
+            }
+            free(keyArr);
+            free(valueArr);
+            return false;
+        }
+        valueArr[i] = Utils::MallocCString(vec[i].second);
+        if (valueArr[i] == nullptr) {
+            free(keyArr[i]);
+            for (size_t j = 0; j < i; j++) {
+                free(keyArr[j]);
+                free(valueArr[j]);
+            }
+            free(keyArr);
+            free(valueArr);
+            return false;
+        }
+    }
+    res.key = keyArr;
+    res.value = valueArr;
+    res.size = static_cast<int64_t>(size);
+    return true;
+}
+
 FFI_EXPORT CjProperties FfiImageMetadataImplGetAllProperties(int64_t id, uint32_t* errCode)
 {
     IMAGE_LOGD("[Metadata] FfiImageMetadataImplGetAllProperties in");
@@ -1636,37 +1707,14 @@ FFI_EXPORT CjProperties FfiImageMetadataImplGetAllProperties(int64_t id, uint32_
     if (*errCode != SUCCESS) {
         return res;
     }
-    size_t size = vec.size();
-    if (size == 0) {
+    if (vec.empty()) {
         return res;
     }
-    if (size > SIZE_MAX / sizeof(char*)) {
-        IMAGE_LOGE("[Metadata] size overflow detected.");
-        *errCode = IMAGE_BAD_PARAMETER;
+    if (!CreateCjProperties(res, vec)) {
+        *errCode = ERR_IMAGE_MALLOC_ABNORMAL;
         return res;
     }
-    char** keyArr = static_cast<char**>(malloc(sizeof(char*) * size));
-    if (keyArr == nullptr) {
-        IMAGE_LOGE("[Metadata] keyArr is nullptr");
-        *errCode = IMAGE_BAD_PARAMETER;
-        return res;
-    }
-    char** valueArr = static_cast<char**>(malloc(sizeof(char*) * size));
-    if (valueArr == nullptr) {
-        IMAGE_LOGE("[Metadata] valueArr is nullptr");
-        free(keyArr);
-        *errCode = IMAGE_BAD_PARAMETER;
-        return res;
-    }
-    size_t index = 0;
-    for (const auto& p : vec) {
-        keyArr[index] = Utils::MallocCString(p.first);
-        valueArr[index] = Utils::MallocCString(p.second);
-        index++;
-    }
-    res.key = keyArr;
-    res.value = valueArr;
-    res.size = static_cast<int64_t>(size);
+    res.size = static_cast<int64_t>(vec.size());
     IMAGE_LOGD("[Metadata] FfiImageMetadataImplGetAllProperties out");
     return res;
 }

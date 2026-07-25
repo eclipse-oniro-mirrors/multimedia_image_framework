@@ -21,6 +21,8 @@
 #include "image_receiver.h"
 #include "image_receiver_manager.h"
 
+#include <atomic>
+
 namespace OHOS {
 namespace Media {
 class ImageReceiverImpl : public OHOS::FFI::FFIData {
@@ -40,6 +42,7 @@ public:
 
 private:
     std::shared_ptr<ImageReceiver> imageReceiver_;
+    std::atomic<bool> isRelease { false };
 };
 
 class CjImageReceiverAvaliableListener : public SurfaceBufferAvaliableListener {

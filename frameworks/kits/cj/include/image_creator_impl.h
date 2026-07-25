@@ -19,6 +19,8 @@
 #include "ffi_remote_data.h"
 #include "image_creator.h"
 
+#include <atomic>
+
 namespace OHOS {
 namespace Media {
 class ImageCreatorImpl : public OHOS::FFI::FFIData {
@@ -35,7 +37,7 @@ public:
 
 private:
     void release();
-    bool isRelease = false;
+    std::atomic<bool> isRelease { false };
     std::shared_ptr<ImageCreator> imageCreator_ = nullptr;
 };
 

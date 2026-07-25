@@ -118,8 +118,7 @@ FFI_EXPORT uint32_t FfiOHOSPixelMapRelease(int64_t id)
         IMAGE_LOGE("[PixelMap] instance not exist %{public}" PRId64, id);
         return ERR_IMAGE_INIT_ABNORMAL;
     }
-    std::shared_ptr<PixelMap> ptr_ = instance->GetRealPixelMap();
-    ptr_.reset();
+    instance->Release();
     IMAGE_LOGD("[PixelMap] FfiOHOSPixelMapRelease success");
     return SUCCESS_CODE;
 }
@@ -707,7 +706,7 @@ FFI_EXPORT uint32_t FfiImagePixelMapImplApplyScale(int64_t id, float x, float y,
         IMAGE_LOGE("[PixelMap] instance is nullptr");
         return ERR_IMAGE_INIT_ABNORMAL;
     }
-    AntiAliasingOption option = AntiAliasingOption(antiAliasing);
+    AntiAliasingOption option = ParseAntiAliasingOption(antiAliasing);
     return instance->ApplyScale(x, y, option);
 }
 

@@ -58,6 +58,10 @@ int64_t ImageReceiverImpl::CreateImageReceiver(int32_t width, int32_t height, in
         return INIT_FAILED;
     }
     auto receiverImpl = FFIData::Create<ImageReceiverImpl>(imageReceiver);
+    if (receiverImpl == nullptr) {
+        IMAGE_LOGE("[ImageReceiverImpl] FFIData::Create returned nullptr.");
+        return INIT_FAILED;
+    }
     return receiverImpl->GetID();
 }
 
@@ -144,12 +148,20 @@ sptr<ImageImpl> ImageReceiverImpl::ReadLatestImage()
         IMAGE_LOGE("LastNativeImage is nullptr.");
         return nullptr;
     }
-    return FFIData::Create<ImageImpl>(image);
+    auto imageImpl = FFIData::Create<ImageImpl>(image);
+    if (imageImpl == nullptr) {
+        IMAGE_LOGE("ImageImpl Create is nullptr");
+        return nullptr;
+    }
+    return imageImpl;
 }
 
 void ImageReceiverImpl::Release()
 {
-    imageReceiver_ = nullptr;
+    bool expected = false;
+    if (isRelease.compare_exchange_strong(expected, true)) {
+        imageReceiver_ = nullptr;
+    }
 }
 
 uint32_t ImageReceiverImpl::CjOn(std::string name, std::function<void()> callBack)

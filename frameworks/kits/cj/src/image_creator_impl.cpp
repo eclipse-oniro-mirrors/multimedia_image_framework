@@ -40,9 +40,9 @@ void ImageCreatorImpl::Release()
 
 void ImageCreatorImpl::release()
 {
-    if (!isRelease) {
+    bool expected = false;
+    if (isRelease.compare_exchange_strong(expected, true)) {
         Release();
-        isRelease = true;
     }
 }
 

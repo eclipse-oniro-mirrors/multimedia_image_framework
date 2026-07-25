@@ -162,6 +162,11 @@ uint32_t ImageImpl::GetComponent(int32_t componentType, CRetComponent& ret)
     return SUCCESS;
 }
 
-void ImageImpl::Release() {}
+void ImageImpl::Release()
+{
+    if (native_ != nullptr) {
+        native_ = nullptr;
+    }
+}
 } // namespace Media
 } // namespace OHOS
