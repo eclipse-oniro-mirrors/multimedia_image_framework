@@ -18,7 +18,6 @@
  
 #include <cstdint>
 #include <vector>
-#include <mutex>
 #include "image_type.h"
 #include "include/core/SkImageInfo.h"
  
