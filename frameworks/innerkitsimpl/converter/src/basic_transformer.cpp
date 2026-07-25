@@ -161,33 +161,23 @@ void BasicTransformer::ReleaseBuffer(AllocatorType allocatorType, int fd, int da
 
 uint32_t BasicTransformer::TransformPixmap(const PixmapInfo &inPixmap, PixmapInfo &outPixmap, AllocateMem allocate)
 {
-    if (inPixmap.data == nullptr) {
-        IMAGE_LOGE("[BasicTransformer]input data is null.");
-        return ERR_IMAGE_GENERAL_ERROR;
-    }
+    bool cond = inPixmap.data == nullptr;
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_GENERAL_ERROR, "[BasicTransformer]input data is null.");
     int32_t pixelBytes = ImageUtils::GetPixelBytes(inPixmap.imageInfo.pixelFormat);
-    if (pixelBytes == 0) {
-        IMAGE_LOGE("[BasicTransformer]input pixel is invalid.");
-        return ERR_IMAGE_INVALID_PIXEL;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(pixelBytes == 0, ERR_IMAGE_INVALID_PIXEL, "[BasicTransformer]input pixel is invalid.");
 
     Size dstSize = inPixmap.imageInfo.size;
     GetDstDimension(inPixmap.imageInfo.size, dstSize);
     outPixmap.imageInfo.size = dstSize;
-    if (dstSize.width <= 0 || dstSize.height <= 0 ||
-        ImageUtils::CheckMulOverflow(dstSize.width, dstSize.height, pixelBytes)) {
-        IMAGE_LOGE("[BasicTransformer]buffer size is invalid.");
-        return ERR_IMAGE_ALLOC_MEMORY_FAILED;
-    }
+    cond = (dstSize.width <= 0) || (dstSize.height <= 0) ||
+        ImageUtils::CheckMulOverflow(dstSize.width, dstSize.height, pixelBytes);
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_ALLOC_MEMORY_FAILED, "[BasicTransformer]buffer size is invalid.");
 
-    uint64_t bufferSize = static_cast<uint64_t>(dstSize.width) *
-            static_cast<uint64_t>(dstSize.height) *
+    uint64_t bufferSize = static_cast<uint64_t>(dstSize.width) * static_cast<uint64_t>(dstSize.height) *
             static_cast<uint64_t>(pixelBytes);
-    if (bufferSize > PIXEL_MAP_MAX_RAM_SIZE) {
-        IMAGE_LOGE("[BasicTransformer] buffer size:%{public}llu out of range.",
-            static_cast<unsigned long long>(bufferSize));
-        return ERR_IMAGE_ALLOC_MEMORY_FAILED;
-    }
+    cond = bufferSize > PIXEL_MAP_MAX_RAM_SIZE;
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_ALLOC_MEMORY_FAILED,
+            "[BasicTransformer] buffer size:%{public}llu out of range.", static_cast<unsigned long long>(bufferSize));
     int fd = 0;
     if (!(CheckAllocateBuffer(outPixmap, allocate, fd, bufferSize, dstSize))) {
         return ERR_IMAGE_ALLOC_MEMORY_FAILED;
