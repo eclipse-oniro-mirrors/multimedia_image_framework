@@ -58,19 +58,20 @@ static constexpr int32_t FORMAT_9 = 9;
 static constexpr int32_t INTEGER_PART_WIDTH = 2;
 static constexpr int32_t REQUIRED_GPS_COMPONENTS = 3;
 using JpegYuvDecodeError = OHOS::ImagePlugin::JpegYuvDecodeError;
-static size_t g_supportedFormatSize = 0;
+static std::atomic<size_t> g_supportedFormatSize{0};
 struct FreeDeleter {
+    size_t count = 0;
+    explicit FreeDeleter(size_t n = 0) : count(n) {}
     void operator()(Image_MimeType* ptr) const
     {
         if (ptr) {
-            for (size_t i = 0; i < g_supportedFormatSize; ++i) {
+            for (size_t i = 0; i < count; ++i) {
                 if (ptr[i].data != nullptr) {
                     free(ptr[i].data);
                     ptr[i].data = nullptr;
                 }
             }
             delete[] ptr;
-            ptr = nullptr;
         }
     }
 };
@@ -1718,7 +1719,7 @@ Image_ErrorCode OH_ImageSourceNative_GetSupportedFormats(Image_MimeType** suppor
     ImageSource::GetSupportedFormats(formats);
     auto newFormats = std::unique_ptr<Image_MimeType[], FreeDeleter>(
         new Image_MimeType[formats.size()],
-        FreeDeleter{});
+        FreeDeleter(formats.size()));
     size_t count = 0;
     for (const auto& str : formats) {
         newFormats[count].data = strdup(str.c_str());

@@ -202,6 +202,9 @@ uint32_t BasicTransformer::TransformPixmap(const PixmapInfo &inPixmap, PixmapInf
         IMAGE_LOGE("[BasicTransformer]apply heap memory failed.");
         ReleaseBuffer((allocate == nullptr) ? AllocatorType::HEAP_ALLOC : AllocatorType::SHARE_MEM_ALLOC,
             fd, bufferSize, outPixmap.data);
+        outPixmap.data = nullptr;
+        delete outPixmap.context;
+        outPixmap.context = nullptr;
         return ERR_IMAGE_GENERAL_ERROR;
     }
 
@@ -209,6 +212,9 @@ uint32_t BasicTransformer::TransformPixmap(const PixmapInfo &inPixmap, PixmapInf
         IMAGE_LOGE("[BasicTransformer] the matrix can not invert.");
         ReleaseBuffer((allocate == nullptr) ? AllocatorType::HEAP_ALLOC : AllocatorType::SHARE_MEM_ALLOC,
             fd, bufferSize, outPixmap.data);
+        outPixmap.data = nullptr;
+        delete outPixmap.context;
+        outPixmap.context = nullptr;
         return ERR_IMAGE_MATRIX_NOT_INVERT;
     }
     return IMAGE_SUCCESS;
