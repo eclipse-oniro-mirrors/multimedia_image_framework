@@ -130,6 +130,7 @@ bool HispeedImageManager::LoadYuvConvertSym()
 bool HispeedImageManager::LoadHispeedImageSo()
 {
 #if !defined(CROSS_PLATFORM)
+    std::lock_guard<std::recursive_mutex> lock(mutex_);
     ImageFuncTimer imageFuncTimer(__func__);
     if (!isHispeedImageSoOpened_) {
         hispeedImageSoHandle_ = dlopen(HISPEED_IMAGE_SO.c_str(), RTLD_LAZY);
@@ -154,6 +155,7 @@ bool HispeedImageManager::LoadHispeedImageSo()
 void HispeedImageManager::UnloadHispeedImageSo()
 {
 #if !defined(CROSS_PLATFORM)
+    std::lock_guard<std::recursive_mutex> lock(mutex_);
     if (hispeedImageSoHandle_ != nullptr) {
         if (dlclose(hispeedImageSoHandle_)) {
             IMAGE_LOGD("hispeedImageSoHandle dlclose failed: %{public}s", HISPEED_IMAGE_SO.c_str());

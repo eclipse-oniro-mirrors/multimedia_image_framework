@@ -18,6 +18,7 @@
  
 #include <cstdint>
 #include <vector>
+#include <mutex>
 #include "image_type.h"
 #include "include/core/SkImageInfo.h"
  
@@ -96,6 +97,7 @@ private:
     void YuvConvertPara(const YUVDataInfo& yuvInfo, SrcConvertParam& srcParam, DestConvertParam& destParam,
                        DestConvertInfo& destInfo);
     const int* GetYuvCoeffFromDest(const DestConvertParam &destParam);
+    std::recursive_mutex mutex_;
     bool isHispeedImageSoOpened_;
     void* hispeedImageSoHandle_;
     YuvJpegEncoderCreateFunc jpegEncoderCreateFunc_;

@@ -786,6 +786,11 @@ static void parseSizeLimit(napi_env env, napi_value root, PackOption* opts)
     if (!GET_INT32_BY_NAME(sizeLimitValue, "level", level)) {
         IMAGE_LOGD("No level in sizeLimit");
     }
+    if (level < static_cast<int32_t>(AntiAliasingOption::NONE) ||
+        level > static_cast<int32_t>(AntiAliasingOption::SLR)) {
+        IMAGE_LOGE("Invalid antiAliasing level: %{public}d", level);
+        level = static_cast<int32_t>(AntiAliasingOption::NONE);
+    }
     sizeLimit.antiAliasingLevel = static_cast<AntiAliasingOption>(level);
     opts->sizeLimit = sizeLimit;
 }
