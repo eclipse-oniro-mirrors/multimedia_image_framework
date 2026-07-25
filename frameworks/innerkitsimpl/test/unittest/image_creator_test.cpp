@@ -195,7 +195,7 @@ HWTEST_F(ImageCreatorTest, OnBufferAvailable002, TestSize.Level3)
     ASSERT_NE(creator, nullptr);
     sptr<ImageCreatorSurfaceListener> listener = new ImageCreatorSurfaceListener();
     listener->ic_ = creator;
-    listener->ic_.RegisterBufferAvaliableListener(listener->ic_.surfaceBufferAvaliableListener_);
+    creator->RegisterBufferAvaliableListener(creator->surfaceBufferAvaliableListener_);
     listener->OnBufferAvailable();
     GTEST_LOG_(INFO) << "ImageCreatorTest: OnBufferAvailable002 end";
 }
