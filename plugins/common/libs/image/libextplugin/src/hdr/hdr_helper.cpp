@@ -538,7 +538,7 @@ static bool ParseColorInfo(const uint8_t* data, uint32_t& offset, uint32_t lengt
 
 static bool ParseTransformInfo(uint8_t* data, uint32_t& offset, uint32_t length, TransformInfo& info)
 {
-    uint8_t size = ImageUtils::BytesToUint16(data, offset, length);
+    uint16_t size = ImageUtils::BytesToUint16(data, offset, length);
     if (size == EMPTY_SIZE) {
         info.mappingFlag = EMPTY_SIZE;
         info.mapping.resize(EMPTY_SIZE);

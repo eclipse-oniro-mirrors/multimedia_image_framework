@@ -150,6 +150,11 @@ static void CommonCallbackRoutine(napi_env env, PictureAsyncContext* &asyncConte
     napi_handle_scope scope = nullptr;
     napi_open_handle_scope(env, &scope);
     if (scope == nullptr) {
+        if (asyncContext != nullptr) {
+            napi_delete_async_work(env, asyncContext->work);
+            delete asyncContext;
+            asyncContext = nullptr;
+        }
         return;
     }
 

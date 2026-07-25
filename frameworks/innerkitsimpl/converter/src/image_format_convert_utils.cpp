@@ -66,6 +66,13 @@ static AVPixelFormat findPixelFormat(PixelFormat format)
 static bool YuvToRGBParam(const YUVDataInfo &yDInfo, SrcConvertParam &srcParam, DestConvertParam &destParam,
                           DestConvertInfo &destInfo)
 {
+    bool cond = srcParam.buffer == nullptr || yDInfo.yOffset > srcParam.bufferSize ||
+        yDInfo.uvOffset > srcParam.bufferSize;
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "YuvToRGBParam invalid input params");
+
+    cond = yDInfo.yStride > static_cast<uint32_t>(INT32_MAX) || yDInfo.uvStride > static_cast<uint32_t>(INT32_MAX);
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "YuvToRGBParam stride overflow");
+
     srcParam.slice[0] = srcParam.buffer + yDInfo.yOffset;
     srcParam.slice[1] = srcParam.buffer + yDInfo.uvOffset;
     srcParam.stride[0] = static_cast<int>(yDInfo.yStride);

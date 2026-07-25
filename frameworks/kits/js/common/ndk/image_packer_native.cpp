@@ -556,7 +556,7 @@ Image_ErrorCode OH_ImagePackerNative_Create(OH_ImagePackerNative **imagePacker)
     if (imagePacker == nullptr) {
         return IMAGE_BAD_PARAMETER;
     }
-    auto imagePacker2 = new OH_ImagePackerNative();
+    auto imagePacker2 = new (std::nothrow) OH_ImagePackerNative();
     if (imagePacker2 == nullptr || imagePacker2->GetInnerImagePacker() == nullptr) {
         if (imagePacker2) {
             delete imagePacker2;
