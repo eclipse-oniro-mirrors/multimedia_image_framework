@@ -239,9 +239,14 @@ static vector<uint32_t> ParseMpfOffset(jpeg_marker_struct* marker, uint32_t preO
     }
     vector<uint32_t> offsetArray(imageNum);
     // gain map offset need add Mpf marker offset;
-    uint32_t markerHeaderOffset = preOffset + JPEG_MARKER_TAG_SIZE + JPEG_MARKER_LENGTH_SIZE + MPF_TAG_SIZE;
+    const uint32_t mpfBaseSize = JPEG_MARKER_TAG_SIZE + JPEG_MARKER_LENGTH_SIZE + MPF_TAG_SIZE;
+    uint32_t markerHeaderOffset = 0;
+    bool headerOverflow = __builtin_add_overflow(preOffset, mpfBaseSize, &markerHeaderOffset);
+    CHECK_ERROR_RETURN_RET_LOG(headerOverflow, {}, "ParseMpfOffset markerHeaderOffset is overflowed");
     for (uint32_t i = INDEX_ONE; i < imageNum; i++) {
-        offsetArray[i] = jpegMpf->images_[i].offset + markerHeaderOffset;
+        bool offsetOverflow = __builtin_add_overflow(jpegMpf->images_[i].offset,
+            markerHeaderOffset, &offsetArray[i]);
+        CHECK_ERROR_RETURN_RET_LOG(offsetOverflow, {}, "ParseMpfOffset offset is overflowed");
     }
     return offsetArray;
 }

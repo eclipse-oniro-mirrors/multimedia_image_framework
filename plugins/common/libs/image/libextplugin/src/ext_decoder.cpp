@@ -405,13 +405,15 @@ uint32_t ExtDecoder::DmaAlloc(DecodeContext &context, uint64_t count, const OHOS
         ioctl(fd, DMA_BUF_SET_TYPE, "pixelmap");
     }
     void* nativeBuffer = sb.GetRefPtr();
+    uint8_t* virAddr = static_cast<uint8_t*>(sb->GetVirAddr());
+    CHECK_ERROR_RETURN_RET_LOG(virAddr == nullptr, ERR_DMA_DATA_ABNORMAL,
+        "ExtDecoder::DmaAlloc GetVirAddr failed");
     int32_t err = ImageUtils::SurfaceBuffer_Reference(nativeBuffer);
     CHECK_ERROR_RETURN_RET_LOG(err != OHOS::GSERROR_OK, ERR_DMA_DATA_ABNORMAL, "NativeBufferReference failed");
 
     IMAGE_LOGD("ExtDecoder::DmaMemAlloc sb stride is %{public}d, height is %{public}d, size is %{public}d",
         sb->GetStride(), sb->GetHeight(), sb->GetSize());
-    SetDecodeContextBuffer(context, AllocatorType::DMA_ALLOC, static_cast<uint8_t*>(sb->GetVirAddr()), count,
-        nativeBuffer);
+    SetDecodeContextBuffer(context, AllocatorType::DMA_ALLOC, virAddr, count, nativeBuffer);
     return SUCCESS;
 #endif
 }
