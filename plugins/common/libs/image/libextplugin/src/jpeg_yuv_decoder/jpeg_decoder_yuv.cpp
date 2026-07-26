@@ -499,6 +499,7 @@ void UpdateDestStride(JpegDecoderYuvParameter decodeParameter, const DecodeConte
 
             uint32_t uvIndex = (decodeParameter.outfmt_ == JpegYuvFmt::OutFmt_NV12) ? UCOM : VCOM;
             uint32_t uvOffset = planes->planes[uvIndex].offset;
+            CHECK_ERROR_RETURN_LOG(uvOffset >= decodeParameter.yuvBufferSize_, "uvOffset exceeds buffer size");
 
             dest.planes[UVCOM] = outYData + uvOffset;
             dest.strides[YCOM] = stride;

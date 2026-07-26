@@ -1171,6 +1171,7 @@ static sptr<SurfaceBuffer> AllocSurfaceBuffer(int32_t width, int32_t height,
 
 sptr<SurfaceBuffer> ExtEncoder::ConvertToSurfaceBuffer(PixelMap* pixelmap)
 {
+    CHECK_ERROR_RETURN_RET_LOG(pixelmap == nullptr, nullptr, "pixelmap is nullptr");
     bool cond = pixelmap->GetHeight() <= 0 || pixelmap->GetWidth() <= 0;
     CHECK_ERROR_RETURN_RET_LOG(cond, nullptr,
         "pixelmap height:%{public}d or width:%{public}d error", pixelmap->GetHeight(), pixelmap->GetWidth());
