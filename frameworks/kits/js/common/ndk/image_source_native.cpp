@@ -1718,7 +1718,7 @@ Image_ErrorCode OH_ImageSourceNative_GetSupportedFormats(Image_MimeType** suppor
     std::set<std::string> formats;
     ImageSource::GetSupportedFormats(formats);
     auto newFormats = std::unique_ptr<Image_MimeType[], FreeDeleter>(
-        new Image_MimeType[formats.size()],
+        new Image_MimeType[formats.size()]{},
         FreeDeleter(formats.size()));
     size_t count = 0;
     for (const auto& str : formats) {
