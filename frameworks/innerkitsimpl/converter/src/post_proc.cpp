@@ -239,21 +239,24 @@ static int32_t GetUVStride(int32_t width)
     return (width + 1) / HALF * HALF;
 }
 
-#if !defined(CROSS_PLATFORM)
 bool PostProc::CenterDisplayYuv(PixelMap &pixelMap, int32_t srcWidth, int32_t srcHeight,
                                 int32_t targetWidth, int32_t targetHeight)
 {
     YUVDataInfo yuvInfo;
+#if !defined(CROSS_PLATFORM)
     ImageUtils::UpdateYUVDataInfo(pixelMap);
+#endif
     pixelMap.GetImageYUVInfo(yuvInfo);
 
     ImageInfo imgInfo;
     pixelMap.GetImageInfo(imgInfo);
     YUVStrideInfo dstStrides;
     void *srcBuffer = nullptr;
+#if !defined(CROSS_PLATFORM)
     if (pixelMap.GetAllocatorType() == AllocatorType::DMA_ALLOC) {
         srcBuffer = reinterpret_cast<void *>(pixelMap.GetFd());
     }
+#endif
     auto dstMemory = PixelYuvUtils::CreateYuvMemory(imgInfo.pixelFormat, "CenterDisplayYuv ImageData",
         targetWidth, targetHeight, pixelMap.GetAllocatorType(), pixelMap.GetNoPaddingUsage(), srcBuffer, dstStrides);
     bool cond = (dstMemory == nullptr) || (dstMemory->data.data == nullptr);
@@ -290,22 +293,21 @@ bool PostProc::CenterDisplayYuv(PixelMap &pixelMap, int32_t srcWidth, int32_t sr
     imgInfo.size.width = targetWidth;
     imgInfo.size.height = targetHeight;
     CHECK_ERROR_RETURN_RET_LOG(pixelMap.SetImageInfo(imgInfo, true) != SUCCESS, false, "update ImageInfo failed");
+#if !defined(CROSS_PLATFORM)
     ImageUtils::UpdateYUVDataInfo(pixelMap);
+#endif
     ImageUtils::FlushSurfaceBuffer(&pixelMap);
     return true;
 }
-#endif
 
 bool PostProc::CenterDisplay(PixelMap &pixelMap, int32_t srcWidth, int32_t srcHeight, int32_t targetWidth,
                              int32_t targetHeight)
 {
     ImageInfo dstImageInfo;
     pixelMap.GetImageInfo(dstImageInfo);
-#if !defined(CROSS_PLATFORM)
     if (dstImageInfo.pixelFormat == PixelFormat::NV12 || dstImageInfo.pixelFormat == PixelFormat::NV21) {
         return CenterDisplayYuv(pixelMap, srcWidth, srcHeight, targetWidth, targetHeight);
     }
-#endif
     int32_t srcRowStride = pixelMap.GetAllocatorType() == AllocatorType::DMA_ALLOC ? pixelMap.GetRowStride() : 0;
     dstImageInfo.size.width = targetWidth;
     dstImageInfo.size.height = targetHeight;
