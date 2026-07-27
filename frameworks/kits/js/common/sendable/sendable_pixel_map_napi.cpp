@@ -1268,21 +1268,19 @@ napi_value SendablePixelMapNapi::CreateSendablPixelMapFromParcel(napi_env env, n
     }
 
     std::shared_ptr<OHOS::Media::PixelMap> pixelPtr;
-    {
-        std::lock_guard<std::mutex> messageSequenceLock(ImageNapiUtils::GetMessageSequenceMutex(messageSequence));
-        auto messageParcel = messageSequence->GetMessageParcel();
-        if (messageParcel == nullptr) {
-            return SendablePixelMapNapi::ThrowExceptionError(env,
-                CREATE_PIXEL_MAP_FROM_PARCEL, ERR_IPC, "get parcel failed");
-        }
-        PIXEL_MAP_ERR error;
-        auto pixelmap = PixelMap::Unmarshalling(*messageParcel, error);
-        if (!IMG_NOT_NULL(pixelmap)) {
-            return SendablePixelMapNapi::ThrowExceptionError(env,
-                CREATE_PIXEL_MAP_FROM_PARCEL, error.errorCode, error.errorInfo);
-        }
-        pixelPtr.reset(pixelmap);
+    { std::lock_guard<std::mutex> messageSequenceLock(ImageNapiUtils::GetMessageSequenceMutex(messageSequence));
+    auto messageParcel = messageSequence->GetMessageParcel();
+    if (messageParcel == nullptr) {
+        return SendablePixelMapNapi::ThrowExceptionError(env,
+            CREATE_PIXEL_MAP_FROM_PARCEL, ERR_IPC, "get parcel failed");
     }
+    PIXEL_MAP_ERR error;
+    auto pixelmap = PixelMap::Unmarshalling(*messageParcel, error);
+    if (!IMG_NOT_NULL(pixelmap)) {
+        return SendablePixelMapNapi::ThrowExceptionError(env,
+            CREATE_PIXEL_MAP_FROM_PARCEL, error.errorCode, error.errorInfo);
+    }
+    pixelPtr.reset(pixelmap); }
     napi_value constructor = nullptr;
     status = napi_get_reference_value(env, sConstructor_, &constructor);
     if (IMG_IS_OK(status)) {
