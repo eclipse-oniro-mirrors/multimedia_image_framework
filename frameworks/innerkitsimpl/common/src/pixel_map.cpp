@@ -3785,11 +3785,6 @@ bool PixelMap::ReadTlvAttr(std::vector<uint8_t> &buff, ImageInfo &info,
 
 PixelMap *PixelMap::DecodeTlv(std::vector<uint8_t> &buff)
 {
-    PixelMap *pixelMap = new(std::nothrow) PixelMap();
-    if (pixelMap == nullptr) {
-        IMAGE_LOGE("pixel map tlv decode fail: new PixelMap error");
-        return nullptr;
-    }
     ImageInfo imageInfo;
     std::unique_ptr<AbsMemory> dstMemory = nullptr;
     int32_t csm = -1;
@@ -3797,8 +3792,30 @@ PixelMap *PixelMap::DecodeTlv(std::vector<uint8_t> &buff)
         if (dstMemory != nullptr) {
             dstMemory->Release();
         }
-        delete pixelMap;
         IMAGE_LOGE("[PixelMap] tlv decode fail");
+        return nullptr;
+    }
+    PixelMap *pixelMap = nullptr;
+    if (IsYUV(imageInfo.pixelFormat)) {
+#ifdef EXT_PIXEL
+        pixelMap = new(std::nothrow) PixelYuvExt();
+#else
+        pixelMap = new(std::nothrow) PixelYuv();
+#endif
+    } else if (ImageUtils::IsAstc(imageInfo.pixelFormat)) {
+#if !defined(CROSS_PLATFORM)
+        pixelMap = new(std::nothrow) PixelAstc();
+#else
+        dstMemory->Release();
+        IMAGE_LOGE("[PixelMap] tlv decode fail: astc not supported on cross platform");
+        return nullptr;
+#endif
+    } else {
+        pixelMap = new(std::nothrow) PixelMap();
+    }
+    if (pixelMap == nullptr) {
+        dstMemory->Release();
+        IMAGE_LOGE("[PixelMap] tlv decode fail: new pixelmap error");
         return nullptr;
     }
     uint32_t ret = pixelMap->SetImageInfo(imageInfo);
