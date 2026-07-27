@@ -1131,6 +1131,7 @@ STATIC_EXEC_FUNC(Unmarshalling)
         IMAGE_LOGE("UnmarshallingExec invalid parameter: messageSequence is null");
         return;
     }
+
     std::lock_guard<std::mutex> lock(ImageNapiUtils::GetMessageSequenceMutex(context->messageSequence));
     auto messageParcel = context->messageSequence->GetMessageParcel();
     if (messageParcel == nullptr) {
@@ -1261,14 +1262,17 @@ napi_value SendablePixelMapNapi::CreateSendablPixelMapFromParcel(napi_env env, n
     }
     NAPI_MessageSequence* messageSequence = nullptr;
     status = NapiUnwrap(env, argValue[NUM_0], reinterpret_cast<void**>(&messageSequence), false);
-    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, messageSequence), result,
-        IMAGE_LOGE("CreateSendablPixelMapFromParcel pixmapNapi unwrapped is nullptr"));
-    std::lock_guard<std::mutex> messageSequenceLock(
-        ImageNapiUtils::GetMessageSequenceMutex(messageSequence));
+    if (!IMG_IS_READY(status, messageSequence)) {
+        return SendablePixelMapNapi::ThrowExceptionError(env, CREATE_PIXEL_MAP_FROM_PARCEL,
+            ERR_IMAGE_PIXELMAP_CREATE_FAILED, "Failed to unwrap invalid message sequence.");
+    }
+
+    std::shared_ptr<OHOS::Media::PixelMap> pixelPtr;
+    { std::lock_guard<std::mutex> messageSequenceLock(ImageNapiUtils::GetMessageSequenceMutex(messageSequence));
     auto messageParcel = messageSequence->GetMessageParcel();
     if (messageParcel == nullptr) {
         return SendablePixelMapNapi::ThrowExceptionError(env,
-            CREATE_PIXEL_MAP_FROM_PARCEL, ERR_IPC, "get pacel failed");
+            CREATE_PIXEL_MAP_FROM_PARCEL, ERR_IPC, "get parcel failed");
     }
     PIXEL_MAP_ERR error;
     auto pixelmap = PixelMap::Unmarshalling(*messageParcel, error);
@@ -1276,7 +1280,7 @@ napi_value SendablePixelMapNapi::CreateSendablPixelMapFromParcel(napi_env env, n
         return SendablePixelMapNapi::ThrowExceptionError(env,
             CREATE_PIXEL_MAP_FROM_PARCEL, error.errorCode, error.errorInfo);
     }
-    std::shared_ptr<OHOS::Media::PixelMap> pixelPtr(pixelmap);
+    pixelPtr.reset(pixelmap); }
     napi_value constructor = nullptr;
     status = napi_get_reference_value(env, sConstructor_, &constructor);
     if (IMG_IS_OK(status)) {
@@ -3099,14 +3103,10 @@ napi_value SendablePixelMapNapi::Marshalling(napi_env env, napi_callback_info in
             env, ERR_IPC, "marshalling pixel map to parcel failed.");
     }
     NAPI_MessageSequence *napiSequence = nullptr;
-    napi_status status = NapiUnwrap(
-        env, nVal.argv[NUM_0], reinterpret_cast<void**>(&napiSequence), false);
-    if (!IMG_IS_READY(status, napiSequence)) {
-        return ImageNapiUtils::ThrowExceptionError(
-            env, ERR_IMAGE_INVALID_PARAMETER, "Invalid MessageSequence");
-    }
-    std::lock_guard<std::mutex> messageSequenceLock(
-        ImageNapiUtils::GetMessageSequenceMutex(napiSequence));
+    napi_status status = NapiUnwrap(env, nVal.argv[0], reinterpret_cast<void**>(&napiSequence), false);
+    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, napiSequence), nullptr, IMAGE_LOGE("Failed to unwrap message sequence"));
+
+    std::lock_guard<std::mutex> messageSequenceLock(ImageNapiUtils::GetMessageSequenceMutex(napiSequence));
     auto messageParcel = napiSequence->GetMessageParcel();
     if (messageParcel == nullptr) {
         return ImageNapiUtils::ThrowExceptionError(
