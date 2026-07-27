@@ -531,17 +531,28 @@ int32_t PixelMap::GetAllocatedByteCount(const ImageInfo& info)
     }
 }
 
-static bool ChoosePixelmap(unique_ptr<PixelMap> &dstPixelMap, PixelFormat pixelFormat, int &errorCode)
+static PixelMap* NewPixelMapByFormat(PixelFormat pixelFormat)
 {
     if (IsYUV(pixelFormat)) {
 #ifdef EXT_PIXEL
-        dstPixelMap = make_unique<PixelYuvExt>();
+        return new (std::nothrow) PixelYuvExt();
 #else
-        dstPixelMap = make_unique<PixelYuv>();
+        return new (std::nothrow) PixelYuv();
 #endif
-    } else {
-        dstPixelMap = make_unique<PixelMap>();
     }
+    if (ImageUtils::IsAstc(pixelFormat)) {
+#if !defined(CROSS_PLATFORM)
+        return new (std::nothrow) PixelAstc();
+#else
+        return nullptr;
+#endif
+    }
+    return new (std::nothrow) PixelMap();
+}
+
+static bool ChoosePixelmap(unique_ptr<PixelMap> &dstPixelMap, PixelFormat pixelFormat, int &errorCode)
+{
+    dstPixelMap.reset(NewPixelMapByFormat(pixelFormat));
     if (dstPixelMap == nullptr) {
         IMAGE_LOGE("[image]Create: make pixelmap failed!");
         errorCode = IMAGE_RESULT_PLUGIN_REGISTER_FAILED;
@@ -902,15 +913,7 @@ static bool CheckPixelMap(unique_ptr<PixelMap>& dstPixelMap, const Initializatio
         IMAGE_LOGE("Create PixelMap does not support ASTC format");
         return false;
     }
-    if (IsYUV(opts.pixelFormat)) {
-#ifdef EXT_PIXEL
-        dstPixelMap = std::make_unique<PixelYuvExt>();
-#else
-        dstPixelMap = std::make_unique<PixelYuv>();
-#endif
-    } else {
-        dstPixelMap = make_unique<PixelMap>();
-    }
+    dstPixelMap.reset(NewPixelMapByFormat(opts.pixelFormat));
     if (dstPixelMap == nullptr) {
         IMAGE_LOGE("create pixelMap pointer fail");
         return false;
@@ -3421,23 +3424,7 @@ PixelMap *PixelMap::StartUnmarshalling(Parcel &parcel, ImageInfo &imgInfo,
         PixelMap::ConstructPixelMapError(error, ERR_IMAGE_PIXELMAP_CREATE_FAILED, "read imageInfo fail");
         return nullptr;
     }
-    PixelMap *pixelMap = nullptr;
-    if (IsYUV(imgInfo.pixelFormat)) {
-#ifdef EXT_PIXEL
-        pixelMap = new (std::nothrow) PixelYuvExt();
-#else
-        pixelMap = new (std::nothrow) PixelYuv();
-#endif
-    } else if (ImageUtils::IsAstc(imgInfo.pixelFormat)) {
-#if !defined(CROSS_PLATFORM)
-        pixelMap = new (std::nothrow) PixelAstc();
-#else
-        return nullptr;
-#endif
-    } else {
-        pixelMap = new (std::nothrow) PixelMap();
-    }
-
+    PixelMap *pixelMap = NewPixelMapByFormat(imgInfo.pixelFormat);
     if (pixelMap == nullptr) {
         PixelMap::ConstructPixelMapError(error, ERR_IMAGE_PIXELMAP_CREATE_FAILED, "pixelmap create failed");
         return nullptr;
@@ -3795,24 +3782,7 @@ PixelMap *PixelMap::DecodeTlv(std::vector<uint8_t> &buff)
         IMAGE_LOGE("[PixelMap] tlv decode fail");
         return nullptr;
     }
-    PixelMap *pixelMap = nullptr;
-    if (IsYUV(imageInfo.pixelFormat)) {
-#ifdef EXT_PIXEL
-        pixelMap = new(std::nothrow) PixelYuvExt();
-#else
-        pixelMap = new(std::nothrow) PixelYuv();
-#endif
-    } else if (ImageUtils::IsAstc(imageInfo.pixelFormat)) {
-#if !defined(CROSS_PLATFORM)
-        pixelMap = new(std::nothrow) PixelAstc();
-#else
-        dstMemory->Release();
-        IMAGE_LOGE("[PixelMap] tlv decode fail: astc not supported on cross platform");
-        return nullptr;
-#endif
-    } else {
-        pixelMap = new(std::nothrow) PixelMap();
-    }
+    PixelMap *pixelMap = NewPixelMapByFormat(imageInfo.pixelFormat);
     if (pixelMap == nullptr) {
         dstMemory->Release();
         IMAGE_LOGE("[PixelMap] tlv decode fail: new pixelmap error");
