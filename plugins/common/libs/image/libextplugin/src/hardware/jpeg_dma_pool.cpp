@@ -58,13 +58,9 @@ bool DmaPool::AllocBufferInDmaPool(sptr<ICodecImage> hwDecoder, ImagePlugin::Inp
         return false;
     }
     // step3. try to copy src data to alloc buffer in dma pool
-    if (!CopySrcToDmaPool(srcStream, streamInfo, bufferInfo)) {
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET(!CopySrcToDmaPool(srcStream, streamInfo, bufferInfo), false);
     // step4. try to packing bufferhandle to inbuffer
-    if (!PackingBufferHandle(bufferInfo, inBuffer)) {
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET(!PackingBufferHandle(bufferInfo, inBuffer), false);
     // step5. try to alloc buffer in dmapool
     UpdateDmaPoolInfo(streamInfo, bufferInfo);
     return true;

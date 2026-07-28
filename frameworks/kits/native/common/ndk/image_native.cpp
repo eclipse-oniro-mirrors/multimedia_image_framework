@@ -96,7 +96,7 @@ Image_ErrorCode OH_ImageNative_GetComponentTypes(OH_ImageNative* image, uint32_t
 
     auto& components = image->imgNative->GetComponents();
     *typeSize = components.size();
-    if (nullptr == types) {
+    if (nullptr == types || nullptr == *types) {
         return IMAGE_SUCCESS;
     }
 
@@ -226,10 +226,8 @@ Image_ErrorCode OH_ImageNative_GetColorSpace(OH_ImageNative *image, int32_t *col
         return IMAGE_BAD_PARAMETER;
     }
     auto it = HDI_TO_COLORSPACENAME_MAP.find(static_cast<CM_ColorSpaceType>(colorSpaceValue));
-    if (it == HDI_TO_COLORSPACENAME_MAP.end()) {
-        IMAGE_LOGE("Unsupported color space type: %{public}d", colorSpaceValue);
-        return IMAGE_BAD_PARAMETER;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(it == HDI_TO_COLORSPACENAME_MAP.end(), IMAGE_BAD_PARAMETER,
+        "Unsupported color space type: %{public}d", colorSpaceValue);
     *colorSpaceName = it->second;
 #else
     *colorSpaceName = colorSpaceValue;
@@ -276,10 +274,8 @@ Image_ErrorCode OH_ImageNative_GetBufferData(OH_ImageNative *image, OH_ImageBuff
     imageBufferData->numStride = static_cast<int32_t>(bufferData->rowStride.size());
     imageBufferData->bufferSize = bufferData->size;
     sptr<SurfaceBuffer> buffer = image->imgNative->GetBuffer();
-    if (buffer == nullptr) {
-        IMAGE_LOGE("get surface buffer failed, buffer is nullptr");
-        return IMAGE_BAD_PARAMETER;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(bufferData == nullptr, IMAGE_BAD_PARAMETER,
+        "get surface buffer failed, buffer is nullptr");
     imageBufferData->nativeBuffer = buffer->SurfaceBufferToNativeBuffer();
     return IMAGE_SUCCESS;
 }

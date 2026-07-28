@@ -273,22 +273,17 @@ uint32_t GifEncoder::processFrame(int index)
 {
     int32_t originalWidth = pixelMaps_[index]->GetWidth();
     int32_t originalHeight = pixelMaps_[index]->GetHeight();
-    if (originalWidth <= 0 || originalHeight <= 0 ||
-        originalWidth > UINT16_MAX || originalHeight > UINT16_MAX) {
-        IMAGE_LOGE("Invalid image dimensions: width=%{public}d, height=%{public}d",
-            originalWidth, originalHeight);
-        return ERR_IMAGE_ENCODE_FAILED;
-    }
+    bool cond = originalWidth <= 0 || originalHeight <= 0 ||
+        originalWidth > UINT16_MAX || originalHeight > UINT16_MAX;
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_ENCODE_FAILED,
+        "Invalid image dimensions: width=%{public}d, height=%{public}d", originalWidth, originalHeight);
     uint16_t width = static_cast<uint16_t>(originalWidth);
     uint16_t height = static_cast<uint16_t>(originalHeight);
 
     auto colorMap = std::make_unique<ColorType[]>(COLOR_MAP_SIZE);
 
     uint64_t frameSize = static_cast<uint64_t>(width) * height;
-    if (frameSize > INT32_MAX) {
-        IMAGE_LOGE("Image frame is too large.");
-        return ERR_IMAGE_ENCODE_FAILED;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(frameSize > INT32_MAX, ERR_IMAGE_ENCODE_FAILED, "Image frame is too large.");
     auto colorBuffer = std::make_unique<uint8_t[]>(frameSize);
     if (colorQuantize(index, width, height, colorBuffer.get(), colorMap.get())) {
         IMAGE_LOGE("Failed to quantize color.");
@@ -320,27 +315,21 @@ uint32_t GifEncoder::colorQuantize(int index, uint16_t width, uint16_t height,
         return ERR_IMAGE_ENCODE_FAILED;
     }
 
-    if (doColorQuantize(width, height, redBuffer.get(), greenBuffer.get(),
-        blueBuffer.get(), alphaBuffer.get(), outputBuffer, outputColorMap)) {
-        IMAGE_LOGE("Failed to quantize buffer, aborted.");
-        return ERR_IMAGE_ENCODE_FAILED;
-    }
+    bool cond = doColorQuantize(width, height, redBuffer.get(), greenBuffer.get(),
+        blueBuffer.get(), alphaBuffer.get(), outputBuffer, outputColorMap);
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_ENCODE_FAILED, "Failed to quantize buffer, aborted.");
     return SUCCESS;
 }
 
 uint32_t GifEncoder::separateRGBA(int index, uint16_t width, uint16_t height,
                                   uint8_t *redBuffer, uint8_t *greenBuffer, uint8_t *blueBuffer, uint8_t *alphaBuffer)
 {
-    if (index < 0 || static_cast<size_t>(index) >= pixelMaps_.size()) {
-        return ERR_IMAGE_ENCODE_FAILED;
-    }
+    CHECK_ERROR_RETURN_RET(index < 0 || static_cast<size_t>(index) >= pixelMaps_.size(), ERR_IMAGE_ENCODE_FAILED);
     for (int y = 0; y < height; y++) {
         for (int x = 0; x < width; x++) {
             uint32_t pixelColor;
-            if (!pixelMaps_[index]->GetARGB32Color(x, y, pixelColor)) {
-                IMAGE_LOGE("Failed to get rgb value.");
-                return ERR_IMAGE_ENCODE_FAILED;
-            }
+            CHECK_ERROR_RETURN_RET_LOG(!pixelMaps_[index]->GetARGB32Color(x, y, pixelColor), ERR_IMAGE_ENCODE_FAILED,
+                "Failed to get rgb value.");
             redBuffer[y * width + x] = pixelMaps_[index]->GetARGB32ColorR(pixelColor);
             greenBuffer[y * width + x] = pixelMaps_[index]->GetARGB32ColorG(pixelColor);
             blueBuffer[y * width + x] = pixelMaps_[index]->GetARGB32ColorB(pixelColor);
@@ -652,10 +641,7 @@ uint32_t GifEncoder::LZWEncodeFrame(uint8_t *outputBuffer, uint16_t width, uint1
         IMAGE_LOGE("Failed to write lastCode, aborted.");
         return ERR_IMAGE_ENCODE_FAILED;
     }
-    if (LZWWriteOut(eofCode_)) {
-        IMAGE_LOGE("Failed to write EOFCode, aborted.");
-        return ERR_IMAGE_ENCODE_FAILED;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(LZWWriteOut(eofCode_), ERR_IMAGE_ENCODE_FAILED, "Failed to write EOFCode, aborted.");
     if (LZWWriteOut(FLUSH_OUTPUT)) {
         IMAGE_LOGE("Failed to write flushCode, aborted.");
         return ERR_IMAGE_ENCODE_FAILED;

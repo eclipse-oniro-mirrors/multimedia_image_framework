@@ -263,10 +263,8 @@ static bool CalcRGBStride(PixelFormat format, uint32_t width, uint32_t &stride)
         default:
             pixelBytes = BYTES_PER_PIXEL_RGBA;
     }
-    if (width > UINT32_MAX / pixelBytes) {
-        IMAGE_LOGE("CalcRGBStride error: overflow! format=%{public}d, width=%{public}u", format, width);
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(width > UINT32_MAX / pixelBytes, false,
+        "CalcRGBStride error: overflow! format=%{public}d, width=%{public}u", format, width);
     stride = width * pixelBytes;
     return true;
 }
@@ -431,6 +429,12 @@ bool ImageFormatConvert::CheckConvertDataInfo(const ConvertDataInfo &convertData
         return false;
     }
 
+    size_t requiredSize = GetBufferSizeByFormat(convertDataInfo.pixelFormat, convertDataInfo.imageSize);
+    if (requiredSize == 0 || requiredSize > convertDataInfo.bufferSize) {
+        IMAGE_LOGE("buffer size is wrong");
+        return false;
+    }
+
     return true;
 }
 
@@ -468,11 +472,9 @@ size_t ImageFormatConvert::GetBufferSizeByFormat(PixelFormat format, const Size 
             return NUM_0;
     }
 
-    if (result > UINT32_MAX) {
-        IMAGE_LOGE("Buffer size overflow, format=%{public}d, width=%{public}d, height=%{public}d",
-                   format, size.width, size.height);
-        return NUM_0;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(result > UINT32_MAX, NUM_0,
+        "Buffer size overflow, format=%{public}d, width=%{public}d, height=%{public}d",
+        format, size.width, size.height);
 
     return result;
 }
@@ -527,19 +529,14 @@ std::unique_ptr<AbsMemory> ImageFormatConvert::CreateMemory(PixelFormat pixelFor
         return nullptr;
     }
     uint32_t pictureSize = GetBufferSizeByFormat(pixelFormat, size);
-    if (pictureSize == 0) {
-        IMAGE_LOGE("CreateMemory: GetBufferSizeByFormat failed");
-        return nullptr;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(pictureSize == 0, nullptr, "CreateMemory: GetBufferSizeByFormat failed");
 
     if (IsYUVConvert(pixelFormat)) {
         strides = {size.width, (size.width + 1) / NUM_2 * NUM_2, 0, size.width * size.height};
     } else {
         uint32_t stride = 0;
-        if (!CalcRGBStride(pixelFormat, size.width, stride)) {
-            IMAGE_LOGE("CreateMemory CalcRGBStride failed");
-            return nullptr;
-        }
+        CHECK_ERROR_RETURN_RET_LOG(!CalcRGBStride(pixelFormat, size.width, stride), nullptr,
+            "CreateMemory CalcRGBStride failed");
         strides = {stride, 0, 0, 0};
     }
     MemoryData memoryData = {nullptr, pictureSize, "PixelConvert", size, pixelFormat};
@@ -578,6 +575,11 @@ std::unique_ptr<AbsMemory> Truncate10BitMemory(std::shared_ptr<PixelMap> &srcPix
     }
 
     VpeSurfaceBuffers buffers;
+    if (sdrMemory->extend.data == nullptr || srcPixelmap->GetFd() == nullptr) {
+        IMAGE_LOGE("Truncate10BitMemory srcPixelmap get fd or extend data failed");
+        sdrMemory->Release();
+        return nullptr;
+    }
     buffers.sdr = sptr<SurfaceBuffer>(reinterpret_cast<SurfaceBuffer*>(sdrMemory->extend.data));
     buffers.hdr = sptr<SurfaceBuffer>(reinterpret_cast<SurfaceBuffer*>(srcPixelmap->GetFd()));
     std::unique_ptr<VpeUtils> utils = std::make_unique<VpeUtils>();
@@ -642,10 +644,7 @@ uint32_t ImageFormatConvert::RGBConvertImageFormatOption(std::shared_ptr<PixelMa
     YUVStrideInfo dstStrides;
     auto allocType = srcPixelMap->GetAllocatorType();
     auto m = CreateMemory(destFormat, allocType, imageInfo.size, dstStrides, srcPixelMap->GetNoPaddingUsage());
-    if (m == nullptr) {
-        IMAGE_LOGE("CreateMemory failed");
-        return ERR_IMAGE_INVALID_PARAMETER;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(m == nullptr, ERR_IMAGE_INVALID_PARAMETER, "CreateMemory failed");
     int32_t stride = srcPixelMap->GetRowStride();
     #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     if (allocType == AllocatorType::DMA_ALLOC) {
@@ -653,6 +652,11 @@ uint32_t ImageFormatConvert::RGBConvertImageFormatOption(std::shared_ptr<PixelMa
         CHECK_ERROR_RETURN_RET(sb == nullptr, ERR_IMAGE_INVALID_PARAMETER);
         stride = sb->GetStride();
         sptr<SurfaceBuffer> sourceSurfaceBuffer(sb);
+        if (m->extend.data == nullptr) {
+            IMAGE_LOGE("CreateMemory get surfacebuffer failed");
+            m->Release();
+            return ERR_IMAGE_INVALID_PARAMETER;
+        }
         sptr<SurfaceBuffer> dstSurfaceBuffer(reinterpret_cast<SurfaceBuffer*>(m->extend.data));
         VpeUtils::CopySurfaceBufferInfo(sourceSurfaceBuffer, dstSurfaceBuffer);
     }
@@ -666,7 +670,7 @@ uint32_t ImageFormatConvert::RGBConvertImageFormatOption(std::shared_ptr<PixelMa
     destInfo.yOffset = dstStrides.yOffset;
     destInfo.uvOffset = dstStrides.uvOffset;
     if (!cvtFunc(srcBuffer, rgbDataInfo, destInfo, srcPixelMap->GetColorSpace())) {
-        IMAGE_LOGE("format convert failed!");
+        IMAGE_LOGE("RGB format convert failed!");
         m->Release();
         return IMAGE_RESULT_FORMAT_CONVERT_FAILED;
     }
@@ -770,13 +774,9 @@ static AllocatorType GetAllocatorType(std::shared_ptr<PixelMap> &srcPixelMap, Pi
 #ifndef CROSS_PLATFORM
 bool GetYuvSbConvertDetails(sptr<SurfaceBuffer> sourceSurfaceBuffer, DestConvertInfo &destInfo)
 {
-    if (sourceSurfaceBuffer == nullptr) {
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET(sourceSurfaceBuffer == nullptr, false);
     CM_ColorSpaceInfo colorSpaceInfo;
-    if (!VpeUtils::GetColorSpaceInfo(sourceSurfaceBuffer, colorSpaceInfo)) {
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET(!VpeUtils::GetColorSpaceInfo(sourceSurfaceBuffer, colorSpaceInfo), false);
     if (colorSpaceInfo.primaries == CM_ColorPrimaries::COLORPRIMARIES_BT709) {
         destInfo.yuvConvertCSDetails.srcYuvConversion = YuvConversion::BT709;
     } else if (colorSpaceInfo.primaries == CM_ColorPrimaries::COLORPRIMARIES_BT2020) {
@@ -799,26 +799,24 @@ uint32_t ImageFormatConvert::YUVConvertImageFormatOption(std::shared_ptr<PixelMa
     CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER, "get convert function by format failed!");
     const_uint8_buffer_type data = srcPixelMap->GetPixels();
     YUVDataInfo yDInfo;
+#if !defined(CROSS_PLATFORM)
+    ImageUtils::UpdateYUVDataInfo(*srcPixelMap);
+#endif
     srcPixelMap->GetImageYUVInfo(yDInfo);
     ImageInfo imageInfo;
     srcPixelMap->GetImageInfo(imageInfo);
-    if ((srcFormat == PixelFormat::NV21 || srcFormat == PixelFormat::YCBCR_P010 ||
-        srcFormat == PixelFormat::YCRCB_P010) &&
-        (yDInfo.yWidth == 0 || yDInfo.yHeight == 0 || yDInfo.uvWidth == 0 || yDInfo.uvHeight == 0)) {
-        yDInfo.yWidth = static_cast<uint32_t>(imageInfo.size.width);
-        yDInfo.yHeight = static_cast<uint32_t>(imageInfo.size.height);
-        yDInfo.uvWidth = static_cast<uint32_t>((imageInfo.size.width + 1) / NUM_2);
-        yDInfo.uvHeight = static_cast<uint32_t>((imageInfo.size.height + 1) / NUM_2);
-    }
     YUVStrideInfo dstStrides;
     auto allocType = GetAllocatorType(srcPixelMap, destFormat);
     DestConvertInfo destInfo = {imageInfo.size.width, imageInfo.size.height, destFormat, allocType};
-    auto m = CreateMemory(destFormat, allocType, imageInfo.size, dstStrides,
-        srcPixelMap->GetNoPaddingUsage());
-    cond = m == nullptr;
-    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER, "CreateMemory failed");
+    auto m = CreateMemory(destFormat, allocType, imageInfo.size, dstStrides, srcPixelMap->GetNoPaddingUsage());
+    CHECK_ERROR_RETURN_RET_LOG(m == nullptr, ERR_IMAGE_INVALID_PARAMETER, "CreateMemory failed");
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     if (allocType == AllocatorType::DMA_ALLOC) {
+        if (srcPixelMap->GetFd() == nullptr || m->extend.data == nullptr) {
+            IMAGE_LOGE("srcPixelMap get fd or extend data is nullptr");
+            m->Release();
+            return ERR_IMAGE_INVALID_PARAMETER;
+        }
         sptr<SurfaceBuffer> sourceSurfaceBuffer(reinterpret_cast<SurfaceBuffer*>(srcPixelMap->GetFd()));
         sptr<SurfaceBuffer> dstSurfaceBuffer(reinterpret_cast<SurfaceBuffer*>(m->extend.data));
         VpeUtils::CopySurfaceBufferInfo(sourceSurfaceBuffer, dstSurfaceBuffer);
@@ -833,6 +831,7 @@ uint32_t ImageFormatConvert::YUVConvertImageFormatOption(std::shared_ptr<PixelMa
     destInfo.yOffset = dstStrides.yOffset;
     destInfo.uvOffset = dstStrides.uvOffset;
     if (!yuvCvtFunc(data, yDInfo, destInfo, srcPixelMap->GetColorSpace())) {
+        IMAGE_LOGE("YUV format convert failed!");
         m->Release();
         return IMAGE_RESULT_FORMAT_CONVERT_FAILED;
     }
@@ -881,12 +880,6 @@ uint32_t ImageFormatConvert::MakeDestPixelMap(std::shared_ptr<PixelMap> &destPix
         pixelMap = std::make_unique<PixelYuv>();
 #endif
         CHECK_ERROR_RETURN_RET(pixelMap == nullptr, ERR_IMAGE_PIXELMAP_CREATE_FAILED);
-        if (allcatorType != AllocatorType::DMA_ALLOC) {
-            pixelMap->AssignYuvDataOnType(info.pixelFormat, info.size.width, info.size.height);
-        } else {
-            YUVStrideInfo strides = {destInfo.yStride, destInfo.uvStride, destInfo.yOffset, destInfo.uvOffset};
-            pixelMap->UpdateYUVDataInfo(info.pixelFormat, info.size.width, info.size.height, strides);
-        }
     } else {
         pixelMap = std::make_unique<PixelMap>();
         CHECK_ERROR_RETURN_RET(pixelMap == nullptr, ERR_IMAGE_PIXELMAP_CREATE_FAILED);
@@ -923,12 +916,6 @@ uint32_t ImageFormatConvert::MakeDestPixelMapUnique(std::unique_ptr<PixelMap> &d
         pixelMap = std::make_unique<PixelYuv>();
 #endif
         CHECK_ERROR_RETURN_RET(pixelMap == nullptr, ERR_IMAGE_PIXELMAP_CREATE_FAILED);
-        if (allcatorType != AllocatorType::DMA_ALLOC) {
-            pixelMap->AssignYuvDataOnType(info.pixelFormat, info.size.width, info.size.height);
-        } else {
-            YUVStrideInfo strides = {destInfo.yStride, destInfo.uvStride, destInfo.yOffset, destInfo.uvOffset};
-            pixelMap->UpdateYUVDataInfo(info.pixelFormat, info.size.width, info.size.height, strides);
-        }
     } else {
         pixelMap = std::make_unique<PixelMap>();
         CHECK_ERROR_RETURN_RET(pixelMap == nullptr, ERR_IMAGE_PIXELMAP_CREATE_FAILED);

@@ -85,6 +85,8 @@
 #include "v1_0/cm_color_space.h"
 #include "v1_0/hdr_static_metadata.h"
 #include "display/graphic/common/v2_1/cm_color_space.h"
+#include "v2_2/cm_color_space.h"
+#include "v2_2/buffer_handle_meta_key_type.h"
 #include "vpe_utils.h"
 #endif
 #ifdef USE_M133_SKIA
@@ -937,6 +939,14 @@ bool IsSupportDma(const DecodeOptions &opts, const ImageInfo &info, bool hasDesi
 #endif
 }
 
+void ImageSource::SetAnimationDesiredSize(const ImageInfo &info, bool hasDesiredSizeOptions,
+    const PlImageInfo &plInfo)
+{
+    if (opts_.isAnimationDecode && !(info.encodedFormat == IMAGE_HEIFS_FORMAT && hasDesiredSizeOptions)) {
+        opts_.desiredSize = plInfo.size;
+    }
+}
+
 DecodeContext ImageSource::InitDecodeContext(const DecodeOptions &opts, const ImageInfo &info,
     const MemoryUsagePreference &preference, bool hasDesiredSizeOptions, PlImageInfo& plInfo)
 {
@@ -983,9 +993,7 @@ DecodeContext ImageSource::InitDecodeContext(const DecodeOptions &opts, const Im
         plInfo.pixelFormat = format;
     }
     context.isAnimationDecode = opts.isAnimationDecode;
-    if (opts_.isAnimationDecode) {
-        opts_.desiredSize = plInfo.size;
-    }
+    SetAnimationDesiredSize(info, hasDesiredSizeOptions, plInfo);
     return context;
 }
 
@@ -1073,6 +1081,21 @@ bool ImageSource::CheckDecodeOptions(const DecodeOptions &opts)
     return CheckAllocatorTypeValid(opts) && CheckCropRectValid(opts);
 }
 
+void ImageSource::UpdateHdrCanvasFlagFromExif()
+{
+    isHdrCanvas_ = false;
+    std::unique_lock<std::recursive_mutex> guard(decodingMutex_);
+    if (CreatExifMetadataByImageSource() == SUCCESS) {
+        if (exifMetadata_ != nullptr) {
+            bool isHdrCanvas = false;
+            if (exifMetadata_->ParseHdrCanvasFlag(isHdrCanvas)) {
+                isHdrCanvas_ = isHdrCanvas;
+            }
+            IMAGE_LOGD("ImageSource: UpdateHdrCanvasFlagFromExif isHdrCanvas_=%{public}d", isHdrCanvas_);
+        }
+    }
+}
+
 void ImageSource::SetAnimationSize(uint32_t index, const DecodeOptions &opts, ImageInfo &info)
 {
     if (info.encodedFormat == IMAGE_HEIFS_FORMAT) {
@@ -1106,6 +1129,7 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index, const D
         OHOS::QOS::SetThreadQos(OHOS::QOS::QosLevel::QOS_USER_INTERACTIVE);
     }
 #endif
+    UpdateHdrCanvasFlagFromExif();
     SetDecodeInfoOptions(index, opts, info, imageEvent);
     std::string pluginType = mainDecoder_->GetPluginType();
     imageEvent.SetPluginType(pluginType);
@@ -1539,9 +1563,6 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMap(uint32_t index, const DecodeOpt
 
         if (finalOutputStep == FinalOutputStep::NO_CHANGE) {
             context.allocatorType = opts_.allocatorType;
-            if (context.allocatorType == AllocatorType::DEFAULT) {
-                context.allocatorType = AllocatorType::SHARE_MEM_ALLOC;
-            }
         } else {
             context.allocatorType = AllocatorType::SHARE_MEM_ALLOC;
         }
@@ -2613,7 +2634,7 @@ uint32_t ImageSource::FillPngMetadataValue(const std::string &key, const ImageMe
     } else if (value.type == PropertyValueType::DOUBLE) {
         char* endPtr = nullptr;
         double dblValue = strtod(strValue.c_str(), &endPtr);
-        if (endPtr != strValue.c_str() && *endPtr == '\0') {
+        if (endPtr != strValue.c_str() && *endPtr == '\0' && std::isfinite(dblValue)) {
             value.doubleArrayValue.emplace_back(dblValue);
         } else {
             IMAGE_LOGE("Failed to convert string to double: %{public}s", strValue.c_str());
@@ -2629,7 +2650,7 @@ uint32_t ImageSource::FillPngMetadataValue(const std::string &key, const ImageMe
             std::string str = strValue.substr(pos, commaPos - pos);
             char* endPtr = nullptr;
             double dblValue = strtod(str.c_str(), &endPtr);
-            if (endPtr != str.c_str() && *endPtr == '\0') {
+            if (endPtr != str.c_str() && *endPtr == '\0' && std::isfinite(dblValue)) {
                 value.doubleArrayValue.emplace_back(dblValue);
             } else {
                 IMAGE_LOGE("Failed to convert string to double: %{public}s", str.c_str());
@@ -5316,6 +5337,10 @@ bool ImageSource::ComposeHdrImage(ImageHdrType hdrType, DecodeContext& baseCtx, 
     };
     std::unique_ptr<VpeUtils> utils = std::make_unique<VpeUtils>();
     int32_t res = utils->ColorSpaceConverterComposeImage(buffers, hdrType == ImageHdrType::HDR_CUVA);
+    string format = GetExtendedCodecMimeType(mainDecoder_.get());
+    if (format == IMAGE_JPEG_FORMAT && isHdrCanvas_) {
+        VpeUtils::SetSbMetadataType(hdrSptr, HDI::Display::Graphic::Common::V2_2::CM_IMAGE_HDR_CANVAS);
+    }
     if (res != VPE_ERROR_OK) {
         IMAGE_LOGE("[ImageSource] composeImage failed, res: %{public}d", res);
         FreeContextBuffer(hdrCtx.freeFunc, hdrCtx.allocatorType, hdrCtx.pixelsBuffer);
@@ -6685,6 +6710,7 @@ std::shared_ptr<ImageMetadata> ImageSource::FindMetadataFromMap(MetadataType typ
 static std::shared_ptr<FragmentMetadata> ParseJpegFragmentMetadata(std::unique_ptr<InputDataStream> &auxStream)
 {
     IMAGE_LOGD("ParseJpegFragmentMetadata IN");
+    CHECK_ERROR_RETURN_RET_LOG(auxStream == nullptr, nullptr, "auxStream is nullptr");
     uint8_t *data = auxStream->GetDataPtr();
     uint32_t size = auxStream->GetStreamSize();
     Rect fragmentRect;

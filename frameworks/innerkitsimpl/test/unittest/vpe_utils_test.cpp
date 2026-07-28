@@ -476,6 +476,55 @@ HWTEST_F(VpeUtilsTest, GetSbMetadataTypeTest001, TestSize.Level3)
 }
 
 /**
+ * @tc.name: SetSbMetadataTypeV22Test001
+ * @tc.desc: Verify V2_2 SetSbMetadataType when buffer is nullptr.
+ * @tc.type: FUNC
+ */
+HWTEST_F(VpeUtilsTest, SetSbMetadataTypeV22Test001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "VpeUtilsTest: SetSbMetadataTypeV22Test001 start";
+    VpeUtils mockVpeUtils;
+    sptr<SurfaceBuffer> mockBuffer;
+    auto ret = mockVpeUtils.SetSbMetadataType(mockBuffer,
+        HDI::Display::Graphic::Common::V2_2::CM_HDR_Metadata_Type::CM_METADATA_NONE);
+    ASSERT_EQ(ret, false);
+    GTEST_LOG_(INFO) << "VpeUtilsTest: SetSbMetadataTypeV22Test001 end";
+}
+ 
+/**
+ * @tc.name: SetSbMetadataTypeV22Test002
+ * @tc.desc: Verify V2_2 SetSbMetadataType when SetMetadata fails.
+ * @tc.type: FUNC
+ */
+HWTEST_F(VpeUtilsTest, SetSbMetadataTypeV22Test002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "VpeUtilsTest: SetSbMetadataTypeV22Test002 start";
+    VpeUtils mockVpeUtils;
+    sptr<SurfaceBuffer> buffer = new MockSurfaceBuffer();
+    static_cast<MockSurfaceBuffer*>(buffer.GetRefPtr())->shouldSetMetadataFail = true;
+    bool result = mockVpeUtils.SetSbMetadataType(buffer,
+        HDI::Display::Graphic::Common::V2_2::CM_HDR_Metadata_Type::CM_METADATA_NONE);
+    ASSERT_EQ(result, false);
+    GTEST_LOG_(INFO) << "VpeUtilsTest: SetSbMetadataTypeV22Test002 end";
+}
+ 
+/**
+ * @tc.name: SetSbMetadataTypeV22Test003
+ * @tc.desc: Verify V2_2 SetSbMetadataType succeeds with valid buffer and metadata type.
+ * @tc.type: FUNC
+ */
+HWTEST_F(VpeUtilsTest, SetSbMetadataTypeV22Test003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "VpeUtilsTest: SetSbMetadataTypeV22Test003 start";
+    VpeUtils mockVpeUtils;
+    sptr<SurfaceBuffer> buffer = new MockSurfaceBuffer();
+    bool result = mockVpeUtils.SetSbMetadataType(buffer,
+        HDI::Display::Graphic::Common::V2_2::CM_HDR_Metadata_Type::CM_IMAGE_HDR_CANVAS);
+    ASSERT_EQ(result, true);
+    GTEST_LOG_(INFO) << "VpeUtilsTest: SetSbMetadataTypeV22Test003 end";
+}
+
+/**
  * @tc.name: TruncateBufferTest001
  * @tc.desc: Verify that VpeUtils call TruncateBuffer when shouldCalDiff is true.
  * @tc.type: FUNC

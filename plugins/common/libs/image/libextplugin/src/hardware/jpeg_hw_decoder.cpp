@@ -59,9 +59,7 @@ static sptr<ICodecImage> GetCodecManager()
     }
     JPEG_HW_LOGI("need to get ICodecImage");
     g_codecMgr = ICodecImage::Get();
-    if (g_codecMgr == nullptr) {
-        return nullptr;
-    }
+    CHECK_ERROR_RETURN_RET(g_codecMgr == nullptr, nullptr);
     bool isDeathRecipientAdded = false;
     const sptr<OHOS::IRemoteObject> &remote = OHOS::HDI::hdi_objcast<ICodecImage>(g_codecMgr);
     if (remote) {
@@ -388,10 +386,9 @@ bool JpegHardwareDecoder::TryDmaPoolInBuff(ImagePlugin::InputDataStream* srcStre
     ImageTrace imageTrace("JpegHardwareDecoder::TryDmaPoolInBuff");
     PureStreamInfo curStreamInfo {compressDataPos_, compressDataSize_};
     DmaBufferInfo allocBufferInfo {0, 0};
-    if (!DmaPool::GetInstance().AllocBufferInDmaPool(hwDecoder_, srcStream, inputBuffer_,
-        curStreamInfo, allocBufferInfo)) {
-        return false;
-    }
+    bool cond = !DmaPool::GetInstance().AllocBufferInDmaPool(hwDecoder_, srcStream, inputBuffer_,
+        curStreamInfo, allocBufferInfo);
+    CHECK_ERROR_RETURN_RET(cond, false);
     usedOffsetInPool_ = allocBufferInfo.allocatedBufferOffsetOfPool;
     usedSizeInPool_ = allocBufferInfo.allocatedBufferSize;
     return true;
@@ -450,9 +447,7 @@ bool JpegHardwareDecoder::CopySrcImgToDecodeInputBuffer(ImagePlugin::InputDataSt
         }
     }
     if ((compressDataSize_ > MAX_SIZE_USE_DMA_POOL) || (!useDmaPool_)) {
-        if (!TryNormalInBuff(srcStream)) {
-            return false;
-        }
+        CHECK_ERROR_RETURN_RET(!TryNormalInBuff(srcStream), false);
     }
     decodeInfo_.compressPos = usedOffsetInPool_;
     return true;

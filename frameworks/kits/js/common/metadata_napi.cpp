@@ -1073,9 +1073,12 @@ napi_value MetadataNapi::Constructor(napi_env env, napi_callback_info info)
     if (pMetadataNapi != nullptr) {
         pMetadataNapi->env_ = env;
         pMetadataNapi->nativeMetadata_ = sMetadata_;
-        status = napi_wrap(env, thisVar, reinterpret_cast<void *>(pMetadataNapi.release()),
+        status = napi_wrap(env, thisVar, reinterpret_cast<void *>(pMetadataNapi.get()),
                            MetadataNapi::Destructor, nullptr, nullptr);
-        if (status != napi_ok) {
+        if (status == napi_ok) {
+            pMetadataNapi.release();
+            return thisVar;
+        } else {
             IMAGE_LOGE("Failure wrapping js to native napi");
             return undefineVar;
         }

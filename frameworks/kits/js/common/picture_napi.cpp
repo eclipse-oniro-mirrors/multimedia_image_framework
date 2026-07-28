@@ -326,9 +326,12 @@ napi_value PictureNapi::Constructor(napi_env env, napi_callback_info info)
         if (pPictureNapi->nativePicture_ == nullptr) {
             IMAGE_LOGE("Failed to set nativePicture_ with null. Maybe a reentrancy error");
         }
-        status = napi_wrap(env, thisVar, reinterpret_cast<void *>(pPictureNapi.release()),
+        status = napi_wrap(env, thisVar, reinterpret_cast<void *>(pPictureNapi.get()),
                            PictureNapi::Destructor, nullptr, nullptr);
-        if (status != napi_ok) {
+        if (status == napi_ok) {
+            pPictureNapi.release();
+            return thisVar;
+        } else {
             IMAGE_LOGE("Failure wrapping js to native napi");
             return undefineVar;
         }
@@ -521,7 +524,7 @@ napi_value PictureNapi::SetAuxiliaryPicture(napi_env env, napi_callback_info inf
 
     AuxiliaryPictureNapi* auxiliaryPictureNapi = nullptr;
     status = napi_unwrap(env, argValue[NUM_1], reinterpret_cast<void**>(&auxiliaryPictureNapi));
-    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, pictureNapi),
+    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, auxiliaryPictureNapi),
         ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER, "Fail to unwrap AuxiliaryPictureNapi!"),
         IMAGE_LOGE("Fail to unwrap AuxiliaryPictureNapi"));
 

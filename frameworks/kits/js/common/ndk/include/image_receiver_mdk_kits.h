@@ -55,7 +55,6 @@ enum {
 ImageReceiverNapi* ImageReceiver_Unwrap(napi_env env, napi_value value);
 int32_t ImageReceiverNativeEnvCall(int32_t mode, napi_env env, struct ImageReceiverArgs* args);
 int32_t ImageReceiverNativeCtxCall(int32_t mode, ImageReceiverNapi* native, struct ImageReceiverArgs* args);
-int32_t ImageReceiverNapiOff(ImageReceiverNapi* native);
 #ifdef __cplusplus
 };
 #endif

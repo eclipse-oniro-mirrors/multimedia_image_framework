@@ -65,17 +65,21 @@ toff_t TiffDecoder::SeekProc(thandle_t handle, toff_t off, int whence)
 {
     InputDataStream* stream = static_cast<InputDataStream*>(handle);
     CHECK_ERROR_RETURN_RET_LOG(!stream, static_cast<toff_t>(-1), "stream is invalid");
+    if (off > UINT32_MAX) {
+        return static_cast<toff_t>(-1);
+    }
+    uint32_t off32 = static_cast<uint32_t>(off);
 
     uint32_t newPos = 0;
     uint32_t currentPos = stream->Tell();
     uint32_t fileSize = stream->GetStreamSize();
 
     if (whence == SEEK_SET) {
-        newPos = static_cast<uint32_t>(off);
-    } else if (whence == SEEK_CUR && !ImageUtils::HasOverflowed(currentPos, static_cast<uint32_t>(off))) {
-        newPos = currentPos + static_cast<uint32_t>(off);
-    } else if (whence == SEEK_END && !ImageUtils::HasOverflowed(currentPos, static_cast<uint32_t>(off))) {
-        newPos = fileSize + static_cast<uint32_t>(off);
+        newPos = off32;
+    } else if (whence == SEEK_CUR && !ImageUtils::HasOverflowed(currentPos, off32)) {
+        newPos = currentPos + off32;
+    } else if (whence == SEEK_END && !ImageUtils::HasOverflowed(fileSize, off32)) {
+        newPos = fileSize + off32;
     } else {
         return static_cast<toff_t>(-1);
     }
@@ -174,13 +178,16 @@ uint32_t TiffDecoder::Decode(uint32_t index, DecodeContext& context)
     if (tiffSize_.width == 0 || tiffSize_.height == 0) {
         GetImageSize(0, tiffSize_);
     }
+    if (tiffSize_.width <= 0 || tiffSize_.height <= 0) {
+        IMAGE_LOGE("[TiffDecoder] invalid size: width=%{public}d, height=%{public}d",
+                   tiffSize_.width, tiffSize_.height);
+        return ERR_IMAGE_INVALID_PARAMETER;
+    }
     context.info.size.width = tiffSize_.width;
     context.info.size.height = tiffSize_.height;
-    if (ImageUtils::CheckMulOverflow(tiffSize_.width, tiffSize_.height, sizeof(uint32_t))) {
-        IMAGE_LOGE("Buffer size overflow: width=%{public}u, height=%{public}u",
-                   tiffSize_.width, tiffSize_.height);
-        return ERR_IMAGE_MALLOC_ABNORMAL;
-    }
+    bool cond = ImageUtils::CheckMulOverflow(tiffSize_.width, tiffSize_.height, sizeof(uint32_t));
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_MALLOC_ABNORMAL,
+        "Buffer size overflow: width=%{public}u, height=%{public}u", tiffSize_.width, tiffSize_.height);
     
     const size_t bufferSize = static_cast<size_t>(tiffSize_.width) *
                               static_cast<size_t>(tiffSize_.height) *
@@ -196,10 +203,8 @@ uint32_t TiffDecoder::Decode(uint32_t index, DecodeContext& context)
         raster = dmaTmpBuffer.get();
     }
     CHECK_ERROR_RETURN_RET_LOG(raster == nullptr, ERR_IMAGE_MALLOC_ABNORMAL, "AllocBuffer failed");
-    if (!TIFFReadRGBAImageOriented(tifCodec_, tiffSize_.width, tiffSize_.height, raster, ORIENTATION_TOPLEFT, 0)) {
-        IMAGE_LOGE("[TiffDecoder] TIFFReadRGBAImageOriented decode failed");
-        return ERR_IMAGE_DECODE_FAILED;
-    }
+    cond = !TIFFReadRGBAImageOriented(tifCodec_, tiffSize_.width, tiffSize_.height, raster, ORIENTATION_TOPLEFT, 0);
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_DECODE_FAILED, "[TiffDecoder] TIFFReadRGBAImageOriented decode failed");
     if (context.allocatorType == AllocatorType::DMA_ALLOC && dmaStride_ > tiffSize_.width) {
         for (int32_t row = 0; row < tiffSize_.height; row++) {
             uint32_t* src = raster + static_cast<uint32_t>(row) * static_cast<uint32_t>(tiffSize_.width);
@@ -404,12 +409,14 @@ void TiffDecoder::ParseICCProfile()
         return;
     }
     uint32_t dataLen = 0;
-    void **data = nullptr;
+    void *data = nullptr;
     if (TIFFGetField(tifCodec_, TIFFTAG_ICCPROFILE, &dataLen, &data)) {
         skcms_ICCProfile parsed;
         if (skcms_Parse(data, dataLen, &parsed)) {
             auto colorSpaceName = OHOS::Media::ColorUtils::GetSrcColorSpace(&parsed);
             auto colorSpace = OHOS::ColorManager::ColorSpace(colorSpaceName);
+            IMAGE_LOGI("[TiffDecoder] ICCProfile parsed, colorSpaceName=%{public}d",
+                static_cast<int32_t>(colorSpace.GetColorSpaceName()));
             if (colorSpace.GetColorSpaceName() != OHOS::ColorManager::ColorSpaceName::NONE) {
                 grColorSpace_ = colorSpace;
             } else {

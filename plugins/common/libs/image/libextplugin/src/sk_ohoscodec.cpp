@@ -19,6 +19,7 @@
 #include "include/core/SkPixmap.h"
 #include "src/codec/SkCodecPriv.h"
 #include "src/codec/SkSampledCodec.h"
+#include "image_log.h"
 #ifdef USE_M133_SKIA
 #include "src/base/SkMathPriv.h"
 #else
@@ -155,9 +156,7 @@ SkColorType SkOHOSCodec::computeOutputColorType(SkColorType requestedColorType)
             // we allowed clients to request kAlpha_8 when they wanted a
             // grayscale decode.
         case kGray_8_SkColorType:
-            if (kGray_8_SkColorType == this->getInfo().colorType()) {
-                return kGray_8_SkColorType;
-            }
+            CHECK_ERROR_RETURN_RET(kGray_8_SkColorType == this->getInfo().colorType(), kGray_8_SkColorType);
             break;
         case kRGB_565_SkColorType:
             if (kOpaque_SkAlphaType == this->getInfo().alphaType()) {
@@ -199,9 +198,8 @@ sk_sp<SkColorSpace> SkOHOSCodec::computeOutputColorSpace(SkColorType outputColor
                     return encodedSpace;
                 }
 
-                if (is_wide_gamut(*encodedProfile)) {
-                    return SkColorSpace::MakeRGB(SkNamedTransferFn::kSRGB, SkNamedGamut::kDisplayP3);
-                }
+                CHECK_ERROR_RETURN_RET(is_wide_gamut(*encodedProfile),
+                    SkColorSpace::MakeRGB(SkNamedTransferFn::kSRGB, SkNamedGamut::kDisplayP3));
             }
 
             return SkColorSpace::MakeSRGB();
@@ -339,9 +337,7 @@ SkCodec::Result SkOHOSCodec::getOHOSPixels(const SkImageInfo& requestInfo,
     if (!requestPixels) {
         return SkCodec::kInvalidParameters;
     }
-    if (requestRowBytes < requestInfo.minRowBytes()) {
-        return SkCodec::kInvalidParameters;
-    }
+    CHECK_ERROR_RETURN_RET(requestRowBytes < requestInfo.minRowBytes(), SkCodec::kInvalidParameters);
 
     OHOSOptions defaultOptions;
     if (!options) {
@@ -533,9 +529,7 @@ SkCodec::Result SkOHOSSampledCodec::onGetOHOSPixels(const SkImageInfo& info, voi
 
     SkCodec::Result result = this->codec()->startScanlineDecode(scaledInfo,
         &subsetOptions);
-    if (SkCodec::kSuccess != result) {
-        return result;
-    }
+    CHECK_ERROR_RETURN_RET(SkCodec::kSuccess != result, result);
 
     SkASSERT(this->codec()->getScanlineOrder() == SkCodec::kTopDown_SkScanlineOrder);
     if (!this->codec()->skipScanlines(scaledSubsetY)) {
@@ -545,9 +539,7 @@ SkCodec::Result SkOHOSSampledCodec::onGetOHOSPixels(const SkImageInfo& info, voi
     }
 
     int decodedLines = this->codec()->getScanlines(pixels, subsetScaledHeight, rowBytes);
-    if (decodedLines != subsetScaledHeight) {
-        return SkCodec::kIncompleteInput;
-    }
+    CHECK_ERROR_RETURN_RET(decodedLines != subsetScaledHeight, SkCodec::kIncompleteInput);
     return SkCodec::kSuccess;
 }
 
@@ -608,9 +600,7 @@ SkCodec::Result SkOHOSSampledCodec::sampledDecode(const SkImageInfo& info, void*
             pixels, rowBytes, &incrementalOptions);
         if (SkCodec::kSuccess == startResult) {
             SkSampler* ohosSampler = this->codec()->callGetSampler(true);
-            if (!ohosSampler) {
-                return SkCodec::kUnimplemented;
-            }
+            CHECK_ERROR_RETURN_RET(!ohosSampler, SkCodec::kUnimplemented);
 
             if (ohosSampler->setSampleX(ohosSampleX) != info.width()) {
                 return SkCodec::kInvalidScale;
@@ -657,9 +647,7 @@ SkCodec::Result SkOHOSSampledCodec::sampledDecode(const SkImageInfo& info, void*
     }
 
     SkSampler* ohosSampler = this->codec()->callGetSampler(true);
-    if (!ohosSampler) {
-        return SkCodec::kInternalError;
-    }
+    CHECK_ERROR_RETURN_RET(!ohosSampler, SkCodec::kInternalError);
 
     if (ohosSampler->setSampleX(ohosSampleX) != info.width()) {
         return SkCodec::kInvalidScale;

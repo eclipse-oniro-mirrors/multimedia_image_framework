@@ -104,12 +104,10 @@ bool IncrementalSourceStream::Peek(uint32_t desiredSize, uint8_t *outBuffer, uin
         desiredSize = dataSize_ - dataOffset_;
     }
     errno_t ret = memcpy_s(outBuffer, bufferSize, sourceData_.data() + dataOffset_, desiredSize);
-    if (ret != 0) {
-        IMAGE_LOGE("[IncrementalSourceStream]copy data fail, ret:%{public}d, bufferSize:%{public}u,"
-            "offset:%{public}zu, desiredSize:%{public}u, dataSize:%{public}zu.", ret, bufferSize, dataOffset_,
-            desiredSize, dataSize_);
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(ret != 0, false,
+        "[IncrementalSourceStream]copy data fail, ret:%{public}d, bufferSize:%{public}u,"
+        "offset:%{public}zu, desiredSize:%{public}u, dataSize:%{public}zu.", ret, bufferSize, dataOffset_,
+        desiredSize, dataSize_);
     readSize = desiredSize;
     return true;
 }
@@ -140,10 +138,9 @@ uint32_t IncrementalSourceStream::UpdateData(const uint8_t *data, uint32_t size,
         return SUCCESS;
     }
     if (incrementalMode_ == IncrementalMode::INCREMENTAL_DATA) {
-        if (dataSize_ > (UINT32_MAX - size)) {
-            IMAGE_LOGE("[IncrementalSourceStream]total size would exceed limit");
-            return ERR_IMAGE_TOO_LARGE;
-        }
+        bool cond = (dataSize_ > (UINT32_MAX - size));
+        CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_TOO_LARGE,
+            "[IncrementalSourceStream]total size would exceed limit");
         vector<uint8_t> newData;
         newData.resize(size);
         copy(data, data + size, newData.begin());

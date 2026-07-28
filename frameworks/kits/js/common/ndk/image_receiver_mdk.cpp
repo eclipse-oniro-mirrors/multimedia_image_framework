@@ -137,9 +137,6 @@ MIDK_EXPORT
 int32_t OH_Image_Receiver_Release(ImageReceiverNative* native)
 {
     if (native != nullptr) {
-        if (native->napi != nullptr) {
-            ImageReceiverNapiOff(native->napi);
-        }
         delete native;
     }
     return IMAGE_RESULT_SUCCESS;

@@ -58,19 +58,20 @@ static constexpr int32_t FORMAT_9 = 9;
 static constexpr int32_t INTEGER_PART_WIDTH = 2;
 static constexpr int32_t REQUIRED_GPS_COMPONENTS = 3;
 using JpegYuvDecodeError = OHOS::ImagePlugin::JpegYuvDecodeError;
-static size_t g_supportedFormatSize = 0;
+static std::atomic<size_t> g_supportedFormatSize{0};
 struct FreeDeleter {
+    size_t count = 0;
+    explicit FreeDeleter(size_t n = 0) : count(n) {}
     void operator()(Image_MimeType* ptr) const
     {
         if (ptr) {
-            for (size_t i = 0; i < g_supportedFormatSize; ++i) {
+            for (size_t i = 0; i < count; ++i) {
                 if (ptr[i].data != nullptr) {
                     free(ptr[i].data);
                     ptr[i].data = nullptr;
                 }
             }
             delete[] ptr;
-            ptr = nullptr;
         }
     }
 };
@@ -678,7 +679,7 @@ Image_ErrorCode OH_ImageSourceNative_CreateFromDataWithUserBuffer(uint8_t *data,
 MIDK_EXPORT
 Image_ErrorCode OH_ImageSourceNative_CreateFromRawFile(RawFileDescriptor *rawFile, OH_ImageSourceNative **res)
 {
-    if (rawFile == nullptr) {
+    if (rawFile == nullptr || res == nullptr) {
         return IMAGE_BAD_PARAMETER;
     }
     SourceOptions options;
@@ -699,7 +700,7 @@ MIDK_EXPORT
 Image_ErrorCode OH_ImageSourceNative_CreatePixelmap(OH_ImageSourceNative *source, OH_DecodingOptions *ops,
     OH_PixelmapNative **pixelmap)
 {
-    if (source == nullptr || source->GetInnerImageSource() == nullptr) {
+    if (source == nullptr || source->GetInnerImageSource() == nullptr || pixelmap == nullptr) {
         return IMAGE_BAD_PARAMETER;
     }
     DecodeOptions decOps;
@@ -1526,17 +1527,6 @@ Image_ErrorCode OH_ImageSourceNative_Release(OH_ImageSourceNative *source)
 }
 
 MIDK_EXPORT
-Image_ErrorCode OH_ImageSourceNative_Destroy(OH_ImageSourceNative **source)
-{
-    if (source == nullptr || *source == nullptr) {
-        return IMAGE_BAD_PARAMETER;
-    }
-    delete *source;
-    *source = nullptr;
-    return IMAGE_SUCCESS;
-}
-
-MIDK_EXPORT
 Image_ErrorCode OH_DecodingOptionsForPicture_Create(OH_DecodingOptionsForPicture **options)
 {
     if (options == nullptr) {
@@ -1728,8 +1718,8 @@ Image_ErrorCode OH_ImageSourceNative_GetSupportedFormats(Image_MimeType** suppor
     std::set<std::string> formats;
     ImageSource::GetSupportedFormats(formats);
     auto newFormats = std::unique_ptr<Image_MimeType[], FreeDeleter>(
-        new Image_MimeType[formats.size()],
-        FreeDeleter{});
+        new Image_MimeType[formats.size()]{},
+        FreeDeleter(formats.size()));
     size_t count = 0;
     for (const auto& str : formats) {
         newFormats[count].data = strdup(str.c_str());

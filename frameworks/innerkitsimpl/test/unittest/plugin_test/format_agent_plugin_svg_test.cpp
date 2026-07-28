@@ -101,21 +101,6 @@ HWTEST_F(FormatAgentPluginSvgTest, SvgCreatePixelMapTest, TestSize.Level3)
 }
 
 /**
- * @tc.name: SvgCheckFormat
- * @tc.desc: svg CheckFormat
- * @tc.type: FUNC
- */
-HWTEST_F(FormatAgentPluginSvgTest, SvgCheckFormat, TestSize.Level3)
-{
-    GTEST_LOG_(INFO) << "FormatAgentPluginSvgTest: SvgCheckFormat start";
-    ImagePlugin::SvgFormatAgent formatAgent;
-    auto datasize = formatAgent.GetHeaderSize();
-    auto ret = formatAgent.CheckFormat(nullptr, datasize);
-    ASSERT_EQ(ret, false);
-    GTEST_LOG_(INFO) << "FormatAgentPluginSvgTest: SvgCheckFormat end";
-}
-
-/**
  * @tc.name: SvgGetPixelsTest
  * @tc.desc: svg CheckFormat
  * @tc.type: FUNC

@@ -842,16 +842,21 @@ bool ImageUtils::CopyYuvPixelMapToSurfaceBuffer(PixelMap* pixelmap,
 
     YUVDataInfo yuvDstInfo;
     YUVDataInfo yuvSrcInfo;
+    ImageUtils::UpdateYUVDataInfo(*pixelmap);
     pixelmap->GetImageYUVInfo(yuvSrcInfo);
 
-    bool cond = !ImageUtils::GetYuvInfoFromSurfaceBuffer(yuvDstInfo, surfaceBuffer);
+    bool cond = !ImageUtils::GetYuvInfoFromDmaBuffer(surfaceBuffer, yuvDstInfo);
     CHECK_ERROR_RETURN_RET_LOG(cond, false, "Get YUVInfo from SurfaceBuffer failed");
+    uint64_t yPlaneEnd = static_cast<uint64_t>(yuvDstInfo.yStride) * yuvDstInfo.yHeight;
+    uint64_t uvPlaneEnd = static_cast<uint64_t>(yuvDstInfo.uvOffset) +
+                           static_cast<uint64_t>(yuvDstInfo.uvStride) * yuvDstInfo.uvHeight;
+    cond = static_cast<uint64_t>(dstSize) < yPlaneEnd || static_cast<uint64_t>(dstSize) < uvPlaneEnd;
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "SurfaceBuffer capacity insufficient.");
 
     uint8_t* src = srcBase + yuvSrcInfo.yOffset;
     for (uint32_t i = 0; i < yuvSrcInfo.yHeight; ++i) {
-        if (memcpy_s(dst, dstSize, src, yuvSrcInfo.yWidth) != EOK) {
-            return false;
-        }
+        cond = memcpy_s(dst, dstSize, src, yuvSrcInfo.yWidth) != EOK;
+        CHECK_ERROR_RETURN_RET_LOG(cond, false, "CopyYuvPixelMapToSurfaceBuffer Y plane memcpy failed");
         dst += yuvDstInfo.yStride;
         dstSize -= yuvDstInfo.yStride;
         src += yuvSrcInfo.yStride;
@@ -859,9 +864,8 @@ bool ImageUtils::CopyYuvPixelMapToSurfaceBuffer(PixelMap* pixelmap,
 
     dst = static_cast<uint8_t*>(surfaceBuffer->GetVirAddr()) + yuvDstInfo.uvOffset;
     for (uint32_t i = 0; i < yuvSrcInfo.uvHeight; ++i) {
-        if (memcpy_s(dst, dstSize, src, yuvSrcInfo.uvWidth * NUM_2) != EOK) {
-            return false;
-        }
+        cond = memcpy_s(dst, dstSize, src, yuvSrcInfo.uvWidth * NUM_2) != EOK;
+        CHECK_ERROR_RETURN_RET_LOG(cond, false, "CopyYuvPixelMapToSurfaceBuffer UV plane memcpy failed");
         dst += yuvDstInfo.uvStride;
         dstSize -= yuvDstInfo.uvStride;
         src += yuvSrcInfo.uvStride;

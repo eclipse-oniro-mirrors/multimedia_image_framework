@@ -66,9 +66,7 @@ heif_error HeifHvccBox::ParseNalUnitArray(HeifStreamReader& reader, std::vector<
         }
         std::vector<uint8_t> nalUnit(nalUnitSize);
         bool res = reader.ReadData(nalUnit.data(), nalUnitSize);
-        if (!res) {
-            return heif_error_eof;
-        }
+        CHECK_ERROR_RETURN_RET(!res, heif_error_eof);
         nalUnits.push_back(nalUnit);
     }
     return reader.GetError();

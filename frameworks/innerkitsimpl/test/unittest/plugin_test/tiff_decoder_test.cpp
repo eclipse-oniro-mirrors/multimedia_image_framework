@@ -417,9 +417,8 @@ HWTEST_F(TiffDecoderTest, SeekProc_SEEK_END_Test, TestSize.Level3)
     MockInputDataStream stream(0, MOCK_SIZE_200);
     TiffDecoder decoder;
     toff_t ret = decoder.SeekProc(static_cast<thandle_t>(&stream), MOCK_NEG_OFFSET, SEEK_END);
-    EXPECT_TRUE(stream.seekCalled_);
-    EXPECT_EQ(stream.seekArg_, MOCK_SIZE_200 + MOCK_NEG_OFFSET);
-    EXPECT_EQ(ret, MOCK_SIZE_200 + MOCK_NEG_OFFSET);
+    EXPECT_FALSE(stream.seekCalled_);
+    EXPECT_EQ(ret, static_cast<toff_t>(-1));
 }
 
 HWTEST_F(TiffDecoderTest, SeekProc_InvalidWhence_Test, TestSize.Level3)

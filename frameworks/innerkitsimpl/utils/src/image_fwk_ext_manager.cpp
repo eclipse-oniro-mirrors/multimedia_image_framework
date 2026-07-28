@@ -101,28 +101,33 @@ bool ImageFwkExtManager::LoadImageFwkExtNativeHeifsSwDecodeSo()
 #if !defined(_WIN32) && !defined(_APPLE)
     CHECK_ERROR_RETURN_RET(isImageFwkExtNativeSoOpened_, true);
     CHECK_ERROR_RETURN_RET(!extNativeSoHandle_, false);
+    auto closeExtNativeSo = [this]() {
+        dlclose(extNativeSoHandle_);
+        extNativeSoHandle_ = nullptr;
+        heifsSoftwareDecodeFunc_ = nullptr;
+        heifsSoftwareCreateDecoderFunc_ = nullptr;
+        heifsSoftwareDeleteDecoderFunc_ = nullptr;
+    };
+
     heifsSoftwareDecodeFunc_ = reinterpret_cast<HeifsSoftwareDecodeFunc>(dlsym(extNativeSoHandle_,
         "HeifsSoftwareDecode"));
     if (heifsSoftwareDecodeFunc_ == nullptr) {
         IMAGE_LOGE("HeifsSoftwareDecode dlsym failed");
-        dlclose(extNativeSoHandle_);
-        extNativeSoHandle_ = nullptr;
+        closeExtNativeSo();
         return false;
     }
     heifsSoftwareCreateDecoderFunc_ = reinterpret_cast<HeifsSoftwareCreateDecoderFunc>(dlsym(extNativeSoHandle_,
         "HeifsSoftwareCreateDecoder"));
     if (heifsSoftwareCreateDecoderFunc_ == nullptr) {
         IMAGE_LOGE("HeifsSoftwareCreateDecoder dlsym failed");
-        dlclose(extNativeSoHandle_);
-        extNativeSoHandle_ = nullptr;
+        closeExtNativeSo();
         return false;
     }
     heifsSoftwareDeleteDecoderFunc_ = reinterpret_cast<HeifsSoftwareDeleteDecoderFunc>(dlsym(extNativeSoHandle_,
         "HeifsSoftwareDeleteDecoder"));
     if (heifsSoftwareDeleteDecoderFunc_ == nullptr) {
         IMAGE_LOGE("HeifsSoftwareDeleteDecoder dlsym failed");
-        dlclose(extNativeSoHandle_);
-        extNativeSoHandle_ = nullptr;
+        closeExtNativeSo();
         return false;
     }
     return true;

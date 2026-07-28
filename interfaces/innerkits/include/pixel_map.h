@@ -36,8 +36,8 @@
 #endif
 
 namespace OHOS::Rosen {
-class PixelMapStorage;
 class RSMarshallingHelper;
+class PixelMapStorage;
 class RSProfiler;
 class RSModifiersDraw;
 };
@@ -121,15 +121,8 @@ struct RWPixelsOptions {
 class ExifMetadata;
 class AbsMemory;
 
-#define PIXELMAP_VERSION_START (1<<16)
-#define PIXELMAP_VERSION_DISPLAY_ONLY (PIXELMAP_VERSION_START + 1)
-#define PIXELMAP_VERSION_LATEST PIXELMAP_VERSION_DISPLAY_ONLY
-
 class PixelMap : public Parcelable, public PIXEL_MAP_ERR {
 public:
-#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
-    friend class PixelMapRecordParcel;
-#endif
     static std::atomic<uint32_t> currentId;
     PixelMap()
     {
@@ -698,13 +691,13 @@ public:
     NATIVEEXPORT virtual void SetTransformered(bool isTransformered);
     NATIVEEXPORT uint32_t ConvertAlphaFormat(PixelMap &wPixelMap, const bool isPremul);
     NATIVEEXPORT bool AttachAddrBySurfaceBuffer();
-    NATIVEEXPORT void SetPixelMapError(uint32_t code, const std::string &info)
+    NATIVEEXPORT void SetPixelMapError(uint32_t code, std::string info)
     {
         errorCode = code;
         errorInfo = info;
     }
 
-    NATIVEEXPORT static void ConstructPixelMapError(PIXEL_MAP_ERR &err, uint32_t code, const std::string &info)
+    NATIVEEXPORT static void ConstructPixelMapError(PIXEL_MAP_ERR &err, uint32_t code, std::string info)
     {
         err.errorCode = code;
         err.errorInfo = info;
@@ -785,9 +778,6 @@ public:
     {
         yuvDataInfo_ = yuvinfo;
     }
-    NATIVEEXPORT virtual void AssignYuvDataOnType(PixelFormat format, int32_t width, int32_t height);
-    NATIVEEXPORT virtual void UpdateYUVDataInfo(PixelFormat format, int32_t width, int32_t height,
-        YUVStrideInfo &strides);
     NATIVEEXPORT virtual void GetImageYUVInfo(YUVDataInfo &yuvInfo) const
     {
         yuvInfo = yuvDataInfo_;
@@ -849,7 +839,7 @@ public:
     NATIVEEXPORT uint32_t GetImagePropertyInt(const std::string &key, int32_t &value);
     NATIVEEXPORT uint32_t GetImagePropertyString(const std::string &key, std::string &value);
     NATIVEEXPORT uint32_t ModifyImageProperty(const std::string &key, const std::string &value);
-    NATIVEEXPORT uint32_t SetMemoryName(const std::string &pixelMapName);
+    NATIVEEXPORT uint32_t SetMemoryName(std::string pixelMapName);
     NATIVEEXPORT std::unique_ptr<PixelMap> Clone(int32_t &errorCode);
     NATIVEEXPORT virtual std::unique_ptr<PixelMap> clone(int32_t &errorCode);
 
@@ -936,16 +926,17 @@ public:
     static int32_t GetYUVByteCount(const ImageInfo& info);
     static int32_t GetAllocatedByteCount(const ImageInfo& info);
 
-    NATIVEEXPORT uint32_t GetVersionId();
-    NATIVEEXPORT void AddVersionId();
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+    friend class PixelMapRecordParcel;
+#endif
     uint64_t GetNoPaddingUsage();
 
 protected:
     static constexpr size_t MAX_IMAGEDATA_SIZE = 128 * 1024 * 1024; // 128M
     static constexpr size_t MIN_IMAGEDATA_SIZE = 32 * 1024;         // 32k
     friend class ImageSource;
-    friend class OHOS::Rosen::PixelMapStorage;
     friend class OHOS::Rosen::RSMarshallingHelper;
+    friend class OHOS::Rosen::PixelMapStorage;
     friend class OHOS::Rosen::RSProfiler;
     static bool ALPHA8ToARGB(const uint8_t *in, uint32_t inCount, uint32_t *out, uint32_t outCount);
     static bool ALPHAF16ToARGB(const uint8_t *in, uint32_t inCount, uint32_t *out, uint32_t outCount);
@@ -978,20 +969,16 @@ protected:
     static void ReleaseBuffer(AllocatorType allocatorType, int fd, uint64_t dataSize, void **buffer);
     static void *AllocSharedMemory(const uint64_t bufferSize, int &fd, uint32_t uniqueId);
     bool WritePropertiesToParcel(Parcel &parcel) const;
-    static bool ReadPropertiesFromParcel(Parcel& parcel, PixelMap*& pixelMap, ImageInfo& imgInfo,
-        PixelMemInfo& memInfo);
-    bool ReadBufferSizeFromParcel(Parcel& parcel, const ImageInfo& imgInfo, PixelMemInfo& memInfo,
-        PIXEL_MAP_ERR& error);
+    bool ReadPropertiesFromParcel(Parcel &parcel, ImageInfo &imgInfo, AllocatorType &allocatorType,
+                                  int32_t &bufferSize, PIXEL_MAP_ERR &error);
     bool WriteMemInfoToParcel(Parcel &parcel, const int32_t &bufferSize) const;
-    static bool ReadMemInfoFromParcel(Parcel &parcel, PixelMemInfo &pixelMemInfo, PIXEL_MAP_ERR &error,
-        std::function<int(Parcel &parcel, std::function<int(Parcel&)> readFdDefaultFunc)> readSafeFdFunc = nullptr,
-        bool isDisplay = false);
+    static bool ReadMemInfoFromParcel(Parcel &parcel, const ImageInfo &imgInfo, PixelMemInfo &pixelMemInfo,
+        PIXEL_MAP_ERR &error,
+        std::function<int(Parcel &parcel, std::function<int(Parcel&)> readFdDefaultFunc)> readSafeFdFunc = nullptr);
     bool WriteTransformDataToParcel(Parcel &parcel) const;
     bool ReadTransformData(Parcel &parcel, PixelMap *pixelMap);
     bool WriteAstcInfoToParcel(Parcel &parcel) const;
     bool ReadAstcInfo(Parcel &parcel, PixelMap *pixelMap);
-    bool WriteYuvDataInfoToParcel(Parcel &parcel) const;
-    bool ReadYuvDataInfoFromParcel(Parcel &parcel, PixelMap *pixelMap);
     uint32_t SetRowDataSizeForImageInfo(ImageInfo info);
 
     void ResetPixelMap()
@@ -1001,14 +988,10 @@ protected:
         colorProc_ = nullptr;
     }
 
-    bool CheckValidParam(int32_t x, int32_t y)
-    {
-        return isUnMap_ || data_ == nullptr || x >= imageInfo_.size.width || x < 0 || y >= imageInfo_.size.height ||
-            y < 0 || (pixelsSize_ < static_cast<uint64_t>(rowDataSize_) * imageInfo_.size.height) ? false : true;
-    }
+    bool CheckValidParam(int32_t x, int32_t y);
 
     static PixelMap *StartUnmarshalling(Parcel &parcel, ImageInfo &imgInfo,
-        PixelMemInfo &pixelMemInfo, PIXEL_MAP_ERR &error);
+        PixelMemInfo &pixelMemInfo, PIXEL_MAP_ERR &error, bool isDisplay = false);
     static PixelMap *FinishUnmarshalling(PixelMap* pixelMap, Parcel &parcel,
         ImageInfo &imgInfo, PixelMemInfo &pixelMemInfo, PIXEL_MAP_ERR &error);
 
@@ -1034,11 +1017,8 @@ protected:
     static int32_t ConvertPixelAlpha(const void *srcPixels, const int32_t srcLength, const ImageInfo &srcInfo,
         void *dstPixels, const ImageInfo &dstInfo);
     void CopySurfaceBufferInfo(void *data);
-    void SetVersionId(uint32_t versionId);
     std::unique_ptr<AbsMemory> CreateSdrMemory(ImageInfo &imageInfo, PixelFormat format,
                                                AllocatorType dstType, uint32_t &errorCode, bool toSRGB);
-    // used to close fd after mmap in RenderService when memory type is shared-mem or dma.
-    bool CloseFd();
     uint32_t CheckPixelMapForWritePixels();
 
     uint8_t *data_ = nullptr;
@@ -1082,10 +1062,9 @@ protected:
     std::shared_ptr<ExifMetadata> exifMetadata_ = nullptr;
     std::shared_ptr<std::mutex> metadataMutex_ = std::make_shared<std::mutex>();
     std::shared_ptr<std::mutex> translationMutex_ = std::make_shared<std::mutex>();
-    std::shared_ptr<std::shared_mutex> colorSpaceMutex_ = std::make_shared<std::shared_mutex>();
+    std::shared_ptr<std::mutex> colorSpaceMutex_ = std::make_shared<std::mutex>();
     bool toSdrColorIsSRGB_ = false;
-    uint32_t versionId_ = 1;
-    std::shared_ptr<std::shared_mutex> versionMutex_ = std::make_shared<std::shared_mutex>();
+    std::shared_ptr<std::shared_mutex> pixelDataMutex_ = std::make_shared<std::shared_mutex>();
 private:
     uint32_t ScaleWithSLR(float xAxis, float yAxis);
 
@@ -1097,16 +1076,6 @@ private:
     NATIVEEXPORT void SetDisplayOnly(bool displayOnly)
     {
         displayOnly_ = displayOnly;
-    }
-
-    NATIVEEXPORT void SetReadVersion(int32_t version)
-    {
-        readVersion_ = version;
-    }
-
-    NATIVEEXPORT int32_t GetReadVersion()
-    {
-        return readVersion_;
     }
 
     void MarkPropertiesDirty()
@@ -1133,8 +1102,6 @@ private:
     // used to mark whether pixelmap is unmarshalling
     bool isUnmarshalling_ = false;
 
-    // pixelmap versioning added since 16th of April 2025
-    int32_t readVersion_ = PIXELMAP_VERSION_LATEST;
     bool displayOnly_ = false;
     bool astcHdr_ = false;
 

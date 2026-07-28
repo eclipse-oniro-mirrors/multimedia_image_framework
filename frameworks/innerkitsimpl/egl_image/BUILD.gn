@@ -69,6 +69,7 @@ ohos_shared_library("egl_image") {
 
 if (!use_clang_ios && !use_clang_android) {
   ohos_shared_library("post_proc_gl") {
+    branch_protector_ret = "pac_ret"
     sanitize = {
       cfi = true
       cfi_cross_dso = true
@@ -93,6 +94,7 @@ if (!use_clang_ios && !use_clang_android) {
     }
     external_deps = [
       "ipc:ipc_single",
+      "bounds_checking_function:libsec_shared",
       "c_utils:utils",
       "graphic_2d:EGL",
       "graphic_2d:GLESv3",

@@ -19,6 +19,7 @@
 
 #include "yuv_helper.h"
 #include "securec.h"
+#include "image_log.h"
 
 namespace OHOS {
 namespace ImagePlugin {
@@ -89,20 +90,14 @@ static bool IsValidScaleFactor(uint8_t factor)
 
 static bool CopyLineData(uint8_t *dest, uint32_t destStride, const uint8_t *src, uint32_t srcStride)
 {
-    if (srcStride == 0 || destStride == 0) {
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET(srcStride == 0 || destStride == 0, false);
     errno_t ret = memcpy_s(dest, destStride, src, std::min(srcStride, destStride));
-    if (ret != EOK) {
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET(ret != EOK, false);
     if (destStride > srcStride) {
         uint32_t count = destStride - srcStride;
         uint8_t lastValueinCurrentSrcLine = *(src + srcStride - 1);
         ret = memset_s(dest + srcStride, count, lastValueinCurrentSrcLine, count);
-        if (ret != EOK) {
-            return false;
-        }
+        CHECK_ERROR_RETURN_RET(ret != EOK, false);
     }
     return true;
 }
@@ -113,12 +108,8 @@ static uint8_t SampleUV(const uint8_t* srcUV, int stride, bool canUseNextRow, bo
     if (canUseNextRow) {
         srcUVNextLine = srcUV + stride;
     }
-    if (srcUVNextLine != nullptr) {
-        return (*srcUV + *srcUVNextLine) / AVERAGE_FACTOR;
-    }
-    if (canUseNextColumn) {
-        return (*srcUV + *(srcUV + 1)) / AVERAGE_FACTOR;
-    }
+    CHECK_ERROR_RETURN_RET(srcUVNextLine != nullptr, (*srcUV + *srcUVNextLine) / AVERAGE_FACTOR);
+    CHECK_ERROR_RETURN_RET(canUseNextColumn, (*srcUV + *(srcUV + 1)) / AVERAGE_FACTOR);
     return *srcUV;
 }
 
@@ -127,10 +118,9 @@ static bool VerifyParameter(const YuvPlaneInfo &src, const YuvPlaneInfo &dest,
 {
     uint32_t width = src.imageWidth;
     uint32_t height = src.imageHeight;
-    if (!IsValidYuvData(src) || !IsValidSize(width, height) ||
-        !IsValidScaleFactor(srcXScale) || !IsValidScaleFactor(srcYScale)) {
-        return false;
-    }
+    bool cond = !IsValidYuvData(src) || !IsValidSize(width, height) ||
+        !IsValidScaleFactor(srcXScale) || !IsValidScaleFactor(srcYScale);
+    CHECK_ERROR_RETURN_RET(cond, false);
     if (outYU12 && !IsValidYuvData(dest)) {
         return false;
     } else if (!outYU12 && !IsValidYuvNVData(dest)) {
@@ -147,16 +137,12 @@ static bool CopyYData(const YuvPlaneInfo &src, const YuvPlaneInfo &dest)
         srcY = src.planes[YCOM] + k * src.strides[YCOM];
         uint8_t* outY = dest.planes[YCOM] + k * dest.strides[YCOM];
         bool ret = CopyLineData(outY, dest.strides[YCOM], srcY, src.strides[YCOM]);
-        if (!ret) {
-            return false;
-        }
+        CHECK_ERROR_RETURN_RET(!ret, false);
     }
     if (dest.planeHeight[YCOM] > height && srcY) {
         uint8_t* outY = dest.planes[YCOM] + height * dest.strides[YCOM];
         bool ret = CopyLineData(outY, dest.strides[YCOM], srcY, src.strides[YCOM]);
-        if (!ret) {
-            return false;
-        }
+        CHECK_ERROR_RETURN_RET(!ret, false);
     }
     return true;
 }
@@ -164,15 +150,10 @@ static bool CopyYData(const YuvPlaneInfo &src, const YuvPlaneInfo &dest)
 int I4xxToI420_c(const YuvPlaneInfo &src, const YuvPlaneInfo &dest,
                  uint8_t srcXScale, uint8_t srcYScale, bool outfmtIsYU12)
 {
-    if (!VerifyParameter(src, dest, srcXScale, srcYScale, outfmtIsYU12)) {
-        return -1;
-    }
-    if (!CopyYData(src, dest)) {
-        return -1;
-    }
-    if (srcYScale == 0) {
-        return -1;
-    }
+    bool cond = !VerifyParameter(src, dest, srcXScale, srcYScale, outfmtIsYU12);
+    CHECK_ERROR_RETURN_RET(cond, -1);
+    CHECK_ERROR_RETURN_RET(!CopyYData(src, dest), -1);
+    CHECK_ERROR_RETURN_RET(srcYScale == 0, -1);
     for (uint32_t k = 0; k < src.imageHeight; k += SAMPLE_FACTOR420) {
         const uint8_t* srcU = src.planes[UCOM] + k / srcYScale * src.strides[UCOM];
         const uint8_t* srcV = src.planes[VCOM] + k / srcYScale * src.strides[VCOM];
@@ -218,9 +199,8 @@ int I444ToI420_wrapper(const YuvPlaneInfo &src, const YuvPlaneInfo &dest)
     if (YuvHelper::GetInstance().I444ToI420) {
         uint32_t width = src.imageWidth;
         uint32_t height = src.imageHeight;
-        if (!IsValidYuvData(src) || !IsValidYuvData(dest) || !IsValidSize(width, height)) {
-            return -1;
-        }
+        bool cond = !IsValidYuvData(src) || !IsValidYuvData(dest) || !IsValidSize(width, height);
+        CHECK_ERROR_RETURN_RET(cond, -1);
         return YuvHelper::GetInstance().I444ToI420(src.planes[YCOM], src.strides[YCOM], src.planes[UCOM],
             src.strides[UCOM], src.planes[VCOM], src.strides[VCOM], dest.planes[YCOM], dest.strides[YCOM],
             dest.planes[UCOM], dest.strides[UCOM], dest.planes[VCOM], dest.strides[VCOM], width, height);
@@ -234,9 +214,8 @@ int I444ToNV21_wrapper(const YuvPlaneInfo &src, const YuvPlaneInfo &dest)
     if (YuvHelper::GetInstance().I444ToNV21) {
         uint32_t width = src.imageWidth;
         uint32_t height = src.imageHeight;
-        if (!IsValidYuvData(src) || !IsValidYuvNVData(dest) || !IsValidSize(width, height)) {
-            return -1;
-        }
+        bool cond = !IsValidYuvData(src) || !IsValidYuvNVData(dest) || !IsValidSize(width, height);
+        CHECK_ERROR_RETURN_RET(cond, -1);
         return YuvHelper::GetInstance().I444ToNV21(src.planes[YCOM], src.strides[YCOM], src.planes[UCOM],
             src.strides[UCOM], src.planes[VCOM], src.strides[VCOM], dest.planes[YCOM], dest.strides[YCOM],
             dest.planes[UVCOM], dest.strides[UVCOM], width, height);
@@ -250,9 +229,8 @@ int I422ToI420_wrapper(const YuvPlaneInfo &src, const YuvPlaneInfo &dest)
     if (YuvHelper::GetInstance().I422ToI420) {
         uint32_t width = src.imageWidth;
         uint32_t height = src.imageHeight;
-        if (!IsValidYuvData(src) || !IsValidYuvData(dest) || !IsValidSize(width, height)) {
-            return -1;
-        }
+        bool cond = !IsValidYuvData(src) || !IsValidYuvData(dest) || !IsValidSize(width, height);
+        CHECK_ERROR_RETURN_RET(cond, -1);
         return YuvHelper::GetInstance().I422ToI420(src.planes[YCOM], src.strides[YCOM], src.planes[UCOM],
             src.strides[UCOM], src.planes[VCOM], src.strides[VCOM], dest.planes[YCOM], dest.strides[YCOM],
             dest.planes[UCOM], dest.strides[UCOM], dest.planes[VCOM], dest.strides[VCOM], width, height);
@@ -266,9 +244,8 @@ int I422ToNV21_wrapper(const YuvPlaneInfo &src, const YuvPlaneInfo &dest)
     if (YuvHelper::GetInstance().I422ToNV21) {
         uint32_t width = src.imageWidth;
         uint32_t height = src.imageHeight;
-        if (!IsValidYuvData(src) || !IsValidYuvNVData(dest) || !IsValidSize(width, height)) {
-            return -1;
-        }
+        bool cond = !IsValidYuvData(src) || !IsValidYuvNVData(dest) || !IsValidSize(width, height);
+        CHECK_ERROR_RETURN_RET(cond, -1);
         return YuvHelper::GetInstance().I422ToNV21(src.planes[YCOM], src.strides[YCOM], src.planes[UCOM],
             src.strides[UCOM], src.planes[VCOM], src.strides[VCOM], dest.planes[YCOM], dest.strides[YCOM],
             dest.planes[UVCOM], dest.strides[UVCOM], width, height);
@@ -287,9 +264,8 @@ int I420ToNV21_wrapper(const YuvPlaneInfo &src, const YuvPlaneInfo &dest)
     if (YuvHelper::GetInstance().I420ToNV21) {
         uint32_t width = src.imageWidth;
         uint32_t height = src.imageHeight;
-        if (!IsValidYuvData(src) || !IsValidYuvNVData(dest) || !IsValidSize(width, height)) {
-            return -1;
-        }
+        bool cond = !IsValidYuvData(src) || !IsValidYuvNVData(dest) || !IsValidSize(width, height);
+        CHECK_ERROR_RETURN_RET(cond, -1);
         return YuvHelper::GetInstance().I420ToNV21(src.planes[YCOM], src.strides[YCOM], src.planes[UCOM],
             src.strides[UCOM], src.planes[VCOM], src.strides[VCOM], dest.planes[YCOM], dest.strides[YCOM],
             dest.planes[UVCOM], dest.strides[UVCOM], width, height);
@@ -322,9 +298,8 @@ int I400ToI420_wrapper(const YuvPlaneInfo &src, const YuvPlaneInfo &dest)
 {
     uint32_t width = src.imageWidth;
     uint32_t height = src.imageHeight;
-    if (!IsValidYuvGrayData(src) || !IsValidYuvData(dest) || !IsValidSize(width, height)) {
-        return -1;
-    }
+    bool cond = !IsValidYuvGrayData(src) || !IsValidYuvData(dest) || !IsValidSize(width, height);
+    CHECK_ERROR_RETURN_RET(cond, -1);
     if (YuvHelper::GetInstance().I400ToI420) {
         return YuvHelper::GetInstance().I400ToI420(src.planes[YCOM], src.strides[YCOM], dest.planes[YCOM],
             dest.strides[YCOM], dest.planes[UCOM], dest.strides[UCOM], dest.planes[VCOM], dest.strides[VCOM],
@@ -345,9 +320,7 @@ int I400ToI420_wrapper(const YuvPlaneInfo &src, const YuvPlaneInfo &dest)
         UVCOMSize += dest.planeWidth[VCOM] * dest.planeHeight[VCOM];
         // U/V planes must be physically contiguous in memory; non-contiguous buffers may cause heap buffer overflow.
         errno_t ret = memset_s(dest.planes[UCOM], UVCOMSize, chromaValueForGray, UVCOMSize);
-        if (ret != EOK) {
-            return -1;
-        }
+        CHECK_ERROR_RETURN_RET(ret != EOK, -1);
         return 0;
     }
 }
@@ -356,9 +329,8 @@ int I400ToYUV420Sp(const YuvPlaneInfo &src, const YuvPlaneInfo &dest)
 {
     uint32_t width = src.imageWidth;
     uint32_t height = src.imageHeight;
-    if (!IsValidYuvGrayData(src) || !IsValidYuvData(dest) || !IsValidSize(width, height)) {
-        return -1;
-    }
+    bool cond = !IsValidYuvGrayData(src) || !IsValidYuvData(dest) || !IsValidSize(width, height);
+    CHECK_ERROR_RETURN_RET(cond, -1);
     const uint8_t* srcY = nullptr;
     for (uint32_t k = 0; k < height; k++) {
         srcY = src.planes[YCOM] + k * src.strides[YCOM];
@@ -373,9 +345,7 @@ int I400ToYUV420Sp(const YuvPlaneInfo &src, const YuvPlaneInfo &dest)
     uint32_t UVCOMSize = dest.strides[UCOM] * dest.planeHeight[UCOM];
     UVCOMSize += dest.strides[VCOM] * dest.planeHeight[VCOM];
     errno_t ret = memset_s(dest.planes[UVCOM], UVCOMSize, chromaValueForGray, UVCOMSize);
-    if (ret != EOK) {
-        return -1;
-    }
+    CHECK_ERROR_RETURN_RET(ret != EOK, -1);
     return 0;
 }
 

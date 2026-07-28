@@ -17,6 +17,7 @@
 #define FRAMEWORK_KITS_TAIHE_INCLUDE_PICTURE_TAIHE_ANI_H
 
 #include <ani.h>
+#include <mutex>
 #include "picture.h"
 
 // This file is for legacy ANI backward compatibility
@@ -27,7 +28,15 @@ namespace Media {
 class PictureTaiheAni {
 public:
     static ani_object CreateEtsPicture(ani_env *env, std::shared_ptr<Picture> picture);
+    static std::shared_ptr<Picture> GetNativePicture(ani_env *env, ani_object obj);
     std::shared_ptr<Picture> nativePicture_;
+
+private:
+    static ani_ref gPictureClass;
+    static ani_method gGetImplPtr;
+    static bool getImplPtrInited;
+    static std::mutex getImplPtrMutex;
+    static bool InitGetImplPtr(ani_env *env);
 };
 
 } // namespace Media

@@ -123,6 +123,7 @@ static int32_t AvifColorSpaceToFFmpegColorSpace(const Dav1dPicture &pic)
 
 bool Dav1dDecoder::ConvertToRGB(SwsContext *ctx, Dav1dPicture &pic, ConvertInfo &info)
 {
+    CHECK_ERROR_RETURN_RET_LOG(info.dstBuffer == nullptr, false, "%{public}s dstBuffer is nullptr", __func__);
     uint8_t* srcY = reinterpret_cast<uint8_t*>((pic).data[Y_PLANE_INDEX]);
     uint8_t* srcU = reinterpret_cast<uint8_t*>((pic).data[U_PLANE_INDEX]);
     uint8_t* srcV = reinterpret_cast<uint8_t*>((pic).data[V_PLANE_INDEX]);
@@ -151,6 +152,7 @@ static bool SetColorConfig(SwsContext* ctx, const Dav1dPicture &pic)
     int32_t ret = sws_getColorspaceDetails(ctx, &srcColorTable, &srcRange, &dstColorTable, &dstRange, &brightness,
         &contrast, &saturation);
     CHECK_ERROR_RETURN_RET_LOG(ret != 0, false, "sws_getColorspaceDetails failed.");
+    CHECK_ERROR_RETURN_RET_LOG(pic.seq_hdr == nullptr, false, "SetColorConfig seq_hdr is nullptr.");
     int32_t srcColorSpace = AvifColorSpaceToFFmpegColorSpace(pic);
     srcRange = pic.seq_hdr->color_range == 0 ? 0 : 1;
     ret = sws_setColorspaceDetails(ctx, sws_getCoefficients(srcColorSpace), srcRange, dstColorTable, dstRange,
@@ -172,7 +174,20 @@ bool Dav1dDecoder::ConvertWithFFmpeg(uint32_t index, ConvertInfo &info)
     AVPixelFormat dstFormat = PixelFormatToAVPixelFormat(info.desiredPixelFormat);
     CHECK_ERROR_RETURN_RET_LOG(dstFormat == AVPixelFormat::AV_PIX_FMT_NONE, false,
         "PixelFormatToAVPixelFormat failed.");
-
+ 
+    uint64_t pixelBytes = static_cast<uint64_t>(ImageUtils::GetPixelBytes(info.desiredPixelFormat));
+    uint64_t w = static_cast<uint64_t>(pic->p.w);
+    uint64_t h = static_cast<uint64_t>(pic->p.h);
+    CHECK_ERROR_RETURN_RET_LOG(
+        ImageUtils::CheckMulOverflow<uint64_t>(w, pixelBytes) || w * pixelBytes > info.rowStride, false,
+        "AVIF row stride mismatch: decoded width(%{public}d) exceeds rowStride(%{public}zu).",
+        pic->p.w, info.rowStride);
+    CHECK_ERROR_RETURN_RET_LOG(
+        ImageUtils::CheckMulOverflow<uint64_t>(h, static_cast<uint64_t>(info.rowStride)) ||
+        h * info.rowStride > info.dstBufferSize, false,
+        "AVIF buffer overflow: decoded(%{public}dx%{public}d) exceeds dstBufferSize(%{public}zu).",
+        pic->p.w, pic->p.h, info.dstBufferSize);
+ 
     SwsContext* ctx = sws_getContext(pic->p.w, pic->p.h, srcFormat,
         pic->p.w, pic->p.h, dstFormat, SWS_POINT, nullptr, nullptr, nullptr);
     CHECK_ERROR_RETURN_RET_LOG(!ctx, false, "SwsContext is nullptr.");
@@ -189,9 +204,7 @@ bool Dav1dDecoder::ConvertWithFFmpeg(uint32_t index, ConvertInfo &info)
 
 bool Dav1dDecoder::CreateDecoder()
 {
-    if (ctx_) {
-        return true;
-    }
+    CHECK_ERROR_RETURN_RET(ctx_, true);
     IMAGE_LOGD("%{public}s IN.", __func__);
     dav1d_default_settings(&settings_);
     settings_.n_threads = DEFAULT_THREAD_NUM;
@@ -543,9 +556,7 @@ std::vector<std::vector<uint32_t>> AvifDecoderImpl::CalculateMiniGroup(uint32_t 
         "%{public}s Incorrect group information.", __func__);
     uint32_t groupNum = end - begin;
     while (IsMemoryExceed(groupNum)) {
-        if (groupNum <= MIN_GROUP_NUM) {
-            return result;
-        }
+        CHECK_ERROR_RETURN_RET(groupNum <= MIN_GROUP_NUM, result);
         groupNum /= GROUP_DIVIDE_NUM;
     }
     for (uint32_t i = begin; i <= index; i += groupNum) {

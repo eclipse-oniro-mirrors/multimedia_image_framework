@@ -147,8 +147,11 @@ heif_error Cr3FtypBox::ParseContent(HeifStreamReader &reader)
     minorVersion_ = reader.Read32();
 
     // (box size - headersize - majorbrand bytes - minorversion bytes) / (compatibleBrand bytes)
+    uint64_t fixedContentSize = GetHeaderSize() + UINT32_BYTES_NUM + UINT32_BYTES_NUM;
+    CHECK_ERROR_RETURN_RET_LOG(GetBoxSize() < fixedContentSize, heif_error_invalid_box_size,
+        "BoxSize less than fixed content size");
     uint64_t compatibleBrandNum =
-        (GetBoxSize() - GetHeaderSize() - UINT32_BYTES_NUM - UINT32_BYTES_NUM) / UINT32_BYTES_NUM;
+        (GetBoxSize() - fixedContentSize) / UINT32_BYTES_NUM;
     for (uint64_t i = 0; i < compatibleBrandNum && !reader.HasError(); i++) {
         compatibleBrands_.push_back(reader.Read32());
     }

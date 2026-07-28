@@ -129,6 +129,9 @@ AttrData::AttrData(AttrData &&data) noexcept
     if (memcpy_s(&value_, sizeof(value_), &data.value_, sizeof(data.value_)) == EOK) {
         type_ = data.type_;
         data.type_ = AttrDataType::ATTR_DATA_NULL;
+        data.value_.stringValue = nullptr;
+        data.value_.uint32Set = nullptr;
+        data.value_.stringSet = nullptr;
     } else {
         type_ = AttrDataType::ATTR_DATA_NULL;
         IMAGE_LOGE("memcpy error in assignment operator!");
@@ -147,12 +150,12 @@ AttrData &AttrData::operator=(const AttrData &data)
     ClearData();
     if (memcpy_s(&value_, sizeof(value_), &temp.value_, sizeof(temp.value_)) == 0) {
         type_ = temp.type_;
-        temp.type_ = AttrDataType::ATTR_DATA_NULL;
     } else {
         type_ = AttrDataType::ATTR_DATA_NULL;
         IMAGE_LOGE("memcpy error in assignment operator!");
     }
 
+    temp.type_ = AttrDataType::ATTR_DATA_NULL;
     return *this;
 }
 
@@ -167,6 +170,9 @@ AttrData &AttrData::operator=(AttrData &&data) noexcept
     if (memcpy_s(&value_, sizeof(value_), &data.value_, sizeof(data.value_)) == EOK) {
         type_ = data.type_;
         data.type_ = AttrDataType::ATTR_DATA_NULL;
+        data.value_.stringValue = nullptr;
+        data.value_.uint32Set = nullptr;
+        data.value_.stringSet = nullptr;
     } else {
         type_ = AttrDataType::ATTR_DATA_NULL;
         IMAGE_LOGE("memcpy error in assignment operator!");

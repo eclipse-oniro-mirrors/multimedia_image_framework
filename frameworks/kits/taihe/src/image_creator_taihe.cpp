@@ -243,7 +243,12 @@ void ImageCreatorImpl::QueueImageSync(weak::Image image)
         return std::monostate{};
     };
 
-    auto imageImpl = reinterpret_cast<ImageImpl*>(image->GetImplPtr());
+    auto imageImplPtr = image->GetImplPtr();
+    if (imageImplPtr == 0) {
+        IMAGE_LOGE("QueueImageSync: imageImplPtr is null");
+        return;
+    }
+    auto imageImpl = reinterpret_cast<ImageImpl*>(imageImplPtr);
     QueueImageSyncProcess(args, imageImpl, this);
 }
 
@@ -361,7 +366,8 @@ void ImageCreatorImpl::OnImageRelease(::taihe::callback_view<void(uintptr_t, uin
         std::shared_ptr<ImageCreatorReleaseListener> listener = std::make_shared<ImageCreatorReleaseListener>();
         listener->context = context;
 
-        native->RegisterBufferReleaseListener((std::shared_ptr<OHOS::Media::SurfaceBufferReleaseListener> &)listener);
+        native->RegisterBufferReleaseListener(
+            std::static_pointer_cast<OHOS::Media::SurfaceBufferReleaseListener>(listener));
 
         listener->context->status = OHOS::Media::SUCCESS;
         return std::monostate{};

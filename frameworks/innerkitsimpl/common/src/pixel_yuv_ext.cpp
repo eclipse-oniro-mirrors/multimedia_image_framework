@@ -67,9 +67,7 @@ static SkImageInfo ToSkImageInfo(ImageInfo &info, sk_sp<SkColorSpace> colorSpace
 static sk_sp<SkColorSpace> ToSkColorSpace(PixelMap *pixelmap)
 {
 #ifdef IMAGE_COLORSPACE_FLAG
-    if (pixelmap->InnerGetGrColorSpacePtr() == nullptr) {
-        return nullptr;
-    }
+    CHECK_ERROR_RETURN_RET(pixelmap->InnerGetGrColorSpacePtr() == nullptr, nullptr);
     return pixelmap->InnerGetGrColorSpacePtr()->ToSkColorSpace();
 #else
     return nullptr;
@@ -116,25 +114,22 @@ constexpr int32_t ANTIALIASING_SIZE = 350;
 
 static bool IsSupportAntiAliasing(const ImageInfo &imageInfo, const AntiAliasingOption &option)
 {
-    return option != AntiAliasingOption::NONE &&
-           imageInfo.size.width <= ANTIALIASING_SIZE &&
-           imageInfo.size.height <= ANTIALIASING_SIZE;
+    bool ret = (option != AntiAliasingOption::NONE &&
+                imageInfo.size.width <= ANTIALIASING_SIZE &&
+                imageInfo.size.height <= ANTIALIASING_SIZE);
+    return ret;
 }
 
 void PixelYuvExt::scale(int32_t dstW, int32_t dstH)
 {
-    if (!IsYuvFormat()) {
-        return;
-    }
+    CHECK_ERROR_RETURN(!IsYuvFormat());
     ImageInfo imageInfo;
     GetImageInfo(imageInfo);
     AntiAliasingOption operation = AntiAliasingOption::NONE;
     AntiAliasingOption option = AntiAliasingOption::NONE;
-    if (ImageSystemProperties::GetAntiAliasingEnabled() && IsSupportAntiAliasing(imageInfo, option)) {
-        operation = AntiAliasingOption::MEDIUM;
-    } else {
-        operation = option;
-    }
+    operation = (ImageSystemProperties::GetAntiAliasingEnabled() && IsSupportAntiAliasing(imageInfo, option))
+                ? AntiAliasingOption::MEDIUM
+                : static_cast<decltype(operation)>(option);
     scale(dstW, dstH, operation);
 }
 
@@ -144,37 +139,32 @@ PixelYuvExt::~PixelYuvExt()
 
 void PixelYuvExt::scale(float xAxis, float yAxis)
 {
-    if (!IsYuvFormat()) {
-        return;
-    }
+    CHECK_ERROR_RETURN(!IsYuvFormat());
     ImageInfo imageInfo;
     GetImageInfo(imageInfo);
     AntiAliasingOption operation = AntiAliasingOption::NONE;
     AntiAliasingOption option = AntiAliasingOption::NONE;
-    if (ImageSystemProperties::GetAntiAliasingEnabled() && IsSupportAntiAliasing(imageInfo, option)) {
-        operation = AntiAliasingOption::MEDIUM;
-    } else {
-        operation = option;
-    }
+    operation = (ImageSystemProperties::GetAntiAliasingEnabled() && IsSupportAntiAliasing(imageInfo, option))
+                ? AntiAliasingOption::MEDIUM
+                : static_cast<decltype(operation)>(option);
     scale(xAxis, yAxis, operation);
 }
 
 void PixelYuvExt::scale(float xAxis, float yAxis, const AntiAliasingOption &option)
 {
     uint32_t errCode = Scale(xAxis, yAxis, option);
-    if (errCode != SUCCESS) {
-        IMAGE_LOGE("PixelYuvExt::scale failed, xAxis: %{public}f, yAxis: %{public}f, ret: %{public}u",
-            xAxis, yAxis, errCode);
-    }
+    CHECK_ERROR_RETURN_LOG(errCode != SUCCESS,
+        "PixelYuvExt::scale failed, xAxis: %{public}f, yAxis: %{public}f, ret: %{public}u", xAxis, yAxis, errCode);
 }
 
 uint32_t PixelYuvExt::Scale(float xAxis, float yAxis, AntiAliasingOption option)
 {
-    if (xAxis == 0 || yAxis == 0) {
-        IMAGE_LOGE("Invalid scale ratio: 0");
-        return ERR_IMAGE_INVALID_PARAMETER;
+    CHECK_ERROR_RETURN_RET_LOG(xAxis == 0 || yAxis == 0, ERR_IMAGE_INVALID_PARAMETER, "Invalid scale ratio: 0");
+    if (xAxis == 1 && yAxis == 1) {
+        IMAGE_LOGI("No need to scale.");
+        return SUCCESS;
     }
-    
+    ImageUtils::DumpPixelMapIfDumpEnabled(*this, std::string("before_") + __func__);
     ImageTrace imageTrace("PixelMap scale");
     ImageInfo imageInfo;
     GetImageInfo(imageInfo);
@@ -185,15 +175,17 @@ uint32_t PixelYuvExt::Scale(float xAxis, float yAxis, AntiAliasingOption option)
     CHECK_ERROR_RETURN_RET_LOG(m == nullptr, ERR_IMAGE_MALLOC_ABNORMAL, "scale CreateMemory failed");
 
     uint8_t *dst = reinterpret_cast<uint8_t *>(m->data.data);
+#if !defined(CROSS_PLATFORM)
+    ImageUtils::UpdateYUVDataInfo(*this);
+#endif
     YUVDataInfo yuvDataInfo;
     GetImageYUVInfo(yuvDataInfo);
     uint32_t pixelsSize = pixelsSize_;
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     if (allocatorType_ == AllocatorType::DMA_ALLOC) {
         SurfaceBuffer* sbBuffer = static_cast<SurfaceBuffer*>(GetFd());
-        if (sbBuffer == nullptr) {
-            IMAGE_LOGE("PixelYuvExt scale get SurfaceBuffer failed");
-        } else {
+        CHECK_ERROR_PRINT_LOG(sbBuffer == nullptr, "PixelYuvExt scale get SurfaceBuffer failed");
+        if (sbBuffer != nullptr) {
             pixelsSize = sbBuffer->GetSize();
         }
     }
@@ -207,40 +199,48 @@ uint32_t PixelYuvExt::Scale(float xAxis, float yAxis, AntiAliasingOption option)
     imageInfo.size.width = dstW;
     imageInfo.size.height = dstH;
     SetImageInfo(imageInfo, true);
-    UpdateYUVDataInfo(imageInfo.pixelFormat, imageInfo.size.width, imageInfo.size.height, dstStrides);
-    AddVersionId();
+#if !defined(CROSS_PLATFORM)
+    ImageUtils::UpdateYUVDataInfo(*this);
+#endif
+    ImageUtils::FlushSurfaceBuffer(this);
+    ImageUtils::DumpPixelMapIfDumpEnabled(*this, std::string("after_") + __func__);
     return SUCCESS;
 }
 
 void PixelYuvExt::scale(int32_t dstW, int32_t dstH, const AntiAliasingOption &option)
 {
     uint32_t errCode = Scale(dstW, dstH, option);
-    if (errCode != SUCCESS) {
-        IMAGE_LOGE("PixelYuvExt::scale failed, dstW: %{public}d, dstH: %{public}d, ret: %{public}u",
-            dstW, dstH, errCode);
-    }
+    CHECK_ERROR_PRINT_LOG(errCode != SUCCESS,
+        "PixelYuvExt::scale failed, dstW: %{public}d, dstH: %{public}d, ret: %{public}u", dstW, dstH, errCode);
 }
 
 uint32_t PixelYuvExt::Scale(int32_t dstW, int32_t dstH, AntiAliasingOption option)
 {
     ImageTrace imageTrace("PixelMap scale");
     IMAGE_LOGI("%{public}s (%{public}d, %{public}d)", __func__, dstW, dstH);
+    ImageUtils::DumpPixelMapIfDumpEnabled(*this, std::string("before_") + __func__);
     ImageInfo imageInfo;
     GetImageInfo(imageInfo);
+    if (dstW == imageInfo.size.width && dstH == imageInfo.size.height) {
+        IMAGE_LOGI("No need to scale.");
+        return SUCCESS;
+    }
 
     YUVStrideInfo dstStrides;
     auto m = CreateMemory(imageInfo.pixelFormat, "Trans ImageData", dstW, dstH, dstStrides);
     CHECK_ERROR_RETURN_RET_LOG(m == nullptr, ERR_IMAGE_MALLOC_ABNORMAL, "scale CreateMemory failed");
     uint8_t *dst = reinterpret_cast<uint8_t *>(m->data.data);
+#if !defined(CROSS_PLATFORM)
+    ImageUtils::UpdateYUVDataInfo(*this);
+#endif
     YUVDataInfo yuvDataInfo;
     GetImageYUVInfo(yuvDataInfo);
     uint32_t pixelsSize = pixelsSize_;
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     if (allocatorType_ == AllocatorType::DMA_ALLOC) {
         SurfaceBuffer* sbBuffer = static_cast<SurfaceBuffer*>(GetFd());
-        if (sbBuffer == nullptr) {
-            IMAGE_LOGE("PixelYuvExt scale get SurfaceBuffer failed");
-        } else {
+        CHECK_ERROR_PRINT_LOG(sbBuffer == nullptr, "PixelYuvExt scale get SurfaceBuffer failed");
+        if (sbBuffer != nullptr) {
             pixelsSize = sbBuffer->GetSize();
         }
     }
@@ -253,17 +253,18 @@ uint32_t PixelYuvExt::Scale(int32_t dstW, int32_t dstH, AntiAliasingOption optio
     imageInfo.size.width = dstW;
     imageInfo.size.height = dstH;
     SetImageInfo(imageInfo, true);
-    UpdateYUVDataInfo(imageInfo.pixelFormat, imageInfo.size.width, imageInfo.size.height, dstStrides);
-    AddVersionId();
+#if !defined(CROSS_PLATFORM)
+    ImageUtils::UpdateYUVDataInfo(*this);
+#endif
+    ImageUtils::DumpPixelMapIfDumpEnabled(*this, std::string("after_") + __func__);
     return SUCCESS;
 }
 
 void PixelYuvExt::rotate(float degrees)
 {
     uint32_t errCode = Rotate(degrees);
-    if (errCode != SUCCESS) {
-        IMAGE_LOGE("PixelYuvExt::rotate failed, degrees: %{public}f, ret: %{public}u", degrees, errCode);
-    }
+    CHECK_ERROR_PRINT_LOG(errCode != SUCCESS,
+        "PixelYuvExt::rotate failed, degrees: %{public}f, ret: %{public}u", degrees, errCode);
 }
 
 uint32_t PixelYuvExt::Rotate(float degrees)
@@ -272,6 +273,10 @@ uint32_t PixelYuvExt::Rotate(float degrees)
         return SUCCESS;
     }
     CHECK_ERROR_RETURN_RET(!IsYuvFormat(), ERR_IMAGE_DATA_UNSUPPORT);
+#if !defined(CROSS_PLATFORM)
+    ImageUtils::UpdateYUVDataInfo(*this);
+#endif
+    ImageUtils::DumpPixelMapIfDumpEnabled(*this, std::string("before_") + __func__);
     YUVDataInfo yuvDataInfo;
     GetImageYUVInfo(yuvDataInfo);
 
@@ -303,18 +308,20 @@ uint32_t PixelYuvExt::Rotate(float degrees)
     imageInfo_.size = dstSize;
     SetImageInfo(imageInfo_, true);
     SetPixelsAddr(dst, m->extend.data, m->data.size, m->GetType(), nullptr);
-    UpdateYUVDataInfo(imageInfo_.pixelFormat, dstWidth, dstHeight, dstStrides);
-    AddVersionId();
+#if !defined(CROSS_PLATFORM)
+    ImageUtils::UpdateYUVDataInfo(*this);
+#endif
+    ImageUtils::FlushSurfaceBuffer(this);
+    ImageUtils::DumpPixelMapIfDumpEnabled(*this, std::string("after_") + __func__);
     return SUCCESS;
 }
 
 void PixelYuvExt::flip(bool xAxis, bool yAxis)
 {
     uint32_t errCode = Flip(xAxis, yAxis);
-    if (errCode != SUCCESS) {
-        IMAGE_LOGE("PixelYuvExt::flip failed, xAxis: %{public}d, yAxis: %{public}d, ret: %{public}u",
-            xAxis, yAxis, errCode);
-    }
+    CHECK_ERROR_PRINT_LOG(errCode != SUCCESS,
+        "PixelYuvExt::flip failed, xAxis: %{public}d, yAxis: %{public}d, ret: %{public}u",
+        xAxis, yAxis, errCode);
 }
 
 uint32_t PixelYuvExt::Flip(bool xAxis, bool yAxis)
@@ -331,6 +338,10 @@ uint32_t PixelYuvExt::Flip(bool xAxis, bool yAxis)
         IMAGE_LOGD("P010 use PixelYuv flip");
         return PixelYuv::Flip(xAxis, yAxis);
     }
+    ImageUtils::DumpPixelMapIfDumpEnabled(*this, std::string("before_") + __func__);
+#if !defined(CROSS_PLATFORM)
+    ImageUtils::UpdateYUVDataInfo(*this);
+#endif
     YUVDataInfo yuvDataInfo;
     GetImageYUVInfo(yuvDataInfo);
 
@@ -358,8 +369,10 @@ uint32_t PixelYuvExt::Flip(bool xAxis, bool yAxis)
         return ERR_IMAGE_TRANSFORM;
     }
     SetPixelsAddr(dst, m->extend.data, m->data.size, m->GetType(), nullptr);
-    UpdateYUVDataInfo(imageInfo.pixelFormat, imageInfo.size.width, imageInfo.size.height, dstStrides);
-    AddVersionId();
+#if !defined(CROSS_PLATFORM)
+    ImageUtils::UpdateYUVDataInfo(*this);
+#endif
+    ImageUtils::DumpPixelMapIfDumpEnabled(*this, std::string("after_") + __func__);
     return SUCCESS;
 }
 
@@ -394,6 +407,9 @@ int32_t PixelYuvExt::ColorSpaceBGRAToYuv(
 {
     int32_t dstWidth = dst.info.width();
     int32_t dstHeight = dst.info.height();
+#if !defined(CROSS_PLATFORM)
+    ImageUtils::UpdateYUVDataInfo(*this);
+#endif
     YUVDataInfo yuvDataInfo;
     GetImageYUVInfo(yuvDataInfo);
     uint32_t pictureSize = GetImageSize(dstWidth, dstHeight, format);
@@ -403,7 +419,6 @@ int32_t PixelYuvExt::ColorSpaceBGRAToYuv(
     auto grName = grColorSpace.GetColorSpaceName();
     grColorSpace_ = std::make_shared<OHOS ::ColorManager::ColorSpace>(
         dst.info.refColorSpace(), grName);
-    AddVersionId();
     return SUCCESS;
 }
 
@@ -413,8 +428,12 @@ uint32_t PixelYuvExt::ApplyColorSpace(const OHOS::ColorManager::ColorSpace &grCo
     CHECK_ERROR_RETURN_RET(cond, ERR_IMAGE_COLOR_CONVERT);
     cond = CheckColorSpace(grColorSpace);
     CHECK_ERROR_RETURN_RET(cond, SUCCESS);
+    ImageUtils::DumpPixelMapIfDumpEnabled(*this, std::string("before_") + __func__);
     /*convert yuV420 to·BRGA */
     PixelFormat format = imageInfo_.pixelFormat;
+#if !defined(CROSS_PLATFORM)
+    ImageUtils::UpdateYUVDataInfo(*this);
+#endif
     YUVDataInfo yuvDataInfo;
     GetImageYUVInfo(yuvDataInfo);
 
@@ -453,6 +472,7 @@ uint32_t PixelYuvExt::ApplyColorSpace(const OHOS::ColorManager::ColorSpace &grCo
     // convert bgra back to·yuv
     cond = ColorSpaceBGRAToYuv(RGBAdataC.get(), dst, imageInfo_, format, grColorSpace) != SUCCESS;
     CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_COLOR_CONVERT, "ColorSpaceBGRAToYuv failed");
+    ImageUtils::DumpPixelMapIfDumpEnabled(*this, std::string("after_") + __func__);
     return SUCCESS;
 }
 #endif

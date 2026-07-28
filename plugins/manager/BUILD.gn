@@ -141,6 +141,7 @@ if (use_clang_ios) {
       ldflags = [ "-Wl,-Bsymbolic" ]
 
       external_deps = [
+        "bounds_checking_function:libsec_shared",
         "c_utils:utils",
         "graphic_2d:color_manager",
         "hilog:libhilog",
@@ -228,6 +229,7 @@ ohos_static_library("pluginmanager_static") {
     ldflags = [ "-Wl,-Bsymbolic" ]
 
     external_deps = [
+      "bounds_checking_function:libsec_shared",
       "c_utils:utils",
       "graphic_2d:color_manager",
       "hilog:libhilog",
