@@ -84,6 +84,28 @@ optional<PixelMap> PictureImpl::GetMainPixelmap()
     return optional<PixelMap>(std::in_place, res);
 }
 
+void PictureImpl::SetMainPixelmap(weak::PixelMap pixelMap)
+{
+    IMAGE_LOGD("SetMainPixelmap IN");
+
+    PixelMapImpl* pixelMapImpl = reinterpret_cast<PixelMapImpl*>(pixelMap->GetImplPtr());
+    if (pixelMapImpl == nullptr) {
+        ImageTaiheUtils::ThrowExceptionError(IMAGE_SOURCE_INVALID_PARAMETER, "Fail to unwrap PixelMapImpl!");
+        return;
+    }
+
+    if (nativePicture_ != nullptr) {
+        auto pixelMapPtr = pixelMapImpl->GetNativePtr();
+        if (pixelMapPtr != nullptr) {
+            nativePicture_->SetMainPixel(pixelMapPtr);
+        } else {
+            ImageTaiheUtils::ThrowExceptionError(IMAGE_SOURCE_INVALID_PARAMETER, "Native pixelmap is nullptr!");
+        }
+    } else {
+        ImageTaiheUtils::ThrowExceptionError(IMAGE_SOURCE_INVALID_PARAMETER, "Native picture is nullptr!");
+    }
+}
+
 optional<PixelMap> PictureImpl::GetHdrComposedPixelmapTaiHe(bool withOptions, optional_view<HdrComposeOptions> options)
 {
     IMAGE_LOGD("GetHdrComposedPixelMap IN");

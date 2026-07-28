@@ -1036,6 +1036,8 @@ interface Picture {
 
   GetMainPixelmap(): Optional<PixelMap>;
 
+  SetMainPixelmap(pixelMap: PixelMap): void;
+
   @promise @rename("getHdrComposedPixelmap")
   GetHdrComposedPixelmapSync(): Optional<PixelMap>;
 
