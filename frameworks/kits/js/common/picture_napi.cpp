@@ -241,6 +241,7 @@ napi_value PictureNapi::Init(napi_env env, napi_value exports)
 {
     napi_property_descriptor props[] = {
         DECLARE_NAPI_FUNCTION("getMainPixelmap", GetMainPixelmap),
+        DECLARE_NAPI_FUNCTION("setMainPixelmap", SetMainPixelmap),
         DECLARE_NAPI_FUNCTION("getHdrComposedPixelmap", GetHdrComposedPixelMap),
         DECLARE_NAPI_FUNCTION("getHdrComposedPixelmapWithOptions", GetHdrComposedPixelMapWithOptions),
         DECLARE_NAPI_FUNCTION("getGainmapPixelmap", GetGainmapPixelmap),
@@ -940,6 +941,45 @@ napi_value PictureNapi::GetMainPixelmap(napi_env env, napi_callback_info info)
         IMAGE_LOGE("Native picture is nullptr!");
     }
     return nVal.result;
+}
+
+napi_value PictureNapi::SetMainPixelmap(napi_env env, napi_callback_info info)
+{
+    napi_value result = nullptr;
+    napi_get_undefined(env, &result);
+    napi_status status;
+    napi_value thisVar = nullptr;
+    napi_value argValue[NUM_1] = {0};
+    size_t argCount = NUM_1;
+
+    IMAGE_LOGD("SetMainPixelmap IN");
+    IMG_JS_ARGS(env, info, status, argCount, argValue, thisVar);
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), result, IMAGE_LOGE("Fail to get arguments from info"));
+    IMG_NAPI_CHECK_RET_D(argCount == NUM_1, ImageNapiUtils::ThrowExceptionError(env, IMAGE_SOURCE_INVALID_PARAMETER,
+        "Invalid args count", true), IMAGE_LOGE("Invalid args count %{public}zu", argCount));
+
+    PictureNapi* pictureNapi = nullptr;
+    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&pictureNapi));
+    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, pictureNapi), result, IMAGE_LOGE("Fail to unwrap context"));
+
+    if (ParserImageType(env, argValue[NUM_0]) == ImageType::TYPE_PIXEL_MAP) {
+        auto pixelMap = PixelMapNapi::GetPixelMap(env, argValue[NUM_0]);
+        if (pixelMap == nullptr) {
+            return ImageNapiUtils::ThrowExceptionError(env,
+                IMAGE_SOURCE_INVALID_PARAMETER, "Get arg pixelmap failed", true);
+        }
+        if (pictureNapi->nativePicture_ != nullptr) {
+            pictureNapi->nativePicture_->SetMainPixel(pixelMap);
+        } else {
+            IMAGE_LOGE("Native picture is nullptr!");
+            return ImageNapiUtils::ThrowExceptionError(env, IMAGE_SOURCE_INVALID_PARAMETER,
+                "Picture is a null pointer", true);
+        }
+    } else {
+        return ImageNapiUtils::ThrowExceptionError(env,
+            IMAGE_SOURCE_INVALID_PARAMETER, "Input image type mismatch", true);
+    }
+    return result;
 }
 
 napi_value PictureNapi::Release(napi_env env, napi_callback_info info)

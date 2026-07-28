@@ -40,6 +40,7 @@ private:
     static void Destructor(napi_env env, void *nativeObject, void *finalize);
     // methods
     static napi_value GetMainPixelmap(napi_env env, napi_callback_info info);
+    static napi_value SetMainPixelmap(napi_env env, napi_callback_info info);
     static napi_value GetHdrComposedPixelMapNapi(napi_env env, napi_callback_info info, bool withOptions);
     static napi_value GetHdrComposedPixelMap(napi_env env, napi_callback_info info);
     static napi_value GetHdrComposedPixelMapWithOptions(napi_env env, napi_callback_info info);
