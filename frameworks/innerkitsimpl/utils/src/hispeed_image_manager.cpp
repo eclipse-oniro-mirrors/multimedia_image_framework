@@ -387,7 +387,7 @@ bool HispeedImageManager::P010ToAR30(const uint8_t* srcBuffer, const YUVDataInfo
 #if !defined(CROSS_PLATFORM)
     CHECK_ERROR_RETURN_RET_LOG(srcBuffer == nullptr, false, "source P010 buffer is null");
     bool cond = isHispeedImageSoOpened_ == false && LoadHispeedImageSo() == false;
- 	CHECK_ERROR_RETURN_RET_LOG(cond, false, "hispeed image so not opened");
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "hispeed image so not opened");
     SrcConvertParam srcParam = {yDInfo.yWidth, yDInfo.yHeight};
     srcParam.buffer = srcBuffer;
     DestConvertParam destParam = {yDInfo.yWidth, yDInfo.yHeight};
