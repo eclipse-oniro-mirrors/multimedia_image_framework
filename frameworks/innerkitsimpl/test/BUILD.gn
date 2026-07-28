@@ -37,7 +37,8 @@ ohos_unittest("pixelmaptest") {
   ]
   sources = [
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest/pixel_map_test/native_image_test.cpp",
-    "$image_subsystem/frameworks/innerkitsimpl/test/unittest/pixel_map_test/pixel_map_astc_test.cpp",
+    "$image_subsystem/frameworks/innerkitsimpl/test/unittest/pixel_map_test/astc/pixel_map_astc_test.cpp",
+    "$image_subsystem/frameworks/innerkitsimpl/test/unittest/pixel_map_test/pixel_map_gl_transform_test.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest/pixel_map_test/pixel_map_parcel_test.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest/pixel_map_test/pixel_map_test.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest/pixel_map_test/pixel_yuv_ext_test.cpp",
@@ -72,6 +73,12 @@ ohos_unittest("pixelmaptest") {
     "egl:libEGL",
     "opengles:libGLES",
   ]
+  if (!use_clang_android && !use_clang_ios) {
+    external_deps += [
+      "graphic_2d:EGL",
+      "skia:skia_canvaskit",
+    ]
+  }
 
   defines = []
   if (memory_utils_purgeable_ashmem_enable && defined(global_parts_info) &&
@@ -1481,7 +1488,7 @@ ohos_unittest("pixelastctest") {
     "${image_subsystem}/interfaces/innerkits/include",
     "${image_subsystem}/plugins/manager/include",
   ]
-  sources = [ "$image_subsystem/frameworks/innerkitsimpl/test/unittest/pixel_astc_test.cpp" ]
+  sources = [ "$image_subsystem/frameworks/innerkitsimpl/test/unittest/pixel_map_test/astc/pixel_astc_test.cpp" ]
 
   deps = [
     "${image_subsystem}/frameworks/innerkitsimpl/utils:image_utils",
@@ -1524,7 +1531,7 @@ ohos_unittest("textureencodetest") {
   ]
   sources = [
     "${image_subsystem}/frameworks/innerkitsimpl/test/unittest/image_source_test/image_source_util.cpp",
-    "${image_subsystem}/frameworks/innerkitsimpl/test/unittest/plugin_texture_encode_test.cpp",
+    "${image_subsystem}/frameworks/innerkitsimpl/test/unittest/pixel_map_test/astc/plugin_texture_encode_test.cpp",
     "${image_subsystem}/frameworks/innerkitsimpl/test/unittest/pixel_map_test/ext_pixel_convert_test.cpp",
     "${image_subsystem}/frameworks/innerkitsimpl/test/unittest/stream_test/ext_stream_test.cpp",
   ]
@@ -1573,7 +1580,7 @@ ohos_unittest("eglimagetest") {
     "$image_subsystem/frameworks/innerkitsimpl/egl_image/include",
     "$image_subsystem/interfaces/innerkits/include",
   ]
-  sources = [ "unittest/egl_image_test.cpp" ]
+  sources = [ "unittest/pixel_map_test/egl/egl_image_test.cpp" ]
 
   deps = [ "$image_subsystem/frameworks/innerkitsimpl/egl_image:egl_image" ]
 
@@ -1614,8 +1621,8 @@ ohos_unittest("eglimagetest2") {
     "$image_subsystem/frameworks/innerkitsimpl/egl_image/src/pixel_map_gl_shader.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/egl_image/src/pixel_map_program_manager.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/utils/src/image_trace.cpp",
-    "unittest/egl_image_helper_test.cpp",
-    "unittest/egl_image_test2.cpp",
+    "unittest/pixel_map_test/egl/egl_image_helper_test.cpp",
+    "unittest/pixel_map_test/egl/egl_image_test2.cpp",
   ]
 
   deps = [ "$image_subsystem/frameworks/innerkitsimpl/egl_image:egl_image" ]
