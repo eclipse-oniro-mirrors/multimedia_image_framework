@@ -1302,7 +1302,13 @@ int ExifMetadata::HandleMakerNote(std::string &value) const
 
     for (unsigned int i = 0; i < ec->size; i++) {
         MnoteHuaweiEntry *entry = ec->entries[i];
+        if (entry == nullptr) {
+            continue;
+        }
         const char *mnoteKey = mnote_huawei_tag_get_name(entry->tag);
+        if (mnoteKey == nullptr) {
+            continue;
+        }
         if (HW_SPECIAL_KEYS.find(mnoteKey) != HW_SPECIAL_KEYS.end()) {
             continue;
         }

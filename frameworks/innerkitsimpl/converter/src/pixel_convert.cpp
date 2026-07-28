@@ -1786,8 +1786,14 @@ int32_t PixelConvert::PixelsConvert(const BufferInfo &src, BufferInfo &dst, int3
     }
 
     Position pos;
-    cond = srcLength < src.imageInfo.size.width * src.imageInfo.size.height *
-        ImageUtils::GetPixelBytes(src.imageInfo.pixelFormat);
+    const int32_t width = src.imageInfo.size.width;
+    const int32_t height = src.imageInfo.size.height;
+    const int32_t pixelBytes = ImageUtils::GetPixelBytes(src.imageInfo.pixelFormat);
+    cond = width <= 0 || height <= 0 || pixelBytes <= 0 ||
+        ImageUtils::CheckMulOverflow(width, height, pixelBytes);
+    CHECK_ERROR_RETURN_RET_LOG(cond, CONVERT_ERROR, "source image size or byte count is invalid");
+    const int32_t srcByteCount = width * height * pixelBytes;
+    cond = srcLength < srcByteCount;
     CHECK_ERROR_PRINT_LOG(cond, "srcLength = %{public}d, size:(%{public}d, %{public}d)", srcLength,
         src.imageInfo.size.width, src.imageInfo.size.height);
     IMAGE_LOGD("srcLength = %{public}d, size:(%{public}d, %{public}d)", srcLength,

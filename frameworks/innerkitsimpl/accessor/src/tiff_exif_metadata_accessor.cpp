@@ -109,8 +109,8 @@ static TIFF* TiffOpenFromStream(InputDataStream* stream)
 uint32_t TiffExifMetadataAccessor::Read()
 {
 #if defined(SUPPORT_LIBTIFF)
-    CHECK_ERROR_RETURN_RET_LOG(!imageStream_->IsOpen(), ERR_IMAGE_SOURCE_DATA,
-        "%{public}s stream is not open", __func__);
+    CHECK_ERROR_RETURN_RET_LOG(imageStream_ == nullptr || !imageStream_->IsOpen(), ERR_IMAGE_SOURCE_DATA,
+        "%{public}s stream is null or not open", __func__);
 
     imageStream_->Seek(0, SeekPos::BEGIN);
     ssize_t size = imageStream_->GetSize();

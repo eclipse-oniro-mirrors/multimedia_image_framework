@@ -282,6 +282,8 @@ uint32_t ImageFormatConvert::YUVConvert(const OHOS::Media::ConvertDataInfo &srcD
     YUVConvertFunction yuvConvertFunction = YUVGetConvertFuncByFormat(srcDataInfo.pixelFormat, destInfo.format);
     CHECK_ERROR_RETURN_RET_LOG(yuvConvertFunction == nullptr, ERR_IMAGE_INVALID_PARAMETER,
         "YUVConvert get convert function by format failed!");
+    CHECK_ERROR_RETURN_RET_LOG(srcDataInfo.buffer == nullptr, IMAGE_RESULT_FORMAT_CONVERT_FAILED,
+        "YUVConvert source buffer is null");
     YUVDataInfo yuvDataInfo = srcDataInfo.yuvDataInfo;
     int32_t width = srcDataInfo.imageSize.width;
     int32_t height = srcDataInfo.imageSize.height;

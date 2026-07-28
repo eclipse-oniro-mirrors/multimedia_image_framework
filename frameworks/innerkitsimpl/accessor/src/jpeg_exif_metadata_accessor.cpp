@@ -415,7 +415,7 @@ uint32_t JpegExifMetadataAccessor::UpdateData(uint8_t *dataBlob, uint32_t size)
     bool cond = !tmpBufStream.Open(OpenMode::ReadWrite);
     CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_SOURCE_DATA, "Failed to open temporary image stream");
 
-    cond = !imageStream_->IsOpen();
+    cond = imageStream_ == nullptr || !imageStream_->IsOpen();
     CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_SOURCE_DATA, "The output image stream is not open");
 
     cond = !UpdateExifMetadata(tmpBufStream, dataBlob, size);
