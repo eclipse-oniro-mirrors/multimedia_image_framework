@@ -183,9 +183,12 @@ napi_value AuxiliaryPictureNapi::Constructor(napi_env env, napi_callback_info in
         if (pAuxiliaryPictureNapi->nativeAuxiliaryPicture_ == nullptr) {
             IMAGE_LOGE("Failed to set nativeAuxiliaryPicture_ with null. Maybe a reentrancy error");
         }
-        status = napi_wrap(env, thisVar, reinterpret_cast<void *>(pAuxiliaryPictureNapi.release()),
+        status = napi_wrap(env, thisVar, reinterpret_cast<void *>(pAuxiliaryPictureNapi.get()),
                            AuxiliaryPictureNapi::Destructor, nullptr, nullptr);
-        if (status != napi_ok) {
+        if (status == napi_ok) {
+            pAuxiliaryPictureNapi.release();
+            return thisVar;
+        } else {
             IMAGE_LOGE("Failure wrapping js to native napi");
             return undefineVar;
         }

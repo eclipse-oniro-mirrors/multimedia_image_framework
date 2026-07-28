@@ -254,9 +254,12 @@ napi_value XMPMetadataNapi::Constructor(napi_env env, napi_callback_info info)
         // Clear the thread-local storage after use
         sXMPMetadata_ = nullptr;
 
-        status = napi_wrap(env, thisVar, reinterpret_cast<void *>(pXMPMetadataNapi.release()),
+        status = napi_wrap(env, thisVar, reinterpret_cast<void *>(pXMPMetadataNapi.get()),
                            XMPMetadataNapi::Destructor, nullptr, nullptr);
-        if (status != napi_ok) {
+        if (status == napi_ok) {
+            pXMPMetadataNapi.release();
+            return thisVar;
+        } else {
             IMAGE_LOGE("Failure wrapping js to native napi");
             return undefineVar;
         }
