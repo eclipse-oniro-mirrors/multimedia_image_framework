@@ -4415,6 +4415,48 @@ HWTEST_F(PixelMapTest, IsUnmarshallingTest003, TestSize.Level3)
 }
 
 /**
+ * @tc.name: AstcUnmarshallingBufferSizeTest001
+ * @tc.desc: Verify ASTC parcel buffer size uses block-aligned dimensions.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, AstcUnmarshallingBufferSizeTest001, TestSize.Level3)
+{
+    constexpr int32_t width = 352;
+    constexpr int32_t height = 466;
+    constexpr int32_t invalidBufferSize = 164032;
+    constexpr int32_t astcBufferSize = 164752;
+
+    PixelMap pixelMapIn;
+    ImageInfo imageInfo;
+    imageInfo.size = {width, height};
+    imageInfo.pixelFormat = PixelFormat::ASTC_4x4;
+    imageInfo.colorSpace = ColorSpace::SRGB;
+    imageInfo.alphaType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
+    ASSERT_EQ(pixelMapIn.SetImageInfo(imageInfo), SUCCESS);
+    pixelMapIn.SetAstc(true);
+    pixelMapIn.SetAstcRealSize(imageInfo.size);
+
+    int32_t rowDataSize = ImageUtils::GetRowDataSizeByPixelFormat(width, imageInfo.pixelFormat);
+    ASSERT_EQ(rowDataSize * height, invalidBufferSize);
+    ASSERT_EQ(ImageUtils::GetAstcBytesCount(imageInfo), astcBufferSize);
+
+    Parcel parcel;
+    ASSERT_TRUE(parcel.WriteInt32(-PIXELMAP_VERSION_LATEST));
+    ASSERT_TRUE(pixelMapIn.WritePropertiesToParcel(parcel));
+    ASSERT_TRUE(parcel.WriteInt32(astcBufferSize));
+
+    ImageInfo parcelImageInfo;
+    PixelMemInfo pixelMemInfo;
+    PIXEL_MAP_ERR error;
+    std::unique_ptr<PixelMap> pixelMapOut(
+        PixelMap::StartUnmarshalling(parcel, parcelImageInfo, pixelMemInfo, error));
+    ASSERT_NE(pixelMapOut, nullptr);
+    EXPECT_TRUE(pixelMemInfo.isAstc);
+    EXPECT_EQ(pixelMemInfo.bufferSize, astcBufferSize);
+    EXPECT_TRUE(pixelMapOut->IsAstc());
+}
+
+/**
  * @tc.name: ConvertFromAstcPixelMapTest
  * @tc.desc: Test ConvertFromAstc PixelMap
  * @tc.type: FUNC
