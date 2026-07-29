@@ -87,7 +87,10 @@ static uint64_t getDefaultBufferSize(std::shared_ptr<ImagePackerContext> context
         if (context->rImageSource == nullptr) {
             return DEFAULT_BUFFER_SIZE;
         }
-        context->rImageSource->GetImageInfo(imageInfo);
+        if (context->rImageSource->GetImageInfo(imageInfo) != SUCCESS) {
+            IMAGE_LOGE("getDefaultBufferSize GetImageInfo failed for image source");
+            return DEFAULT_BUFFER_SIZE;
+        }
     } else if (context->packType == TYPE_PIXEL_MAP) {
         if (context->rPixelMap == nullptr) {
             return DEFAULT_BUFFER_SIZE;

@@ -20,6 +20,8 @@
 #include "image_source.h"
 #include "image_type.h"
 
+#include <atomic>
+
 namespace OHOS {
 namespace Media {
 class ImageSourceImpl : public OHOS::FFI::FFIData {
@@ -28,6 +30,7 @@ public:
     explicit ImageSourceImpl(std::unique_ptr<ImageSource> ptr_);
     ~ImageSourceImpl() override
     {
+        navIncPixelMap_ = nullptr;
         nativeImgSrc = nullptr;
     }
     ImageSourceImpl(std::unique_ptr<ImageSource> imageSource, std::unique_ptr<IncrementalPixelMap> pixelMap);
@@ -56,7 +59,14 @@ public:
     void SetPathName(std::string pathName);
     void SetFd(int fd);
     void SetBuffer(uint8_t* data, uint32_t size);
-    void Release() {}
+    void Release()
+    {
+        bool expected = false;
+        if (isRelease.compare_exchange_strong(expected, true)) {
+            nativeImgSrc = nullptr;
+            navIncPixelMap_ = nullptr;
+        }
+    }
 
     static std::unique_ptr<ImageSource> CreateImageSource(const std::string& uri, uint32_t& errCode);
     static std::unique_ptr<ImageSource> CreateImageSourceWithOption(
@@ -74,6 +84,7 @@ public:
 
 private:
     std::shared_ptr<IncrementalPixelMap> navIncPixelMap_ = nullptr;
+    std::atomic<bool> isRelease { false };
     uint32_t index_ = 0;
     std::string pathName_ = "";
     int fd_ = -1; // INVALID_FD

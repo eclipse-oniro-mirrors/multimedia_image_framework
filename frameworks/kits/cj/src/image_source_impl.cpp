@@ -78,8 +78,19 @@ std::unique_ptr<ImageSource> ImageSourceImpl::CreateImageSourceWithOption(
 std::unique_ptr<ImageSource> ImageSourceImpl::CreateImageSource(
     const int fd, int32_t offset, int32_t length, const SourceOptions& opts, uint32_t& errorCode)
 {
-    int32_t fileSize = offset + length;
-    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(fd, offset, fileSize, opts, errorCode);
+    if (offset < 0 || length <= 0) {
+        IMAGE_LOGE("CreateImageSource invalid offset=%{public}d or length=%{public}d", offset, length);
+        errorCode = ERR_IMAGE_INVALID_PARAMETER;
+        return nullptr;
+    }
+    int64_t fileSize = static_cast<int64_t>(offset) + static_cast<int64_t>(length);
+    if (fileSize > INT32_MAX) {
+        IMAGE_LOGE("CreateImageSource fileSize overflow, offset=%{public}d, length=%{public}d", offset, length);
+        errorCode = ERR_IMAGE_INVALID_PARAMETER;
+        return nullptr;
+    }
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(fd, offset, static_cast<int32_t>(fileSize), opts, errorCode);
     return imageSource;
 }
 
@@ -283,6 +294,11 @@ uint32_t ImageSourceImpl::ModifyImageProperties(
 {
     if (nativeImgSrc == nullptr) {
         return ERR_IMAGE_INIT_ABNORMAL;
+    }
+    if (keyStrArray.size() != valueStrArray.size()) {
+        IMAGE_LOGE("ModifyImageProperties key size %{public}zu not equal value size %{public}zu",
+            keyStrArray.size(), valueStrArray.size());
+        return ERR_IMAGE_INVALID_PARAMETER;
     }
     for (size_t i = 0; i < keyStrArray.size(); i++) {
         uint32_t ret = ModifyImageProperty(keyStrArray[i], valueStrArray[i]);

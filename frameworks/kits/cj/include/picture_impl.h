@@ -19,6 +19,8 @@
 #include "ffi_remote_data.h"
 #include "picture.h"
 
+#include <atomic>
+
 namespace OHOS {
 namespace Media {
 class PictureImpl : public OHOS::FFI::FFIData {
@@ -33,7 +35,7 @@ public:
 private:
     void release();
     std::shared_ptr<Picture> nativePicture_;
-    bool isRelease = false;
+    std::atomic<bool> isRelease { false };
     uint32_t uniqueId_ = 0;
 };
 } // namespace Media

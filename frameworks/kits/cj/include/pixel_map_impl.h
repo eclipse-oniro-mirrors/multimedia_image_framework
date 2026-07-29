@@ -15,6 +15,7 @@
 #ifndef PIXEL_MAP_H
 #define PIXEL_MAP_H
 
+#include <atomic>
 #include <string>
 
 #include "ffi_remote_data.h"
@@ -60,6 +61,14 @@ public:
     bool GetIsEditable();
     bool GetIsStrideAlignment();
 
+    void Release()
+    {
+        bool expected = false;
+        if (isRelease.compare_exchange_strong(expected, true)) {
+            real_.reset();
+        }
+    }
+
     bool GetTransferDetach()
     {
         return transferDetach_;
@@ -89,6 +98,7 @@ private:
     std::shared_ptr<PixelMap> real_;
     bool isPixelMapImplEditable = true;
     bool transferDetach_ = false;
+    std::atomic<bool> isRelease { false };
 };
 } // namespace Media
 } // namespace OHOS

@@ -34,11 +34,9 @@ PictureImpl::~PictureImpl()
 
 void PictureImpl::release()
 {
-    if (!isRelease) {
-        if (nativePicture_ != nullptr) {
-            nativePicture_ = nullptr;
-        }
-        isRelease = true;
+    bool expected = false;
+    if (isRelease.compare_exchange_strong(expected, true)) {
+        nativePicture_ = nullptr;
     }
 }
 
