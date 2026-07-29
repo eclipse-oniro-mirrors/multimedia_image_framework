@@ -921,6 +921,8 @@ public:
         editable_ = editable;
     }
 
+    NATIVEEXPORT void FlushCache() const;
+
     static int32_t GetRGBxRowDataSize(const ImageInfo& info);
     static int32_t GetRGBxByteCount(const ImageInfo& info);
     static int32_t GetYUVByteCount(const ImageInfo& info);
@@ -930,8 +932,6 @@ public:
     friend class PixelMapRecordParcel;
 #endif
     uint64_t GetNoPaddingUsage();
-
-    void FlushCache() const;
 
 protected:
     static constexpr size_t MAX_IMAGEDATA_SIZE = 128 * 1024 * 1024; // 128M
