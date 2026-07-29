@@ -3252,7 +3252,8 @@ bool PixelMap::ReadPropertiesFromParcel(Parcel& parcel, PixelMap*& pixelMap, Ima
 
     pixelMap->SetReadVersion(readVersion);
     pixelMap->SetEditable(parcel.ReadBool());
-    pixelMap->SetAstc(ImageUtils::IsAstc(imgInfo.pixelFormat));
+    memInfo.isAstc = ImageUtils::IsAstc(imgInfo.pixelFormat);
+    pixelMap->SetAstc(memInfo.isAstc);
     if (pixelMap->GetReadVersion() >= PIXELMAP_VERSION_DISPLAY_ONLY) {
         bool displayOnly = parcel.ReadBool();
         pixelMap->SetDisplayOnly(displayOnly);
