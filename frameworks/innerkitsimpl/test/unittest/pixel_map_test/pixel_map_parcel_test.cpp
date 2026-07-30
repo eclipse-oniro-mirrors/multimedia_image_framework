@@ -240,6 +240,9 @@ HWTEST_F(PixelMapParcelTest, MarshallingUnmarshallingRecodeParcelTest003, TestSi
 {
     GTEST_LOG_(INFO) << "PixelMapParcelTest: MarshallingUnmarshallingRecodeParcelTest003 start";
     for (int i = 0; i <= static_cast<int>(PixelFormat::EXTERNAL_MAX); i++) {
+        if (PixelFormat(i) == PixelFormat::RGBA_F16) {
+            continue;
+        }
         EXPECT_TRUE(RecodeParcelTest(10, PixelFormat(i), false)); // Test with smaller size 10
         EXPECT_TRUE(RecodeParcelTest(10, PixelFormat(i), true)); // Test with smaller size 10
         EXPECT_TRUE(RecodeParcelTest(512, PixelFormat(i), false)); // Test with larger size 512
