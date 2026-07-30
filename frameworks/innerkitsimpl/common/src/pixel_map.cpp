@@ -3020,15 +3020,21 @@ bool PixelMap::Marshalling(Parcel &parcel) const
         return false;
     }
 
-    if (isMemoryDirty_ || isUseDefaultDmaNopadding_) {
-        ImageUtils::FlushSurfaceBuffer(const_cast<PixelMap*>(this));
-        isMemoryDirty_ = false;
-    }
+    FlushCache();
+
     {
         std::lock_guard<std::mutex> lock(*propertiesDirtyMutex_);
         isPropertiesDirty_ = false;
     }
     return true;
+}
+
+void PixelMap::FlushCache() const
+{
+    if (isMemoryDirty_ || isUseDefaultDmaNopadding_) {
+        ImageUtils::FlushSurfaceBuffer(const_cast<PixelMap *>(this));
+        isMemoryDirty_ = false;
+    }
 }
 
 bool PixelMap::ReadImageInfo(Parcel &parcel, ImageInfo &imgInfo)
