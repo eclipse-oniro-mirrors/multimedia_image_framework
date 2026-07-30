@@ -17,17 +17,11 @@
 
 namespace OHOS {
 namespace ImagePlugin {
-namespace {
-constexpr uint32_t MAX_IMAGE_SIZE = 32768;
-}
 heif_error HeifIspeBox::ParseContent(HeifStreamReader &reader)
 {
     ParseFullHeader(reader);
     width_ = reader.Read32();
     height_ = reader.Read32();
-    if (width_ > MAX_IMAGE_SIZE || height_ > MAX_IMAGE_SIZE) {
-        return heif_error_invalid_data;
-    }
     return reader.GetError();
 }
 
