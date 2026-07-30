@@ -742,10 +742,13 @@ CropValue PostProc::GetCropValue(const Rect &rect, const Size &size)
     bool isSameSize = (rect.top == 0 && rect.left == 0 && rect.height == size.height && rect.width == size.width);
     bool cond = !IsHasCrop(rect) || isSameSize;
     CHECK_ERROR_RETURN_RET(cond, CropValue::NOCROP);
-    bool isValid = ((rect.top >= 0 && rect.width > 0 && rect.left >= 0 && rect.height > 0) &&
-                    (rect.top + rect.height <= size.height) && (rect.left + rect.width <= size.width));
-    cond = !isValid;
-    CHECK_ERROR_RETURN_RET(cond, CropValue::INVALID);
+    bool isValid = rect.top >= 0 && rect.width > 0 && rect.left >= 0 && rect.height > 0;
+    CHECK_ERROR_RETURN_RET(!isValid, CropValue::INVALID);
+    int32_t sum = 0;
+    CHECK_ERROR_RETURN_RET(__builtin_add_overflow(rect.top, rect.height, &sum), CropValue::INVALID);
+    CHECK_ERROR_RETURN_RET(sum > size.height, CropValue::INVALID);
+    CHECK_ERROR_RETURN_RET(__builtin_add_overflow(rect.left, rect.width, &sum), CropValue::INVALID);
+    CHECK_ERROR_RETURN_RET(sum > size.width, CropValue::INVALID);
     return CropValue::VALID;
 }
 
@@ -753,11 +756,12 @@ CropValue PostProc::ValidCropValue(Rect &rect, const Size &size)
 {
     CropValue res = GetCropValue(rect, size);
     if (res == CropValue::INVALID) {
-        if (rect.top + rect.height > size.height) {
-            rect.height = size.height - rect.top;
+        int sum = 0;
+        if (__builtin_add_overflow(rect.top, rect.height, &sum) || sum > size.height) {
+            rect.height = (rect.top < size.height) ? size.height - rect.top : 0;
         }
-        if (rect.left + rect.width > size.width) {
-            rect.width = size.width - rect.left;
+        if (__builtin_add_overflow(rect.left, rect.width, &sum) || sum > size.width) {
+            rect.width = (rect.left < size.width) ? size.width - rect.left : 0;
         }
         res = GetCropValue(rect, size);
     }
