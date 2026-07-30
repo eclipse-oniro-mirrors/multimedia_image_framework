@@ -1607,15 +1607,14 @@ static bool GetHdrMetadata(const OHOS::sptr<OHOS::SurfaceBuffer> &buffer,
     OH_Pixelmap_HdrMetadataKey key, OH_Pixelmap_HdrMetadataValue *metadataValue)
 {
     if (buffer == nullptr || metadataValue == nullptr) {
-        IMAGE_LOGE("GetHdrMetadata buffer is nullptr");
         return false;
     }
     switch (key) {
         case OH_Pixelmap_HdrMetadataKey::HDR_METADATA_TYPE: {
             CM_HDR_Metadata_Type type;
             VpeUtils::GetSbMetadataType(buffer, type);
-            if (MetadataNdkTypeMap.find(type) != MetadataNdkTypeMap.end()) {
-                metadataValue->type = MetadataNdkTypeMap[type];
+            if (auto it = MetadataNdkTypeMap.find(type); it != MetadataNdkTypeMap.end()) {
+                metadataValue->type = it->second;
                 return true;
             }
             break;

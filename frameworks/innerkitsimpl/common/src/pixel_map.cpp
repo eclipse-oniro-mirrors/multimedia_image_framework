@@ -3792,7 +3792,7 @@ PixelMap *PixelMap::DecodeTlv(std::vector<uint8_t> &buff)
     if (ret != SUCCESS) {
         dstMemory->Release();
         delete pixelMap;
-        IMAGE_LOGE("[PixelMap]  tlv decode fail: set image info error[%{public}d]", ret);
+        IMAGE_LOGE("[PixelMap] tlv decode fail: set image info error [%{public}d]", ret);
         return nullptr;
     }
     if ((dstMemory->GetType() == AllocatorType::DMA_ALLOC &&
@@ -3801,7 +3801,7 @@ PixelMap *PixelMap::DecodeTlv(std::vector<uint8_t> &buff)
         dstMemory->data.size != static_cast<uint32_t>(pixelMap->GetByteCount()))) {
         dstMemory->Release();
         delete pixelMap;
-        IMAGE_LOGE("[PixelMap]  tlv decode fail: size not match");
+        IMAGE_LOGE("[PixelMap] tlv decode fail: size not match");
         return nullptr;
     }
     pixelMap->SetPixelsAddr(dstMemory->data.data, dstMemory->extend.data, dstMemory->data.size,
