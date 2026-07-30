@@ -369,6 +369,26 @@ typedef struct OH_Pixelmap_HdrMetadataValue {
 struct OH_Pixelmap_InitializationOptions;
 typedef struct OH_Pixelmap_InitializationOptions OH_Pixelmap_InitializationOptions;
 
+#ifdef CROSS_PLATFORM
+Image_ErrorCode OH_PixelmapInitializationOptions_Create(OH_Pixelmap_InitializationOptions **options);
+Image_ErrorCode OH_PixelmapInitializationOptions_SetWidth(OH_Pixelmap_InitializationOptions *options,
+    uint32_t width);
+Image_ErrorCode OH_PixelmapInitializationOptions_SetHeight(OH_Pixelmap_InitializationOptions *options,
+    uint32_t height);
+Image_ErrorCode OH_PixelmapInitializationOptions_SetPixelFormat(OH_Pixelmap_InitializationOptions *options,
+    int32_t pixelFormat);
+Image_ErrorCode OH_PixelmapInitializationOptions_SetAlphaType(OH_Pixelmap_InitializationOptions *options,
+    int32_t alphaType);
+Image_ErrorCode OH_PixelmapInitializationOptions_Release(OH_Pixelmap_InitializationOptions *options);
+Image_ErrorCode OH_PixelmapNative_CreatePixelmap(uint8_t *data, size_t dataLength,
+    OH_Pixelmap_InitializationOptions *options, OH_PixelmapNative **pixelmap);
+Image_ErrorCode OH_PixelmapNative_ConvertPixelmapNativeToNapi(napi_env env, OH_PixelmapNative *pixelmapNative,
+    napi_value *pixelmapNapi);
+Image_ErrorCode OH_PixelmapNative_ConvertPixelmapNativeFromNapi(napi_env env, napi_value pixelmapNapi,
+    OH_PixelmapNative **pixelmapNative);
+Image_ErrorCode OH_PixelmapNative_Release(OH_PixelmapNative *pixelmap);
+Image_ErrorCode OH_PixelmapNative_Destroy(OH_PixelmapNative **pixelmap);
+#else
 /**
  * @brief Create a for InitializationOtions struct.
  *
@@ -690,7 +710,9 @@ Image_ErrorCode OH_PixelmapNative_CreatePixelmapUsingAllocator(uint8_t *data, si
  * @param pixelmapNapi the <b>PixelMap</b> pointer will be converted.
  * @return Image functions result code.
  *     {@link IMAGE_SUCCESS} if the execution is successful.
- *     {@link IMAGE_BAD_PARAMETER} pixelmapNative is nullptr
+ *     {@link IMAGE_BAD_PARAMETER} If env, pixelmapNative, or pixelmapNapi is nullptr,
+ *         or the NAPI wrapper cannot be created.
+ * @note This API must be called on the thread associated with env.
  * @since 12
  */
 Image_ErrorCode OH_PixelmapNative_ConvertPixelmapNativeToNapi(napi_env env, OH_PixelmapNative *pixelmapNative,
@@ -1454,6 +1476,7 @@ Image_ErrorCode OH_PixelmapNative_GetUniqueId(OH_PixelmapNative *pixelmap, uint3
  * @since 22
  */
 Image_ErrorCode OH_PixelmapNative_IsReleased(OH_PixelmapNative *pixelmap, bool *released);
+#endif
 
 #ifdef __cplusplus
 };
