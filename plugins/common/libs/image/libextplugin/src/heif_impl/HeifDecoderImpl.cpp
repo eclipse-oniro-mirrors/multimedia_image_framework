@@ -1734,6 +1734,9 @@ bool HeifDecoderImpl::AllocateBufferSize(HevcSoftDecodeParam &param, bool isStat
     CHECK_ERROR_RETURN_RET_LOG(!isStatic && curBufferSize > MALLOC_MAX_LENTH, false,
         "%{public}s heifs total buffer size too large: %{public}llu", __func__,
         static_cast<unsigned long long>(curBufferSize));
+    CHECK_ERROR_RETURN_RET_LOG(isStatic && curBufferSize > static_cast<uint64_t>(INT32_MAX), false,
+        "%{public}s heif static image buffer size too large: %{public}llu", __func__,
+        static_cast<unsigned long long>(curBufferSize));
 #if defined(CROSS_PLATFORM)
     IMAGE_LOGE("Unsupport dma mem alloc");
     return false;
