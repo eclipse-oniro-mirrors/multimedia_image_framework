@@ -13,9 +13,11 @@
  * limitations under the License.
  */
 #include "image_packer_native_impl.h"
+#ifndef CROSS_PLATFORM
 #include "image_source_native_impl.h"
-#include "pixelmap_native_impl.h"
 #include "picture_native_impl.h"
+#endif
+#include "pixelmap_native_impl.h"
 #include "image_log.h"
 using namespace OHOS;
 using namespace Media;
@@ -23,7 +25,9 @@ using namespace Media;
 extern "C" {
 #endif
 
+#ifndef CROSS_PLATFORM
 constexpr int32_t defaultBufferSize = 25 * 1024 * 1024;
+#endif
 
 OH_ImagePackerNative::OH_ImagePackerNative()
 {
@@ -42,6 +46,7 @@ OH_ImagePackerNative::~OH_ImagePackerNative()
     }
 }
 
+#ifndef CROSS_PLATFORM
 int32_t OH_ImagePackerNative::PackingFromImageSource(OHOS::Media::PackOption *option, OH_ImageSourceNative *imageSource,
     uint8_t *outData, int64_t *size)
 {
@@ -224,6 +229,7 @@ int32_t OH_ImagePackerNative::PackToFileFromImageSource(OHOS::Media::PackOption 
     }
     return imagePacker->FinalizePacking(packedSize);
 }
+#endif
 
 int32_t OH_ImagePackerNative::PackToFileFromPixelmap(OHOS::Media::PackOption *option, OH_PixelmapNative *pixelmap,
     int32_t fd)
@@ -240,6 +246,12 @@ int32_t OH_ImagePackerNative::PackToFileFromPixelmap(OHOS::Media::PackOption *op
         IMAGE_LOGE("PixelMap is nullptr.");
         return IMAGE_BAD_PARAMETER;
     }
+#ifdef CROSS_PLATFORM
+    if (pixelmapPtr->IsHdr()) {
+        IMAGE_LOGE("HDR PixelMap is not supported on cross platforms.");
+        return IMAGE_UNSUPPORTED_OPERATION;
+    }
+#endif
     int64_t packedSize = 0;
     uint32_t ret = IMAGE_SUCCESS;
     ret = imagePacker->StartPacking(fd, *option);
@@ -253,6 +265,7 @@ int32_t OH_ImagePackerNative::PackToFileFromPixelmap(OHOS::Media::PackOption *op
     return imagePacker->FinalizePacking(packedSize);
 }
 
+#ifndef CROSS_PLATFORM
 int32_t OH_ImagePackerNative::PackToFileMultiFrames(OHOS::Media::PackOption *option,
     std::vector<OH_PixelmapNative*> &pixelmap, int32_t fd)
 {
@@ -311,6 +324,7 @@ int32_t OH_ImagePackerNative::PackToFileFromPicture(OHOS::Media::PackOption *opt
     }
     return imagePacker->FinalizePacking(packedSize);
 }
+#endif
 
 std::shared_ptr<OHOS::Media::ImagePacker> OH_ImagePackerNative::GetInnerImagePacker()
 {

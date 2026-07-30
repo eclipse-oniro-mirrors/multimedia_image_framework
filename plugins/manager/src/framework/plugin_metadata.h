@@ -19,6 +19,21 @@
 namespace OHOS {
 namespace MultimediaPlugin {
 const std::vector<std::string> META_DATA = {
+#ifdef CROSS_PLATFORM
+    R"({
+        "packageName":"LibJpegPlugin",
+        "version":"1.0.0.0",
+        "targetVersion":"1.0.0.0",
+        "libraryPath":"libjpegplugin.z.so",
+        "classes":[
+            {"className":"OHOS::ImagePlugin::JpegDecoder",
+             "services":[{"interfaceID":2, "serviceType":0}],
+             "priority":100,
+             "capabilities":[{"name":"encodeFormat", "type":"string", "value":"image/jpeg"}]
+            }
+        ]
+    })",
+#else
     R"({
         "packageName":"LibJpegPlugin",
         "version":"1.0.0.0",
@@ -37,6 +52,7 @@ const std::vector<std::string> META_DATA = {
             }
         ]
     })",
+#endif
 
     R"({
         "packageName":"LibPngPlugin",

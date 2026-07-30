@@ -15,14 +15,18 @@
 
 #include "pixelmap_native.h"
 
+#ifndef CROSS_PLATFORM
 #include <charconv>
+#endif
 #include "common_utils.h"
 #include "image_type.h"
+#include "media_errors.h"
+#include "pixel_map_napi.h"
+#include "pixelmap_native_impl.h"
+#ifndef CROSS_PLATFORM
 #include "image_utils.h"
 #include "image_pixel_map_napi_kits.h"
 #include "pixel_map_from_surface.h"
-#include "pixel_map_napi.h"
-#include "pixelmap_native_impl.h"
 #include "image_format_convert.h"
 #include "surface_buffer.h"
 #include "sync_fence.h"
@@ -32,18 +36,19 @@
 #include "refbase.h"
 #include "securec.h"
 #include "color_utils.h"
-#include "media_errors.h"
 #include "memory.h"
 #include "image_log.h"
 
 #include "native_color_space_manager.h"
 #include "ndk_color_space.h"
+#endif
 
 using namespace OHOS::Media;
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+#ifndef CROSS_PLATFORM
 constexpr int32_t IMAGE_BASE = 62980096;
 static constexpr int32_t IMAGE_BASE_19 = 19;
 static constexpr int32_t IMAGE_BASE_16 = 16;
@@ -60,6 +65,7 @@ static constexpr int32_t IMAGE_BASE_9 = 9;
 static constexpr int32_t IMAGE_BASE_20 = 20;
 static constexpr int32_t IMAGE_BASE_22 = 22;
 static constexpr int32_t IMAGE_BASE_23 = 23;
+#endif
 
 struct OH_Pixelmap_InitializationOptions {
     uint32_t width;
@@ -71,6 +77,7 @@ struct OH_Pixelmap_InitializationOptions {
     int32_t srcRowStride = 0;
 };
 
+#ifndef CROSS_PLATFORM
 struct OH_Pixelmap_ImageInfo {
     uint32_t width;
     uint32_t height;
@@ -81,6 +88,7 @@ struct OH_Pixelmap_ImageInfo {
     bool isHdr = false;
     Image_MimeType mimeType;
 };
+#endif
 
 static PIXEL_FORMAT ParsePixelForamt(int32_t val)
 {
@@ -100,6 +108,7 @@ static PIXELMAP_ALPHA_TYPE ParseAlphaType(int32_t val)
     return PIXELMAP_ALPHA_TYPE::PIXELMAP_ALPHA_TYPE_UNKNOWN;
 }
 
+#ifndef CROSS_PLATFORM
 static Image_ErrorCode ToNewErrorCode(int code)
 {
     switch (code) {
@@ -142,7 +151,9 @@ static Image_ErrorCode ToNewErrorCode(int code)
             return IMAGE_UNKNOWN_ERROR;
     }
 };
+#endif
 
+#ifndef CROSS_PLATFORM
 static bool IsMatchType(IMAGE_FORMAT type, PixelFormat format)
 {
     if (type == IMAGE_FORMAT::IMAGE_FORMAT_YUV_TYPE) {
@@ -172,7 +183,9 @@ static bool IsMatchType(IMAGE_FORMAT type, PixelFormat format)
         return false;
     }
 }
+#endif
 
+#ifndef CROSS_PLATFORM
 static void releaseMimeType(Image_MimeType *mimeType)
 {
     if (mimeType->data != nullptr) {
@@ -181,6 +194,7 @@ static void releaseMimeType(Image_MimeType *mimeType)
     }
     mimeType->size = 0;
 }
+#endif
 
 MIDK_EXPORT
 Image_ErrorCode OH_PixelmapInitializationOptions_Create(OH_Pixelmap_InitializationOptions **ops)
@@ -195,6 +209,7 @@ Image_ErrorCode OH_PixelmapInitializationOptions_Create(OH_Pixelmap_Initializati
     return IMAGE_SUCCESS;
 }
 
+#ifndef CROSS_PLATFORM
 MIDK_EXPORT
 Image_ErrorCode OH_PixelmapInitializationOptions_GetWidth(OH_Pixelmap_InitializationOptions *ops,
     uint32_t *width)
@@ -205,6 +220,7 @@ Image_ErrorCode OH_PixelmapInitializationOptions_GetWidth(OH_Pixelmap_Initializa
     *width = ops->width;
     return IMAGE_SUCCESS;
 }
+#endif
 
 MIDK_EXPORT
 Image_ErrorCode OH_PixelmapInitializationOptions_SetWidth(OH_Pixelmap_InitializationOptions *ops,
@@ -217,6 +233,7 @@ Image_ErrorCode OH_PixelmapInitializationOptions_SetWidth(OH_Pixelmap_Initializa
     return IMAGE_SUCCESS;
 }
 
+#ifndef CROSS_PLATFORM
 MIDK_EXPORT
 Image_ErrorCode OH_PixelmapInitializationOptions_GetHeight(OH_Pixelmap_InitializationOptions *ops,
     uint32_t *height)
@@ -227,6 +244,7 @@ Image_ErrorCode OH_PixelmapInitializationOptions_GetHeight(OH_Pixelmap_Initializ
     *height = ops->height;
     return IMAGE_SUCCESS;
 }
+#endif
 
 MIDK_EXPORT
 Image_ErrorCode OH_PixelmapInitializationOptions_SetHeight(OH_Pixelmap_InitializationOptions *ops,
@@ -239,6 +257,7 @@ Image_ErrorCode OH_PixelmapInitializationOptions_SetHeight(OH_Pixelmap_Initializ
     return IMAGE_SUCCESS;
 }
 
+#ifndef CROSS_PLATFORM
 MIDK_EXPORT
 Image_ErrorCode OH_PixelmapInitializationOptions_GetPixelFormat(OH_Pixelmap_InitializationOptions *ops,
     int32_t *pixelFormat)
@@ -249,6 +268,7 @@ Image_ErrorCode OH_PixelmapInitializationOptions_GetPixelFormat(OH_Pixelmap_Init
     *pixelFormat = static_cast<int32_t>(ops->pixelFormat);
     return IMAGE_SUCCESS;
 }
+#endif
 
 MIDK_EXPORT
 Image_ErrorCode OH_PixelmapInitializationOptions_SetPixelFormat(OH_Pixelmap_InitializationOptions *ops,
@@ -261,6 +281,7 @@ Image_ErrorCode OH_PixelmapInitializationOptions_SetPixelFormat(OH_Pixelmap_Init
     return IMAGE_SUCCESS;
 }
 
+#ifndef CROSS_PLATFORM
 MIDK_EXPORT
 Image_ErrorCode OH_PixelmapInitializationOptions_GetSrcPixelFormat(OH_Pixelmap_InitializationOptions *ops,
     int32_t *srcpixelFormat)
@@ -293,6 +314,7 @@ Image_ErrorCode OH_PixelmapInitializationOptions_GetAlphaType(OH_Pixelmap_Initia
     *alphaType = static_cast<int32_t>(ops->alphaType);
     return IMAGE_SUCCESS;
 }
+#endif
 
 MIDK_EXPORT
 Image_ErrorCode OH_PixelmapInitializationOptions_SetAlphaType(OH_Pixelmap_InitializationOptions *ops,
@@ -305,6 +327,7 @@ Image_ErrorCode OH_PixelmapInitializationOptions_SetAlphaType(OH_Pixelmap_Initia
     return IMAGE_SUCCESS;
 }
 
+#ifndef CROSS_PLATFORM
 MIDK_EXPORT
 Image_ErrorCode OH_PixelmapInitializationOptions_GetEditable(OH_Pixelmap_InitializationOptions *options,
     bool *editable)
@@ -348,6 +371,7 @@ Image_ErrorCode OH_PixelmapInitializationOptions_SetRowStride(OH_Pixelmap_Initia
     options->srcRowStride = rowStride;
     return IMAGE_SUCCESS;
 }
+#endif
 
 MIDK_EXPORT
 Image_ErrorCode OH_PixelmapInitializationOptions_Release(OH_Pixelmap_InitializationOptions *ops)
@@ -360,6 +384,7 @@ Image_ErrorCode OH_PixelmapInitializationOptions_Release(OH_Pixelmap_Initializat
     return IMAGE_SUCCESS;
 }
 
+#ifndef CROSS_PLATFORM
 MIDK_EXPORT
 Image_ErrorCode OH_PixelmapImageInfo_Create(OH_Pixelmap_ImageInfo **info)
 {
@@ -454,6 +479,7 @@ Image_ErrorCode OH_PixelmapImageInfo_Release(OH_Pixelmap_ImageInfo *info)
     info = nullptr;
     return IMAGE_SUCCESS;
 }
+#endif
 
 MIDK_EXPORT
 Image_ErrorCode OH_PixelmapNative_CreatePixelmap(uint8_t *data, size_t dataLength,
@@ -482,6 +508,7 @@ Image_ErrorCode OH_PixelmapNative_CreatePixelmap(uint8_t *data, size_t dataLengt
     return IMAGE_SUCCESS;
 }
 
+#ifndef CROSS_PLATFORM
 static bool UsingAllocatorPixelFormatCheck(PixelFormat srcPixelFormat,
     PixelFormat dstPixelFormat, bool isSupportYUV10Bit = false)
 {
@@ -738,26 +765,44 @@ Image_ErrorCode OH_PixelmapNative_CreatePixelmapFromNativeBuffer(OH_NativeBuffer
     *pixelmap = new OH_PixelmapNative(std::move(pixelMapFromSurface));
     return IMAGE_SUCCESS;
 }
+#endif
 
 MIDK_EXPORT
 Image_ErrorCode OH_PixelmapNative_ConvertPixelmapNativeToNapi(napi_env env, OH_PixelmapNative *pixelmapNative,
     napi_value *pixelmapNapi)
 {
-    if (pixelmapNative == nullptr || pixelmapNative->GetInnerPixelmap() == nullptr) {
+    if (env == nullptr || pixelmapNative == nullptr || pixelmapNapi == nullptr ||
+        pixelmapNative->GetInnerPixelmap() == nullptr) {
         return IMAGE_BAD_PARAMETER;
     }
     std::shared_ptr<OHOS::Media::PixelMap> pixelMap = pixelmapNative->GetInnerPixelmap();
-    *pixelmapNapi = PixelMapNapi::CreatePixelMap(env, pixelMap);
+    napi_value napiPixelmap = PixelMapNapi::CreatePixelMap(env, pixelMap);
+    if (napiPixelmap == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
     napi_valuetype valueType = napi_undefined;
-    napi_typeof(env, *pixelmapNapi, &valueType);
-    return (valueType == napi_undefined) ? IMAGE_BAD_PARAMETER : IMAGE_SUCCESS;
+    if (napi_typeof(env, napiPixelmap, &valueType) != napi_ok || valueType == napi_undefined) {
+        return IMAGE_BAD_PARAMETER;
+    }
+    *pixelmapNapi = napiPixelmap;
+    return IMAGE_SUCCESS;
 }
 
 MIDK_EXPORT
 Image_ErrorCode OH_PixelmapNative_ConvertPixelmapNativeFromNapi(napi_env env, napi_value pixelmapNapi,
     OH_PixelmapNative **pixelmapNative)
 {
-    PixelMapNapi* napi = PixelMapNapi_Unwrap(env, pixelmapNapi);
+    if (env == nullptr || pixelmapNapi == nullptr || pixelmapNative == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
+    napi_valuetype valueType = napi_undefined;
+    if (napi_typeof(env, pixelmapNapi, &valueType) != napi_ok || valueType != napi_object) {
+        return IMAGE_BAD_PARAMETER;
+    }
+    PixelMapNapi* napi = nullptr;
+    if (napi_unwrap(env, pixelmapNapi, reinterpret_cast<void**>(&napi)) != napi_ok) {
+        return IMAGE_BAD_PARAMETER;
+    }
     if (napi == nullptr || napi->GetPixelNapiInner() == nullptr) {
         return IMAGE_BAD_PARAMETER;
     }
@@ -772,6 +817,7 @@ Image_ErrorCode OH_PixelmapNative_ConvertPixelmapNativeFromNapi(napi_env env, na
     return IMAGE_SUCCESS;
 }
 
+#ifndef CROSS_PLATFORM
 MIDK_EXPORT
 Image_ErrorCode OH_PixelmapNative_ReadPixels(OH_PixelmapNative *pixelmap, uint8_t *destination, size_t *bufferSize)
 {
@@ -1249,6 +1295,7 @@ Image_ErrorCode OH_PixelmapNative_Crop(OH_PixelmapNative *pixelmap, Image_Region
     pixelmap->GetInnerPixelmap()->crop(rect);
     return IMAGE_SUCCESS;
 }
+#endif
 
 MIDK_EXPORT
 Image_ErrorCode OH_PixelmapNative_Release(OH_PixelmapNative *pixelmap)
@@ -1272,6 +1319,7 @@ Image_ErrorCode OH_PixelmapNative_Destroy(OH_PixelmapNative **pixelmap)
     return IMAGE_SUCCESS;
 }
 
+#ifndef CROSS_PLATFORM
 MIDK_EXPORT
 Image_ErrorCode OH_PixelmapNative_ConvertAlphaType(OH_PixelmapNative *srcPixelmap, OH_PixelmapNative *dstPixelmap,
     const bool toPremul)
@@ -1831,6 +1879,7 @@ Image_ErrorCode OH_PixelmapNative_IsReleased(OH_PixelmapNative *pixelmap, bool *
     *released = pixelmap->GetInnerPixelmap() == nullptr;
     return IMAGE_SUCCESS;
 }
+#endif
 
 #ifdef __cplusplus
 };
