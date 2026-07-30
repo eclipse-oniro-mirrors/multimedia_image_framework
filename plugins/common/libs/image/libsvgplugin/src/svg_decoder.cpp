@@ -49,10 +49,6 @@ const std::string SVG_FILL_COLOR_ATTR = "fill";
 const std::string SVG_STROKE_COLOR_ATTR = "stroke";
 static constexpr uint32_t DEFAULT_RESIZE_PERCENTAGE = 100;
 static constexpr float FLOAT_HALF = 0.5f;
-static constexpr uint32_t SVG_MAX_RECURSION_DEPTH = 300;
-constexpr static uint32_t NUM_0 = 0;
-constexpr static uint32_t NUM_1 = 1;
-constexpr static uint32_t NUM_2 = 2;
 
 static inline uint32_t Float2UInt32(float val)
 {
@@ -407,51 +403,6 @@ bool SvgDecoder::AllocBuffer(DecodeContext &context)
     return ret;
 }
 
-static bool CheckSvgNestingDepth(const uint8_t* data, size_t size)
-{
-    uint32_t depth = NUM_0;
-    size_t i = NUM_0;
-    while (i < size) {
-        if (data[i] != '<') {
-            i++;
-            continue;
-        }
-        if (i + NUM_1 >= size) {
-            break;
-        }
-        char next = data[i + NUM_1];
-        if (next == '!') {
-            i += NUM_2;
-            continue;
-        }
-        if (next == '?') {
-            i += NUM_2;
-            continue;
-        }
-        if (next == '/') {
-            if (depth > NUM_0) {
-                depth--;
-            }
-            i += NUM_2;
-            continue;
-        }
-        size_t j = i + NUM_1;
-        while (j < size && data[j] != '>') {
-            j++;
-        }
-        bool selfClosing = (j > i + NUM_1) && (j < size) && (data[j - NUM_1] == '/');
-        if (!selfClosing) {
-            depth++;
-            if (depth > SVG_MAX_RECURSION_DEPTH) {
-                IMAGE_LOGE("CheckSvgNestingDepth exceeds limit: %{public}u", depth);
-                return false;
-            }
-        }
-        i = (j < size) ? (j + NUM_1) : size;
-    }
-    return true;
-}
-
 bool SvgDecoder::BuildStream()
 {
     IMAGE_LOGD("[BuildStream] IN");
@@ -461,36 +412,29 @@ bool SvgDecoder::BuildStream()
 
     auto length = inputStreamPtr_->GetStreamSize();
     if (inputStreamPtr_->GetStreamType() == ImagePlugin::BUFFER_SOURCE_TYPE) {
-        CHECK_ERROR_RETURN_RET_LOG(!CheckSvgNestingDepth(inputStreamPtr_->GetDataPtr(), length),
-            false, "[BuildStream] SVG nesting depth exceeds limit.");
         svgStream_ = std::make_unique<SkMemoryStream>(inputStreamPtr_->GetDataPtr(), length);
     } else {
-        uint8_t* data = inputStreamPtr_->GetDataPtr(true);
-        if (data == nullptr) {
-            IMAGE_LOGE("[BuildStream] get data ptr failed.");
+        auto data = std::make_unique<uint8_t[]>(length);
+        uint32_t readSize = 0;
+        if (!inputStreamPtr_->Read(length, data.get(), length, readSize)) {
+            IMAGE_LOGE("[BuildStream] read failed.");
             return false;
         }
-        CHECK_ERROR_RETURN_RET_LOG(!CheckSvgNestingDepth(data, length),
-            false, "[BuildStream] SVG nesting depth exceeds limit.");
-        svgStream_ = std::make_unique<SkMemoryStream>(data, length, true);
+        svgStream_ = std::make_unique<SkMemoryStream>(data.get(), length, true);
     }
 
     IMAGE_LOGD("[BuildStream] OUT");
     return true;
 }
 
-static void SetSVGColor(SkSVGNode* node, std::string color, std::string colorAttr, uint32_t depth)
+static void SetSVGColor(SkSVGNode* node, std::string color, std::string colorAttr)
 {
     CHECK_ERROR_RETURN(node == nullptr);
-    if (depth >= SVG_MAX_RECURSION_DEPTH) {
-        IMAGE_LOGW("SetSVGColor recursion depth exceeds limit: %{public}u", depth);
-        return;
-    }
     IMAGE_LOGD("[SetSVGColor] node tag %{public}d %{public}s %{public}s.",
         node->tag(), color.c_str(), colorAttr.c_str());
     node->setAttribute(colorAttr.c_str(), color.c_str());
     for (auto childNode : node->getChild()) {
-        SetSVGColor(childNode.get(), color, colorAttr, depth + 1);
+        SetSVGColor(childNode.get(), color, colorAttr);
     }
 }
 
@@ -501,7 +445,7 @@ static void SetSVGColor(SkSVGNode* node, uint32_t color, std::string colorAttr)
     stream.width(SVG_COLOR_ATTR_WIDTH);
     stream << std::hex << (color & SVG_COLOR_MASK);
     std::string newValue(stream.str());
-    SetSVGColor(node, "#" + newValue, colorAttr, NUM_0);
+    SetSVGColor(node, "#" + newValue, colorAttr);
 }
 
 bool SvgDecoder::BuildDom()
