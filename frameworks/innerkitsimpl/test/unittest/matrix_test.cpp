@@ -608,5 +608,95 @@ HWTEST_F(MatrixTest, RotXYExecutionTest001, TestSize.Level3)
     
     GTEST_LOG_(INFO) << "MatrixTest: RotXYExecutionTest001 end";
 }
+
+/**
+ * @tc.name: SetTranslateAxisAlignOperTypeTest001
+ * @tc.desc: SetTranslate with one axis zero must still be TRANSLATE, not IDENTITY
+ * @tc.type: FUNC
+ */
+HWTEST_F(MatrixTest, SetTranslateAxisAlignOperTypeTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "MatrixTest: SetTranslateAxisAlignOperTypeTest001 start";
+
+    Matrix m;
+    m.SetTranslate(5.0f, 0.0f);
+    ASSERT_EQ(m.GetOperType(), Matrix::OperType::TRANSLATE);
+    ASSERT_EQ(m.GetTransX(), 5.0f);
+    ASSERT_EQ(m.GetTranY(), 0.0f);
+
+    m.SetTranslate(0.0f, 7.0f);
+    ASSERT_EQ(m.GetOperType(), Matrix::OperType::TRANSLATE);
+    ASSERT_EQ(m.GetTransX(), 0.0f);
+    ASSERT_EQ(m.GetTranY(), 7.0f);
+
+    m.SetTranslate(5.0f, 7.0f);
+    ASSERT_EQ(m.GetOperType(), Matrix::OperType::TRANSLATE);
+
+    m.SetTranslate(0.0f, 0.0f);
+    ASSERT_EQ(m.GetOperType(), Matrix::OperType::IDENTITY);
+
+    GTEST_LOG_(INFO) << "MatrixTest: SetTranslateAxisAlignOperTypeTest001 end";
+}
+
+/**
+ * @tc.name: SetTranslateAxisAlignMapsPointsTest001
+ * @tc.desc: SetTranslate(5,0) maps (10,20)->(15,20) via TransXY
+ * @tc.type: FUNC
+ */
+HWTEST_F(MatrixTest, SetTranslateAxisAlignMapsPointsTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "MatrixTest: SetTranslateAxisAlignMapsPointsTest001 start";
+
+    Matrix m;
+    m.SetTranslate(5.0f, 0.0f);
+    ASSERT_EQ(m.GetXYProc(m.GetOperType()), Matrix::TransXY);
+
+    Point pt;
+    pt.x = INITIAL_POINT_VALUE;
+    pt.y = INITIAL_POINT_VALUE;
+    Matrix::TransXY(m, 10.0f, 20.0f, pt);
+    ASSERT_EQ(pt.x, 15.0f);
+    ASSERT_EQ(pt.y, 20.0f);
+
+    Matrix my;
+    my.SetTranslate(0.0f, 7.0f);
+    pt.x = INITIAL_POINT_VALUE;
+    pt.y = INITIAL_POINT_VALUE;
+    Matrix::TransXY(my, 10.0f, 20.0f, pt);
+    ASSERT_EQ(pt.x, 10.0f);
+    ASSERT_EQ(pt.y, 27.0f);
+
+    GTEST_LOG_(INFO) << "MatrixTest: SetTranslateAxisAlignMapsPointsTest001 end";
+}
+
+/**
+ * @tc.name: SetTranslateAxisAlignInvertTest001
+ * @tc.desc: Invert of SetTranslate(5,0) negates the translation
+ * @tc.type: FUNC
+ */
+HWTEST_F(MatrixTest, SetTranslateAxisAlignInvertTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "MatrixTest: SetTranslateAxisAlignInvertTest001 start";
+
+    Matrix m;
+    m.SetTranslate(5.0f, 0.0f);
+    ASSERT_FALSE(m.IsIdentity());
+
+    Matrix inv;
+    ASSERT_TRUE(m.Invert(inv));
+    ASSERT_EQ(inv.GetOperType(), Matrix::OperType::TRANSLATE);
+    ASSERT_EQ(inv.GetTransX(), -5.0f);
+    ASSERT_EQ(inv.GetTranY(), 0.0f);
+
+    Matrix my;
+    my.SetTranslate(0.0f, 7.0f);
+    Matrix invY;
+    ASSERT_TRUE(my.Invert(invY));
+    ASSERT_EQ(invY.GetOperType(), Matrix::OperType::TRANSLATE);
+    ASSERT_EQ(invY.GetTransX(), 0.0f);
+    ASSERT_EQ(invY.GetTranY(), -7.0f);
+
+    GTEST_LOG_(INFO) << "MatrixTest: SetTranslateAxisAlignInvertTest001 end";
+}
 }
 }
