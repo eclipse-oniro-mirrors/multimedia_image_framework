@@ -931,6 +931,8 @@ public:
         editable_ = editable;
     }
 
+    NATIVEEXPORT void FlushCache() const;
+
     static int32_t GetRGBxRowDataSize(const ImageInfo& info);
     static int32_t GetRGBxByteCount(const ImageInfo& info);
     static int32_t GetYUVByteCount(const ImageInfo& info);
