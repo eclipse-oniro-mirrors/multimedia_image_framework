@@ -6347,5 +6347,33 @@ HWTEST_F(PixelMapTest, CheckTlvImageInfo001, TestSize.Level3)
     GTEST_LOG_(INFO) << "PixelMapTest: CheckTlvImageInfo001 end";
 }
 
+/**
+ * @tc.name: FlushCacheTest001
+ * @tc.desc: Test FlushCache skips when not dirty, executes and clears dirty flag, and executes for
+ * isUseDefaultDmaNopadding_
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, FlushCacheTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelMapTest: FlushCacheTest001 start";
+    auto pixelMap = ConstructPixmap(AllocatorType::SHARE_MEM_ALLOC);
+    ASSERT_NE(nullptr, pixelMap);
+    // Both flags false, FlushCache should skip without crash
+    EXPECT_FALSE(pixelMap->IsMemoryDirty());
+    pixelMap->FlushCache();
+    EXPECT_FALSE(pixelMap->IsMemoryDirty());
+
+    // Mark dirty, FlushCache should execute and clear the dirty flag
+    pixelMap->MarkDirty();
+    EXPECT_TRUE(pixelMap->IsMemoryDirty());
+    pixelMap->FlushCache();
+    EXPECT_FALSE(pixelMap->IsMemoryDirty());
+
+    // isUseDefaultDmaNopadding_ true (without isMemoryDirty_), FlushCache should execute
+    pixelMap->isUseDefaultDmaNopadding_ = true;
+    pixelMap->FlushCache();
+    pixelMap->isUseDefaultDmaNopadding_ = false;
+    GTEST_LOG_(INFO) << "PixelMapTest: FlushCacheTest001 end";
+}
 }
 }
