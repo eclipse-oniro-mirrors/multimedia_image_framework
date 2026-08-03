@@ -1028,7 +1028,7 @@ PixelMap PixelMapImpl::CreateCroppedAndScaledPixelMapSync(ohos::multimedia::imag
     }
 
     Media::Rect rect = {region.x, region.y, region.size.width, region.size.height};
-    uint32_t status = nativePixelMap_->crop(rect);
+    uint32_t status = clonedPixelMap->crop(rect);
     if (status != Media::SUCCESS) {
         ImageTaiheUtils::ThrowExceptionError(Media::ERR_MEDIA_INVALID_REGION,
             "Failed to crop due to invalid region or properties. (" + std::to_string(status) + ")");

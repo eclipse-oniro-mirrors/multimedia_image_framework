@@ -531,17 +531,28 @@ int32_t PixelMap::GetAllocatedByteCount(const ImageInfo& info)
     }
 }
 
-static bool ChoosePixelmap(unique_ptr<PixelMap> &dstPixelMap, PixelFormat pixelFormat, int &errorCode)
+static PixelMap* NewPixelMapByFormat(PixelFormat pixelFormat)
 {
     if (IsYUV(pixelFormat)) {
 #ifdef EXT_PIXEL
-        dstPixelMap = make_unique<PixelYuvExt>();
+        return new (std::nothrow) PixelYuvExt();
 #else
-        dstPixelMap = make_unique<PixelYuv>();
+        return new (std::nothrow) PixelYuv();
 #endif
-    } else {
-        dstPixelMap = make_unique<PixelMap>();
     }
+    if (ImageUtils::IsAstc(pixelFormat)) {
+#if !defined(CROSS_PLATFORM)
+        return new (std::nothrow) PixelAstc();
+#else
+        return nullptr;
+#endif
+    }
+    return new (std::nothrow) PixelMap();
+}
+
+static bool ChoosePixelmap(unique_ptr<PixelMap> &dstPixelMap, PixelFormat pixelFormat, int &errorCode)
+{
+    dstPixelMap.reset(NewPixelMapByFormat(pixelFormat));
     if (dstPixelMap == nullptr) {
         IMAGE_LOGE("[image]Create: make pixelmap failed!");
         errorCode = IMAGE_RESULT_PLUGIN_REGISTER_FAILED;
@@ -902,15 +913,7 @@ static bool CheckPixelMap(unique_ptr<PixelMap>& dstPixelMap, const Initializatio
         IMAGE_LOGE("Create PixelMap does not support ASTC format");
         return false;
     }
-    if (IsYUV(opts.pixelFormat)) {
-#ifdef EXT_PIXEL
-        dstPixelMap = std::make_unique<PixelYuvExt>();
-#else
-        dstPixelMap = std::make_unique<PixelYuv>();
-#endif
-    } else {
-        dstPixelMap = make_unique<PixelMap>();
-    }
+    dstPixelMap.reset(NewPixelMapByFormat(opts.pixelFormat));
     if (dstPixelMap == nullptr) {
         IMAGE_LOGE("create pixelMap pointer fail");
         return false;
@@ -2035,19 +2038,19 @@ uint32_t PixelMap::ReadPixels(const uint64_t &bufferSize, uint8_t *dst)
     }
     if (IsYUV(imageInfo_.pixelFormat)) {
         uint64_t tmpSize = 0;
-        int readSize = MAX_READ_COUNT;
+        uint64_t readSize = MAX_READ_COUNT;
         while (tmpSize < bufferSize && tmpSize < pixelsSize_) {
             if (tmpSize + MAX_READ_COUNT > bufferSize) {
-                readSize = (int)(bufferSize - tmpSize);
+                readSize = bufferSize - tmpSize;
             } else if (tmpSize + MAX_READ_COUNT > pixelsSize_) {
-                readSize = (int)(pixelsSize_ - tmpSize);
+                readSize = pixelsSize_ - tmpSize;
             }
             errno_t ret = memcpy_s(dst + tmpSize, readSize, data_ + tmpSize, readSize);
             if (ret != 0) {
                 IMAGE_LOGE("read pixels by buffer memcpy the pixelmap data to dst fail, error:%{public}d", ret);
                 return ERR_IMAGE_READ_PIXELMAP_FAILED;
             }
-            tmpSize += static_cast<uint64_t>(readSize);
+            tmpSize += readSize;
         }
     } else {
         // Copy the actual pixel data without padding bytes
@@ -2430,17 +2433,17 @@ uint32_t PixelMap::WritePixels(const uint8_t *source, const uint64_t &bufferSize
 
     if (IsYUV(imageInfo_.pixelFormat)) {
         uint64_t tmpSize = 0;
-        int readSize = MAX_READ_COUNT;
-        while (tmpSize < bufferSize) {
-            if (tmpSize + MAX_READ_COUNT > bufferSize) {
-                readSize = (int)(bufferSize - tmpSize);
+        uint64_t readSize = MAX_READ_COUNT;
+        while (tmpSize < bufferSize && tmpSize < pixelsSize_) {
+            if (tmpSize + MAX_READ_COUNT > pixelsSize_) {
+                readSize = pixelsSize_ - tmpSize;
             }
-            errno_t ret = memcpy_s(data_ + tmpSize, readSize, source + tmpSize, readSize);
+            errno_t ret = memcpy_s(data_ + tmpSize, pixelsSize_ - tmpSize, source + tmpSize, readSize);
             if (ret != 0) {
                 IMAGE_LOGE("write pixels by buffer memcpy the pixelmap data to dst fail, error:%{public}d", ret);
                 return ERR_IMAGE_WRITE_PIXELMAP_FAILED;
             }
-            tmpSize += static_cast<uint64_t>(readSize);
+            tmpSize += readSize;
         }
     } else {
         for (int i = 0; i < imageInfo_.size.height; ++i) {
@@ -3427,23 +3430,7 @@ PixelMap *PixelMap::StartUnmarshalling(Parcel &parcel, ImageInfo &imgInfo,
         PixelMap::ConstructPixelMapError(error, ERR_IMAGE_PIXELMAP_CREATE_FAILED, "read imageInfo fail");
         return nullptr;
     }
-    PixelMap *pixelMap = nullptr;
-    if (IsYUV(imgInfo.pixelFormat)) {
-#ifdef EXT_PIXEL
-        pixelMap = new (std::nothrow) PixelYuvExt();
-#else
-        pixelMap = new (std::nothrow) PixelYuv();
-#endif
-    } else if (ImageUtils::IsAstc(imgInfo.pixelFormat)) {
-#if !defined(CROSS_PLATFORM)
-        pixelMap = new (std::nothrow) PixelAstc();
-#else
-        return nullptr;
-#endif
-    } else {
-        pixelMap = new (std::nothrow) PixelMap();
-    }
-
+    PixelMap *pixelMap = NewPixelMapByFormat(imgInfo.pixelFormat);
     if (pixelMap == nullptr) {
         PixelMap::ConstructPixelMapError(error, ERR_IMAGE_PIXELMAP_CREATE_FAILED, "pixelmap create failed");
         return nullptr;
@@ -3791,11 +3778,6 @@ bool PixelMap::ReadTlvAttr(std::vector<uint8_t> &buff, ImageInfo &info,
 
 PixelMap *PixelMap::DecodeTlv(std::vector<uint8_t> &buff)
 {
-    PixelMap *pixelMap = new(std::nothrow) PixelMap();
-    if (pixelMap == nullptr) {
-        IMAGE_LOGE("pixel map tlv decode fail: new PixelMap error");
-        return nullptr;
-    }
     ImageInfo imageInfo;
     std::unique_ptr<AbsMemory> dstMemory = nullptr;
     int32_t csm = -1;
@@ -3803,15 +3785,20 @@ PixelMap *PixelMap::DecodeTlv(std::vector<uint8_t> &buff)
         if (dstMemory != nullptr) {
             dstMemory->Release();
         }
-        delete pixelMap;
         IMAGE_LOGE("[PixelMap] tlv decode fail");
+        return nullptr;
+    }
+    PixelMap *pixelMap = NewPixelMapByFormat(imageInfo.pixelFormat);
+    if (pixelMap == nullptr) {
+        dstMemory->Release();
+        IMAGE_LOGE("[PixelMap] tlv decode fail: new pixelmap error");
         return nullptr;
     }
     uint32_t ret = pixelMap->SetImageInfo(imageInfo);
     if (ret != SUCCESS) {
         dstMemory->Release();
         delete pixelMap;
-        IMAGE_LOGE("[PixelMap]  tlv decode fail: set image info error[%{public}d]", ret);
+        IMAGE_LOGE("[PixelMap] tlv decode fail: set image info error [%{public}d]", ret);
         return nullptr;
     }
     if ((dstMemory->GetType() == AllocatorType::DMA_ALLOC &&
@@ -3820,7 +3807,7 @@ PixelMap *PixelMap::DecodeTlv(std::vector<uint8_t> &buff)
         dstMemory->data.size != static_cast<uint32_t>(pixelMap->GetByteCount()))) {
         dstMemory->Release();
         delete pixelMap;
-        IMAGE_LOGE("[PixelMap]  tlv decode fail: size not match");
+        IMAGE_LOGE("[PixelMap] tlv decode fail: size not match");
         return nullptr;
     }
     pixelMap->SetPixelsAddr(dstMemory->data.data, dstMemory->extend.data, dstMemory->data.size,
