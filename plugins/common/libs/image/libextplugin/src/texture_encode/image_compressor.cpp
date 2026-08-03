@@ -668,18 +668,6 @@ CL_ASTC_SHARE_LIB_API void AstcClReleaseSlot()
     }
 }
 
-CL_ASTC_SHARE_LIB_API void AstcClDisableGpuPath()
-{
-    std::lock_guard<std::mutex> lock(g_admissionMutex);
-    g_gpuPathOpen = false;
-}
-
-CL_ASTC_SHARE_LIB_API bool AstcClGpuPathIsOpen()
-{
-    std::lock_guard<std::mutex> lock(g_admissionMutex);
-    return g_gpuPathOpen;
-}
-
 CL_ASTC_SHARE_LIB_API void AstcClAbandonHandle(ClAstcHandle *handle)
 {
     if (handle == nullptr) {
@@ -692,15 +680,6 @@ CL_ASTC_SHARE_LIB_API void AstcClAbandonHandle(ClAstcHandle *handle)
     g_abandonedJobsPending.store(true);
     g_gpuPathOpen = false;
     IMAGE_LOGE("astc gpu path disabled after timeout");
-}
-
-CL_ASTC_SHARE_LIB_API void AstcClResetAdmissionStateForTest()
-{
-    std::lock_guard<std::mutex> lock(g_admissionMutex);
-    if (g_abandonedJobCount == 0) {
-        g_gpuPathOpen = true;
-        g_slotUsed = 0;
-    }
 }
 
 CL_ASTC_SHARE_LIB_API CL_ASTC_STATUS AstcClClose(ClAstcHandle *clAstcHandle)

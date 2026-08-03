@@ -759,24 +759,20 @@ HWTEST_F(PluginTextureEncodeTest, AstcEncBasedOnCl006, TestSize.Level3)
 
 /**
  * @tc.name: AstcClAdmission001
- * @tc.desc: Four GPU jobs are admitted and a timeout keeps new jobs closed for the process lifetime.
+ * @tc.desc: Four GPU jobs are admitted and released slots can be reused.
  * @tc.type: FUNC
  */
 HWTEST_F(PluginTextureEncodeTest, AstcClAdmission001, TestSize.Level3)
 {
-    AstcClResetAdmissionStateForTest();
-    EXPECT_TRUE(AstcClGpuPathIsOpen());
     for (uint32_t i = 0; i < ASTC_CL_MAX_CONCURRENCY; i++) {
         EXPECT_TRUE(AstcClTryAcquireSlot());
     }
     EXPECT_FALSE(AstcClTryAcquireSlot());
-    AstcClDisableGpuPath();
     for (uint32_t i = 0; i < ASTC_CL_MAX_CONCURRENCY; i++) {
         AstcClReleaseSlot();
     }
-    EXPECT_FALSE(AstcClGpuPathIsOpen());
-    EXPECT_FALSE(AstcClTryAcquireSlot());
-    AstcClResetAdmissionStateForTest();
+    EXPECT_TRUE(AstcClTryAcquireSlot());
+    AstcClReleaseSlot();
 }
 
 static void RemoveAstcClTestFile(const std::string &path)

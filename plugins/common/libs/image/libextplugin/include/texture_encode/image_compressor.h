@@ -92,10 +92,7 @@ CL_ASTC_SHARE_LIB_API CL_ASTC_STATUS AstcClClose(ClAstcHandle *handle);
 // admitted until process exit; the OS then reclaims the still-driver-owned objects.
 CL_ASTC_SHARE_LIB_API bool AstcClTryAcquireSlot();
 CL_ASTC_SHARE_LIB_API void AstcClReleaseSlot();
-CL_ASTC_SHARE_LIB_API void AstcClDisableGpuPath();
-CL_ASTC_SHARE_LIB_API bool AstcClGpuPathIsOpen();
 CL_ASTC_SHARE_LIB_API void AstcClAbandonHandle(ClAstcHandle *handle);
-CL_ASTC_SHARE_LIB_API void AstcClResetAdmissionStateForTest();
 }
 }
 }
