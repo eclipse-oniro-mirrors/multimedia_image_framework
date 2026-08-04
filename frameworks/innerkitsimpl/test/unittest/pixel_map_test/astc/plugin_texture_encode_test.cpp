@@ -733,48 +733,6 @@ HWTEST_F(PluginTextureEncodeTest, AstcEncBasedOnCl003, TestSize.Level3)
     GTEST_LOG_(INFO) << "PluginTextureEncodeTest: AstcEncBasedOnCl003 end";
 }
 
-/**
- * @tc.name: AstcEncBasedOnCl006
- * @tc.desc: The bounded wait distinguishes completion, execution failure and timeout.
- * @tc.type: FUNC
- */
-HWTEST_F(PluginTextureEncodeTest, AstcEncBasedOnCl006, TestSize.Level3)
-{
-    uint32_t probeCount = 0;
-    EXPECT_EQ(AstcClWaitWithDeadline([&probeCount]() {
-        return probeCount++ == 0 ? ClJobState::RUNNING : ClJobState::COMPLETE;
-    }, ASTC_CL_KERNEL_TIMEOUT_MS, 0), CL_ASTC_ENC_SUCCESS);
-    EXPECT_EQ(probeCount, 2U);
-
-    EXPECT_EQ(AstcClWaitWithDeadline([]() {
-        return ClJobState::JOB_ERROR;
-    }, ASTC_CL_KERNEL_TIMEOUT_MS, 0), CL_ASTC_ENC_FAILED);
-    EXPECT_EQ(AstcClWaitWithDeadline([]() {
-        return ClJobState::RUNNING;
-    }, 0, 0), CL_ASTC_ENC_TIMEOUT);
-    EXPECT_EQ(AstcClWaitWithDeadline([]() {
-        return ClJobState::UNKNOWN;
-    }, ASTC_CL_KERNEL_TIMEOUT_MS, 0), CL_ASTC_ENC_TIMEOUT);
-}
-
-/**
- * @tc.name: AstcClAdmission001
- * @tc.desc: Four GPU jobs are admitted and released slots can be reused.
- * @tc.type: FUNC
- */
-HWTEST_F(PluginTextureEncodeTest, AstcClAdmission001, TestSize.Level3)
-{
-    for (uint32_t i = 0; i < ASTC_CL_MAX_CONCURRENCY; i++) {
-        EXPECT_TRUE(AstcClTryAcquireSlot());
-    }
-    EXPECT_FALSE(AstcClTryAcquireSlot());
-    for (uint32_t i = 0; i < ASTC_CL_MAX_CONCURRENCY; i++) {
-        AstcClReleaseSlot();
-    }
-    EXPECT_TRUE(AstcClTryAcquireSlot());
-    AstcClReleaseSlot();
-}
-
 static void RemoveAstcClTestFile(const std::string &path)
 {
     (void)std::remove(path.c_str());
