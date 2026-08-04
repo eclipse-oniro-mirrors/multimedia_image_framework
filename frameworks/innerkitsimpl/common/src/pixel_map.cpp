@@ -2318,7 +2318,7 @@ uint32_t PixelMap::WritePixel(const Position &pos, const uint32_t &color)
             return ERR_IMAGE_WRITE_PIXELMAP_FAILED;
         }
         UInt8ToAlphaF16(GetColorComp(color, BGRA32_A_SHIFT), pixel);
-        MarkDirty();
+        ImageUtils::FlushSurfaceBuffer(this);
         return SUCCESS;
     }
     ImageInfo srcImageInfo =
@@ -2330,6 +2330,7 @@ uint32_t PixelMap::WritePixel(const Position &pos, const uint32_t &color)
         IMAGE_LOGE("write pixel by pos call WritePixelsConvert fail.");
         return ERR_IMAGE_WRITE_PIXELMAP_FAILED;
     }
+    ImageUtils::FlushSurfaceBuffer(this);
     return SUCCESS;
 }
 
@@ -2400,7 +2401,7 @@ uint32_t PixelMap::WritePixels(const RWPixelsOptions &opts)
             return ERR_IMAGE_WRITE_PIXELMAP_FAILED;
         }
     }
-    MarkDirty();
+    ImageUtils::FlushSurfaceBuffer(this);
     return SUCCESS;
 }
 
@@ -2455,7 +2456,7 @@ uint32_t PixelMap::WritePixels(const uint8_t *source, const uint64_t &bufferSize
             }
         }
     }
-    MarkDirty();
+    ImageUtils::FlushSurfaceBuffer(this);
     return SUCCESS;
 }
 
