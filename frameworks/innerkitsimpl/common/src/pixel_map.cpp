@@ -4290,6 +4290,7 @@ uint32_t PixelMap::SetAlpha(const float percent)
             }
         }
     }
+    ImageUtils::FlushSurfaceBuffer(this);
     return SUCCESS;
 }
 
