@@ -15,13 +15,9 @@
 
 #include "image_compressor.h"
 
-#include <array>
-#include <atomic>
-#include <chrono>
 #include <unistd.h>
 #include <fstream>
 #include <cerrno>
-#include <thread>
 
 #include "securec.h"
 #include "media_errors.h"
@@ -610,16 +606,8 @@ private:
     std::mutex openClSoMutex_ = {};
 };
 
-// A timed-out GPU job may still execute inside the driver. Keep libOpenCL loaded until the process
-// exits instead of unloading code that still owns live contexts and buffers.
-static std::atomic<bool> g_abandonedJobsPending(false);
 static OpenCLSoManager g_clSoManager;
 std::mutex checkClBinPathMutex = {};
-static std::mutex g_admissionMutex;
-static bool g_gpuPathOpen = true;
-static uint32_t g_slotUsed = 0;
-static std::array<ClAstcHandle *, ASTC_CL_MAX_CONCURRENCY> g_abandonedJobs = {};
-static uint32_t g_abandonedJobCount = 0;
 
 OpenCLSoManager::OpenCLSoManager()
 {
@@ -629,10 +617,6 @@ OpenCLSoManager::OpenCLSoManager()
 
 OpenCLSoManager::~OpenCLSoManager()
 {
-    if (g_abandonedJobsPending.load()) {
-        IMAGE_LOGE("astcenc skip OpenCL unload, timed-out job still owned!");
-        return;
-    }
     if (!UnLoadCLExtern(clSoHandle)) {
         IMAGE_LOGE("astcenc OpenCLSoManager UnLoad failed!");
     } else {
@@ -648,38 +632,6 @@ bool OpenCLSoManager::LoadOpenCLSo()
         loadSuccess = InitOpenCLExtern(&clSoHandle);
     }
     return loadSuccess;
-}
-
-CL_ASTC_SHARE_LIB_API bool AstcClTryAcquireSlot()
-{
-    std::lock_guard<std::mutex> lock(g_admissionMutex);
-    if (!g_gpuPathOpen || g_slotUsed >= ASTC_CL_MAX_CONCURRENCY) {
-        return false;
-    }
-    g_slotUsed++;
-    return true;
-}
-
-CL_ASTC_SHARE_LIB_API void AstcClReleaseSlot()
-{
-    std::lock_guard<std::mutex> lock(g_admissionMutex);
-    if (g_slotUsed > 0) {
-        g_slotUsed--;
-    }
-}
-
-CL_ASTC_SHARE_LIB_API void AstcClAbandonHandle(ClAstcHandle *handle)
-{
-    if (handle == nullptr) {
-        return;
-    }
-    std::lock_guard<std::mutex> lock(g_admissionMutex);
-    if (g_abandonedJobCount < g_abandonedJobs.size()) {
-        g_abandonedJobs[g_abandonedJobCount++] = handle;
-    }
-    g_abandonedJobsPending.store(true);
-    g_gpuPathOpen = false;
-    IMAGE_LOGE("astc gpu path disabled after timeout");
 }
 
 CL_ASTC_SHARE_LIB_API CL_ASTC_STATUS AstcClClose(ClAstcHandle *clAstcHandle)
@@ -973,13 +925,6 @@ static void ReleaseClAstcObj(ClAstcObjEnc *obj)
 {
     cl_int clRet;
     if (obj != nullptr) {
-        if (obj->kernelEvent != nullptr) {
-            clRet = clReleaseEvent(obj->kernelEvent);
-            if (clRet != CL_SUCCESS) {
-                IMAGE_LOGE("astc kernelEvent release failed ret %{public}d!", clRet);
-            }
-            obj->kernelEvent = nullptr;
-        }
         if (obj->inputImage != nullptr) {
             clRet = clReleaseMemObject(obj->inputImage);
             if (clRet != CL_SUCCESS) {
@@ -1082,45 +1027,6 @@ static CL_ASTC_STATUS ClKernelArgSet(ClAstcHandle *clAstcHandle, ClAstcObjEnc *e
     return CL_ASTC_ENC_SUCCESS;
 }
 
-CL_ASTC_SHARE_LIB_API CL_ASTC_STATUS AstcClWaitWithDeadline(const std::function<ClJobState()> &probe,
-    uint32_t timeoutMs, uint32_t pollIntervalUs)
-{
-    if (probe == nullptr) {
-        return CL_ASTC_ENC_FAILED;
-    }
-    auto deadline = std::chrono::steady_clock::now() + std::chrono::milliseconds(timeoutMs);
-    while (std::chrono::steady_clock::now() < deadline) {
-        ClJobState state = probe();
-        if (state == ClJobState::COMPLETE) {
-            return CL_ASTC_ENC_SUCCESS;
-        }
-        if (state == ClJobState::JOB_ERROR) {
-            return CL_ASTC_ENC_FAILED;
-        }
-        if (state == ClJobState::UNKNOWN) {
-            return CL_ASTC_ENC_TIMEOUT;
-        }
-        std::this_thread::sleep_for(std::chrono::microseconds(pollIntervalUs));
-    }
-    return CL_ASTC_ENC_TIMEOUT;
-}
-
-static ClJobState ClProbeEventState(cl_event event)
-{
-    cl_int execStatus = CL_QUEUED;
-    cl_int clRet = clGetEventInfo(event, CL_EVENT_COMMAND_EXECUTION_STATUS,
-        sizeof(execStatus), &execStatus, nullptr);
-    if (clRet != CL_SUCCESS) {
-        IMAGE_LOGE("astc clGetEventInfo failed ret %{public}d!", clRet);
-        return ClJobState::UNKNOWN;
-    }
-    if (execStatus < 0) {
-        IMAGE_LOGE("astc kernel exec error status %{public}d!", execStatus);
-        return ClJobState::JOB_ERROR;
-    }
-    return execStatus == CL_COMPLETE ? ClJobState::COMPLETE : ClJobState::RUNNING;
-}
-
 static CL_ASTC_STATUS ClKernelArgSetAndRun(ClAstcHandle *clAstcHandle, ClAstcObjEnc *encObj, int width, int height)
 {
     if (ClKernelArgSet(clAstcHandle, encObj, width, height) != CL_ASTC_ENC_SUCCESS) {
@@ -1148,24 +1054,17 @@ static CL_ASTC_STATUS ClKernelArgSetAndRun(ClAstcHandle *clAstcHandle, ClAstcObj
         return CL_ASTC_ENC_FAILED;
     }
     clRet = clEnqueueNDRangeKernel(clAstcHandle->queue, clAstcHandle->kernel, GLOBAL_WH_NUM_CL, nullptr, global, local,
-        0, nullptr, &encObj->kernelEvent);
+        0, nullptr, nullptr);
     if (clRet != CL_SUCCESS) {
         IMAGE_LOGE("astc clEnqueueNDRangeKernel failed ret %{public}d!", clRet);
         return CL_ASTC_ENC_FAILED;
     }
-    clRet = clFlush(clAstcHandle->queue);
+    clRet = clFinish(clAstcHandle->queue);
     if (clRet != CL_SUCCESS) {
-        IMAGE_LOGE("astc clFlush failed ret %{public}d!", clRet);
-        return CL_ASTC_ENC_TIMEOUT;
+        IMAGE_LOGE("astc clFinish failed ret %{public}d!", clRet);
+        return CL_ASTC_ENC_FAILED;
     }
-    cl_event kernelEvent = encObj->kernelEvent;
-    CL_ASTC_STATUS ret = AstcClWaitWithDeadline([kernelEvent]() {
-        return ClProbeEventState(kernelEvent);
-    }, ASTC_CL_KERNEL_TIMEOUT_MS, ASTC_CL_KERNEL_POLL_INTERVAL_US);
-    if (ret == CL_ASTC_ENC_TIMEOUT) {
-        IMAGE_LOGE("astc kernel wait timeout %{public}u ms!", ASTC_CL_KERNEL_TIMEOUT_MS);
-    }
-    return ret;
+    return CL_ASTC_ENC_SUCCESS;
 }
 
 static CL_ASTC_STATUS ClReadAstcBufAndBlockError(ClAstcHandle *clAstcHandle, ClAstcObjEnc *encObj,
@@ -1212,13 +1111,7 @@ CL_ASTC_SHARE_LIB_API CL_ASTC_STATUS AstcClEncImage(ClAstcHandle *clAstcHandle,
         IMAGE_LOGE("astc ClCreateBufferAndImage failed!");
         return CL_ASTC_ENC_FAILED;
     }
-    CL_ASTC_STATUS kernelRet = ClKernelArgSetAndRun(clAstcHandle, encObj, imageIn->width, imageIn->height);
-    if (kernelRet == CL_ASTC_ENC_TIMEOUT) {
-        // The GPU may still use the event and CL_MEM_USE_HOST_PTR memory. The caller retains the
-        // whole handle and permanently disables this process's GPU path.
-        return kernelRet;
-    }
-    if (kernelRet != CL_ASTC_ENC_SUCCESS) {
+    if (ClKernelArgSetAndRun(clAstcHandle, encObj, imageIn->width, imageIn->height) != CL_ASTC_ENC_SUCCESS) {
         ReleaseClAstcObj(encObj);
         IMAGE_LOGE("astc ClKernelArgSetAndRun failed!");
         return CL_ASTC_ENC_FAILED;

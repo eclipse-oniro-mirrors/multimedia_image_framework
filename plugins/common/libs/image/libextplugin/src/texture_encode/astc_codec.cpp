@@ -74,25 +74,6 @@ constexpr char ASTC_CL_PREBUILT_BIN_PATH[] = "/sys_prod/etc/graphic/AstcEncShade
 constexpr char ASTC_CL_RUNTIME_BIN_PATH[] = "/data/storage/el1/base/AstcEncShader.bin";
 std::atomic<bool> g_astcClCompileInProgress = false;
 std::mutex g_astcClCompileMutex;
-
-class AstcClSlotGuard {
-public:
-    AstcClSlotGuard() : acquired_(AstcClTryAcquireSlot()) {}
-    ~AstcClSlotGuard()
-    {
-        if (acquired_) {
-            AstcClReleaseSlot();
-        }
-    }
-    bool Acquired() const
-    {
-        return acquired_;
-    }
-    AstcClSlotGuard(const AstcClSlotGuard &) = delete;
-    AstcClSlotGuard &operator=(const AstcClSlotGuard &) = delete;
-private:
-    bool acquired_ = false;
-};
 #endif
 constexpr int32_t WIDTH_MAX_ASTC = 8192;
 constexpr int32_t HEIGHT_MAX_ASTC = 8192;
@@ -135,11 +116,6 @@ void AstcCodec::FinishAstcClWarmup()
 void AstcCodec::DoAstcClBinWarmup(const std::string &clBinPath)
 {
     std::lock_guard<std::mutex> lock(g_astcClCompileMutex);
-    AstcClSlotGuard clSlot;
-    if (!clSlot.Acquired()) {
-        FinishAstcClWarmup();
-        return;
-    }
     if (!CheckClBinIsExistWithLock(clBinPath)) {
         AstcEncBasedCl::ClAstcHandle *astcClEncoder = nullptr;
         bool warmupSuccess = AstcClCreate(&astcClEncoder, clBinPath) == CL_ASTC_ENC_SUCCESS;
@@ -530,11 +506,6 @@ bool AstcCodec::TryAstcEncBasedOnCl(TextureEncodeOptions &param, uint8_t *inData
         IMAGE_LOGE("astc Please check TryAstcEncBasedOnCl input!");
         return false;
     }
-    AstcClSlotGuard clSlot;
-    if (!clSlot.Acquired()) {
-        IMAGE_LOGI("astc gpu path unavailable, fallback to cpu");
-        return false;
-    }
     if (AstcClCreate(&astcClEncoder, clBinPath) != CL_ASTC_ENC_SUCCESS) {
         IMAGE_LOGE("astc AstcClCreate failed!");
         return false;
@@ -545,13 +516,7 @@ bool AstcCodec::TryAstcEncBasedOnCl(TextureEncodeOptions &param, uint8_t *inData
         AstcClClose(astcClEncoder);
         return false;
     }
-    CL_ASTC_STATUS encRet = AstcClEncImage(astcClEncoder, &imageIn, buffer);
-    if (encRet == CL_ASTC_ENC_TIMEOUT) {
-        AstcClAbandonHandle(astcClEncoder);
-        IMAGE_LOGE("astc gpu kernel timeout, disable gpu encode and fallback to cpu!");
-        return false;
-    }
-    if (encRet != CL_ASTC_ENC_SUCCESS) {
+    if (AstcClEncImage(astcClEncoder, &imageIn, buffer) != CL_ASTC_ENC_SUCCESS) {
         IMAGE_LOGE("astc AstcClEncImage failed!");
         AstcClClose(astcClEncoder);
         return false;
