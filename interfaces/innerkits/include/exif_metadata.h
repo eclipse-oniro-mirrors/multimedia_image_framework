@@ -40,6 +40,7 @@ public:
     ExifMetadata(ExifData *exifData);
     virtual ~ExifMetadata();
     virtual int GetValue(const std::string &key, std::string &value) const override;
+    int GetValue(const std::string &key, std::string &value, std::string *errMsg) const;
     int GetValueByType(const std::string &key, MetadataValue &result) const;
     int HandleHwMnoteByType(const std::string &key, MetadataValue &result) const;
     bool SetBlobValue(const MetadataValue &properties);

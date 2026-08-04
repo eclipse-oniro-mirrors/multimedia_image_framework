@@ -1317,19 +1317,7 @@ napi_value CreateObtainErrorArray(napi_env env, std::multimap<std::int32_t, std:
     for (auto it = errMsgArray.begin(); it != errMsgArray.end(); ++it) {
         napi_value errMsgVal;
         napi_get_undefined(env, &errMsgVal);
-        if (it->first == ERR_IMAGE_DECODE_ABNORMAL) {
-            ImageNapiUtils::CreateErrorObj(env, errMsgVal, it->first,
-                "The image source data is incorrect! exif key: " + it->second);
-        } else if (it->first == ERR_IMAGE_UNKNOWN_FORMAT) {
-            ImageNapiUtils::CreateErrorObj(env, errMsgVal, it->first,
-                "Unknown image format! exif key: " + it->second);
-        } else if (it->first == ERR_IMAGE_DECODE_FAILED) {
-            ImageNapiUtils::CreateErrorObj(env, errMsgVal, it->first,
-                "Failed to decode the image! exif key: " + it->second);
-        } else {
-            ImageNapiUtils::CreateErrorObj(env, errMsgVal, ERROR,
-                "There is generic napi failure! exif key: " + it->second);
-        }
+        ImageNapiUtils::CreateErrorObj(env, errMsgVal, it->first, it->second);
         status = napi_set_element(env, result, index, errMsgVal);
         if (status != napi_ok) {
             IMAGE_LOGE("Add error message to array failed %{public}d", status);
@@ -3548,6 +3536,20 @@ static void ModifyImagePropertyExecute(napi_env env, void *data)
     IMAGE_LOGD("[ImageSourceNapi]ModifyImagePropertyExecute OUT.");
 }
 
+static void GetExifErrorMessage(uint32_t &status, const std::string &key, std::string &errMsg)
+{
+    if (status == ERR_IMAGE_DECODE_ABNORMAL) {
+        errMsg = errMsg.empty() ? "The image source data is incorrect! exif key: " + key : errMsg;
+    } else if (status == ERR_IMAGE_UNKNOWN_FORMAT) {
+        errMsg = errMsg.empty() ? "Unknown image format! exif key: " + key : errMsg;
+    } else if (status == ERR_IMAGE_DECODE_FAILED) {
+        errMsg = errMsg.empty() ? "Failed to decode the image! exif key: " + key : errMsg;
+    } else {
+        status = ERROR;
+        errMsg = errMsg.empty() ? "There is generic napi failure! exif key: " + key : errMsg;
+    }
+}
+
 static void GetImagePropertiesExecute(napi_env env, void *data)
 {
     IMAGE_LOGD("[ImageSourceNapi]GetImagePropertiesExecute IN.");
@@ -3559,12 +3561,14 @@ static void GetImagePropertiesExecute(napi_env env, void *data)
     uint32_t status = SUCCESS;
     for (auto keyStrIt = context->keyStrArray.begin(); keyStrIt != context->keyStrArray.end(); ++keyStrIt) {
         std::string valueStr = "";
-        status = context->rImageSource->GetImagePropertyString(0, *keyStrIt, valueStr);
+        std::string errMsg = "";
+        status = context->rImageSource->GetImagePropertyString(0, *keyStrIt, valueStr, &errMsg);
         if (status == SUCCESS) {
             context->kVStrArray.emplace_back(std::make_pair(*keyStrIt, valueStr));
         } else {
             context->kVStrArray.emplace_back(std::make_pair(*keyStrIt, ""));
-            context->errMsgArray.insert(std::make_pair(status, *keyStrIt));
+            GetExifErrorMessage(status, *keyStrIt, errMsg);
+            context->errMsgArray.insert(std::make_pair(status, errMsg));
             IMAGE_LOGE("errCode: %{public}u , exif key: %{public}s", status, keyStrIt->c_str());
         }
     }

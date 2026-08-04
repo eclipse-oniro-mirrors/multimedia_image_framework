@@ -2213,7 +2213,8 @@ uint32_t ImageSource::CreateExifMetadata(uint8_t *buffer, const uint32_t size, b
     return SUCCESS;
 }
 
-uint32_t ImageSource::GetImagePropertyCommon(uint32_t index, const std::string &key, std::string &value)
+uint32_t ImageSource::GetImagePropertyCommon(uint32_t index, const std::string &key, std::string &value,
+    std::string *errMsg)
 {
     bool cond = (isExifReadFailed_ && exifMetadata_ == nullptr);
     CHECK_ERROR_RETURN_RET(cond, exifReadStatus_);
@@ -2230,7 +2231,7 @@ uint32_t ImageSource::GetImagePropertyCommon(uint32_t index, const std::string &
         return ret;
     }
 
-    return exifMetadata_->GetValue(key, value);
+    return exifMetadata_->GetValue(key, value, errMsg);
 }
 
 uint32_t ImageSource::GetImagePropertyCommonByType(const std::string &key, MetadataValue &value)
@@ -2466,6 +2467,12 @@ uint32_t ImageSource::GetImagePropertyInt(uint32_t index, const std::string &key
 
 uint32_t ImageSource::GetImagePropertyString(uint32_t index, const std::string &key, std::string &value)
 {
+    return GetImagePropertyString(index, key, value, nullptr);
+}
+
+uint32_t ImageSource::GetImagePropertyString(uint32_t index, const std::string &key, std::string &value,
+    std::string *errMsg)
+{
     bool cond = key.empty();
     CHECK_ERROR_RETURN_RET(cond, Media::ERR_IMAGE_DECODE_EXIF_UNSUPPORT);
     uint32_t ret = SUCCESS;
@@ -2487,7 +2494,7 @@ uint32_t ImageSource::GetImagePropertyString(uint32_t index, const std::string &
 
     std::unique_lock<std::recursive_mutex> guard(decodingMutex_);
     std::unique_lock<std::mutex> guardFile(fileMutex_);
-    return GetImagePropertyCommon(index, key, value);
+    return GetImagePropertyCommon(index, key, value, errMsg);
 }
 
 static uint32_t ParseUInt32Key(ImageMetadata::PropertyMapPtr propertiesPtr, std::string key, uint32_t &u32num)
