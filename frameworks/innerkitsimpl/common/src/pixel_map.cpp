@@ -2615,7 +2615,7 @@ bool PixelMap::WriteImageData(Parcel &parcel, size_t size) const
 uint8_t *PixelMap::ReadHeapDataFromParcel(Parcel &parcel, int32_t bufferSize)
 {
     uint8_t *base = nullptr;
-    if (bufferSize <= 0) {
+    if (bufferSize <= 0 || static_cast<size_t>(bufferSize) > MAX_IMAGEDATA_SIZE) {
         IMAGE_LOGE("malloc parameter bufferSize:[%{public}d] error.", bufferSize);
         return nullptr;
     }
@@ -3517,11 +3517,11 @@ PixelMap *PixelMap::Unmarshalling(Parcel &parcel, PIXEL_MAP_ERR &error,
 
 uint8_t PixelMap::ReadUint8(std::vector<uint8_t> &buff, int32_t &cursor)
 {
-    if (static_cast<size_t>(cursor + 1) > buff.size()) {
+    if (cursor < 0 || cursor == INT32_MAX || static_cast<size_t>(cursor) >= buff.size()) {
         IMAGE_LOGE("ReadUint8 out of range");
         return TLV_END;
     }
-    return buff[cursor++];
+    return buff[static_cast<size_t>(cursor++)];
 }
 
 void PixelMap::WriteData(std::vector<uint8_t> &buff, const uint8_t *data,
@@ -3646,38 +3646,101 @@ static bool CheckTlvImageInfo(const ImageInfo &info, std::unique_ptr<AbsMemory>&
     return false;
 }
 
+static bool IsValidTlvColorSpace(int32_t colorSpace)
+{
+    return colorSpace >= static_cast<int32_t>(ColorSpace::UNKNOWN) &&
+        colorSpace <= static_cast<int32_t>(ColorSpace::SMPTE_C);
+}
+
+static bool IsValidTlvAlphaType(int32_t alphaType)
+{
+    return alphaType >= static_cast<int32_t>(AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN) &&
+        alphaType <= static_cast<int32_t>(AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
+}
+
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+static bool IsValidTlvCmColorSpaceType(int32_t colorSpaceType)
+{
+    CM_ColorSpaceType type = static_cast<CM_ColorSpaceType>(colorSpaceType);
+    return type == CM_COLORSPACE_NONE ||
+        ImageUtils::SbCMColorSpaceType2ColorSpaceName(type) != OHOS::ColorManager::NONE;
+}
+
+static bool IsValidTlvMetadataType(int32_t metadataType)
+{
+    switch (static_cast<CM_HDR_Metadata_Type>(metadataType)) {
+        case CM_METADATA_NONE:
+        case CM_VIDEO_HLG:
+        case CM_VIDEO_HDR10:
+        case CM_VIDEO_HDR_VIVID:
+        case CM_IMAGE_HDR_VIVID_DUAL:
+        case CM_IMAGE_HDR_VIVID_SINGLE:
+        case CM_IMAGE_HDR_ISO_DUAL:
+        case CM_IMAGE_HDR_ISO_SINGLE:
+            return true;
+        default:
+            return false;
+    }
+}
+
+static bool IsValidTlvColorSpaceName(int32_t colorSpaceName)
+{
+    return colorSpaceName >= static_cast<int32_t>(OHOS::ColorManager::NONE) &&
+        colorSpaceName <= static_cast<int32_t>(OHOS::ColorManager::H_LOG_FULL);
+}
+#endif
+
 static std::map<uint8_t, std::function<bool(TlvDecodeInfo&, vector<uint8_t>&, int32_t&, int32_t)>>
     TlvDecodeFunc = {
-        {TLV_IMAGE_WIDTH, [](TlvDecodeInfo& decodeInfo, vector<uint8_t>& buff, int32_t& cursor, int32_t len) {
-            decodeInfo.info.size.width = ImageUtils::ReadVarint(buff, cursor);
-            return !(decodeInfo.info.size.width <= 0);
+        {TLV_IMAGE_WIDTH, [](TlvDecodeInfo& decodeInfo, vector<uint8_t>& buff, int32_t& cursor, int32_t) {
+            return ImageUtils::ReadVarint(buff, cursor, decodeInfo.info.size.width) &&
+                decodeInfo.info.size.width > 0;
         }},
-        {TLV_IMAGE_HEIGHT, [](TlvDecodeInfo& decodeInfo, vector<uint8_t>& buff, int32_t& cursor, int32_t len) {
-            decodeInfo.info.size.height = ImageUtils::ReadVarint(buff, cursor);
-            return !(decodeInfo.info.size.height <= 0);
+        {TLV_IMAGE_HEIGHT, [](TlvDecodeInfo& decodeInfo, vector<uint8_t>& buff, int32_t& cursor, int32_t) {
+            return ImageUtils::ReadVarint(buff, cursor, decodeInfo.info.size.height) &&
+                decodeInfo.info.size.height > 0;
         }},
-        {TLV_IMAGE_PIXELFORMAT, [](TlvDecodeInfo& decodeInfo, vector<uint8_t>& buff, int32_t& cursor, int32_t len) {
-            decodeInfo.info.pixelFormat = static_cast<PixelFormat>(ImageUtils::ReadVarint(buff, cursor));
+        {TLV_IMAGE_PIXELFORMAT, [](TlvDecodeInfo& decodeInfo, vector<uint8_t>& buff, int32_t& cursor, int32_t) {
+            int32_t pixelFormat = 0;
+            if (!ImageUtils::ReadVarint(buff, cursor, pixelFormat)) {
+                return false;
+            }
+            decodeInfo.info.pixelFormat = static_cast<PixelFormat>(pixelFormat);
             if (!ImageUtils::CheckTlvSupportedFormat(decodeInfo.info.pixelFormat)) {
                 IMAGE_LOGE("[PixelMap] tlv decode unsupported pixelformat: %{public}d", decodeInfo.info.pixelFormat);
                 return false;
             }
             return true;
         }},
-        {TLV_IMAGE_COLORSPACE, [](TlvDecodeInfo& decodeInfo, vector<uint8_t>& buff, int32_t& cursor, int32_t len) {
-            decodeInfo.info.colorSpace = static_cast<ColorSpace>(ImageUtils::ReadVarint(buff, cursor));
+        {TLV_IMAGE_COLORSPACE, [](TlvDecodeInfo& decodeInfo, vector<uint8_t>& buff, int32_t& cursor, int32_t) {
+            int32_t colorSpace = 0;
+            if (!ImageUtils::ReadVarint(buff, cursor, colorSpace)) {
+                return false;
+            }
+            if (!IsValidTlvColorSpace(colorSpace)) {
+                return false;
+            }
+            decodeInfo.info.colorSpace = static_cast<ColorSpace>(colorSpace);
             return true;
         }},
-        {TLV_IMAGE_ALPHATYPE, [](TlvDecodeInfo& decodeInfo, vector<uint8_t>& buff, int32_t& cursor, int32_t len) {
-            decodeInfo.info.alphaType = static_cast<AlphaType>(ImageUtils::ReadVarint(buff, cursor));
+        {TLV_IMAGE_ALPHATYPE, [](TlvDecodeInfo& decodeInfo, vector<uint8_t>& buff, int32_t& cursor, int32_t) {
+            int32_t alphaType = 0;
+            if (!ImageUtils::ReadVarint(buff, cursor, alphaType)) {
+                return false;
+            }
+            if (!IsValidTlvAlphaType(alphaType)) {
+                return false;
+            }
+            decodeInfo.info.alphaType = static_cast<AlphaType>(alphaType);
             return true;
         }},
-        {TLV_IMAGE_BASEDENSITY, [](TlvDecodeInfo& decodeInfo, vector<uint8_t>& buff, int32_t& cursor, int32_t len) {
-            decodeInfo.info.baseDensity = ImageUtils::ReadVarint(buff, cursor);
-            return true;
+        {TLV_IMAGE_BASEDENSITY, [](TlvDecodeInfo& decodeInfo, vector<uint8_t>& buff, int32_t& cursor, int32_t) {
+            return ImageUtils::ReadVarint(buff, cursor, decodeInfo.info.baseDensity);
         }},
-        {TLV_IMAGE_ALLOCATORTYPE, [](TlvDecodeInfo& decodeInfo, vector<uint8_t>& buff, int32_t& cursor, int32_t len) {
-            decodeInfo.allocType = ImageUtils::ReadVarint(buff, cursor);
+        {TLV_IMAGE_ALLOCATORTYPE, [](TlvDecodeInfo& decodeInfo, vector<uint8_t>& buff, int32_t& cursor, int32_t) {
+            if (!ImageUtils::ReadVarint(buff, cursor, decodeInfo.allocType)) {
+                return false;
+            }
             if (decodeInfo.allocType != NUM_1) {
                 IMAGE_LOGE("[PixelMap] tlv decode invalid allocatorType: %{public}d", decodeInfo.allocType);
                 return false;
@@ -3692,43 +3755,58 @@ static std::map<uint8_t, std::function<bool(TlvDecodeInfo&, vector<uint8_t>&, in
         {TLV_IMAGE_DATA, [](TlvDecodeInfo& decodeInfo, vector<uint8_t>& buff, int32_t& cursor, int32_t len) {
             decodeInfo.dstMemory = ImageUtils::ReadData(buff, len, cursor,
                 static_cast<AllocatorType>(decodeInfo.allocType), decodeInfo.info);
-            cursor += len; // skip data
             if (decodeInfo.dstMemory == nullptr) {
                 return false;
             }
+            cursor += len; // skip data
             return true;
         }},
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
-        {TLV_IMAGE_HDR, [](TlvDecodeInfo& decodeInfo, vector<uint8_t>& buff, int32_t& cursor, int32_t len) {
-            decodeInfo.isHdr = ImageUtils::ReadVarint(buff, cursor);
+        {TLV_IMAGE_HDR, [](TlvDecodeInfo& decodeInfo, vector<uint8_t>& buff, int32_t& cursor, int32_t) {
+            return ImageUtils::ReadVarint(buff, cursor, decodeInfo.isHdr) &&
+                (decodeInfo.isHdr == 0 || decodeInfo.isHdr == NUM_1);
+        }},
+        {TLV_IMAGE_COLORTYPE, [](TlvDecodeInfo& decodeInfo, vector<uint8_t>& buff, int32_t& cursor, int32_t) {
+            int32_t colorSpaceType = 0;
+            if (!ImageUtils::ReadVarint(buff, cursor, colorSpaceType)) {
+                return false;
+            }
+            if (!IsValidTlvCmColorSpaceType(colorSpaceType)) {
+                return false;
+            }
+            decodeInfo.hdrInfo.colorSpaceType = static_cast<CM_ColorSpaceType>(colorSpaceType);
             return true;
         }},
-        {TLV_IMAGE_COLORTYPE, [](TlvDecodeInfo& decodeInfo, vector<uint8_t>& buff, int32_t& cursor, int32_t len) {
-            decodeInfo.hdrInfo.colorSpaceType =
-                static_cast<CM_ColorSpaceType>(ImageUtils::ReadVarint(buff, cursor));
-            return true;
-        }},
-        {TLV_IMAGE_METADATATYPE, [](TlvDecodeInfo& decodeInfo, vector<uint8_t>& buff, int32_t& cursor, int32_t len) {
-            decodeInfo.hdrInfo.metadataType =
-                static_cast<CM_HDR_Metadata_Type>(ImageUtils::ReadVarint(buff, cursor));
+        {TLV_IMAGE_METADATATYPE, [](TlvDecodeInfo& decodeInfo, vector<uint8_t>& buff, int32_t& cursor, int32_t) {
+            int32_t metadataType = 0;
+            if (!ImageUtils::ReadVarint(buff, cursor, metadataType)) {
+                return false;
+            }
+            if (!IsValidTlvMetadataType(metadataType)) {
+                return false;
+            }
+            decodeInfo.hdrInfo.metadataType = static_cast<CM_HDR_Metadata_Type>(metadataType);
             return true;
         }},
         {TLV_IMAGE_STATICMETADATA, [](TlvDecodeInfo& decodeInfo, vector<uint8_t>& buff, int32_t& cursor, int32_t len) {
-            decodeInfo.hdrInfo.staticMetadata.reserve(len);
-            copy(buff.begin() + cursor, buff.begin() + cursor + len, back_inserter(decodeInfo.hdrInfo.staticMetadata));
+            if (static_cast<size_t>(len) > MAX_TLV_METADATA_SIZE) {
+                return false;
+            }
+            decodeInfo.hdrInfo.staticMetadata.assign(buff.begin() + cursor, buff.begin() + cursor + len);
             cursor += len;
             return true;
         }},
         {TLV_IMAGE_DYNAMICMETADATA, [](TlvDecodeInfo& decodeInfo, vector<uint8_t>& buff, int32_t& cursor, int32_t len) {
-            decodeInfo.hdrInfo.dynamicMetadata.reserve(len);
-            copy(buff.begin() + cursor, buff.begin() + cursor + len, back_inserter(decodeInfo.hdrInfo.dynamicMetadata));
-            
+            if (static_cast<size_t>(len) > MAX_TLV_METADATA_SIZE) {
+                return false;
+            }
+            decodeInfo.hdrInfo.dynamicMetadata.assign(buff.begin() + cursor, buff.begin() + cursor + len);
             cursor += len;
             return true;
         }},
-        {TLV_IMAGE_CSM, [](TlvDecodeInfo& decodeInfo, vector<uint8_t>& buff, int32_t& cursor, int32_t len) {
-            decodeInfo.csm = ImageUtils::ReadVarint(buff, cursor);
-            return true;
+        {TLV_IMAGE_CSM, [](TlvDecodeInfo& decodeInfo, vector<uint8_t>& buff, int32_t& cursor, int32_t) {
+            return ImageUtils::ReadVarint(buff, cursor, decodeInfo.csm) &&
+                IsValidTlvColorSpaceName(decodeInfo.csm);
         }},
 #endif
 };
@@ -3757,13 +3835,32 @@ static std::map<uint8_t, bool> InitTlvReEntryCheckMap()
 bool PixelMap::ReadTlvAttr(std::vector<uint8_t> &buff, ImageInfo &info,
     std::unique_ptr<AbsMemory>& dstMemory, int32_t& csm)
 {
+    if (buff.empty() || buff.size() > MAX_TLV_SIZE) {
+        IMAGE_LOGE("[PixelMap] ReadTlvAttr invalid tlv size: %{public}zu", buff.size());
+        return false;
+    }
     TlvDecodeInfo tlvDecInfo;
     map<uint8_t, bool> tlvReEntryCheck = InitTlvReEntryCheckMap();
     int32_t cursor = 0;
-    for (uint8_t tag = ReadUint8(buff, cursor); tag != TLV_END; tag = ReadUint8(buff, cursor)) {
-        int32_t len = ImageUtils::ReadVarint(buff, cursor);
-        if (len <= 0 || cursor > INT32_MAX - len || static_cast<size_t>(cursor + len) > buff.size()) {
+    while (true) {
+        if (cursor < 0 || static_cast<size_t>(cursor) >= buff.size()) {
+            IMAGE_LOGE("[PixelMap] ReadTlvAttr missing end tag");
+            return false;
+        }
+        uint8_t tag = ReadUint8(buff, cursor);
+        if (tag == TLV_END) {
+            break;
+        }
+        int32_t len = 0;
+        if (!ImageUtils::ReadVarint(buff, cursor, len) || len <= 0 || cursor < 0 ||
+            static_cast<size_t>(cursor) > buff.size() ||
+            static_cast<size_t>(len) > buff.size() - static_cast<size_t>(cursor)) {
             IMAGE_LOGE("[PixelMap] ReadTlvAttr out of range tag: %{public}d, len: %{public}d", tag, len);
+            return false;
+        }
+        if ((tag == TLV_IMAGE_STATICMETADATA || tag == TLV_IMAGE_DYNAMICMETADATA) &&
+            static_cast<size_t>(len) > MAX_TLV_METADATA_SIZE) {
+            IMAGE_LOGE("[PixelMap] ReadTlvAttr metadata too large, tag: %{public}d, len: %{public}d", tag, len);
             return false;
         }
         auto tlvDecFunc = TlvDecodeFunc.find(tag);
@@ -3772,13 +3869,18 @@ bool PixelMap::ReadTlvAttr(std::vector<uint8_t> &buff, ImageInfo &info,
             IMAGE_LOGW("[PixelMap] ReadTlvAttr unsupported tag: %{public}d", tag);
         } else {
             auto it = tlvReEntryCheck.find(tag);
-            if (it != tlvReEntryCheck.end() && it->second) {
+            if (it == tlvReEntryCheck.end() || it->second) {
                 IMAGE_LOGE("[PixelMap] ReadTlvAttr re-entry tag: %{public}d", tag);
                 return false;
             }
             it->second = true;
+            int32_t valueStart = cursor;
             if (!tlvDecFunc->second(tlvDecInfo, buff, cursor, len)) {
                 IMAGE_LOGE("[PixelMap] ReadTlvAttr decode tag: %{public}d fail", tag);
+                return false;
+            }
+            if (cursor < valueStart || cursor - valueStart != len) {
+                IMAGE_LOGE("[PixelMap] ReadTlvAttr length mismatch, tag: %{public}d, len: %{public}d", tag, len);
                 return false;
             }
         }
@@ -3791,6 +3893,10 @@ bool PixelMap::ReadTlvAttr(std::vector<uint8_t> &buff, ImageInfo &info,
 
 PixelMap *PixelMap::DecodeTlv(std::vector<uint8_t> &buff)
 {
+    if (buff.empty() || buff.size() > MAX_TLV_SIZE) {
+        IMAGE_LOGE("pixel map tlv decode fail: invalid tlv size[%{public}zu]", buff.size());
+        return nullptr;
+    }
     PixelMap *pixelMap = new(std::nothrow) PixelMap();
     if (pixelMap == nullptr) {
         IMAGE_LOGE("pixel map tlv decode fail: new PixelMap error");

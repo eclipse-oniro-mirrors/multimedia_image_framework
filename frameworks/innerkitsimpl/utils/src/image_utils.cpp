@@ -2476,26 +2476,41 @@ void ImageUtils::TlvWriteSurfaceInfo(const PixelMap* pixelMap, vector<uint8_t>& 
     return;
 }
 
-int32_t ImageUtils::ReadVarint(std::vector<uint8_t> &buff, int32_t &cursor)
+bool ImageUtils::ReadVarint(std::vector<uint8_t> &buff, int32_t &cursor, int32_t &result)
 {
+    if (cursor < 0) {
+        IMAGE_LOGE("ReadVarint invalid cursor");
+        return false;
+    }
+
+    size_t readPos = static_cast<size_t>(cursor);
     uint32_t value = 0;
-    uint8_t shift = 0;
-    uint32_t item = 0;
-    uint32_t border = 32;
-    do {
-        if (static_cast<size_t>(cursor + 1) > buff.size()) {
+    constexpr uint8_t maxVarintBytes = 5;
+    for (uint8_t byteIndex = 0; byteIndex < maxVarintBytes; ++byteIndex) {
+        if (readPos >= buff.size()) {
             IMAGE_LOGE("ReadVarint out of range");
-            return static_cast<int32_t>(TLV_END);
+            return false;
         }
-        if (shift >= border) { // add overflow check
-            IMAGE_LOGE("ReadVarint shift overflow");
-            return static_cast<int32_t>(TLV_END);
+
+        uint8_t item = buff[readPos++];
+        if (byteIndex == maxVarintBytes - 1 && (item & 0xF0) != 0) {
+            IMAGE_LOGE("ReadVarint value overflow");
+            return false;
         }
-        item = uint32_t(buff[cursor++]);
-        value |= (item & TLV_VARINT_MASK) << shift;
-        shift += TLV_VARINT_BITS;
-    } while ((item & TLV_VARINT_MORE) != 0);
-    return int32_t(value);
+
+        value |= static_cast<uint32_t>(item & TLV_VARINT_MASK) << (byteIndex * TLV_VARINT_BITS);
+        if ((item & TLV_VARINT_MORE) == 0) {
+            if (readPos > static_cast<size_t>(INT32_MAX)) {
+                IMAGE_LOGE("ReadVarint cursor overflow");
+                return false;
+            }
+            cursor = static_cast<int32_t>(readPos);
+            result = static_cast<int32_t>(value);
+            return true;
+        }
+    }
+    IMAGE_LOGE("ReadVarint too long");
+    return false;
 }
 
 int32_t ImageUtils::AllocPixelMapMemory(std::unique_ptr<AbsMemory> &dstMemory, int32_t &dstRowStride,
@@ -2548,7 +2563,28 @@ std::unique_ptr<AbsMemory> ImageUtils::ReadData(std::vector<uint8_t> &buff, int3
         IMAGE_LOGE("[PixelMap] tlv read data fail: invalid size[%{public}d]", size);
         return nullptr;
     }
-    if (cursor < 0 || static_cast<uint64_t>(cursor) + static_cast<uint64_t>(size) > buff.size()) {
+    if (imageInfo.size.width <= 0 || imageInfo.size.height <= 0 || imageInfo.size.width > MAX_DIMENSION ||
+        imageInfo.size.height > MAX_DIMENSION) {
+        IMAGE_LOGE("[PixelMap] tlv read data fail: invalid image size");
+        return nullptr;
+    }
+    int32_t rowDataSize = ImageUtils::GetRowDataSizeByPixelFormat(imageInfo.size.width, imageInfo.pixelFormat);
+    int64_t expectedSize = static_cast<int64_t>(rowDataSize) * static_cast<int64_t>(imageInfo.size.height);
+    if (rowDataSize <= 0 || expectedSize <= 0 || expectedSize > INT32_MAX ||
+        static_cast<size_t>(expectedSize) > MAX_TLV_HEAP_SIZE || size != expectedSize) {
+        IMAGE_LOGE("[PixelMap] tlv read data fail: data size does not match image info");
+        return nullptr;
+    }
+    int64_t allocationSize = expectedSize;
+    if (IsYuvFormat(imageInfo.pixelFormat)) {
+        allocationSize = GetYUVByteCount(imageInfo);
+    }
+    if (allocationSize <= 0 || static_cast<size_t>(allocationSize) > MAX_TLV_HEAP_SIZE) {
+        IMAGE_LOGE("[PixelMap] tlv read data fail: allocation size out of range");
+        return nullptr;
+    }
+    if (cursor < 0 || static_cast<size_t>(cursor) > buff.size() ||
+        static_cast<size_t>(size) > buff.size() - static_cast<size_t>(cursor)) {
         IMAGE_LOGE("[PixelMap] ReadData out of range");
         return nullptr;
     }
@@ -2562,15 +2598,7 @@ std::unique_ptr<AbsMemory> ImageUtils::ReadData(std::vector<uint8_t> &buff, int3
         return nullptr;
     }
     uint8_t* addr = static_cast<uint8_t*>(dstMemory->data.data);
-    int32_t rowDataSize = ImageUtils::GetRowDataSizeByPixelFormat(imageInfo.size.width, imageInfo.pixelFormat);
     uint8_t* srcAddr = buff.data() + cursor;
-
-    int64_t expectedSize = static_cast<int64_t>(rowDataSize) * static_cast<int64_t>(imageInfo.size.height);
-    if (expectedSize <= 0 || expectedSize > INT32_MAX || size != expectedSize) {
-        IMAGE_LOGE("[PixelMap] tlv read data fail: alloc memory failed");
-        dstMemory->Release();
-        return nullptr;
-    }
 #if !defined(CROSS_PLATFORM)
     if (allocType == AllocatorType::DMA_ALLOC) {
         if (dstRowStride == 0 || dstRowStride < rowDataSize ||

@@ -5662,6 +5662,150 @@ HWTEST_F(PixelMapTest, HdrPixelMapTlvTest006, TestSize.Level3)
     ASSERT_EQ(tlvPixelMap->GetAllocatorType(), srcPixelMap.GetAllocatorType());
 }
 
+static void WriteTlvVarintField(std::vector<uint8_t> &buff, uint8_t tag, int32_t value)
+{
+    ImageUtils::WriteUint8(buff, tag);
+    ImageUtils::WriteVarint(buff, ImageUtils::GetVarintLen(value));
+    ImageUtils::WriteVarint(buff, value);
+}
+
+static std::vector<uint8_t> BuildMinimalPixelMapTlv(
+    int32_t colorSpace = static_cast<int32_t>(ColorSpace::SRGB),
+    int32_t alphaType = static_cast<int32_t>(AlphaType::IMAGE_ALPHA_TYPE_OPAQUE))
+{
+    std::vector<uint8_t> buff;
+    WriteTlvVarintField(buff, TLV_IMAGE_WIDTH, 1);
+    WriteTlvVarintField(buff, TLV_IMAGE_HEIGHT, 1);
+    WriteTlvVarintField(buff, TLV_IMAGE_PIXELFORMAT, static_cast<int32_t>(PixelFormat::RGBA_8888));
+    WriteTlvVarintField(buff, TLV_IMAGE_COLORSPACE, colorSpace);
+    WriteTlvVarintField(buff, TLV_IMAGE_ALPHATYPE, alphaType);
+    WriteTlvVarintField(buff, TLV_IMAGE_ALLOCATORTYPE, static_cast<int32_t>(AllocatorType::HEAP_ALLOC));
+    ImageUtils::WriteUint8(buff, TLV_IMAGE_DATA);
+    ImageUtils::WriteVarint(buff, 4); // RGBA_8888, width 1 and height 1
+    buff.insert(buff.end(), 4, 0);
+    ImageUtils::WriteUint8(buff, TLV_END);
+    return buff;
+}
+
+/**
+ * @tc.name: PixelMapTlvRejectInvalidImageInfoEnumTest001
+ * @tc.desc: Reject external integers outside the ColorSpace and AlphaType enum ranges.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, PixelMapTlvRejectInvalidImageInfoEnumTest001, TestSize.Level3)
+{
+    int32_t invalidColorSpace = static_cast<int32_t>(ColorSpace::SMPTE_C) + 1;
+    std::vector<uint8_t> invalidColorSpaceBuff = BuildMinimalPixelMapTlv(invalidColorSpace);
+    EXPECT_EQ(PixelMap::DecodeTlv(invalidColorSpaceBuff), nullptr);
+
+    int32_t invalidAlphaType = static_cast<int32_t>(AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL) + 1;
+    std::vector<uint8_t> invalidAlphaTypeBuff = BuildMinimalPixelMapTlv(
+        static_cast<int32_t>(ColorSpace::SRGB), invalidAlphaType);
+    EXPECT_EQ(PixelMap::DecodeTlv(invalidAlphaTypeBuff), nullptr);
+}
+
+/**
+ * @tc.name: PixelMapTlvRejectScalarCrossingDeclaredLengthTest001
+ * @tc.desc: Reject a scalar varint that consumes the following TLV end tag.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, PixelMapTlvRejectScalarCrossingDeclaredLengthTest001, TestSize.Level3)
+{
+    std::vector<uint8_t> buff = BuildMinimalPixelMapTlv();
+    buff.pop_back();
+    ImageUtils::WriteUint8(buff, TLV_IMAGE_BASEDENSITY);
+    ImageUtils::WriteVarint(buff, 1);
+    ImageUtils::WriteUint8(buff, TLV_VARINT_MORE);
+    ImageUtils::WriteUint8(buff, TLV_END);
+
+    std::unique_ptr<PixelMap> pixelMap(PixelMap::DecodeTlv(buff));
+    EXPECT_EQ(pixelMap, nullptr);
+}
+
+/**
+ * @tc.name: PixelMapTlvRejectVarintFifthByteOverflowTest001
+ * @tc.desc: Reject a 32-bit varint whose fifth byte contains bits above bit 31.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, PixelMapTlvRejectVarintFifthByteOverflowTest001, TestSize.Level3)
+{
+    std::vector<uint8_t> buff = BuildMinimalPixelMapTlv();
+    buff.pop_back();
+    ImageUtils::WriteUint8(buff, TLV_IMAGE_BASEDENSITY);
+    ImageUtils::WriteVarint(buff, 5);
+    buff.insert(buff.end(), {TLV_VARINT_MORE, TLV_VARINT_MORE, TLV_VARINT_MORE, TLV_VARINT_MORE, 0x10});
+    ImageUtils::WriteUint8(buff, TLV_END);
+
+    std::unique_ptr<PixelMap> pixelMap(PixelMap::DecodeTlv(buff));
+    EXPECT_EQ(pixelMap, nullptr);
+}
+
+/**
+ * @tc.name: PixelMapTlvVarintResultTest001
+ * @tc.desc: Distinguish a valid zero varint from a truncated varint.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, PixelMapTlvVarintResultTest001, TestSize.Level3)
+{
+    std::vector<uint8_t> zeroBuff = {0};
+    int32_t cursor = 0;
+    int32_t value = -1;
+    EXPECT_TRUE(ImageUtils::ReadVarint(zeroBuff, cursor, value));
+    EXPECT_EQ(value, 0);
+    EXPECT_EQ(cursor, 1);
+
+    std::vector<uint8_t> truncatedBuff = {TLV_VARINT_MORE};
+    cursor = 0;
+    value = -1;
+    EXPECT_FALSE(ImageUtils::ReadVarint(truncatedBuff, cursor, value));
+    EXPECT_EQ(value, -1);
+    EXPECT_EQ(cursor, 0);
+}
+
+/**
+ * @tc.name: PixelMapTlvReadUint8InvalidCursorTest001
+ * @tc.desc: Reject a negative cursor without indexing the input vector.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, PixelMapTlvReadUint8InvalidCursorTest001, TestSize.Level3)
+{
+    std::vector<uint8_t> buff = {1};
+    int32_t cursor = -1;
+    EXPECT_EQ(PixelMap::ReadUint8(buff, cursor), TLV_END);
+    EXPECT_EQ(cursor, -1);
+}
+
+/**
+ * @tc.name: PixelMapTlvRejectOversizedMetadataTest001
+ * @tc.desc: Reject a single HDR metadata field larger than 1 MiB.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, PixelMapTlvRejectOversizedMetadataTest001, TestSize.Level3)
+{
+    constexpr int32_t oversizedMetadataSize = 1024 * 1024 + 1;
+    std::vector<uint8_t> buff = BuildMinimalPixelMapTlv();
+    buff.pop_back();
+    ImageUtils::WriteUint8(buff, TLV_IMAGE_STATICMETADATA);
+    ImageUtils::WriteVarint(buff, oversizedMetadataSize);
+    buff.insert(buff.end(), oversizedMetadataSize, 0);
+    ImageUtils::WriteUint8(buff, TLV_END);
+
+    std::unique_ptr<PixelMap> pixelMap(PixelMap::DecodeTlv(buff));
+    EXPECT_EQ(pixelMap, nullptr);
+}
+
+/**
+ * @tc.name: PixelMapReadHeapDataRejectOversizedBufferTest001
+ * @tc.desc: Reject a heap Parcel buffer larger than the 128 MiB write limit.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, PixelMapReadHeapDataRejectOversizedBufferTest001, TestSize.Level3)
+{
+    Parcel parcel;
+    constexpr int32_t oversizedBuffer = static_cast<int32_t>(PixelMap::MAX_IMAGEDATA_SIZE + 1);
+    EXPECT_EQ(PixelMap::ReadHeapDataFromParcel(parcel, oversizedBuffer), nullptr);
+}
+
 static int g_getPos(std::vector<uint8_t> &buff, uint8_t findTag)
 {
     int32_t cursor = 0;
@@ -5669,12 +5813,18 @@ static int g_getPos(std::vector<uint8_t> &buff, uint8_t findTag)
         if (tag == findTag) {
             return cursor - 1;
         }
-        int32_t len = ImageUtils::ReadVarint(buff, cursor);
+        int32_t len = 0;
+        if (!ImageUtils::ReadVarint(buff, cursor, len)) {
+            return -1;
+        }
         if (tag == TLV_IMAGE_DATA || tag == TLV_IMAGE_STATICMETADATA || tag == TLV_IMAGE_DYNAMICMETADATA) {
             cursor += len;
             continue;
         }
-        ImageUtils::ReadVarint(buff, cursor);
+        int32_t value = 0;
+        if (!ImageUtils::ReadVarint(buff, cursor, value)) {
+            return -1;
+        }
     }
     return -1;
 }
