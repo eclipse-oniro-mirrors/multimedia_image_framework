@@ -54,7 +54,12 @@ XTS 用例不在本仓完整维护。涉及公开 API、错误码、默认值、
 
 ## 提交和推送
 
-所有提交在 push 之前，必须完成 `stability-code-review` 检视，并确认没有遗留问题。`stability-code-review` 是团队外部检查工具/skill，不是 Agent 内置能力；当前环境不可用时，先执行：
+提交在 push 前的 `stability-code-review` 检视采用询问制，按改动类型区分：
+
+- 若改动仅为 `test`、`docs`、注释、构建配置等非业务代码，不需要做 `stability-code-review`，也无需询问用户，直接跳过。
+- 若改动涉及业务代码（C++ 实现、公开 API、插件、内存/Surface、metadata、Parcel/TLV、跨进程传输等），在提交或 push 前向用户询问是否需要执行 `stability-code-review`；用户确认需要时再执行，用户明确不需要时可跳过。
+
+`stability-code-review` 是团队外部检查工具/skill，不是 Agent 内置能力；当前环境不可用时，先执行：
 
 ```sh
 npm i @ohos-graphics/stability-code-review
@@ -134,4 +139,4 @@ Agent 最终回复必须包含：
 - 修改的文件、行为影响面和明确未修改的关键文件。
 - 已执行的单测、fuzz、XTS 或真实设备验证命令；未执行时说明原因。
 - XTS 目标或真实设备验证无法确认时，列出缺口和需要人工确认的问题。
-- 若涉及提交或 push，说明 `stability-code-review` 结果、commit message 是否包含 `Signed-off-by` 和 `Co-Authored-By: Agent`。
+- 若涉及提交或 push，说明 `stability-code-review` 询问/执行情况（非业务代码可省略）、commit message 是否包含 `Signed-off-by` 和 `Co-Authored-By: Agent`。

@@ -146,6 +146,11 @@ heif_error HeifIlocBox::ReadData(const Item &item, const std::shared_ptr<HeifInp
     size_t totalSize = 0;
     for (const auto &extent: item.extents) {
         CHECK_ERROR_RETURN_RET(HasOverflowed64(extent.offset, item.baseOffset), heif_error_eof);
+        if (extent.length > MAX_HEIF_IMAGE_GRID_SIZE) {
+            return heif_error_grid_too_large;
+        }
+        totalSize += extent.length;
+        CHECK_ERROR_RETURN_RET(totalSize > MAX_HEIF_IMAGE_GRID_SIZE, heif_error_grid_too_large);
 
         if (item.constructionMethod == CONSTRUCTION_METHOD_FILE_OFFSET) {
             bool ret = stream->Seek(extent.offset + item.baseOffset);
@@ -154,12 +159,6 @@ heif_error HeifIlocBox::ReadData(const Item &item, const std::shared_ptr<HeifInp
             }
 
             size_t oldSize = dest->size();
-            if (extent.length > MAX_HEIF_IMAGE_GRID_SIZE) {
-                return heif_error_grid_too_large;
-            }
-
-            totalSize += extent.length;
-            CHECK_ERROR_RETURN_RET(totalSize > MAX_HEIF_IMAGE_GRID_SIZE, heif_error_grid_too_large);
             dest->resize(static_cast<size_t>(oldSize + extent.length));
             ret = stream->Read(reinterpret_cast<char*>(dest->data()) + oldSize, static_cast<size_t>(extent.length));
             CHECK_ERROR_RETURN_RET(!ret, heif_error_eof);
@@ -481,6 +480,9 @@ heif_error HeifIdatBox::ReadData(const std::shared_ptr<HeifInputStream> &stream,
     }
 
     if (length > 0) {
+        if (HasOverflowed64(currSize, length) || (currSize + length) > MAX_HEIF_IMAGE_GRID_SIZE) {
+            return heif_error_grid_too_large;
+        }
         outData.resize(static_cast<size_t>(currSize + length));
         uint8_t *data = &outData[currSize];
 

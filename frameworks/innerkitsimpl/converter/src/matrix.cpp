@@ -34,7 +34,7 @@ Matrix &Matrix::Reset()
 
 Matrix &Matrix::SetTranslate(const float tx, const float ty)
 {
-    *this = Matrix(1, 0, tx, 0, 1, ty, 0, 1, 1, (tx == 0 || ty == 0) ? IDENTITY : TRANSLATE);
+    *this = Matrix(1, 0, tx, 0, 1, ty, 0, 1, 1, (tx == 0 && ty == 0) ? IDENTITY : TRANSLATE);
     return *this;
 }
 

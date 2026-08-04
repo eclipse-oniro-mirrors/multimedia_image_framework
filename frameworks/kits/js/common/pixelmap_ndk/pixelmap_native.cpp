@@ -1607,49 +1607,48 @@ static bool GetHdrMetadata(const OHOS::sptr<OHOS::SurfaceBuffer> &buffer,
     OH_Pixelmap_HdrMetadataKey key, OH_Pixelmap_HdrMetadataValue *metadataValue)
 {
     if (buffer == nullptr || metadataValue == nullptr) {
-        IMAGE_LOGE("GetHdrMetadata buffer is nullptr");
         return false;
     }
     switch (key) {
-        case OH_Pixelmap_HdrMetadataKey::HDR_METADATA_TYPE:
-            {
-                CM_HDR_Metadata_Type type;
-                VpeUtils::GetSbMetadataType(buffer, type);
-                if (MetadataNdkTypeMap.find(type) != MetadataNdkTypeMap.end()) {
-                    metadataValue->type = MetadataNdkTypeMap[type];
-                    return true;
-                }
+        case OH_Pixelmap_HdrMetadataKey::HDR_METADATA_TYPE: {
+            CM_HDR_Metadata_Type type;
+            VpeUtils::GetSbMetadataType(buffer, type);
+            if (auto it = MetadataNdkTypeMap.find(type); it != MetadataNdkTypeMap.end()) {
+                metadataValue->type = it->second;
+                return true;
             }
             break;
+        }
         case OH_Pixelmap_HdrMetadataKey::HDR_STATIC_METADATA:
             return GetStaticMetadata(buffer, metadataValue);
-            break;
-        case OH_Pixelmap_HdrMetadataKey::HDR_DYNAMIC_METADATA:
-            {
-                std::vector<uint8_t> dynamicData;
-                if (VpeUtils::GetSbDynamicMetadata(buffer, dynamicData) && (dynamicData.size() > 0)) {
-                    metadataValue->dynamicMetadata.data = (uint8_t*)malloc(dynamicData.size());
-                    if (metadataValue->dynamicMetadata.data == nullptr || memcpy_s(metadataValue->dynamicMetadata.data,
-                        dynamicData.size(), dynamicData.data(), dynamicData.size()) != EOK) {
-                        return false;
-                    }
-                    metadataValue->dynamicMetadata.length = dynamicData.size();
-                    return true;
+        case OH_Pixelmap_HdrMetadataKey::HDR_DYNAMIC_METADATA: {
+            std::vector<uint8_t> dynamicData;
+            if (VpeUtils::GetSbDynamicMetadata(buffer, dynamicData) && (dynamicData.size() > 0)) {
+                metadataValue->dynamicMetadata.data = (uint8_t*)malloc(dynamicData.size());
+                if (metadataValue->dynamicMetadata.data == nullptr) {
+                    return false;
                 }
+                if (memcpy_s(metadataValue->dynamicMetadata.data,
+                    dynamicData.size(), dynamicData.data(), dynamicData.size()) != EOK) {
+                    free(metadataValue->dynamicMetadata.data);
+                    return false;
+                }
+                metadataValue->dynamicMetadata.length = dynamicData.size();
+                return true;
             }
             break;
-        case OH_Pixelmap_HdrMetadataKey::HDR_GAINMAP_METADATA:
-            {
-                std::vector<uint8_t> gainmapData;
-                if (VpeUtils::GetSbDynamicMetadata(buffer, gainmapData) &&
-                    (gainmapData.size() == sizeof(HDRVividExtendMetadata))) {
-                    OH_Pixelmap_HdrGainmapMetadata &dst = metadataValue->gainmapMetadata;
-                    HDRVividExtendMetadata &src = *(reinterpret_cast<HDRVividExtendMetadata*>(gainmapData.data()));
-                    ConvertToOHGainmapMetadata(src, dst);
-                    return true;
-                }
+        }
+        case OH_Pixelmap_HdrMetadataKey::HDR_GAINMAP_METADATA: {
+            std::vector<uint8_t> gainmapData;
+            if (VpeUtils::GetSbDynamicMetadata(buffer, gainmapData) &&
+                (gainmapData.size() == sizeof(HDRVividExtendMetadata))) {
+                OH_Pixelmap_HdrGainmapMetadata &dst = metadataValue->gainmapMetadata;
+                HDRVividExtendMetadata &src = *(reinterpret_cast<HDRVividExtendMetadata*>(gainmapData.data()));
+                ConvertToOHGainmapMetadata(src, dst);
+                return true;
             }
             break;
+        }
         default:
             break;
     }
