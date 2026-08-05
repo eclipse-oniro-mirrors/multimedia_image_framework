@@ -5175,6 +5175,9 @@ bool ImageSource::DecodeJpegGainMap(ImageHdrType hdrType, float scale, DecodeCon
         return false;
     }
     metadata = jpegGainmapDecoder_->GetHdrMetadata(hdrType);
+    IMAGE_LOGI("HDR-IMAGE decode jpeg gainmap success, offset=%{public}u, size=%{public}dx%{public}d, "
+        "scale=%{public}.2f, hdrType=%{public}d", gainMapOffset, gainMapCtx.outInfo.size.width,
+        gainMapCtx.outInfo.size.height, scale, hdrType);
     return true;
 }
 
