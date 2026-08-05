@@ -2482,6 +2482,7 @@ bool PixelMap::WritePixels(const uint32_t &color)
                 UInt8ToAlphaF16(alpha, row + x * ALPHA_F16_BYTES);
             }
         }
+        ImageUtils::FlushSurfaceBuffer(this);
         return true;
     }
     ImageInfo srcInfo =
@@ -2490,6 +2491,7 @@ bool PixelMap::WritePixels(const uint32_t &color)
         IMAGE_LOGE("erase pixels by color call EraseBitmap fail.");
         return false;
     }
+    ImageUtils::FlushSurfaceBuffer(this);
     return true;
 }
 
@@ -4211,6 +4213,7 @@ uint32_t PixelMap::ConvertAlphaFormat(PixelMap &wPixelMap, const bool isPremul)
             }
         }
         wPixelMap.SetAlphaType(isPremul ? AlphaType::IMAGE_ALPHA_TYPE_PREMUL : AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
+        ImageUtils::FlushSurfaceBuffer(&wPixelMap);
         return SUCCESS;
     }
     int8_t srcAlphaIndex = GetAlphaIndex(srcPixelFormat);
@@ -4227,6 +4230,7 @@ uint32_t PixelMap::ConvertAlphaFormat(PixelMap &wPixelMap, const bool isPremul)
     } else {
         wPixelMap.SetAlphaType(AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
     }
+    ImageUtils::FlushSurfaceBuffer(&wPixelMap);
     return SUCCESS;
 }
 
