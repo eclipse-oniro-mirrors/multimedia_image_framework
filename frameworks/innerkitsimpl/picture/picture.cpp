@@ -624,11 +624,6 @@ std::unique_ptr<Picture> Picture::DeepCopy(std::shared_ptr<Picture> srcPicture,
 
 static bool ShouldComposeAsCuva(const sptr<SurfaceBuffer> &baseSptr, const sptr<SurfaceBuffer> &gainmapSptr)
 {
-    std::vector<uint8_t> baseStaticMetadata;
-    VpeUtils::GetSbStaticMetadata(baseSptr, baseStaticMetadata);
-    std::vector<uint8_t> baseDynamicMetadata;
-    VpeUtils::GetSbDynamicMetadata(gainmapSptr, baseDynamicMetadata);
-    CHECK_ERROR_RETURN_RET(baseStaticMetadata.size() == 0 || baseDynamicMetadata.size() == 0, true);
     std::vector<uint8_t> gainmapDynamicMetadata;
     VpeUtils::GetSbDynamicMetadata(gainmapSptr, gainmapDynamicMetadata);
     CHECK_ERROR_RETURN_RET(gainmapDynamicMetadata.size() != sizeof(HDRVividExtendMetadata), true);
