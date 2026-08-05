@@ -37,6 +37,9 @@ namespace Media {
 const std::string IMAGE_ENCODE_FORMAT = "encodeFormat";
 constexpr uint32_t MALLOC_MAX_LENTH = 0x40000000;
 constexpr uint32_t MAX_TLV_HEAP_SIZE = 128 * 1021 * 1024;
+constexpr uint32_t MAX_TLV_METADATA_SIZE = 1024 * 1024;
+constexpr size_t MAX_TLV_SIZE = static_cast<size_t>(MAX_TLV_HEAP_SIZE) +
+    2U * static_cast<size_t>(MAX_TLV_METADATA_SIZE) + 4U * 1024U;
 constexpr int32_t APIVERSION_13 = 13;
 constexpr int32_t APIVERSION_20 = 20;
 static constexpr uint8_t TLV_VARINT_BITS = 7;
@@ -277,7 +280,7 @@ public:
     static uint16_t GetRGBA1010102ColorA(uint32_t color);
     static bool CheckPixelsInput(PixelMap* pixelMap, const RWPixelsOptions &opts);
     static bool FloatEqual(float a, float b);
-    static int32_t ReadVarint(std::vector<uint8_t> &buff, int32_t &cursor);
+    static bool ReadVarint(std::vector<uint8_t> &buff, int32_t &cursor, int32_t &value);
     static std::unique_ptr<AbsMemory> ReadData(std::vector<uint8_t> &buff, int32_t size, int32_t &cursor,
         AllocatorType allocType, ImageInfo imageInfo);
     static int32_t AllocPixelMapMemory(std::unique_ptr<AbsMemory> &dstMemory, int32_t &dstRowStride,
