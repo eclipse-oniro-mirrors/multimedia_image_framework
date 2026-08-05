@@ -953,7 +953,8 @@ static std::string GetStringArgumentForModify(napi_env env, napi_value value)
     return strValue;
 }
 
-static void ImageSourceCallbackRoutine(napi_env env, ImageSourceAsyncContext* &context, const napi_value &valueParam)
+static void ImageSourceCallbackRoutine(napi_env env, ImageSourceAsyncContext* &context, const napi_value &valueParam,
+    bool codeAsNumber = false)
 {
     napi_value result[NUM_2] = {0};
     napi_value retVal;
@@ -971,7 +972,7 @@ static void ImageSourceCallbackRoutine(napi_env env, ImageSourceAsyncContext* &c
         result[NUM_1] = valueParam;
     } else if (context->errMsgArray.size() > 0) {
         for (const auto &[errorCode, errMsg] : context->errMsgArray) {
-            ImageNapiUtils::CreateErrorObj(env, result[NUM_0], errorCode, errMsg);
+            ImageNapiUtils::CreateErrorObj(env, result[NUM_0], errorCode, errMsg, codeAsNumber);
         }
     } else if (context->errMsg.size() > 0) {
         napi_create_string_utf8(env, context->errMsg.c_str(), NAPI_AUTO_LENGTH, &result[NUM_0]);
@@ -2475,7 +2476,7 @@ static void CreateThumbnailComplete(napi_env env, napi_status status, void *data
         napi_get_undefined(env, &result);
     }
     IMAGE_LOGD("[ImageSourceNapi]CreateThumbnailComplete OUT");
-    ImageSourceCallbackRoutine(env, context, result);
+    ImageSourceCallbackRoutine(env, context, result, true);
 }
 
 static napi_value CreatePixelMapCompleteSync(napi_env env, napi_status status, ImageSourceSyncContext *context)
@@ -2519,7 +2520,7 @@ static napi_value CreateThumbnailSyncComplete(napi_env env, napi_status status,
 
     if (context->status != SUCCESS) {
         for (const auto &[errorCode, errMsg] : context->errMsgArray) {
-            ImageNapiUtils::ThrowExceptionError(env, errorCode, errMsg);
+            ImageNapiUtils::ThrowExceptionError(env, errorCode, errMsg, true);
         }
     }
     return result;
@@ -5455,11 +5456,11 @@ napi_value ImageSourceNapi::CreateThumbnail(napi_env env, napi_callback_info inf
                 &(asyncContext->decodingOptsForThumbnail))) {
                 IMAGE_LOGE("DecodingOptionsForThumbnail mismatch");
                 return ImageNapiUtils::ThrowExceptionError(env, IMAGE_SOURCE_INVALID_PARAMETER,
-                    "DecodingOptionsForThumbnail mismatch");
+                    "DecodingOptionsForThumbnail mismatch", true);
             }
         } else {
             return ImageNapiUtils::ThrowExceptionError(env, IMAGE_SOURCE_INVALID_PARAMETER,
-                "DecodingOptionsForThumbnail type mismatch");
+                "DecodingOptionsForThumbnail type mismatch", true);
         }
     }
     napi_create_promise(env, &(asyncContext->deferred), &result);
@@ -5495,11 +5496,11 @@ napi_value ImageSourceNapi::CreateThumbnailSync(napi_env env, napi_callback_info
                 &(syncContext->decodingOptsForThumbnail))) {
                 IMAGE_LOGE("DecodingOptionsForThumbnail mismatch");
                 return ImageNapiUtils::ThrowExceptionError(env, IMAGE_SOURCE_INVALID_PARAMETER,
-                    "DecodingOptionsForThumbnail mismatch");
+                    "DecodingOptionsForThumbnail mismatch", true);
             }
         } else {
             return ImageNapiUtils::ThrowExceptionError(env, IMAGE_SOURCE_INVALID_PARAMETER,
-                "DecodingOptionsForThumbnail type mismatch");
+                "DecodingOptionsForThumbnail type mismatch", true);
         }
     }
     syncContext->rPixelMap = syncContext->constructor_->nativeImgSrc->CreateThumbnail(

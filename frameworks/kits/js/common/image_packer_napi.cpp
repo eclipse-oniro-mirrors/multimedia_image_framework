@@ -104,6 +104,7 @@ struct ImagePackerAsyncContext {
     int fd = INVALID_FD;
     ImagePackerError error;
     bool needReturnErrorCode = true;
+    bool useBusinessError = false;
     uint32_t frameCount;
     // For TIFF binary image encoding
     PixelBufferInfo bufferInfo;
@@ -181,6 +182,10 @@ static void ImagePackerErrorToNapiError(napi_env env, ImagePackerAsyncContext *c
     }
 
     auto errorCode = (ctx->error.errorCode != SUCCESS) ? ctx->error.errorCode : ctx->status;
+    if (ctx->useBusinessError) {
+        ImageNapiUtils::CreateErrorObj(env, out, errorCode, msg, true);
+        return;
+    }
     napi_value message;
     napi_value code;
     if (napi_create_object(env, &out) != napi_ok) {
@@ -1513,6 +1518,7 @@ napi_value ImagePackerNapi::PackBinaryImageToTiffFile(napi_env env, napi_callbac
     NAPI_ASSERT(env, IMG_IS_OK(status), "fail to napi_get_cb_info");
 
     std::unique_ptr<ImagePackerAsyncContext> asyncContext = std::make_unique<ImagePackerAsyncContext>();
+    asyncContext->useBusinessError = true;
     status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->constructor_));
     NAPI_ASSERT(env, IMG_IS_READY(status, asyncContext->constructor_), "fail to unwrap constructor_");
 
@@ -1605,6 +1611,7 @@ napi_value ImagePackerNapi::PackBinaryImageToTiffData(napi_env env, napi_callbac
     NAPI_ASSERT(env, IMG_IS_OK(status), "fail to napi_get_cb_info");
 
     std::unique_ptr<ImagePackerAsyncContext> asyncContext = std::make_unique<ImagePackerAsyncContext>();
+    asyncContext->useBusinessError = true;
     status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->constructor_));
     NAPI_ASSERT(env, IMG_IS_READY(status, asyncContext->constructor_), "fail to unwrap constructor_");
 
