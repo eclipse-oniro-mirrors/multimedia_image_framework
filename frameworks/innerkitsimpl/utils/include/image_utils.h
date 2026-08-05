@@ -136,9 +136,9 @@ public:
     static bool IsValidAuxiliaryInfo(const std::shared_ptr<PixelMap> &pixelMap, const AuxiliaryPictureInfo &info);
     static bool IsAstc(PixelFormat format);
     static bool IsWidthAligned(const int32_t &width);
-    static bool IsSizeSupportDma(const Size &size);
+    static bool IsSizeSupportDma(const Size &size, bool isUseDefaultDmaNopadding = false);
     static bool IsFormatSupportDma(const PixelFormat &format);
-    static bool IsSupportDefaultDmaNopadding(const PixelFormat &format);
+    static bool IsSupportDefaultDmaNopadding(const Size &size, const PixelFormat &format);
     static bool Is10Bit(const PixelFormat &format);
     static MultimediaPlugin::PluginServer& GetPluginServer();
     static bool CheckMulOverflow(int32_t width, int32_t bytesPerPixel);

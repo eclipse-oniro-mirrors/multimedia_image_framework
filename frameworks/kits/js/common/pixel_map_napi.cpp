@@ -6976,7 +6976,8 @@ napi_value PixelMapNapi::GetMetadata(napi_env env, napi_callback_info info)
         return ImageNapiUtils::ThrowExceptionError(env, COMMON_ERR_INVALID_PARAMETER, "Fail to unwrap context");
     }
     std::shared_ptr<PixelMap> pixelMap = nVal.context->nConstructor->nativePixelMap_;
-    if (pixelMap->GetAllocatorType() != AllocatorType::DMA_ALLOC) {
+    if (pixelMap->GetAllocatorType() != AllocatorType::DMA_ALLOC ||
+        pixelMap->IsUseDefaultDmaNopadding()) {
         return ImageNapiUtils::ThrowExceptionError(env, ERR_DMA_NOT_EXIST, "Not DMA memory");
     }
 
@@ -7276,7 +7277,8 @@ napi_value PixelMapNapi::SetMetadataSync(napi_env env, napi_callback_info info)
             env, ERR_IMAGE_INVALID_PARAMETER, "Invalid parameter");
     }
     std::shared_ptr<PixelMap> pixelMap = nVal.context->nConstructor->nativePixelMap_;
-    if (pixelMap->GetAllocatorType() != AllocatorType::DMA_ALLOC) {
+    if (pixelMap->GetAllocatorType() != AllocatorType::DMA_ALLOC ||
+        pixelMap->IsUseDefaultDmaNopadding()) {
         return ImageNapiUtils::ThrowExceptionError(
             env, ERR_DMA_NOT_EXIST, "Not DMA memory");
     }
@@ -7317,7 +7319,8 @@ napi_value PixelMapNapi::SetMetadata(napi_env env, napi_callback_info info)
         nVal.context->status = ERR_IMAGE_INVALID_PARAMETER;
     }
     nVal.context->rPixelMap = nVal.context->nConstructor->nativePixelMap_;
-    if (nVal.context->rPixelMap->GetAllocatorType() != AllocatorType::DMA_ALLOC) {
+    if (nVal.context->rPixelMap->GetAllocatorType() != AllocatorType::DMA_ALLOC ||
+        nVal.context->rPixelMap->IsUseDefaultDmaNopadding()) {
         nVal.context->status = ERR_DMA_NOT_EXIST;
     }
     if (nVal.context->status == napi_ok) {

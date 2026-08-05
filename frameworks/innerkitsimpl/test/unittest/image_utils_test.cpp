@@ -1326,6 +1326,140 @@ HWTEST_F(ImageUtilsTest, IsSizeSupportDmaTest002, TestSize.Level3)
 }
 
 /**
+ * @tc.name: IsSizeSupportDmaTest003
+ * @tc.desc: test IsSizeSupportDma method with isUseDefaultDmaNopadding when size is below the 256x256 threshold
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageUtilsTest, IsSizeSupportDmaTest003, TestSize.Level3)
+{
+    Size size;
+    size.width = 0;
+    size.height = 0;
+    EXPECT_FALSE(ImageUtils::IsSizeSupportDma(size, true));
+
+    size.width = 0;
+    size.height = 100;
+    EXPECT_FALSE(ImageUtils::IsSizeSupportDma(size, true));
+
+    size.width = 1;
+    size.height = 1;
+    EXPECT_FALSE(ImageUtils::IsSizeSupportDma(size, true));
+
+    size.width = 256;
+    size.height = 255;
+    EXPECT_FALSE(ImageUtils::IsSizeSupportDma(size, true));
+}
+
+/**
+ * @tc.name: IsSizeSupportDmaTest004
+ * @tc.desc: test IsSizeSupportDma method with isUseDefaultDmaNopadding at and above the 256x256 threshold boundary
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageUtilsTest, IsSizeSupportDmaTest004, TestSize.Level3)
+{
+    Size size;
+    size.width = 256;
+    size.height = 256;
+    EXPECT_TRUE(ImageUtils::IsSizeSupportDma(size, true));
+
+    size.width = 255;
+    size.height = 256;
+    EXPECT_FALSE(ImageUtils::IsSizeSupportDma(size, true));
+
+    size.width = 1;
+    size.height = 65535;
+    EXPECT_FALSE(ImageUtils::IsSizeSupportDma(size, true));
+
+    size.width = 1;
+    size.height = 65536;
+    EXPECT_TRUE(ImageUtils::IsSizeSupportDma(size, true));
+
+    size.width = 512;
+    size.height = 512;
+    EXPECT_TRUE(ImageUtils::IsSizeSupportDma(size, true));
+}
+
+/**
+ * @tc.name: IsSizeSupportDmaTest005
+ * @tc.desc: test IsSizeSupportDma method with isUseDefaultDmaNopadding when width is positive and height overflows
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageUtilsTest, IsSizeSupportDmaTest005, TestSize.Level3)
+{
+    Size size;
+    size.width = TEST_HEIGHT_MEDIUM;
+    size.height = TEST_BYTE_COUNT_LARGE;
+    EXPECT_FALSE(ImageUtils::IsSizeSupportDma(size, true));
+
+    size.width = 50000;
+    size.height = 50000;
+    EXPECT_FALSE(ImageUtils::IsSizeSupportDma(size, true));
+}
+
+/**
+ * @tc.name: IsSupportDefaultDmaNopaddingTest001
+ * @tc.desc: test IsSupportDefaultDmaNopadding adapts to no-padding system property on different devices
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageUtilsTest, IsSupportDefaultDmaNopaddingTest001, TestSize.Level3)
+{
+    bool combinedEnabled = ImageSystemProperties::GetNoPaddingEnabled() &&
+        ImageSystemProperties::GetDefaultDmaNoPaddingEnabled();
+    Size size;
+    size.width = 256;
+    size.height = 256;
+    EXPECT_EQ(ImageUtils::IsSupportDefaultDmaNopadding(size, PixelFormat::RGBA_8888), combinedEnabled);
+    EXPECT_EQ(ImageUtils::IsSupportDefaultDmaNopadding(size, PixelFormat::BGRA_8888), combinedEnabled);
+    EXPECT_FALSE(ImageUtils::IsSupportDefaultDmaNopadding(size, PixelFormat::RGB_565));
+
+    size.width = 100;
+    size.height = 100;
+    EXPECT_FALSE(ImageUtils::IsSupportDefaultDmaNopadding(size, PixelFormat::RGBA_8888));
+}
+
+/**
+ * @tc.name: GetPixelMapAllocatorTypeTest001
+ * @tc.desc: test GetPixelMapAllocatorType covers main DMA, no-padding DMA and SHARE_MEM branches
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageUtilsTest, GetPixelMapAllocatorTypeTest001, TestSize.Level3)
+{
+    bool combinedEnabled = ImageSystemProperties::GetNoPaddingEnabled() &&
+        ImageSystemProperties::GetDefaultDmaNoPaddingEnabled();
+    uint64_t usage = 0;
+    bool isUseDefaultDmaNopadding = false;
+
+    Size dmaSize;
+    dmaSize.width = 512;
+    dmaSize.height = 512;
+    usage = 0;
+    AllocatorType type = ImageUtils::GetPixelMapAllocatorType(dmaSize, PixelFormat::RGBA_8888, false, usage);
+    EXPECT_EQ(type, AllocatorType::DMA_ALLOC);
+
+    Size nopadSize;
+    nopadSize.width = 256;
+    nopadSize.height = 256;
+    usage = 0;
+    isUseDefaultDmaNopadding = false;
+    type = ImageUtils::GetPixelMapAllocatorType(nopadSize, PixelFormat::BGRA_8888, false, usage,
+        isUseDefaultDmaNopadding);
+    if (combinedEnabled) {
+        EXPECT_EQ(type, AllocatorType::DMA_ALLOC);
+        EXPECT_TRUE(isUseDefaultDmaNopadding);
+    } else {
+        EXPECT_EQ(type, AllocatorType::SHARE_MEM_ALLOC);
+        EXPECT_FALSE(isUseDefaultDmaNopadding);
+    }
+
+    Size smallSize;
+    smallSize.width = 100;
+    smallSize.height = 100;
+    usage = 0;
+    type = ImageUtils::GetPixelMapAllocatorType(smallSize, PixelFormat::RGBA_8888, false, usage);
+    EXPECT_EQ(type, AllocatorType::SHARE_MEM_ALLOC);
+}
+
+/**
  * @tc.name: CheckMulOverflowTest011
  * @tc.desc: test CheckMulOverflow witdh only method when size overflow
  * @tc.type: FUNC

@@ -3671,7 +3671,7 @@ static std::map<uint8_t, std::function<bool(TlvDecodeInfo&, vector<uint8_t>&, in
             }
             if (decodeInfo.isHdr == NUM_1) {
                 decodeInfo.allocType = static_cast<int32_t>(AllocatorType::DMA_ALLOC);
-            } else if (ImageUtils::IsSupportDefaultDmaNopadding(decodeInfo.info.pixelFormat)) {
+            } else if (ImageUtils::IsSupportDefaultDmaNopadding(decodeInfo.info.size, decodeInfo.info.pixelFormat)) {
                 decodeInfo.allocType = static_cast<int32_t>(AllocatorType::DEFAULT);
             }
             return true;
