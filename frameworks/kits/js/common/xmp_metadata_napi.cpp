@@ -363,7 +363,7 @@ static void CommonCallbackRoutine(napi_env env, XMPMetadataAsyncContext* &contex
     } else {
         const auto [errorCode, errMsg] = makeErrMsg(context->status);
         std::string combinedErrMsg = context->errMsg.empty() ? errMsg : (errMsg + " " + context->errMsg);
-        OHOS::Media::ImageNapiUtils::CreateErrorObj(env, result[NUM_0], errorCode, combinedErrMsg);
+        OHOS::Media::ImageNapiUtils::CreateErrorObj(env, result[NUM_0], errorCode, combinedErrMsg, true);
     }
 
     if (context->deferred) {
@@ -412,12 +412,12 @@ napi_value XMPMetadataNapi::SetValue(napi_env env, napi_callback_info info)
     IMG_JS_ARGS(env, info, status, argCount, argValue, thisVar);
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), result, IMAGE_LOGE("Fail to napi_get_cb_info"));
     if (argCount < NUM_2 || argCount > NUM_3) {
-        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_INVALID_PARAMETER, "Invalid argument count");
+        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_INVALID_PARAMETER, "Invalid argument count", true);
     }
 
     auto asyncContext = UnwrapXMPMetadataIntoContext(env, thisVar);
     if (asyncContext == nullptr) {
-        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_INVALID_PARAMETER, "Unwrap XMPMetadata failed");
+        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_INVALID_PARAMETER, "Unwrap XMPMetadata failed", true);
     }
 
     // Parse arguments
@@ -426,7 +426,7 @@ napi_value XMPMetadataNapi::SetValue(napi_env env, napi_callback_info info)
     napi_get_value_int32(env, argValue[NUM_1], &typeValue);
     if (!XMPMetadata::IsValidTagType(static_cast<XMPTagType>(typeValue))) {
         IMAGE_LOGE("Invalid tag type: %{public}d", typeValue);
-        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_INVALID_PARAMETER, "Invalid tag type");
+        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_INVALID_PARAMETER, "Invalid tag type", true);
     }
     asyncContext->tagType = static_cast<XMPTagType>(typeValue);
     if (argCount == NUM_3) {
@@ -479,12 +479,12 @@ napi_value XMPMetadataNapi::GetTag(napi_env env, napi_callback_info info)
     IMG_JS_ARGS(env, info, status, argCount, argValue, thisVar);
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), result, IMAGE_LOGE("Fail to napi_get_cb_info"));
     if (argCount != NUM_1) {
-        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_INVALID_PARAMETER, "Invalid argument count");
+        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_INVALID_PARAMETER, "Invalid argument count", true);
     }
 
     auto asyncContext = UnwrapXMPMetadataIntoContext(env, thisVar);
     if (asyncContext == nullptr) {
-        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_INVALID_PARAMETER, "Unwrap XMPMetadata failed");
+        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_INVALID_PARAMETER, "Unwrap XMPMetadata failed", true);
     }
 
     asyncContext->path = ImageNapiUtils::GetStringArgument(env, argValue[NUM_0]);
@@ -528,12 +528,12 @@ napi_value XMPMetadataNapi::RemoveTag(napi_env env, napi_callback_info info)
     IMG_JS_ARGS(env, info, status, argCount, argValue, thisVar);
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), result, IMAGE_LOGE("Fail to napi_get_cb_info"));
     if (argCount != NUM_1) {
-        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_INVALID_PARAMETER, "Invalid argument count");
+        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_INVALID_PARAMETER, "Invalid argument count", true);
     }
 
     auto asyncContext = UnwrapXMPMetadataIntoContext(env, thisVar);
     if (asyncContext == nullptr) {
-        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_INVALID_PARAMETER, "Unwrap XMPMetadata failed");
+        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_INVALID_PARAMETER, "Unwrap XMPMetadata failed", true);
     }
 
     asyncContext->path = ImageNapiUtils::GetStringArgument(env, argValue[NUM_0]);
@@ -597,23 +597,23 @@ napi_value XMPMetadataNapi::RegisterXMPNamespace(napi_env env, napi_callback_inf
     IMG_JS_ARGS(env, info, status, argCount, argValue, thisVar);
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), result, IMAGE_LOGE("Fail to napi_get_cb_info"));
     if (argCount != NUM_1) {
-        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_INVALID_PARAMETER, "Invalid argument count");
+        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_INVALID_PARAMETER, "Invalid argument count", true);
     }
 
     auto asyncContext = UnwrapXMPMetadataIntoContext(env, thisVar);
     if (asyncContext == nullptr) {
-        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_INVALID_PARAMETER, "Unwrap XMPMetadata failed");
+        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_INVALID_PARAMETER, "Unwrap XMPMetadata failed", true);
     }
 
     napi_valuetype type0 = ImageNapiUtils::getType(env, argValue[NUM_0]);
     if (type0 != napi_object) {
         return ImageNapiUtils::ThrowExceptionError(env, IMAGE_INVALID_PARAMETER,
-            "First argument must be a XMPNamespace object");
+            "First argument must be a XMPNamespace object", true);
     }
     ParseXMPNamespace(env, argValue[NUM_0], asyncContext->xmlns, asyncContext->prefix);
     if (asyncContext->xmlns.empty() || asyncContext->prefix.empty()) {
         return ImageNapiUtils::ThrowExceptionError(env, IMAGE_INVALID_PARAMETER,
-            "XMPNamespace.uri or XMPNamespace.prefix is empty");
+            "XMPNamespace.uri or XMPNamespace.prefix is empty", true);
     }
 
     napi_create_promise(env, &(asyncContext->deferred), &result);
@@ -732,24 +732,24 @@ napi_value XMPMetadataNapi::EnumerateTags(napi_env env, napi_callback_info info)
     // At least callback is required
     if (argc < NUM_1) {
         return ImageNapiUtils::ThrowExceptionError(env, IMAGE_INVALID_PARAMETER,
-            "Invalid argument count, at least callback is required");
+            "Invalid argument count, at least callback is required", true);
     }
 
     // Unwrap native object
     auto context = UnwrapXMPMetadataIntoContext(env, thisVar);
     if (context == nullptr) {
-        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_INVALID_PARAMETER, "Unwrap XMPMetadata failed");
+        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_INVALID_PARAMETER, "Unwrap XMPMetadata failed", true);
     }
     std::shared_ptr<XMPMetadata> nativePtr = context->rXMPMetadata;
     if (!nativePtr) {
-        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_INVALID_PARAMETER, "Native XMPMetadata is null");
+        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_INVALID_PARAMETER, "Native XMPMetadata is null", true);
     }
 
     // First parameter must be callback function
     napi_valuetype type0 = ImageNapiUtils::getType(env, argv[0]);
     if (type0 != napi_function) {
         return ImageNapiUtils::ThrowExceptionError(env, IMAGE_INVALID_PARAMETER,
-            "First argument must be a callback function");
+            "First argument must be a callback function", true);
     }
     context->callbackValue = argv[0];
 
@@ -769,7 +769,7 @@ napi_value XMPMetadataNapi::EnumerateTags(napi_env env, napi_callback_info info)
 
     if (!ProcessEnumerateTags(env, context, nativePtr)) {
         const auto [errorCode, errMsg] = ImageErrorConvert::XMPMetadataCommonMakeErrMsg(context->status);
-        return ImageNapiUtils::ThrowExceptionError(env, errorCode, errMsg);
+        return ImageNapiUtils::ThrowExceptionError(env, errorCode, errMsg, true);
     }
     IMAGE_LOGD("EnumerateTags completed successfully");
     return result;
@@ -821,7 +821,7 @@ napi_value XMPMetadataNapi::GetTags(napi_env env, napi_callback_info info)
 
     auto asyncContext = UnwrapXMPMetadataIntoContext(env, thisVar);
     if (asyncContext == nullptr) {
-        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_INVALID_PARAMETER, "Unwrap XMPMetadata failed");
+        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_INVALID_PARAMETER, "Unwrap XMPMetadata failed", true);
     }
 
     // Parse optional arguments: rootPath and options
@@ -877,19 +877,19 @@ napi_value XMPMetadataNapi::SetBlob(napi_env env, napi_callback_info info)
     IMG_JS_ARGS(env, info, status, argCount, argValue, thisVar);
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), result, IMAGE_LOGE("Fail to napi_get_cb_info"));
     if (argCount != NUM_1) {
-        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_INVALID_PARAMETER, "Invalid argument count");
+        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_INVALID_PARAMETER, "Invalid argument count", true);
     }
 
     auto asyncContext = UnwrapXMPMetadataIntoContext(env, thisVar);
     if (asyncContext == nullptr) {
-        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_INVALID_PARAMETER, "Unwrap XMPMetadata failed");
+        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_INVALID_PARAMETER, "Unwrap XMPMetadata failed", true);
     }
 
     // Parse argument
     status = napi_get_arraybuffer_info(env, argValue[NUM_0],
         &(asyncContext->arrayBuffer), &(asyncContext->arrayBufferSize));
     if (status != napi_ok || asyncContext->arrayBuffer == nullptr || asyncContext->arrayBufferSize == NUM_0) {
-        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_INVALID_PARAMETER, "Invalid blob data");
+        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_INVALID_PARAMETER, "Invalid blob data", true);
     }
 
     napi_create_promise(env, &(asyncContext->deferred), &result);
@@ -959,7 +959,7 @@ napi_value XMPMetadataNapi::GetBlob(napi_env env, napi_callback_info info)
 
     auto asyncContext = UnwrapXMPMetadataIntoContext(env, thisVar);
     if (asyncContext == nullptr) {
-        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_INVALID_PARAMETER, "Unwrap XMPMetadata failed");
+        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_INVALID_PARAMETER, "Unwrap XMPMetadata failed", true);
     }
 
     napi_create_promise(env, &(asyncContext->deferred), &result);

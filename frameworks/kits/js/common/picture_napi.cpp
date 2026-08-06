@@ -706,7 +706,7 @@ napi_value PictureNapi::CreatePictureByHdrAndSdrPixelMap(napi_env env, napi_call
     if (!ImageSystemProperties::IsSystemApp()) {
         IMAGE_LOGE("This interface can be called only by system apps");
         return ImageNapiUtils::ThrowExceptionError(env, IMAGE_PERMISSIONS_FAILED,
-            "This interface can be called only by system apps");
+            "This interface can be called only by system apps", true);
     }
     if (sConstructor_ == nullptr) {
         napi_value exports = nullptr;
@@ -720,25 +720,25 @@ napi_value PictureNapi::CreatePictureByHdrAndSdrPixelMap(napi_env env, napi_call
     napi_value thisVar = nullptr;
     napi_value argValue[NUM_3] = {0};
     size_t argCount = NUM_3;
-    IMAGE_LOGD("CreatePictureByHdrAndSdrPixelMap IN");
     IMG_JS_ARGS(env, info, status, argCount, argValue, thisVar);
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER,
         "Invalid args"), IMAGE_LOGE("fail to napi_get_cb_info"));
+    const bool codeAsNumber = argCount >= NUM_3;
     IMG_NAPI_CHECK_RET_D(argCount >= NUM_2 && argCount <= NUM_3,
-        ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER, "Invalid args count"),
+        ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER, "Invalid args count", codeAsNumber),
         IMAGE_LOGE("Invalid args count %{public}zu", argCount));
     std::unique_ptr<PictureAsyncContext> asyncContext = std::make_unique<PictureAsyncContext>();
     if (!ParsePixelMapParameter(env, argValue[NUM_0], "hdr", asyncContext->rHdrPixelMap)) {
-        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER, "Invalid hdr PixelMap parameter");
+        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER,
+            "Invalid hdr PixelMap parameter", codeAsNumber);
     }
     if (!ParsePixelMapParameter(env, argValue[NUM_1], "sdr", asyncContext->rPixelMap)) {
-        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER, "Invalid sdr PixelMap parameter");
+        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER,
+            "Invalid sdr PixelMap parameter", codeAsNumber);
     }
     GainmapParams gainmapParams;
-    if (argCount == NUM_3) {
-        if (!ParseGainmapParams(env, argValue[NUM_2], &gainmapParams)) {
-            return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER, "Invalid gainmap params");
-        }
+    if (argCount == NUM_3 && !ParseGainmapParams(env, argValue[NUM_2], &gainmapParams)) {
+        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER, "Invalid gainmap params", codeAsNumber);
     }
     asyncContext->gainmapParams = gainmapParams;
     CreatePictureByHdrAndSdrPixelMapExec(env, static_cast<void*>((asyncContext).get()));
@@ -819,7 +819,7 @@ napi_value PictureNapi::DecomposeToPicture(napi_env env, napi_callback_info info
     if (!ImageSystemProperties::IsSystemApp()) {
         IMAGE_LOGE("PictureNapi::DecomposeToPicture can be called only by system apps");
         return ImageNapiUtils::ThrowExceptionError(env, IMAGE_PERMISSIONS_FAILED,
-            "DecomposeToPicture can be called only by system apps");
+            "DecomposeToPicture can be called only by system apps", true);
     }
  
     if (sConstructor_ == nullptr) {
@@ -836,18 +836,19 @@ napi_value PictureNapi::DecomposeToPicture(napi_env env, napi_callback_info info
     size_t argCount = NUM_2;
     IMG_JS_ARGS(env, info, status, argCount, argValue, thisVar);
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER,
-        "Invalid args"), IMAGE_LOGE("fail to napi_get_cb_info"));
+        "Invalid args", true), IMAGE_LOGE("fail to napi_get_cb_info"));
     IMG_NAPI_CHECK_RET_D(argCount >= NUM_1 && argCount <= NUM_2,
-        ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER, "Invalid args count"),
+        ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER, "Invalid args count", true),
         IMAGE_LOGE("Invalid args count %{public}zu", argCount));
  
     std::unique_ptr<PictureAsyncContext> asyncContext = std::make_unique<PictureAsyncContext>();
     if (!ParsePixelMapParameter(env, argValue[NUM_0], "hdr", asyncContext->rHdrPixelMap)) {
         return ImageNapiUtils::ThrowExceptionError(env, IMAGE_INVALID_PARAMETER,
-            "hdrPixelMap is empty");
+            "hdrPixelMap is empty", true);
     }
     if (argCount == NUM_2 && !ParseDecomposeOptions(env, argValue[NUM_1], &asyncContext->decomposeOption)) {
-        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER, "Invalid DecomposeOptions parameter");
+        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER,
+            "Invalid DecomposeOptions parameter", true);
     }
  
     napi_create_promise(env, &(asyncContext->deferred), &result);
@@ -1331,11 +1332,11 @@ napi_value PictureNapi::HdrComposeToMainPixelmap(napi_env env, napi_callback_inf
     asyncContext->rPicture = asyncContext->nConstructor->nativePicture_;
     IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->rPicture), result, IMAGE_LOGE("Empty native picture"));
     if (asyncContext->rPicture->GetAuxiliaryPicture(AuxiliaryPictureType::GAINMAP) == nullptr) {
-        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_UNSUPPORTED_OPERATION, "There is no GAINMAP");
+        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_UNSUPPORTED_OPERATION, "There is no GAINMAP", true);
     }
     if (asyncContext->rPicture->GetMainPixel()->GetAllocatorType() != AllocatorType::DMA_ALLOC ||
         asyncContext->rPicture->GetGainmapPixelMap()->GetAllocatorType() != AllocatorType::DMA_ALLOC) {
-        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_UNSUPPORTED_OPERATION, "Pixelmap is not DMA");
+        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_UNSUPPORTED_OPERATION, "Pixelmap is not DMA", true);
     }
     napi_create_promise(env, &(asyncContext->deferred), &result);
 
