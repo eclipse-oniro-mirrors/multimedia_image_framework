@@ -2318,7 +2318,7 @@ uint32_t PixelMap::WritePixel(const Position &pos, const uint32_t &color)
             return ERR_IMAGE_WRITE_PIXELMAP_FAILED;
         }
         UInt8ToAlphaF16(GetColorComp(color, BGRA32_A_SHIFT), pixel);
-        MarkDirty();
+        ImageUtils::FlushSurfaceBuffer(this);
         return SUCCESS;
     }
     ImageInfo srcImageInfo =
@@ -2330,6 +2330,7 @@ uint32_t PixelMap::WritePixel(const Position &pos, const uint32_t &color)
         IMAGE_LOGE("write pixel by pos call WritePixelsConvert fail.");
         return ERR_IMAGE_WRITE_PIXELMAP_FAILED;
     }
+    ImageUtils::FlushSurfaceBuffer(this);
     return SUCCESS;
 }
 
@@ -2400,7 +2401,7 @@ uint32_t PixelMap::WritePixels(const RWPixelsOptions &opts)
             return ERR_IMAGE_WRITE_PIXELMAP_FAILED;
         }
     }
-    MarkDirty();
+    ImageUtils::FlushSurfaceBuffer(this);
     return SUCCESS;
 }
 
@@ -2455,7 +2456,7 @@ uint32_t PixelMap::WritePixels(const uint8_t *source, const uint64_t &bufferSize
             }
         }
     }
-    MarkDirty();
+    ImageUtils::FlushSurfaceBuffer(this);
     return SUCCESS;
 }
 
@@ -2481,6 +2482,7 @@ bool PixelMap::WritePixels(const uint32_t &color)
                 UInt8ToAlphaF16(alpha, row + x * ALPHA_F16_BYTES);
             }
         }
+        ImageUtils::FlushSurfaceBuffer(this);
         return true;
     }
     ImageInfo srcInfo =
@@ -2489,6 +2491,7 @@ bool PixelMap::WritePixels(const uint32_t &color)
         IMAGE_LOGE("erase pixels by color call EraseBitmap fail.");
         return false;
     }
+    ImageUtils::FlushSurfaceBuffer(this);
     return true;
 }
 
@@ -4316,6 +4319,7 @@ uint32_t PixelMap::ConvertAlphaFormat(PixelMap &wPixelMap, const bool isPremul)
             }
         }
         wPixelMap.SetAlphaType(isPremul ? AlphaType::IMAGE_ALPHA_TYPE_PREMUL : AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
+        ImageUtils::FlushSurfaceBuffer(&wPixelMap);
         return SUCCESS;
     }
     int8_t srcAlphaIndex = GetAlphaIndex(srcPixelFormat);
@@ -4332,6 +4336,7 @@ uint32_t PixelMap::ConvertAlphaFormat(PixelMap &wPixelMap, const bool isPremul)
     } else {
         wPixelMap.SetAlphaType(AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
     }
+    ImageUtils::FlushSurfaceBuffer(&wPixelMap);
     return SUCCESS;
 }
 
@@ -4396,6 +4401,7 @@ uint32_t PixelMap::SetAlpha(const float percent)
             }
         }
     }
+    ImageUtils::FlushSurfaceBuffer(this);
     return SUCCESS;
 }
 
