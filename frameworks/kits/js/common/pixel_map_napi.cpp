@@ -835,6 +835,7 @@ extern "C" __attribute__((visibility("default"))) int32_t OHOS_MEDIA_UnAccessPix
     }
 
     pixmapNapi->UnlockPixelMap();
+    ImageUtils::FlushSurfaceBuffer(pixmapNapi->GetPixelNapiInner().get());
 
     return OHOS_IMAGE_RESULT_SUCCESS;
 }

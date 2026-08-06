@@ -1805,6 +1805,7 @@ Image_ErrorCode OH_PixelmapNative_UnaccessPixels(OH_PixelmapNative *pixelmap)
         return IMAGE_BAD_PARAMETER;
     }
     pixelmap->GetInnerPixelmap()->SetModifiable(true);
+    ImageUtils::FlushSurfaceBuffer(pixelmap->GetInnerPixelmap().get());
     return IMAGE_SUCCESS;
 }
 

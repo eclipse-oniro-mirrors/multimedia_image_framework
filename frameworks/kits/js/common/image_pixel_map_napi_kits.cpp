@@ -17,6 +17,7 @@
 
 #include <map>
 #include <set>
+#include "image_utils.h"
 #include "pixel_map_napi.h"
 
 namespace {
@@ -372,6 +373,7 @@ static int32_t PixelMapNapiUnAccessPixels(PixelMapNapi* native, PixelMapNapiArgs
 {
     if (native != nullptr) {
         native->UnlockPixelMap();
+        ImageUtils::FlushSurfaceBuffer(native->GetPixelNapiInner().get());
         return IMAGE_RESULT_SUCCESS;
     } else {
         return IMAGE_RESULT_INVALID_PARAMETER;
