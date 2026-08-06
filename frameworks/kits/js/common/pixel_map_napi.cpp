@@ -3418,8 +3418,8 @@ napi_value PixelMapNapi::CreatePixelMapFromSurfaceWithTransformation(napi_env en
     std::unique_ptr<PixelMapAsyncContext> asyncContext = std::make_unique<PixelMapAsyncContext>();
     asyncContext->surfaceId = ImageNapiUtils::GetStringArgument(env, argValue[NUM_0]);
     bool transformEnabled = false;
-    NAPI_ASSERT(env, napi_get_value_bool(env, argValue[NUM_1], &transformEnabled) == napi_ok,
-        "Parse input error");
+    IMG_NAPI_CHECK_RET(napi_get_value_bool(env, argValue[NUM_1], &transformEnabled) == napi_ok,
+        ImageNapiUtils::ThrowExceptionError(env, ERR_IMAGE_INVALID_PARAM, "Invalid argument type."));
     asyncContext->transformEnabled = transformEnabled;
     asyncContext->argc = argCount;
     napi_create_promise(env, &(asyncContext->deferred), &result);
@@ -3514,8 +3514,8 @@ napi_value PixelMapNapi::CreatePixelMapFromSurfaceWithTransformationSync(napi_en
     std::unique_ptr<PixelMapAsyncContext> asyncContext = std::make_unique<PixelMapAsyncContext>();
     asyncContext->surfaceId = ImageNapiUtils::GetStringArgument(env, argValue[NUM_0]);
     bool transformEnabled = false;
-    NAPI_ASSERT(env, napi_get_value_bool(env, argValue[NUM_1], &transformEnabled) == napi_ok,
-        "Parse input error");
+    IMG_NAPI_CHECK_RET(napi_get_value_bool(env, argValue[NUM_1], &transformEnabled) == napi_ok,
+        ImageNapiUtils::ThrowExceptionError(env, ERR_IMAGE_INVALID_PARAM, "Invalid argument type."));
     asyncContext->transformEnabled = transformEnabled;
     asyncContext->argc = argCount;
     CreatePixelMapFromSurfaceWithTransformationExec(env, static_cast<void*>((asyncContext).get()));
