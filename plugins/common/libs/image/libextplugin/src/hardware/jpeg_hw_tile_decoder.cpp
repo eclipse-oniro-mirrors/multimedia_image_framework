@@ -785,7 +785,9 @@ bool RSTBasedDecoder::Init()
     REQUIRE(IsBaselineDCT());
     jpg.imageWidthPad16 = ALIGN_UP(jpg.dinfo->image_width, MCU_WIDTH);
     jpg.imageHeightPad16 = ALIGN_UP(jpg.dinfo->image_height, MCU_HEIGHT);
-    REQUIRE_LOG(hwDecoder = std::make_unique<JpegHardwareDecoder>(), "create JpegHardwareDecoder failed");
+    if (hwDecoder == nullptr) {
+        REQUIRE_LOG(hwDecoder = std::make_unique<JpegHardwareDecoder>(), "create JpegHardwareDecoder failed");
+    }
     isAligned = ((jpg.imageWidthPad16 / MCU_WIDTH) % jpg.dinfo->restart_interval) == 0;
 
     REQUIRE(ParseRSTs());
@@ -804,20 +806,12 @@ bool RSTBasedDecoder::CheckResolution(uint32_t image_width, uint32_t image_heigh
     auto side = image_width > image_height ? image_width : image_height;
     REQUIRE(side > minLength && side <= maxLength);
 
-    auto hwDecoder = std::make_unique<JpegHardwareDecoder>();
-    REQUIRE_LOG(hwDecoder, "create JpegHardwareDecoder failed");
+    if (hwDecoder == nullptr) {
+        REQUIRE_LOG(hwDecoder = std::make_unique<JpegHardwareDecoder>(), "create JpegHardwareDecoder failed");
+    }
     REQUIRE_LOG(hwDecoder->IsHardwareDecodeSupported(IMAGE_JPEG_FORMAT,
                     {NUM_8k, NUM_8k}),
                 "the jpeg hardware decoder doesn't support 8192x8192");
-
-    constexpr int32_t maxLengthJ = 15 * 1000;
-    REQUIRE_LOG(hwDecoder->IsHardwareDecodeSupported(IMAGE_JPEG_FORMAT,
-                    {maxLengthJ, static_cast<uint64_t>(NUM_8k) * NUM_8k / maxLengthJ}),
-                "the jpeg hardware decoder doesn't support 15000x4473");
-
-    REQUIRE_LOG(hwDecoder->IsHardwareDecodeSupported(IMAGE_JPEG_FORMAT,
-                    {static_cast<uint64_t>(NUM_8k) * NUM_8k / maxLengthJ, maxLengthJ}),
-                "the jpeg hardware decoder doesn't support 4473x15000");
     return true;
 }
 
@@ -967,8 +961,9 @@ bool JpegHwRegionDecoder::IsSupport(DecodeContext& dctx, const ExtDecoder* extDe
     REQUIRE_LOG(dctx.info.pixelFormat == PixelFormat::RGBA_8888,
         "JpegHwRegionDecoder only support RGBA8888");
 
-    auto hwDecoder = std::make_unique<JpegHardwareDecoder>();
-    REQUIRE_LOG(hwDecoder, "create JpegHardwareDecoder failed");
+    if (hwDecoder == nullptr) {
+        REQUIRE_LOG(hwDecoder = std::make_unique<JpegHardwareDecoder>(), "create JpegHardwareDecoder failed");
+    }
     int32_t extensionWidthLength = ((jpg.imageWidthPad16 / MCU_WIDTH) % jpg.dinfo->restart_interval) == 0 ?
         static_cast<int32_t>(jpg.dinfo->restart_interval * MCU_WIDTH) : static_cast<int32_t>(MCU_WIDTH);
     int32_t minProbSubJpegWidth = ALIGN_UP(extDecoder->dstSubset_.width(), extensionWidthLength);
@@ -1213,8 +1208,9 @@ bool JpegHwFullDecoder::IsSupport16k()
     }
     int32_t subjpgWidth = static_cast<int32_t>(jpg.dinfo->image_width / NUM_2);
     int32_t subjpgHeight = static_cast<int32_t>(jpg.dinfo->image_height / NUM_2);
-    auto hwDecoder = std::make_unique<JpegHardwareDecoder>();
-    REQUIRE_LOG(hwDecoder, "create JpegHardwareDecoder failed");
+    if (hwDecoder == nullptr) {
+        REQUIRE_LOG(hwDecoder = std::make_unique<JpegHardwareDecoder>(), "create JpegHardwareDecoder failed");
+    }
     REQUIRE_LOG(hwDecoder->IsHardwareDecodeSupported(IMAGE_JPEG_FORMAT,
                     {subjpgWidth, subjpgHeight}),
                 "16k subJpg max prob resolution not support");
@@ -1233,10 +1229,22 @@ bool JpegHwFullDecoder::IsSupport(DecodeContext& dctx, const ExtDecoder* extDeco
                                         dinfo->image_width, dinfo->image_height);
         REQUIRE_LOG(sampleSize > 1, "Area above 16384x16384 only support downsampling decoding");
     }
-    if (Is16k(dinfo->image_width, dinfo->image_height) && dctx.info.pixelFormat == PixelFormat::RGBA_8888) {
+    if (Is16k(dinfo->image_width, dinfo->image_height) &&
+        (dctx.info.pixelFormat == PixelFormat::RGBA_8888 || dctx.info.pixelFormat == PixelFormat::NV21)) {
         REQUIRE(IsSupport16k());
     } else {
         REQUIRE_LOG(jpg.ctx->info.pixelFormat == PixelFormat::NV21, "only support NV21");
+        constexpr int32_t maxLengthJ = 15 * 1000;
+        if (hwDecoder == nullptr) {
+            REQUIRE_LOG(hwDecoder = std::make_unique<JpegHardwareDecoder>(), "create JpegHardwareDecoder failed");
+        }
+        REQUIRE_LOG(hwDecoder->IsHardwareDecodeSupported(IMAGE_JPEG_FORMAT,
+                        {maxLengthJ, static_cast<uint64_t>(NUM_8k) * NUM_8k / maxLengthJ}),
+                    "the jpeg hardware decoder doesn't support 15000x4473");
+
+        REQUIRE_LOG(hwDecoder->IsHardwareDecodeSupported(IMAGE_JPEG_FORMAT,
+                        {static_cast<uint64_t>(NUM_8k) * NUM_8k / maxLengthJ, maxLengthJ}),
+                    "the jpeg hardware decoder doesn't support 4473x15000");
     }
     return true;
 }
