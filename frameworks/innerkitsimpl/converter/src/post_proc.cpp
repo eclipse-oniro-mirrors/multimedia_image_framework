@@ -636,6 +636,26 @@ bool PostProc::TranslatePixelMap(float tX, float tY, PixelMap &pixelMap)
     return Transform(trans, input, pixelMap);
 }
 
+static void ReleasePixmapBuffer(PixmapInfo &pixmap, AllocatorType allocatorType)
+{
+#if !defined(CROSS_PLATFORM)
+    if (allocatorType == AllocatorType::SHARE_MEM_ALLOC) {
+        int *fd = static_cast<int *>(pixmap.context);
+        if (pixmap.data != nullptr) {
+            ::munmap(pixmap.data, pixmap.bufferSize);
+            pixmap.data = nullptr;
+        }
+        if (fd != nullptr) {
+            ::close(*fd);
+            delete fd;
+            pixmap.context = nullptr;
+        }
+        return;
+    }
+#endif
+    pixmap.Destroy();
+}
+
 bool PostProc::Transform(BasicTransformer &trans, const PixmapInfo &input, PixelMap &pixelMap)
 {
     bool cond = pixelMap.IsTransformered();
@@ -652,12 +672,14 @@ bool PostProc::Transform(BasicTransformer &trans, const PixmapInfo &input, Pixel
         ret = trans.TransformPixmap(input, output);
     }
     if (ret != IMAGE_SUCCESS) {
-        output.Destroy();
+        ReleasePixmapBuffer(output, decodeOpts_.allocatorType);
+        pixelMap.SetTransformered(false);
         return false;
     }
 
     if (pixelMap.SetImageInfo(output.imageInfo) != SUCCESS) {
-        output.Destroy();
+        ReleasePixmapBuffer(output, decodeOpts_.allocatorType);
+        pixelMap.SetTransformered(false);
         return false;
     }
     pixelMap.SetPixelsAddr(output.data, output.context, output.bufferSize, decodeOpts_.allocatorType, nullptr);

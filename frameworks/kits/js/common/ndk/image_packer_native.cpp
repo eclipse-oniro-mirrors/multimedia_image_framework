@@ -55,19 +55,20 @@ static constexpr int32_t IMAGE_BASE_9 = 9;
 static constexpr int32_t IMAGE_BASE_20 = 20;
 static constexpr int32_t IMAGE_BASE_22 = 22;
 static constexpr int32_t IMAGE_BASE_23 = 23;
-static size_t g_supportedFormatSize = 0;
+static std::atomic<size_t> g_supportedFormatSize{0};
 struct FreeDeleter {
+    size_t count = 0;
+    explicit FreeDeleter(size_t n = 0) : count(n) {}
     void operator()(Image_MimeType* ptr) const
     {
         if (ptr) {
-            for (size_t i = 0; i < g_supportedFormatSize; ++i) {
+            for (size_t i = 0; i < count; ++i) {
                 if (ptr[i].data != nullptr) {
                     free(ptr[i].data);
                     ptr[i].data = nullptr;
                 }
             }
             delete[] ptr;
-            ptr = nullptr;
         }
     }
 };
@@ -790,8 +791,8 @@ Image_ErrorCode OH_ImagePackerNative_GetSupportedFormats(Image_MimeType** suppor
     }
 
     auto newFormats = std::unique_ptr<Image_MimeType[], FreeDeleter>(
-        new Image_MimeType[formats.size()],
-        FreeDeleter{});
+        new Image_MimeType[formats.size()]{},
+        FreeDeleter(formats.size()));
     size_t count = 0;
     for (const auto& str : formats) {
         newFormats[count].data = strdup(str.c_str());
