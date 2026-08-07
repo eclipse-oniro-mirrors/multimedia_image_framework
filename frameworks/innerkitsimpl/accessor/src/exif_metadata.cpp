@@ -904,6 +904,11 @@ ExifMetadata::~ExifMetadata()
 
 int ExifMetadata::GetValue(const std::string &key, std::string &value) const
 {
+    return GetValue(key, value, nullptr);
+}
+
+int ExifMetadata::GetValue(const std::string &key, std::string &value, std::string *errMsg) const
+{
     value.clear();
     IMAGE_LOGD("Retrieving value for key: %{public}s", key.c_str());
     bool cond = exifData_ == nullptr;
@@ -921,6 +926,9 @@ int ExifMetadata::GetValue(const std::string &key, std::string &value) const
         auto tag = exif_tag_from_name(key.c_str());
         ExifEntry *entry = GetEntry(key);
         cond = entry == nullptr;
+        if (cond && errMsg != nullptr) {
+            *errMsg = "Exif data entry returned null, no exif for the image! exif key:" + key;
+        }
         CHECK_DEBUG_RETURN_RET_LOG(cond, ERR_IMAGE_DECODE_EXIF_UNSUPPORT,
             "Exif data entry returned null for key: %{public}s, tag: %{public}d", key.c_str(), tag);
         IMAGE_LOGD("Using exif_entry_get_value for key: %{public}s, tag: %{public}d", key.c_str(), entry->tag);

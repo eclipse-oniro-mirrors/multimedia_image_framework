@@ -229,6 +229,8 @@ public:
     NATIVEEXPORT bool IsIncrementalSource();
     NATIVEEXPORT uint32_t GetImagePropertyInt(uint32_t index, const std::string &key, int32_t &value);
     NATIVEEXPORT uint32_t GetImagePropertyString(uint32_t index, const std::string &key, std::string &value);
+    NATIVEEXPORT uint32_t GetImagePropertyString(uint32_t index, const std::string &key, std::string &value,
+        std::string *errMsg);
     NATIVEEXPORT uint32_t GetImagePropertyByType(uint32_t index, const std::string &key, MetadataValue &value);
     NATIVEEXPORT uint32_t GetImagePropertyCommonByType(const std::string &key, MetadataValue &value);
     NATIVEEXPORT uint32_t RemoveAllProperties();
@@ -354,7 +356,8 @@ private:
                                    IncrementalDecodingContext &recordContext);
     void SetIncrementalSource(const bool isIncrementalSource);
     bool IsStreamCompleted();
-    uint32_t GetImagePropertyCommon(uint32_t index, const std::string &key, std::string &value);
+    uint32_t GetImagePropertyCommon(uint32_t index, const std::string &key, std::string &value,
+        std::string *errMsg = nullptr);
     uint32_t GetGifLoopCountByType(uint32_t index, MetadataValue &value);
     uint32_t GetGifProperty(uint32_t index, const std::string &key, MetadataValue &value);
     uint32_t GetWebPProperty(uint32_t index, const std::string &key, MetadataValue &value);
