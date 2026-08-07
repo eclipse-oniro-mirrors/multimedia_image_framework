@@ -28,6 +28,7 @@ config("egl_image_private_config") {
 
 ohos_shared_library("egl_image") {
   branch_protector_ret = "pac_ret"
+  branch_protector_frt = "bti"
   sanitize = {
     cfi = true
     cfi_cross_dso = true
@@ -70,6 +71,7 @@ ohos_shared_library("egl_image") {
 if (!use_clang_ios && !use_clang_android) {
   ohos_shared_library("post_proc_gl") {
     branch_protector_ret = "pac_ret"
+    branch_protector_frt = "bti"
     sanitize = {
       cfi = true
       cfi_cross_dso = true
