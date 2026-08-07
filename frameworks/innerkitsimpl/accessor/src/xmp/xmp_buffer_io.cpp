@@ -105,7 +105,7 @@ XMP_Uns32 XMPBuffer_IO::Read(void *buffer, XMP_Uns32 count, bool readAll)
 
     const XMP_Uns8 *dataPtr = GetCurrentDataPtr();
     std::copy(dataPtr + position, dataPtr + position + toRead, static_cast<XMP_Uns8 *>(buffer));
-    position += toRead;
+    position += static_cast<XMP_Int64>(toRead);
     return toRead;
     XMP_CATCH_THROW();
     return 0;
@@ -143,7 +143,7 @@ void XMPBuffer_IO::Write(const void *buffer, XMP_Uns32 count)
 
     std::copy(static_cast<const XMP_Uns8 *>(buffer), static_cast<const XMP_Uns8 *>(buffer) + count,
         data.begin() + position);
-    position += count;
+    position += static_cast<XMP_Int64>(count);
     XMP_CATCH_THROW();
 }
 
