@@ -467,7 +467,7 @@ bool ColorUtils::GetColorSpaceName(const skcms_ICCProfile* profile, OHOS::ColorM
         tmpOffset = 0;
         auto offset = ImageUtils::BytesToUint32(const_cast<uint8_t*>(tags[i].offset),
             tmpOffset, SIZE_4, true);
-        if (size == 0 || offset >= profile->size || offset + size >= profile->size) {
+        if (size == 0 || offset >= profile->size || size > profile->size - offset) {
             continue;
         }
         tmpOffset = 0;
@@ -509,7 +509,7 @@ static uint32_t U8ToU32(const uint8_t* p)
 static bool GetXYZFromTag(const uint8_t* buffer, uint32_t offset, uint32_t size, XYZValues* xyz)
 {
     CHECK_ERROR_RETURN_RET(buffer == nullptr || xyz == nullptr, false);
-    CHECK_ERROR_RETURN_RET(offset + XYZ_TAG_LENGTH > size, false);
+    CHECK_ERROR_RETURN_RET(XYZ_TAG_LENGTH > size || offset > size - XYZ_TAG_LENGTH, false);
     // s15Fixed16Number to float
     auto toFixed16 = [](const uint8_t* p) -> float {
         int32_t val = (p[OFFSET_0] << SHIFT_BITS_24) | (p[OFFSET_1] << SHIFT_BITS_16) |
@@ -526,7 +526,7 @@ static bool GetXYZFromTag(const uint8_t* buffer, uint32_t offset, uint32_t size,
 static bool GetGammaFromTRCTag(const uint8_t* buffer, uint32_t offset, uint32_t size, float* gamma)
 {
     CHECK_ERROR_RETURN_RET(buffer == nullptr || gamma == nullptr, false);
-    CHECK_ERROR_RETURN_RET(offset + SHIFT_BITS_4 > size, false);
+    CHECK_ERROR_RETURN_RET(SHIFT_BITS_4 > size || offset > size - SHIFT_BITS_4, false);
     uint32_t curveType = (buffer[offset] << SHIFT_BITS_24) | (buffer[offset + OFFSET_1] << SHIFT_BITS_16) |
         (buffer[offset + OFFSET_2] << SHIFT_BITS_8) | buffer[offset + OFFSET_3];
 
