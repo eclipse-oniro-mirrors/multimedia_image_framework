@@ -205,8 +205,6 @@ Shader::Shader()
 
 Shader::~Shader()
 {
-    (void)clearResources();
-    PixelMapGlResource::DeleteFramebuffer(writeFbo_);
 }
 
 bool Shader::Clear()
@@ -230,12 +228,15 @@ bool Shader::clearResources()
         glDeleteShader(fShader_);
         fShader_ = 0;
     }
-    if (readTexId_ != 0) {
+    if (readTexId_ != 0 && ownsReadTexId_) {
         PixelMapGlResource::DeleteTexture(readTexId_);
     }
+    readTexId_ = 0U;
+    ownsReadTexId_ = true;
     if (writeTexId_ != 0) {
         PixelMapGlResource::DeleteTexture(writeTexId_);
     }
+    PixelMapGlResource::DeleteFramebuffer(writeFbo_);
     GLenum err = glGetError();
     if (err != GL_NO_ERROR) {
         IMAGE_LOGE("slr_gpu Shader %{public}s failed gl error: %{public}x", __func__, err);

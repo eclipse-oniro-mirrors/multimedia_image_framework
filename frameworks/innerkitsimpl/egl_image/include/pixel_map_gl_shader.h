@@ -62,6 +62,12 @@ public:
     void SetReadTexId(GLuint readTexId)
     {
         readTexId_ = readTexId;
+        ownsReadTexId_ = true;
+    }
+    void SetBorrowedReadTexId(GLuint readTexId)
+    {
+        readTexId_ = readTexId;
+        ownsReadTexId_ = false;
     }
     GLuint &GetWriteTexId()
     {
@@ -94,6 +100,7 @@ protected:
     GLuint readTexId_ = 0U;
     GLuint writeFbo_ = 0U;
     GLuint writeTexId_ = 0U;
+    bool ownsReadTexId_ = true;
     EGLImageKHR eglImage_ = EGL_NO_IMAGE_KHR;
     Size targetSize_;
     Size sourceSize_;
