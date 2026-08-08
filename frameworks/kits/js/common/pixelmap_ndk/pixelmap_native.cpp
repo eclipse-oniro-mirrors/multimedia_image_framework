@@ -1528,7 +1528,8 @@ Image_ErrorCode OH_PixelmapNative_SetMetadata(OH_PixelmapNative *pixelmap, OH_Pi
         return IMAGE_BAD_PARAMETER;
     }
 
-    if (pixelmap->GetInnerPixelmap()->GetAllocatorType() != AllocatorType::DMA_ALLOC) {
+    if (pixelmap->GetInnerPixelmap()->GetAllocatorType() != AllocatorType::DMA_ALLOC ||
+        pixelmap->GetInnerPixelmap()->IsUseDefaultDmaNopadding()) {
         return IMAGE_DMA_NOT_EXIST;
     }
 
@@ -1664,7 +1665,8 @@ Image_ErrorCode OH_PixelmapNative_GetMetadata(OH_PixelmapNative *pixelmap, OH_Pi
         return IMAGE_BAD_PARAMETER;
     }
 
-    if (pixelmap->GetInnerPixelmap()->GetAllocatorType() != AllocatorType::DMA_ALLOC) {
+    if (pixelmap->GetInnerPixelmap()->GetAllocatorType() != AllocatorType::DMA_ALLOC ||
+        pixelmap->GetInnerPixelmap()->IsUseDefaultDmaNopadding()) {
         return IMAGE_DMA_NOT_EXIST;
     }
 
@@ -1683,7 +1685,8 @@ Image_ErrorCode OH_PixelmapNative_GetNativeBuffer(OH_PixelmapNative *pixelmap, O
         return IMAGE_BAD_PARAMETER;
     }
 
-    if (pixelmap->GetInnerPixelmap()->GetAllocatorType() != AllocatorType::DMA_ALLOC) {
+    if (pixelmap->GetInnerPixelmap()->GetAllocatorType() != AllocatorType::DMA_ALLOC ||
+        pixelmap->GetInnerPixelmap()->IsUseDefaultDmaNopadding()) {
         return IMAGE_DMA_NOT_EXIST;
     }
 

@@ -23,6 +23,7 @@
 #include "image_source.h"
 #include "image_type.h"
 #include "image_utils.h"
+#include "image_system_properties.h"
 #include "media_errors.h"
 #include "pixel_convert.h"
 #include "pixel_map.h"
@@ -5638,6 +5639,32 @@ HWTEST_F(PixelMapTest, HdrPixelMapTlvTest005, TestSize.Level3)
 }
 
 /**
+ * @tc.name: PixelMapTlvNopaddingDmaTest001
+ * @tc.desc: test DecodeTlv re-derives allocator via no-padding DMA DEFAULT branch
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, PixelMapTlvNopaddingDmaTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelMapTest: PixelMapTlvNopaddingDmaTest001 start";
+    bool combinedEnabled = ImageSystemProperties::GetNoPaddingEnabled() &&
+        ImageSystemProperties::GetDefaultDmaNoPaddingEnabled();
+    InitializationOptions opts;
+    opts.size.width = 512;
+    opts.size.height = 512;
+    opts.pixelFormat = PixelFormat::RGBA_8888;
+    opts.allocatorType = AllocatorType::HEAP_ALLOC;
+    std::unique_ptr<PixelMap> pixelMap = PixelMap::Create(opts);
+    ASSERT_NE(pixelMap, nullptr);
+    vector<uint8_t> buff;
+    ASSERT_TRUE(pixelMap->EncodeTlv(buff));
+    std::unique_ptr<PixelMap> tlvPixelMap(PixelMap::DecodeTlv(buff));
+    ASSERT_NE(tlvPixelMap, nullptr);
+    EXPECT_EQ(tlvPixelMap->GetAllocatorType(),
+        combinedEnabled ? AllocatorType::DMA_ALLOC : AllocatorType::HEAP_ALLOC);
+    GTEST_LOG_(INFO) << "PixelMapTest: PixelMapTlvNopaddingDmaTest001 end";
+}
+
+/**
  * @tc.name: HdrPixelMapTlvTest006
  * @tc.desc: Test HdrPixelMapTlvTest
  * @tc.type: FUNC
@@ -6599,6 +6626,26 @@ HWTEST_F(PixelMapTest, FlushCacheTest001, TestSize.Level3)
     pixelMap->FlushCache();
     pixelMap->isUseDefaultDmaNopadding_ = false;
     GTEST_LOG_(INFO) << "PixelMapTest: FlushCacheTest001 end";
+}
+
+/**
+ * @tc.name: IsUseDefaultDmaNopaddingTest001
+ * @tc.desc: test IsUseDefaultDmaNopadding accessor reflects the member flag state
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, IsUseDefaultDmaNopaddingTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelMapTest: IsUseDefaultDmaNopaddingTest001 start";
+    auto pixelMap = ConstructPixmap(AllocatorType::SHARE_MEM_ALLOC);
+    ASSERT_NE(nullptr, pixelMap);
+    EXPECT_FALSE(pixelMap->IsUseDefaultDmaNopadding());
+
+    pixelMap->isUseDefaultDmaNopadding_ = true;
+    EXPECT_TRUE(pixelMap->IsUseDefaultDmaNopadding());
+
+    pixelMap->isUseDefaultDmaNopadding_ = false;
+    EXPECT_FALSE(pixelMap->IsUseDefaultDmaNopadding());
+    GTEST_LOG_(INFO) << "PixelMapTest: IsUseDefaultDmaNopaddingTest001 end";
 }
 }
 }

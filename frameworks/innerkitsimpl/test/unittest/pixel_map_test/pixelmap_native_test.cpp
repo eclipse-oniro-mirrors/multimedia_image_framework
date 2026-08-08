@@ -3102,5 +3102,84 @@ HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_ConvertAlphaType_Failure, TestSize.
 
     GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_ConvertAlphaType_Failure end";
 }
+
+/**
+ * @tc.name: OH_PixelmapNative_SetMetadata_NopaddingDma001
+ * @tc.desc: test OH_PixelmapNative_SetMetadata returns IMAGE_DMA_NOT_EXIST when PixelMap is no-padding DMA
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_SetMetadata_NopaddingDma001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_SetMetadata_NopaddingDma001 start";
+    OH_PixelmapNative* pixelmap = CreateEmptyPixelmapNativeForTest();
+    ASSERT_NE(pixelmap, nullptr);
+    auto inner = pixelmap->GetInnerPixelmap();
+    ASSERT_NE(inner, nullptr);
+    AllocatorType origType = inner->allocatorType_;
+    inner->allocatorType_ = AllocatorType::DMA_ALLOC;
+    inner->isUseDefaultDmaNopadding_ = true;
+
+    OH_Pixelmap_HdrMetadataValue value;
+    Image_ErrorCode ret = OH_PixelmapNative_SetMetadata(pixelmap, OH_Pixelmap_HdrMetadataKey(ZERO), &value);
+    EXPECT_EQ(ret, IMAGE_DMA_NOT_EXIST);
+
+    inner->isUseDefaultDmaNopadding_ = false;
+    inner->allocatorType_ = origType;
+    OH_PixelmapNative_Destroy(&pixelmap);
+    GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_SetMetadata_NopaddingDma001 end";
+}
+
+/**
+ * @tc.name: OH_PixelmapNative_GetMetadata_NopaddingDma001
+ * @tc.desc: test OH_PixelmapNative_GetMetadata returns IMAGE_DMA_NOT_EXIST when PixelMap is no-padding DMA
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_GetMetadata_NopaddingDma001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_GetMetadata_NopaddingDma001 start";
+    OH_PixelmapNative* pixelmap = CreateEmptyPixelmapNativeForTest();
+    ASSERT_NE(pixelmap, nullptr);
+    auto inner = pixelmap->GetInnerPixelmap();
+    ASSERT_NE(inner, nullptr);
+    AllocatorType origType = inner->allocatorType_;
+    inner->allocatorType_ = AllocatorType::DMA_ALLOC;
+    inner->isUseDefaultDmaNopadding_ = true;
+
+    OH_Pixelmap_HdrMetadataValue value;
+    OH_Pixelmap_HdrMetadataValue* valuePtr = &value;
+    Image_ErrorCode ret = OH_PixelmapNative_GetMetadata(pixelmap, OH_Pixelmap_HdrMetadataKey(ZERO), &valuePtr);
+    EXPECT_EQ(ret, IMAGE_DMA_NOT_EXIST);
+
+    inner->isUseDefaultDmaNopadding_ = false;
+    inner->allocatorType_ = origType;
+    OH_PixelmapNative_Destroy(&pixelmap);
+    GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_GetMetadata_NopaddingDma001 end";
+}
+
+/**
+ * @tc.name: OH_PixelmapNative_GetNativeBuffer_NopaddingDma001
+ * @tc.desc: test OH_PixelmapNative_GetNativeBuffer returns IMAGE_DMA_NOT_EXIST when PixelMap is no-padding DMA
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_GetNativeBuffer_NopaddingDma001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_GetNativeBuffer_NopaddingDma001 start";
+    OH_PixelmapNative* pixelmap = CreateEmptyPixelmapNativeForTest();
+    ASSERT_NE(pixelmap, nullptr);
+    auto inner = pixelmap->GetInnerPixelmap();
+    ASSERT_NE(inner, nullptr);
+    AllocatorType origType = inner->allocatorType_;
+    inner->allocatorType_ = AllocatorType::DMA_ALLOC;
+    inner->isUseDefaultDmaNopadding_ = true;
+
+    OH_NativeBuffer* nativeBuffer = nullptr;
+    Image_ErrorCode ret = OH_PixelmapNative_GetNativeBuffer(pixelmap, &nativeBuffer);
+    EXPECT_EQ(ret, IMAGE_DMA_NOT_EXIST);
+
+    inner->isUseDefaultDmaNopadding_ = false;
+    inner->allocatorType_ = origType;
+    OH_PixelmapNative_Destroy(&pixelmap);
+    GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_GetNativeBuffer_NopaddingDma001 end";
+}
 }
 }

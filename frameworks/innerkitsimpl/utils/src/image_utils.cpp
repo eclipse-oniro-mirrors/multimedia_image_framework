@@ -126,6 +126,7 @@ constexpr int32_t ASTC_HEADER_SIZE = 16;
 constexpr uint8_t FILL_NUMBER = 3;
 constexpr uint8_t ALIGN_NUMBER = 4;
 constexpr int32_t DMA_SIZE = 512 * 512; // DMA minimum effective size
+constexpr int32_t NOPADDING_DMA_SIZE = 256 * 256;
 constexpr int32_t FAULT_API_VERSION = -1;
 constexpr int32_t BUNDLE_MGR_SERVICE_SYS_ABILITY_ID = 401;
 constexpr int32_t BASE_EVEN_DIVISOR = 2;
@@ -552,7 +553,7 @@ AllocatorType ImageUtils::GetPixelMapAllocatorType(const Size &size, const Pixel
     if (IsSizeSupportDma(size) && (preferDma || (IsWidthAligned(size.width) && IsFormatSupportDma(format))) &&
         (format == PixelFormat::RGBA_8888 || format == PixelFormat::ALPHA_F16 || Is10Bit(format))) {
         return AllocatorType::DMA_ALLOC;
-    } else if (IsSupportDefaultDmaNopadding(format)) {
+    } else if (IsSupportDefaultDmaNopadding(size, format)) {
         usage |= BUFFER_USAGE_PREFER_NO_PADDING | BUFFER_USAGE_ALLOC_NO_IPC;
         isUseDefaultDmaNopadding = true;
         return AllocatorType::DMA_ALLOC;
@@ -666,13 +667,14 @@ bool ImageUtils::IsWidthAligned(const int32_t &width)
     return ((static_cast<uint32_t>(width) * NUM_4) & INT_255) == 0;
 }
 
-bool ImageUtils::IsSizeSupportDma(const Size &size)
+bool ImageUtils::IsSizeSupportDma(const Size &size, bool isUseDefaultDmaNopadding)
 {
     // Check for overflow risk
     if (size.width > 0 && size.height > INT_MAX / size.width) {
         return false;
     }
-    return size.width * size.height >= DMA_SIZE;
+    int32_t minSize = isUseDefaultDmaNopadding ? NOPADDING_DMA_SIZE : DMA_SIZE;
+    return size.width * size.height >= minSize;
 }
 
 bool ImageUtils::IsFormatSupportDma(const PixelFormat &format)
@@ -680,10 +682,10 @@ bool ImageUtils::IsFormatSupportDma(const PixelFormat &format)
     return format == PixelFormat::UNKNOWN || format == PixelFormat::RGBA_8888 || format == PixelFormat::ALPHA_F16;
 }
 
-bool ImageUtils::IsSupportDefaultDmaNopadding(const PixelFormat &format)
+bool ImageUtils::IsSupportDefaultDmaNopadding(const Size &size, const PixelFormat &format)
 {
     if (ImageSystemProperties::GetDefaultDmaNoPaddingEnabled() && ImageSystemProperties::GetNoPaddingEnabled() &&
-        (format == PixelFormat::BGRA_8888 || format == PixelFormat::RGBA_8888)) {
+        IsSizeSupportDma(size, true) && (format == PixelFormat::BGRA_8888 || format == PixelFormat::RGBA_8888)) {
         return true;
     }
     return false;

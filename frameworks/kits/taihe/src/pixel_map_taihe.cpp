@@ -1713,7 +1713,8 @@ HdrMetadataValue PixelMapImpl::GetMetadata(HdrMetadataKey key)
         ImageTaiheUtils::ThrowExceptionError(Media::COMMON_ERR_INVALID_PARAMETER, "Native PixelMap has been released.");
         return HdrMetadataValue::make_hdrMetadataType(HdrMetadataType::key_t::NONE);
     }
-    if (nativePixelMap_->GetAllocatorType() != Media::AllocatorType::DMA_ALLOC) {
+    if (nativePixelMap_->GetAllocatorType() != Media::AllocatorType::DMA_ALLOC ||
+        nativePixelMap_->IsUseDefaultDmaNopadding()) {
         ImageTaiheUtils::ThrowExceptionError(Media::ERR_DMA_NOT_EXIST, "PixelMap memory type is not DMA memory.");
         return HdrMetadataValue::make_hdrMetadataType(HdrMetadataType::key_t::NONE);
     }
@@ -1756,7 +1757,8 @@ void PixelMapImpl::SetMetadataSync(HdrMetadataKey key, HdrMetadataValue const& v
         ImageTaiheUtils::ThrowExceptionError(Media::ERR_IMAGE_INVALID_PARAMETER, "Native PixelMap has been released.");
         return;
     }
-    if (nativePixelMap_->GetAllocatorType() != Media::AllocatorType::DMA_ALLOC) {
+    if (nativePixelMap_->GetAllocatorType() != Media::AllocatorType::DMA_ALLOC ||
+        nativePixelMap_->IsUseDefaultDmaNopadding()) {
         ImageTaiheUtils::ThrowExceptionError(Media::ERR_DMA_NOT_EXIST, "PixelMap memory type is not DMA memory.");
         return;
     }
