@@ -23,6 +23,7 @@ namespace {
     const uint32_t MAX_HEIF_IMAGE_GRID_SIZE = 128 * 1024 * 1024;
     const uint32_t MAX_HEIF_ITEM_COUNT = 2000;
     const uint32_t MAX_HEIF_EXTENT_NUM = 1024;
+    const size_t MAX_HEIF_GRID_TOTAL_INPUT_SIZE = 2 * 1024 * 1024 * 1024;
 }
 
 namespace OHOS {
@@ -152,9 +153,16 @@ heif_error HeifIlocBox::ReadData(const Item &item, const std::shared_ptr<HeifInp
         totalSize += extent.length;
         CHECK_ERROR_RETURN_RET(totalSize > MAX_HEIF_IMAGE_GRID_SIZE, heif_error_grid_too_large);
 
+        CHECK_ERROR_RETURN_RET(HasOverflowed64(totalReadDataSize_, extent.length), heif_error_grid_too_large);
+        CHECK_ERROR_RETURN_RET(totalReadDataSize_ + extent.length > MAX_HEIF_GRID_TOTAL_INPUT_SIZE,
+            heif_error_grid_too_large);
+
         if (item.constructionMethod == CONSTRUCTION_METHOD_FILE_OFFSET) {
             bool ret = stream->Seek(extent.offset + item.baseOffset);
             if (!ret) {
+                return heif_error_eof;
+            }
+            if (!stream->CheckSize(extent.length, -1)) {
                 return heif_error_eof;
             }
 
@@ -162,12 +170,15 @@ heif_error HeifIlocBox::ReadData(const Item &item, const std::shared_ptr<HeifInp
             dest->resize(static_cast<size_t>(oldSize + extent.length));
             ret = stream->Read(reinterpret_cast<char*>(dest->data()) + oldSize, static_cast<size_t>(extent.length));
             CHECK_ERROR_RETURN_RET(!ret, heif_error_eof);
+            totalReadDataSize_ += extent.length;
         } else if (item.constructionMethod == CONSTRUCTION_METHOD_IDAT_OFFSET) {
             if (!idat) {
                 return heif_error_no_idat;
             }
             uint64_t start = extent.offset + item.baseOffset;
-            idat->ReadData(stream, start, extent.length, *dest);
+            heif_error idatErr = idat->ReadData(stream, start, extent.length, *dest);
+            CHECK_ERROR_RETURN_RET(idatErr != heif_error_ok, idatErr);
+            totalReadDataSize_ += extent.length;
         } else {
             return heif_error_no_idat;
         }

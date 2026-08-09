@@ -767,6 +767,7 @@ bool HeifDecoderImpl::HwDecodeGrids(std::shared_ptr<HeifImage> &image,
 {
     bool cond = image == nullptr;
     CHECK_ERROR_RETURN_RET_LOG(cond, false, "HeifDecoderImpl::DecodeGrids image is nullptr");
+    parser_->ResetIlocReadDataSize();
     std::vector<std::shared_ptr<HeifImage>> tileImages;
     parser_->GetTileImages(image->GetItemId(), tileImages);
     cond = tileImages.empty();
@@ -941,6 +942,7 @@ bool HeifDecoderImpl::SwDecodeGrids(std::shared_ptr<HeifImage> &image, HevcSoftD
     CHECK_ERROR_RETURN_RET(cond, false);
     cond = param.dstBuffer == nullptr || param.dstStride == 0;
     CHECK_ERROR_RETURN_RET(cond, false);
+    parser_->ResetIlocReadDataSize();
     std::vector<std::shared_ptr<HeifImage>> tileImages;
     parser_->GetTileImages(image->GetItemId(), tileImages);
     cond = tileImages.empty();
