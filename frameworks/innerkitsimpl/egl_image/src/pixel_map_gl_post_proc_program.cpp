@@ -20,12 +20,12 @@
 #include <sys/time.h>
 #include <sys/types.h>
 
-#include <atomic>
 #include <cstdint>
 #include <fstream>
 #include <iostream>
 #include <limits>
 #include <memory>
+#include <mutex>
 #include <sstream>
 #include <string>
 
@@ -49,11 +49,27 @@ namespace OHOS {
 namespace Media {
 using namespace GlCommon;
 using PixelMapGlScope::MakeScopeExit;
-std::once_flag shaderInitFlag[PixelMapGlShader::SHADER_MAX];
-std::mutex g_shaderMtx;
-std::condition_variable g_shaderCv;
-std::atomic<int> g_shaderCount = 0;
-std::atomic<int> g_shaderFailCount = 0;
+
+namespace {
+struct EglCurrentState {
+    EGLDisplay display = eglGetCurrentDisplay();
+    EGLSurface drawSurface = eglGetCurrentSurface(EGL_DRAW);
+    EGLSurface readSurface = eglGetCurrentSurface(EGL_READ);
+    EGLContext context = eglGetCurrentContext();
+};
+
+bool RestoreEglCurrentState(const EglCurrentState &state, EGLDisplay fallbackDisplay)
+{
+    EGLDisplay restoreDisplay = state.display == EGL_NO_DISPLAY ? fallbackDisplay : state.display;
+    if (restoreDisplay == EGL_NO_DISPLAY) {
+        return state.context == EGL_NO_CONTEXT && state.drawSurface == EGL_NO_SURFACE &&
+            state.readSurface == EGL_NO_SURFACE;
+    }
+    return eglMakeCurrent(restoreDisplay, state.drawSurface, state.readSurface, state.context) == EGL_TRUE;
+}
+std::once_flag g_shaderInitFlag;
+bool g_shaderBuildResult = false;
+} // namespace
 
 PixelMapGLPostProcProgram::PixelMapGLPostProcProgram()
 {
@@ -72,51 +88,77 @@ void PixelMapGLPostProcProgram::SetGPUTransformData(GPUTransformData &transformD
 
 void PixelMapGLPostProcProgram::Clear() noexcept
 {
-    if (renderContext_ != nullptr && renderContext_->eglContext_ != EGL_NO_CONTEXT) {
-        renderContext_->MakeCurrentSimple(true);
-        DestroyProcTexture();
-        if (rotateShader_) {
-            rotateShader_->Clear();
-            rotateShader_.reset();
+    if (renderContext_ == nullptr || renderContext_->eglContext_ == EGL_NO_CONTEXT) {
+        DestroyEglImage();
+        return;
+    }
+    const EglCurrentState previousState;
+    if (!renderContext_->MakeCurrentSimple(true)) {
+        IMAGE_LOGE("slr_gpu %{public}s failed to make owner context current", __func__);
+        DestroyEglImage();
+        return;
+    }
+    auto restoreContext = MakeScopeExit([this, previousState] {
+        if (!RestoreEglCurrentState(previousState, renderContext_->GetEGLDisplay())) {
+            IMAGE_LOGE("slr_gpu %{public}s failed to restore previous context", __func__);
         }
-        if (slrShader_) {
-            slrShader_->Clear();
-            slrShader_.reset();
-        }
-        if (lapShader_) {
-            lapShader_->Clear();
-            lapShader_.reset();
-        }
-        if (vertexShader_) {
-            vertexShader_->Clear();
-            vertexShader_.reset();
-        }
-        renderContext_->MakeCurrentSimple(false);
+    });
+    DestroyProcTexture();
+    if (rotateShader_) {
+        rotateShader_->Clear();
+        rotateShader_.reset();
+    }
+    if (slrShader_) {
+        slrShader_->Clear();
+        slrShader_.reset();
+    }
+    if (lapShader_) {
+        lapShader_->Clear();
+        lapShader_.reset();
+    }
+    if (vertexShader_) {
+        vertexShader_->Clear();
+        vertexShader_.reset();
     }
 }
 
 bool PixelMapGLPostProcProgram::BuildShader()
 {
     ImageTrace imageTrace("PixelMapGLPostProcProgram::BuildShader");
-    static PixelMapGlContext renderContextAll(true);
-    for (int i = PixelMapGlShader::SHADER_ROTATE; i < PixelMapGlShader::SHADER_MAX; i++) {
-        std::call_once(shaderInitFlag[i], [&]() {
-            auto shader = PixelMapGlShader::ShaderFactory::GetInstance().Get(PixelMapGlShader::ShaderType(i));
-            g_shaderCount++;
-            if (!shader || !shader->LoadProgram()) {
-                g_shaderFailCount++;
+    static PixelMapGlContext renderContextAll;
+    std::call_once(g_shaderInitFlag, [&]() {
+        const EglCurrentState previousState;
+        auto restoreContext = MakeScopeExit([previousState]() {
+            if (!RestoreEglCurrentState(previousState, renderContextAll.GetEGLDisplay())) {
+                IMAGE_LOGE("slr_gpu %{public}s failed to restore previous context: %{public}x",
+                    __func__, eglGetError());
+                g_shaderBuildResult = false;
             }
-            std::unique_lock<std::mutex> lock(g_shaderMtx);
-            g_shaderCv.notify_all();
         });
-    }
-    {
-        std::unique_lock<std::mutex> lock(g_shaderMtx);
-        g_shaderCv.wait(lock, [] {
-            return g_shaderCount == PixelMapGlShader::SHADER_MAX - PixelMapGlShader::SHADER_ROTATE;
-        });
-    }
-    return g_shaderFailCount == 0;
+        if (!renderContextAll.InitEGLContext() || !renderContextAll.MakeCurrentSimple(true)) {
+            IMAGE_LOGE("slr_gpu %{public}s failed to initialize warm-up context", __func__);
+            return;
+        }
+
+        g_shaderBuildResult = true;
+        for (int i = PixelMapGlShader::SHADER_ROTATE; i < PixelMapGlShader::SHADER_MAX; i++) {
+            auto shader = PixelMapGlShader::ShaderFactory::GetInstance().Get(PixelMapGlShader::ShaderType(i));
+            if (!shader) {
+                g_shaderBuildResult = false;
+                continue;
+            }
+            auto clearShader = MakeScopeExit([&]() {
+                if (!shader->Clear()) {
+                    IMAGE_LOGE("slr_gpu %{public}s failed to clear warm-up shader", __func__);
+                    g_shaderBuildResult = false;
+                }
+            });
+            if (!shader->LoadProgram()) {
+                g_shaderBuildResult = false;
+            }
+        }
+    });
+    return g_shaderBuildResult;
 }
 
 bool PixelMapGLPostProcProgram::Init()
@@ -326,15 +368,19 @@ bool PixelMapGLPostProcProgram::BuildProcTexture(GLuint &readTexId)
     return true;
 }
 
-void PixelMapGLPostProcProgram::DestroyProcTexture()
+void PixelMapGLPostProcProgram::DestroyEglImage()
 {
-    glBindTexture(GL_TEXTURE_2D, 0);
-    glBindTexture(GL_TEXTURE_EXTERNAL_OES, 0);
     if (eglImage_ != EGL_NO_IMAGE_KHR && renderContext_ != nullptr) {
         eglDestroyImageKHR(renderContext_->GetEGLDisplay(), eglImage_);
     }
     eglImage_ = EGL_NO_IMAGE_KHR;
-    return;
+}
+
+void PixelMapGLPostProcProgram::DestroyProcTexture()
+{
+    glBindTexture(GL_TEXTURE_2D, 0);
+    glBindTexture(GL_TEXTURE_EXTERNAL_OES, 0);
+    DestroyEglImage();
 }
 
 bool PixelMapGLPostProcProgram::GenProcEndData(char *lcdData)
@@ -390,7 +436,7 @@ bool PixelMapGLPostProcProgram::ResizeScaleWithGL()
         return false;
     }
     ((PixelMapGlShader::LapShader*)(lapShader_.get()))->SetParams(transformData_);
-    lapShader_->GetReadTexId() = slrShader_->GetWriteTexId();
+    lapShader_->SetBorrowedReadTexId(slrShader_->GetWriteTexId());
     if (!lapShader_->Use()) {
         return false;
     }

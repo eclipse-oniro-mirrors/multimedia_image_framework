@@ -16,12 +16,7 @@
 #ifndef FRAMEWORKS_INNERKITSIMPL_EGL_IMAGE_INCLUDE_PIXELMAP_GL_POST_PROC_PROGRAM_H
 #define FRAMEWORKS_INNERKITSIMPL_EGL_IMAGE_INCLUDE_PIXELMAP_GL_POST_PROC_PROGRAM_H
 
-#include <array>
-#include <atomic>
-#include <condition_variable>
 #include <iostream>
-#include <mutex>
-#include <numeric>
 
 #include "pixel_map_gl_shader.h"
 #include "surface_buffer.h"
@@ -58,6 +53,7 @@ private:
     bool UseEGLImageCreateNormalImage(GLuint &imageTexId);
     bool CreateNormalImage(const uint8_t *data, GLuint &imageTexId);
     bool BuildProcTexture(GLuint &readTexId);
+    void DestroyEglImage();
     void DestroyProcTexture();
     bool ResizeRotateWithGL();
     bool ResizeScaleWithGL();

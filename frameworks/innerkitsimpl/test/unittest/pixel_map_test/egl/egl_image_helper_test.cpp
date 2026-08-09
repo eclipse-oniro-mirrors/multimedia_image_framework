@@ -15,8 +15,12 @@
 
 #include <gtest/gtest.h>
 
+#include <array>
 #include <cmath>
 #include <limits>
+#include <memory>
+#include <thread>
+#include <vector>
 
 #include "pixel_map_egl_utils.h"
 #include "pixel_map_from_surface.h"
@@ -46,6 +50,13 @@ public:
     bool Clear() override
     {
         return Shader::Clear();
+    }
+
+    void SetProgramAndShaders(GLuint programId, GLuint vertexShader, GLuint fragmentShader)
+    {
+        programId_ = programId;
+        vShader_ = vertexShader;
+        fShader_ = fragmentShader;
     }
 
     void SetTargetSize(const Size &targetSize)
@@ -333,6 +344,98 @@ HWTEST_F(EglImageHelperTest, PixelMapGlShaderFactoryAndParamsTest001, TestSize.L
 }
 
 /**
+ * @tc.name: PixelMapGlShaderExplicitClearResourceTest001
+ * @tc.desc: Test explicit Clear releases all base Shader GL resources.
+ * @tc.type: FUNC
+ */
+HWTEST_F(EglImageHelperTest, PixelMapGlShaderExplicitClearResourceTest001, TestSize.Level3)
+{
+    PixelMapGlContext context;
+    if (!context.InitEGLContext()) {
+        SUCCEED();
+        return;
+    }
+
+    const GLuint programId = glCreateProgram();
+    const GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
+    const GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+    GLuint textures[2] = { 0U, 0U };
+    glGenTextures(2, textures);
+    glBindTexture(GL_TEXTURE_2D, textures[0]);
+    glBindTexture(GL_TEXTURE_2D, textures[1]);
+
+    GLuint framebuffer = 0U;
+    {
+        TestShader shader;
+        shader.SetProgramAndShaders(programId, vertexShader, fragmentShader);
+        shader.SetReadTexId(textures[0]);
+        shader.SetWriteTexId(textures[1]);
+        framebuffer = shader.GetWriteFbo();
+        glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
+
+        EXPECT_EQ(glIsProgram(programId), GL_TRUE);
+        EXPECT_EQ(glIsShader(vertexShader), GL_TRUE);
+        EXPECT_EQ(glIsShader(fragmentShader), GL_TRUE);
+        EXPECT_EQ(glIsTexture(textures[0]), GL_TRUE);
+        EXPECT_EQ(glIsTexture(textures[1]), GL_TRUE);
+        EXPECT_EQ(glIsFramebuffer(framebuffer), GL_TRUE);
+        EXPECT_TRUE(shader.Clear());
+    }
+
+    EXPECT_EQ(glIsProgram(programId), GL_FALSE);
+    EXPECT_EQ(glIsShader(vertexShader), GL_FALSE);
+    EXPECT_EQ(glIsShader(fragmentShader), GL_FALSE);
+    EXPECT_EQ(glIsTexture(textures[0]), GL_FALSE);
+    EXPECT_EQ(glIsTexture(textures[1]), GL_FALSE);
+    EXPECT_EQ(glIsFramebuffer(framebuffer), GL_FALSE);
+}
+
+/**
+ * @tc.name: PixelMapGlShaderDestructorDoesNotTouchGlTest001
+ * @tc.desc: Test destruction does not issue GL calls or consume unrelated GL errors.
+ * @tc.type: FUNC
+ */
+HWTEST_F(EglImageHelperTest, PixelMapGlShaderDestructorDoesNotTouchGlTest001, TestSize.Level3)
+{
+    PixelMapGlContext context;
+    if (!context.InitEGLContext()) {
+        SUCCEED();
+        return;
+    }
+
+    auto shader = std::make_unique<TestShader>();
+    while (glGetError() != GL_NO_ERROR) {}
+    glBindTexture(GL_INVALID_ENUM, 0U);
+    shader.reset();
+    EXPECT_EQ(glGetError(), GL_INVALID_ENUM);
+}
+
+/**
+ * @tc.name: PixelMapGlShaderBorrowedTextureTest001
+ * @tc.desc: Test clearing a shader does not delete its borrowed input texture.
+ * @tc.type: FUNC
+ */
+HWTEST_F(EglImageHelperTest, PixelMapGlShaderBorrowedTextureTest001, TestSize.Level3)
+{
+    PixelMapGlContext context;
+    if (!context.InitEGLContext()) {
+        SUCCEED();
+        return;
+    }
+
+    GLuint texture = 0U;
+    glGenTextures(1, &texture);
+    glBindTexture(GL_TEXTURE_2D, texture);
+    {
+        TestShader shader;
+        shader.SetBorrowedReadTexId(texture);
+        EXPECT_TRUE(shader.Clear());
+        EXPECT_EQ(glIsTexture(texture), GL_TRUE);
+    }
+    PixelMapGlResource::DeleteTexture(texture);
+}
+
+/**
  * @tc.name: PixelMapProgramExecutionGuardTest001
  * @tc.desc: Test post processing program and manager guard branches without GL context.
  * @tc.type: FUNC
@@ -440,9 +543,38 @@ HWTEST_F(EglImageHelperTest, PixelMapGlShaderInterfaceGuardTest002, TestSize.Lev
  */
 HWTEST_F(EglImageHelperTest, PixelMapProgramManagerInterfaceTest001, TestSize.Level3)
 {
-    const bool firstBuildRet = PixelMapGLPostProcProgram::BuildShader();
-    const bool secondBuildRet = PixelMapProgramManager::BuildShader();
-    EXPECT_EQ(firstBuildRet, secondBuildRet);
+    constexpr size_t threadCount = 4;
+    std::array<bool, threadCount> buildResults = { false };
+    std::array<bool, threadCount> contextRestored = { false };
+    std::vector<std::thread> threads;
+    threads.reserve(threadCount);
+    for (size_t index = 0; index < threadCount; ++index) {
+        threads.emplace_back([index, &buildResults, &contextRestored]() {
+            PixelMapGlContext callerContext;
+            if (!callerContext.InitEGLContext()) {
+                buildResults[index] = PixelMapGLPostProcProgram::BuildShader();
+                contextRestored[index] = true;
+                return;
+            }
+            const EGLDisplay previousDisplay = eglGetCurrentDisplay();
+            const EGLSurface previousDrawSurface = eglGetCurrentSurface(EGL_DRAW);
+            const EGLSurface previousReadSurface = eglGetCurrentSurface(EGL_READ);
+            const EGLContext previousContext = eglGetCurrentContext();
+            buildResults[index] = PixelMapGLPostProcProgram::BuildShader();
+            contextRestored[index] = eglGetCurrentDisplay() == previousDisplay &&
+                eglGetCurrentSurface(EGL_DRAW) == previousDrawSurface &&
+                eglGetCurrentSurface(EGL_READ) == previousReadSurface &&
+                eglGetCurrentContext() == previousContext;
+        });
+    }
+    for (auto &thread : threads) {
+        thread.join();
+    }
+    for (size_t index = 0; index < threadCount; ++index) {
+        EXPECT_EQ(buildResults[index], buildResults[0]);
+        EXPECT_TRUE(contextRestored[index]);
+    }
+    EXPECT_EQ(PixelMapProgramManager::BuildShader(), buildResults[0]);
 
     PixelMapGLPostProcProgram *program = PixelMapProgramManager::GetInstance().GetProgram();
     if (program == nullptr) {

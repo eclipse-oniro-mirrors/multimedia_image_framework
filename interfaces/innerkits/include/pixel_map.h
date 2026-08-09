@@ -720,10 +720,12 @@ public:
 
     NATIVEEXPORT virtual void SetModifiable(bool modifiable)
     {
+        std::unique_lock<std::shared_mutex> lock(*pixelDataMutex_);
         modifiable_ = modifiable;
     }
     NATIVEEXPORT virtual bool IsModifiable()
     {
+        std::shared_lock<std::shared_mutex> lock(*pixelDataMutex_);
         return modifiable_;
     }
 
