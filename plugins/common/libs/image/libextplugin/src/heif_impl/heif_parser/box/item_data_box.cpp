@@ -23,7 +23,7 @@ namespace {
     const uint32_t MAX_HEIF_IMAGE_GRID_SIZE = 128 * 1024 * 1024;
     const uint32_t MAX_HEIF_ITEM_COUNT = 2000;
     const uint32_t MAX_HEIF_EXTENT_NUM = 1024;
-    const size_t MAX_HEIF_GRID_TOTAL_INPUT_SIZE = 2 * 1024 * 1024 * 1024;
+    const size_t MAX_HEIF_GRID_TOTAL_INPUT_SIZE = 2ULL * 1024 * 1024 * 1024;
 }
 
 namespace OHOS {

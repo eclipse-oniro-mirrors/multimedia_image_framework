@@ -79,6 +79,7 @@ const static int GRID_NUM_2 = 2;
 const static uint32_t HEIF_HARDWARE_TILE_MIN_DIM = 128;
 const static uint32_t HEIF_HARDWARE_TILE_MAX_DIM = 4096;
 const static uint32_t HEIF_HARDWARE_DISPLAY_MIN_DIM = 128;
+const static uint32_t MAX_HEIF_GAINMAP_DIM = 20000;
 const static int IMAGE_ID = 123;
 
 const static uint16_t BT2020_PRIMARIES = 9;
@@ -1038,6 +1039,9 @@ bool HeifDecoderImpl::SwDecodeAuxiliaryImage(std::shared_ptr<HeifImage> &gainmap
         } else {
             uint32_t width = gainmapImage->GetOriginalWidth();
             uint32_t height = gainmapImage->GetOriginalHeight();
+            CHECK_ERROR_RETURN_RET_LOG(width == 0 || height == 0 || width > MAX_HEIF_GAINMAP_DIM ||
+                height > MAX_HEIF_GAINMAP_DIM, false,
+                "invalid gainmap dim, w=%{public}u h=%{public}u", width, height);
             output = SurfaceBuffer::Create();
             BufferRequestConfig config = {
                 .width = width,
