@@ -104,7 +104,7 @@ heif_error HeifAv1CBox::ParseConfigOBUS(HeifStreamReader &reader)
     CHECK_ERROR_RETURN_RET_LOG(GetBoxSize() < AV1C_BOX_FIXED_SIZE, heif_error_invalid_av1c,
         "HeifAv1CBox is invalid, HeifAv1CBox size less than 12");
     uint64_t remainingSize = GetBoxSize() - AV1C_BOX_FIXED_SIZE;
-    CHECK_DEBUG_RETURN_RET_LOG(remainingSize > MAX_AV1C_CONFIG_OBUs_SIZE, heif_error_invalid_av1c,
+    CHECK_ERROR_RETURN_RET_LOG(remainingSize > MAX_AV1C_CONFIG_OBUs_SIZE, heif_error_invalid_av1c,
         "HeifAv1CBox configOBUs size exceeds limit");
     CHECK_DEBUG_RETURN_RET_LOG(remainingSize == 0, heif_error_ok, "HeifAv1CBox configOBUS is equal to zero.");
     configOBUs_.resize(remainingSize);
