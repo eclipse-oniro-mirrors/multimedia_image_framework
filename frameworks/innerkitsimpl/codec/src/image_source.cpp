@@ -1206,6 +1206,11 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index, const D
     ImageUtils::FlushSurfaceBuffer(pixelMap.get());
     pixelMap->SetMemoryName(GetPixelMapName(pixelMap.get()));
     ImageTrace pixelMapId("CreatePixelMapExtended, pixelMapId:%u", pixelMap->GetUniqueId());
+#ifdef IMAGE_QOS_ENABLE
+    if (ImageUtils::IsSizeSupportDma(info.size) && getpid() != gettid()) {
+        OHOS::QOS::ResetThreadQos();
+    }
+#endif
     return pixelMap;
 }
 
