@@ -723,6 +723,33 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapEx(uint32_t index, const DecodeO
     return CreatePixelMap(index, opts, errorCode);
 }
 
+namespace {
+class QosGuard {
+public:
+    explicit QosGuard(const Size &size)
+    {
+#ifdef IMAGE_QOS_ENABLE
+        active_ = ImageUtils::IsSizeSupportDma(size) && getpid() != gettid();
+        if (active_) {
+            OHOS::QOS::SetThreadQos(OHOS::QOS::QosLevel::QOS_USER_INTERACTIVE);
+        }
+#endif
+    }
+    ~QosGuard()
+    {
+#ifdef IMAGE_QOS_ENABLE
+        if (active_) {
+            OHOS::QOS::ResetThreadQos();
+        }
+#endif
+    }
+    QosGuard(const QosGuard &) = delete;
+    QosGuard &operator=(const QosGuard &) = delete;
+private:
+    bool active_ = false;
+};
+} // namespace
+
 static bool IsExtendedCodec(AbsImageDecoder *decoder)
 {
     const static string ENCODED_FORMAT_KEY = "EncodedFormat";
@@ -1124,11 +1151,7 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index, const D
         errorCode = ERR_MEDIA_INVALID_OPERATION;
         return nullptr;
     }
-#ifdef IMAGE_QOS_ENABLE
-    if (ImageUtils::IsSizeSupportDma(info.size) && getpid() != gettid()) {
-        OHOS::QOS::SetThreadQos(OHOS::QOS::QosLevel::QOS_USER_INTERACTIVE);
-    }
-#endif
+    QosGuard qosGuard(info.size);
     UpdateHdrCanvasFlagFromExif();
     SetDecodeInfoOptions(index, opts, info, imageEvent);
     std::string pluginType = mainDecoder_->GetPluginType();
@@ -1140,11 +1163,6 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index, const D
         IMAGE_LOGE("[ImageSource]get image info failed, ret:%{public}u.", errorCode);
         imageEvent.SetDecodeErrorMsg("get image info failed, ret:" + std::to_string(errorCode));
         errorCode = ERR_IMAGE_DATA_ABNORMAL;
-#ifdef IMAGE_QOS_ENABLE
-        if (ImageUtils::IsSizeSupportDma(info.size) && getpid() != gettid()) {
-            OHOS::QOS::ResetThreadQos();
-        }
-#endif
         return nullptr;
     }
     //Extract Exif Metadata，hasValidXmageCoords_ is used for judgeing
@@ -1166,11 +1184,6 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index, const D
     if (errorCode != SUCCESS) {
         IMAGE_LOGE("[ImageSource]decode source fail, ret:%{public}u.", errorCode);
         imageEvent.SetDecodeErrorMsg("decode source fail, ret:" + std::to_string(errorCode));
-#ifdef IMAGE_QOS_ENABLE
-        if (ImageUtils::IsSizeSupportDma(info.size) && getpid() != gettid()) {
-            OHOS::QOS::ResetThreadQos();
-        }
-#endif
         return nullptr;
     }
     bool isHdr = context.hdrType > Media::ImageHdrType::SDR;
@@ -1188,11 +1201,6 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index, const D
 
     auto pixelMap = CreatePixelMapByInfos(plInfo, context, errorCode);
     if (pixelMap == nullptr) {
-#ifdef IMAGE_QOS_ENABLE
-    if (ImageUtils::IsSizeSupportDma(info.size) && getpid() != gettid()) {
-        OHOS::QOS::ResetThreadQos();
-    }
-#endif
         return nullptr;
     }
     if (!context.ifPartialOutput) {
@@ -1221,11 +1229,6 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index, const D
     ImageUtils::FlushSurfaceBuffer(pixelMap.get());
     pixelMap->SetMemoryName(GetPixelMapName(pixelMap.get()));
     ImageTrace pixelMapId("CreatePixelMapExtended, pixelMapId:%u", pixelMap->GetUniqueId());
-#ifdef IMAGE_QOS_ENABLE
-    if (ImageUtils::IsSizeSupportDma(info.size) && getpid() != gettid()) {
-        OHOS::QOS::ResetThreadQos();
-    }
-#endif
     return pixelMap;
 }
 
