@@ -79,6 +79,7 @@ const static int GRID_NUM_2 = 2;
 const static uint32_t HEIF_HARDWARE_TILE_MIN_DIM = 128;
 const static uint32_t HEIF_HARDWARE_TILE_MAX_DIM = 4096;
 const static uint32_t HEIF_HARDWARE_DISPLAY_MIN_DIM = 128;
+const static uint32_t MAX_HEIF_GAINMAP_DIM = 20000;
 const static int IMAGE_ID = 123;
 
 const static uint16_t BT2020_PRIMARIES = 9;
@@ -767,6 +768,7 @@ bool HeifDecoderImpl::HwDecodeGrids(std::shared_ptr<HeifImage> &image,
 {
     bool cond = image == nullptr;
     CHECK_ERROR_RETURN_RET_LOG(cond, false, "HeifDecoderImpl::DecodeGrids image is nullptr");
+    parser_->ResetIlocReadDataSize();
     std::vector<std::shared_ptr<HeifImage>> tileImages;
     parser_->GetTileImages(image->GetItemId(), tileImages);
     cond = tileImages.empty();
@@ -941,6 +943,7 @@ bool HeifDecoderImpl::SwDecodeGrids(std::shared_ptr<HeifImage> &image, HevcSoftD
     CHECK_ERROR_RETURN_RET(cond, false);
     cond = param.dstBuffer == nullptr || param.dstStride == 0;
     CHECK_ERROR_RETURN_RET(cond, false);
+    parser_->ResetIlocReadDataSize();
     std::vector<std::shared_ptr<HeifImage>> tileImages;
     parser_->GetTileImages(image->GetItemId(), tileImages);
     cond = tileImages.empty();
@@ -1036,6 +1039,9 @@ bool HeifDecoderImpl::SwDecodeAuxiliaryImage(std::shared_ptr<HeifImage> &gainmap
         } else {
             uint32_t width = gainmapImage->GetOriginalWidth();
             uint32_t height = gainmapImage->GetOriginalHeight();
+            CHECK_ERROR_RETURN_RET_LOG(width == 0 || height == 0 || width > MAX_HEIF_GAINMAP_DIM ||
+                height > MAX_HEIF_GAINMAP_DIM, false,
+                "invalid gainmap dim, w=%{public}u h=%{public}u", width, height);
             output = SurfaceBuffer::Create();
             BufferRequestConfig config = {
                 .width = width,

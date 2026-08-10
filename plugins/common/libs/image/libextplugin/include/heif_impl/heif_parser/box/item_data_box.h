@@ -75,11 +75,15 @@ public:
     heif_error GetPrimaryImageFileOffset(heif_item_id itemId, uint64_t &offset,
         const std::shared_ptr<HeifIdatBox> &idatBox) const;
 
+    void ResetTotalReadDataSize() const { totalReadDataSize_ = 0; }
+
 protected:
     heif_error ParseContent(HeifStreamReader &reader) override;
 
 private:
     std::vector<Item> items_;
+
+    mutable size_t totalReadDataSize_ = 0;
 
     mutable size_t startPos_ = 0;
     uint8_t offsetSize_ = 0;

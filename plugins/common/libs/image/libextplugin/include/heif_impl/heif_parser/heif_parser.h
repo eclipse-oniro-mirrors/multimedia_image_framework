@@ -76,6 +76,13 @@ public:
     heif_error GetItemData(heif_item_id itemId, std::vector<uint8_t> *out,
                            heif_header_option option = heif_no_header) const;
 
+    void ResetIlocReadDataSize()
+    {
+        if (ilocBox_) {
+            ilocBox_->ResetTotalReadDataSize();
+        }
+    }
+
     void GetTileImages(heif_item_id gridItemId, std::vector<std::shared_ptr<HeifImage>> &out);
 
     void GetIdenImage(heif_item_id itemId, std::shared_ptr<HeifImage> &out);
