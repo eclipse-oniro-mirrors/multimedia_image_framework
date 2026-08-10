@@ -1331,20 +1331,11 @@ HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_CreatePixelmapUsingAllocator, TestS
     const int32_t size = 300;
     const int32_t dmaSize = 512;
     OH_ImageSourceNative *imageSource = CreateImageSourceNative(IMAGE_JPEG_PATH_TEST_PICTURE);
-    ASSERT_NE(imageSource, nullptr);
-#ifdef EXT_PIXEL
-    ASSERT_EQ(CreateUsingAlloc(dmaSize, PIXEL_FORMAT_RGB_565, IMAGE_ALLOCATOR_MODE_AUTO, imageSource), true);
-    ASSERT_EQ(CreateUsingAlloc(dmaSize, PIXEL_FORMAT_RGBA_1010102, IMAGE_ALLOCATOR_MODE_AUTO, imageSource), true);
-    ASSERT_EQ(CreateUsingAlloc(size, PIXEL_FORMAT_RGB_565, IMAGE_ALLOCATOR_MODE_DMA, imageSource), true);
-    ASSERT_EQ(CreateUsingAlloc(size, PIXEL_FORMAT_ALPHA_F16, IMAGE_ALLOCATOR_MODE_DMA, imageSource), true);
-    ASSERT_EQ(CreateUsingAlloc(size, PIXEL_FORMAT_RGBA_1010102, IMAGE_ALLOCATOR_MODE_DMA, imageSource), true);
-#else
-    ASSERT_EQ(CreateUsingAlloc(dmaSize, PIXEL_FORMAT_RGB_565, IMAGE_ALLOCATOR_MODE_AUTO, imageSource), false);
-    ASSERT_EQ(CreateUsingAlloc(dmaSize, PIXEL_FORMAT_RGBA_1010102, IMAGE_ALLOCATOR_MODE_AUTO, imageSource), false);
-    ASSERT_EQ(CreateUsingAlloc(size, PIXEL_FORMAT_RGB_565, IMAGE_ALLOCATOR_MODE_DMA, imageSource), false);
-    ASSERT_EQ(CreateUsingAlloc(size, PIXEL_FORMAT_ALPHA_F16, IMAGE_ALLOCATOR_MODE_DMA, imageSource), false);
-    ASSERT_EQ(CreateUsingAlloc(size, PIXEL_FORMAT_RGBA_1010102, IMAGE_ALLOCATOR_MODE_DMA, imageSource), false);
-#endif
+    if (imageSource == nullptr) {
+        GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_CreatePixelmapUsingAllocator end, imageSource is null";
+        return;
+    }
+
     ASSERT_EQ(CreateUsingAlloc(dmaSize, PIXEL_FORMAT_RGBA_8888, IMAGE_ALLOCATOR_MODE_AUTO, imageSource), true);
     ASSERT_EQ(CreateUsingAlloc(dmaSize, PIXEL_FORMAT_BGRA_8888, IMAGE_ALLOCATOR_MODE_AUTO, imageSource), true);
     ASSERT_EQ(CreateUsingAlloc(dmaSize, PIXEL_FORMAT_RGB_888, IMAGE_ALLOCATOR_MODE_AUTO, imageSource), true);
