@@ -1140,6 +1140,11 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index, const D
         IMAGE_LOGE("[ImageSource]get image info failed, ret:%{public}u.", errorCode);
         imageEvent.SetDecodeErrorMsg("get image info failed, ret:" + std::to_string(errorCode));
         errorCode = ERR_IMAGE_DATA_ABNORMAL;
+#ifdef IMAGE_QOS_ENABLE
+        if (ImageUtils::IsSizeSupportDma(info.size) && getpid() != gettid()) {
+            OHOS::QOS::ResetThreadQos();
+        }
+#endif
         return nullptr;
     }
     //Extract Exif Metadata，hasValidXmageCoords_ is used for judgeing
@@ -1161,6 +1166,11 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index, const D
     if (errorCode != SUCCESS) {
         IMAGE_LOGE("[ImageSource]decode source fail, ret:%{public}u.", errorCode);
         imageEvent.SetDecodeErrorMsg("decode source fail, ret:" + std::to_string(errorCode));
+#ifdef IMAGE_QOS_ENABLE
+        if (ImageUtils::IsSizeSupportDma(info.size) && getpid() != gettid()) {
+            OHOS::QOS::ResetThreadQos();
+        }
+#endif
         return nullptr;
     }
     bool isHdr = context.hdrType > Media::ImageHdrType::SDR;
@@ -1178,6 +1188,11 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index, const D
 
     auto pixelMap = CreatePixelMapByInfos(plInfo, context, errorCode);
     if (pixelMap == nullptr) {
+#ifdef IMAGE_QOS_ENABLE
+    if (ImageUtils::IsSizeSupportDma(info.size) && getpid() != gettid()) {
+        OHOS::QOS::ResetThreadQos();
+    }
+#endif
         return nullptr;
     }
     if (!context.ifPartialOutput) {
