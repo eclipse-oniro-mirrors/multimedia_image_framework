@@ -1519,7 +1519,6 @@ uint32_t PixelMap::SetRowDataSizeForImageInfo(ImageInfo info)
 
     if (ImageUtils::IsAlpha8(info.pixelFormat) || info.pixelFormat == PixelFormat::ALPHA_F16) {
         SetRowStride(rowDataSize_);
-        IMAGE_LOGI("Alpha format rowDataSize_ = %{public}d", rowDataSize_);
     } else if (!ImageUtils::IsAstc(info.pixelFormat)) {
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
         if (allocatorType_ == AllocatorType::DMA_ALLOC) {

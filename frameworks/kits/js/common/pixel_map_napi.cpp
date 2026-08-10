@@ -1001,9 +1001,14 @@ void PixelMapNapi::Destructor(napi_env env, void *nativeObject, void *finalize)
     }
 }
 
-static void BuildContextError(napi_env env, napi_ref &error, const std::string errMsg, const int32_t errCode)
+static void BuildContextError(napi_env env, napi_ref &error, const std::string errMsg, const int32_t errCode,
+    bool useDebugLog = false)
 {
-    IMAGE_LOGE("%{public}s", errMsg.c_str());
+    if (useDebugLog) {
+        IMAGE_LOGD("%{public}s", errMsg.c_str());
+    } else {
+        IMAGE_LOGE("%{public}s", errMsg.c_str());
+    }
     napi_value tmpError;
     ImageNapiUtils::CreateErrorObj(env, tmpError, errCode, errMsg);
     napi_create_reference(env, tmpError, NUM_1, &(error));
@@ -4703,10 +4708,9 @@ napi_value PixelMapNapi::GetPixelBytesNumber(napi_env env, napi_callback_info in
     status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&pixelMapNapi));
 
     IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, pixelMapNapi), result, IMAGE_LOGE("fail to unwrap context"));
-    IMG_NAPI_CHECK_RET_D(pixelMapNapi->GetPixelNapiEditable(),
+    IMG_NAPI_CHECK_RET(pixelMapNapi->GetPixelNapiEditable(),
         ImageNapiUtils::ThrowExceptionError(env, ERR_RESOURCE_UNAVAILABLE,
-        "Pixelmap has crossed threads . GetPixelBytesNumber failed"),
-        IMAGE_LOGE("Pixelmap has crossed threads . GetPixelBytesNumber failed"));
+        "Pixelmap has crossed threads . GetPixelBytesNumber failed"));
     if (pixelMapNapi->nativePixelMap_ != nullptr) {
         uint32_t byteCount = pixelMapNapi->nativePixelMap_->GetByteCount();
         status = napi_create_int32(env, byteCount, &result);
@@ -5516,10 +5520,9 @@ napi_value PixelMapNapi::SetMemoryNameSync(napi_env env, napi_callback_info info
 
     IMG_NAPI_CHECK_RET_D(IMG_IS_READY(napiStatus, pixelMapNapi), result, IMAGE_LOGE("fail to unwrap context"));
 
-    // corssed threads error
     IMG_NAPI_CHECK_BUILD_ERROR(nVal.context->nConstructor->GetPixelNapiEditable(),
         BuildContextError(env, nVal.context->error, "pixelmap has crossed threads . setname failed",
-        ERR_RESOURCE_UNAVAILABLE), IMG_CREATE_CREATE_ASYNC_WORK(env, nVal.status, "SetNameError",
+        ERR_RESOURCE_UNAVAILABLE, true), IMG_CREATE_CREATE_ASYNC_WORK(env, nVal.status, "SetNameError",
         [](napi_env env, void *data) {}, GeneralErrorComplete, nVal.context, nVal.context->work),
         nVal.result);
 
