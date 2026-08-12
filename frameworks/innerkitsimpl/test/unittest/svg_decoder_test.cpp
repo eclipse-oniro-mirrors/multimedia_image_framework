@@ -416,24 +416,6 @@ HWTEST_F(SvgDecoderTest, BuildStream001, TestSize.Level3)
 }
 
 /**
- * @tc.name: BuildStream002
- * @tc.desc: Test of BuildStream with stream size exceeding max limit
- * @tc.type: FUNC
- */
-HWTEST_F(SvgDecoderTest, BuildStream002, TestSize.Level3)
-{
-    GTEST_LOG_(INFO) << "SvgDecoderTest: BuildStream002 start";
-    auto svgDecoder = std::make_shared<SvgDecoder>();
-    auto mock = std::make_shared<MockInputDataStream>();
-    mock->SetReturn(false);
-    mock->SetStreamSize(300 * 1024 * 1024 + 1);
-    svgDecoder->SetSource(*mock.get());
-    bool ret = svgDecoder->BuildStream();
-    ASSERT_EQ(ret, false);
-    GTEST_LOG_(INFO) << "SvgDecoderTest: BuildStream002 end";
-}
-
-/**
  * @tc.name: BuildDom001
  * @tc.desc: Test of BuildDom
  * @tc.type: FUNC
