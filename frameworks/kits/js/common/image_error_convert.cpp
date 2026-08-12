@@ -51,7 +51,7 @@ std::pair<int32_t, std::string> ImageErrorConvert::ModifyImagePropertiesEnhanced
                 "Unsupported metadata." + exMessage);
         case ERR_IMAGE_SOURCE_DATA:
             return std::make_pair<int32_t, std::string>(IMAGE_SOURCE_UNSUPPORTED_MIMETYPE,
-                "Unsupported MIME type.");
+                "Unsupported MIME type or inaccessible image source.");
         case ERR_MEDIA_WRITE_PARCEL_FAIL:
         default:
             return std::make_pair(ERR_IMAGE_WRITE_PROPERTY_FAILED,

@@ -162,6 +162,8 @@ struct ImageSourceSyncContext {
     DecodingOptionsForThumbnail decodingOptsForThumbnail;
 };
 
+static void GenerateErrMsg(ImageSourceAsyncContext *context, std::string &errMsg);
+
 static std::vector<struct ImageEnum> sPixelMapFormatMap = {
     {"UNKNOWN", 0, ""},
     {"ARGB_8888", 1, ""},
@@ -715,6 +717,30 @@ static std::string GetErrorCodeMsg(Image_ErrorCode apiErrorCode)
     return errMsg;
 }
 
+static std::string GetDecodeErrorMsg(uint32_t innerErrorCode, Image_ErrorCode apiErrorCode,
+    const std::string &unsupportedDataMsg)
+{
+    if (innerErrorCode == ERR_IMAGE_DATA_UNSUPPORT) {
+        return unsupportedDataMsg;
+    }
+    return GetErrorCodeMsg(apiErrorCode);
+}
+
+static std::string GetImageRawDataErrorMsg(uint32_t innerErrorCode, Image_ErrorCode apiErrorCode)
+{
+    const std::string prefix = "Failed to get DNG raw data: ";
+    switch (innerErrorCode) {
+        case ERR_IMAGE_MISMATCHED_FORMAT:
+            return prefix + "The image is not in DNG format.";
+        case ERR_IMAGE_DATA_UNSUPPORT:
+            return prefix + "The DNG raw data layout or size is not supported.";
+        case ERR_IMAGE_GET_DATA_ABNORMAL:
+            return prefix + "Failed to read the DNG image data.";
+        default:
+            return prefix + GetErrorCodeMsg(apiErrorCode);
+    }
+}
+
 static int32_t GetIntArgument(napi_env env, napi_value value)
 {
     int32_t intValue = -1;
@@ -1265,28 +1291,39 @@ napi_value SetRecordParametersInfo(napi_env env, std::vector<std::pair<std::stri
     return result;
 }
 
-napi_value CreateModifyErrorArray(napi_env env, std::multimap<std::int32_t, std::string> errMsgArray)
+napi_value CreateModifyErrorArray(napi_env env, const ImageSourceAsyncContext *context)
 {
     napi_value result = nullptr;
-    napi_status status = napi_create_array_with_length(env, errMsgArray.size(), &result);
+    napi_status status = napi_create_array_with_length(env, context->errMsgArray.size(), &result);
     if (status != napi_ok) {
         IMAGE_LOGE("Malloc array buffer failed %{public}d", status);
         return result;
     }
 
     uint32_t index = 0;
-    for (auto it = errMsgArray.begin(); it != errMsgArray.end(); ++it) {
+    for (auto it = context->errMsgArray.begin(); it != context->errMsgArray.end(); ++it) {
         napi_value errMsgVal;
         napi_get_undefined(env, &errMsgVal);
         if (it->first == ERR_MEDIA_WRITE_PARCEL_FAIL) {
-            ImageNapiUtils::CreateErrorObj(env, errMsgVal, it->first,
-                "Create Fd without write permission! exif key: " + it->second);
+            if (context->fdIndex != INVALID_FD) {
+                ImageNapiUtils::CreateErrorObj(env, errMsgVal, it->first,
+                    "Failed to write EXIF data to the file. The file may be read-only or inaccessible. exif key: " +
+                    it->second);
+            } else if (context->sourceBuffer != nullptr && context->sourceBufferSize != 0) {
+                ImageNapiUtils::CreateErrorObj(env, errMsgVal, it->first,
+                    "Failed to write EXIF data because in-memory image sources do not support metadata modification. "
+                    "exif key: " + it->second);
+            } else {
+                ImageNapiUtils::CreateErrorObj(env, errMsgVal, it->first,
+                    "Failed to write EXIF data to the image source. exif key: " + it->second);
+            }
         } else if (it->first == ERR_MEDIA_OUT_OF_RANGE) {
             ImageNapiUtils::CreateErrorObj(env, errMsgVal, it->first,
-                "The given buffer size is too small to add new exif data! exif key: " + it->second);
+                "The EXIF value is out of the supported range. exif key: " + it->second);
         } else if (it->first == ERR_IMAGE_DECODE_EXIF_UNSUPPORT) {
             ImageNapiUtils::CreateErrorObj(env, errMsgVal, it->first,
-                "The image does not support EXIF decoding. exif key: " + it->second);
+                "Failed to modify the EXIF property because the EXIF data or requested EXIF key is not supported. "
+                "exif key: " + it->second);
         } else if (it->first == ERR_MEDIA_VALUE_INVALID) {
             ImageNapiUtils::CreateErrorObj(env, errMsgVal, it->first, it->second);
         } else {
@@ -1331,25 +1368,28 @@ napi_value CreateObtainErrorArray(napi_env env, std::multimap<std::int32_t, std:
     return result;
 }
 
-napi_value CreateMetadataErrorArray(napi_env env, std::multimap<std::int32_t, std::string> errMsgArray)
+napi_value CreateMetadataErrorArray(napi_env env, const ImageSourceAsyncContext *context)
 {
     napi_value result = nullptr;
-    napi_status status = napi_create_array_with_length(env, errMsgArray.size(), &result);
+    napi_status status = napi_create_array_with_length(env, context->errMsgArray.size(), &result);
     if (status != napi_ok) {
         IMAGE_LOGE("Malloc array buffer failed %{public}d", status);
         return result;
     }
 
     uint32_t index = 0;
-    for (auto it = errMsgArray.begin(); it != errMsgArray.end(); ++it) {
+    for (auto it = context->errMsgArray.begin(); it != context->errMsgArray.end(); ++it) {
         napi_value errMsgVal;
         napi_get_undefined(env, &errMsgVal);
         if (it->first == ERR_IMAGE_SOURCE_DATA) {
             ImageNapiUtils::CreateErrorObj(env, errMsgVal, IMAGE_SOURCE_UNSUPPORTED_MIMETYPE,
-                "The image source data is incorrect!");
+                "Unsupported MIME type. The requested metadata is not available for this image source.");
+        } else if (context->typeArray == nullptr) {
+            ImageNapiUtils::CreateErrorObj(env, errMsgVal, IMAGE_SOURCE_UNSUPPORTED_METADATA,
+                "No readable metadata was found in the image.");
         } else {
             ImageNapiUtils::CreateErrorObj(env, errMsgVal, IMAGE_SOURCE_UNSUPPORTED_METADATA,
-                "unsupported metadata! exif key: " + it->second);
+                "The requested metadata type is not supported or is not available in the image.");
         }
         status = napi_set_element(env, result, index, errMsgVal);
         if (status != napi_ok) {
@@ -2273,6 +2313,10 @@ napi_value ImageSourceNapi::GetImageInfo(napi_env env, napi_callback_info info)
             auto context = static_cast<ImageSourceAsyncContext*>(data);
             int index = (context->index >= NUM_0) ? context->index : NUM_0;
             context->status = context->rImageSource->GetImageInfo(index, context->imageInfo);
+            if (context->status != SUCCESS) {
+                context->errMsg = "Failed to get image information.";
+                IMAGE_LOGE("GetImageInfo failed: ret=%{public}u, index=%{public}d.", context->status, index);
+            }
             context->rImageSource->IsHdrImage();
             IMAGE_LOGD("[ImageSourceNapi]GetImageInfo OUT");
         }, GetImageInfoComplete, asyncContext, asyncContext->work);
@@ -2374,8 +2418,10 @@ static void CreatePixelMapExecute(napi_env env, void *data)
 
     if (context->status != SUCCESS) {
         Image_ErrorCode apiErrorCode = ConvertToErrorCode(context->status);
-        context->errMsg = GetErrorCodeMsg(apiErrorCode);
-        IMAGE_LOGE("Create PixelMap error");
+        context->errMsg = GetDecodeErrorMsg(context->status, apiErrorCode,
+            "The image data or requested decode configuration is not supported.");
+        IMAGE_LOGE("CreatePixelMap failed: ret=%{public}u, index=%{public}u.",
+            context->status, context->index);
     }
     IMAGE_LOGD("[ImageSourceNapi]CreatePixelMapExecute OUT");
 }
@@ -2404,9 +2450,11 @@ static void CreateWideGamutSdrPixelMapExecute(napi_env env, void *data)
         context->index, context->decodeOpts, context->status);
     if (context->status != SUCCESS) {
         Image_ErrorCode apiErrorCode = ConvertToErrorCode(context->status);
-        std::string apiErrorMsg = GetErrorCodeMsg(apiErrorCode);
+        std::string apiErrorMsg = GetDecodeErrorMsg(context->status, apiErrorCode,
+            "The image data cannot be decoded as a wide-gamut SDR PixelMap.");
         context->errMsgArray.emplace(apiErrorCode, apiErrorMsg);
-        IMAGE_LOGE("CreateWideGamutSdrPixelMap error");
+        IMAGE_LOGE("CreateWideGamutSdrPixelMap failed: ret=%{public}u, index=%{public}u.",
+            context->status, context->index);
     }
     IMAGE_LOGD("[ImageSourceNapi]CreateWideGamutSdrPixelMapExecute OUT");
 }
@@ -2427,8 +2475,11 @@ static void CreatePixelMapUsingAllocatorExecute(napi_env env, void *data)
         context->index, context->decodeOpts, context->status);
     if (context->status != SUCCESS) {
         Image_ErrorCode apiErrorCode = ConvertToErrorCode(context->status);
-        std::string apiErrorMsg = GetErrorCodeMsg(apiErrorCode);
+        std::string apiErrorMsg = GetDecodeErrorMsg(context->status, apiErrorCode,
+            "The image data or requested allocator configuration is not supported.");
         context->errMsgArray.emplace(apiErrorCode, apiErrorMsg);
+        IMAGE_LOGE("CreatePixelMapUsingAllocator failed: ret=%{public}u, index=%{public}u.",
+            context->status, context->index);
     }
     IMAGE_LOGD("[ImageSourceNapi]CreatePixelMapUsingAllocatorExecute OUT");
 }
@@ -2611,8 +2662,10 @@ napi_value ImageSourceNapi::CreatePixelMapSync(napi_env env, napi_callback_info 
 
     if (syncContext->status != SUCCESS) {
         Image_ErrorCode apiErrorCode = ConvertToErrorCode(syncContext->status);
-        syncContext->errMsg = GetErrorCodeMsg(apiErrorCode);
-        IMAGE_LOGE("Create PixelMap error");
+        syncContext->errMsg = GetDecodeErrorMsg(syncContext->status, apiErrorCode,
+            "The image data or requested decode configuration is not supported.");
+        IMAGE_LOGE("CreatePixelMapSync failed: ret=%{public}u, index=%{public}u.",
+            syncContext->status, syncContext->index);
     }
     result = CreatePixelMapCompleteSync(env, status, static_cast<ImageSourceSyncContext*>((syncContext).get()));
 
@@ -2785,8 +2838,11 @@ napi_value ImageSourceNapi::CreatePixelMapUsingAllocatorSync(napi_env env, napi_
         syncContext->index, syncContext->decodeOpts, syncContext->status);
     if (syncContext->status != SUCCESS) {
         Image_ErrorCode apiErrorCode = ConvertToErrorCode(syncContext->status);
-        std::string apiErrorMsg = GetErrorCodeMsg(apiErrorCode);
+        std::string apiErrorMsg = GetDecodeErrorMsg(syncContext->status, apiErrorCode,
+            "The image data or requested allocator configuration is not supported.");
         syncContext->errMsgArray.emplace(apiErrorCode, apiErrorMsg);
+        IMAGE_LOGE("CreatePixelMapUsingAllocatorSync failed: ret=%{public}u, index=%{public}u.",
+            syncContext->status, syncContext->index);
     }
     result = CreatePixelMapThrowErrorCompleteSync(env, status,
         static_cast<ImageSourceSyncContext*>((syncContext).get()));
@@ -2826,22 +2882,27 @@ static void ModifyImagePropertyComplete(napi_env env, napi_status status, ImageS
     napi_value retVal;
     napi_value callback = nullptr;
     if (context->isBatch) {
-        result[NUM_0] = CreateModifyErrorArray(env, context->errMsgArray);
+        result[NUM_0] = CreateModifyErrorArray(env, context);
     } else {
         if (context->status == ERR_MEDIA_WRITE_PARCEL_FAIL) {
             if (context->fdIndex != -1) {
                 ImageNapiUtils::CreateErrorObj(env, result[NUM_0], context->status,
-                    "Create Fd without write permission!");
+                    "Failed to write EXIF data to the file. The file may be read-only or inaccessible.");
+            } else if (context->sourceBuffer != nullptr && context->sourceBufferSize != 0) {
+                ImageNapiUtils::CreateErrorObj(env, result[NUM_0], context->status,
+                    "Failed to write EXIF data because in-memory image sources do not support metadata modification.");
             } else {
                 ImageNapiUtils::CreateErrorObj(env, result[0], context->status,
-                    "The EXIF data failed to be written to the file.");
+                    "Failed to write EXIF data to the image source.");
             }
         } else if (context->status == ERR_MEDIA_OUT_OF_RANGE) {
+            const std::string errMsg = context->errMsg.empty() ?
+                "The EXIF value is out of the supported range." : context->errMsg;
             ImageNapiUtils::CreateErrorObj(env, result[NUM_0], context->status,
-                "The given buffer size is too small to add new exif data!");
+                errMsg);
         } else if (context->status == ERR_IMAGE_DECODE_EXIF_UNSUPPORT) {
             ImageNapiUtils::CreateErrorObj(env, result[NUM_0], context->status,
-                "The exif data format is not standard, so modify it failed!");
+                "Failed to modify the image property because the EXIF data or requested EXIF key is not supported.");
         } else if (context->status == ERR_MEDIA_VALUE_INVALID) {
             ImageNapiUtils::CreateErrorObj(env, result[NUM_0], context->status, context->errMsg);
         }
@@ -2904,8 +2965,18 @@ static void GenerateErrMsg(ImageSourceAsyncContext *context, std::string &errMsg
         case ERROR:
             errMsg = "The operation failed.";
             break;
+        case ERR_SHAMEM_DATA_ABNORMAL:
+            errMsg = "The shared memory data is abnormal.";
+            break;
+        case ERR_IMAGE_DATA_ABNORMAL:
+            errMsg = "The image data is abnormal.";
+            break;
         case ERR_IMAGE_DATA_UNSUPPORT:
             errMsg = "The image data is not supported.";
+            break;
+        case ERR_IMAGE_TOO_LARGE:
+            errMsg = "The image data is too large. This status code is thrown when an error occurs during "
+                "the process of checking size.";
             break;
         case ERR_IMAGE_SOURCE_DATA:
             errMsg = "The image source data is incorrect.";
@@ -2914,10 +2985,13 @@ static void GenerateErrMsg(ImageSourceAsyncContext *context, std::string &errMsg
             errMsg = "The image source data is incomplete.";
             break;
         case ERR_IMAGE_MISMATCHED_FORMAT:
-            errMsg = "The image format does not mastch.";
+            errMsg = "The image format does not match.";
             break;
         case ERR_IMAGE_UNKNOWN_FORMAT:
             errMsg = "Unknown image format.";
+            break;
+        case ERR_MEDIA_FORMAT_UNSUPPORT:
+            errMsg = "The media format is not supported.";
             break;
         case ERR_IMAGE_INVALID_PARAMETER:
             errMsg = "Invalid image parameter.";
@@ -2930,6 +3004,18 @@ static void GenerateErrMsg(ImageSourceAsyncContext *context, std::string &errMsg
             break;
         case ERR_IMAGE_DECODE_HEAD_ABNORMAL:
             errMsg = "Failed to decode the image header.";
+            break;
+        case ERR_MEDIA_INVALID_OPERATION:
+            errMsg = "Invalid media operation.";
+            break;
+        case ERR_DMA_NOT_EXIST:
+            errMsg = "The DMA memory does not exist.";
+            break;
+        case ERR_DMA_DATA_ABNORMAL:
+            errMsg = "The DMA memory data is abnormal.";
+            break;
+        case ERR_IMAGE_MALLOC_ABNORMAL:
+            errMsg = "Image memory allocation failed.";
             break;
         case ERR_MEDIA_VALUE_INVALID:
             errMsg = "The EXIF value is invalid.";
@@ -2963,8 +3049,10 @@ static void GetImagePropertyComplete(napi_env env, napi_status status, ImageSour
         if (context->isBatch) {
             result[NUM_0] = CreateObtainErrorArray(env, context->errMsgArray);
         } else {
-            std::string errMsg;
-            GenerateErrMsg(context, errMsg);
+            std::string errMsg = context->errMsg;
+            if (errMsg.empty()) {
+                GenerateErrMsg(context, errMsg);
+            }
             ImageNapiUtils::CreateErrorObj(env, result[NUM_0], context->status, errMsg);
 
             if (!context->defaultValueStr.empty()) {
@@ -3366,7 +3454,7 @@ static void ReadImageMetadataComplete(napi_env env, napi_status status, ImageSou
     if (context->status == SUCCESS) {
         HandleSuccessResult(env, context, result);
     } else {
-        result[0] = CreateMetadataErrorArray(env, context->errMsgArray);
+        result[0] = CreateMetadataErrorArray(env, context);
     }
     if (context->deferred) {
         if (context->status == SUCCESS) {
@@ -3534,6 +3622,10 @@ static void ModifyImagePropertyExecute(napi_env env, void *data)
         return;
     }
     context->status = context->rImageSource->ModifyImagePropertyEx(context->index, context->keyStr, context->valueStr);
+    if (context->status != SUCCESS) {
+        IMAGE_LOGE("ModifyImageProperty failed: ret=%{public}u, index=%{public}u, key=%{public}s.",
+            context->status, context->index, context->keyStr.c_str());
+    }
     IMAGE_LOGD("[ImageSourceNapi]ModifyImagePropertyExecute OUT.");
 }
 
@@ -3621,7 +3713,7 @@ static void GetAllMetadataProperties(ImageSourceAsyncContext *context)
 
     if (context->status != SUCCESS) {
         IMAGE_LOGE("%{public}s Failed to get any properties, index: %{public}u", __func__, context->index);
-        context->errMsgArray.emplace(ERROR, "AllProperties");
+        context->errMsgArray.emplace(ERROR, "");
     }
 
     context->kValueTypeArray = std::move(allProperties);
@@ -3941,7 +4033,7 @@ napi_value ImageSourceNapi::WriteImageMetadata(napi_env env, napi_callback_info 
     }
     if (asyncContext->hasUnSupportMetadata) {
         return ImageNapiUtils::ThrowExceptionError(env, IMAGE_SOURCE_UNSUPPORTED_METADATA,
-            "metadata type is not supported write");
+            "Writing this metadata type is not supported.");
     }
 
     napi_create_promise(env, &(asyncContext->deferred), &result);
@@ -4216,7 +4308,7 @@ static void GetSpecifiedMetadataProperties(ImageSourceAsyncContext* context)
     for (const auto& metaType : *context->typeArray) {
         status = ProcessSpecifiedMetadataType(context, metaType);
         if (status != SUCCESS) {
-            context->errMsgArray.insert(std::make_pair(status, "Unsupport metadata type"));
+            context->errMsgArray.emplace(status, "");
         }
     }
     context->status = (context->typeArray.get()->size() == context->errMsgArray.size()) ? ERROR : SUCCESS;
@@ -4308,9 +4400,15 @@ napi_value ImageSourceNapi::GetImageProperty(napi_env env, napi_callback_info in
         IMG_CREATE_CREATE_ASYNC_WORK(env, status, "GetImageProperty",
             [](napi_env env, void *data) {
                 auto context = static_cast<ImageSourceAsyncContext*>(data);
+                std::string errMsg;
                 context->status = context->rImageSource->GetImagePropertyString(context->index,
                                                                                 context->keyStr,
-                                                                                context->valueStr);
+                                                                                context->valueStr, &errMsg);
+                if (context->status != SUCCESS) {
+                    context->errMsg = errMsg;
+                    IMAGE_LOGE("GetImageProperty failed: ret=%{public}u, index=%{public}u, key=%{public}s.",
+                        context->status, context->index, context->keyStr.c_str());
+                }
             },
             reinterpret_cast<napi_async_complete_callback>(GetImagePropertyComplete),
             asyncContext,
@@ -4358,20 +4456,28 @@ napi_value ImageSourceNapi::GetImagePropertySync(napi_env env, napi_callback_inf
             return result;
         }
         if (ret == Media::ERR_IMAGE_PROPERTY_NOT_EXIST) {
-            IMAGE_LOGE("%{public}s: Unsupported metadata, errorCode=%{public}u", __func__, ret);
-            return ImageNapiUtils::ThrowExceptionError(env, IMAGE_SOURCE_UNSUPPORTED_METADATA, "Unsupported metadata");
+            std::string errMsg = "The requested image property does not exist or is not supported. key: " + key;
+            IMAGE_LOGE("%{public}s: %{public}s, errorCode=%{public}u", __func__, errMsg.c_str(), ret);
+            return ImageNapiUtils::ThrowExceptionError(env, IMAGE_SOURCE_UNSUPPORTED_METADATA, errMsg);
         }
         if (ret == Media::ERR_IMAGE_SOURCE_DATA) {
-            IMAGE_LOGE("%{public}s: Unsupported MIME type, errorCode=%{public}u", __func__, ret);
-            return ImageNapiUtils::ThrowExceptionError(env, IMAGE_SOURCE_UNSUPPORTED_MIMETYPE, "Unsupported MIME type");
+            const std::string errMsg =
+                "Unsupported MIME type. The requested image property is not available for this image source.";
+            IMAGE_LOGE("%{public}s: %{public}s, errorCode=%{public}u", __func__, errMsg.c_str(), ret);
+            return ImageNapiUtils::ThrowExceptionError(env, IMAGE_SOURCE_UNSUPPORTED_MIMETYPE, errMsg);
         }
         if (ret == Media::ERR_IMAGE_DECODE_EXIF_UNSUPPORT) {
-            IMAGE_LOGE("%{public}s: Bad source, errorCode=%{public}u", __func__, ret);
-            return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_SOURCE, "Bad source");
+            const std::string errMsg = key.empty() ?
+                "Unable to read the image property because the property key is empty." :
+                "Unable to read the image property because the EXIF data is unavailable or invalid.";
+            IMAGE_LOGE("%{public}s: %{public}s, errorCode=%{public}u", __func__, errMsg.c_str(), ret);
+            return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_SOURCE, errMsg);
         }
     }
-    IMAGE_LOGE("%{public}s: Bad source", __func__);
-    return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_SOURCE, "Bad source");
+    const std::string errMsg =
+        "Failed to read the image property. Ensure the property key is a string and the image source is valid.";
+    IMAGE_LOGE("%{public}s: %{public}s", __func__, errMsg.c_str());
+    return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_SOURCE, errMsg);
 }
 
 static void UpdateDataExecute(napi_env env, void *data)
@@ -4673,9 +4779,12 @@ STATIC_EXEC_FUNC(CreatePixelMapList)
     if ((errorCode == SUCCESS) && IMG_NOT_NULL(context->pixelMaps)) {
         context->status = SUCCESS;
     } else {
-        IMAGE_LOGE("Create PixelMap List error, error=%{public}u", errorCode);
-        context->errMsg = "Create PixelMap List error";
         context->status = (errorCode != SUCCESS) ? errorCode : ERROR;
+        std::string mappedErrorMsg;
+        GenerateErrMsg(context, mappedErrorMsg);
+        context->errMsg = "Create PixelMap List error: " + mappedErrorMsg;
+        IMAGE_LOGE("CreatePixelMapList failed: ret=%{public}u, index=%{public}u.",
+            context->status, context->index);
     }
 }
 
@@ -4759,9 +4868,11 @@ STATIC_EXEC_FUNC(GetDelayTime)
     if ((errorCode == SUCCESS) && IMG_NOT_NULL(context->delayTimes)) {
         context->status = SUCCESS;
     } else {
-        IMAGE_LOGE("Get DelayTime error, error=%{public}u", errorCode);
-        context->errMsg = "Get DelayTime error";
         context->status = (errorCode != SUCCESS) ? errorCode : ERROR;
+        std::string mappedErrorMsg;
+        GenerateErrMsg(context, mappedErrorMsg);
+        context->errMsg = "Get DelayTime error: " + mappedErrorMsg;
+        IMAGE_LOGE("GetDelayTime failed: ret=%{public}u.", context->status);
     }
 }
 
@@ -4843,9 +4954,11 @@ STATIC_EXEC_FUNC(GetDisposalType)
     if ((errorCode == SUCCESS) && IMG_NOT_NULL(context->disposalType)) {
         context->status = SUCCESS;
     } else {
-        IMAGE_LOGE("Get DisposalType error, error=%{public}u", errorCode);
-        context->errMsg = "Get DisposalType error";
         context->status = (errorCode != SUCCESS) ? errorCode : ERROR;
+        std::string mappedErrorMsg;
+        GenerateErrMsg(context, mappedErrorMsg);
+        context->errMsg = "Get DisposalType error: " + mappedErrorMsg;
+        IMAGE_LOGE("GetDisposalType failed: ret=%{public}u.", context->status);
     }
 }
 
@@ -4928,9 +5041,11 @@ STATIC_EXEC_FUNC(GetFrameCount)
     if (errorCode == SUCCESS) {
         context->status = SUCCESS;
     } else {
-        IMAGE_LOGE("Get FrameCount error, error=%{public}u", errorCode);
-        context->errMsg = "Get FrameCount error";
         context->status = errorCode;
+        std::string mappedErrorMsg;
+        GenerateErrMsg(context, mappedErrorMsg);
+        context->errMsg = "Get FrameCount error: " + mappedErrorMsg;
+        IMAGE_LOGE("GetFrameCount failed: ret=%{public}u.", context->status);
     }
 }
 
@@ -5268,6 +5383,7 @@ static void CreatePictureExecute(napi_env env, void *data)
         } else {
             context->status = ERROR;
         }
+        IMAGE_LOGE("CreatePicture failed: ret=%{public}u.", errorCode);
     }
 
     IMAGE_LOGD("[ImageSourceNapi]CreatePictureExecute OUT");
@@ -5283,11 +5399,13 @@ static void CreatePictureComplete(napi_env env, napi_status status, void *data)
         result = PictureNapi::CreatePicture(env, context->rPicture);
     } else if (context->status == ERR_IMAGE_DESIRED_PIXELFORMAT_UNSUPPORTED) {
         std::pair<int32_t, std::string> errorMsg(static_cast<int32_t>(IMAGE_SOURCE_UNSUPPORTED_OPTIONS),
-            "DesiredPixelFormat error");
+            "DesiredPixelFormat error: Unsupported options. For example, unsupported desiredPixelFormat causes "
+            "a failure in converting an image into the desired pixel format.");
         context->errMsgArray.insert(errorMsg);
         napi_get_undefined(env, &result);
     } else {
-        std::pair<int32_t, std::string> errorMsg(static_cast<int32_t>(IMAGE_DECODE_FAILED), "Create Picture error");
+        std::pair<int32_t, std::string> errorMsg(static_cast<int32_t>(IMAGE_DECODE_FAILED),
+            "Create Picture error: Decode failed.");
         context->errMsgArray.insert(errorMsg);
         napi_get_undefined(env, &result);
     }
@@ -5552,8 +5670,10 @@ STATIC_EXEC_FUNC(CreateImageRawData)
     if (errorCode != SUCCESS) {
         context->status = ERROR;
         Image_ErrorCode apiErrorCode = ConvertToErrorCode(errorCode);
-        std::pair<int32_t, std::string> errorMsg(static_cast<int32_t>(apiErrorCode), "Failed to get dng raw data.");
+        std::pair<int32_t, std::string> errorMsg(static_cast<int32_t>(apiErrorCode),
+            GetImageRawDataErrorMsg(errorCode, apiErrorCode));
         context->errMsgArray.insert(errorMsg);
+        IMAGE_LOGE("CreateImageRawData failed: ret=%{public}u.", errorCode);
     } else {
         context->imageRawData = std::move(imageRawData);
         context->bitsPerSample = bitsPerSample;

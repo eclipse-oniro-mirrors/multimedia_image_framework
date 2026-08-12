@@ -25,6 +25,22 @@ extern "C" {
 
 constexpr int32_t defaultBufferSize = 25 * 1024 * 1024;
 
+static int32_t HandlePackToDataResult(int64_t packedSize, int64_t bufferSize, int64_t *size)
+{
+    if (packedSize > 0 && packedSize < bufferSize) {
+        *size = packedSize;
+        return IMAGE_SUCCESS;
+    }
+    if (packedSize >= bufferSize) {
+        IMAGE_LOGE("packedSize (%{public}" PRId64 ") reaches or exceeds buffer capacity (%{public}" PRId64
+            "); output may be truncated.",
+            packedSize, bufferSize);
+    } else {
+        IMAGE_LOGE("packing failed after writing %{public}" PRId64 " bytes.", packedSize);
+    }
+    return IMAGE_ENCODE_FAILED;
+}
+
 OH_ImagePackerNative::OH_ImagePackerNative()
 {
     imagePacker_ = std::make_shared<OHOS::Media::ImagePacker>();
@@ -73,11 +89,7 @@ int32_t OH_ImagePackerNative::PackingFromImageSource(OHOS::Media::PackOption *op
     if (ret != IMAGE_SUCCESS) {
         return ret;
     }
-    if (packedSize > 0 && (packedSize < bufferSize)) {
-        *size = packedSize;
-        return IMAGE_SUCCESS;
-    }
-    return IMAGE_ENCODE_FAILED;
+    return HandlePackToDataResult(packedSize, bufferSize, size);
 }
 
 int32_t OH_ImagePackerNative::PackingFromPixelmap(OHOS::Media::PackOption *option, OH_PixelmapNative *pixelmap,
@@ -111,11 +123,7 @@ int32_t OH_ImagePackerNative::PackingFromPixelmap(OHOS::Media::PackOption *optio
     if (ret != IMAGE_SUCCESS) {
         return ret;
     }
-    if (packedSize > 0 && (packedSize < bufferSize)) {
-        *size = packedSize;
-        return IMAGE_SUCCESS;
-    }
-    return IMAGE_ENCODE_FAILED;
+    return HandlePackToDataResult(packedSize, bufferSize, size);
 }
 
 int32_t OH_ImagePackerNative::PackToDataMultiFrames(OHOS::Media::PackOption *option,
@@ -152,11 +160,7 @@ int32_t OH_ImagePackerNative::PackToDataMultiFrames(OHOS::Media::PackOption *opt
     if (ret != IMAGE_SUCCESS) {
         return ret;
     }
-    if (packedSize > 0 && (packedSize < bufferSize)) {
-        *size = packedSize;
-        return IMAGE_SUCCESS;
-    }
-    return IMAGE_ENCODE_FAILED;
+    return HandlePackToDataResult(packedSize, bufferSize, size);
 }
 
 int32_t OH_ImagePackerNative::PackToDataFromPicture(OHOS::Media::PackOption *option, struct OH_PictureNative *picture,
@@ -190,11 +194,7 @@ int32_t OH_ImagePackerNative::PackToDataFromPicture(OHOS::Media::PackOption *opt
     if (ret != IMAGE_SUCCESS) {
         return ret;
     }
-    if (packedSize > 0 && (packedSize < bufferSize)) {
-        *size = packedSize;
-        return IMAGE_SUCCESS;
-    }
-    return IMAGE_ENCODE_FAILED;
+    return HandlePackToDataResult(packedSize, bufferSize, size);
 }
 
 int32_t OH_ImagePackerNative::PackToFileFromImageSource(OHOS::Media::PackOption *option,

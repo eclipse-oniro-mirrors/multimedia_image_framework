@@ -727,15 +727,21 @@ static bool FinalizePacking(std::unique_ptr<ImagePackerTaiheContext> &context, i
         context->packedSize = packedSize;
         return true;
     } else if (packedSize == context->resultBufferSize) {
+        const std::string errorMsg = "The effective packingOptions.bufferSize (" +
+            std::to_string(context->resultBufferSize) +
+            " bytes) is insufficient. Set bufferSize to a value greater than the encoded image size.";
         if (context->packType == TYPE_PICTURE) {
-            ThrowPackingError(context, IMAGE_ENCODE_FAILED, "output buffer is not enough");
+            ThrowPackingError(context, IMAGE_ENCODE_FAILED, errorMsg);
         } else {
-            ThrowPackingError(context, OHOS::Media::ERR_IMAGE_TOO_LARGE, "output buffer is not enough");
+            ThrowPackingError(context, OHOS::Media::ERR_IMAGE_TOO_LARGE, errorMsg);
         }
-        IMAGE_LOGE("output buffer is not enough.");
+        IMAGE_LOGE("packingOptions.bufferSize is insufficient: bufferSize=%{public}" PRId64
+            " bytes; encoded output exceeds the buffer. Set bufferSize greater than the encoded image size.",
+            context->resultBufferSize);
         return false;
     } else {
-        IMAGE_LOGE("Packing failed, packedSize outside size.");
+        IMAGE_LOGE("Packing failed: ret=%{public}u, packedSize=%{public}" PRId64 ", bufferSize=%{public}" PRId64 ".",
+            packRes, packedSize, context->resultBufferSize);
         ThrowPackingError(context, packRes == OHOS::Media::ERR_IMAGE_INVALID_PARAMETER ?
             OHOS::Media::COMMON_ERR_INVALID_PARAMETER : innerEncodeErrorCode, "Packing failed");
         return false;

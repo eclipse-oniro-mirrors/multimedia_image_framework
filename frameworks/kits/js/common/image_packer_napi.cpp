@@ -76,6 +76,11 @@ const int64_t DEFAULT_BUFFER_SIZE = 25 * 1024 * 1024; // 25M is the maximum defa
 const int MASK_3 = 0x3;
 const int MASK_16 = 0xffff;
 
+static bool IsPictureEncodingFormatSupported(const std::string &format)
+{
+    return format == "image/jpeg" || format == "image/heic" || format == "image/heif";
+}
+
 struct ImagePackerError {
     bool hasErrorCode = false;
     int32_t errorCode = SUCCESS;
@@ -372,16 +377,25 @@ STATIC_EXEC_FUNC(Packing)
         context->status = SUCCESS;
     } else if (packedSize == context->resultBufferSize) {
         context->status = ERROR;
+        const std::string errorMsg = "The effective packingOptions.bufferSize (" +
+            std::to_string(context->resultBufferSize) +
+            " bytes) is insufficient. Set bufferSize to a value greater than the encoded image size.";
         if (context->packType == TYPE_PICTURE) {
-            BuildMsgOnError(context, false, "output buffer is not enough", IMAGE_ENCODE_FAILED);
+            BuildMsgOnError(context, false, errorMsg, IMAGE_ENCODE_FAILED);
         } else {
-            BuildMsgOnError(context, false, "output buffer is not enough", ERR_IMAGE_TOO_LARGE);
+            BuildMsgOnError(context, false, errorMsg, ERR_IMAGE_TOO_LARGE);
         }
-        IMAGE_LOGE("output buffer is not enough.");
+        IMAGE_LOGE("packingOptions.bufferSize is insufficient: bufferSize=%{public}" PRId64
+            " bytes; encoded output exceeds the buffer. Set bufferSize greater than the encoded image size.",
+            context->resultBufferSize);
     } else {
         context->status = ERROR;
-        IMAGE_LOGE("Packing failed, packedSize outside size.");
-        BuildMsgOnError(context, false, "Packing failed",
+        IMAGE_LOGE("Packing failed: ret=%{public}u, packedSize=%{public}" PRId64 ", bufferSize=%{public}" PRId64 ".",
+            packRes, packedSize, context->resultBufferSize);
+        const char *errorMsg = context->packType == TYPE_PICTURE &&
+            !IsPictureEncodingFormatSupported(context->packOption.format) ?
+            "Picture encoding only supports image/jpeg, image/heic, or image/heif." : "Packing failed";
+        BuildMsgOnError(context, false, errorMsg,
             packRes == ERR_IMAGE_INVALID_PARAMETER ? COMMON_ERR_INVALID_PARAMETER : innerEncodeErrorCode);
     }
 }

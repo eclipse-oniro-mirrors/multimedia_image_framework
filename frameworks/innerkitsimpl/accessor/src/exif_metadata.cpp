@@ -927,7 +927,7 @@ int ExifMetadata::GetValue(const std::string &key, std::string &value, std::stri
         ExifEntry *entry = GetEntry(key);
         cond = entry == nullptr;
         if (cond && errMsg != nullptr) {
-            *errMsg = "Exif data entry returned null, no exif for the image! exif key:" + key;
+            *errMsg = "The requested EXIF key is not found in the image. key: " + key;
         }
         CHECK_DEBUG_RETURN_RET_LOG(cond, ERR_IMAGE_DECODE_EXIF_UNSUPPORT,
             "Exif data entry returned null for key: %{public}s, tag: %{public}d", key.c_str(), tag);

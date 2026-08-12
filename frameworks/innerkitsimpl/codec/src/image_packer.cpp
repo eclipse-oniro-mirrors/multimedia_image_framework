@@ -282,6 +282,11 @@ uint32_t ImagePacker::AddImage(ImageSource &source, uint32_t index)
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 uint32_t ImagePacker::AddPicture(Picture &picture)
 {
+    bool isSupportedFormat = format_ == IMAGE_JPEG_FORMAT || format_ == IMAGE_HEIC_FORMAT ||
+        format_ == IMAGE_HEIF_FORMAT;
+    CHECK_ERROR_PRINT_LOG(!isSupportedFormat,
+        "Picture encoding only supports image/jpeg, image/heic, or image/heif, requested format: %{public}s",
+        format_.c_str());
     Picture::DumpPictureIfDumpEnabled(picture, "picture_encode_before");
     return DoEncodingFunc([this, &picture](ImagePlugin::AbsImageEncoder* encoder) {
         return encoder->AddPicture(picture);
