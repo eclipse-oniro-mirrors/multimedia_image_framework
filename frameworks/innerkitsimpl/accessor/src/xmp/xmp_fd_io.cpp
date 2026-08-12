@@ -184,8 +184,12 @@ XMPFd_IO::XMPFd_IO(const std::string &filePath, bool readOnly)
     : fd_(-1), readOnly_(readOnly), ownsFd_(true), derivedTemp_(nullptr)
 {
     XMP_TRY();
+    char resolvedPath[PATH_MAX] = {0};
+    if (realpath(filePath.c_str(), resolvedPath) == nullptr) {
+        this->ThrowErrnoExternalFailure("XMPFd_IO::XMPFd_IO(realpath)", errno);
+    }
     int flags = readOnly_ ? O_RDONLY : O_RDWR;
-    fd_ = open(filePath.c_str(), flags);
+    fd_ = open(resolvedPath, flags);
     if (fd_ < 0) {
         this->ThrowErrnoExternalFailure("XMPFd_IO::XMPFd_IO(open)", errno);
     }
@@ -486,7 +490,7 @@ void XMPFd_IO::ValidateAccessModeOrThrow(const char *context) const
         ThrowErrnoExternalFailure(context, errno);
     }
 
-    const int accMode = (flags & O_ACCMODE);
+    const int accMode = (static_cast<unsigned int>(flags) & static_cast<unsigned int>(O_ACCMODE));
     if (readOnly_) {
         if (accMode == O_WRONLY) {
             XMP_Throw("XMPFd_IO, fd is write-only but stream is read-only", kXMPErr_ExternalFailure);
