@@ -2382,8 +2382,8 @@ napi_value PixelMapNapi::ApplyCropSync(napi_env env, napi_callback_info info)
     context->rPixelMap = context->nConstructor->nativePixelMap_;
 
     if (!parseRegion(env, argv[NUM_0], &(context->area.region))) {
-        ImageNapiUtils::ThrowExceptionError(env, ERR_MEDIA_INVALID_REGION,
-            "The specified region is invalid. Ensure all attributes are valid integers within the PixelMap bounds.", true);
+        ImageNapiUtils::ThrowExceptionError(env, ERR_MEDIA_INVALID_REGION, "The specified region is invalid. "
+            "Ensure all attributes are valid integers within the PixelMap bounds.", true);
         return result;
     }
     
