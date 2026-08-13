@@ -102,7 +102,7 @@ PixelMap CreatePixelMapSync(array_view<uint8_t> colors, InitializationOptions co
     Media::InitializationOptions nativeOptions;
     ParseInitializationOptions(options, nativeOptions);
     if (Media::ImageUtils::Is10Bit(nativeOptions.pixelFormat)) {
-        ImageTaiheUtils::ThrowExceptionError(Media::ERROR, "10-bit format is not supported.");
+        ImageTaiheUtils::ThrowExceptionError(Media::ERROR, "10-bit pixel formats are not supported.");
         return make_holder<PixelMapImpl, PixelMap>();
     }
     auto nativePixelMap =
@@ -344,7 +344,7 @@ PixelMapImpl::PixelMapImpl(array_view<uint8_t> const& pixels, InitializationOpti
     ParseInitializationOptions(etsOptions, options);
     if (Media::ImageUtils::Is10Bit(options.pixelFormat)) {
         ImageTaiheUtils::ThrowExceptionError(Media::ERR_IMAGE_UNSUPPORTED_DATA_FORMAT,
-            "10-bit formats are not supported.");
+            "10-bit pixel formats are not supported.");
         return;
     }
 
@@ -353,12 +353,14 @@ PixelMapImpl::PixelMapImpl(array_view<uint8_t> const& pixels, InitializationOpti
 
     if (errCode == Media::ERR_IMAGE_INVALID_PARAMETER) {
         ImageTaiheUtils::ThrowExceptionError(Media::ERR_IMAGE_INVALID_PARAM,
-            "Invalid parameter: Invalid input values or buffer size not matching.");
+            "Invalid parameter: Invalid input values, "
+            "or buffer size not matching the expected size for the given dimensions and pixel format.");
     } else if (errCode == Media::ERR_IMAGE_DATA_ABNORMAL) {
         ImageTaiheUtils::ThrowExceptionError(Media::ERR_IMAGE_INVALID_PARAM,
             "Invalid parameter: Input values are invalid or out of range causing internal configuration error.");
     } else if (errCode == Media::ERR_IMAGE_MALLOC_ABNORMAL) {
-        ImageTaiheUtils::ThrowExceptionError(Media::ERR_MEDIA_MEMORY_ALLOC_FAILED, "Failed to allocate memory.");
+        ImageTaiheUtils::ThrowExceptionError(Media::ERR_MEDIA_MEMORY_ALLOC_FAILED,
+            "Failed to allocate memory. Image size may be too large or the system may be out of memory.");
     } else if (errCode != Media::SUCCESS || nativePixelMap_ == nullptr) {
         ImageTaiheUtils::ThrowExceptionError(Media::ERR_IMAGE_CREATE_PIXELMAP_FAILED,
             "Failed to create PixelMap from pixels data.");
@@ -403,7 +405,8 @@ PixelMapImpl::PixelMapImpl(InitializationOptions const& etsOptions)
     Media::InitializationOptions options;
     ParseInitializationOptions(etsOptions, options);
     if (options.size.width <= 0 || options.size.height <= 0) {
-        ImageTaiheUtils::ThrowExceptionError(Media::ERR_IMAGE_INVALID_PARAM, "Invalid image size.");
+        ImageTaiheUtils::ThrowExceptionError(Media::ERR_IMAGE_INVALID_PARAM,
+            "Invalid image size: Width and height must be positive.");
         return;
     }
 
@@ -413,7 +416,7 @@ PixelMapImpl::PixelMapImpl(InitializationOptions const& etsOptions)
     nativePixelMap_ = Media::PixelMap::Create(options);
     if (nativePixelMap_ == nullptr) {
         ImageTaiheUtils::ThrowExceptionError(Media::ERR_MEDIA_MEMORY_ALLOC_FAILED,
-            "Failed to allocate memory for the empty PixelMap.");
+            "Failed to allocate memory. Image size may be too large or the system may be out of memory.");
     }
 }
 
@@ -527,7 +530,7 @@ void PixelMapImpl::ReadAllPixelsToBufferImpl(array_view<uint8_t> const& dst)
     uint32_t status = nativePixelMap_->ReadPixels(dst.size(), dst.data());
     if (status == Media::ERR_IMAGE_INVALID_PARAMETER) {
         ImageTaiheUtils::ThrowExceptionError(Media::ERR_IMAGE_INVALID_PARAM,
-            "Invalid parameter: Buffer size is too small.");
+            "Invalid parameter: Buffer size is too small. It must match the PixelMap's total byte count.");
     } else if (status == Media::ERR_IMAGE_READ_PIXELMAP_FAILED) {
         ImageTaiheUtils::ThrowExceptionError(Media::ERR_MEDIA_MEMORY_COPY_FAILED, "Failed to copy the pixel data.");
     } else if (status != Media::SUCCESS) {
@@ -560,7 +563,8 @@ void PixelMapImpl::ReadPixelsToAreaWrapperImpl(weak::PositionArea const& area, a
     uint32_t status = nativePixelMap_->ReadPixels(pixels.size(), area->GetOffset(), area->GetStride(), region,
         pixels.data());
     if (status == Media::ERR_IMAGE_INVALID_PARAMETER) {
-        ImageTaiheUtils::ThrowExceptionError(Media::ERR_IMAGE_INVALID_PARAM, "Invalid parameter.");
+        ImageTaiheUtils::ThrowExceptionError(Media::ERR_IMAGE_INVALID_PARAM,
+            "Invalid parameter. Ensure the offset, stride, and region are within range.");
     } else if (status == Media::ERR_IMAGE_READ_PIXELMAP_FAILED) {
         ImageTaiheUtils::ThrowExceptionError(Media::ERR_MEDIA_MEMORY_COPY_FAILED,
             "Failed to copy the area pixel data.");
@@ -593,7 +597,7 @@ void PixelMapImpl::WriteAllPixelsFromBufferImpl(array_view<uint8_t> const& src)
             "The PixelMap is not editable or is locked.");
     } else if (status == Media::ERR_IMAGE_INVALID_PARAMETER) {
         ImageTaiheUtils::ThrowExceptionError(Media::ERR_IMAGE_INVALID_PARAM,
-            "Invalid parameter: Buffer size is too small.");
+            "Invalid parameter: Buffer size is too small. It must match the PixelMap's total byte count.");
     } else if (status == Media::ERR_IMAGE_WRITE_PIXELMAP_FAILED) {
         ImageTaiheUtils::ThrowExceptionError(Media::ERR_MEDIA_MEMORY_COPY_FAILED, "Failed to copy the pixel data.");
     } else if (status != Media::SUCCESS) {
@@ -629,7 +633,8 @@ void PixelMapImpl::WritePixelsFromAreaImpl(weak::PositionArea const& area)
         ImageTaiheUtils::ThrowExceptionError(Media::ERR_MEDIA_UNSUPPORT_OPERATION,
             "The PixelMap is not editable or is locked.");
     } else if (status == Media::ERR_IMAGE_INVALID_PARAMETER) {
-        ImageTaiheUtils::ThrowExceptionError(Media::ERR_IMAGE_INVALID_PARAM, "Invalid parameter.");
+        ImageTaiheUtils::ThrowExceptionError(Media::ERR_IMAGE_INVALID_PARAM,
+            "Invalid parameter. Ensure the offset, stride, and region are within range.");
     } else if (status == Media::ERR_IMAGE_WRITE_PIXELMAP_FAILED) {
         ImageTaiheUtils::ThrowExceptionError(Media::ERR_MEDIA_MEMORY_COPY_FAILED,
             "Failed to copy the area pixel data.");
@@ -760,7 +765,8 @@ PixelMap PixelMapImpl::ExtractAlphaPixelMapSync()
     int32_t errCode = Media::SUCCESS;
     auto alphaPixelMap = Media::PixelMap::Create(*nativePixelMap_, region, options, errCode);
     if (errCode == Media::IMAGE_RESULT_FORMAT_CONVERT_FAILED) {
-        ImageTaiheUtils::ThrowExceptionError(Media::ERR_MEDIA_DATA_CONVERSION_FAILED, "Failed to convert the pixels.");
+        ImageTaiheUtils::ThrowExceptionError(Media::ERR_MEDIA_DATA_CONVERSION_FAILED,
+            "Failed to convert the pixels: Pixel data may be corrupted.");
         return make_holder<PixelMapImpl, PixelMap>();
     } else if (errCode == Media::ERR_IMAGE_DECODE_FAILED) {
         ImageTaiheUtils::ThrowExceptionError(Media::ERR_MEDIA_DATA_CONVERSION_FAILED,
@@ -832,11 +838,14 @@ int32_t PixelMapImpl::GetDensity()
 static void HandleAffineTransformReturnStatus(uint32_t status, std::string transformType)
 {
     if (status == Media::ERR_IMAGE_PIXELMAP_NOT_ALLOW_MODIFY) {
-        ImageTaiheUtils::ThrowExceptionError(Media::ERR_MEDIA_UNSUPPORT_OPERATION, "The PixelMap is locked.");
+        ImageTaiheUtils::ThrowExceptionError(Media::ERR_MEDIA_UNSUPPORT_OPERATION,
+            "The PixelMap is locked. Release the lock before modifying the PixelMap.");
     } else if (status == Media::ERR_IMAGE_MALLOC_ABNORMAL) {
-        ImageTaiheUtils::ThrowExceptionError(Media::ERR_MEDIA_MEMORY_ALLOC_FAILED, "Failed to allocate memory.");
+        ImageTaiheUtils::ThrowExceptionError(Media::ERR_MEDIA_MEMORY_ALLOC_FAILED,
+            "Failed to allocate memory. The resulting image size may be too large or the system may be out of memory.");
     } else if (status == Media::ERR_IMAGE_INVALID_PARAMETER) {
-        ImageTaiheUtils::ThrowExceptionError(Media::ERR_IMAGE_INVALID_PARAM, "Invalid parameter.");
+        ImageTaiheUtils::ThrowExceptionError(Media::ERR_IMAGE_INVALID_PARAM,
+            "Invalid parameter. Ensure the input values are within valid range.");
     } else if (status != Media::SUCCESS) {
         ImageTaiheUtils::ThrowExceptionError(Media::ERR_IMAGE_GET_IMAGE_DATA_FAILED,
             "Failed to " + transformType + " the PixelMap. (" + std::to_string(status) + ")");
@@ -1060,12 +1069,14 @@ void PixelMapImpl::ApplyCropSync(::ohos::multimedia::image::image::Region const&
 
     uint32_t status = nativePixelMap_->Crop(rect);
     if (status == Media::ERR_IMAGE_PIXELMAP_NOT_ALLOW_MODIFY) {
-        ImageTaiheUtils::ThrowExceptionError(Media::ERR_MEDIA_UNSUPPORT_OPERATION, "The PixelMap is locked.");
+        ImageTaiheUtils::ThrowExceptionError(Media::ERR_MEDIA_UNSUPPORT_OPERATION,
+            "The PixelMap is locked. Release the lock before modifying the PixelMap.");
     } else if (status == Media::ERR_IMAGE_INVALID_PARAMETER) {
         ImageTaiheUtils::ThrowExceptionError(Media::ERR_MEDIA_INVALID_REGION,
             "The specified region is invalid or out of range.");
     } else if (status == Media::ERR_IMAGE_MALLOC_ABNORMAL) {
-        ImageTaiheUtils::ThrowExceptionError(Media::ERR_MEDIA_MEMORY_ALLOC_FAILED, "Failed to allocate memory.");
+        ImageTaiheUtils::ThrowExceptionError(Media::ERR_MEDIA_MEMORY_ALLOC_FAILED,
+            "Failed to allocate memory. The system may be out of memory.");
     } else if (status != Media::SUCCESS) {
         ImageTaiheUtils::ThrowExceptionError(Media::ERR_IMAGE_GET_IMAGE_DATA_FAILED,
             "Failed to crop the PixelMap. (" + std::to_string(status) + ")");
@@ -1183,7 +1194,8 @@ void PixelMapImpl::SetOpacitySync(double value)
 
     uint32_t status = nativePixelMap_->SetAlpha(static_cast<float>(value));
     if (status == Media::ERR_IMAGE_PIXELMAP_NOT_ALLOW_MODIFY) {
-        ImageTaiheUtils::ThrowExceptionError(Media::ERR_MEDIA_UNSUPPORT_OPERATION, "The PixelMap is locked.");
+        ImageTaiheUtils::ThrowExceptionError(Media::ERR_MEDIA_UNSUPPORT_OPERATION,
+            "The PixelMap is locked. Release the lock before modifying the PixelMap.");
     } else if (status == Media::ERR_IMAGE_INVALID_PARAMETER) {
         ImageTaiheUtils::ThrowExceptionError(Media::ERR_IMAGE_INVALID_PARAM,
             "The specified opacity value is out of range.");
