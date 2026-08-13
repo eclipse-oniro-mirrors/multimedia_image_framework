@@ -551,7 +551,7 @@ MIDK_EXPORT
 Image_ErrorCode OH_PixelmapNative_CreateEmptyPixelmap(
     OH_Pixelmap_InitializationOptions *options, OH_PixelmapNative **pixelmap)
 {
-    if (options == nullptr) {
+    if (options == nullptr || pixelmap == nullptr) {
         return IMAGE_BAD_PARAMETER;
     }
     InitializationOptions info;
