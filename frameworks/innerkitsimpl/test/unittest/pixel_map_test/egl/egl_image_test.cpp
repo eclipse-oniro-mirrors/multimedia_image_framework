@@ -172,7 +172,7 @@ HWTEST_F(EglImageTest, RenderContextTest003, TestSize.Level1)
     auto renderContext = std::make_unique<RenderContext>();
     auto ret = renderContext->Init();
     EXPECT_EQ(ret, true);
-    renderContext->MakeCurrent(EGL_NO_SURFACE);
+    EXPECT_TRUE(renderContext->MakeCurrent(EGL_NO_SURFACE));
     auto currSurface = eglGetCurrentSurface(EGL_DRAW);
     // even though MakeCurrent(EGL_NO_SURFACE), current surface is still not EGL_NO_SURFACE
     // in our renderContext, it will be a pbufferSurface.
@@ -189,7 +189,7 @@ HWTEST_F(EglImageTest, RenderContextTest005, TestSize.Level1)
     auto renderContext = std::make_unique<RenderContext>();
     auto ret = renderContext->Init();
     EXPECT_EQ(ret, true);
-    renderContext->MakeCurrent(EGL_NO_SURFACE);
+    EXPECT_TRUE(renderContext->MakeCurrent(EGL_NO_SURFACE));
     auto currSurface = eglGetCurrentSurface(EGL_DRAW);
     // even though MakeCurrent(EGL_NO_SURFACE), current surface is still not EGL_NO_SURFACE
     // in our renderContext, it will be a pbufferSurface.
@@ -198,7 +198,7 @@ HWTEST_F(EglImageTest, RenderContextTest005, TestSize.Level1)
         renderContext->GetEGLDisplay(), renderContext->GetEGLConfig(),
         static_cast<EGLNativeWindowType>(nativeWindow), nullptr);
     EXPECT_NE(surface, EGL_NO_SURFACE);
-    renderContext->MakeCurrent(surface);
+    EXPECT_TRUE(renderContext->MakeCurrent(surface));
     EXPECT_EQ(surface, eglGetCurrentSurface(EGL_DRAW));
 }
 

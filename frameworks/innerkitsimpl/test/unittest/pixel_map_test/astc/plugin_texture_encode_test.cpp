@@ -733,6 +733,21 @@ HWTEST_F(PluginTextureEncodeTest, AstcEncBasedOnCl003, TestSize.Level3)
     GTEST_LOG_(INFO) << "PluginTextureEncodeTest: AstcEncBasedOnCl003 end";
 }
 
+/**
+ * @tc.name: AstcEncBasedOnCl006
+ * @tc.desc: AstcClCreate rejects a null output handle
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginTextureEncodeTest, AstcEncBasedOnCl006, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginTextureEncodeTest: AstcEncBasedOnCl006 start";
+
+    uint32_t ret = AstcClCreate(nullptr, "");
+    ASSERT_EQ(ret, CL_ASTC_ENC_FAILED);
+
+    GTEST_LOG_(INFO) << "PluginTextureEncodeTest: AstcEncBasedOnCl006 end";
+}
+
 static void RemoveAstcClTestFile(const std::string &path)
 {
     (void)std::remove(path.c_str());

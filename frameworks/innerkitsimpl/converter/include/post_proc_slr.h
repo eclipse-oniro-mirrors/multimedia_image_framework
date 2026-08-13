@@ -16,6 +16,8 @@
 #ifndef FRAMEWORKS_INNERKITSIMPL_CONVERTER_INCLUDE_POST_PROC_SLR_H
 #define FRAMEWORKS_INNERKITSIMPL_CONVERTER_INCLUDE_POST_PROC_SLR_H
 
+#include <cstddef>
+
 #include "image_type.h"
 #ifdef USE_M133_SKIA
 #include "include/private/base/SkMutex.h"
@@ -31,13 +33,18 @@ namespace Media {
 class SLRMat {
 public:
     SLRMat() = default;
-    SLRMat(Size size, PixelFormat format, void *data, int32_t rowStride)
-        :size_(size), format_(format), data_(data), rowStride_(rowStride) {}
+    SLRMat(Size size, PixelFormat format, void *data, int32_t rowStride, size_t bufferSize)
+        : size_(size), format_(format), data_(data), rowStride_(rowStride), bufferSize_(bufferSize) {}
     ~SLRMat() = default;
-    Size size_;
-    PixelFormat format_;
-    void *data_;
-    int32_t rowStride_;
+
+    bool IsValid() const;
+    bool GetIndex(int32_t row, int32_t column, size_t &index) const;
+
+    Size size_ = {};
+    PixelFormat format_ = PixelFormat::UNKNOWN;
+    void *data_ = nullptr;
+    int32_t rowStride_ = 0;
+    size_t bufferSize_ = 0;
 };
 
 class SLRWeightKey {
@@ -141,9 +148,9 @@ private:
 class SLRProc {
 public:
     static SLRWeightMat GetWeights(float coeff, int n);
-    static void Serial(const SLRMat &src, SLRMat &dst, const SLRWeightMat &x, const SLRWeightMat &y);
-    static void Parallel(const SLRMat &src, SLRMat &dst, const SLRWeightMat &x, const SLRWeightMat &y);
-    static void Laplacian(SLRMat &srcMat, void* data, float alpha);
+    static bool Serial(const SLRMat &src, SLRMat &dst, const SLRWeightMat &x, const SLRWeightMat &y);
+    static bool Parallel(const SLRMat &src, SLRMat &dst, const SLRWeightMat &x, const SLRWeightMat &y);
+    static bool Laplacian(const SLRMat &src, SLRMat &dst, float alpha);
 };
 } // namespace Media
 } // namespace OHOS

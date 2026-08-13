@@ -2317,8 +2317,13 @@ static void SetAlphaExec(napi_env env, SendablePixelMapAsyncContext* context)
     }
     if (context->status == SUCCESS) {
         if (context->rPixelMap != nullptr) {
-            context->status = context->rPixelMap->SetAlpha(
-                static_cast<float>(context->alpha));
+            float alpha = 0.0f;
+            if (!ImageNapiUtils::ConvertDoubleToFloat(context->alpha, &alpha)) {
+                IMAGE_LOGW("Alpha is non-finite or out of float range, skip setting alpha");
+                context->status = SUCCESS;
+                return;
+            }
+            context->status = context->rPixelMap->SetAlpha(alpha);
         } else {
             IMAGE_LOGE("Null native ref");
             context->status = ERR_IMAGE_INIT_ABNORMAL;
@@ -2414,10 +2419,14 @@ napi_value SendablePixelMapNapi::SetAlphaSync(napi_env env, napi_callback_info i
         ImageNapiUtils::ThrowExceptionError(env, ERR_RESOURCE_UNAVAILABLE,
         "Pixelmap has crossed threads . SetAlphaSync failed"),
         IMAGE_LOGE("Pixelmap has crossed threads . SetAlphaSync failed"));
+    float safeAlpha = 0.0f;
+    if (!ImageNapiUtils::ConvertDoubleToFloat(alpha, &safeAlpha)) {
+        IMAGE_LOGW("Alpha is non-finite or out of float range, skip setting alpha");
+        return result;
+    }
 
     if (pixelMapNapi->nativePixelMap_ != nullptr) {
-        status = pixelMapNapi->nativePixelMap_->SetAlpha(
-            static_cast<float>(alpha));
+        status = pixelMapNapi->nativePixelMap_->SetAlpha(safeAlpha);
         if (status != SUCCESS) {
             IMAGE_LOGE("SetAlphaSync failed");
         }
@@ -2435,7 +2444,15 @@ static void ScaleExec(napi_env env, SendablePixelMapAsyncContext* context)
     }
     if (context->status == SUCCESS) {
         if (context->rPixelMap != nullptr) {
-            context->rPixelMap->scale(static_cast<float>(context->xArg), static_cast<float>(context->yArg));
+            float scaleX = 0.0f;
+            float scaleY = 0.0f;
+            if (!ImageNapiUtils::ConvertDoubleToFloat(context->xArg, &scaleX) ||
+                !ImageNapiUtils::ConvertDoubleToFloat(context->yArg, &scaleY)) {
+                IMAGE_LOGW("Scale factors are non-finite or out of float range, skip scaling");
+                context->status = SUCCESS;
+                return;
+            }
+            context->rPixelMap->scale(scaleX, scaleY);
             context->status = SUCCESS;
         } else {
             IMAGE_LOGE("Null native ref");
@@ -2533,9 +2550,16 @@ napi_value SendablePixelMapNapi::ScaleSync(napi_env env, napi_callback_info info
         ImageNapiUtils::ThrowExceptionError(env, ERR_RESOURCE_UNAVAILABLE,
         "Pixelmap has crossed threads . ScaleSync failed"),
         IMAGE_LOGE("Pixelmap has crossed threads . ScaleSync failed"));
+    float scaleX = 0.0f;
+    float scaleY = 0.0f;
+    if (!ImageNapiUtils::ConvertDoubleToFloat(xArg, &scaleX) ||
+        !ImageNapiUtils::ConvertDoubleToFloat(yArg, &scaleY)) {
+        IMAGE_LOGW("Scale factors are non-finite or out of float range, skip scaling");
+        return result;
+    }
 
     if (pixelMapNapi->nativePixelMap_ != nullptr) {
-        pixelMapNapi->nativePixelMap_->scale(static_cast<float>(xArg), static_cast<float>(yArg));
+        pixelMapNapi->nativePixelMap_->scale(scaleX, scaleY);
     } else {
         IMAGE_LOGE("Null native ref");
     }
@@ -2550,7 +2574,15 @@ static void TranslateExec(napi_env env, SendablePixelMapAsyncContext* context)
     }
     if (context->status == SUCCESS) {
         if (context->rPixelMap != nullptr) {
-            context->rPixelMap->translate(static_cast<float>(context->xArg), static_cast<float>(context->yArg));
+            float translateX = 0.0f;
+            float translateY = 0.0f;
+            if (!ImageNapiUtils::ConvertDoubleToFloat(context->xArg, &translateX) ||
+                !ImageNapiUtils::ConvertDoubleToFloat(context->yArg, &translateY)) {
+                IMAGE_LOGW("Translation values are non-finite or out of float range, skip translation");
+                context->status = SUCCESS;
+                return;
+            }
+            context->rPixelMap->translate(translateX, translateY);
             context->status = SUCCESS;
         } else {
             IMAGE_LOGE("Null native ref");
@@ -2641,7 +2673,6 @@ napi_value SendablePixelMapNapi::TranslateSync(napi_env env, napi_callback_info 
         IMAGE_LOGE("get arraybuffer info failed");
         return result;
     }
-
     SendablePixelMapNapi* pixelMapNapi = nullptr;
     napiStatus = NapiUnwrap(env, thisVar, reinterpret_cast<void**>(&pixelMapNapi));
     IMG_NAPI_CHECK_RET_D(IMG_IS_READY(napiStatus, pixelMapNapi), result,
@@ -2650,9 +2681,16 @@ napi_value SendablePixelMapNapi::TranslateSync(napi_env env, napi_callback_info 
         ImageNapiUtils::ThrowExceptionError(env, ERR_RESOURCE_UNAVAILABLE,
         "Pixelmap has crossed threads . TranslateSync failed"),
         IMAGE_LOGE("Pixelmap has crossed threads . TranslateSync failed"));
+    float translateX = 0.0f;
+    float translateY = 0.0f;
+    if (!ImageNapiUtils::ConvertDoubleToFloat(x, &translateX) ||
+        !ImageNapiUtils::ConvertDoubleToFloat(y, &translateY)) {
+        IMAGE_LOGW("Translation values are non-finite or out of float range, skip translation");
+        return result;
+    }
 
     if (pixelMapNapi->nativePixelMap_ != nullptr) {
-        pixelMapNapi->nativePixelMap_->translate(static_cast<float>(x), static_cast<float>(y));
+        pixelMapNapi->nativePixelMap_->translate(translateX, translateY);
     } else {
         IMAGE_LOGE("Null native ref");
     }
@@ -2667,7 +2705,13 @@ static void RotateExec(napi_env env, SendablePixelMapAsyncContext* context)
     }
     if (context->status == SUCCESS) {
         if (context->rPixelMap != nullptr) {
-            context->rPixelMap->rotate(context->xArg);
+            float angle = 0.0f;
+            if (!ImageNapiUtils::ConvertDoubleToFloat(context->xArg, &angle)) {
+                IMAGE_LOGW("Rotation angle is non-finite or out of float range, skip rotation");
+                context->status = SUCCESS;
+                return;
+            }
+            context->rPixelMap->rotate(angle);
             context->status = SUCCESS;
         } else {
             IMAGE_LOGE("Null native ref");
@@ -2752,7 +2796,6 @@ napi_value SendablePixelMapNapi::RotateSync(napi_env env, napi_callback_info inf
         IMAGE_LOGE("RotateSync failed, invalid parameter"));
     napiStatus = napi_get_value_double(env, argValue[NUM_0], &angle);
     IMG_NAPI_CHECK_RET_D(napiStatus == napi_ok, result, IMAGE_LOGE("get arraybuffer info failed"));
-
     SendablePixelMapNapi* pixelMapNapi = nullptr;
     napiStatus = NapiUnwrap(env, thisVar, reinterpret_cast<void**>(&pixelMapNapi));
     IMG_NAPI_CHECK_RET_D(IMG_IS_READY(napiStatus, pixelMapNapi), result,
@@ -2761,9 +2804,14 @@ napi_value SendablePixelMapNapi::RotateSync(napi_env env, napi_callback_info inf
         ImageNapiUtils::ThrowExceptionError(env, ERR_RESOURCE_UNAVAILABLE,
         "Pixelmap has crossed threads . RotateSync failed"),
         IMAGE_LOGE("Pixelmap has crossed threads . RotateSync failed"));
+    float safeAngle = 0.0f;
+    if (!ImageNapiUtils::ConvertDoubleToFloat(angle, &safeAngle)) {
+        IMAGE_LOGW("Rotation angle is non-finite or out of float range, skip rotation");
+        return result;
+    }
 
     if (pixelMapNapi->nativePixelMap_ != nullptr) {
-        pixelMapNapi->nativePixelMap_->rotate(static_cast<float>(angle));
+        pixelMapNapi->nativePixelMap_->rotate(safeAngle);
     } else {
         IMAGE_LOGE("Null native ref");
     }

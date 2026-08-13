@@ -21,6 +21,8 @@
 #include <memory>
 #include <thread>
 #include <vector>
+#include <type_traits>
+#include <utility>
 
 #include "pixel_map_egl_utils.h"
 #include "pixel_map_from_surface.h"
@@ -45,6 +47,11 @@ public:
     ~EglImageHelperTest() override = default;
 };
 
+static_assert(std::is_same_v<
+    decltype(std::declval<PixelMapGlContext &>().MakeCurrent(EGL_NO_SURFACE)), bool>);
+static_assert(std::is_same_v<
+    decltype(std::declval<RenderContext &>().MakeCurrent(EGL_NO_SURFACE)), bool>);
+
 class TestShader : public PixelMapGlShader::Shader {
 public:
     bool Clear() override
@@ -62,6 +69,23 @@ public:
     void SetTargetSize(const Size &targetSize)
     {
         targetSize_ = targetSize;
+    }
+
+    void SetResourcesForTest()
+    {
+        programId_ = 1U;
+        vShader_ = 2U;
+        fShader_ = 3U;
+        readTexId_ = 4U;
+        writeFbo_ = 5U;
+        writeTexId_ = 6U;
+        eglImage_ = reinterpret_cast<EGLImageKHR>(1);
+    }
+
+    bool HasNoResourcesForTest() const
+    {
+        return programId_ == 0U && vShader_ == 0U && fShader_ == 0U && readTexId_ == 0U &&
+            writeFbo_ == 0U && writeTexId_ == 0U && eglImage_ == EGL_NO_IMAGE_KHR;
     }
 };
 
@@ -98,6 +122,7 @@ HWTEST_F(EglImageHelperTest, PixelMapGlCommonTransformDefaultsTest001, TestSize.
     EXPECT_FALSE(transformData.isTargetDma);
     EXPECT_EQ(transformData.sourceInfo_.addr, nullptr);
     EXPECT_EQ(transformData.sourceInfo_.context, nullptr);
+    EXPECT_EQ(transformData.sourceInfo_.bufferSize, 0);
     EXPECT_EQ(transformData.targetInfo_.outdata, nullptr);
     EXPECT_EQ(transformData.targetInfo_.context, nullptr);
 
@@ -182,8 +207,12 @@ HWTEST_F(EglImageHelperTest, PixelMapGlResourceCopyFailureTest001, TestSize.Leve
     constexpr size_t rowBytes = 8;
     const uint8_t src[12] = {0};
     char dst[16] = {0};
-    EXPECT_FALSE(PixelMapGlResource::CopyStridedToLinear(nullptr, 8, 2, rowBytes, dst, sizeof(dst)));
-    EXPECT_FALSE(PixelMapGlResource::CopyStridedToLinear(src, 8, 3, rowBytes, dst, sizeof(dst)));
+    EXPECT_FALSE(PixelMapGlResource::CopyStridedToLinear(
+        nullptr, 0, 8, 2, rowBytes, dst, sizeof(dst)));
+    EXPECT_FALSE(PixelMapGlResource::CopyStridedToLinear(
+        src, sizeof(src), 8, 2, rowBytes, dst, sizeof(dst)));
+    EXPECT_FALSE(PixelMapGlResource::ValidateStridedBufferSize(sizeof(src), 8, 2, rowBytes));
+    EXPECT_TRUE(PixelMapGlResource::ValidateStridedBufferSize(sizeof(dst), 8, 2, rowBytes));
 
     const char linear[16] = {0};
     uint8_t strided[12] = {0};
@@ -293,14 +322,13 @@ HWTEST_F(EglImageHelperTest, PixelMapContextInvalidStateTest001, TestSize.Level3
     EXPECT_FALSE(glContext.CreatePbufferSurface());
     EXPECT_FALSE(glContext.MakeCurrentSimple(true));
     EXPECT_FALSE(glContext.MakeCurrentSimple(false));
-    glContext.MakeCurrent(EGL_NO_SURFACE);
+    EXPECT_FALSE(glContext.MakeCurrent(EGL_NO_SURFACE));
     glContext.Clear();
 
     RenderContext renderContext;
     EXPECT_FALSE(renderContext.CreatePbufferSurface());
-    renderContext.MakeCurrent(EGL_NO_SURFACE);
+    EXPECT_FALSE(renderContext.MakeCurrent(EGL_NO_SURFACE));
     renderContext.Clear();
-    SUCCEED();
 }
 
 /**
@@ -450,9 +478,25 @@ HWTEST_F(EglImageHelperTest, PixelMapProgramExecutionGuardTest001, TestSize.Leve
     program.SetGPUTransformData(transformData);
     char output = 0;
     EXPECT_TRUE(program.GenProcEndData(&output));
+    EXPECT_FALSE(program.GenProcDmaEndData(nullptr));
     EXPECT_TRUE(program.GenProcDmaEndData(reinterpret_cast<void *>(0x1)));
 
     EXPECT_FALSE(PixelMapProgramManager::ExecutProgram(nullptr));
+}
+
+/**
+ * @tc.name: PixelMapShaderAbandonTest001
+ * @tc.desc: Drop GL names without issuing GL calls when no context can be made current.
+ * @tc.type: FUNC
+ */
+HWTEST_F(EglImageHelperTest, PixelMapShaderAbandonTest001, TestSize.Level3)
+{
+    TestShader shader;
+    shader.SetResourcesForTest();
+
+    shader.Abandon();
+
+    EXPECT_TRUE(shader.HasNoResourcesForTest());
 }
 
 /**
@@ -489,7 +533,11 @@ HWTEST_F(EglImageHelperTest, PixelMapGlContextInterfaceLifecycleTest001, TestSiz
     EXPECT_TRUE(context.MakeCurrentSimple(true));
     EXPECT_TRUE(context.MakeCurrentSimple(true));
     EXPECT_TRUE(context.MakeCurrentSimple(false));
-    context.MakeCurrent(EGL_NO_SURFACE);
+    EXPECT_TRUE(context.MakeCurrent(EGL_NO_SURFACE));
+    const EGLSurface pbufferSurface = context.pbufferSurface_;
+    context.pbufferSurface_ = EGL_NO_SURFACE;
+    EXPECT_FALSE(context.MakeCurrent(EGL_NO_SURFACE));
+    context.pbufferSurface_ = pbufferSurface;
     context.Clear();
     EXPECT_EQ(context.GetEGLContext(), EGL_NO_CONTEXT);
     EXPECT_EQ(context.pbufferSurface_, EGL_NO_SURFACE);
@@ -513,7 +561,11 @@ HWTEST_F(EglImageHelperTest, RenderContextInterfaceLifecycleTest001, TestSize.Le
     EXPECT_NE(context.GetEGLDisplay(), EGL_NO_DISPLAY);
     EXPECT_NE(context.pbufferSurface_, EGL_NO_SURFACE);
     EXPECT_TRUE(context.CreatePbufferSurface());
-    context.MakeCurrent(EGL_NO_SURFACE);
+    EXPECT_TRUE(context.MakeCurrent(EGL_NO_SURFACE));
+    const EGLSurface pbufferSurface = context.pbufferSurface_;
+    context.pbufferSurface_ = EGL_NO_SURFACE;
+    EXPECT_FALSE(context.MakeCurrent(EGL_NO_SURFACE));
+    context.pbufferSurface_ = pbufferSurface;
     context.Clear();
     EXPECT_EQ(context.GetEGLContext(), EGL_NO_CONTEXT);
     EXPECT_EQ(context.GetEGLDisplay(), EGL_NO_DISPLAY);

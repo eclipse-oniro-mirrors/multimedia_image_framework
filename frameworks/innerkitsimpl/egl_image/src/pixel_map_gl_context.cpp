@@ -95,8 +95,14 @@ bool PixelMapGlContext::InitEGLContext()
         eglContext_ = EGL_NO_CONTEXT;
         return false;
     }
+    if (!MakeCurrent(pbufferSurface_)) {
+        (void)eglDestroySurface(eglDisplay_, pbufferSurface_);
+        (void)eglDestroyContext(eglDisplay_, eglContext_);
+        pbufferSurface_ = EGL_NO_SURFACE;
+        eglContext_ = EGL_NO_CONTEXT;
+        return false;
+    }
     ++g_contextRefCount;
-    MakeCurrent(pbufferSurface_);
 
     return true;
 }
@@ -143,25 +149,38 @@ bool PixelMapGlContext::MakeCurrentSimple(bool needCurrent)
     return true;
 }
 
-void PixelMapGlContext::MakeCurrent(EGLSurface surface) const
+bool PixelMapGlContext::MakeCurrent(EGLSurface surface) const
 {
     if (eglDisplay_ == EGL_NO_DISPLAY || eglContext_ == EGL_NO_CONTEXT) {
         IMAGE_LOGE("PixelMapGlContext::MakeCurrent invalid egl context");
-        return;
+        return false;
     }
     EGLSurface currSurface = surface;
     if (currSurface == EGL_NO_SURFACE) {
         currSurface = pbufferSurface_;
     }
+    if (currSurface == EGL_NO_SURFACE) {
+        IMAGE_LOGE("PixelMapGlContext::MakeCurrent invalid egl surface");
+        return false;
+    }
 
     if (eglMakeCurrent(eglDisplay_, currSurface, currSurface, eglContext_) != EGL_TRUE) {
+        const EGLint makeCurrentError = eglGetError();
         EGLint surfaceId = -1;
-        eglQuerySurface(eglDisplay_, surface, EGL_CONFIG_ID, &surfaceId);
+        if (eglQuerySurface(eglDisplay_, currSurface, EGL_CONFIG_ID, &surfaceId) != EGL_TRUE) {
+            IMAGE_LOGE(
+                "PixelMapGlContext::MakeCurrent failed, error is %{public}x, query surface failed %{public}x",
+                makeCurrentError,
+                eglGetError());
+            return false;
+        }
         IMAGE_LOGE(
             "PixelMapGlContext::MakeCurrent failed for eglSurface %{public}d, error is %{public}x",
             surfaceId,
-            eglGetError());
+            makeCurrentError);
+        return false;
     }
+    return true;
 }
 
 bool PixelMapGlContext::InitGrContext()

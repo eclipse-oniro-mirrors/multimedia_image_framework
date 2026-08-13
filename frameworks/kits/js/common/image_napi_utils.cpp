@@ -16,7 +16,9 @@
 #include "image_log.h"
 #include "image_napi_utils.h"
 #include <array>
+#include <cmath>
 #include <functional>
+#include <limits>
 #include <securec.h>
 #include <unistd.h>
 #if !defined(CROSS_PLATFORM)
@@ -86,6 +88,32 @@ bool ImageNapiUtils::GetInt32ByName(napi_env env, napi_value root, const char* n
 
     IMG_NAPI_CHECK_RET(IMG_IS_OK(napi_get_value_int32(env, tempValue, res)), false);
 
+    return true;
+}
+
+bool ImageNapiUtils::GetInt32ByNameWithRange(napi_env env, napi_value root, const char* name, int32_t *res)
+{
+    double value = 0.0;
+    IMG_NAPI_CHECK_RET(GetDoubleByName(env, root, name, &value), false);
+    return ConvertDoubleToInt32(value, res);
+}
+
+bool ImageNapiUtils::ConvertDoubleToInt32(double value, int32_t *res)
+{
+    IMG_NAPI_CHECK_RET(res != nullptr, false);
+    constexpr double int32Min = static_cast<double>(std::numeric_limits<int32_t>::min());
+    constexpr double int32Max = static_cast<double>(std::numeric_limits<int32_t>::max());
+    IMG_NAPI_CHECK_RET(std::isfinite(value) && value >= int32Min && value <= int32Max, false);
+    *res = static_cast<int32_t>(value);
+    return true;
+}
+
+bool ImageNapiUtils::ConvertDoubleToFloat(double value, float *res)
+{
+    IMG_NAPI_CHECK_RET(res != nullptr, false);
+    constexpr double floatMax = static_cast<double>(std::numeric_limits<float>::max());
+    IMG_NAPI_CHECK_RET(std::isfinite(value) && value >= -floatMax && value <= floatMax, false);
+    *res = static_cast<float>(value);
     return true;
 }
 

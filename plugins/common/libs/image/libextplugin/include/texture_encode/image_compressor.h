@@ -61,6 +61,11 @@ struct ClAstcHandle {
     ClAstcObjEnc encObj;
 };
 
+/**
+ * Creates an ASTC OpenCL encoder handle.
+ *
+ * When handle is non-null, the output handle is set to nullptr on failure.
+ */
 CL_ASTC_SHARE_LIB_API CL_ASTC_STATUS AstcClCreate(ClAstcHandle **handle, const std::string &clBinPath);
 
 CL_ASTC_SHARE_LIB_API CL_ASTC_STATUS AstcClFillImage(ClAstcImageOption *imageIn, uint8_t *data,
@@ -69,6 +74,12 @@ CL_ASTC_SHARE_LIB_API CL_ASTC_STATUS AstcClFillImage(ClAstcImageOption *imageIn,
 CL_ASTC_SHARE_LIB_API CL_ASTC_STATUS AstcClEncImage(ClAstcHandle *handle, const ClAstcImageOption *imageIn,
     uint8_t *buffer);
 
+/**
+ * Closes an ASTC OpenCL encoder handle.
+ *
+ * Ownership of a non-null handle is consumed regardless of the return value. The handle storage is always freed,
+ * and the caller must not retry AstcClClose or access the handle after this call.
+ */
 CL_ASTC_SHARE_LIB_API CL_ASTC_STATUS AstcClClose(ClAstcHandle *handle);
 }
 }

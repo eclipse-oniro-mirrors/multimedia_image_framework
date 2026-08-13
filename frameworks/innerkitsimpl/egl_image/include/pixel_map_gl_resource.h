@@ -282,19 +282,34 @@ inline bool IsValidGlTransferSize(const Size &size)
         size.width <= MAX_GL_TRANSFER_DIMENSION && size.height <= MAX_GL_TRANSFER_DIMENSION;
 }
 
-inline bool CopyStridedToLinear(const uint8_t *src, int32_t srcStride, int32_t height, size_t rowBytes,
-    char *dst, size_t dstSize)
+inline bool ValidateStridedBufferSize(size_t bufferSize, int32_t stride, int32_t height, size_t rowBytes)
+{
+    if (stride <= 0 || height <= 0 || rowBytes == 0 || rowBytes > static_cast<size_t>(stride)) {
+        return false;
+    }
+    const size_t rowsBeforeLast = static_cast<size_t>(height - 1);
+    const size_t strideSize = static_cast<size_t>(stride);
+    if (rowsBeforeLast > (std::numeric_limits<size_t>::max() - rowBytes) / strideSize) {
+        return false;
+    }
+    return rowsBeforeLast * strideSize + rowBytes <= bufferSize;
+}
+
+inline bool CopyStridedToLinear(const uint8_t *src, size_t srcSize, int32_t srcStride, int32_t height,
+    size_t rowBytes, char *dst, size_t dstSize)
 {
     if (src == nullptr || dst == nullptr || srcStride <= 0 || height <= 0 || rowBytes == 0) {
         return false;
     }
+    if (!ValidateStridedBufferSize(srcSize, srcStride, height, rowBytes) ||
+        static_cast<size_t>(height) > dstSize / rowBytes) {
+        return false;
+    }
     for (int32_t i = 0; i < height; ++i) {
         const size_t rowOffset = rowBytes * static_cast<size_t>(i);
-        if (rowOffset > dstSize || dstSize - rowOffset < rowBytes) {
-            return false;
-        }
+        const size_t srcOffset = static_cast<size_t>(srcStride) * static_cast<size_t>(i);
         if (memcpy_s(dst + rowOffset, dstSize - rowOffset,
-            src + static_cast<size_t>(srcStride) * static_cast<size_t>(i), rowBytes) != EOK) {
+            src + srcOffset, rowBytes) != EOK) {
             return false;
         }
     }

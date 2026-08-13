@@ -16,6 +16,7 @@
 #include "pixelmap_native.h"
 
 #include <charconv>
+#include <limits>
 #include "common_utils.h"
 #include "image_type.h"
 #include "image_utils.h"
@@ -142,6 +143,24 @@ static Image_ErrorCode ToNewErrorCode(int code)
             return IMAGE_UNKNOWN_ERROR;
     }
 };
+
+static bool ConvertImageRegionToRect(const Image_Region &region, OHOS::Media::Rect &rect)
+{
+    constexpr uint32_t maxInt32 = static_cast<uint32_t>(std::numeric_limits<int32_t>::max());
+    if (region.x > maxInt32 || region.y > maxInt32 || region.width > maxInt32 || region.height > maxInt32) {
+        IMAGE_LOGE("Image_Region exceeds int32 range, x: %{public}u, y: %{public}u, "
+            "width: %{public}u, height: %{public}u",
+            region.x, region.y, region.width, region.height);
+        return false;
+    }
+    rect = {
+        .left = static_cast<int32_t>(region.x),
+        .top = static_cast<int32_t>(region.y),
+        .width = static_cast<int32_t>(region.width),
+        .height = static_cast<int32_t>(region.height)
+    };
+    return true;
+}
 
 static bool IsMatchType(IMAGE_FORMAT type, PixelFormat format)
 {
@@ -797,12 +816,10 @@ Image_ErrorCode OH_PixelmapNative_ReadPixelsFromArea(OH_PixelmapNative *pixelmap
         return IMAGE_BAD_PARAMETER;
     }
 
-    OHOS::Media::Rect region = {
-        .left = static_cast<int32_t>(area->region.x),
-        .top = static_cast<int32_t>(area->region.y),
-        .width = static_cast<int32_t>(area->region.width),
-        .height = static_cast<int32_t>(area->region.height)
-    };
+    OHOS::Media::Rect region;
+    if (!ConvertImageRegionToRect(area->region, region)) {
+        return IMAGE_BAD_PARAMETER;
+    }
     return ToNewErrorCode(pixelmap->GetInnerPixelmap()->ReadPixels(
         area->pixelsSize, area->offset, area->stride, region, area->pixels));
 }
@@ -814,12 +831,10 @@ Image_ErrorCode OH_PixelmapNative_WritePixelsToArea(OH_PixelmapNative *pixelmap,
         return IMAGE_BAD_PARAMETER;
     }
 
-    OHOS::Media::Rect region = {
-        .left = static_cast<int32_t>(area->region.x),
-        .top = static_cast<int32_t>(area->region.y),
-        .width = static_cast<int32_t>(area->region.width),
-        .height = static_cast<int32_t>(area->region.height)
-    };
+    OHOS::Media::Rect region;
+    if (!ConvertImageRegionToRect(area->region, region)) {
+        return IMAGE_BAD_PARAMETER;
+    }
     return ToNewErrorCode(pixelmap->GetInnerPixelmap()->WritePixels(
         area->pixels, area->pixelsSize, area->offset, area->stride, region));
 }
@@ -978,7 +993,8 @@ Image_ErrorCode OH_PixelmapNative_ApplyScaleWithAntiAliasing(OH_PixelmapNative *
         return IMAGE_PIXELMAP_RELEASED;
     }
 
-    uint32_t status = pixelmap->GetInnerPixelmap()->Scale(scaleX, scaleY, static_cast<AntiAliasingOption>(level));
+    uint32_t status = pixelmap->GetInnerPixelmap()->Scale(
+        scaleX, scaleY, ParsePublicAntiAliasingOption(static_cast<int32_t>(level)));
     if (status == ERR_IMAGE_PIXELMAP_NOT_ALLOW_MODIFY) {
         return IMAGE_UNSUPPORTED_OPERATION;
     } else if (status == ERR_IMAGE_MALLOC_ABNORMAL) {
@@ -999,7 +1015,8 @@ Image_ErrorCode OH_PixelmapNative_ScaleWithAntiAliasing(OH_PixelmapNative *pixel
     if (pixelmap == nullptr) {
         return IMAGE_BAD_PARAMETER;
     }
-    pixelmap->GetInnerPixelmap()->scale(scaleX, scaleY, static_cast<AntiAliasingOption>(level));
+    pixelmap->GetInnerPixelmap()->scale(
+        scaleX, scaleY, ParsePublicAntiAliasingOption(static_cast<int32_t>(level)));
     return IMAGE_SUCCESS;
 }
 
@@ -1052,17 +1069,16 @@ Image_ErrorCode OH_PixelmapNative_CreateCroppedAndScaledPixelMap(OH_PixelmapNati
         return ToNewErrorCode(errorCode);
     }
 
-    OHOS::Media::Rect rect = {
-        .left = static_cast<int32_t>(region->x),
-        .top = static_cast<int32_t>(region->y),
-        .width = static_cast<int32_t>(region->width),
-        .height = static_cast<int32_t>(region->height)
-    };
+    OHOS::Media::Rect rect;
+    if (!ConvertImageRegionToRect(*region, rect)) {
+        return IMAGE_BAD_PARAMETER;
+    }
     uint32_t status = clonedPixelmap->crop(rect);
     if (status != SUCCESS) {
         return IMAGE_BAD_PARAMETER;
     }
-    clonedPixelmap->scale(scale->x, scale->y, static_cast<AntiAliasingOption>(level));
+    clonedPixelmap->scale(
+        scale->x, scale->y, ParsePublicAntiAliasingOption(static_cast<int32_t>(level)));
     *dstPixelmap = new OH_PixelmapNative(std::move(clonedPixelmap));
     return IMAGE_SUCCESS;
 }
@@ -1096,7 +1112,8 @@ Image_ErrorCode OH_PixelmapNative_CreateScaledPixelMapWithAntiAliasing(OH_Pixelm
     if (clonePixelmap == nullptr) {
         return IMAGE_BAD_PARAMETER;
     }
-    clonePixelmap->scale(scaleX, scaleY, static_cast<AntiAliasingOption>(level));
+    clonePixelmap->scale(
+        scaleX, scaleY, ParsePublicAntiAliasingOption(static_cast<int32_t>(level)));
     *dstPixelmap = new OH_PixelmapNative(std::move(clonePixelmap));
     return IMAGE_SUCCESS;
 }
@@ -1215,12 +1232,10 @@ Image_ErrorCode OH_PixelmapNative_ApplyCrop(OH_PixelmapNative *pixelmap, Image_R
         return IMAGE_PIXELMAP_RELEASED;
     }
 
-    OHOS::Media::Rect rect = {
-        .left = static_cast<int32_t>(region->x),
-        .top = static_cast<int32_t>(region->y),
-        .width = static_cast<int32_t>(region->width),
-        .height = static_cast<int32_t>(region->height)
-    };
+    OHOS::Media::Rect rect;
+    if (!ConvertImageRegionToRect(*region, rect)) {
+        return IMAGE_INVALID_REGION;
+    }
     uint32_t status = pixelmap->GetInnerPixelmap()->Crop(rect);
     if (status == ERR_IMAGE_PIXELMAP_NOT_ALLOW_MODIFY) {
         return IMAGE_UNSUPPORTED_OPERATION;
@@ -1242,10 +1257,9 @@ Image_ErrorCode OH_PixelmapNative_Crop(OH_PixelmapNative *pixelmap, Image_Region
         return IMAGE_BAD_PARAMETER;
     }
     OHOS::Media::Rect rect;
-    rect.left = static_cast<int32_t>(region->x);
-    rect.top = static_cast<int32_t>(region->y);
-    rect.width = static_cast<int32_t>(region->width);
-    rect.height = static_cast<int32_t>(region->height);
+    if (!ConvertImageRegionToRect(*region, rect)) {
+        return IMAGE_BAD_PARAMETER;
+    }
     pixelmap->GetInnerPixelmap()->crop(rect);
     return IMAGE_SUCCESS;
 }

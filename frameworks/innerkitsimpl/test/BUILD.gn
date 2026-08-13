@@ -1252,7 +1252,10 @@ ohos_unittest("napitest") {
   ]
   sources = [ "unittest/napi_test.cpp" ]
 
-  deps = [ "$image_subsystem/interfaces/kits/js/common:image" ]
+  deps = [
+    "$image_subsystem/interfaces/innerkits:image_native",
+    "$image_subsystem/interfaces/kits/js/common:image",
+  ]
 
   external_deps = [
     "ipc:ipc_single",

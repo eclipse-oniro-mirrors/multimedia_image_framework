@@ -61,7 +61,7 @@ public:
 
     bool Init();
 
-    void MakeCurrent(EGLSurface surface) const;
+    bool MakeCurrent(EGLSurface surface) const;
 
     bool MakeCurrentSimple(bool needCurrent);
 

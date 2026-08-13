@@ -245,6 +245,17 @@ bool Shader::clearResources()
     return true;
 }
 
+void Shader::Abandon()
+{
+    programId_ = 0U;
+    vShader_ = 0U;
+    fShader_ = 0U;
+    readTexId_ = 0U;
+    writeFbo_ = 0U;
+    writeTexId_ = 0U;
+    eglImage_ = EGL_NO_IMAGE_KHR;
+}
+
 GLuint Shader::loadShader(GLenum type, const char *shaderSrc)
 {
     ImageTrace imageTrace("Shader::loadShader");
@@ -369,6 +380,12 @@ bool VertexShader::Clear()
         PixelMapGlResource::DeleteBuffer(vbo_);
     }
     return Shader::Clear();
+}
+
+void VertexShader::Abandon()
+{
+    vbo_ = 0U;
+    Shader::Abandon();
 }
 
 bool VertexShader::Build()
@@ -578,6 +595,14 @@ bool SLRShader::Clear()
         PixelMapGlResource::DeleteTexture(texture_[1]);
     }
     return Shader::Clear();
+}
+
+void SLRShader::Abandon()
+{
+    texture_[0] = 0U;
+    texture_[1] = 0U;
+    eglImage_ = EGL_NO_IMAGE_KHR;
+    Shader::Abandon();
 }
 
 bool SLRShader::Build()
