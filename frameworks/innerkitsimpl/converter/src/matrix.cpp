@@ -78,8 +78,8 @@ Matrix &Matrix::SetConcat(const Matrix &m)
     if ((static_cast<uint8_t>(aOperType) & OPERTYPE_MASK) == 0) {
         *this = m;
     } else if (((static_cast<uint8_t>(aOperType) | static_cast<uint8_t>(bOperType)) & ROTATEORSKEW) == 0) {
-        SetTranslateAndScale(fMat_[IMAGE_TRANSX] * m.fMat_[IMAGE_TRANSX] + fMat_[IMAGE_TRANSX],
-                             fMat_[IMAGE_TRANSY] * m.fMat_[IMAGE_TRANSY] + fMat_[IMAGE_TRANSY],
+        SetTranslateAndScale(fMat_[IMAGE_SCALEX] * m.fMat_[IMAGE_TRANSX] + fMat_[IMAGE_TRANSX],
+                             fMat_[IMAGE_SCALEY] * m.fMat_[IMAGE_TRANSY] + fMat_[IMAGE_TRANSY],
                              fMat_[IMAGE_SCALEX] * m.fMat_[IMAGE_SCALEX], fMat_[IMAGE_SCALEY] * m.fMat_[IMAGE_SCALEY]);
     } else {
         Matrix src = *this;
