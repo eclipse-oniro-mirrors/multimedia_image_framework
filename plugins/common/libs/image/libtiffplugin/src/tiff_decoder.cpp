@@ -32,6 +32,13 @@ namespace ImagePlugin {
 using namespace MultimediaPlugin;
 using namespace Media;
 
+namespace {
+constexpr tmsize_t TIFF_MAX_SINGLE_MEMORY_ALLOCATION =
+    static_cast<tmsize_t>(1024) * 1024 * 1024;
+constexpr tmsize_t TIFF_MAX_CUMULATED_MEMORY_ALLOCATION =
+    static_cast<tmsize_t>(2) * 1024 * 1024 * 1024;
+}
+
 TiffDecoder::TiffDecoder()
 {
     TiffLogUtils::RegisterLogHandler();
@@ -107,8 +114,13 @@ void TiffDecoder::SetSource(InputDataStream& sourceStream)
     bool cond = !buf || len == 0;
     CHECK_ERROR_RETURN(cond);
 
-    tifCodec_ = TIFFClientOpen("mem", "r", static_cast<thandle_t>(inputStream_), ReadProc, WriteProc, SeekProc,
-                               CloseProc, SizeProc, nullptr, nullptr);
+    TIFFOpenOptions* options = TIFFOpenOptionsAlloc();
+    CHECK_ERROR_RETURN_LOG(options == nullptr, "TIFFOpenOptionsAlloc failed");
+    TIFFOpenOptionsSetMaxSingleMemAlloc(options, TIFF_MAX_SINGLE_MEMORY_ALLOCATION);
+    TIFFOpenOptionsSetMaxCumulatedMemAlloc(options, TIFF_MAX_CUMULATED_MEMORY_ALLOCATION);
+    tifCodec_ = TIFFClientOpenExt("mem", "r", static_cast<thandle_t>(inputStream_), ReadProc, WriteProc, SeekProc,
+                                  CloseProc, SizeProc, nullptr, nullptr, options);
+    TIFFOpenOptionsFree(options);
 }
 
 void TiffDecoder::Reset()
