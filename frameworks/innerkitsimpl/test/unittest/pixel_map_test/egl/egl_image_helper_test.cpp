@@ -20,9 +20,9 @@
 #include <limits>
 #include <memory>
 #include <thread>
-#include <vector>
 #include <type_traits>
 #include <utility>
+#include <vector>
 
 #include "pixel_map_egl_utils.h"
 #include "pixel_map_from_surface.h"
