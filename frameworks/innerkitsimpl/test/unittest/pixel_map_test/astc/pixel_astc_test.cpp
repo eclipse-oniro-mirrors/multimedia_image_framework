@@ -140,6 +140,31 @@ static void ConstructPixelAstc(std::unique_ptr<PixelMap>& pixelMap, uint8_t** da
 }
 
 /**
+ * @tc.name: PixelAstcTestScaleRounding001
+ * @tc.desc: PixelAstc scale rounding covers both round-down and round-up
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelAstcTest, PixelAstcTestScaleRounding001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelAstcTest: PixelAstcTestScaleRounding001 start";
+    std::unique_ptr<PixelMap> pixelAstc = std::unique_ptr<PixelMap>();
+    uint8_t* data = nullptr;
+    ConstructPixelAstc(pixelAstc, &data);
+    ASSERT_NE(pixelAstc.get(), nullptr);
+    float xAxis = 0.7f; // 256 * 0.7 = 179.2, rounds down to 179
+    float yAxis = 1.3f; // 256 * 1.3 = 332.8, rounds up to 333
+    pixelAstc->scale(xAxis, yAxis);
+    ImageInfo outInfo;
+    pixelAstc->GetImageInfo(outInfo);
+    EXPECT_EQ(179, outInfo.size.width);
+    EXPECT_EQ(333, outInfo.size.height);
+    if (data != nullptr) {
+        free(data);
+    }
+    GTEST_LOG_(INFO) << "PixelAstcTest: PixelAstcTestScaleRounding001 end";
+}
+
+/**
  * @tc.name: PixelAstcTest001
  * @tc.desc: PixelAstc scale
  * @tc.type: FUNC

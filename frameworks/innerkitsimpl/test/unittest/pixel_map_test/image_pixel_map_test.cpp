@@ -2249,6 +2249,30 @@ HWTEST_F(ImagePixelMapTest, ImagePixelMapSLR006, TestSize.Level3)
 }
 
 /**
+ * @tc.name: ImagePixelMapScaleRounding001
+ * @tc.desc: test non-SLR scale rounding covers both round-down and round-up
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagePixelMapTest, ImagePixelMapScaleRounding001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMapScaleRounding001 scale start";
+    uint32_t* data = nullptr;
+    std::unique_ptr<PixelMap> pixelMap = ConstructPixelMap(&data);
+    EXPECT_NE(pixelMap, nullptr);
+    float xAxis = 0.7f; // 3 * 0.7 = 2.1, rounds down to 2
+    float yAxis = 1.3f; // 3 * 1.3 = 3.9, rounds up to 4
+    pixelMap->scale(xAxis, yAxis);
+    ImageInfo outInfo;
+    pixelMap->GetImageInfo(outInfo);
+    EXPECT_EQ(2, outInfo.size.width);
+    EXPECT_EQ(4, outInfo.size.height);
+    if (data != nullptr) {
+        delete[] data;
+    }
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMapScaleRounding001 scale end";
+}
+
+/**
 * @tc.name: ImagePixelMapCreate001
 * @tc.desc: test SLR with DMA
 * @tc.type: FUNC

@@ -4777,8 +4777,8 @@ uint32_t PixelMap::ScaleWithSLR(float xAxis, float yAxis)
     ImageInfo tmpInfo;
     GetImageInfo(tmpInfo);
     Size desiredSize;
-    if (!SafeCastToInt32(static_cast<double>(imageInfo_.size.width) * xAxis, desiredSize.width) ||
-        !SafeCastToInt32(static_cast<double>(imageInfo_.size.height) * yAxis, desiredSize.height) ||
+    if (!SafeRoundToInt32(static_cast<double>(imageInfo_.size.width) * xAxis, desiredSize.width) ||
+        !SafeRoundToInt32(static_cast<double>(imageInfo_.size.height) * yAxis, desiredSize.height) ||
         desiredSize.width == 0 || desiredSize.height == 0) {
         IMAGE_LOGE("PixelMap::scale with SLR invalid scale ratio");
         return ERR_IMAGE_INVALID_PARAMETER;
