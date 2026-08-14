@@ -3354,12 +3354,11 @@ static bool CheckYuvPixelMapBufferSize(const ImageInfo& imgInfo, PixelMemInfo& p
             return false;
         }
     } else {
-        uint32_t expectedBufferSize = static_cast<uint32_t>(ImageUtils::GetByteCount(imgInfo));
-        cond = calcSize > expectedBufferSize;
-        CHECK_ERROR_RETURN_RET_LOG(cond, false, "Invalid YUV buffer size:%{public}u > expect:%{public}u",
-                                   calcSize, expectedBufferSize);
+        uint64_t expectedBufferSize = static_cast<uint64_t>(ImageUtils::GetByteCount(imgInfo));
+        cond = static_cast<uint64_t>(calcSize) > expectedBufferSize;
+        CHECK_ERROR_RETURN_RET_LOG(cond, false, "Invalid YUV buffer size %{public}u exceeds expect.", calcSize);
         cond = !ImageUtils::CheckBufferSizeIsValid(memBufSizeInt, expectedBufferSize, pixelMemInfo.allocatorType);
-        CHECK_ERROR_RETURN_RET_LOG(cond, false, "Invalid buffer size[%{public}d], expect[%{public}u]",
+        CHECK_ERROR_RETURN_RET_LOG(cond, false, "Invalid buffer size[%{public}d], expect[%{public}llu]",
                                    memBufSizeInt, expectedBufferSize);
     }
     return true;
