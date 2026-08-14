@@ -386,18 +386,15 @@ struct Image ImageReceiverImpl::ReadNextImageSync()
 
 static void DoCallBack(std::shared_ptr<ImageReceiverTaiheContext> &context)
 {
-    auto localContext = std::make_unique<std::shared_ptr<ImageReceiverTaiheContext>>(context);
     if (context == nullptr) {
         IMAGE_LOGE("%{public}s, localContext is nullptr", __func__);
-        localContext.release();
         return;
     }
-
+    std::shared_ptr<ImageReceiverTaiheContext> localContext = context;
     std::shared_ptr<taihe::callback<void(uintptr_t, uintptr_t)>> cacheCallback =
         std::reinterpret_pointer_cast<taihe::callback<void(uintptr_t, uintptr_t)>>(context->taiheCallback);
     ani_object err = ImageTaiheUtils::ToBusinessError(taihe::get_env(), NUM_0, "Callback is OK");
     (*cacheCallback)(reinterpret_cast<uintptr_t>(err), ImageTaiheUtils::GetUndefinedPtr(taihe::get_env()));
-    localContext.release();
 }
 
 void ImageReceiverImpl::OnProcessSendEvent(std::shared_ptr<ImageReceiverTaiheContext> &context)

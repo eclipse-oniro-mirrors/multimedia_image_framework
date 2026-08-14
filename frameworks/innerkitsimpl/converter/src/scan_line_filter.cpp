@@ -72,13 +72,10 @@ uint32_t ScanlineFilter::FilterLine(void *destRowPixels, uint32_t destRowBytes, 
         IMAGE_LOGE("[ScanlineFilter]the src or dest pixel point is null.");
         return ERR_IMAGE_CROP;
     }
-    auto startPixel = static_cast<const uint8_t *>(srcRowPixels) + srcRegion_.left * srcBpp_;
-    if (startPixel == nullptr) {
-        IMAGE_LOGE("[ScanlineFilter]the shift src pixel point is null.");
-        return ERR_IMAGE_CROP;
-    }
+    auto startPixel = static_cast<const uint8_t *>(srcRowPixels) + static_cast<size_t>(srcRegion_.left * srcBpp_);
     if (!needPixelConvert_) {
-        errno_t ret = memcpy_s(destRowPixels, destRowBytes, startPixel, srcRegion_.width * srcBpp_);
+        errno_t ret = memcpy_s(destRowPixels, destRowBytes, startPixel,
+            static_cast<size_t>(srcRegion_.width) * srcBpp_);
         if (ret != 0) {
             IMAGE_LOGE("[ScanlineFilter]memcpy failed,ret=%{public}d.", ret);
             return ERR_IMAGE_CROP;

@@ -344,6 +344,10 @@ void PictureImpl::Marshalling(uintptr_t sequence)
         ImageTaiheUtils::ThrowExceptionError(OHOS::Media::ERR_IPC, "Marshalling picture to parcel failed.");
         return;
     }
+    if (nativePicture_ == nullptr) {
+        ImageTaiheUtils::ThrowExceptionError(OHOS::Media::ERR_IPC, "nativePicture_ is nullptr.");
+        return;
+    }
     bool st = nativePicture_->Marshalling(*messageParcel);
     if (!st) {
         ImageTaiheUtils::ThrowExceptionError(OHOS::Media::ERR_IPC, "Marshalling picture to parcel failed.");

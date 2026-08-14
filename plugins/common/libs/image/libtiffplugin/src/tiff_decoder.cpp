@@ -69,7 +69,9 @@ toff_t TiffDecoder::SeekProc(thandle_t handle, toff_t off, int whence)
         return static_cast<toff_t>(-1);
     }
     uint32_t off32 = static_cast<uint32_t>(off);
-
+    if (off < 0 || off > static_cast<toff_t>(UINT32_MAX)) {
+        return static_cast<toff_t>(-1);
+    }
     uint32_t newPos = 0;
     uint32_t currentPos = stream->Tell();
     uint32_t fileSize = stream->GetStreamSize();

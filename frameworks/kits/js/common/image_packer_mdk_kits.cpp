@@ -95,10 +95,10 @@ static int32_t ImagePackerNapiCreate(struct ImagePackerArgs* args)
 
 static std::shared_ptr<ImageSource> GetNativeImageSouce(napi_env env, napi_value source)
 {
-    std::unique_ptr<ImageSourceNapi> napi = nullptr;
+    ImageSourceNapi* napi = nullptr;
     napi_status status = napi_unwrap(env, source, reinterpret_cast<void**>(&napi));
     if ((status == napi_ok) && napi != nullptr) {
-        return napi.release()->nativeImgSrc;
+        return napi->nativeImgSrc;
     }
     return nullptr;
 }

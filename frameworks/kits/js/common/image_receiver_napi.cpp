@@ -178,7 +178,11 @@ napi_value ImageReceiverNapi::Init(napi_env env, napi_value exports)
         nullptr,
         IMAGE_ERR("create reference fail")
     );
-    auto ctorContext = new NapiConstructorContext();
+    auto ctorContext = new (std::nothrow) NapiConstructorContext();
+    if (ctorContext == nullptr) {
+        IMAGE_LOGE("NapiConstructorContext allocation failed");
+        return nullptr;
+    }
     ctorContext->env_ = env;
     ctorContext->ref_ = sConstructor_;
     napi_add_env_cleanup_hook(env, ImageNapiUtils::CleanUpConstructorContext, ctorContext);
@@ -1012,25 +1016,21 @@ void ImageReceiverNapi::DoCallBack(shared_ptr<ImageReceiverAsyncContext> &contex
                                    string name, CompleteCallback callBack)
 {
     IMAGE_FUNCTION_IN();
-    auto localContext = std::make_unique<shared_ptr<ImageReceiverAsyncContext>> (context);
     if (context == nullptr) {
         IMAGE_ERR("gContext is empty");
-        localContext.release();
         return;
     }
     if (context->env == nullptr) {
         IMAGE_ERR("env is empty");
-        localContext.release();
         return;
     }
-
+    std::shared_ptr<ImageReceiverAsyncContext> localContext = context;
     auto task = [context]() {
         (void)DoCallBackNoUvWork(context->env, context.get());
     };
     if (napi_status::napi_ok != napi_send_event(context->env, task, napi_eprio_high)) {
         IMAGE_LOGE("DoCallBackSendEvent: failed to SendEvent!");
     }
-    localContext.release();
     IMAGE_FUNCTION_OUT();
 }
 
@@ -1061,7 +1061,7 @@ napi_value ImageReceiverNapi::JsOn(napi_env env, napi_callback_info info)
         listener->context->env = args.env;
         listener->name = args.name;
 
-        native->RegisterBufferAvaliableListener((std::shared_ptr<SurfaceBufferAvaliableListener> &)listener);
+        native->RegisterBufferAvaliableListener(std::static_pointer_cast<SurfaceBufferAvaliableListener>(listener));
 
         IMAGE_LINE_OUT();
         return true;
