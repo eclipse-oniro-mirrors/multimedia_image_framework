@@ -119,6 +119,8 @@ GifEncoder::~GifEncoder()
 {
     IMAGE_LOGD("release IN");
 
+    pixelMaps_.clear();
+
     IMAGE_LOGD("release OUT");
 }
 
