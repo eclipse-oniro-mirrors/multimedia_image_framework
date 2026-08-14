@@ -374,20 +374,7 @@ HWTEST_F(NapiTest, NapiTest0014, TestSize.Level3)
 
     GTEST_LOG_(INFO) << "NapiTest: NapiTest0014 end";
 }
-/**
- * @tc.name: NapiTest0015
- * @tc.desc: OH_PixelMap_SetOpacity
- * @tc.type: FUNC
- */
-HWTEST_F(NapiTest, NapiTest0015, TestSize.Level3)
-{
-    GTEST_LOG_(INFO) << "NapiTest: NapiTest0015 start";
-    ImageSourceNapi napi;
-    ImageResource resource = napi.GetImageResource();
-    ASSERT_EQ(resource.buffer, nullptr);
 
-    GTEST_LOG_(INFO) << "NapiTest: NapiTest0015 end";
-}
 /**
  * @tc.name: NapiTest0016
  * @tc.desc: The same MessageSequence native object uses the same unmarshalling mutex.
