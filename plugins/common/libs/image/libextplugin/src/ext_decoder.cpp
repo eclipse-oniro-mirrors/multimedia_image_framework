@@ -1695,18 +1695,9 @@ uint32_t ExtDecoder::DoHeifToRgbDecode(OHOS::ImagePlugin::DecodeContext &context
         decoder->getErrMsg(context.hardDecodeError);
     }
 #ifdef IMAGE_COLORSPACE_FLAG
-    if (decodeRet && dstColorSpace_ != nullptr) {
-        if (srcColorSpace_ == nullptr) {
-            srcColorSpace_ = std::make_shared<OHOS::ColorManager::ColorSpace>(GetSrcColorSpace());
-        }
-        if (srcColorSpace_->GetColorSpaceName() != dstColorSpace_->GetColorSpaceName()) {
-            hwDstInfo_ = dstInfo_;
-            uint32_t csRet = ApplyDesiredColorSpace(context);
-            if (csRet != SUCCESS) {
-                IMAGE_LOGE("DoHeifToRgbDecode ApplyDesiredColorSpace failed, err=%{public}u", csRet);
-                return ERR_IMAGE_COLOR_CONVERT;
-            }
-        }
+    if (decodeRet) {
+        uint32_t csRet = ApplyDesiredColorSpaceIfNeeded(context);
+        CHECK_ERROR_RETURN_RET(csRet != SUCCESS, csRet);
     }
 #endif
     return decodeRet ? SUCCESS : ERR_IMAGE_DATA_UNSUPPORT;
@@ -2213,6 +2204,26 @@ uint32_t ExtDecoder::ApplyDesiredColorSpace(DecodeContext &context)
     FreeContextBuffer(context.freeFunc, context.allocatorType, context.pixelsBuffer);
     SetDecodeContextBuffer(context, context.allocatorType, static_cast<uint8_t *>(m->data.data),
                            m->data.size, m->extend.data);
+    return SUCCESS;
+}
+
+uint32_t ExtDecoder::ApplyDesiredColorSpaceIfNeeded(DecodeContext &context)
+{
+    if (dstColorSpace_ == nullptr || context.pixelsBuffer.context == nullptr) {
+        return SUCCESS;
+    }
+    if (srcColorSpace_ == nullptr) {
+        srcColorSpace_ = std::make_shared<OHOS::ColorManager::ColorSpace>(GetSrcColorSpace());
+    }
+    if (srcColorSpace_->GetColorSpaceName() == dstColorSpace_->GetColorSpaceName()) {
+        return SUCCESS;
+    }
+    hwDstInfo_ = dstInfo_;
+    uint32_t csRet = ApplyDesiredColorSpace(context);
+    if (csRet != SUCCESS) {
+        IMAGE_LOGE("ApplyDesiredColorSpace failed, err=%{public}u", csRet);
+        return ERR_IMAGE_COLOR_CONVERT;
+    }
     return SUCCESS;
 }
 
@@ -3993,18 +4004,9 @@ uint32_t ExtDecoder::AvifDecode(uint32_t index, DecodeContext &context, uint64_t
         decodeRet = decoder->decode();
     }
 #ifdef IMAGE_COLORSPACE_FLAG
-    if (decodeRet && dstColorSpace_ != nullptr && context.pixelsBuffer.context != nullptr) {
-        if (srcColorSpace_ == nullptr) {
-            srcColorSpace_ = std::make_shared<OHOS::ColorManager::ColorSpace>(GetSrcColorSpace());
-        }
-        if (srcColorSpace_->GetColorSpaceName() != dstColorSpace_->GetColorSpaceName()) {
-            hwDstInfo_ = dstInfo_;
-            uint32_t csRet = ApplyDesiredColorSpace(context);
-            if (csRet != SUCCESS) {
-                IMAGE_LOGE("AvifDecode ApplyDesiredColorSpace failed, err=%{public}u", csRet);
-                return ERR_IMAGE_COLOR_CONVERT;
-            }
-        }
+    if (decodeRet) {
+        uint32_t csRet = ApplyDesiredColorSpaceIfNeeded(context);
+        CHECK_ERROR_RETURN_RET(csRet != SUCCESS, csRet);
     }
 #endif
     return decodeRet ? SUCCESS : ERR_IMAGE_DECODE_FAILED;
