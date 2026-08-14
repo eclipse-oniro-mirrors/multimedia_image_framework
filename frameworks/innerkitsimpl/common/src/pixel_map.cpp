@@ -3358,7 +3358,7 @@ static bool CheckYuvPixelMapBufferSize(const ImageInfo& imgInfo, PixelMemInfo& p
         cond = static_cast<uint64_t>(calcSize) > expectedBufferSize;
         CHECK_ERROR_RETURN_RET_LOG(cond, false, "Invalid YUV buffer size %{public}u exceeds expect.", calcSize);
         cond = !ImageUtils::CheckBufferSizeIsValid(memBufSizeInt, expectedBufferSize, pixelMemInfo.allocatorType);
-        CHECK_ERROR_RETURN_RET_LOG(cond, false, "Invalid buffer size[%{public}d], expect[%{public}lu]",
+        CHECK_ERROR_RETURN_RET_LOG(cond, false, "Invalid buffer size[%{public}d], expect[%{public}" PRIu64 "]",
                                    memBufSizeInt, expectedBufferSize);
     }
     return true;
