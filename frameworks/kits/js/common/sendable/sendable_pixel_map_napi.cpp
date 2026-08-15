@@ -557,6 +557,7 @@ std::shared_ptr<PixelMap> SendablePixelMapNapi::GetSendablePixelMap(napi_env env
         IMAGE_LOGE("GetPixelMap SendablePixelMapNapi is nullptr");
         return nullptr;
     }
+    std::shared_lock<std::shared_mutex> lock(mutex_);
     return pixelmapNapiPtr->nativePixelMap_;
 }
 
@@ -963,13 +964,16 @@ napi_value SendablePixelMapNapi::ConvertToPixelMap(napi_env env, napi_callback_i
     }
     SendablePixelMapNapi* pixelMapNapi = nullptr;
     NapiUnwrap(env, argValue[0], reinterpret_cast<void**>(&pixelMapNapi));
-    if (!(IMG_NOT_NULL(pixelMapNapi) && IMG_NOT_NULL(pixelMapNapi->nativePixelMap_))) {
-        return ImageNapiUtils::ThrowExceptionError(env,
-            ERR_IMAGE_INIT_ABNORMAL, "ConvertToPixelMap napi_unwrap failed");
+    std::shared_ptr<PixelMap> nativePixelMap = nullptr;
+    {
+        std::unique_lock<std::shared_mutex> lock(mutex_);
+        if (!(IMG_NOT_NULL(pixelMapNapi) && IMG_NOT_NULL(pixelMapNapi->nativePixelMap_))) {
+            return ImageNapiUtils::ThrowExceptionError(env,
+                ERR_IMAGE_INIT_ABNORMAL, "ConvertToPixelMap napi_unwrap failed");
+        }
+        pixelMapNapi->setPixelNapiEditable(false);
+        nativePixelMap = std::move(pixelMapNapi->nativePixelMap_);
     }
-
-    std::shared_ptr<PixelMap> nativePixelMap = pixelMapNapi->nativePixelMap_;
-    pixelMapNapi->ReleasePixelNapiInner();
     result = PixelMapNapi::CreatePixelMap(env, nativePixelMap);
     if (!IMG_NOT_NULL(result)) {
         return ImageNapiUtils::ThrowExceptionError(env,
@@ -3254,6 +3258,7 @@ napi_value SendablePixelMapNapi::ApplyColorSpace(napi_env env, napi_callback_inf
 
 void SendablePixelMapNapi::release()
 {
+    std::unique_lock<std::shared_mutex> lock(mutex_);
     if (!isRelease) {
         if (nativePixelMap_ != nullptr) {
             nativePixelMap_.reset();
