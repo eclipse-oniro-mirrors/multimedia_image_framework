@@ -254,6 +254,7 @@ private:
     std::shared_ptr<OHOS::ColorManager::ColorSpace> srcColorSpace_ = nullptr;
     OHOS::ColorManager::ColorSpace GetSrcColorSpace();
     uint32_t ApplyDesiredColorSpace(DecodeContext &context);
+    uint32_t ApplyDesiredColorSpaceIfNeeded(DecodeContext &context);
     OHOS::ColorManager::ColorSpaceName heifColorSpaceName_ = ColorManager::ColorSpaceName::NONE;
     bool heifIsColorSpaceFromCicp_ = false;
 #endif

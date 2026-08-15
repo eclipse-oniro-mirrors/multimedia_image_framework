@@ -1694,6 +1694,12 @@ uint32_t ExtDecoder::DoHeifToRgbDecode(OHOS::ImagePlugin::DecodeContext &context
     if (!decodeRet) {
         decoder->getErrMsg(context.hardDecodeError);
     }
+#ifdef IMAGE_COLORSPACE_FLAG
+    if (decodeRet) {
+        uint32_t csRet = ApplyDesiredColorSpaceIfNeeded(context);
+        CHECK_ERROR_RETURN_RET(csRet != SUCCESS, csRet);
+    }
+#endif
     return decodeRet ? SUCCESS : ERR_IMAGE_DATA_UNSUPPORT;
 #else
     return ERR_IMAGE_DATA_UNSUPPORT;
@@ -2172,7 +2178,11 @@ uint32_t ExtDecoder::ApplyDesiredColorSpace(DecodeContext &context)
     SkColorType colorType = ImageTypeConverter::ToSkColorType(context.pixelFormat);
     SkAlphaType alphaType = ImageTypeConverter::ToSkAlphaType(OHOS::Media::AlphaType::IMAGE_ALPHA_TYPE_PREMUL);
 
-    bool cond = !src.bitmap.installPixels(info_, srcData, rowStride);
+    sk_sp<SkColorSpace> srcSkColorSpace = (srcColorSpace_ != nullptr) ?
+        srcColorSpace_->ToSkColorSpace() : info_.refColorSpace();
+    SkImageInfo srcInfo = SkImageInfo::Make(info_.width(), info_.height(),
+        info_.colorType(), info_.alphaType(), srcSkColorSpace);
+    bool cond = !src.bitmap.installPixels(srcInfo, srcData, rowStride);
     CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_COLOR_CONVERT, "apply colorspace get install failed.");
 
     // build target information
@@ -2194,6 +2204,26 @@ uint32_t ExtDecoder::ApplyDesiredColorSpace(DecodeContext &context)
     FreeContextBuffer(context.freeFunc, context.allocatorType, context.pixelsBuffer);
     SetDecodeContextBuffer(context, context.allocatorType, static_cast<uint8_t *>(m->data.data),
                            m->data.size, m->extend.data);
+    return SUCCESS;
+}
+
+uint32_t ExtDecoder::ApplyDesiredColorSpaceIfNeeded(DecodeContext &context)
+{
+    if (dstColorSpace_ == nullptr || context.pixelsBuffer.context == nullptr) {
+        return SUCCESS;
+    }
+    if (srcColorSpace_ == nullptr) {
+        srcColorSpace_ = std::make_shared<OHOS::ColorManager::ColorSpace>(GetSrcColorSpace());
+    }
+    if (srcColorSpace_->GetColorSpaceName() == dstColorSpace_->GetColorSpaceName()) {
+        return SUCCESS;
+    }
+    hwDstInfo_ = dstInfo_;
+    uint32_t csRet = ApplyDesiredColorSpace(context);
+    if (csRet != SUCCESS) {
+        IMAGE_LOGE("ApplyDesiredColorSpace failed, err=%{public}u", csRet);
+        return ERR_IMAGE_COLOR_CONVERT;
+    }
     return SUCCESS;
 }
 
@@ -3973,6 +4003,12 @@ uint32_t ExtDecoder::AvifDecode(uint32_t index, DecodeContext &context, uint64_t
     } else {
         decodeRet = decoder->decode();
     }
+#ifdef IMAGE_COLORSPACE_FLAG
+    if (decodeRet) {
+        uint32_t csRet = ApplyDesiredColorSpaceIfNeeded(context);
+        CHECK_ERROR_RETURN_RET(csRet != SUCCESS, csRet);
+    }
+#endif
     return decodeRet ? SUCCESS : ERR_IMAGE_DECODE_FAILED;
 #else
     return ERR_IMAGE_DECODE_FAILED;
