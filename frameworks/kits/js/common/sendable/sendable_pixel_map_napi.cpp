@@ -398,7 +398,7 @@ static void CommonCallbackRoutine(napi_env env,
 static void NapiSendEvent(napi_env env, SendablePixelMapAsyncContext *asyncContext,
     napi_event_priority prio, uint32_t status = SUCCESS)
 {
-    if (napi_status::napi_ok != napi_send_event(env, [env, asyncContext, status]() {
+    napi_status sendStatus = napi_send_event(env, [env, asyncContext, status]() {
         if (!IMG_NOT_NULL(asyncContext)) {
             IMAGE_LOGE("SendEvent asyncContext is nullptr!");
             return;
@@ -408,8 +408,10 @@ static void NapiSendEvent(napi_env env, SendablePixelMapAsyncContext *asyncConte
         asyncContext->status = status;
         SendablePixelMapAsyncContext *context = asyncContext;
         CommonCallbackRoutine(env, context, result);
-    }, prio)) {
-        IMAGE_LOGE("failed to sendEvent!");
+    }, prio);
+    if (sendStatus != napi_status::napi_ok) {
+        IMAGE_LOGE("failed to sendEvent, status: %{public}d", static_cast<int32_t>(sendStatus));
+        CleanupAsyncContext(env, asyncContext);
     }
 }
 
@@ -429,10 +431,7 @@ SendablePixelMapNapi::SendablePixelMapNapi():env_(nullptr)
     uniqueId_ = currentId.fetch_add(1, std::memory_order_relaxed);
 }
 
-SendablePixelMapNapi::~SendablePixelMapNapi()
-{
-    release();
-}
+SendablePixelMapNapi::~SendablePixelMapNapi() = default;
 
 static napi_value DoInitAfter(napi_env env,
                               napi_value exports,
@@ -3277,15 +3276,5 @@ napi_value SendablePixelMapNapi::ApplyColorSpace(napi_env env, napi_callback_inf
     return nVal.result;
 }
 
-void SendablePixelMapNapi::release()
-{
-    std::unique_lock<std::shared_mutex> lock(mutex_);
-    if (!isRelease) {
-        if (nativePixelMap_ != nullptr) {
-            nativePixelMap_.reset();
-        }
-        isRelease = true;
-    }
-}
 }  // namespace Media
 }  // namespace OHOS

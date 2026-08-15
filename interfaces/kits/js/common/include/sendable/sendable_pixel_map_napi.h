@@ -128,13 +128,11 @@ private:
     static napi_value ApplyColorSpace(napi_env env, napi_callback_info info);
     static ImageType ParserImageType(napi_env env, napi_value argv);
 
-    void release();
     static thread_local napi_ref sConstructor_;
     static std::shared_mutex mutex_;
     napi_env env_ = nullptr;
     std::shared_ptr<PixelMap> nativePixelMap_;
     int32_t lockCount = 0;
-    bool isRelease = false;
     bool isPixelNapiEditable = true;
     uint32_t uniqueId_ = 0;
 };
