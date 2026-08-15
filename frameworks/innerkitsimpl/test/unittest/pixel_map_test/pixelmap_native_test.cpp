@@ -735,6 +735,9 @@ HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_CreateEmptyPixelmap, TestSize.Level
     OH_PixelmapNative **pixelmap = nullptr;
     Image_ErrorCode ret = OH_PixelmapNative_CreateEmptyPixelmap(options, pixelmap);
     ASSERT_EQ(ret, IMAGE_BAD_PARAMETER);
+    ASSERT_EQ(OH_PixelmapInitializationOptions_Create(&options), IMAGE_SUCCESS);
+    ASSERT_EQ(OH_PixelmapNative_CreateEmptyPixelmap(options, nullptr), IMAGE_BAD_PARAMETER);
+    ASSERT_EQ(OH_PixelmapInitializationOptions_Release(options), IMAGE_SUCCESS);
     GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_CreateEmptyPixelmap end";
 }
 

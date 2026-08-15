@@ -62,6 +62,26 @@ thread_local napi_ref SendablePixelMapNapi::sConstructor_ = nullptr;
 
 std::shared_mutex SendablePixelMapNapi::mutex_;
 static std::mutex pixelMapCrossThreadMutex_;
+
+struct SendablePixelMapConstructorContext {
+    napi_env env = nullptr;
+    napi_ref ref = nullptr;
+    napi_ref* constructorRef = nullptr;
+};
+
+static void CleanUpSendablePixelMapConstructor(void* data)
+{
+    if (data == nullptr) {
+        return;
+    }
+    auto context = static_cast<SendablePixelMapConstructorContext*>(data);
+    napi_delete_reference(context->env, context->ref);
+    if (context->constructorRef != nullptr && *(context->constructorRef) == context->ref) {
+        *(context->constructorRef) = nullptr;
+    }
+    delete context;
+}
+
 struct PositionArea {
     void* pixels;
     size_t size;
@@ -70,12 +90,26 @@ struct PositionArea {
     Rect region;
 };
 
+class SendablePixelMapNapiArrayBufferReference {
+public:
+    SendablePixelMapNapiArrayBufferReference(napi_env env, napi_ref ref) : env_(env), ref_(ref) {}
+    ~SendablePixelMapNapiArrayBufferReference()
+    {
+        NAPI_CHECK_AND_DELETE_REF(env_, ref_);
+    }
+
+private:
+    napi_env env_ = nullptr;
+    napi_ref ref_ = nullptr;
+};
+
 struct SendablePixelMapAsyncContext {
-    napi_env env;
+    napi_env env = nullptr;
     napi_async_work work;
     napi_deferred deferred;
     napi_ref callbackRef;
     napi_ref error = nullptr;
+    std::shared_ptr<SendablePixelMapNapiArrayBufferReference> arrayBufferRef;
     NAPI_MessageSequence* messageSequence = nullptr;
     napi_ref messageSequenceRef = nullptr;
     uint32_t status;
@@ -242,16 +276,21 @@ static bool parseRegion(napi_env env, napi_value root, Rect* region)
     return true;
 }
 
-static bool parsePositionArea(napi_env env, napi_value root, PositionArea* area)
+static bool parsePositionArea(napi_env env, napi_value root, PositionArea* area, napi_value* pixelsValue = nullptr)
 {
     napi_value tmpValue = nullptr;
+    napi_value pixels = nullptr;
 
     if (area == nullptr) {
         return false;
     }
 
-    if (!GET_BUFFER_BY_NAME(root, "pixels", area->pixels, area->size)) {
+    if (!IMG_IS_OK(napi_get_named_property(env, root, "pixels", &pixels)) ||
+        !IMG_IS_OK(napi_get_arraybuffer_info(env, pixels, &area->pixels, &area->size))) {
         return false;
+    }
+    if (pixelsValue != nullptr) {
+        *pixelsValue = pixels;
     }
 
     if (!GET_UINT32_BY_NAME(root, "offset", area->offset)) {
@@ -270,6 +309,29 @@ static bool parsePositionArea(napi_env env, napi_value root, PositionArea* area)
         return false;
     }
     return true;
+}
+
+static bool HoldArrayBufferReference(napi_env env, napi_value arrayBuffer, SendablePixelMapAsyncContext &context)
+{
+    napi_ref arrayBufferRef = nullptr;
+    napi_status status = napi_create_reference(env, arrayBuffer, NUM_1, &arrayBufferRef);
+    if (!IMG_IS_OK(status)) {
+        IMAGE_LOGE("Failed to create ArrayBuffer reference, status: %{public}d", status);
+        return false;
+    }
+    context.arrayBufferRef = std::make_shared<SendablePixelMapNapiArrayBufferReference>(env, arrayBufferRef);
+    return true;
+}
+
+static bool HoldPositionAreaBufferReference(
+    napi_env env, napi_value root, SendablePixelMapAsyncContext &context)
+{
+    napi_value arrayBuffer = nullptr;
+    if (!parsePositionArea(env, root, &context.area, &arrayBuffer)) {
+        IMAGE_LOGE("Failed to parse PositionArea");
+        return false;
+    }
+    return HoldArrayBufferReference(env, arrayBuffer, context);
 }
 
 static void CleanupAsyncContext(napi_env env, SendablePixelMapAsyncContext* &asyncContext)
@@ -336,7 +398,7 @@ static void CommonCallbackRoutine(napi_env env,
 static void NapiSendEvent(napi_env env, SendablePixelMapAsyncContext *asyncContext,
     napi_event_priority prio, uint32_t status = SUCCESS)
 {
-    if (napi_status::napi_ok != napi_send_event(env, [env, asyncContext, status]() {
+    napi_status sendStatus = napi_send_event(env, [env, asyncContext, status]() {
         if (!IMG_NOT_NULL(asyncContext)) {
             IMAGE_LOGE("SendEvent asyncContext is nullptr!");
             return;
@@ -346,8 +408,10 @@ static void NapiSendEvent(napi_env env, SendablePixelMapAsyncContext *asyncConte
         asyncContext->status = status;
         SendablePixelMapAsyncContext *context = asyncContext;
         CommonCallbackRoutine(env, context, result);
-    }, prio)) {
-        IMAGE_LOGE("failed to sendEvent!");
+    }, prio);
+    if (sendStatus != napi_status::napi_ok) {
+        IMAGE_LOGE("failed to sendEvent, status: %{public}d", static_cast<int32_t>(sendStatus));
+        CleanupAsyncContext(env, asyncContext);
     }
 }
 
@@ -367,10 +431,7 @@ SendablePixelMapNapi::SendablePixelMapNapi():env_(nullptr)
     uniqueId_ = currentId.fetch_add(1, std::memory_order_relaxed);
 }
 
-SendablePixelMapNapi::~SendablePixelMapNapi()
-{
-    release();
-}
+SendablePixelMapNapi::~SendablePixelMapNapi() = default;
 
 static napi_value DoInitAfter(napi_env env,
                               napi_value exports,
@@ -469,10 +530,11 @@ napi_value SendablePixelMapNapi::Init(napi_env env, napi_value exports)
         nullptr, IMAGE_LOGE("create reference fail")
     );
 
-    auto ctorContext = new NapiConstructorContext();
-    ctorContext->env_ = env;
-    ctorContext->ref_ = sConstructor_;
-    napi_add_env_cleanup_hook(env, ImageNapiUtils::CleanUpConstructorContext, ctorContext);
+    auto ctorContext = new SendablePixelMapConstructorContext();
+    ctorContext->env = env;
+    ctorContext->ref = sConstructor_;
+    ctorContext->constructorRef = &sConstructor_;
+    napi_add_env_cleanup_hook(env, CleanUpSendablePixelMapConstructor, ctorContext);
 
     auto result = DoInitAfter(env, exports, constructor,
         IMG_ARRAY_SIZE(static_prop), static_prop);
@@ -515,6 +577,7 @@ std::shared_ptr<PixelMap> SendablePixelMapNapi::GetSendablePixelMap(napi_env env
         IMAGE_LOGE("GetPixelMap SendablePixelMapNapi is nullptr");
         return nullptr;
     }
+    std::shared_lock<std::shared_mutex> lock(mutex_);
     return pixelmapNapiPtr->nativePixelMap_;
 }
 
@@ -836,6 +899,8 @@ napi_value SendablePixelMapNapi::CreateSendablePixelMap(napi_env env, napi_callb
         &(asyncContext->colorsBufferSize));
 
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, IMAGE_LOGE("colors mismatch"));
+    IMG_NAPI_CHECK_RET_D(HoldArrayBufferReference(env, argValue[NUM_0], *asyncContext),
+        nullptr, IMAGE_LOGE("Failed to retain ArrayBuffer"));
 
     IMG_NAPI_CHECK_RET_D(parseInitializationOptions(env, argValue[1], &(asyncContext->opts)),
         nullptr, IMAGE_LOGE("InitializationOptions mismatch"));
@@ -919,13 +984,16 @@ napi_value SendablePixelMapNapi::ConvertToPixelMap(napi_env env, napi_callback_i
     }
     SendablePixelMapNapi* pixelMapNapi = nullptr;
     NapiUnwrap(env, argValue[0], reinterpret_cast<void**>(&pixelMapNapi));
-    if (!(IMG_NOT_NULL(pixelMapNapi) && IMG_NOT_NULL(pixelMapNapi->nativePixelMap_))) {
-        return ImageNapiUtils::ThrowExceptionError(env,
-            ERR_IMAGE_INIT_ABNORMAL, "ConvertToPixelMap napi_unwrap failed");
+    std::shared_ptr<PixelMap> nativePixelMap = nullptr;
+    {
+        std::unique_lock<std::shared_mutex> lock(mutex_);
+        if (!(IMG_NOT_NULL(pixelMapNapi) && IMG_NOT_NULL(pixelMapNapi->nativePixelMap_))) {
+            return ImageNapiUtils::ThrowExceptionError(env,
+                ERR_IMAGE_INIT_ABNORMAL, "ConvertToPixelMap napi_unwrap failed");
+        }
+        pixelMapNapi->setPixelNapiEditable(false);
+        nativePixelMap = std::move(pixelMapNapi->nativePixelMap_);
     }
-
-    std::shared_ptr<PixelMap> nativePixelMap = pixelMapNapi->nativePixelMap_;
-    pixelMapNapi->ReleasePixelNapiInner();
     result = PixelMapNapi::CreatePixelMap(env, nativePixelMap);
     if (!IMG_NOT_NULL(result)) {
         return ImageNapiUtils::ThrowExceptionError(env,
@@ -1383,6 +1451,8 @@ napi_value SendablePixelMapNapi::ReadPixelsToBuffer(napi_env env, napi_callback_
         &(asyncContext->colorsBuffer), &(asyncContext->colorsBufferSize));
 
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, IMAGE_LOGE("colors mismatch"));
+    IMG_NAPI_CHECK_RET_D(HoldArrayBufferReference(env, argValue[NUM_0], *asyncContext),
+        nullptr, IMAGE_LOGE("Failed to retain ArrayBuffer"));
 
     if (argCount == NUM_2 && ImageNapiUtils::getType(env, argValue[argCount - 1]) == napi_function) {
         napi_create_reference(env, argValue[argCount - 1], refCount, &asyncContext->callbackRef);
@@ -1487,7 +1557,7 @@ napi_value SendablePixelMapNapi::ReadPixels(napi_env env, napi_callback_info inf
     IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->rPixelMap),
         nullptr, IMAGE_LOGE("empty native pixelmap"));
 
-    IMG_NAPI_CHECK_RET_D(parsePositionArea(env, argValue[NUM_0], &(asyncContext->area)),
+    IMG_NAPI_CHECK_RET_D(HoldPositionAreaBufferReference(env, argValue[NUM_0], *asyncContext),
         nullptr, IMAGE_LOGE("fail to parse position area"));
 
     if (argCount == NUM_2 && ImageNapiUtils::getType(env, argValue[argCount - 1]) == napi_function) {
@@ -1588,7 +1658,7 @@ napi_value SendablePixelMapNapi::WritePixels(napi_env env, napi_callback_info in
     IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->rPixelMap),
         nullptr, IMAGE_LOGE("empty native pixelmap"));
 
-    IMG_NAPI_CHECK_RET_D(parsePositionArea(env, argValue[NUM_0], &(asyncContext->area)),
+    IMG_NAPI_CHECK_RET_D(HoldPositionAreaBufferReference(env, argValue[NUM_0], *asyncContext),
         nullptr, IMAGE_LOGE("fail to parse position area"));
 
     if (argCount == NUM_2 && ImageNapiUtils::getType(env, argValue[argCount - 1]) == napi_function) {
@@ -1693,6 +1763,8 @@ napi_value SendablePixelMapNapi::WriteBufferToPixels(napi_env env, napi_callback
 
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status),
         nullptr, IMAGE_LOGE("fail to get buffer info"));
+    IMG_NAPI_CHECK_RET_D(HoldArrayBufferReference(env, argValue[NUM_0], *asyncContext),
+        nullptr, IMAGE_LOGE("Failed to retain ArrayBuffer"));
 
     if (argCount == NUM_2 && ImageNapiUtils::getType(env, argValue[argCount - 1]) == napi_function) {
         napi_create_reference(env, argValue[argCount - 1], refCount, &asyncContext->callbackRef);
@@ -3204,14 +3276,5 @@ napi_value SendablePixelMapNapi::ApplyColorSpace(napi_env env, napi_callback_inf
     return nVal.result;
 }
 
-void SendablePixelMapNapi::release()
-{
-    if (!isRelease) {
-        if (nativePixelMap_ != nullptr) {
-            nativePixelMap_.reset();
-        }
-        isRelease = true;
-    }
-}
 }  // namespace Media
 }  // namespace OHOS

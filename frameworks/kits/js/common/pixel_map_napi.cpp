@@ -105,12 +105,26 @@ static std::vector<struct ImageEnum> HdrMetadataTypeMap = {
     {"ALTERNATE", 3, ""},
 };
 
+class PixelMapNapiArrayBufferReference {
+public:
+    PixelMapNapiArrayBufferReference(napi_env env, napi_ref ref) : env_(env), ref_(ref) {}
+    ~PixelMapNapiArrayBufferReference()
+    {
+        NAPI_CHECK_AND_DELETE_REF(env_, ref_);
+    }
+
+private:
+    napi_env env_ = nullptr;
+    napi_ref ref_ = nullptr;
+};
+
 struct PixelMapAsyncContext {
-    napi_env env;
+    napi_env env = nullptr;
     napi_async_work work;
     napi_deferred deferred;
     napi_ref callbackRef;
     napi_ref error = nullptr;
+    std::shared_ptr<PixelMapNapiArrayBufferReference> arrayBufferRef;
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     NAPI_MessageSequence* messageSequence = nullptr;
     napi_ref messageSequenceRef = nullptr;
@@ -353,16 +367,21 @@ static bool parseRegion(napi_env env, napi_value root, Rect* region)
     return true;
 }
 
-static bool parsePositionArea(napi_env env, napi_value root, PositionArea* area)
+static bool parsePositionArea(napi_env env, napi_value root, PositionArea* area, napi_value* pixelsValue = nullptr)
 {
     napi_value tmpValue = nullptr;
+    napi_value pixels = nullptr;
 
     if (area == nullptr) {
         return false;
     }
 
-    if (!GET_BUFFER_BY_NAME(root, "pixels", area->pixels, area->size)) {
+    if (!IMG_IS_OK(napi_get_named_property(env, root, "pixels", &pixels)) ||
+        !IMG_IS_OK(napi_get_arraybuffer_info(env, pixels, &area->pixels, &area->size))) {
         return false;
+    }
+    if (pixelsValue != nullptr) {
+        *pixelsValue = pixels;
     }
 
     if (!GET_UINT32_BY_NAME(root, "offset", area->offset)) {
@@ -381,6 +400,28 @@ static bool parsePositionArea(napi_env env, napi_value root, PositionArea* area)
         return false;
     }
     return true;
+}
+
+static bool HoldArrayBufferReference(napi_env env, napi_value arrayBuffer, PixelMapAsyncContext &context)
+{
+    napi_ref arrayBufferRef = nullptr;
+    napi_status status = napi_create_reference(env, arrayBuffer, NUM_1, &arrayBufferRef);
+    if (!IMG_IS_OK(status)) {
+        IMAGE_LOGE("Failed to create ArrayBuffer reference, status: %{public}d", status);
+        return false;
+    }
+    context.arrayBufferRef = std::make_shared<PixelMapNapiArrayBufferReference>(env, arrayBufferRef);
+    return true;
+}
+
+static bool HoldPositionAreaBufferReference(napi_env env, napi_value root, PixelMapAsyncContext &context)
+{
+    napi_value arrayBuffer = nullptr;
+    if (!parsePositionArea(env, root, &context.area, &arrayBuffer)) {
+        IMAGE_LOGE("Failed to parse PositionArea");
+        return false;
+    }
+    return HoldArrayBufferReference(env, arrayBuffer, context);
 }
 
 static void CleanupAsyncContext(napi_env env, PixelMapAsyncContext* &asyncContext)
@@ -1151,6 +1192,9 @@ napi_value PixelMapNapi::CreatePixelMapFromPixels(napi_env env, napi_callback_in
     if (!IMG_IS_OK(status)) {
         CreatePendingErrorIfAbsent(env, context->error, ERR_IMAGE_INVALID_PARAM,
             "The 1st argument must be an ArrayBuffer. (" + std::to_string(status) + ")");
+    } else if (!HoldArrayBufferReference(env, argv[NUM_0], *context)) {
+        CreatePendingErrorIfAbsent(env, context->error, ERR_IMAGE_CREATE_PIXELMAP_FAILED,
+            "Internal error: Failed to retain ArrayBuffer.");
     }
 
     if (!parseInitializationOptions(env, argv[NUM_1], &(context->opts))) {
@@ -1358,6 +1402,9 @@ napi_value PixelMapNapi::ReadAllPixelsToBuffer(napi_env env, napi_callback_info 
     if (!IMG_IS_OK(status)) {
         CreatePendingErrorIfAbsent(env, context->error, ERR_IMAGE_INVALID_PARAM,
             "The 1st argument must be an ArrayBuffer. (" + std::to_string(status) + ")");
+    } else if (!HoldArrayBufferReference(env, argv[NUM_0], *context)) {
+        CreatePendingErrorIfAbsent(env, context->error, ERR_IMAGE_GET_IMAGE_DATA_FAILED,
+            "Internal error: Failed to retain ArrayBuffer.");
     }
 
     napi_create_promise(env, &(context->deferred), &result);
@@ -1472,7 +1519,7 @@ napi_value PixelMapNapi::ReadPixelsToArea(napi_env env, napi_callback_info info)
         context->rPixelMap = context->nConstructor->nativePixelMap_;
     }
     
-    if (!parsePositionArea(env, argv[NUM_0], &(context->area))) {
+    if (!HoldPositionAreaBufferReference(env, argv[NUM_0], *context)) {
         CreatePendingErrorIfAbsent(env, context->error, ERR_IMAGE_INVALID_PARAM,
             "Failed to parse PositionArea. Ensure the pixels buffer, offset, stride, and region are valid.");
     }
@@ -1594,6 +1641,9 @@ napi_value PixelMapNapi::WriteAllPixelsFromBuffer(napi_env env, napi_callback_in
     if (!IMG_IS_OK(status)) {
         CreatePendingErrorIfAbsent(env, context->error, ERR_IMAGE_INVALID_PARAM,
             "The 1st argument must be an ArrayBuffer. (" + std::to_string(status) + ")");
+    } else if (!HoldArrayBufferReference(env, argv[NUM_0], *context)) {
+        CreatePendingErrorIfAbsent(env, context->error, ERR_IMAGE_GET_IMAGE_DATA_FAILED,
+            "Internal error: Failed to retain ArrayBuffer.");
     }
 
     napi_create_promise(env, &(context->deferred), &result);
@@ -1711,7 +1761,7 @@ napi_value PixelMapNapi::WritePixelsFromArea(napi_env env, napi_callback_info in
         context->wPixelMap = context->nConstructor->nativePixelMap_;
     }
     
-    if (!parsePositionArea(env, argv[NUM_0], &(context->area))) {
+    if (!HoldPositionAreaBufferReference(env, argv[NUM_0], *context)) {
         CreatePendingErrorIfAbsent(env, context->error, ERR_IMAGE_INVALID_PARAM,
             "Failed to parse PositionArea. Ensure the pixels buffer, offset, stride, and region are valid.");
     }
@@ -2857,6 +2907,8 @@ napi_value PixelMapNapi::CreatePixelMap(napi_env env, napi_callback_info info)
         &(asyncContext->colorsBufferSize));
 
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, IMAGE_LOGE("colors mismatch"));
+    IMG_NAPI_CHECK_RET_D(HoldArrayBufferReference(env, argValue[NUM_0], *asyncContext),
+        nullptr, IMAGE_LOGE("Failed to retain ArrayBuffer"));
 
     IMG_NAPI_CHECK_RET_D(parseInitializationOptions(env, argValue[1], &(asyncContext->opts)),
         nullptr, IMAGE_LOGE("InitializationOptions mismatch"));
@@ -3046,6 +3098,10 @@ napi_value PixelMapNapi::CreatePixelMapUsingAllocator(napi_env env, napi_callbac
         ImageNapiUtils::ThrowExceptionError(env,
         ERR_MEDIA_UNSUPPORT_OPERATION, "napi_get_arraybuffer_info failed."),
         IMAGE_LOGE("colors mismatch"));
+    IMG_NAPI_CHECK_RET_D(HoldArrayBufferReference(env, argValue[NUM_0], *asyncContext),
+        ImageNapiUtils::ThrowExceptionError(env,
+        ERR_MEDIA_UNSUPPORT_OPERATION, "Failed to retain ArrayBuffer."),
+        IMAGE_LOGE("Failed to retain ArrayBuffer"));
     IMG_NAPI_CHECK_RET_D(UsingAllocatorFormatCheck(env, argValue[1]) &&
         parseInitializationOptions(env, argValue[1], &(asyncContext->opts)),
         ImageNapiUtils::ThrowExceptionError(env,
@@ -4148,6 +4204,8 @@ napi_value PixelMapNapi::ReadPixelsToBuffer(napi_env env, napi_callback_info inf
         &(asyncContext->colorsBuffer), &(asyncContext->colorsBufferSize));
 
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, IMAGE_LOGE("colors mismatch"));
+    IMG_NAPI_CHECK_RET_D(HoldArrayBufferReference(env, argValue[NUM_0], *asyncContext),
+        nullptr, IMAGE_LOGE("Failed to retain ArrayBuffer"));
 
     if (argCount == NUM_2 && ImageNapiUtils::getType(env, argValue[argCount - 1]) == napi_function) {
         napi_create_reference(env, argValue[argCount - 1], refCount, &asyncContext->callbackRef);
@@ -4251,7 +4309,7 @@ napi_value PixelMapNapi::ReadPixels(napi_env env, napi_callback_info info)
     IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->rPixelMap),
         nullptr, IMAGE_LOGE("empty native pixelmap"));
 
-    IMG_NAPI_CHECK_RET_D(parsePositionArea(env, argValue[NUM_0], &(asyncContext->area)),
+    IMG_NAPI_CHECK_RET_D(HoldPositionAreaBufferReference(env, argValue[NUM_0], *asyncContext),
         nullptr, IMAGE_LOGE("fail to parse position area"));
 
     if (argCount == NUM_2 && ImageNapiUtils::getType(env, argValue[argCount - 1]) == napi_function) {
@@ -4350,7 +4408,7 @@ napi_value PixelMapNapi::WritePixels(napi_env env, napi_callback_info info)
     IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->rPixelMap),
         nullptr, IMAGE_LOGE("empty native pixelmap"));
 
-    IMG_NAPI_CHECK_RET_D(parsePositionArea(env, argValue[NUM_0], &(asyncContext->area)),
+    IMG_NAPI_CHECK_RET_D(HoldPositionAreaBufferReference(env, argValue[NUM_0], *asyncContext),
         nullptr, IMAGE_LOGE("fail to parse position area"));
 
     if (argCount == NUM_2 && ImageNapiUtils::getType(env, argValue[argCount - 1]) == napi_function) {
@@ -4452,6 +4510,8 @@ napi_value PixelMapNapi::WriteBufferToPixels(napi_env env, napi_callback_info in
 
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status),
         nullptr, IMAGE_LOGE("fail to get buffer info"));
+    IMG_NAPI_CHECK_RET_D(HoldArrayBufferReference(env, argValue[NUM_0], *asyncContext),
+        nullptr, IMAGE_LOGE("Failed to retain ArrayBuffer"));
 
     if (argCount == NUM_2 && ImageNapiUtils::getType(env, argValue[argCount - 1]) == napi_function) {
         napi_create_reference(env, argValue[argCount - 1], refCount, &asyncContext->callbackRef);
