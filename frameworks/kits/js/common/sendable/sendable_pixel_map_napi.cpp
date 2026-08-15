@@ -62,6 +62,26 @@ thread_local napi_ref SendablePixelMapNapi::sConstructor_ = nullptr;
 
 std::shared_mutex SendablePixelMapNapi::mutex_;
 static std::mutex pixelMapCrossThreadMutex_;
+
+struct SendablePixelMapConstructorContext {
+    napi_env env = nullptr;
+    napi_ref ref = nullptr;
+    napi_ref* constructorRef = nullptr;
+};
+
+static void CleanUpSendablePixelMapConstructor(void* data)
+{
+    if (data == nullptr) {
+        return;
+    }
+    auto context = static_cast<SendablePixelMapConstructorContext*>(data);
+    napi_delete_reference(context->env, context->ref);
+    if (context->constructorRef != nullptr && *(context->constructorRef) == context->ref) {
+        *(context->constructorRef) = nullptr;
+    }
+    delete context;
+}
+
 struct PositionArea {
     void* pixels;
     size_t size;
@@ -511,10 +531,11 @@ napi_value SendablePixelMapNapi::Init(napi_env env, napi_value exports)
         nullptr, IMAGE_LOGE("create reference fail")
     );
 
-    auto ctorContext = new NapiConstructorContext();
-    ctorContext->env_ = env;
-    ctorContext->ref_ = sConstructor_;
-    napi_add_env_cleanup_hook(env, ImageNapiUtils::CleanUpConstructorContext, ctorContext);
+    auto ctorContext = new SendablePixelMapConstructorContext();
+    ctorContext->env = env;
+    ctorContext->ref = sConstructor_;
+    ctorContext->constructorRef = &sConstructor_;
+    napi_add_env_cleanup_hook(env, CleanUpSendablePixelMapConstructor, ctorContext);
 
     auto result = DoInitAfter(env, exports, constructor,
         IMG_ARRAY_SIZE(static_prop), static_prop);
