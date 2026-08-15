@@ -2222,7 +2222,6 @@ uint32_t ExtDecoder::ApplyDesiredColorSpaceIfNeeded(DecodeContext &context)
     uint32_t csRet = ApplyDesiredColorSpace(context);
     if (csRet != SUCCESS) {
         IMAGE_LOGE("ApplyDesiredColorSpace failed, err=%{public}u", csRet);
-        return ERR_IMAGE_COLOR_CONVERT;
     }
     return SUCCESS;
 }
