@@ -158,12 +158,22 @@ bool PixelConvertAdapter::RGBToRGBx(const uint8_t* srcPixels, uint8_t* dstPixels
 
 static int32_t GetRGBxRowBytes(const ImageInfo &imgInfo)
 {
+    if (imgInfo.size.width > INT32_MAX / NUM_4) {
+        IMAGE_LOGE("obtained an out of range value for rgbx row bytes, width: %{public}d", imgInfo.size.width);
+        return -1;
+    }
     return imgInfo.size.width * NUM_4;
 }
 
 static int32_t GetRGBxSize(const ImageInfo &imgInfo)
 {
-    return imgInfo.size.height * GetRGBxRowBytes(imgInfo);
+    int32_t rowBytes = GetRGBxRowBytes(imgInfo);
+    if (rowBytes < 0 || (rowBytes != 0 && imgInfo.size.height > INT32_MAX / rowBytes)) {
+        IMAGE_LOGE("obtained an out of range value for rgbx size, width: %{public}d, height: %{public}d",
+            imgInfo.size.width, imgInfo.size.height);
+        return -1;
+    }
+    return imgInfo.size.height * rowBytes;
 }
 
 bool PixelConvertAdapter::WritePixelsConvert(const void *srcPixels, uint32_t srcRowBytes, const ImageInfo &srcInfo,
@@ -185,6 +195,7 @@ bool PixelConvertAdapter::WritePixelsConvert(const void *srcPixels, uint32_t src
 
     int32_t dstRGBxSize = (dstInfo.pixelFormat == PixelFormat::RGB_888) ?
         GetRGBxSize(dstInfo) : static_cast<int32_t>(NUM_1);
+    CHECK_ERROR_RETURN_RET_LOG(dstRGBxSize <= 0, false, "WritePixelsConvert get dst rgbx size failed.");
     auto dstRGBxPixels = std::make_unique<uint8_t[]>(dstRGBxSize);
     auto keepDstPixels = dstPixels;
     dstPixels = (dstInfo.pixelFormat == PixelFormat::RGB_888) ? &dstRGBxPixels[0] : dstPixels;
@@ -196,6 +207,7 @@ bool PixelConvertAdapter::WritePixelsConvert(const void *srcPixels, uint32_t src
                 dstInfo.size.width * dstInfo.size.height * NUM_3);
     }
     int32_t srcRGBxSize = (srcInfo.pixelFormat == PixelFormat::RGB_888) ? GetRGBxSize(srcInfo) : NUM_1;
+    CHECK_ERROR_RETURN_RET_LOG(srcRGBxSize <= 0, false, "WritePixelsConvert get src rgbx size failed.");
     auto srcRGBxPixels = std::make_unique<uint8_t[]>(srcRGBxSize);
     if (srcInfo.pixelFormat == PixelFormat::RGB_888) {
         RGBToRGBx(static_cast<const uint8_t*>(srcPixels), &srcRGBxPixels[0], srcRowBytes * srcInfo.size.height);
