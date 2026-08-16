@@ -349,6 +349,7 @@ if (use_clang_ios) {
     subsystem_name = "multimedia"
     innerapi_tags = [ "platformsdk" ]
     part_name = "image_framework"
+    version_script = "libimage_napi.versionscript"
   }
 
   if (use_clang_android) {
