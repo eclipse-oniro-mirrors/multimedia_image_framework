@@ -1214,7 +1214,7 @@ static bool GetSLRMemoryLayout(AbsMemory &memory, const Size &size, int32_t pixe
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
         auto surfaceBuffer = reinterpret_cast<SurfaceBuffer *>(memory.extend.data);
         CHECK_ERROR_RETURN_RET_LOG(surfaceBuffer == nullptr, false, "GetSLRMemoryLayout surface buffer is null");
-        rowStrideBytes = surfaceBuffer->GetStride();
+        rowStrideBytes = static_cast<uint64_t>(surfaceBuffer->GetStride());
         bufferSize = surfaceBuffer->GetSize();
 #else
         return false;
