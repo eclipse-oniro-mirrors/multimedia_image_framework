@@ -4634,6 +4634,11 @@ unique_ptr<vector<unique_ptr<PixelMap>>> ImageSource::CreatePixelMapList(const D
         IMAGE_LOGE("[ImageSource]CreatePixelMapList get frame count error.");
         return nullptr;
     }
+    if (frameCount > MAX_FRAME_COUNT) {
+        IMAGE_LOGE("[ImageSource]CreatePixelMapList frame count %{public}u, exceeds max.", frameCount);
+        errorCode = ERR_IMAGE_SOURCE_DATA;
+        return nullptr;
+    }
 
     auto pixelMaps = std::make_unique<vector<unique_ptr<PixelMap>>>();
     for (uint32_t index = 0; index < frameCount; index++) {
@@ -4655,6 +4660,11 @@ unique_ptr<vector<int32_t>> ImageSource::GetDelayTime(uint32_t &errorCode)
     auto frameCount = GetFrameCount(errorCode);
     if (errorCode != SUCCESS) {
         IMAGE_LOGE("Failed to get frame count in GetDelayTime.");
+        return nullptr;
+    }
+    if (frameCount > MAX_FRAME_COUNT) {
+        IMAGE_LOGE("GetDelayTime frame count %{public}u, exceeds max.", frameCount);
+        errorCode = ERR_IMAGE_SOURCE_DATA;
         return nullptr;
     }
 
@@ -4698,6 +4708,11 @@ unique_ptr<vector<int32_t>> ImageSource::GetDisposalType(uint32_t &errorCode)
     auto frameCount = GetFrameCount(errorCode);
     if (errorCode != SUCCESS) {
         IMAGE_LOGE("[ImageSource]GetDisposalType get frame sum error.");
+        return nullptr;
+    }
+    if (frameCount > MAX_FRAME_COUNT) {
+        IMAGE_LOGE("[ImageSource]GetDisposalType frame count %{public}u, exceeds max.", frameCount);
+        errorCode = ERR_IMAGE_SOURCE_DATA;
         return nullptr;
     }
 
@@ -4749,13 +4764,6 @@ uint32_t ImageSource::GetFrameCount(uint32_t &errorCode)
     if (InitMainDecoder() != SUCCESS) {
         IMAGE_LOGE("[ImageSource]GetFrameCount image decode plugin is null.");
         errorCode = ERR_IMAGE_PLUGIN_CREATE_FAILED;
-        return 0;
-    }
-    
-    if (frameCount > MAX_FRAME_COUNT) {
-        IMAGE_LOGE("[ImageSource]GetFrameCount frame count %{public}u, exceeds max.",
-            frameCount);
-        errorCode = ERR_IMAGE_SOURCE_DATA;
         return 0;
     }
 
