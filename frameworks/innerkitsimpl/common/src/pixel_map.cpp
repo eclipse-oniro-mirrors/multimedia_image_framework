@@ -3240,15 +3240,6 @@ bool PixelMap::ReadMemInfoFromParcel(Parcel &parcel, const ImageInfo &imgInfo, P
             ::close(fd);
             return false;
         }
-        // Validate YUV/F16 buffer size before mmap to prevent oversized mapping
-        if (IsYUV(imgInfo.pixelFormat) || imgInfo.pixelFormat == PixelFormat::RGBA_F16) {
-            if (!CheckYuvPixelMapBufferSize(imgInfo, pixelMemInfo, this) ||
-                !CheckF16PixelMapBufferSize(imgInfo, pixelMemInfo, this)) {
-                PixelMap::ConstructPixelMapError(error, ERR_IMAGE_GET_FD_BAD, "YUV/F16 buffer size is invalid.");
-                ::close(fd);
-                return false;
-            }
-        }
         void* ptr = ::mmap(nullptr, pixelMemInfo.bufferSize, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
         if (ptr == MAP_FAILED) {
             ptr = ::mmap(nullptr, pixelMemInfo.bufferSize, PROT_READ, MAP_SHARED, fd, 0);
