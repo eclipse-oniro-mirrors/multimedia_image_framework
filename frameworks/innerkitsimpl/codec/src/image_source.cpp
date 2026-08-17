@@ -174,6 +174,7 @@ static const uint8_t ASTC_HEADER_DIM_X = 7;
 static const uint8_t ASTC_HEADER_DIM_Y = 10;
 static const int IMAGE_HEADER_SIZE = 12;
 static const uint32_t MAX_SOURCE_SIZE = 300 * 1024 * 1024;
+static const uint32_t MAX_FRAME_COUNT = 1000;
 constexpr uint8_t ASTC_EXTEND_INFO_TLV_NUM = 1; // curren only one group TLV
 constexpr uint8_t ASTC_EXTEND_INFO_TLV_NUM6 = 6; // curren only six group TLV
 constexpr uint32_t ASTC_EXTEND_INFO_SIZE_DEFINITION_LENGTH = 4; // 4 bytes to discripte for extend info summary bytes
@@ -4656,6 +4657,11 @@ unique_ptr<vector<int32_t>> ImageSource::GetDelayTime(uint32_t &errorCode)
         IMAGE_LOGE("Failed to get frame count in GetDelayTime.");
         return nullptr;
     }
+    if (frameCount > MAX_FRAME_COUNT) {
+        IMAGE_LOGE("GetDelayTime frame count %{public}u, exceeds max.", frameCount);
+        errorCode = ERR_IMAGE_SOURCE_DATA;
+        return nullptr;
+    }
 
     auto delayTimes = std::make_unique<vector<int32_t>>();
     if (sourceInfo_.encodedFormat == "image/webp" && frameCount == 1) {
@@ -4697,6 +4703,11 @@ unique_ptr<vector<int32_t>> ImageSource::GetDisposalType(uint32_t &errorCode)
     auto frameCount = GetFrameCount(errorCode);
     if (errorCode != SUCCESS) {
         IMAGE_LOGE("[ImageSource]GetDisposalType get frame sum error.");
+        return nullptr;
+    }
+    if (frameCount > MAX_FRAME_COUNT) {
+        IMAGE_LOGE("[ImageSource]GetDisposalType frame count %{public}u, exceeds max.", frameCount);
+        errorCode = ERR_IMAGE_SOURCE_DATA;
         return nullptr;
     }
 
