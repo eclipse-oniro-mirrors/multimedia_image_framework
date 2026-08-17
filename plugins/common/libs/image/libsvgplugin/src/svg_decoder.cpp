@@ -43,6 +43,7 @@ using namespace Media;
 namespace {
 constexpr uint32_t SVG_IMAGE_NUM = 1;
 constexpr uint32_t SVG_BYTES_PER_PIXEL = 4;
+constexpr size_t MAX_STREAM_SIZE = 300 * 1024 * 1024;
 constexpr uint32_t SVG_COLOR_ATTR_WIDTH = 6;
 constexpr uint32_t SVG_COLOR_MASK = 0xFFFFFF;
 const std::string SVG_FILL_COLOR_ATTR = "fill";
@@ -411,6 +412,8 @@ bool SvgDecoder::BuildStream()
     CHECK_ERROR_RETURN_RET_LOG(cond, false, "[BuildStream] Stream is null.");
 
     auto length = inputStreamPtr_->GetStreamSize();
+    cond = length > MAX_STREAM_SIZE;
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "[BuildStream] Stream size %{public}zu exceeds max limit.", length);
     if (inputStreamPtr_->GetStreamType() == ImagePlugin::BUFFER_SOURCE_TYPE) {
         svgStream_ = std::make_unique<SkMemoryStream>(inputStreamPtr_->GetDataPtr(), length);
     } else {
