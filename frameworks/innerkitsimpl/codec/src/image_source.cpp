@@ -4634,11 +4634,6 @@ unique_ptr<vector<unique_ptr<PixelMap>>> ImageSource::CreatePixelMapList(const D
         IMAGE_LOGE("[ImageSource]CreatePixelMapList get frame count error.");
         return nullptr;
     }
-    if (frameCount > MAX_FRAME_COUNT) {
-        IMAGE_LOGE("[ImageSource]CreatePixelMapList frame count %{public}u, exceeds max.", frameCount);
-        errorCode = ERR_IMAGE_SOURCE_DATA;
-        return nullptr;
-    }
 
     auto pixelMaps = std::make_unique<vector<unique_ptr<PixelMap>>>();
     for (uint32_t index = 0; index < frameCount; index++) {
