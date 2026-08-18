@@ -1135,7 +1135,7 @@ bool PixelYuvUtils::IsLegalAxis(float xAxis, float yAxis, ImageInfo &imageInfo_)
     const int64_t width = static_cast<int64_t>(imageInfo_.size.width) + xOffset;
     const int64_t height = static_cast<int64_t>(imageInfo_.size.height) + yOffset;
     if (width < 1 || height < 1 || width > MAX_DIMENSION || height > MAX_DIMENSION) {
-        IMAGE_LOGE("Checktranslate size overflow width(%{public}lld), height(%{public}lld)", width, height);
+        IMAGE_LOGE("Checktranslate size overflow width:%{public}" PRId64 ", height:%{public}" PRId64, width, height);
         return false;
     }
     return true;
