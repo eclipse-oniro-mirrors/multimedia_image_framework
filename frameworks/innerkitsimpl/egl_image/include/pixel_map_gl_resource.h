@@ -36,6 +36,10 @@ namespace OHOS {
 namespace Media {
 namespace PixelMapGlResource {
 constexpr int32_t MAX_GL_TRANSFER_DIMENSION = 8192;
+constexpr int32_t BYTES_PER_PIXEL_ALPHA = 1;
+constexpr int32_t BYTES_PER_PIXEL_RGB565 = 2;
+constexpr int32_t BYTES_PER_PIXEL_RGB = 3;
+constexpr int32_t BYTES_PER_PIXEL_RGBA = 4;
 
 inline void DeleteTexture(GLuint &textureId)
 {
@@ -297,16 +301,16 @@ inline bool GetGlPixelBytes(GLenum glFormat, int32_t &pixelBytes)
     switch (glFormat) {
         case GL_RGBA:
         case GL_BGRA_EXT:
-            pixelBytes = 4;
+            pixelBytes = BYTES_PER_PIXEL_RGBA;
             return true;
         case GL_RGB:
-            pixelBytes = 3;
+            pixelBytes = BYTES_PER_PIXEL_RGB;
             return true;
         case GL_RGB565:
-            pixelBytes = 2;
+            pixelBytes = BYTES_PER_PIXEL_RGB565;
             return true;
         case GL_ALPHA8_EXT:
-            pixelBytes = 1;
+            pixelBytes = BYTES_PER_PIXEL_ALPHA;
             return true;
         default:
             pixelBytes = 0;

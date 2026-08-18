@@ -83,7 +83,7 @@ static bool checkProgram(GLuint &programId)
     return true;
 }
 
-static bool readFileFully(int fd, unsigned char *data, size_t size)
+static bool ReadFileFully(int fd, unsigned char *data, size_t size)
 {
     size_t totalRead = 0;
     while (totalRead < size) {
@@ -145,12 +145,8 @@ static bool loadShaderFromFileLocked(unsigned char*&shaderBinary, GLenum &binary
         IMAGE_LOGE("slr_gpu shader cache file too large");
         return false;
     }
-    std::unique_ptr<unsigned char[]> binaryData(new (std::nothrow) unsigned char[fileSize]);
-    if (binaryData == nullptr) {
-        close(binaryFd);
-        return false;
-    }
-    const bool readSuccess = readFileFully(binaryFd, binaryData.get(), fileSize);
+    auto binaryData = std::make_unique<unsigned char[]>(fileSize);
+    const bool readSuccess = ReadFileFully(binaryFd, binaryData.get(), fileSize);
     const int readError = errno;
     close(binaryFd);
 
