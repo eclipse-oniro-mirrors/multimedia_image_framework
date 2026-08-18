@@ -1343,10 +1343,10 @@ bool ImageUtils::SurfaceBuffer2PixelMap(sptr<OHOS::SurfaceBuffer> &surfaceBuffer
 #ifdef IMAGE_COLORSPACE_FLAG
     ColorManager::ColorSpaceName colorSpaceName =
         CMColorSpaceType2ColorSpaceName(GetCMColorSpaceType(surfaceBuffer));
-    Pixelmap->InnerSetColorSpace(ColorManager::ColorSpace(colorSpaceName));
+    pixelmap->InnerSetColorSpace(ColorManager::ColorSpace(colorSpaceName));
 #endif
     if (ImageUtils::IsYuvFormat(pixelFormat)) {
-        SetYuvDataInfo(Pixelmap, surfaceBuffer);
+        SetYuvDataInfo(pixelmap, surfaceBuffer);
     }
     return true;
 }
