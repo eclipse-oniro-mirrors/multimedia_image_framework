@@ -1853,11 +1853,20 @@ AlphaConvertType PixelConvert::GetAlphaConvertType(const AlphaType &srcType, con
 
 bool PixelConvert::IsValidRowStride(int32_t rowStride, const ImageInfo &imageInfo)
 {
-    if (imageInfo.pixelFormat == PixelFormat::YCBCR_P010 ||
-        imageInfo.pixelFormat == PixelFormat::YCRCB_P010) {
-        return rowStride == 0 || rowStride >= imageInfo.size.width * YUV420_P010_BYTES;
+    if (rowStride == 0) {
+        return true;
     }
-    return rowStride == 0 || rowStride >= imageInfo.size.width * ImageUtils::GetPixelBytes(imageInfo.pixelFormat);
+    if (rowStride < 0 || imageInfo.size.width <= 0) {
+        return false;
+    }
+    const int32_t pixelBytes = imageInfo.pixelFormat == PixelFormat::YCBCR_P010 ||
+        imageInfo.pixelFormat == PixelFormat::YCRCB_P010 ? YUV420_P010_BYTES :
+        ImageUtils::GetPixelBytes(imageInfo.pixelFormat);
+    if (pixelBytes <= 0) {
+        return false;
+    }
+    const int64_t minRowStride = static_cast<int64_t>(imageInfo.size.width) * pixelBytes;
+    return minRowStride <= INT32_MAX && rowStride >= minRowStride;
 }
 
 bool PixelConvert::IsValidBufferInfo(const BufferInfo &bufferInfo)
