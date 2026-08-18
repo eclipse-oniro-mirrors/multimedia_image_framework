@@ -16,6 +16,9 @@
 #include "image_utils.h"
 
 #include <sys/stat.h>
+#include <sys/ioctl.h>
+#include <fcntl.h>
+#include <unistd.h>
 #include <cerrno>
 #include <climits>
 #include <cmath>
@@ -129,6 +132,15 @@ constexpr int32_t DMA_SIZE = 512 * 512; // DMA minimum effective size
 constexpr int32_t NOPADDING_DMA_SIZE = 256 * 256;
 constexpr int32_t FAULT_API_VERSION = -1;
 constexpr int32_t BUNDLE_MGR_SERVICE_SYS_ABILITY_ID = 401;
+struct binder_write_read {
+    uint64_t write_size;
+    uint64_t write_consumed;
+    uint64_t write_buffer;
+    uint64_t read_size;
+    uint64_t read_consumed;
+    uint64_t read_buffer;
+};
+constexpr unsigned long BINDER_WRITE_READ = _IOWR('b', 1, struct binder_write_read);
 constexpr int32_t BASE_EVEN_DIVISOR = 2;
 constexpr float EPSILON = 1e-6;
 constexpr float FLOAT_1 = 1.0f;
@@ -921,6 +933,18 @@ void ImageUtils::DumpPixelMapIfDumpEnabled(std::unique_ptr<PixelMap>& pixelMap, 
     DumpPixelMap(pixelMap.get(), "_imageId", imageId);
 }
 
+void ImageUtils::DumpPixelMapIfDumpEnabled(std::shared_ptr<PixelMap>& pixelMap, uint64_t imageId)
+{
+    if (!ImageSystemProperties::GetDumpPictureEnabled()) {
+        return;
+    }
+    if (pixelMap == nullptr) {
+        IMAGE_LOGI("ImageUtils::DumpPixelMapIfDumpEnabled pixelMap is null");
+        return;
+    }
+    DumpPixelMap(pixelMap.get(), "_imageId", imageId);
+}
+
 void ImageUtils::DumpPixelMapIfDumpEnabled(PixelMap& pixelMap, std::string func)
 {
     if (!ImageSystemProperties::GetDumpImageEnabled()) {
@@ -1297,9 +1321,9 @@ void ImageUtils::SetYuvDataInfo(std::unique_ptr<PixelMap> &pixelMap, sptr<OHOS::
     pixelMap->SetImageYUVInfo(info);
 }
 
-bool ImageUtils::SurfaceBuffer2PixelMap(sptr<OHOS::SurfaceBuffer> &surfaceBuffer, std::unique_ptr<PixelMap> &Pixelmap)
+bool ImageUtils::SurfaceBuffer2PixelMap(sptr<OHOS::SurfaceBuffer> &surfaceBuffer, std::unique_ptr<PixelMap> &pixelmap)
 {
-    if (surfaceBuffer == nullptr || Pixelmap == nullptr) {
+    if (surfaceBuffer == nullptr || pixelmap == nullptr) {
         return false;
     }
     PixelFormat pixelFormat = ImageUtils::SbFormat2PixelFormat(surfaceBuffer->GetFormat());
@@ -1312,17 +1336,17 @@ bool ImageUtils::SurfaceBuffer2PixelMap(sptr<OHOS::SurfaceBuffer> &surfaceBuffer
 
     ImageInfo imageInfo = MakeImageInfo(surfaceBuffer->GetWidth(),
                                         surfaceBuffer->GetHeight(), pixelFormat, alphaType, colorSpace);
-    Pixelmap->SetImageInfo(imageInfo, true);
-    Pixelmap->SetPixelsAddr(surfaceBuffer->GetVirAddr(),
-                            nativeBuffer, Pixelmap->GetRowBytes() * Pixelmap->GetHeight(),
+    pixelmap->SetImageInfo(imageInfo, true);
+    pixelmap->SetPixelsAddr(surfaceBuffer->GetVirAddr(),
+                            nativeBuffer, pixelmap->GetRowBytes() * pixelmap->GetHeight(),
                             AllocatorType::DMA_ALLOC, nullptr);
 #ifdef IMAGE_COLORSPACE_FLAG
     ColorManager::ColorSpaceName colorSpaceName =
         CMColorSpaceType2ColorSpaceName(GetCMColorSpaceType(surfaceBuffer));
-    Pixelmap->InnerSetColorSpace(ColorManager::ColorSpace(colorSpaceName));
+    pixelmap->InnerSetColorSpace(ColorManager::ColorSpace(colorSpaceName));
 #endif
     if (ImageUtils::IsYuvFormat(pixelFormat)) {
-        SetYuvDataInfo(Pixelmap, surfaceBuffer);
+        SetYuvDataInfo(pixelmap, surfaceBuffer);
     }
     return true;
 }
@@ -1991,9 +2015,35 @@ int32_t ImageUtils::GetAPIVersion()
 #endif
 }
 
+// Probe whether binder driver is available, used to check if running in a normal OpenHarmony environment
+static bool TryGetBinder()
+{
+    constexpr const char *BINDER_DRIVER = "/dev/binder";
+    // Open the binder driver to check if the IPC mechanism is available
+    int fd = open(BINDER_DRIVER, O_RDWR);
+    if (fd < 0) {
+        IMAGE_LOGE("TryGetBinder failed, cannot open binder device, errno=%{public}d", errno);
+        return false;
+    }
+    // Perform a no-op BINDER_WRITE_READ ioctl to verify the binder driver is functional;
+    // an empty binder_write_read with zero counts acts as a probe without sending any commands
+    struct binder_write_read bwr = {0};
+    int res = ioctl(fd, BINDER_WRITE_READ, &bwr);
+    close(fd);
+    if (res < 0) {
+        IMAGE_LOGE("TryGetBinder ioctl BINDER_WRITE_READ failed, errno=%{public}d", errno);
+        return false;
+    }
+    return true;
+}
+
 int32_t ImageUtils::GetAPIVersionInner()
 {
 #if !defined(CROSS_PLATFORM)
+    // Binder unavailable means not in a normal runtime environment (e.g. UT), return FAULT_API_VERSION directly
+    if (!TryGetBinder()) {
+        return FAULT_API_VERSION;
+    }
     uint32_t targetVersion = 0;
     auto samgr = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     if (samgr == nullptr) {

@@ -153,6 +153,7 @@ public:
     static int32_t SurfaceBuffer_Reference(void* buffer);
     static int32_t SurfaceBuffer_Unreference(void* buffer);
     static void DumpPixelMap(PixelMap* pixelMap, std::string customFileName, uint64_t imageId = 0);
+    static void DumpPixelMapIfDumpEnabled(std::shared_ptr<PixelMap>& pixelMap, uint64_t imageId = 0);
     static void DumpPixelMapIfDumpEnabled(std::unique_ptr<PixelMap>& pixelMap, uint64_t imageId = 0);
     static void DumpPixelMapIfDumpEnabled(PixelMap& pixelMap, std::string func);
     static void DumpPixelMapBeforeEncode(PixelMap& pixelMap);
