@@ -1321,9 +1321,9 @@ void ImageUtils::SetYuvDataInfo(std::unique_ptr<PixelMap> &pixelMap, sptr<OHOS::
     pixelMap->SetImageYUVInfo(info);
 }
 
-bool ImageUtils::SurfaceBuffer2PixelMap(sptr<OHOS::SurfaceBuffer> &surfaceBuffer, std::unique_ptr<PixelMap> &Pixelmap)
+bool ImageUtils::SurfaceBuffer2PixelMap(sptr<OHOS::SurfaceBuffer> &surfaceBuffer, std::unique_ptr<PixelMap> &pixelmap)
 {
-    if (surfaceBuffer == nullptr || Pixelmap == nullptr) {
+    if (surfaceBuffer == nullptr || pixelmap == nullptr) {
         return false;
     }
     PixelFormat pixelFormat = ImageUtils::SbFormat2PixelFormat(surfaceBuffer->GetFormat());
@@ -1336,9 +1336,9 @@ bool ImageUtils::SurfaceBuffer2PixelMap(sptr<OHOS::SurfaceBuffer> &surfaceBuffer
 
     ImageInfo imageInfo = MakeImageInfo(surfaceBuffer->GetWidth(),
                                         surfaceBuffer->GetHeight(), pixelFormat, alphaType, colorSpace);
-    Pixelmap->SetImageInfo(imageInfo, true);
-    Pixelmap->SetPixelsAddr(surfaceBuffer->GetVirAddr(),
-                            nativeBuffer, Pixelmap->GetRowBytes() * Pixelmap->GetHeight(),
+    pixelmap->SetImageInfo(imageInfo, true);
+    pixelmap->SetPixelsAddr(surfaceBuffer->GetVirAddr(),
+                            nativeBuffer, pixelmap->GetRowBytes() * pixelmap->GetHeight(),
                             AllocatorType::DMA_ALLOC, nullptr);
 #ifdef IMAGE_COLORSPACE_FLAG
     ColorManager::ColorSpaceName colorSpaceName =
