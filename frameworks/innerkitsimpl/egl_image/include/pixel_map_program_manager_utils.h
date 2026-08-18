@@ -36,6 +36,16 @@ inline bool CanCreateProgram(int32_t totalInstances, int32_t maxInstanceCount)
     return totalInstances >= 0 && totalInstances < maxInstanceCount;
 }
 
+inline bool TryReserveProgram(int32_t &totalInstances, int32_t maxInstanceCount, int32_t &reservedTotal)
+{
+    if (!CanCreateProgram(totalInstances, maxInstanceCount)) {
+        return false;
+    }
+    totalInstances++;
+    reservedTotal = totalInstances;
+    return true;
+}
+
 inline bool ShouldWaitForAvailableProgram(int32_t totalInstances, int32_t maxInstanceCount, size_t availableInstances)
 {
     return availableInstances == 0 && totalInstances >= maxInstanceCount;

@@ -16,6 +16,7 @@
 #include <gtest/gtest.h>
 
 #include <array>
+#include <atomic>
 #include <cmath>
 #include <limits>
 #include <memory>
@@ -32,6 +33,7 @@
 #include "pixel_map_gl_resource.h"
 #include "pixel_map_gl_scope.h"
 #include "pixel_map_gl_shader.h"
+#include "pixel_map_gl_shader_utils.h"
 #include "pixel_map_gl_utils.h"
 #include "pixel_map_program_manager.h"
 #include "pixel_map_program_manager_utils.h"
@@ -120,6 +122,10 @@ HWTEST_F(EglImageHelperTest, PixelMapGlCommonTransformDefaultsTest001, TestSize.
     EXPECT_FALSE(transformData.isDma);
     EXPECT_FALSE(transformData.isSourceDma);
     EXPECT_FALSE(transformData.isTargetDma);
+    EXPECT_EQ(transformData.transformationType, static_cast<TransformationType>(0));
+    EXPECT_EQ(transformData.sourceInfo_.size.width, 0);
+    EXPECT_EQ(transformData.sourceInfo_.stride, 0);
+    EXPECT_EQ(transformData.sourceInfo_.pixelBytes, 0);
     EXPECT_EQ(transformData.sourceInfo_.addr, nullptr);
     EXPECT_EQ(transformData.sourceInfo_.context, nullptr);
     EXPECT_EQ(transformData.sourceInfo_.bufferSize, 0);
@@ -187,6 +193,51 @@ HWTEST_F(EglImageHelperTest, PixelMapGlResourceValidationTest001, TestSize.Level
     EXPECT_FALSE(PixelMapGlResource::ValidateTransferLayout(
         Size { PixelMapGlResource::MAX_GL_TRANSFER_DIMENSION + 1, 1 },
         (PixelMapGlResource::MAX_GL_TRANSFER_DIMENSION + 1) * 4, 4, rowBytes, contiguousSize));
+    size_t requiredSize = 0;
+    EXPECT_TRUE(PixelMapGlUtils::ComputeRequiredStridedBufferSize(16, 3, 8, requiredSize));
+    EXPECT_EQ(requiredSize, 40U);
+    EXPECT_FALSE(PixelMapGlUtils::ComputeRequiredStridedBufferSize(7, 3, 8, requiredSize));
+    EXPECT_FALSE(PixelMapGlUtils::ComputeRequiredStridedBufferSize(16, 0, 8, requiredSize));
+
+    GlImageInfo imageInfo {};
+    imageInfo.size = { 2, 2 };
+    imageInfo.stride = 8;
+    imageInfo.pixelBytes = 4;
+    imageInfo.bufferSize = 16;
+    EXPECT_TRUE(PixelMapGlResource::ValidateCpuImageInfo(imageInfo, GL_RGBA));
+    imageInfo.bufferSize = 15;
+    EXPECT_FALSE(PixelMapGlResource::ValidateCpuImageInfo(imageInfo, GL_RGBA));
+    imageInfo.bufferSize = 16;
+    imageInfo.pixelBytes = 1;
+    EXPECT_FALSE(PixelMapGlResource::ValidateCpuImageInfo(imageInfo, GL_RGBA));
+    EXPECT_FALSE(PixelMapGlResource::ValidateCpuImageInfo(imageInfo, GL_INVALID_ENUM));
+
+    imageInfo.pixelBytes = 4;
+    PixelMapGlResource::SurfaceBufferInfo surfaceInfo {
+        .size = { 2, 2 },
+        .stride = 8,
+        .bufferSize = 16,
+        .format = GRAPHIC_PIXEL_FMT_RGBA_8888,
+    };
+    EXPECT_TRUE(PixelMapGlResource::ValidateSurfaceBufferInfo(
+        imageInfo, surfaceInfo, GL_RGBA, GRAPHIC_PIXEL_FMT_RGBA_8888));
+    surfaceInfo.size.width = 1;
+    EXPECT_FALSE(PixelMapGlResource::ValidateSurfaceBufferInfo(
+        imageInfo, surfaceInfo, GL_RGBA, GRAPHIC_PIXEL_FMT_RGBA_8888));
+    surfaceInfo.size.width = 2;
+    surfaceInfo.stride = 12;
+    EXPECT_FALSE(PixelMapGlResource::ValidateSurfaceBufferInfo(
+        imageInfo, surfaceInfo, GL_RGBA, GRAPHIC_PIXEL_FMT_RGBA_8888));
+    surfaceInfo.stride = 8;
+    imageInfo.bufferSize = 15;
+    surfaceInfo.bufferSize = 15;
+    EXPECT_FALSE(PixelMapGlResource::ValidateSurfaceBufferInfo(
+        imageInfo, surfaceInfo, GL_RGBA, GRAPHIC_PIXEL_FMT_RGBA_8888));
+    imageInfo.bufferSize = 16;
+    surfaceInfo.bufferSize = 16;
+    surfaceInfo.format = GRAPHIC_PIXEL_FMT_RGB_888;
+    EXPECT_FALSE(PixelMapGlResource::ValidateSurfaceBufferInfo(
+        imageInfo, surfaceInfo, GL_RGBA, GRAPHIC_PIXEL_FMT_RGBA_8888));
 
     PixelMapGlResource::ScopedNativeWindowBuffer nativeBuffer;
     EXPECT_EQ(nativeBuffer.Get(), nullptr);
@@ -216,9 +267,14 @@ HWTEST_F(EglImageHelperTest, PixelMapGlResourceCopyFailureTest001, TestSize.Leve
 
     const char linear[16] = {0};
     uint8_t strided[12] = {0};
-    EXPECT_FALSE(PixelMapGlResource::CopyLinearToStrided(nullptr, sizeof(linear), rowBytes, 2, strided, 8));
-    EXPECT_FALSE(PixelMapGlResource::CopyLinearToStrided(linear, 4, rowBytes, 2, strided, 8));
-    EXPECT_FALSE(PixelMapGlResource::CopyLinearToStrided(linear, sizeof(linear), rowBytes, 2, strided, 4));
+    EXPECT_FALSE(PixelMapGlResource::CopyLinearToStrided(
+        nullptr, sizeof(linear), rowBytes, 2, strided, sizeof(strided), 8));
+    EXPECT_FALSE(PixelMapGlResource::CopyLinearToStrided(
+        linear, 4, rowBytes, 2, strided, sizeof(strided), 8));
+    EXPECT_FALSE(PixelMapGlResource::CopyLinearToStrided(
+        linear, sizeof(linear), rowBytes, 2, strided, sizeof(strided), 4));
+    EXPECT_FALSE(PixelMapGlResource::CopyLinearToStrided(
+        linear, sizeof(linear), rowBytes, 2, strided, sizeof(strided), 8));
 
     PixelMapGlResource::ScopedFramebuffer framebuffer(0U);
     PixelMapGlResource::ScopedFramebuffer movedFramebuffer(std::move(framebuffer));
@@ -271,6 +327,96 @@ HWTEST_F(EglImageHelperTest, PixelMapProgramManagerUtilsStateTest002, TestSize.L
     EXPECT_EQ(ComputeDestroySleepSeconds(115, 100, MAX_GL_INSTANCE_NUM, MAX_GL_INSTANCE_NUM), 0);
     EXPECT_EQ(ComputeDestroySleepSeconds(100, 0, 3, MAX_GL_INSTANCE_NUM),
         PixelMapGlUtils::GetContextExpireDelaySec(3, MAX_GL_INSTANCE_NUM));
+}
+
+/**
+ * @tc.name: PixelMapProgramManagerUtilsReserveTest001
+ * @tc.desc: Test reserving a program slot returns a stable post-increment snapshot.
+ * @tc.type: FUNC
+ */
+HWTEST_F(EglImageHelperTest, PixelMapProgramManagerUtilsReserveTest001, TestSize.Level3)
+{
+    using namespace PixelMapProgramManagerUtils;
+    int32_t totalInstances = 0;
+    int32_t reservedTotal = -1;
+    EXPECT_TRUE(TryReserveProgram(totalInstances, MAX_GL_INSTANCE_NUM, reservedTotal));
+    EXPECT_EQ(totalInstances, 1);
+    EXPECT_EQ(reservedTotal, 1);
+
+    totalInstances = MAX_GL_INSTANCE_NUM;
+    reservedTotal = -1;
+    EXPECT_FALSE(TryReserveProgram(totalInstances, MAX_GL_INSTANCE_NUM, reservedTotal));
+    EXPECT_EQ(totalInstances, MAX_GL_INSTANCE_NUM);
+    EXPECT_EQ(reservedTotal, -1);
+
+    totalInstances = -1;
+    EXPECT_FALSE(TryReserveProgram(totalInstances, MAX_GL_INSTANCE_NUM, reservedTotal));
+    EXPECT_EQ(totalInstances, -1);
+}
+
+/**
+ * @tc.name: PixelMapGlShaderCacheSizeTest001
+ * @tc.desc: Test shader cache size validation rejects truncated and oversized files.
+ * @tc.type: FUNC
+ */
+HWTEST_F(EglImageHelperTest, PixelMapGlShaderCacheSizeTest001, TestSize.Level3)
+{
+    using namespace PixelMapGlShaderUtils;
+    constexpr uint64_t metadataSize = sizeof(GLenum) + sizeof(int);
+    EXPECT_FALSE(IsShaderCacheFileSizeValid(metadataSize - 1, metadataSize));
+    EXPECT_TRUE(IsShaderCacheFileSizeValid(metadataSize, metadataSize));
+    EXPECT_TRUE(IsShaderCacheFileSizeValid(MAX_SHADER_CACHE_FILE_SIZE, metadataSize));
+    EXPECT_FALSE(IsShaderCacheFileSizeValid(MAX_SHADER_CACHE_FILE_SIZE + 1, metadataSize));
+}
+
+/**
+ * @tc.name: PixelMapGlShaderCacheLockTest001
+ * @tc.desc: Test shader cache state operations are serialized across threads.
+ * @tc.type: FUNC
+ */
+HWTEST_F(EglImageHelperTest, PixelMapGlShaderCacheLockTest001, TestSize.Level3)
+{
+    constexpr size_t threadCount = 4;
+    constexpr int iterationCount = 100;
+    std::atomic<int> activeCount = 0;
+    std::atomic<int> maxActiveCount = 0;
+    std::atomic<bool> allOperationsSucceeded = true;
+    std::atomic<size_t> readyThreadCount = 0;
+    std::atomic<bool> startOperations = false;
+    std::array<std::thread, threadCount> threads;
+    for (auto &thread : threads) {
+        thread = std::thread([&activeCount, &maxActiveCount, &allOperationsSucceeded,
+            &readyThreadCount, &startOperations]() {
+            readyThreadCount.fetch_add(1);
+            while (!startOperations.load()) {
+                std::this_thread::yield();
+            }
+            for (int iteration = 0; iteration < iterationCount; ++iteration) {
+                const bool success = PixelMapGlShaderUtils::WithShaderCacheLock([&activeCount, &maxActiveCount]() {
+                    const int active = activeCount.fetch_add(1) + 1;
+                    int observedMax = maxActiveCount.load();
+                    while (active > observedMax &&
+                        !maxActiveCount.compare_exchange_weak(observedMax, active)) {
+                    }
+                    std::this_thread::yield();
+                    activeCount.fetch_sub(1);
+                    return true;
+                });
+                if (!success) {
+                    allOperationsSucceeded.store(false);
+                }
+            }
+        });
+    }
+    while (readyThreadCount.load() != threadCount) {
+        std::this_thread::yield();
+    }
+    startOperations.store(true);
+    for (auto &thread : threads) {
+        thread.join();
+    }
+    EXPECT_TRUE(allOperationsSucceeded.load());
+    EXPECT_EQ(maxActiveCount.load(), 1);
 }
 
 /**
@@ -654,7 +800,7 @@ HWTEST_F(EglImageHelperTest, PixelMapGLPostProcProgramInterfaceTest001, TestSize
     transformData.transformationType = static_cast<TransformationType>(0);
     program.SetGPUTransformData(transformData);
     EXPECT_TRUE(program.Init());
-    EXPECT_TRUE(program.Execute());
+    EXPECT_FALSE(program.Execute());
 }
 } // namespace Media
 } // namespace OHOS

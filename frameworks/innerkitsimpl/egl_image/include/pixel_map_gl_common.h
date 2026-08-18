@@ -156,18 +156,18 @@ enum TransformationType {
 };
 
 struct GlImageInfo {
-    Size size;
-    int32_t stride;
-    int pixelBytes;
+    Size size {};
+    int32_t stride = 0;
+    int pixelBytes = 0;
     size_t bufferSize = 0;
     const uint8_t *addr = nullptr;
     void *context = nullptr;
     void *outdata = nullptr;
 };
 typedef struct GPUTransformData {
-    float rotateDegreeZ;
+    float rotateDegreeZ = 0.0f;
     GlCommon::Mat4 rotateTrans;
-    TransformationType transformationType;
+    TransformationType transformationType = static_cast<TransformationType>(0);
     GLenum glFormat = GL_RGBA;
     bool isDma = false;
     bool isSourceDma = false;

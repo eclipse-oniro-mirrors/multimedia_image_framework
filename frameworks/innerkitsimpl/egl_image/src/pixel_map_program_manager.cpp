@@ -62,6 +62,7 @@ PixelMapGLPostProcProgram* PixelMapProgramManager::GetProgram()
     ImageTrace imageTrace("PixelMapProgramManager::GetProgram");
     PixelMapGLPostProcProgram *program = nullptr;
     bool needCreateProgram = false;
+    int32_t reservedTotal = 0;
     std::unique_lock<std::mutex> locker(g_contextMutex);
     g_lastTouchInstanceTime = GetMonotonicTimeSec();
     program = TakeAvailableProgramLocked();
@@ -84,8 +85,7 @@ PixelMapGLPostProcProgram* PixelMapProgramManager::GetProgram()
             return program;
         }
     }
-    if (PixelMapProgramManagerUtils::CanCreateProgram(g_nowInstanceNum, MAX_GL_INSTANCE_NUM)) {
-        g_nowInstanceNum++;
+    if (PixelMapProgramManagerUtils::TryReserveProgram(g_nowInstanceNum, MAX_GL_INSTANCE_NUM, reservedTotal)) {
         needCreateProgram = true;
     }
     locker.unlock();
@@ -98,8 +98,7 @@ PixelMapGLPostProcProgram* PixelMapProgramManager::GetProgram()
             g_dataCond.notify_one();
             return nullptr;
         } else {
-            const int num = g_nowInstanceNum;
-            IMAGE_LOGI("slr_gpu %{public}s new instance(%{public}d)", __func__, num);
+            IMAGE_LOGI("slr_gpu %{public}s new instance(%{public}d)", __func__, reservedTotal);
             program = newProgram.release();
         }
     }

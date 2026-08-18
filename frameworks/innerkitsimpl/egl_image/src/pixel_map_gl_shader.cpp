@@ -15,22 +15,22 @@
 
 #include "pixel_map_gl_shader.h"
 #include "pixel_map_gl_resource.h"
+#include "pixel_map_gl_shader_utils.h"
 #include "pixel_map_gl_utils.h"
 
+#include <cerrno>
 #include <fcntl.h>
 #include <inttypes.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <unistd.h>
 
 #include <filesystem>
 #include <fstream>
+#include <limits>
 #include <memory>
 #include <sstream>
 #include <string>
-
-#ifdef USE_M133_SKIA
-#include <unistd.h>
-#endif
 
 #include "securec.h"
 
@@ -83,30 +83,29 @@ static bool checkProgram(GLuint &programId)
     return true;
 }
 
-static bool loadShaderFromFile(unsigned char*&shaderBinary, GLenum &binaryFormat, GLuint &binarySize,
+static bool readFileFully(int fd, unsigned char *data, size_t size)
+{
+    size_t totalRead = 0;
+    while (totalRead < size) {
+        errno = 0;
+        const ssize_t readLen = read(fd, data + totalRead, size - totalRead);
+        if (readLen > 0) {
+            totalRead += static_cast<size_t>(readLen);
+            continue;
+        }
+        if (readLen < 0 && errno == EINTR) {
+            continue;
+        }
+        return false;
+    }
+    return true;
+}
+
+static bool loadShaderFromFileLocked(unsigned char*&shaderBinary, GLenum &binaryFormat, GLuint &binarySize,
     const char* filePath, int version)
 {
     if (shaderBinary != nullptr) {
         return true;
-    }
-
-    struct stat fileStat;
-    if (stat(filePath, &fileStat) != 0) {
-        IMAGE_LOGE("slr_gpu shader cache is not exist! error %{public}d", errno);
-        return false;
-    }
-
-    const size_t minSize = sizeof(GLenum) + sizeof(version);
-    if (fileStat.st_size < 0) {
-        IMAGE_LOGE("slr_gpu shader cache file size failed! size:%{public}lld",
-            static_cast<long long>(fileStat.st_size));
-        return false;
-    }
-    const uint64_t fileSize64 = static_cast<uint64_t>(fileStat.st_size);
-    if (fileSize64 < minSize) {
-        IMAGE_LOGE("slr_gpu shader cache file size failed! size:%{public}llu",
-            static_cast<unsigned long long>(fileSize64));
-        return false;
     }
 
     int binaryFd = open(filePath, O_RDONLY);
@@ -115,9 +114,29 @@ static bool loadShaderFromFile(unsigned char*&shaderBinary, GLenum &binaryFormat
         return false;
     }
 
-    if (fileSize64 > std::numeric_limits<size_t>::max()) {
+    struct stat fileStat;
+    if (fstat(binaryFd, &fileStat) != 0) {
+        const int statError = errno;
         close(binaryFd);
-        IMAGE_LOGE("slr_gpu shader cache file too large for platform size_t");
+        IMAGE_LOGE("slr_gpu shader cache fstat failed! error %{public}d", statError);
+        return false;
+    }
+
+    const size_t minSize = sizeof(GLenum) + sizeof(version);
+    if (fileStat.st_size < 0) {
+        close(binaryFd);
+        IMAGE_LOGE("slr_gpu shader cache file size failed! size:%{public}lld",
+            static_cast<long long>(fileStat.st_size));
+        return false;
+    }
+    const uint64_t fileSize64 = static_cast<uint64_t>(fileStat.st_size);
+    const uint64_t maxSize = static_cast<uint64_t>(std::numeric_limits<size_t>::max());
+    const uint64_t maxReadSize = static_cast<uint64_t>(std::numeric_limits<ssize_t>::max());
+    if (!PixelMapGlShaderUtils::IsShaderCacheFileSizeValid(fileSize64, minSize) ||
+        fileSize64 > maxSize || fileSize64 > maxReadSize) {
+        close(binaryFd);
+        IMAGE_LOGE("slr_gpu shader cache file size failed! size:%{public}llu",
+            static_cast<unsigned long long>(fileSize64));
         return false;
     }
     const size_t fileSize = static_cast<size_t>(fileSize64);
@@ -131,12 +150,12 @@ static bool loadShaderFromFile(unsigned char*&shaderBinary, GLenum &binaryFormat
         close(binaryFd);
         return false;
     }
-    ssize_t readLen = read(binaryFd, binaryData.get(), fileSize);
+    const bool readSuccess = readFileFully(binaryFd, binaryData.get(), fileSize);
+    const int readError = errno;
     close(binaryFd);
 
-    if (readLen != static_cast<ssize_t>(fileSize)) {
-        IMAGE_LOGE("slr_gpu shader cache read failed! error "
-            "%{public}d readnum %{public}zd", errno, readLen);
+    if (!readSuccess) {
+        IMAGE_LOGE("slr_gpu shader cache read failed! error %{public}d", readError);
         return false;
     }
     binarySize = static_cast<uint32_t>(fileSize - minSize);
@@ -157,7 +176,15 @@ static bool loadShaderFromFile(unsigned char*&shaderBinary, GLenum &binaryFormat
     return true;
 }
 
-bool saveShaderToFile(unsigned char*&shaderBinary, GLenum &binaryFormat,
+static bool loadShaderFromFile(unsigned char*&shaderBinary, GLenum &binaryFormat, GLuint &binarySize,
+    const char* filePath, int version)
+{
+    return PixelMapGlShaderUtils::WithShaderCacheLock([&]() {
+        return loadShaderFromFileLocked(shaderBinary, binaryFormat, binarySize, filePath, version);
+    });
+}
+
+static bool saveShaderToFileLocked(unsigned char*&shaderBinary, GLenum &binaryFormat,
     GLuint &binarySize, const char* filePath, GLuint &programId)
 {
     if (shaderBinary == nullptr) {
@@ -195,6 +222,14 @@ bool saveShaderToFile(unsigned char*&shaderBinary, GLenum &binaryFormat,
     }
     close(binaryFd);
     return true;
+}
+
+bool saveShaderToFile(unsigned char*&shaderBinary, GLenum &binaryFormat,
+    GLuint &binarySize, const char* filePath, GLuint &programId)
+{
+    return PixelMapGlShaderUtils::WithShaderCacheLock([&]() {
+        return saveShaderToFileLocked(shaderBinary, binaryFormat, binarySize, filePath, programId);
+    });
 }
 
 Shader::Shader()

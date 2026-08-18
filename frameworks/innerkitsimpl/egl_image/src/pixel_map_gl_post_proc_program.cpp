@@ -67,6 +67,36 @@ bool RestoreEglCurrentState(const EglCurrentState &state, EGLDisplay fallbackDis
     }
     return eglMakeCurrent(restoreDisplay, state.drawSurface, state.readSurface, state.context) == EGL_TRUE;
 }
+
+bool GetExpectedSurfaceFormat(GLenum glFormat, int32_t &surfaceFormat)
+{
+    switch (glFormat) {
+        case GL_RGBA:
+            surfaceFormat = GRAPHIC_PIXEL_FMT_RGBA_8888;
+            return true;
+        case GL_BGRA_EXT:
+            surfaceFormat = GRAPHIC_PIXEL_FMT_BGRA_8888;
+            return true;
+        case GL_RGB:
+            surfaceFormat = GRAPHIC_PIXEL_FMT_RGB_888;
+            return true;
+        case GL_RGB565:
+            surfaceFormat = GRAPHIC_PIXEL_FMT_RGB_565;
+            return true;
+        default:
+            return false;
+    }
+}
+
+PixelMapGlResource::SurfaceBufferInfo GetSurfaceBufferInfo(const SurfaceBuffer &surfaceBuffer)
+{
+    return {
+        .size = { surfaceBuffer.GetWidth(), surfaceBuffer.GetHeight() },
+        .stride = surfaceBuffer.GetStride(),
+        .bufferSize = surfaceBuffer.GetSize(),
+        .format = surfaceBuffer.GetFormat(),
+    };
+}
 std::once_flag g_shaderInitFlag;
 bool g_shaderBuildResult = false;
 } // namespace
@@ -84,6 +114,49 @@ PixelMapGLPostProcProgram::~PixelMapGLPostProcProgram() noexcept
 void PixelMapGLPostProcProgram::SetGPUTransformData(GPUTransformData &transformData)
 {
     this->transformData_ = transformData;
+}
+
+bool PixelMapGLPostProcProgram::ValidateTransformData() const
+{
+    if (transformData_.transformationType != TransformationType::SCALE &&
+        transformData_.transformationType != TransformationType::ROTATE) {
+        IMAGE_LOGE("slr_gpu %{public}s invalid transformation type", __func__);
+        return false;
+    }
+    if (transformData_.isDma != (transformData_.isSourceDma || transformData_.isTargetDma)) {
+        IMAGE_LOGE("slr_gpu %{public}s inconsistent DMA flags", __func__);
+        return false;
+    }
+
+    if (transformData_.isSourceDma) {
+        const auto *surfaceBuffer = reinterpret_cast<const SurfaceBuffer *>(transformData_.sourceInfo_.context);
+        int32_t expectedSurfaceFormat = 0;
+        if (surfaceBuffer == nullptr || !GetExpectedSurfaceFormat(transformData_.glFormat, expectedSurfaceFormat) ||
+            !PixelMapGlResource::ValidateSurfaceBufferInfo(transformData_.sourceInfo_,
+                GetSurfaceBufferInfo(*surfaceBuffer), transformData_.glFormat, expectedSurfaceFormat)) {
+            IMAGE_LOGE("slr_gpu %{public}s invalid source DMA metadata", __func__);
+            return false;
+        }
+    } else if (transformData_.sourceInfo_.addr == nullptr ||
+        !PixelMapGlResource::ValidateCpuImageInfo(transformData_.sourceInfo_, transformData_.glFormat)) {
+        IMAGE_LOGE("slr_gpu %{public}s invalid source CPU buffer", __func__);
+        return false;
+    }
+
+    if (transformData_.isTargetDma) {
+        const auto *surfaceBuffer = reinterpret_cast<const SurfaceBuffer *>(transformData_.targetInfo_.context);
+        if (surfaceBuffer == nullptr ||
+            !PixelMapGlResource::ValidateSurfaceBufferInfo(transformData_.targetInfo_,
+                GetSurfaceBufferInfo(*surfaceBuffer), GL_RGBA, GRAPHIC_PIXEL_FMT_RGBA_8888)) {
+            IMAGE_LOGE("slr_gpu %{public}s invalid target DMA metadata", __func__);
+            return false;
+        }
+    } else if (transformData_.targetInfo_.outdata == nullptr ||
+        !PixelMapGlResource::ValidateCpuImageInfo(transformData_.targetInfo_, GL_RGBA)) {
+        IMAGE_LOGE("slr_gpu %{public}s invalid target CPU buffer", __func__);
+        return false;
+    }
+    return true;
 }
 
 void PixelMapGLPostProcProgram::Clear() noexcept
@@ -497,6 +570,11 @@ bool PixelMapGLPostProcProgram::ReadEndData(char *targetData, GLuint &writeTexId
         IMAGE_LOGE("slr_gpu %{public}s invalid target image layout", __func__);
         return false;
     }
+    if (!PixelMapGlResource::ValidateStridedBufferSize(transformData_.targetInfo_.bufferSize,
+        transformData_.targetInfo_.stride, targetSize.height, rowBytes)) {
+        IMAGE_LOGE("slr_gpu %{public}s target buffer is too small", __func__);
+        return false;
+    }
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, writeTexId, 0);
     if (static_cast<size_t>(transformData_.targetInfo_.stride) == rowBytes) {
         glReadPixels(0, 0, targetSize.width, targetSize.height, GL_RGBA, GL_UNSIGNED_BYTE, targetData);
@@ -514,7 +592,8 @@ bool PixelMapGLPostProcProgram::ReadEndData(char *targetData, GLuint &writeTexId
             return false;
         }
         if (!PixelMapGlResource::CopyLinearToStrided(mapPointer, contiguousSize, rowBytes, targetSize.height,
-            reinterpret_cast<uint8_t *>(targetData), transformData_.targetInfo_.stride)) {
+            reinterpret_cast<uint8_t *>(targetData), transformData_.targetInfo_.bufferSize,
+            transformData_.targetInfo_.stride)) {
             IMAGE_LOGE("slr_gpu %{public}s CopyLinearToStrided fail", __func__);
             glUnmapBuffer(GL_PIXEL_PACK_BUFFER);
             return false;
@@ -571,6 +650,9 @@ bool PixelMapGLPostProcProgram::ReadEndDMAData(void *surfaceBuffer, GLuint &writ
 
 bool PixelMapGLPostProcProgram::Execute()
 {
+    if (!ValidateTransformData()) {
+        return false;
+    }
     if (!GLMakecurrent(true)) {
         IMAGE_LOGE("slr_gpu GenProcEndData cannot makecurent with opengl");
         return false;

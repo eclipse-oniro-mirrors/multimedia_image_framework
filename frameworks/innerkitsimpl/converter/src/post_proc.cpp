@@ -932,7 +932,8 @@ static bool CheckPixelMapSLR(PixelMap &pixelMap, const Size &desiredSize, GPUTra
     int32_t pixelBytes = pixelMap.GetPixelBytes();
     cond = pixelBytes <= 0;
     CHECK_ERROR_RETURN_RET_LOG(cond, false, "slr_gpu CheckPixelMapSLR invalid pixel bytes, %{public}d", pixelBytes);
-    cond = srcWidth > g_maxTextureSize || srcHeight > g_maxTextureSize;
+    cond = srcWidth > g_maxTextureSize || srcHeight > g_maxTextureSize ||
+        desiredSize.width > g_maxTextureSize || desiredSize.height > g_maxTextureSize;
     CHECK_INFO_RETURN_RET_LOG(cond, false,
         "slr_gpu CheckPixelMapSLR The maximum width and height cannot exceed:%{public}d.", g_maxTextureSize);
     uint64_t dstSizeOverflow = static_cast<uint64_t>(desiredSize.width) * static_cast<uint64_t>(desiredSize.height) *
@@ -1011,18 +1012,30 @@ static bool PixelMapPostProcWithGL(PixelMap &sourcePixelMap, GPUTransformData &t
     if (dmaMode.isSourceDma && !dmaMode.isTargetDma) {
         IMAGE_LOGI("slr_gpu PixelMapPostProcWithGL no-padding DMA does not support GPU writeback, fallback output");
     }
-    size_t buffersize = static_cast<uint64_t>(desiredSize.width) * static_cast<uint64_t>(desiredSize.height) * 4;
-    MemoryData memoryData = {nullptr, buffersize, "PixelMapPostProcWithGL", desiredSize};
+    size_t outputRowBytes = 0;
+    size_t buffersize = 0;
+    cond = !PixelMapGlUtils::ComputeRowBytes(desiredSize.width, perPixelSize, outputRowBytes) ||
+        !PixelMapGlUtils::ComputePackedBufferSize(desiredSize, perPixelSize, buffersize) ||
+        outputRowBytes > static_cast<size_t>(std::numeric_limits<int32_t>::max());
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "slr_gpu PixelMapPostProcWithGL invalid target buffer layout");
+    MemoryData memoryData = {
+        nullptr, buffersize, "PixelMapPostProcWithGL", desiredSize, PixelFormat::RGBA_8888
+    };
     memoryData.usage = noPaddingUsage;
     std::unique_ptr<AbsMemory> dstMemory = MemoryManager::CreateMemory(dmaMode.outputAllocType, memoryData);
     cond = dstMemory == nullptr || dstMemory->data.data == nullptr;
     CHECK_ERROR_RETURN_RET_LOG(cond, false, "slr_gpu PixelMapPostProcWithGL dstMemory is null");
-    int outputStride = 4 * desiredSize.width;
+    int outputStride = static_cast<int32_t>(outputRowBytes);
+    size_t outputBufferSize = dstMemory->data.size;
     if (dmaMode.isTargetDma) {
         SurfaceBuffer* sbBuffer = reinterpret_cast<SurfaceBuffer*>(dstMemory->extend.data);
+        if (sbBuffer == nullptr) {
+            dstMemory->Release();
+            IMAGE_LOGE("slr_gpu PixelMapPostProcWithGL target surface buffer is null");
+            return false;
+        }
         outputStride = sbBuffer->GetStride();
-        buffersize = static_cast<uint32_t>(static_cast<uint64_t>(sbBuffer->GetStride()) *
-            static_cast<uint64_t>(desiredSize.height));
+        outputBufferSize = sbBuffer->GetSize();
     }
     PixelMapProgramManager::BuildShader();
     bool ret = true;
@@ -1033,6 +1046,7 @@ static bool PixelMapPostProcWithGL(PixelMap &sourcePixelMap, GPUTransformData &t
     } else {
         trans.targetInfo_.stride = outputStride;
         trans.targetInfo_.pixelBytes = perPixelSize;
+        trans.targetInfo_.bufferSize = outputBufferSize;
         trans.targetInfo_.outdata = dstMemory->data.data;
         trans.targetInfo_.context = dstMemory->extend.data;
         trans.glFormat = glFormat;
