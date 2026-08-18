@@ -1127,25 +1127,15 @@ bool PixelYuvUtils::IsLegalAxis(float xAxis, float yAxis, ImageInfo &imageInfo_)
         IMAGE_LOGE("translate axis not finite");
         return false;
     }
-    int32_t xOffset = static_cast<int32_t>(xAxis);
-    int32_t yOffset = static_cast<int32_t>(yAxis);
-    if (imageInfo_.size.width > INT32_MAX - xOffset) {
-        IMAGE_LOGE("translate width overflow width(%{public}d) + xOffset(%{public}d)",
-            imageInfo_.size.width, xOffset);
-        return false;
-    }
-    if (imageInfo_.size.height > INT32_MAX - yOffset) {
-        IMAGE_LOGE("translate height overflow height(%{public}d) + yOffset(%{public}d)",
-            imageInfo_.size.height, yOffset);
-        return false;
-    }
+    int64_t xOffset = static_cast<int64_t>(xAxis);
+    int64_t yOffset = static_cast<int64_t>(yAxis);
     if (xOffset == 0 && yOffset == 0) {
         return false;
     }
-    int32_t width = imageInfo_.size.width + xOffset;
-    int32_t height = imageInfo_.size.height + yOffset;
+    const int64_t width = static_cast<int64_t>(imageInfo_.size.width) + xOffset;
+    const int64_t height = static_cast<int64_t>(imageInfo_.size.height) + yOffset;
     if (width < 1 || height < 1 || width > MAX_DIMENSION || height > MAX_DIMENSION) {
-        IMAGE_LOGE("Checktranslate size overflow width(%{public}d), height(%{public}d)", width, height);
+        IMAGE_LOGE("Checktranslate size overflow width:%{public}" PRId64 ", height:%{public}" PRId64, width, height);
         return false;
     }
     return true;

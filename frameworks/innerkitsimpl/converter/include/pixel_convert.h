@@ -155,6 +155,9 @@ static inline float UintToFloat(uint32_t ui)
 static inline uint16_t FloatToHalf(float f)
 {
     uint32_t u32 = FloatToUint(f);
+    if ((u32 & MAX_31_BIT_VALUE) == 0) {
+        return static_cast<uint16_t>((u32 >> SHIFT_16_BIT) & 0x8000u);
+    }
     uint16_t u16 = static_cast<uint16_t>(
         (((u32 & MAX_31_BIT_VALUE) >> SHIFT_HALF_BIT) - SHIFT_7_MASK) & MAX_16_BIT_VALUE);
     u16 |= static_cast<uint16_t>(
@@ -164,6 +167,10 @@ static inline uint16_t FloatToHalf(float f)
 
 static inline float HalfToFloat(uint16_t ui)
 {
+    if ((ui & MAX_15_BIT_VALUE) == 0) {
+        uint32_t sign = static_cast<uint32_t>(ui & SHIFT_16_MASK) << SHIFT_16_BIT;
+        return UintToFloat(sign);
+    }
     uint32_t u32 = ((ui & MAX_15_BIT_VALUE) << SHIFT_HALF_BIT) + SHIFT_HALF_MASK;
     u32 |= ((ui & SHIFT_16_MASK) << SHIFT_16_BIT);
     return UintToFloat(u32);
@@ -177,7 +184,7 @@ static inline uint16_t U8ToU16(uint8_t val1, uint8_t val2)
 
 static inline uint32_t HalfToUint32(const uint8_t* ui, bool isLittleEndian)
 {
-    uint16_t val = isLittleEndian ? U8ToU16(*ui, *(ui + 1)) : U8ToU16(*(ui + 1), *ui);
+    uint16_t val = isLittleEndian ? U8ToU16(*(ui + 1), *ui) : U8ToU16(*ui, *(ui + 1));
     float fRet = HalfToFloat(val);
     return static_cast<uint32_t>(fRet);
 }
