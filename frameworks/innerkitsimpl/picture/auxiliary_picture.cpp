@@ -231,13 +231,11 @@ AuxiliaryPicture *AuxiliaryPicture::Unmarshalling(Parcel &parcel, PICTURE_ERR &e
     CHECK_ERROR_RETURN_RET_LOG(cond, nullptr, "Failed to set auxiliary picture info.");
 
     uint64_t size = 0;
-    cond = !parcel.ReadUint64(size);
-    CHECK_ERROR_RETURN_RET_LOG(cond, nullptr, "Failed to read metadata size from parcel.");
+    CHECK_ERROR_RETURN_RET_LOG(!parcel.ReadUint64(size), nullptr, "Failed to read metadata size from parcel.");
     CHECK_ERROR_RETURN_RET(size > MAX_PICTURE_META_TYPE_COUNT, nullptr);
     for (size_t i = 0; i < size; ++i) {
         int32_t typeValue = 0;
-        cond = !parcel.ReadInt32(typeValue);
-        CHECK_ERROR_RETURN_RET_LOG(cond, nullptr, "Failed to read metadata type from parcel.");
+        CHECK_ERROR_RETURN_RET_LOG(!parcel.ReadInt32(typeValue), nullptr, "Failed to read metadata type from parcel.");
         MetadataType type = static_cast<MetadataType>(typeValue);
         std::shared_ptr<ImageMetadata> imagedataPtr(nullptr);
 
