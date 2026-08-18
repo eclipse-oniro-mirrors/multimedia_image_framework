@@ -205,9 +205,7 @@ AuxiliaryPicture *AuxiliaryPicture::Unmarshalling(Parcel &parcel, PICTURE_ERR &e
     std::unique_ptr<AuxiliaryPicture> auxPtr = std::make_unique<AuxiliaryPicture>();
 
     std::shared_ptr<PixelMap> contentPtr(PixelMap::Unmarshalling(parcel));
-    if (!contentPtr) {
-        return nullptr;
-    }
+    CHECK_ERROR_RETURN_RET(!contentPtr, nullptr);
     auxPtr->SetContentPixel(contentPtr);
     AuxiliaryPictureInfo auxiliaryPictureInfo;
     int32_t auxTypeValue = 0;
@@ -229,9 +227,8 @@ AuxiliaryPicture *AuxiliaryPicture::Unmarshalling(Parcel &parcel, PICTURE_ERR &e
     cond = !parcel.ReadInt32(auxiliaryPictureInfo.size.width);
     CHECK_ERROR_RETURN_RET_LOG(cond, nullptr, "Failed to read width from parcel.");
     auxiliaryPictureInfo.jpegTagName = parcel.ReadString();
-    auxPtr->SetAuxiliaryPictureInfo(auxiliaryPictureInfo);
-
-    std::map<MetadataType, std::shared_ptr<ImageMetadata>> metadatas;
+    cond = auxPtr->SetAuxiliaryPictureInfo(auxiliaryPictureInfo) != SUCCESS;
+    CHECK_ERROR_RETURN_RET_LOG(cond, nullptr, "Failed to set auxiliary picture info.");
 
     uint64_t size = 0;
     cond = !parcel.ReadUint64(size);

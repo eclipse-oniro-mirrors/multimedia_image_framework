@@ -158,11 +158,8 @@ static inline uint16_t FloatToHalf(float f)
     if ((u32 & MAX_31_BIT_VALUE) == 0) {
         return static_cast<uint16_t>((u32 >> SHIFT_16_BIT) & 0x8000u);
     }
-    uint32_t val = (u32 & MAX_31_BIT_VALUE) >> SHIFT_HALF_BIT;
-    if (val < SHIFT_7_MASK) {
-        return static_cast<uint16_t>((u32 & SHIFT_32_MASK) >> SHIFT_16_BIT);
-    }
-    uint16_t u16 = static_cast<uint16_t>((val - SHIFT_7_MASK) & MAX_16_BIT_VALUE);
+    uint16_t u16 = static_cast<uint16_t>(
+        ((u32 & MAX_31_BIT_VALUE) >> SHIFT_HALF_BIT - SHIFT_7_MASK) & MAX_16_BIT_VALUE);
     u16 |= static_cast<uint16_t>(
         ((u32 & SHIFT_32_MASK) >> SHIFT_16_BIT) & MAX_16_BIT_VALUE);
     return u16;
