@@ -23,6 +23,15 @@
 
 namespace OHOS {
 namespace Media {
+inline AntiAliasingOption ParsePublicAntiAliasingOption(int32_t value)
+{
+    if (value < static_cast<int32_t>(AntiAliasingOption::NONE) ||
+        value > static_cast<int32_t>(AntiAliasingOption::HIGH)) {
+        return AntiAliasingOption::NONE;
+    }
+    return static_cast<AntiAliasingOption>(value);
+}
+
 #ifdef __cplusplus
 extern "C" {
 #endif

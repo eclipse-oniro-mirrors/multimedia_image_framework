@@ -872,7 +872,8 @@ Image_ErrorCode OH_PixelmapNative_Scale(OH_PixelmapNative *pixelmap, float scale
  * @param pixelmap Pointer of the PixelMap to be scaled.
  * @param scaleX The scale ratio of width.
  * @param scaleY The scale ratio of height.
- * @param level The anti-aliasing algorithm to be used.
+ * @param level The anti-aliasing algorithm to be used. Values outside the defined range use
+ *     {@link OH_PixelmapNative_AntiAliasing_NONE}.
  * @return Function result code:
  *     {@link IMAGE_SUCCESS} The operation is successful.
  *     {@link IMAGE_GET_IMAGE_DATA_FAILED} Failed to get image data.
@@ -894,7 +895,8 @@ Image_ErrorCode OH_PixelmapNative_ApplyScaleWithAntiAliasing(OH_PixelmapNative *
  * @param pixelmap The Pixelmap pointer will be operated.
  * @param scaleX Scaling ratio of the width.
  * @param scaleY Scaling ratio of the height.
- * @param level The anti-aliasing algorithm to be used.
+ * @param level The anti-aliasing algorithm to be used. Values outside the defined range use
+ *     {@link OH_PixelmapNative_AntiAliasing_NONE}.
  * @return Returns {@link Image_ErrorCode} IMAGE_SUCCESS - if the operation is successful.
  * returns {@link Image_ErrorCode} IMAGE_BAD_PARAMETER - if invalid parameter, x and y are incorrect.
  * returns {@link Image_ErrorCode} IMAGE_TOO_LARGE - if image is too large.
@@ -974,7 +976,8 @@ Image_ErrorCode OH_PixelmapNative_Clone(OH_PixelmapNative *srcPixelmap, OH_Pixel
  * @param srcPixelmap The source PixelMap.
  * @param region The crop region.
  * @param scale The scale ratio of width and height.
- * @param level The scaling interpolation algorithm to be used.
+ * @param level The scaling interpolation algorithm to be used. Values outside the defined range use
+ *     {@link OH_PixelmapNative_AntiAliasing_NONE}.
  * @param dstPixelmap The target PixelMap to be created.
  * @return Function result code:
  *         {@link IMAGE_SUCCESS} If the operation is successful.
@@ -1013,7 +1016,8 @@ Image_ErrorCode OH_PixelmapNative_CreateScaledPixelMap(OH_PixelmapNative *srcPix
  * @param dstPixelmap The destination native pixelmap for create.
  * @param scaleX Scaling ratio of the width.
  * @param scaleY Scaling ratio of the height.
- * @param level The anti-aliasing algorithm to be used.
+ * @param level The anti-aliasing algorithm to be used. Values outside the defined range use
+ *     {@link OH_PixelmapNative_AntiAliasing_NONE}.
  * @return Function result code:
  *         {@link IMAGE_SUCCESS} If the execution is successful.
  *         {@link IMAGE_BAD_PARAMETER} If the param is nullptr or invalid.

@@ -16,6 +16,7 @@
 #define protected public
 #include <gtest/gtest.h>
 #include <fstream>
+#include <limits>
 
 #if !defined(CROSS_PLATFORM)
 #include "surface_type.h"
@@ -29,6 +30,7 @@
 #include "memory_manager.h"
 #include "pixel_map.h"
 #include "post_proc.h"
+#include "post_proc_slr.h"
 #include "basic_transformer.h"
 
 using namespace testing::ext;
@@ -65,6 +67,48 @@ public:
     PostProcTest() {}
     ~PostProcTest() {}
 };
+
+/**
+ * @tc.name: SLRMatRejectsInvalidBufferLayout
+ * @tc.desc: Reject row strides and buffer capacities that cannot cover the last pixel.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PostProcTest, SLRMatRejectsInvalidBufferLayout, TestSize.Level3)
+{
+    constexpr Size size = { 4, 3 };
+    uint32_t pixels[12] = {};
+
+    SLRMat valid(size, PixelFormat::RGBA_8888, pixels, 4, sizeof(pixels));
+    EXPECT_TRUE(valid.IsValid());
+
+    SLRMat shortStride(size, PixelFormat::RGBA_8888, pixels, 3, sizeof(pixels));
+    EXPECT_FALSE(shortStride.IsValid());
+
+    SLRMat shortBuffer(size, PixelFormat::RGBA_8888, pixels, 4, sizeof(pixels) - sizeof(uint32_t));
+    EXPECT_FALSE(shortBuffer.IsValid());
+
+    SLRMat hugeStride(size, PixelFormat::RGBA_8888, pixels, std::numeric_limits<int32_t>::max(), sizeof(pixels));
+    EXPECT_FALSE(hugeStride.IsValid());
+}
+
+/**
+ * @tc.name: SLRProcRejectsInvalidDestinationCapacity
+ * @tc.desc: Do not run SLR when the destination buffer cannot cover its declared layout.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PostProcTest, SLRProcRejectsInvalidDestinationCapacity, TestSize.Level3)
+{
+    constexpr Size srcSize = { 4, 4 };
+    constexpr Size dstSize = { 2, 2 };
+    uint32_t srcPixels[16] = {};
+    uint32_t dstPixels[3] = {};
+    SLRMat src(srcSize, PixelFormat::RGBA_8888, srcPixels, 4, sizeof(srcPixels));
+    SLRMat dst(dstSize, PixelFormat::RGBA_8888, dstPixels, 2, sizeof(dstPixels));
+    auto weightX = SLRProc::GetWeights(0.5f, dstSize.width);
+    auto weightY = SLRProc::GetWeights(0.5f, dstSize.height);
+
+    EXPECT_FALSE(SLRProc::Serial(src, dst, weightX, weightY));
+}
 
 /**
  * @tc.name: PostProcTest001

@@ -59,6 +59,7 @@ private:
     bool ResizeScaleWithGL();
     bool ReadEndData(char *targetData, GLuint &writeTexId);
     bool ReadEndDMAData(void *surfaceBuffer, GLuint &writeTexId);
+    void AbandonGLResources() noexcept;
     void Clear() noexcept;
 
 private:

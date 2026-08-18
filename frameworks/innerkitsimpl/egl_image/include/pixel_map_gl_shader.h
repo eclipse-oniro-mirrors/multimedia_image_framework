@@ -55,6 +55,7 @@ public:
     }
     virtual bool Use() { return false; }
     virtual bool Clear() = 0;
+    virtual void Abandon();
     GLuint &GetReadTexId()
     {
         return readTexId_;
@@ -115,6 +116,7 @@ public:
     bool Build() override;
     bool LoadProgram() override;
     bool Clear() override;
+    void Abandon() override;
 private:
     GLuint vbo_ = 0U;
 };
@@ -156,6 +158,7 @@ public:
     bool SetParams(const GPUTransformData &transformData) override;
     bool Use() override;
     bool Clear() override;
+    void Abandon() override;
     void SetEglImage(EGLImageKHR eglImage)
     {
         eglImage_ = eglImage;

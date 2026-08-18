@@ -2249,6 +2249,84 @@ HWTEST_F(ImagePixelMapTest, ImagePixelMapSLR006, TestSize.Level3)
 }
 
 /**
+ * @tc.name: ImagePixelMapScaleRounding001
+ * @tc.desc: test non-SLR scale rounding covers both round-down and round-up
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagePixelMapTest, ImagePixelMapScaleRounding001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMapScaleRounding001 scale start";
+    uint32_t* data = nullptr;
+    std::unique_ptr<PixelMap> pixelMap = ConstructPixelMap(&data);
+    EXPECT_NE(pixelMap, nullptr);
+    float xAxis = 0.7f; // 3 * 0.7 = 2.1, rounds down to 2
+    float yAxis = 1.3f; // 3 * 1.3 = 3.9, rounds up to 4
+    pixelMap->scale(xAxis, yAxis);
+    ImageInfo outInfo;
+    pixelMap->GetImageInfo(outInfo);
+    EXPECT_EQ(2, outInfo.size.width);
+    EXPECT_EQ(4, outInfo.size.height);
+    if (data != nullptr) {
+        delete[] data;
+    }
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMapScaleRounding001 scale end";
+}
+
+/**
+ * @tc.name: ImagePixelMapSLRWithlap001
+ * @tc.desc: test SLR with Laplacian
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagePixelMapTest, ImagePixelMapSLRWithLap001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMapSLRWithLap001 scale start";
+    std::unique_ptr<PixelMap> pixelMap = ConstructSLRPixelMap();
+    EXPECT_NE(pixelMap, nullptr);
+    ImageInfo imageInfo;
+    pixelMap->GetImageInfo(imageInfo);
+
+    float xAxis = 0.7f; // 0.7f scale test
+    float yAxis = 0.9f; // 0.9f scale test
+    Size desiredSize;
+    desiredSize.width = static_cast<int32_t>(imageInfo.size.width * xAxis);
+    desiredSize.height = static_cast<int32_t>(imageInfo.size.height * yAxis);
+
+    PostProc postProc;
+    bool ret = postProc.ScalePixelMapWithSLR(desiredSize, *pixelMap.get(), true);
+    EXPECT_EQ(ret, true);
+    EXPECT_EQ(pixelMap->GetWidth(), desiredSize.width);
+    EXPECT_EQ(pixelMap->GetHeight(), desiredSize.height);
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMapSLRWithLap001 scale end";
+}
+
+/**
+ * @tc.name: ImagePixelMapSLRWithLap002
+ * @tc.desc: test SLR with Laplacian
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagePixelMapTest, ImagePixelMapSLRWithLap002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMapSLRWithLap002 scale start";
+    std::unique_ptr<PixelMap> pixelMap = ConstructSLRPixelMap();
+    EXPECT_NE(pixelMap, nullptr);
+    ImageInfo imageInfo;
+    pixelMap->GetImageInfo(imageInfo);
+
+    float xAxis = 0.7f; // 0.7f scale test
+    float yAxis = 0.9f; // 0.9f scale test
+    Size desiredSize;
+    desiredSize.width = static_cast<int32_t>(imageInfo.size.width * xAxis);
+    desiredSize.height = static_cast<int32_t>(imageInfo.size.height * yAxis);
+
+    PostProc postProc;
+    bool ret = postProc.ScalePixelMapWithSLR(desiredSize, *pixelMap.get(), false);
+    EXPECT_EQ(ret, true);
+    EXPECT_EQ(pixelMap->GetWidth(), desiredSize.width);
+    EXPECT_EQ(pixelMap->GetHeight(), desiredSize.height);
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMapSLRWithLap002 scale end";
+}
+
+/**
 * @tc.name: ImagePixelMapCreate001
 * @tc.desc: test SLR with DMA
 * @tc.type: FUNC
@@ -2322,56 +2400,6 @@ HWTEST_F(ImagePixelMapTest, ImagePixelMapCreate002, TestSize.Level3)
     ASSERT_EQ(ret, 0);
 
     GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMapCreate002 scale end";
-}
-
-/**
-* @tc.name: ImagePixelMapSLRWithlap001
-* @tc.desc: test SLR with Laplacian
-* @tc.type: FUNC
-*/
-HWTEST_F(ImagePixelMapTest, ImagePixelMapSLRWithLap001, TestSize.Level3)
-{
-    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMapSLRWithLap001 scale start";
-    std::unique_ptr<PixelMap> pixelMap = ConstructSLRPixelMap();
-    EXPECT_NE(pixelMap, nullptr);
-    ImageInfo imageInfo;
-    pixelMap->GetImageInfo(imageInfo);
-
-    float xAxis = 0.7f; // 0.7f scale test
-    float yAxis = 0.9f; // 0.9f scale test
-    Size desiredSize;
-    desiredSize.width = static_cast<int32_t>(imageInfo.size.width * xAxis);
-    desiredSize.height = static_cast<int32_t>(imageInfo.size.height * yAxis);
-
-    PostProc postProc;
-    bool ret = postProc.ScalePixelMapWithSLR(desiredSize, *pixelMap.get(), true);
-    EXPECT_NE(ret, false);
-    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMapSLRWithLap001 scale end";
-}
-
-/**
-* @tc.name: ImagePixelMapSLRWithlap002
-* @tc.desc: test SLR with Laplacian
-* @tc.type: FUNC
-*/
-HWTEST_F(ImagePixelMapTest, ImagePixelMapSLRWithlap002, TestSize.Level3)
-{
-    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMapSLRWithlap002 scale start";
-    std::unique_ptr<PixelMap> pixelMap = ConstructSLRPixelMap();
-    EXPECT_NE(pixelMap, nullptr);
-    ImageInfo imageInfo;
-    pixelMap->GetImageInfo(imageInfo);
-
-    float xAxis = 0.7f; // 0.7f scale test
-    float yAxis = 0.9f; // 0.9f scale test
-    Size desiredSize;
-    desiredSize.width = static_cast<int32_t>(imageInfo.size.width * xAxis);
-    desiredSize.height = static_cast<int32_t>(imageInfo.size.height * yAxis);
-
-    PostProc postProc;
-    bool ret = postProc.ScalePixelMapWithSLR(desiredSize, *pixelMap.get(), false);
-    EXPECT_NE(ret, false);
-    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMapSLRWithlap002 scale end";
 }
 } // namespace Multimedia
 } // namespace OHOS

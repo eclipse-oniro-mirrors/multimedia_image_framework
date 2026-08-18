@@ -20,7 +20,9 @@
 #include <algorithm>
 #include <charconv>
 #include <chrono>
+#include <cmath>
 #include <iostream>
+#include <limits>
 #include <unistd.h>
 #if !defined(IOS_PLATFORM) &&!defined(ANDROID_PLATFORM)
 #include <linux/dma-buf.h>
@@ -4354,7 +4356,7 @@ static uint32_t ValidateSetAlpha(float percent, bool modifiable, AlphaType alpha
         IMAGE_LOGE("[PixelMap] SetAlpha could not set alpha on %{public}s", GetNamedAlphaType(alphaType).c_str());
         return ERR_IMAGE_DATA_UNSUPPORT;
     }
-    if (percent <= 0 || percent > 1) {
+    if (!std::isfinite(percent) || percent <= 0 || percent > 1) {
         IMAGE_LOGE("[PixelMap] SetAlpha input should satisfy (0 < input <= 1). Current input is %{public}f", percent);
         return ERR_IMAGE_INVALID_PARAMETER;
     }
@@ -4461,11 +4463,35 @@ struct TransMemoryInfo {
     std::unique_ptr<AbsMemory> memory = nullptr;
 };
 
-constexpr float HALF = 0.5f;
-
-static inline int FloatToInt(float a)
+static bool SafeCastToInt32(double value, int32_t &result)
 {
-    return static_cast<int>(a + HALF);
+    if (!std::isfinite(value) ||
+        value < static_cast<double>(std::numeric_limits<int32_t>::min()) ||
+        value > static_cast<double>(std::numeric_limits<int32_t>::max())) {
+        return false;
+    }
+    result = static_cast<int32_t>(value);
+    return true;
+}
+
+static bool SafeRoundToInt32(double value, int32_t &result)
+{
+    if (!std::isfinite(value)) {
+        return false;
+    }
+    return SafeCastToInt32(std::round(value), result);
+}
+
+static bool GetScaledSize(const Size &srcSize, float xAxis, float yAxis, Size &dstSize)
+{
+    if (!std::isfinite(xAxis) || !std::isfinite(yAxis) || xAxis == 0.0f || yAxis == 0.0f) {
+        return false;
+    }
+    double scaledWidth = std::abs(static_cast<double>(srcSize.width) * static_cast<double>(xAxis));
+    double scaledHeight = std::abs(static_cast<double>(srcSize.height) * static_cast<double>(yAxis));
+    return SafeRoundToInt32(scaledWidth, dstSize.width) &&
+        SafeRoundToInt32(scaledHeight, dstSize.height) &&
+        dstSize.width > 0 && dstSize.height > 0;
 }
 
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
@@ -4494,17 +4520,9 @@ static void GenSrcTransInfo(SkTransInfo &srcInfo, ImageInfo &imageInfo, uint8_t*
     srcInfo.bitmap.installPixels(srcInfo.info, pixels, srcInfo.info.minRowBytes());
 }
 
-static bool GenDstTransInfo(SkTransInfo &srcInfo, SkTransInfo &dstInfo, SkMatrix &matrix,
-    TransMemoryInfo &memoryInfo, uint64_t usage)
+static bool AllocDstTransMemory(SkTransInfo &srcInfo, SkTransInfo &dstInfo, TransMemoryInfo &memoryInfo,
+    uint64_t usage)
 {
-    dstInfo.r = matrix.mapRect(srcInfo.r);
-    int width = FloatToInt(dstInfo.r.width());
-    int height = FloatToInt(dstInfo.r.height());
-    if (matrix.isTranslate()) {
-        width += dstInfo.r.fLeft;
-        height += dstInfo.r.fTop;
-    }
-    dstInfo.info = srcInfo.info.makeWH(width, height);
     PixelFormat format = ImageTypeConverter::ToPixelFormat(srcInfo.info.colorType());
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     Size desiredSize = {dstInfo.info.width(), dstInfo.info.height()};
@@ -4543,6 +4561,36 @@ static bool GenDstTransInfo(SkTransInfo &srcInfo, SkTransInfo &dstInfo, SkMatrix
     dstInfo.bitmap.installPixels(dstInfo.info, memoryInfo.memory->data.data, dstInfo.info.minRowBytes());
 #endif
     return true;
+}
+
+static bool GenDstTransInfo(SkTransInfo &srcInfo, SkTransInfo &dstInfo, SkMatrix &matrix,
+    TransMemoryInfo &memoryInfo, uint64_t usage)
+{
+    dstInfo.r = matrix.mapRect(srcInfo.r);
+    if (!std::isfinite(dstInfo.r.fLeft) || !std::isfinite(dstInfo.r.fTop) ||
+        !std::isfinite(dstInfo.r.fRight) || !std::isfinite(dstInfo.r.fBottom)) {
+        IMAGE_LOGE("Invalid transformed rectangle");
+        return false;
+    }
+    int32_t width = 0;
+    int32_t height = 0;
+    if (!SafeRoundToInt32(dstInfo.r.width(), width) || !SafeRoundToInt32(dstInfo.r.height(), height)) {
+        IMAGE_LOGE("Invalid transformed image size");
+        return false;
+    }
+    if (matrix.isTranslate()) {
+        if (!SafeCastToInt32(static_cast<double>(width) + dstInfo.r.fLeft, width) ||
+            !SafeCastToInt32(static_cast<double>(height) + dstInfo.r.fTop, height)) {
+            IMAGE_LOGE("Invalid translated image size");
+            return false;
+        }
+    }
+    if (width <= 0 || height <= 0) {
+        IMAGE_LOGE("Transformed image size must be positive");
+        return false;
+    }
+    dstInfo.info = srcInfo.info.makeWH(width, height);
+    return AllocDstTransMemory(srcInfo, dstInfo, memoryInfo, usage);
 }
 
 struct TransInfos {
@@ -4660,8 +4708,13 @@ void PixelMap::scale(float xAxis, float yAxis)
         IMAGE_LOGE("scale does not support Y8");
         return;
     }
-    if ((static_cast<int32_t>(round(imageInfo_.size.width * xAxis)) - imageInfo_.size.width) == 0 &&
-        (static_cast<int32_t>(round(imageInfo_.size.height * yAxis)) - imageInfo_.size.height) == 0) {
+    Size scaledSize;
+    if (!GetScaledSize(imageInfo_.size, xAxis, yAxis, scaledSize)) {
+        IMAGE_LOGE("Invalid scale ratio");
+        return;
+    }
+    if (xAxis > 0.0f && yAxis > 0.0f &&
+        scaledSize.width == imageInfo_.size.width && scaledSize.height == imageInfo_.size.height) {
         return;
     }
     TransInfos infos;
@@ -4680,12 +4733,13 @@ void PixelMap::scale(float xAxis, float yAxis, const AntiAliasingOption &option)
 
 uint32_t PixelMap::Scale(float xAxis, float yAxis, AntiAliasingOption option)
 {
-    if (xAxis == 0 || yAxis == 0) {
-        IMAGE_LOGE("Invalid scale ratio: 0");
+    Size scaledSize;
+    if (!GetScaledSize(imageInfo_.size, xAxis, yAxis, scaledSize)) {
+        IMAGE_LOGE("Invalid scale ratio");
         return ERR_IMAGE_INVALID_PARAMETER;
     }
-    if ((static_cast<int32_t>(round(imageInfo_.size.width * xAxis)) - imageInfo_.size.width) == 0 &&
-        (static_cast<int32_t>(round(imageInfo_.size.height * yAxis)) - imageInfo_.size.height) == 0) {
+    if (xAxis > 0.0f && yAxis > 0.0f &&
+        scaledSize.width == imageInfo_.size.width && scaledSize.height == imageInfo_.size.height) {
         return SUCCESS;
     }
     if (IsAstcOrY8Format()) {
@@ -4726,8 +4780,16 @@ uint32_t PixelMap::ScaleWithSLR(float xAxis, float yAxis)
     ImageInfo tmpInfo;
     GetImageInfo(tmpInfo);
     Size desiredSize;
-    desiredSize.width = static_cast<int32_t>(imageInfo_.size.width * xAxis);
-    desiredSize.height = static_cast<int32_t>(imageInfo_.size.height * yAxis);
+    if (!SafeCastToInt32(static_cast<double>(imageInfo_.size.width * xAxis), desiredSize.width) ||
+        !SafeCastToInt32(static_cast<double>(imageInfo_.size.height * yAxis), desiredSize.height) ||
+        desiredSize.width == 0 || desiredSize.height == 0) {
+        IMAGE_LOGE("PixelMap::scale with SLR invalid scale ratio");
+        return ERR_IMAGE_INVALID_PARAMETER;
+    }
+    if (desiredSize.width < 0 || desiredSize.height < 0) {
+        IMAGE_LOGE("PixelMap::scale with SLR does not support negative scale ratio");
+        return ERR_IMAGE_TRANSFORM;
+    }
 
     PostProc postProc;
     if (!postProc.ScalePixelMapWithSLR(desiredSize, *this)) {
@@ -4748,6 +4810,11 @@ uint32_t PixelMap::ScaleWithSLR(float xAxis, float yAxis)
 
 bool PixelMap::resize(float xAxis, float yAxis)
 {
+    Size scaledSize;
+    if (!GetScaledSize(imageInfo_.size, xAxis, yAxis, scaledSize)) {
+        IMAGE_LOGE("resize invalid scale ratio");
+        return false;
+    }
     if (IsYUV(imageInfo_.pixelFormat)) {
         IMAGE_LOGE("resize temp disabled for YUV data");
         return true;
@@ -4770,6 +4837,18 @@ void PixelMap::translate(float xAxis, float yAxis)
 
 uint32_t PixelMap::Translate(float xAxis, float yAxis)
 {
+    if (!std::isfinite(xAxis) || !std::isfinite(yAxis)) {
+        IMAGE_LOGE("Invalid translate distance");
+        return ERR_IMAGE_INVALID_PARAMETER;
+    }
+    int32_t translatedWidth = 0;
+    int32_t translatedHeight = 0;
+    if (!SafeCastToInt32(static_cast<double>(imageInfo_.size.width) + xAxis, translatedWidth) ||
+        !SafeCastToInt32(static_cast<double>(imageInfo_.size.height) + yAxis, translatedHeight) ||
+        translatedWidth <= 0 || translatedHeight <= 0) {
+        IMAGE_LOGE("Invalid translated image size");
+        return ERR_IMAGE_INVALID_PARAMETER;
+    }
     if (imageInfo_.pixelFormat == PixelFormat::Y8) {
         IMAGE_LOGE("Translate does not support Y8");
         return ERR_IMAGE_DATA_UNSUPPORT;
@@ -4793,6 +4872,10 @@ void PixelMap::rotate(float degrees)
 
 uint32_t PixelMap::Rotate(float degrees)
 {
+    if (!std::isfinite(degrees)) {
+        IMAGE_LOGE("Invalid rotate degrees");
+        return ERR_IMAGE_INVALID_PARAMETER;
+    }
     if (ImageUtils::FloatEqual(degrees, 0.0f)) {
         return SUCCESS;
     }

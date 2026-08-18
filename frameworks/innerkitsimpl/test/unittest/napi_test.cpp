@@ -14,6 +14,8 @@
  */
 
 #include <gtest/gtest.h>
+#include <limits>
+#include "image_pixel_map_napi_kits.h"
 #include "image_napi_utils.h"
 #include "pixel_map_napi.h"
 #include "image_packer_napi.h"
@@ -27,6 +29,123 @@ public:
     NapiTest() {}
     ~NapiTest() {}
 };
+
+class AntiAliasingOptionRecordingPixelMap : public PixelMap {
+public:
+    void scale(float, float, const AntiAliasingOption &option) override
+    {
+        lastOption_ = option;
+    }
+
+    AntiAliasingOption lastOption_ = AntiAliasingOption::HIGH;
+};
+
+/**
+ * @tc.name: PixelMapNapiScaleWithAntiAliasingOutOfRangeUsesNone
+ * @tc.desc: Use NONE when NAPI receives a public anti-aliasing level that is out of range.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiTest, PixelMapNapiScaleWithAntiAliasingOutOfRangeUsesNone, TestSize.Level3)
+{
+    PixelMapNapi pixelMapNapi;
+    auto recordingPixelMap = std::make_shared<AntiAliasingOptionRecordingPixelMap>();
+    *(pixelMapNapi.GetPixelMap()) = recordingPixelMap;
+
+    PixelMapNapiArgs args = {};
+    args.inFloat0 = 0.5f;
+    args.inFloat1 = 0.5f;
+    args.inNum0 = -1;
+    ASSERT_EQ(PixelMapNapiNativeCtxCall(CTX_FUNC_SCALE, &pixelMapNapi, &args), IMAGE_RESULT_SUCCESS);
+    EXPECT_EQ(recordingPixelMap->lastOption_, AntiAliasingOption::NONE);
+
+    recordingPixelMap->lastOption_ = AntiAliasingOption::HIGH;
+    args.inNum0 = static_cast<int32_t>(AntiAliasingOption::HIGH) + 1;
+    ASSERT_EQ(PixelMapNapiNativeCtxCall(CTX_FUNC_SCALE, &pixelMapNapi, &args), IMAGE_RESULT_SUCCESS);
+    EXPECT_EQ(recordingPixelMap->lastOption_, AntiAliasingOption::NONE);
+
+    args.inNum0 = static_cast<int32_t>(AntiAliasingOption::HIGH);
+    ASSERT_EQ(PixelMapNapiNativeCtxCall(CTX_FUNC_SCALE, &pixelMapNapi, &args), IMAGE_RESULT_SUCCESS);
+    EXPECT_EQ(recordingPixelMap->lastOption_, AntiAliasingOption::HIGH);
+}
+
+/**
+ * @tc.name: ImageNapiUtilsConvertDoubleToInt32RejectsInvalidValues
+ * @tc.desc: Reject non-finite and out-of-range values before converting them to int32.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiTest, ImageNapiUtilsConvertDoubleToInt32RejectsInvalidValues, TestSize.Level3)
+{
+    int32_t result = 0;
+    constexpr double int32Max = static_cast<double>(std::numeric_limits<int32_t>::max());
+    constexpr double int32Min = static_cast<double>(std::numeric_limits<int32_t>::min());
+
+    EXPECT_FALSE(ImageNapiUtils::ConvertDoubleToInt32(int32Max + 1.0, &result));
+    EXPECT_FALSE(ImageNapiUtils::ConvertDoubleToInt32(int32Min - 1.0, &result));
+    EXPECT_FALSE(ImageNapiUtils::ConvertDoubleToInt32(4294967297.0, &result));
+    EXPECT_FALSE(ImageNapiUtils::ConvertDoubleToInt32(std::numeric_limits<double>::infinity(), &result));
+    EXPECT_FALSE(ImageNapiUtils::ConvertDoubleToInt32(-std::numeric_limits<double>::infinity(), &result));
+    EXPECT_FALSE(ImageNapiUtils::ConvertDoubleToInt32(std::numeric_limits<double>::quiet_NaN(), &result));
+    EXPECT_FALSE(ImageNapiUtils::ConvertDoubleToInt32(0.0, nullptr));
+}
+
+/**
+ * @tc.name: ImageNapiUtilsConvertDoubleToInt32PreservesCompatibleValues
+ * @tc.desc: Accept int32 boundaries and preserve truncation for finite fractional values in range.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiTest, ImageNapiUtilsConvertDoubleToInt32PreservesCompatibleValues, TestSize.Level3)
+{
+    int32_t result = 0;
+
+    ASSERT_TRUE(ImageNapiUtils::ConvertDoubleToInt32(
+        static_cast<double>(std::numeric_limits<int32_t>::max()), &result));
+    EXPECT_EQ(result, std::numeric_limits<int32_t>::max());
+
+    ASSERT_TRUE(ImageNapiUtils::ConvertDoubleToInt32(
+        static_cast<double>(std::numeric_limits<int32_t>::min()), &result));
+    EXPECT_EQ(result, std::numeric_limits<int32_t>::min());
+
+    ASSERT_TRUE(ImageNapiUtils::ConvertDoubleToInt32(1.75, &result));
+    EXPECT_EQ(result, 1);
+
+    ASSERT_TRUE(ImageNapiUtils::ConvertDoubleToInt32(-1.75, &result));
+    EXPECT_EQ(result, -1);
+}
+
+/**
+ * @tc.name: ImageNapiUtilsConvertDoubleToFloatRejectsInvalidValues
+ * @tc.desc: Reject non-finite and out-of-float-range values before converting them to float.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiTest, ImageNapiUtilsConvertDoubleToFloatRejectsInvalidValues, TestSize.Level3)
+{
+    float result = 0.0f;
+    constexpr double floatMax = static_cast<double>(std::numeric_limits<float>::max());
+
+    EXPECT_FALSE(ImageNapiUtils::ConvertDoubleToFloat(floatMax * 2.0, &result));
+    EXPECT_FALSE(ImageNapiUtils::ConvertDoubleToFloat(-floatMax * 2.0, &result));
+    EXPECT_FALSE(ImageNapiUtils::ConvertDoubleToFloat(std::numeric_limits<double>::infinity(), &result));
+    EXPECT_FALSE(ImageNapiUtils::ConvertDoubleToFloat(-std::numeric_limits<double>::infinity(), &result));
+    EXPECT_FALSE(ImageNapiUtils::ConvertDoubleToFloat(std::numeric_limits<double>::quiet_NaN(), &result));
+    EXPECT_FALSE(ImageNapiUtils::ConvertDoubleToFloat(0.0, nullptr));
+}
+
+/**
+ * @tc.name: ImageNapiUtilsConvertDoubleToFloatPreservesCompatibleValues
+ * @tc.desc: Accept finite values within the float range.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiTest, ImageNapiUtilsConvertDoubleToFloatPreservesCompatibleValues, TestSize.Level3)
+{
+    float result = 0.0f;
+
+    ASSERT_TRUE(ImageNapiUtils::ConvertDoubleToFloat(1.25, &result));
+    EXPECT_FLOAT_EQ(result, 1.25f);
+
+    ASSERT_TRUE(ImageNapiUtils::ConvertDoubleToFloat(
+        static_cast<double>(std::numeric_limits<float>::max()), &result));
+    EXPECT_EQ(result, std::numeric_limits<float>::max());
+}
 
 /**
  * @tc.name: NapiTest001
@@ -254,20 +373,6 @@ HWTEST_F(NapiTest, NapiTest0014, TestSize.Level3)
     ASSERT_EQ(ret.buffer, nullptr);
 
     GTEST_LOG_(INFO) << "NapiTest: NapiTest0014 end";
-}
-/**
- * @tc.name: NapiTest0015
- * @tc.desc: OH_PixelMap_SetOpacity
- * @tc.type: FUNC
- */
-HWTEST_F(NapiTest, NapiTest0015, TestSize.Level3)
-{
-    GTEST_LOG_(INFO) << "NapiTest: NapiTest0015 start";
-    ImageSourceNapi napi;
-    ImageResource resource = napi.GetImageResource();
-    ASSERT_EQ(resource.buffer, nullptr);
-
-    GTEST_LOG_(INFO) << "NapiTest: NapiTest0015 end";
 }
 
 /**

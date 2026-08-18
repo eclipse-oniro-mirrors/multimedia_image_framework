@@ -59,7 +59,7 @@ public:
 
     bool Init();
 
-    void MakeCurrent(EGLSurface surface) const;
+    bool MakeCurrent(EGLSurface surface) const;
 
     sk_sp<GrDirectContext> GetGrContext() const
     {

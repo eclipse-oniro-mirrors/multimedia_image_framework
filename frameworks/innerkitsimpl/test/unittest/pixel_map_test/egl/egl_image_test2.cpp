@@ -134,7 +134,7 @@ HWTEST_F(EglImageTest, PixelMapGlResourceCopyHelpersTest001, TestSize.Level3)
     };
     std::vector<char> linear(16, 0);
     EXPECT_TRUE(PixelMapGlResource::CopyStridedToLinear(
-        src.data(), stride, height, rowBytes, linear.data(), linear.size()));
+        src.data(), src.size(), stride, height, rowBytes, linear.data(), linear.size()));
     EXPECT_EQ(static_cast<uint8_t>(linear[0]), 1);
     EXPECT_EQ(static_cast<uint8_t>(linear[7]), 8);
     EXPECT_EQ(static_cast<uint8_t>(linear[8]), 9);

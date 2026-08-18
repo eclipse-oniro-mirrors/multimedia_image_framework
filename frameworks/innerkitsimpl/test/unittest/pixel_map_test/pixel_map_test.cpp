@@ -16,6 +16,7 @@
 #include <atomic>
 #include <chrono>
 #include <future>
+#include <limits>
 
 #define protected public
 #define private public
@@ -3794,6 +3795,64 @@ HWTEST_F(PixelMapTest, RotateApiTest001, TestSize.Level3)
     EXPECT_EQ(nv21PixelMap->GetHeight(), 4);
 
     GTEST_LOG_(INFO) << "PixelMapTest: RotateApiTest001 end";
+}
+
+/**
+ * @tc.name: TransformApiInvalidFloatTest001
+ * @tc.desc: Verify transform APIs reject non-finite and overflowing float parameters without changing image size.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, TransformApiInvalidFloatTest001, TestSize.Level3)
+{
+    auto [pixelMap, errCode] = CreateTransformApiPixelMap(PixelFormat::RGBA_8888, 4, 2);
+    ASSERT_EQ(errCode, SUCCESS);
+    ASSERT_NE(pixelMap, nullptr);
+
+    const float nan = std::numeric_limits<float>::quiet_NaN();
+    const float infinity = std::numeric_limits<float>::infinity();
+    const float maxFloat = std::numeric_limits<float>::max();
+    EXPECT_EQ(pixelMap->Scale(nan, 1.0f, AntiAliasingOption::NONE), ERR_IMAGE_INVALID_PARAMETER);
+    EXPECT_EQ(pixelMap->Scale(maxFloat, 1.0f, AntiAliasingOption::NONE), ERR_IMAGE_INVALID_PARAMETER);
+    EXPECT_EQ(pixelMap->Translate(infinity, 0.0f), ERR_IMAGE_INVALID_PARAMETER);
+    EXPECT_EQ(pixelMap->Translate(maxFloat, 0.0f), ERR_IMAGE_INVALID_PARAMETER);
+    EXPECT_EQ(pixelMap->Rotate(nan), ERR_IMAGE_INVALID_PARAMETER);
+    EXPECT_FALSE(pixelMap->resize(1.0f, infinity));
+    EXPECT_EQ(pixelMap->GetWidth(), 4);
+    EXPECT_EQ(pixelMap->GetHeight(), 2);
+}
+
+/**
+ * @tc.name: SetAlphaInvalidFloatTest001
+ * @tc.desc: Verify SetAlpha rejects NaN instead of passing it to pixel conversion.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, SetAlphaInvalidFloatTest001, TestSize.Level3)
+{
+    auto [pixelMap, errCode] = CreateTransformApiPixelMap(PixelFormat::RGBA_8888, 4, 2);
+    ASSERT_EQ(errCode, SUCCESS);
+    ASSERT_NE(pixelMap, nullptr);
+
+    const float nan = std::numeric_limits<float>::quiet_NaN();
+    EXPECT_EQ(pixelMap->SetAlpha(nan), ERR_IMAGE_INVALID_PARAMETER);
+    EXPECT_EQ(pixelMap->GetWidth(), 4);
+    EXPECT_EQ(pixelMap->GetHeight(), 2);
+}
+
+/**
+ * @tc.name: CropApiOverflowTest001
+ * @tc.desc: Verify crop rejects a rectangle whose coordinates overflow without changing image size.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, CropApiOverflowTest001, TestSize.Level3)
+{
+    auto [pixelMap, errCode] = CreateTransformApiPixelMap(PixelFormat::RGBA_8888, 4, 2);
+    ASSERT_EQ(errCode, SUCCESS);
+    ASSERT_NE(pixelMap, nullptr);
+
+    Rect rect = {std::numeric_limits<int32_t>::max(), 0, std::numeric_limits<int32_t>::max(), 1};
+    EXPECT_EQ(pixelMap->Crop(rect), ERR_IMAGE_INVALID_PARAMETER);
+    EXPECT_EQ(pixelMap->GetWidth(), 4);
+    EXPECT_EQ(pixelMap->GetHeight(), 2);
 }
 
 /**

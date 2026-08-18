@@ -168,6 +168,9 @@ public:
     static bool GetBufferByName(napi_env env, napi_value root, const char* name, void **res, size_t* len);
     static bool GetUint32ByName(napi_env env, napi_value root, const char* name, uint32_t *res);
     static bool GetInt32ByName(napi_env env, napi_value root, const char* name, int32_t *res);
+    static bool GetInt32ByNameWithRange(napi_env env, napi_value root, const char* name, int32_t *res);
+    static bool ConvertDoubleToInt32(double value, int32_t *res);
+    static bool ConvertDoubleToFloat(double value, float *res);
     static bool GetDoubleByName(napi_env env, napi_value root, const char* name, double *res);
     static bool GetBoolByName(napi_env env, napi_value root, const char* name, bool *res);
     static bool GetNodeByName(napi_env env, napi_value root, const char* name, napi_value *res);

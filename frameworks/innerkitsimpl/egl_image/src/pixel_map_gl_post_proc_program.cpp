@@ -122,6 +122,21 @@ void PixelMapGLPostProcProgram::Clear() noexcept
     }
 }
 
+void PixelMapGLPostProcProgram::AbandonGLResources() noexcept
+{
+    eglImage_ = EGL_NO_IMAGE_KHR;
+    auto abandon = [](auto &shader) {
+        if (shader != nullptr) {
+            shader->Abandon();
+            shader.reset();
+        }
+    };
+    abandon(rotateShader_);
+    abandon(slrShader_);
+    abandon(lapShader_);
+    abandon(vertexShader_);
+}
+
 bool PixelMapGLPostProcProgram::BuildShader()
 {
     ImageTrace imageTrace("PixelMapGLPostProcProgram::BuildShader");
@@ -189,6 +204,11 @@ bool PixelMapGLPostProcProgram::CreateNormalImage(const uint8_t *data, GLuint &i
         IMAGE_LOGE("slr_gpu %{public}s invalid source image layout", __func__);
         return false;
     }
+    if (!PixelMapGlResource::ValidateStridedBufferSize(transformData_.sourceInfo_.bufferSize,
+        transformData_.sourceInfo_.stride, sourceSize.height, rowBytes)) {
+        IMAGE_LOGE("slr_gpu %{public}s source buffer is too small", __func__);
+        return false;
+    }
     GLuint newImageTexId = 0U;
     glGenTextures(1, &newImageTexId);
     PixelMapGlResource::ScopedTexture scopedImageTexture(newImageTexId);
@@ -212,8 +232,8 @@ bool PixelMapGLPostProcProgram::CreateNormalImage(const uint8_t *data, GLuint &i
         if (mapPointer == NULL) {
             return false;
         }
-        if (!PixelMapGlResource::CopyStridedToLinear(data, transformData_.sourceInfo_.stride,
-            sourceSize.height, rowBytes, mapPointer, contiguousSize)) {
+        if (!PixelMapGlResource::CopyStridedToLinear(data, transformData_.sourceInfo_.bufferSize,
+            transformData_.sourceInfo_.stride, sourceSize.height, rowBytes, mapPointer, contiguousSize)) {
             IMAGE_LOGE("slr_gpu %{public}s CopyStridedToLinear failed", __func__);
             glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER);
             return false;
@@ -346,11 +366,15 @@ bool PixelMapGLPostProcProgram::InitGLResource()
 bool PixelMapGLPostProcProgram::BuildProcTexture(GLuint &readTexId)
 {
     if (!transformData_.isSourceDma) {
+        CHECK_ERROR_RETURN_RET_LOG(transformData_.sourceInfo_.addr == nullptr, false,
+            "slr_gpu BuildProcTexture source address is null");
         if (!CreateNormalImage(transformData_.sourceInfo_.addr, readTexId)) {
             return false;
         }
     } else {
         void *surfaceBuffer = transformData_.sourceInfo_.context;
+        CHECK_ERROR_RETURN_RET_LOG(surfaceBuffer == nullptr, false,
+            "slr_gpu BuildProcTexture source surface buffer is null");
         PixelMapGlResource::ScopedNativeWindowBuffer scopedBuffer
             (CreateNativeWindowBufferFromSurfaceBuffer(&surfaceBuffer));
         if (!CreateEGLImage(scopedBuffer.Get(), eglImage_, readTexId)) {
@@ -408,6 +432,7 @@ bool PixelMapGLPostProcProgram::GenProcEndData(char *lcdData)
 bool PixelMapGLPostProcProgram::GenProcDmaEndData(void *surfaceBuffer)
 {
     ImageTrace imageTrace("GenProcEndData-surface");
+    CHECK_ERROR_RETURN_RET_LOG(surfaceBuffer == nullptr, false, "slr_gpu GenProcDmaEndData surface buffer is null");
     switch (transformData_.transformationType) {
         case TransformationType::SCALE :
             if (!(BuildProcTexture(slrShader_->GetReadTexId()) &&
@@ -509,6 +534,7 @@ bool PixelMapGLPostProcProgram::ReadEndData(char *targetData, GLuint &writeTexId
 bool PixelMapGLPostProcProgram::ReadEndDMAData(void *surfaceBuffer, GLuint &writeFbo)
 {
     ImageTrace imageTrace("ReadEndDMAData ");
+    CHECK_ERROR_RETURN_RET_LOG(surfaceBuffer == nullptr, false, "slr_gpu ReadEndDMAData surface buffer is null");
     PixelMapGlResource::ScopedNativeWindowBuffer nativeBuffer
         (CreateNativeWindowBufferFromSurfaceBuffer(&surfaceBuffer));
     if (nativeBuffer.Get() == nullptr) {

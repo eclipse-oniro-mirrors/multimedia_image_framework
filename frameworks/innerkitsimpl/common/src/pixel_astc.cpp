@@ -15,6 +15,9 @@
 
 #include "pixel_astc.h"
 
+#include <cmath>
+#include <limits>
+
 #include "image_log.h"
 #include "image_utils.h"
 #include "image_trace.h"
@@ -36,6 +39,53 @@
 namespace OHOS {
 namespace Media {
 using namespace std;
+
+namespace {
+constexpr double PI = 3.14159265358979323846;
+constexpr double FULL_ROTATION_DEGREES = 360.0;
+
+bool SafeCastToInt32(double value, int32_t &result)
+{
+    if (!std::isfinite(value) ||
+        value < static_cast<double>(std::numeric_limits<int32_t>::min()) ||
+        value > static_cast<double>(std::numeric_limits<int32_t>::max())) {
+        return false;
+    }
+    result = static_cast<int32_t>(value);
+    return true;
+}
+
+bool SafeRoundToInt32(double value, int32_t &result)
+{
+    if (!std::isfinite(value)) {
+        return false;
+    }
+    return SafeCastToInt32(std::round(value), result);
+}
+
+bool SafeCastToFloat(double value, float &result)
+{
+    if (!std::isfinite(value) ||
+        value < -static_cast<double>(std::numeric_limits<float>::max()) ||
+        value > static_cast<double>(std::numeric_limits<float>::max())) {
+        return false;
+    }
+    result = static_cast<float>(value);
+    return true;
+}
+
+std::pair<double, double> CalculateRotatedDimensions(int32_t width, int32_t height, double rotationDegrees)
+{
+    double radians = rotationDegrees * PI / 180.0;
+    double cosTheta = std::cos(radians);
+    double sinTheta = std::sin(radians);
+    double newWidth = std::abs(static_cast<double>(width) * cosTheta) +
+        std::abs(static_cast<double>(height) * sinTheta);
+    double newHeight = std::abs(static_cast<double>(width) * sinTheta) +
+        std::abs(static_cast<double>(height) * cosTheta);
+    return {newWidth, newHeight};
+}
+}
 
 PixelAstc::~PixelAstc()
 {
@@ -68,30 +118,41 @@ bool PixelAstc::GetARGB32Color(int32_t x, int32_t y, uint32_t &color)
 
 void PixelAstc::scale(float xAxis, float yAxis)
 {
-    if (xAxis == 0 || yAxis == 0) {
-        IMAGE_LOGE("scale param incorrect on pixelastc");
-        return;
-    } else {
-        TransformData transformData;
-        GetTransformData(transformData);
-        transformData.scaleX *= xAxis;
-        transformData.scaleY *= yAxis;
-        SetTransformData(transformData);
-        ImageInfo imageInfo;
-        GetImageInfo(imageInfo);
-        imageInfo.size.width = static_cast<int32_t>(round(imageInfo.size.width * abs(xAxis)));
-        imageInfo.size.height = static_cast<int32_t>(round(imageInfo.size.height * abs(yAxis)));
-        SetImageInfo(imageInfo, true);
-    }
+    Scale(xAxis, yAxis, AntiAliasingOption::NONE);
 }
 
 uint32_t PixelAstc::Scale(float xAxis, float yAxis, AntiAliasingOption option)
 {
-    if (xAxis == 0 || yAxis == 0) {
-        IMAGE_LOGE("Invalid scale ratio: 0");
+    std::lock_guard<std::mutex> lock(*translationMutex_);
+    if (!std::isfinite(xAxis) || !std::isfinite(yAxis) || xAxis == 0.0f || yAxis == 0.0f) {
+        IMAGE_LOGE("Invalid scale ratio");
         return ERR_IMAGE_INVALID_PARAMETER;
     }
-    scale(xAxis, yAxis);
+    TransformData transformData;
+    GetTransformData(transformData);
+    ImageInfo imageInfo;
+    GetImageInfo(imageInfo);
+    ImageInfo scaledImageInfo = imageInfo;
+    double scaledWidth = std::abs(static_cast<double>(imageInfo.size.width) * xAxis);
+    double scaledHeight = std::abs(static_cast<double>(imageInfo.size.height) * yAxis);
+    if (!SafeRoundToInt32(scaledWidth, scaledImageInfo.size.width) ||
+        !SafeRoundToInt32(scaledHeight, scaledImageInfo.size.height) ||
+        scaledImageInfo.size.width <= 0 || scaledImageInfo.size.height <= 0 ||
+        !SafeCastToFloat(static_cast<double>(transformData.scaleX) * xAxis, transformData.scaleX) ||
+        !SafeCastToFloat(static_cast<double>(transformData.scaleY) * yAxis, transformData.scaleY)) {
+        IMAGE_LOGE("Invalid scaled image or transform size");
+        return ERR_IMAGE_INVALID_PARAMETER;
+    }
+    uint32_t ret = SetImageInfo(scaledImageInfo, true);
+    if (ret != SUCCESS) {
+        IMAGE_LOGE("PixelAstc scale SetImageInfo failed, ret: %{public}u", ret);
+        uint32_t restoreRet = SetImageInfo(imageInfo, true);
+        if (restoreRet != SUCCESS) {
+            IMAGE_LOGE("PixelAstc scale restore ImageInfo failed, ret: %{public}u", restoreRet);
+        }
+        return ret;
+    }
+    SetTransformData(transformData);
     return SUCCESS;
 }
 
@@ -108,33 +169,41 @@ void PixelAstc::translate(float xAxis, float yAxis)
 
 uint32_t PixelAstc::Translate(float xAxis, float yAxis)
 {
+    std::lock_guard<std::mutex> lock(*translationMutex_);
+    if (!std::isfinite(xAxis) || !std::isfinite(yAxis)) {
+        IMAGE_LOGE("Invalid translate distance");
+        return ERR_IMAGE_INVALID_PARAMETER;
+    }
     TransformData transformData;
     GetTransformData(transformData);
-    transformData.translateX += xAxis;
-    transformData.translateY += yAxis;
     ImageInfo imageInfo;
     GetImageInfo(imageInfo);
-    imageInfo.size.width += static_cast<int32_t>(xAxis);
-    imageInfo.size.height += static_cast<int32_t>(yAxis);
-    if (imageInfo.size.width <= 0 || imageInfo.size.height <= 0) {
+    ImageInfo translatedImageInfo = imageInfo;
+    int32_t translatedXAxis = 0;
+    int32_t translatedYAxis = 0;
+    if (!SafeCastToInt32(xAxis, translatedXAxis) ||
+        !SafeCastToInt32(yAxis, translatedYAxis) ||
+        !SafeCastToInt32(static_cast<double>(imageInfo.size.width) + translatedXAxis,
+        translatedImageInfo.size.width) ||
+        !SafeCastToInt32(static_cast<double>(imageInfo.size.height) + translatedYAxis,
+        translatedImageInfo.size.height) ||
+        translatedImageInfo.size.width <= 0 || translatedImageInfo.size.height <= 0 ||
+        !SafeCastToFloat(static_cast<double>(transformData.translateX) + xAxis, transformData.translateX) ||
+        !SafeCastToFloat(static_cast<double>(transformData.translateY) + yAxis, transformData.translateY)) {
         IMAGE_LOGE("PixelAstc translate failed");
         return ERR_IMAGE_INVALID_PARAMETER;
     }
+    uint32_t ret = SetImageInfo(translatedImageInfo, true);
+    if (ret != SUCCESS) {
+        IMAGE_LOGE("PixelAstc translate SetImageInfo failed, ret: %{public}u", ret);
+        uint32_t restoreRet = SetImageInfo(imageInfo, true);
+        if (restoreRet != SUCCESS) {
+            IMAGE_LOGE("PixelAstc translate restore ImageInfo failed, ret: %{public}u", restoreRet);
+        }
+        return ret;
+    }
     SetTransformData(transformData);
-    SetImageInfo(imageInfo, true);
     return SUCCESS;
-}
-
-std::pair<float, float> calculateRotatedDimensions(float width, float height, float rotationDegrees)
-{
-    float radians = rotationDegrees * M_PI / 180.0f;
-    
-    float cosTheta = std::cos(radians);
-    float sinTheta = std::sin(radians);
-    
-    float newWidth = std::abs(width * cosTheta) + std::abs(height * sinTheta);
-    float newHeight = std::abs(width * sinTheta) + std::abs(height * cosTheta);
-    return {newWidth, newHeight};
 }
 
 void PixelAstc::rotate(float degrees)
@@ -144,17 +213,43 @@ void PixelAstc::rotate(float degrees)
 
 uint32_t PixelAstc::Rotate(float degrees)
 {
+    std::lock_guard<std::mutex> lock(*translationMutex_);
+    if (!std::isfinite(degrees)) {
+        IMAGE_LOGE("Invalid rotate degrees");
+        return ERR_IMAGE_INVALID_PARAMETER;
+    }
     TransformData transformData;
     GetTransformData(transformData);
-    transformData.rotateD += degrees;
-    transformData.rotateD = fmod(fmod(transformData.rotateD, 360.0f) + 360.0f, 360.0f); // Normalize to [0, 360)
-    SetTransformData(transformData);
+    double normalizedDegrees = std::fmod(static_cast<double>(degrees), FULL_ROTATION_DEGREES);
+    double accumulatedDegrees = std::fmod(
+        static_cast<double>(transformData.rotateD) + normalizedDegrees, FULL_ROTATION_DEGREES);
+    accumulatedDegrees = std::fmod(
+        accumulatedDegrees + FULL_ROTATION_DEGREES, FULL_ROTATION_DEGREES);
+    if (!SafeCastToFloat(accumulatedDegrees, transformData.rotateD)) {
+        IMAGE_LOGE("Invalid accumulated rotate degrees");
+        return ERR_IMAGE_INVALID_PARAMETER;
+    }
     ImageInfo imageInfo;
     GetImageInfo(imageInfo);
-    auto newDimensions = calculateRotatedDimensions(imageInfo.size.width, imageInfo.size.height, degrees);
-    imageInfo.size.width = static_cast<int32_t>(newDimensions.first);
-    imageInfo.size.height = static_cast<int32_t>(newDimensions.second);
-    SetImageInfo(imageInfo, true);
+    ImageInfo rotatedImageInfo = imageInfo;
+    auto newDimensions = CalculateRotatedDimensions(
+        imageInfo.size.width, imageInfo.size.height, normalizedDegrees);
+    if (!SafeCastToInt32(newDimensions.first, rotatedImageInfo.size.width) ||
+        !SafeCastToInt32(newDimensions.second, rotatedImageInfo.size.height) ||
+        rotatedImageInfo.size.width <= 0 || rotatedImageInfo.size.height <= 0) {
+        IMAGE_LOGE("Invalid rotated image size");
+        return ERR_IMAGE_INVALID_PARAMETER;
+    }
+    uint32_t ret = SetImageInfo(rotatedImageInfo, true);
+    if (ret != SUCCESS) {
+        IMAGE_LOGE("PixelAstc rotate SetImageInfo failed, ret: %{public}u", ret);
+        uint32_t restoreRet = SetImageInfo(imageInfo, true);
+        if (restoreRet != SUCCESS) {
+            IMAGE_LOGE("PixelAstc rotate restore ImageInfo failed, ret: %{public}u", restoreRet);
+        }
+        return ret;
+    }
+    SetTransformData(transformData);
     return SUCCESS;
 }
 
@@ -165,6 +260,7 @@ void PixelAstc::flip(bool xAxis, bool yAxis)
 
 uint32_t PixelAstc::Flip(bool xAxis, bool yAxis)
 {
+    std::lock_guard<std::mutex> lock(*translationMutex_);
     TransformData transformData;
     GetTransformData(transformData);
     transformData.flipX = xAxis;
@@ -180,6 +276,7 @@ uint32_t PixelAstc::crop(const Rect &rect)
 
 uint32_t PixelAstc::Crop(const Rect &rect)
 {
+    std::lock_guard<std::mutex> lock(*translationMutex_);
     ImageInfo imageInfo;
     GetImageInfo(imageInfo);
     if (rect.left >= 0 && rect.top >= 0 && rect.width > 0 && rect.height > 0 &&
@@ -192,10 +289,19 @@ uint32_t PixelAstc::Crop(const Rect &rect)
         transformData.cropTop = rect.top;
         transformData.cropWidth = rect.width;
         transformData.cropHeight = rect.height;
+        ImageInfo croppedImageInfo = imageInfo;
+        croppedImageInfo.size.width = rect.width;
+        croppedImageInfo.size.height = rect.height;
+        uint32_t ret = SetImageInfo(croppedImageInfo, true);
+        if (ret != SUCCESS) {
+            IMAGE_LOGE("PixelAstc crop SetImageInfo failed, ret: %{public}u", ret);
+            uint32_t restoreRet = SetImageInfo(imageInfo, true);
+            if (restoreRet != SUCCESS) {
+                IMAGE_LOGE("PixelAstc crop restore ImageInfo failed, ret: %{public}u", restoreRet);
+            }
+            return ret;
+        }
         SetTransformData(transformData);
-        imageInfo.size.width = rect.width;
-        imageInfo.size.height = rect.height;
-        SetImageInfo(imageInfo, true);
     } else {
         IMAGE_LOGE("crop failed");
         return ERR_IMAGE_CROP;

@@ -15,6 +15,7 @@
 
 #include "post_proc.h"
 
+#include <limits>
 #include <memory>
 #include <unistd.h>
 
@@ -1085,6 +1086,7 @@ bool PostProc::RotateInRectangularSteps(PixelMap &pixelMap, float degrees, bool 
             .size = imageInfo.size,
             .stride = pixelMap.GetRowStride(),
             .pixelBytes = ImageUtils::GetPixelBytes(pixelMap.GetPixelFormat()),
+            .bufferSize = pixelMap.GetAllocationByteCount(),
             .addr = pixelMap.GetPixels(),
             .context = pixelMap.GetFd(),
         };
@@ -1119,6 +1121,7 @@ bool PostProc::ScalePixelMapWithGPU(PixelMap &pixelMap, const Size &desiredSize,
             .size = imageInfo.size,
             .stride = pixelMap.GetRowStride(),
             .pixelBytes = ImageUtils::GetPixelBytes(pixelMap.GetPixelFormat()),
+            .bufferSize = pixelMap.GetAllocationByteCount(),
             .addr = pixelMap.GetPixels(),
             .context = pixelMap.GetFd(),
         };
@@ -1176,13 +1179,8 @@ float getLapFactor(const ImageInfo& imgInfo, const Size &desiredSize)
     return 0.15f;
 }
 
-struct SLRContext {
-    void *data;
-    bool useLap;
-};
-
-bool ExecuteSLR(PixelMap& pixelMap, const Size& desiredSize, SLRMat &src, SLRMat &dst,
-    SLRContext scalingContext)
+bool ExecuteSLR(PixelMap& pixelMap, const Size& desiredSize, SLRMat &src, SLRMat &scaledDst,
+    SLRMat *laplacianDst)
 {
     ImageInfo imgInfo;
     pixelMap.GetImageInfo(imgInfo);
@@ -1190,15 +1188,92 @@ bool ExecuteSLR(PixelMap& pixelMap, const Size& desiredSize, SLRMat &src, SLRMat
     CHECK_ERROR_RETURN_RET_LOG(weightTuplePtr == nullptr, false, "PostProcExecuteSLR init failed");
     SLRWeightMat slrWeightX = std::get<0>(*weightTuplePtr);
     SLRWeightMat slrWeightY = std::get<1>(*weightTuplePtr);
+    bool success = false;
     if (ImageSystemProperties::GetSLRParallelEnabled()) {
-        SLRProc::Parallel(src, dst, slrWeightX, slrWeightY);
+        success = SLRProc::Parallel(src, scaledDst, slrWeightX, slrWeightY);
     } else {
-        SLRProc::Serial(src, dst, slrWeightX, slrWeightY);
+        success = SLRProc::Serial(src, scaledDst, slrWeightX, slrWeightY);
     }
-    if (scalingContext.useLap) {
+    CHECK_ERROR_RETURN_RET_LOG(!success, false, "PostProcExecuteSLR scale failed");
+    if (laplacianDst != nullptr) {
         float factor = getLapFactor(imgInfo, desiredSize);
-        SLRProc::Laplacian(dst, scalingContext.data, factor);
+        CHECK_ERROR_RETURN_RET_LOG(!SLRProc::Laplacian(scaledDst, *laplacianDst, factor), false,
+            "PostProcExecuteSLR laplacian failed");
     }
+    return true;
+}
+
+static bool GetSLRMemoryLayout(AbsMemory &memory, const Size &size, int32_t pixelBytes,
+    size_t &bufferSize, int32_t &rowStride)
+{
+    CHECK_ERROR_RETURN_RET_LOG(memory.data.data == nullptr || pixelBytes <= 0, false,
+        "GetSLRMemoryLayout invalid memory");
+    uint64_t rowStrideBytes = static_cast<uint64_t>(size.width) * static_cast<uint64_t>(pixelBytes);
+    bufferSize = memory.data.size;
+    if (memory.GetType() == AllocatorType::DMA_ALLOC) {
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+        auto surfaceBuffer = reinterpret_cast<SurfaceBuffer *>(memory.extend.data);
+        CHECK_ERROR_RETURN_RET_LOG(surfaceBuffer == nullptr, false, "GetSLRMemoryLayout surface buffer is null");
+        rowStrideBytes = static_cast<uint64_t>(surfaceBuffer->GetStride());
+        bufferSize = surfaceBuffer->GetSize();
+#else
+        return false;
+#endif
+    }
+    CHECK_ERROR_RETURN_RET_LOG(rowStrideBytes == 0 ||
+        rowStrideBytes % static_cast<uint64_t>(pixelBytes) != 0, false,
+        "GetSLRMemoryLayout invalid row stride");
+    const uint64_t rowStridePixels = rowStrideBytes / static_cast<uint64_t>(pixelBytes);
+    CHECK_ERROR_RETURN_RET_LOG(rowStridePixels > static_cast<uint64_t>(std::numeric_limits<int32_t>::max()),
+        false, "GetSLRMemoryLayout row stride overflow");
+    rowStride = static_cast<int32_t>(rowStridePixels);
+    return true;
+}
+
+struct SLRTargetCtx {
+    const Size &desiredSize;
+    int32_t pixelBytes;
+    PixelFormat format;
+    PixelMap &pixelMap;
+    uint32_t dstBufferSize;
+    bool useLap;
+    std::unique_ptr<AbsMemory> &m;
+    std::unique_ptr<AbsMemory> &lapMemory;
+    SLRMat &scaledDst;
+    SLRMat &finalDst;
+};
+
+static bool PrepareSLRTargets(SLRTargetCtx &ctx)
+{
+    ctx.m = nullptr;
+    ctx.lapMemory = CreateSLRMemory(ctx.pixelMap, ctx.dstBufferSize, ctx.desiredSize, ctx.m, ctx.useLap);
+    bool cond = ctx.m == nullptr || (ctx.useLap && (ctx.lapMemory == nullptr));
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "pixelMap scale slr memory nullptr");
+    AbsMemory *scaledMemory = ctx.useLap ? ctx.lapMemory.get() : ctx.m.get();
+    size_t scaledBufferSize = 0;
+    int32_t scaledRowStride = 0;
+    cond = !GetSLRMemoryLayout(*scaledMemory, ctx.desiredSize, ctx.pixelBytes, scaledBufferSize, scaledRowStride);
+    if (cond) {
+        IMAGE_LOGE("ScalePixelMapWithSLR invalid scale target layout");
+        ctx.m->Release();
+        if (ctx.lapMemory) {
+            ctx.lapMemory->Release();
+        }
+        return false;
+    }
+    ctx.scaledDst = SLRMat(ctx.desiredSize, ctx.format, scaledMemory->data.data, scaledRowStride, scaledBufferSize);
+    size_t finalBufferSize = 0;
+    int32_t finalRowStride = 0;
+    cond = !GetSLRMemoryLayout(*ctx.m, ctx.desiredSize, ctx.pixelBytes, finalBufferSize, finalRowStride);
+    if (cond) {
+        IMAGE_LOGE("ScalePixelMapWithSLR invalid final target layout");
+        ctx.m->Release();
+        if (ctx.lapMemory) {
+            ctx.lapMemory->Release();
+        }
+        return false;
+    }
+    ctx.finalDst = SLRMat(ctx.desiredSize, ctx.format, ctx.m->data.data, finalRowStride, finalBufferSize);
     return true;
 }
 
@@ -1211,23 +1286,28 @@ bool PostProc::ScalePixelMapWithSLR(const Size &desiredSize, PixelMap &pixelMap,
     useLap = useLap && ImageSystemProperties::GetSLRLaplacianEnabled();
     ImageTrace imageTrace("ScalePixelMapWithSLR");
     int32_t pixelBytes = pixelMap.GetPixelBytes();
-    SLRMat src(imgInfo.size, imgInfo.pixelFormat, pixelMap.GetWritablePixels(), pixelMap.GetRowStride() / pixelBytes);
-    uint32_t dstBufferSize = desiredSize.height * desiredSize.width * pixelBytes;
+    const int32_t srcRowStrideBytes = pixelMap.GetRowStride();
+    CHECK_ERROR_RETURN_RET_LOG(srcRowStrideBytes <= 0 || srcRowStrideBytes % pixelBytes != 0, false,
+        "ScalePixelMapWithSLR invalid source row stride");
+    SLRMat src(imgInfo.size, imgInfo.pixelFormat, pixelMap.GetWritablePixels(), srcRowStrideBytes / pixelBytes,
+        pixelMap.GetAllocationByteCount());
+    CHECK_ERROR_RETURN_RET_LOG(!src.IsValid(), false, "ScalePixelMapWithSLR invalid source buffer layout");
+    const uint64_t dstBufferSize64 = static_cast<uint64_t>(desiredSize.height) *
+        static_cast<uint64_t>(desiredSize.width) * static_cast<uint64_t>(pixelBytes);
+    CHECK_ERROR_RETURN_RET_LOG(dstBufferSize64 > std::numeric_limits<uint32_t>::max(), false,
+        "ScalePixelMapWithSLR desired size overflow");
+    uint32_t dstBufferSize = static_cast<uint32_t>(dstBufferSize64);
     std::unique_ptr<AbsMemory> m = nullptr;
-    auto lapMemory = CreateSLRMemory(pixelMap, dstBufferSize, desiredSize, m, useLap);
-    cond = m == nullptr || (useLap && (lapMemory == nullptr));
-    CHECK_ERROR_RETURN_RET_LOG(cond, false, "pixelMap scale slr memory nullptr");
-    size_t rowStride;
-    if (m->GetType() == AllocatorType::DMA_ALLOC) {
-#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
-        rowStride = reinterpret_cast<SurfaceBuffer*>(m->extend.data)->GetStride();
-#endif
-    } else {
-        rowStride = desiredSize.width * pixelBytes;
+    std::unique_ptr<AbsMemory> lapMemory = nullptr;
+    SLRMat scaledDst;
+    SLRMat finalDst;
+    SLRTargetCtx ctx{desiredSize, pixelBytes, imgInfo.pixelFormat, pixelMap, dstBufferSize, useLap,
+        m, lapMemory, scaledDst, finalDst};
+    if (!PrepareSLRTargets(ctx)) {
+        return false;
     }
-    void *data = useLap ? lapMemory->data.data : m->data.data;
-    SLRMat dst({desiredSize.width, desiredSize.height}, imgInfo.pixelFormat, data, rowStride / pixelBytes);
-    if (!ExecuteSLR(pixelMap, desiredSize, src, dst, {m->data.data, useLap})) {
+    SLRMat *laplacianDst = useLap ? &finalDst : nullptr;
+    if (!ExecuteSLR(pixelMap, desiredSize, src, scaledDst, laplacianDst)) {
         m->Release();
         if (useLap && lapMemory) {
             lapMemory->Release();

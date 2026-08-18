@@ -18,6 +18,7 @@
 #include "image_log.h"
 #include "image_napi_utils.h"
 #include "image_pixel_map_napi.h"
+#include "image_pixel_map_napi_kits.h"
 #include "image_source_napi.h"
 #include "image_trace.h"
 #include "log_tags.h"
@@ -241,15 +242,6 @@ static ScaleMode ParseScaleMode(int32_t val)
     return ScaleMode::FIT_TARGET_SIZE;
 }
 
-static AntiAliasingOption ParseAntiAliasingOption(int32_t val)
-{
-    if (val <= static_cast<int32_t>(AntiAliasingOption::SPLINE)) {
-        return AntiAliasingOption(val);
-    }
-
-    return AntiAliasingOption::NONE;
-}
-
 static bool parseSize(napi_env env, napi_value root, Size* size)
 {
     if (size == nullptr) {
@@ -336,7 +328,7 @@ ImageType PixelMapNapi::ParserImageType(napi_env env, napi_value argv)
     return ImageType::TYPE_UNKNOWN;
 }
 
-static bool parseRegion(napi_env env, napi_value root, Rect* region)
+static bool parseRegion(napi_env env, napi_value root, Rect* region, bool checkRange = false)
 {
     napi_value tmpValue = nullptr;
 
@@ -344,11 +336,15 @@ static bool parseRegion(napi_env env, napi_value root, Rect* region)
         return false;
     }
 
-    if (!GET_INT32_BY_NAME(root, "x", region->left)) {
+    auto getInt32ByName = [env, checkRange](napi_value object, const char* name, int32_t* value) {
+        return checkRange ? ImageNapiUtils::GetInt32ByNameWithRange(env, object, name, value) :
+            ImageNapiUtils::GetInt32ByName(env, object, name, value);
+    };
+    if (!getInt32ByName(root, "x", &region->left)) {
         return false;
     }
 
-    if (!GET_INT32_BY_NAME(root, "y", region->top)) {
+    if (!getInt32ByName(root, "y", &region->top)) {
         return false;
     }
 
@@ -356,11 +352,11 @@ static bool parseRegion(napi_env env, napi_value root, Rect* region)
         return false;
     }
 
-    if (!GET_INT32_BY_NAME(tmpValue, "height", region->height)) {
+    if (!getInt32ByName(tmpValue, "height", &region->height)) {
         return false;
     }
 
-    if (!GET_INT32_BY_NAME(tmpValue, "width", region->width)) {
+    if (!getInt32ByName(tmpValue, "width", &region->width)) {
         return false;
     }
 
@@ -1971,7 +1967,14 @@ static void SetOpacityExec(napi_env env, void* data)
         return;
     }
 
-    context->status = context->rPixelMap->SetAlpha(static_cast<float>(context->alpha));
+    float opacity = 0.0f;
+    if (!ImageNapiUtils::ConvertDoubleToFloat(context->alpha, &opacity)) {
+        context->status = ERR_IMAGE_INVALID_PARAMETER;
+        context->errCode = ERR_IMAGE_INVALID_PARAM;
+        context->errMsg = "Invalid parameter: Opacity must be a finite value in the float range.";
+        return;
+    }
+    context->status = context->rPixelMap->SetAlpha(opacity);
     if (context->status == ERR_IMAGE_PIXELMAP_NOT_ALLOW_MODIFY) {
         context->errCode = ERR_MEDIA_UNSUPPORT_OPERATION;
         context->errMsg = "The PixelMap is locked. Release the lock before modifying the PixelMap.";
@@ -2106,8 +2109,16 @@ static void ApplyScaleExec(napi_env env, void* data)
         return;
     }
 
-    context->status = context->rPixelMap->Scale(static_cast<float>(context->xArg), static_cast<float>(context->yArg),
-        context->antiAliasing);
+    float scaleX = 0.0f;
+    float scaleY = 0.0f;
+    if (!ImageNapiUtils::ConvertDoubleToFloat(context->xArg, &scaleX) ||
+        !ImageNapiUtils::ConvertDoubleToFloat(context->yArg, &scaleY)) {
+        context->status = ERR_IMAGE_INVALID_PARAMETER;
+        context->errCode = ERR_IMAGE_INVALID_PARAM;
+        context->errMsg = "Invalid parameter: Scale factors must be finite values in the float range.";
+        return;
+    }
+    context->status = context->rPixelMap->Scale(scaleX, scaleY, context->antiAliasing);
     HandleAffineTransformReturnStatus(context->status, context->errCode, context->errMsg, "scale");
 }
 
@@ -2145,7 +2156,7 @@ napi_value PixelMapNapi::ApplyScale(napi_env env, napi_callback_info info)
         CreatePendingErrorIfAbsent(env, context->error, ERR_IMAGE_INVALID_PARAM,
             "Invalid parameter: The 3rd argument must be a number.");
     }
-    context->antiAliasing = ParseAntiAliasingOption(antiAliasing);
+    context->antiAliasing = ParsePublicAntiAliasingOption(antiAliasing);
 
     napi_create_promise(env, &(context->deferred), &result);
 
@@ -2209,7 +2220,7 @@ napi_value PixelMapNapi::ApplyScaleSync(napi_env env, napi_callback_info info)
             "Invalid parameter: The 3rd argument must be a number.", true);
         return result;
     }
-    context->antiAliasing = ParseAntiAliasingOption(antiAliasing);
+    context->antiAliasing = ParsePublicAntiAliasingOption(antiAliasing);
     
     ApplyScaleExec(env, static_cast<void*>(context.get()));
     if (context->errCode != SUCCESS) {
@@ -2233,8 +2244,16 @@ static void ApplyTranslateExec(napi_env env, void* data)
         return;
     }
 
-    context->status =
-        context->rPixelMap->Translate(static_cast<float>(context->xArg), static_cast<float>(context->yArg));
+    float translateX = 0.0f;
+    float translateY = 0.0f;
+    if (!ImageNapiUtils::ConvertDoubleToFloat(context->xArg, &translateX) ||
+        !ImageNapiUtils::ConvertDoubleToFloat(context->yArg, &translateY)) {
+        context->status = ERR_IMAGE_INVALID_PARAMETER;
+        context->errCode = ERR_IMAGE_INVALID_PARAM;
+        context->errMsg = "Invalid parameter: Translation values must be finite values in the float range.";
+        return;
+    }
+    context->status = context->rPixelMap->Translate(translateX, translateY);
     HandleAffineTransformReturnStatus(context->status, context->errCode, context->errMsg, "translate");
 }
 
@@ -2385,7 +2404,7 @@ napi_value PixelMapNapi::ApplyCrop(napi_env env, napi_callback_info info)
         context->rPixelMap = context->nConstructor->nativePixelMap_;
     }
     
-    if (!parseRegion(env, argv[NUM_0], &(context->area.region))) {
+    if (!parseRegion(env, argv[NUM_0], &(context->area.region), true)) {
         CreatePendingErrorIfAbsent(env, context->error, ERR_MEDIA_INVALID_REGION,
             "The specified region is invalid. Ensure all attributes are valid integers within the PixelMap bounds.");
     }
@@ -2436,7 +2455,7 @@ napi_value PixelMapNapi::ApplyCropSync(napi_env env, napi_callback_info info)
     }
     context->rPixelMap = context->nConstructor->nativePixelMap_;
 
-    if (!parseRegion(env, argv[NUM_0], &(context->area.region))) {
+    if (!parseRegion(env, argv[NUM_0], &(context->area.region), true)) {
         ImageNapiUtils::ThrowExceptionError(env, ERR_MEDIA_INVALID_REGION, "The specified region is invalid. "
             "Ensure all attributes are valid integers within the PixelMap bounds.", true);
         return result;
@@ -2464,7 +2483,14 @@ static void ApplyRotateExec(napi_env env, void* data)
         return;
     }
 
-    context->status = context->rPixelMap->Rotate(static_cast<float>(context->xArg));
+    float angle = 0.0f;
+    if (!ImageNapiUtils::ConvertDoubleToFloat(context->xArg, &angle)) {
+        context->status = ERR_IMAGE_INVALID_PARAMETER;
+        context->errCode = ERR_IMAGE_INVALID_PARAM;
+        context->errMsg = "Invalid parameter: Rotation angle must be a finite value in the float range.";
+        return;
+    }
+    context->status = context->rPixelMap->Rotate(angle);
     HandleAffineTransformReturnStatus(context->status, context->errCode, context->errMsg, "rotate");
 }
 
@@ -3950,6 +3976,37 @@ static napi_value BuildClonePixelMapError(napi_env& env, int32_t errorCode)
     return ImageNapiUtils::ThrowExceptionError(env, ERR_MEDIA_MEMORY_ALLOC_FAILED, "Clone PixelMap failed");
 }
 
+struct CropScaleArgs {
+    Rect region;
+    float scaleX = 0.0f;
+    float scaleY = 0.0f;
+    bool canScale = false;
+    int32_t antiAliasing = 0;
+};
+
+static napi_value CropScaleClonePixelMap(napi_env env, PixelMapNapi* pixelMapNapi, const CropScaleArgs& args)
+{
+    napi_value result = nullptr;
+    napi_get_undefined(env, &result);
+    auto nativePixelMap = pixelMapNapi->GetPixelNapiInner();
+    if (nativePixelMap != nullptr) {
+        int32_t errorCode = 0;
+        auto clonePixelMap = nativePixelMap->Clone(errorCode);
+        if (clonePixelMap == nullptr) {
+            return BuildClonePixelMapError(env, errorCode);
+        }
+        IMG_NAPI_CHECK_RET_D(SUCCESS == clonePixelMap->crop(args.region), ImageNapiUtils::ThrowExceptionError(env,
+            ERR_MEDIA_INVALID_REGION, "Crop failed, region or properties invalid"), {});
+        if (args.canScale) {
+            clonePixelMap->scale(args.scaleX, args.scaleY, ParsePublicAntiAliasingOption(args.antiAliasing));
+        } else {
+            IMAGE_LOGW("Scale factors are non-finite or out of float range, skip scaling");
+        }
+        result = PixelMapNapi::CreatePixelMap(env, std::move(clonePixelMap));
+    }
+    return result;
+}
+
 napi_value PixelMapNapi::CreateCroppedAndScaledPixelMapSync(napi_env env, napi_callback_info info)
 {
     napi_value result = nullptr;
@@ -3970,42 +4027,31 @@ napi_value PixelMapNapi::CreateCroppedAndScaledPixelMapSync(napi_env env, napi_c
     IMG_NAPI_CHECK_RET_D(pixelMapNapi->nativePixelMap_ != nullptr,
         ImageNapiUtils::ThrowExceptionError(env, ERR_MEDIA_UNSUPPORT_OPERATION, "native pixelmap has released"), {});
 
-    IMG_NAPI_CHECK_RET_D(pixelMapNapi->GetPixelNapiEditable(),
-        ImageNapiUtils::ThrowExceptionError(env, ERR_MEDIA_UNSUPPORT_OPERATION,
-        "Pixelmap has crossed threads. CreateCroppedAndScaledPixelMapSync failed"), {});
+    IMG_NAPI_CHECK_RET_D(pixelMapNapi->GetPixelNapiEditable(), ImageNapiUtils::ThrowExceptionError(env,
+        ERR_MEDIA_UNSUPPORT_OPERATION, "Pixelmap has crossed threads. CreateCroppedAndScaledPixelMapSync failed"), {});
 
-    IMG_NAPI_CHECK_RET_D((argCount == NUM_3 || argCount == NUM_4),
-        ImageNapiUtils::ThrowExceptionError(env, ERR_MEDIA_UNSUPPORT_OPERATION, "Invalid argument count"),
-        IMAGE_LOGE("%{public}s Invalid argument count", __func__));
+    IMG_NAPI_CHECK_RET_D((argCount == NUM_3 || argCount == NUM_4), ImageNapiUtils::ThrowExceptionError(env,
+        ERR_MEDIA_UNSUPPORT_OPERATION, "Invalid argument count"), {});
 
-    Rect region;
+    CropScaleArgs args;
     double xArg = 0;
     double yArg = 0;
-    int32_t antiAliasing = 0;
-    IMG_NAPI_CHECK_RET_D(parseRegion(env, argValue[NUM_0], &region),
+    IMG_NAPI_CHECK_RET_D(parseRegion(env, argValue[NUM_0], &args.region),
         ImageNapiUtils::ThrowExceptionError(env, ERR_MEDIA_INVALID_REGION, "Invalid argument region type"), {});
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(napi_get_value_double(env, argValue[NUM_1], &xArg)),
         ImageNapiUtils::ThrowExceptionError(env, ERR_MEDIA_UNSUPPORT_OPERATION, "Invalid argument x"), {});
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(napi_get_value_double(env, argValue[NUM_2], &yArg)),
         ImageNapiUtils::ThrowExceptionError(env, ERR_MEDIA_UNSUPPORT_OPERATION, "Invalid argument y"), {});
+    args.canScale = ImageNapiUtils::ConvertDoubleToFloat(xArg, &args.scaleX) &&
+        ImageNapiUtils::ConvertDoubleToFloat(yArg, &args.scaleY);
     if (argCount == NUM_4) {
-        IMG_NAPI_CHECK_RET_D(IMG_IS_OK(napi_get_value_int32(env, argValue[NUM_3], &antiAliasing)),
+        IMG_NAPI_CHECK_RET_D(IMG_IS_OK(napi_get_value_int32(env, argValue[NUM_3], &args.antiAliasing)),
             ImageNapiUtils::ThrowExceptionError(env, ERR_MEDIA_UNSUPPORT_OPERATION, "Invalid antiAliasing"), {});
-        IMG_NAPI_CHECK_RET_D(antiAliasing >= static_cast<int32_t>(NUM_0) && antiAliasing <= static_cast<int32_t>(NUM_3),
+        IMG_NAPI_CHECK_RET_D(args.antiAliasing >= static_cast<int32_t>(AntiAliasingOption::NONE) &&
+            args.antiAliasing <= static_cast<int32_t>(AntiAliasingOption::HIGH),
             ImageNapiUtils::ThrowExceptionError(env, ERR_MEDIA_UNSUPPORT_OPERATION, "Not support antiAliasing"), {});
     }
-    if (pixelMapNapi->nativePixelMap_ != nullptr) {
-        int32_t errorCode = 0;
-        auto clonePixelMap = pixelMapNapi->nativePixelMap_->Clone(errorCode);
-        if (clonePixelMap == nullptr) {
-            return BuildClonePixelMapError(env, errorCode);
-        }
-        IMG_NAPI_CHECK_RET_D(SUCCESS == clonePixelMap->crop(region), ImageNapiUtils::ThrowExceptionError(env,
-            ERR_MEDIA_INVALID_REGION, "Crop failed, region or properties invalid"), {});
-        clonePixelMap->scale(xArg, yArg, ParseAntiAliasingOption(antiAliasing));
-        result = PixelMapNapi::CreatePixelMap(env, std::move(clonePixelMap));
-    }
-    return result;
+    return CropScaleClonePixelMap(env, pixelMapNapi, args);
 }
 
 STATIC_EXEC_FUNC(CreateCropAndScalePixelMap)
@@ -4017,6 +4063,13 @@ STATIC_EXEC_FUNC(CreateCropAndScalePixelMap)
     auto context = static_cast<PixelMapAsyncContext*>(data);
     std::shared_ptr<PixelMap> pixelMap = context->wPixelMap;
     if (pixelMap != nullptr) {
+        float scaleX = 0.0f;
+        float scaleY = 0.0f;
+        bool canScale = ImageNapiUtils::ConvertDoubleToFloat(context->xArg, &scaleX) &&
+            ImageNapiUtils::ConvertDoubleToFloat(context->yArg, &scaleY);
+        if (!canScale) {
+            IMAGE_LOGW("Scale factors are non-finite or out of float range, skip scaling");
+        }
         int32_t errorCode = SUCCESS;
         auto clonePixelMap = pixelMap->Clone(errorCode);
         if (clonePixelMap == nullptr || errorCode != SUCCESS) {
@@ -4030,7 +4083,9 @@ STATIC_EXEC_FUNC(CreateCropAndScalePixelMap)
             context->resultUint32 = NUM_2;
             return;
         }
-        clonePixelMap->scale(context->xArg, context->yArg, context->antiAliasing);
+        if (canScale) {
+            clonePixelMap->scale(scaleX, scaleY, context->antiAliasing);
+        }
         context->rPixelMap = std::move(clonePixelMap);
     }
 }
@@ -4131,17 +4186,16 @@ napi_value PixelMapNapi::CreateCroppedAndScaledPixelMap(napi_env env, napi_callb
     if (argCount == NUM_4) {
         IMG_NAPI_CHECK_RET_D(IMG_IS_OK(napi_get_value_int32(env, argValue[NUM_3], &antiAliasing)),
             ImageNapiUtils::ThrowExceptionError(env, ERR_MEDIA_UNSUPPORT_OPERATION, "Invalid antiAliasing"), {});
-        IMG_NAPI_CHECK_RET_D(antiAliasing >= static_cast<int32_t>(NUM_0) && antiAliasing <= static_cast<int32_t>(NUM_3),
+        IMG_NAPI_CHECK_RET_D(antiAliasing >= static_cast<int32_t>(AntiAliasingOption::NONE) &&
+            antiAliasing <= static_cast<int32_t>(AntiAliasingOption::HIGH),
             ImageNapiUtils::ThrowExceptionError(env, ERR_MEDIA_UNSUPPORT_OPERATION, "Not support antiAliasing"), {});
-        asyncContext->antiAliasing = ParseAntiAliasingOption(antiAliasing);
+        asyncContext->antiAliasing = ParsePublicAntiAliasingOption(antiAliasing);
     }
 
     napi_create_promise(env, &(asyncContext->deferred), &result);
     IMG_CREATE_CREATE_ASYNC_WORK(env, status, "CreateCropAndScalePixelMap", CreateCropAndScalePixelMapExec,
         CreateCropAndScalePixelMapComplete, asyncContext, asyncContext->work);
-    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, {
-        NAPI_CHECK_AND_DELETE_REF(env, asyncContext->callbackRef);
-    });
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, { NAPI_CHECK_AND_DELETE_REF(env, asyncContext->callbackRef); });
     return result;
 }
 
@@ -5151,8 +5205,13 @@ static void SetAlphaExec(napi_env env, PixelMapAsyncContext* context)
     }
     if (context->status == SUCCESS) {
         if (context->rPixelMap != nullptr) {
-            context->status = context->rPixelMap->SetAlpha(
-                static_cast<float>(context->alpha));
+            float alpha = 0.0f;
+            if (!ImageNapiUtils::ConvertDoubleToFloat(context->alpha, &alpha)) {
+                IMAGE_LOGW("Alpha is non-finite or out of float range, skip setting alpha");
+                context->status = SUCCESS;
+                return;
+            }
+            context->status = context->rPixelMap->SetAlpha(alpha);
         } else {
             IMAGE_LOGE("Null native ref");
             context->status = ERR_IMAGE_INIT_ABNORMAL;
@@ -5247,10 +5306,14 @@ napi_value PixelMapNapi::SetAlphaSync(napi_env env, napi_callback_info info)
         ImageNapiUtils::ThrowExceptionError(env, ERR_RESOURCE_UNAVAILABLE,
         "Pixelmap has crossed threads . SetAlphaSync failed"),
         IMAGE_LOGE("Pixelmap has crossed threads . SetAlphaSync failed"));
+    float safeAlpha = 0.0f;
+    if (!ImageNapiUtils::ConvertDoubleToFloat(alpha, &safeAlpha)) {
+        IMAGE_LOGW("Alpha is non-finite or out of float range, skip setting alpha");
+        return result;
+    }
 
     if (pixelMapNapi->nativePixelMap_ != nullptr) {
-        status = pixelMapNapi->nativePixelMap_->SetAlpha(
-            static_cast<float>(alpha));
+        status = pixelMapNapi->nativePixelMap_->SetAlpha(safeAlpha);
         if (status != SUCCESS) {
             IMAGE_LOGE("SetAlphaSync failed");
         }
@@ -5268,11 +5331,18 @@ static void ScaleExec(napi_env env, PixelMapAsyncContext* context)
     }
     if (context->status == SUCCESS) {
         if (context->rPixelMap != nullptr) {
+            float scaleX = 0.0f;
+            float scaleY = 0.0f;
+            if (!ImageNapiUtils::ConvertDoubleToFloat(context->xArg, &scaleX) ||
+                !ImageNapiUtils::ConvertDoubleToFloat(context->yArg, &scaleY)) {
+                IMAGE_LOGW("Scale factors are non-finite or out of float range, skip scaling");
+                context->status = SUCCESS;
+                return;
+            }
             if (context->antiAliasing == AntiAliasingOption::NONE) {
-                context->rPixelMap->scale(static_cast<float>(context->xArg), static_cast<float>(context->yArg));
+                context->rPixelMap->scale(scaleX, scaleY);
             } else {
-                context->rPixelMap->scale(static_cast<float>(context->xArg), static_cast<float>(context->yArg),
-                    context->antiAliasing);
+                context->rPixelMap->scale(scaleX, scaleY, context->antiAliasing);
             }
             context->status = SUCCESS;
         } else {
@@ -5294,7 +5364,7 @@ static void NapiParseCallbackOrAntiAliasing(napi_env &env, NapiValues &nVal, int
             IMAGE_LOGE("Arg %{public}d type mismatch", argi);
             nVal.context->status = ERR_IMAGE_INVALID_PARAMETER;
         }
-        nVal.context->antiAliasing = ParseAntiAliasingOption(antiAliasing);
+        nVal.context->antiAliasing = ParsePublicAntiAliasingOption(antiAliasing);
     }
 }
 
@@ -5370,8 +5440,7 @@ napi_value PixelMapNapi::ScaleSync(napi_env env, napi_callback_info info)
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(napiStatus), result, IMAGE_LOGE("fail to arg info"));
 
     IMG_NAPI_CHECK_RET_D(argCount == NUM_2 || argCount == NUM_3,
-        ImageNapiUtils::ThrowExceptionError(env, COMMON_ERR_INVALID_PARAMETER,
-        "Invalid args count"),
+        ImageNapiUtils::ThrowExceptionError(env, COMMON_ERR_INVALID_PARAMETER, "Invalid args count"),
         IMAGE_LOGE("Invalid args count %{public}zu", argCount));
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(napi_get_value_double(env, argValue[NUM_0], &xArg)),
         result, IMAGE_LOGE("Arg 0 type mismatch"));
@@ -5389,13 +5458,18 @@ napi_value PixelMapNapi::ScaleSync(napi_env env, napi_callback_info info)
         ImageNapiUtils::ThrowExceptionError(env, ERR_RESOURCE_UNAVAILABLE,
         "Pixelmap has crossed threads . ScaleSync failed"),
         IMAGE_LOGE("Pixelmap has crossed threads . ScaleSync failed"));
+    float scaleX = 0.0f;
+    float scaleY = 0.0f;
+    if (!ImageNapiUtils::ConvertDoubleToFloat(xArg, &scaleX) || !ImageNapiUtils::ConvertDoubleToFloat(yArg, &scaleY)) {
+        IMAGE_LOGW("Scale factors are non-finite or out of float range, skip scaling");
+        return result;
+    }
 
     if (pixelMapNapi->nativePixelMap_ != nullptr) {
         if (antiAliasing == 0) {
-            pixelMapNapi->nativePixelMap_->scale(static_cast<float>(xArg), static_cast<float>(yArg));
+            pixelMapNapi->nativePixelMap_->scale(scaleX, scaleY);
         } else {
-            pixelMapNapi->nativePixelMap_->scale(static_cast<float>(xArg), static_cast<float>(yArg),
-                ParseAntiAliasingOption(antiAliasing));
+            pixelMapNapi->nativePixelMap_->scale(scaleX, scaleY, ParsePublicAntiAliasingOption(antiAliasing));
         }
     } else {
         IMAGE_LOGE("Null native ref");
@@ -5409,28 +5483,36 @@ static void CreateScaledPixelMapExec(napi_env env, PixelMapAsyncContext* context
         IMAGE_LOGE("Null context");
         return;
     }
-    if (context->status == SUCCESS) {
-        if (context->rPixelMap != nullptr) {
-            InitializationOptions opts;
-            std::unique_ptr<PixelMap> clonePixelMap = PixelMap::Create(*(context->rPixelMap), opts);
-            if (clonePixelMap == nullptr) {
-                IMAGE_LOGE("Null clonePixelMap");
-                return;
-            }
-            if (context->antiAliasing == AntiAliasingOption::NONE) {
-                clonePixelMap->scale(static_cast<float>(context->xArg), static_cast<float>(context->yArg));
-            } else {
-                clonePixelMap->scale(static_cast<float>(context->xArg), static_cast<float>(context->yArg),
-                    context->antiAliasing);
-            }
-            context->alphaMap = std::move(clonePixelMap);
-            context->status = SUCCESS;
-        } else {
-            IMAGE_LOGE("Null native ref");
-            context->status = COMMON_ERR_INVALID_PARAMETER;
+    if (context->status != SUCCESS) {
+        IMAGE_LOGD("CreateScaledPixelMap has failed, do nothing");
+        return;
+    }
+
+    if (context->rPixelMap != nullptr) {
+        float scaleX = 0.0f;
+        float scaleY = 0.0f;
+        bool canScale = ImageNapiUtils::ConvertDoubleToFloat(context->xArg, &scaleX) &&
+            ImageNapiUtils::ConvertDoubleToFloat(context->yArg, &scaleY);
+        InitializationOptions opts;
+        std::unique_ptr<PixelMap> clonePixelMap = PixelMap::Create(*(context->rPixelMap), opts);
+        if (clonePixelMap == nullptr) {
+            IMAGE_LOGE("Null clonePixelMap");
+            return;
         }
+        if (canScale) {
+            if (context->antiAliasing == AntiAliasingOption::NONE) {
+                clonePixelMap->scale(scaleX, scaleY);
+            } else {
+                clonePixelMap->scale(scaleX, scaleY, context->antiAliasing);
+            }
+        } else {
+            IMAGE_LOGW("Scale factors are non-finite or out of float range, skip scaling");
+        }
+        context->alphaMap = std::move(clonePixelMap);
+        context->status = SUCCESS;
     } else {
-        IMAGE_LOGD("Scale has failed. do nothing");
+        IMAGE_LOGE("Null native ref");
+        context->status = COMMON_ERR_INVALID_PARAMETER;
     }
 }
 
@@ -5485,7 +5567,7 @@ napi_value PixelMapNapi::CreateScaledPixelMap(napi_env env, napi_callback_info i
             BuildContextError(env, asyncContext->error, "Arg 2 type mismatch",
             COMMON_ERR_INVALID_PARAMETER), IMG_CREATE_CREATE_ASYNC_WORK(env, status, "CreateScaledPixelMapGeneralError",
             [](napi_env env, void *data) {}, GeneralErrorComplete, asyncContext, asyncContext->work), result);
-        asyncContext->antiAliasing = ParseAntiAliasingOption(antiAliasing);
+        asyncContext->antiAliasing = ParsePublicAntiAliasingOption(antiAliasing);
     }
     status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->nConstructor));
     IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->nConstructor),
@@ -5521,7 +5603,7 @@ static napi_value CreateScaledPixelMapSyncPrepareArgs(napi_env env, struct NapiV
         IMG_NAPI_CHECK_RET_D(IMG_IS_OK(napi_get_value_int32(env, nVal->argv[NUM_2], &antiAliasing)),
             ImageNapiUtils::ThrowExceptionError(env, COMMON_ERR_INVALID_PARAMETER, "Arg 2 type mismatch"),
             IMAGE_LOGE("Arg 2 type mismatch"));
-        nVal->context->antiAliasing = ParseAntiAliasingOption(antiAliasing);
+        nVal->context->antiAliasing = ParsePublicAntiAliasingOption(antiAliasing);
     }
     IMG_NAPI_CHECK_RET_D(nVal->context->nConstructor->GetPixelNapiEditable(),
         ImageNapiUtils::ThrowExceptionError(env, ERR_RESOURCE_UNAVAILABLE,
@@ -5549,11 +5631,16 @@ napi_value PixelMapNapi::CreateScaledPixelMapSync(napi_env env, napi_callback_in
     IMG_NAPI_CHECK_RET_D(clonePixelMap != nullptr,
         ImageNapiUtils::ThrowExceptionError(env, COMMON_ERR_INVALID_PARAMETER, "Null clonePixelMap"),
         IMAGE_LOGE("Null clonePixelMap"));
-    if (nVal.context->antiAliasing == AntiAliasingOption::NONE) {
-        clonePixelMap->scale(static_cast<float>(nVal.context->xArg), static_cast<float>(nVal.context->yArg));
+    float scaleX = 0.0f;
+    float scaleY = 0.0f;
+    bool canScale = ImageNapiUtils::ConvertDoubleToFloat(nVal.context->xArg, &scaleX) &&
+        ImageNapiUtils::ConvertDoubleToFloat(nVal.context->yArg, &scaleY);
+    if (!canScale) {
+        IMAGE_LOGW("Scale factors are non-finite or out of float range, skip scaling");
+    } else if (nVal.context->antiAliasing == AntiAliasingOption::NONE) {
+        clonePixelMap->scale(scaleX, scaleY);
     } else {
-        clonePixelMap->scale(static_cast<float>(nVal.context->xArg), static_cast<float>(nVal.context->yArg),
-            nVal.context->antiAliasing);
+        clonePixelMap->scale(scaleX, scaleY, nVal.context->antiAliasing);
     }
     nVal.result = PixelMapNapi::CreatePixelMap(env, std::move(clonePixelMap));
     return nVal.result;
@@ -5741,7 +5828,15 @@ static void TranslateExec(napi_env env, PixelMapAsyncContext* context)
     }
     if (context->status == SUCCESS) {
         if (context->rPixelMap != nullptr) {
-            context->rPixelMap->translate(static_cast<float>(context->xArg), static_cast<float>(context->yArg));
+            float translateX = 0.0f;
+            float translateY = 0.0f;
+            if (!ImageNapiUtils::ConvertDoubleToFloat(context->xArg, &translateX) ||
+                !ImageNapiUtils::ConvertDoubleToFloat(context->yArg, &translateY)) {
+                IMAGE_LOGW("Translation values are non-finite or out of float range, skip translation");
+                context->status = SUCCESS;
+                return;
+            }
+            context->rPixelMap->translate(translateX, translateY);
             context->status = SUCCESS;
         } else {
             IMAGE_LOGE("Null native ref");
@@ -5832,7 +5927,6 @@ napi_value PixelMapNapi::TranslateSync(napi_env env, napi_callback_info info)
         IMAGE_LOGE("get arraybuffer info failed");
         return result;
     }
-
     PixelMapNapi* pixelMapNapi = nullptr;
     status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&pixelMapNapi));
 
@@ -5841,9 +5935,16 @@ napi_value PixelMapNapi::TranslateSync(napi_env env, napi_callback_info info)
         ImageNapiUtils::ThrowExceptionError(env, ERR_RESOURCE_UNAVAILABLE,
         "Pixelmap has crossed threads . TranslateSync failed"),
         IMAGE_LOGE("Pixelmap has crossed threads . TranslateSync failed"));
+    float translateX = 0.0f;
+    float translateY = 0.0f;
+    if (!ImageNapiUtils::ConvertDoubleToFloat(x, &translateX) ||
+        !ImageNapiUtils::ConvertDoubleToFloat(y, &translateY)) {
+        IMAGE_LOGW("Translation values are non-finite or out of float range, skip translation");
+        return result;
+    }
 
     if (pixelMapNapi->nativePixelMap_ != nullptr) {
-        pixelMapNapi->nativePixelMap_->translate(static_cast<float>(x), static_cast<float>(y));
+        pixelMapNapi->nativePixelMap_->translate(translateX, translateY);
     } else {
         IMAGE_LOGE("Null native ref");
     }
@@ -5858,7 +5959,13 @@ static void RotateExec(napi_env env, PixelMapAsyncContext* context)
     }
     if (context->status == SUCCESS) {
         if (context->rPixelMap != nullptr) {
-            context->rPixelMap->rotate(context->xArg);
+            float angle = 0.0f;
+            if (!ImageNapiUtils::ConvertDoubleToFloat(context->xArg, &angle)) {
+                IMAGE_LOGW("Rotation angle is non-finite or out of float range, skip rotation");
+                context->status = SUCCESS;
+                return;
+            }
+            context->rPixelMap->rotate(angle);
             context->status = SUCCESS;
         } else {
             IMAGE_LOGE("Null native ref");
@@ -5941,7 +6048,6 @@ napi_value PixelMapNapi::RotateSync(napi_env env, napi_callback_info info)
         IMAGE_LOGE("RotateSync failed, invalid parameter"));
     napiStatus = napi_get_value_double(env, argValue[NUM_0], &angle);
     IMG_NAPI_CHECK_RET_D(napiStatus == napi_ok, result, IMAGE_LOGE("get arraybuffer info failed"));
-
     PixelMapNapi* pixelMapNapi = nullptr;
     status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&pixelMapNapi));
 
@@ -5950,9 +6056,14 @@ napi_value PixelMapNapi::RotateSync(napi_env env, napi_callback_info info)
         ImageNapiUtils::ThrowExceptionError(env, ERR_RESOURCE_UNAVAILABLE,
         "Pixelmap has crossed threads . RotateSync failed"),
         IMAGE_LOGE("Pixelmap has crossed threads . RotateSync failed"));
+    float safeAngle = 0.0f;
+    if (!ImageNapiUtils::ConvertDoubleToFloat(angle, &safeAngle)) {
+        IMAGE_LOGW("Rotation angle is non-finite or out of float range, skip rotation");
+        return result;
+    }
 
     if (pixelMapNapi->nativePixelMap_ != nullptr) {
-        pixelMapNapi->nativePixelMap_->rotate(static_cast<float>(angle));
+        pixelMapNapi->nativePixelMap_->rotate(safeAngle);
     } else {
         IMAGE_LOGE("Null native ref");
     }

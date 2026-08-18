@@ -16,6 +16,7 @@
 #ifndef FRAMEWORKS_INNERKITSIMPL_EGL_IMAGE_INCLUDE_PIXEL_MAP_GL_COMMON_H
 #define FRAMEWORKS_INNERKITSIMPL_EGL_IMAGE_INCLUDE_PIXEL_MAP_GL_COMMON_H
 
+#include <cstddef>
 #include <iostream>
 
 #include "GLES/gl.h"
@@ -158,6 +159,7 @@ struct GlImageInfo {
     Size size;
     int32_t stride;
     int pixelBytes;
+    size_t bufferSize = 0;
     const uint8_t *addr = nullptr;
     void *context = nullptr;
     void *outdata = nullptr;

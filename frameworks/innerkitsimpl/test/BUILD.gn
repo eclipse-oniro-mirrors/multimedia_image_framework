@@ -1252,15 +1252,18 @@ ohos_unittest("napitest") {
   ]
   sources = [ "unittest/napi_test.cpp" ]
 
-  deps = [ "$image_subsystem/interfaces/kits/js/common:image" ]
+  deps = [
+    "$image_subsystem/interfaces/innerkits:image_native",
+    "$image_subsystem/interfaces/kits/js/common:image",
+  ]
 
   external_deps = [
-    "ipc:ipc_single",
+    "c_utils:utils",
     "googletest:gmock_main",
     "googletest:gtest_main",
     "graphic_2d:color_manager",
-    "napi:ace_napi",
     "ipc:ipc_single",
+    "napi:ace_napi",
   ]
 }
 

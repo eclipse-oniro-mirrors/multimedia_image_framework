@@ -14,11 +14,13 @@
  */
 
 #include <gtest/gtest.h>
+#include <limits>
 #include <memory>
 #include "pixelmap_native.h"
 #include "pixelmap_native_impl.h"
 #include "common_utils.h"
 #include "image_source_native.h"
+#include "media_errors.h"
 #include "securec.h"
 #include "image_utils.h"
 #include "native_color_space_manager.h"
@@ -46,6 +48,22 @@ class PixelMapNdk2Test : public testing::Test {
 public:
     PixelMapNdk2Test() {}
     ~PixelMapNdk2Test() {}
+};
+
+class AntiAliasingOptionRecordingPixelMap : public PixelMap {
+public:
+    void scale(float, float, const AntiAliasingOption &option) override
+    {
+        lastOption_ = option;
+    }
+
+    uint32_t Scale(float, float, AntiAliasingOption option) override
+    {
+        lastOption_ = option;
+        return SUCCESS;
+    }
+
+    AntiAliasingOption lastOption_ = AntiAliasingOption::HIGH;
 };
 
 const int32_t ZERO = 0;
@@ -2797,6 +2815,51 @@ HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_ApplyScaleWithAntiAliasing_Failure,
 }
 
 /**
+ * @tc.name: OH_PixelmapNative_AntiAliasingLevel_OutOfRangeUsesNone
+ * @tc.desc: Use NONE for anti-aliasing levels outside the public enum range.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_AntiAliasingLevel_OutOfRangeUsesNone, TestSize.Level3)
+{
+    const auto belowRange = static_cast<OH_PixelmapNative_AntiAliasingLevel>(-1);
+    const auto aboveRange = static_cast<OH_PixelmapNative_AntiAliasingLevel>(
+        static_cast<int32_t>(OH_PixelmapNative_AntiAliasing_HIGH) + 1);
+
+    auto recordingPixelmap = std::make_shared<AntiAliasingOptionRecordingPixelMap>();
+    OH_PixelmapNative nativeRecordingPixelmap(recordingPixelmap);
+    EXPECT_EQ(OH_PixelmapNative_ApplyScaleWithAntiAliasing(
+        &nativeRecordingPixelmap, 0.5f, 0.5f, aboveRange), IMAGE_SUCCESS);
+    EXPECT_EQ(recordingPixelmap->lastOption_, AntiAliasingOption::NONE);
+
+    recordingPixelmap->lastOption_ = AntiAliasingOption::HIGH;
+    EXPECT_EQ(OH_PixelmapNative_ScaleWithAntiAliasing(
+        &nativeRecordingPixelmap, 0.5f, 0.5f, belowRange), IMAGE_SUCCESS);
+    EXPECT_EQ(recordingPixelmap->lastOption_, AntiAliasingOption::NONE);
+
+    OH_PixelmapNative *pixelmap = CreateEmptyPixelmapNativeForTest();
+    ASSERT_NE(pixelmap, nullptr);
+    Image_Region region = {0, 0, TWO, TWO};
+    Image_Scale scale = {2.0f, 2.0f};
+    OH_PixelmapNative *croppedPixelmap = nullptr;
+    EXPECT_EQ(OH_PixelmapNative_CreateCroppedAndScaledPixelMap(
+        pixelmap, &region, &scale, aboveRange, &croppedPixelmap), IMAGE_SUCCESS);
+    EXPECT_NE(croppedPixelmap, nullptr);
+
+    OH_PixelmapNative *scaledPixelmap = nullptr;
+    EXPECT_EQ(OH_PixelmapNative_CreateScaledPixelMapWithAntiAliasing(
+        pixelmap, &scaledPixelmap, 2.0f, 2.0f, belowRange), IMAGE_SUCCESS);
+    EXPECT_NE(scaledPixelmap, nullptr);
+
+    if (croppedPixelmap != nullptr) {
+        OH_PixelmapNative_Destroy(&croppedPixelmap);
+    }
+    if (scaledPixelmap != nullptr) {
+        OH_PixelmapNative_Destroy(&scaledPixelmap);
+    }
+    OH_PixelmapNative_Destroy(&pixelmap);
+}
+
+/**
  * @tc.name: OH_PixelmapNative_ApplyTranslate_Success
  * @tc.desc: Test OH_PixelmapNative_ApplyTranslate success path. [AUTO-GENERATED]
  * @tc.type: FUNC
@@ -3011,6 +3074,57 @@ HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_ApplyCrop_Failure, TestSize.Level3)
     OH_PixelmapNative_Destroy(&unmodifiablePixelmap);
 
     GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_ApplyCrop_Failure end";
+}
+
+/**
+ * @tc.name: OH_PixelmapNative_ImageRegionOverflow_Failure
+ * @tc.desc: Reject Image_Region fields that cannot be represented by the inner Rect type.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_ImageRegionOverflow_Failure, TestSize.Level3)
+{
+    constexpr uint32_t outOfRange = static_cast<uint32_t>(std::numeric_limits<int32_t>::max()) + 1U;
+    Image_Region invalidRegions[] = {
+        {outOfRange, 0, 1, 1},
+        {0, outOfRange, 1, 1},
+        {0, 0, outOfRange, 1},
+        {0, 0, 1, outOfRange},
+    };
+
+    OH_PixelmapNative *pixelmap = CreateEmptyPixelmapNativeForTest();
+    ASSERT_NE(pixelmap, nullptr);
+    uint32_t widthBefore = 0;
+    uint32_t heightBefore = 0;
+    ASSERT_TRUE(GetPixelmapNativeImageInfoForTest(pixelmap, widthBefore, heightBefore));
+
+    uint8_t pixels[ARGB_8888_BYTES] = {};
+    Image_PositionArea area = {
+        .pixels = pixels,
+        .pixelsSize = sizeof(pixels),
+        .offset = 0,
+        .stride = sizeof(pixels),
+        .region = {0, 0, 1, 1},
+    };
+    Image_Scale scale = {1.0f, 1.0f};
+    for (auto &region : invalidRegions) {
+        area.region = region;
+        EXPECT_EQ(OH_PixelmapNative_ReadPixelsFromArea(pixelmap, &area), IMAGE_BAD_PARAMETER);
+        EXPECT_EQ(OH_PixelmapNative_WritePixelsToArea(pixelmap, &area), IMAGE_BAD_PARAMETER);
+
+        OH_PixelmapNative *dstPixelmap = nullptr;
+        EXPECT_EQ(OH_PixelmapNative_CreateCroppedAndScaledPixelMap(
+            pixelmap, &region, &scale, OH_PixelmapNative_AntiAliasing_NONE, &dstPixelmap), IMAGE_BAD_PARAMETER);
+        EXPECT_EQ(dstPixelmap, nullptr);
+        EXPECT_EQ(OH_PixelmapNative_ApplyCrop(pixelmap, &region), IMAGE_INVALID_REGION);
+        EXPECT_EQ(OH_PixelmapNative_Crop(pixelmap, &region), IMAGE_BAD_PARAMETER);
+    }
+
+    uint32_t widthAfter = 0;
+    uint32_t heightAfter = 0;
+    ASSERT_TRUE(GetPixelmapNativeImageInfoForTest(pixelmap, widthAfter, heightAfter));
+    EXPECT_EQ(widthAfter, widthBefore);
+    EXPECT_EQ(heightAfter, heightBefore);
+    OH_PixelmapNative_Destroy(&pixelmap);
 }
 
 /**

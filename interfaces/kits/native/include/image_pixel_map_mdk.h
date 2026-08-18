@@ -443,7 +443,8 @@ int32_t OH_PixelMap_Scale(const NativePixelMap* native, float x, float y);
  * @param native Indicates the pointer to a <b>NativePixelMap</b> object.
  * @param x Indicates the scaling ratio of the width.
  * @param y Indicates the scaling ratio of the height.
- * @param level Indicates the anti-aliasing algorithm to be used.
+ * @param level Indicates the anti-aliasing algorithm to be used. Values outside the defined range use
+ *              {@link OH_PixelMap_AntiAliasing_NONE}.
  * @return Returns {@link IRNdkErrCode} IMAGE_RESULT_SUCCESS - if the operation is successful.
  * returns {@link IRNdkErrCode} IMAGE_RESULT_JNI_ENV_ABNORMAL - if Abnormal JNI environment.
  * returns {@link IRNdkErrCode} IMAGE_RESULT_INVALID_PARAMETER - if invalid parameter, x and y are incorrect.
