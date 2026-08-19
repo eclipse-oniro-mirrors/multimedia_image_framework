@@ -4094,7 +4094,7 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapForYUV(uint32_t &errorCode)
             pixelMap->rotate(opts_.rotateDegrees);
         } else if (opts_.rotateNewDegrees != INT_ZERO) {
             pixelMap->rotate(opts_.rotateNewDegrees);
-        } 
+        }
     }
     return pixelMap;
 }
