@@ -1142,16 +1142,13 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index, const D
     ImageEvent imageEvent;
     ImageDataStatistics imageDataStatistics("[ImageSource] CreatePixelMapExtended.");
     uint64_t decodeStartTime = GetNowTimeMicroSeconds();
-    {
-        std::unique_lock<std::recursive_mutex> guard(decodingMutex_);
-        opts_ = opts;
-        ImageInfo info;
-        errorCode = GetImageInfo(FIRST_FRAME, info);
-        SetAnimationSize(index, opts, info);
+    opts_ = opts;
+    ImageInfo info;
+    errorCode = GetImageInfo(FIRST_FRAME, info);
+    SetAnimationSize(index, opts, info);
 #if !defined(CROSS_PLATFORM)
-        ImageHandle::GetInstance().LowRamDeviceOptsOptimize(opts_, info);
+    ImageHandle::GetInstance().LowRamDeviceOptsOptimize(opts_, info);
 #endif
-    }
     ParseHdrType();
     if (!CheckDecodeOptions(opts)) {
         IMAGE_LOGI("CheckDecodeOptions failed.");
@@ -1227,11 +1224,12 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index, const D
             auto metadataPtr = exifMetadata_->Clone();
             pixelMap->SetExifMetadata(metadataPtr);
         }
-        if (NeedConvertToYuv(opts.desiredPixelFormat, pixelMap->GetPixelFormat())) {
-            uint32_t convertRes = ImageFormatConvert::RGBConvertImageFormatOptionUnique(
-                pixelMap, plInfo.pixelFormat, opts_.desiredPixelFormat);
-            CHECK_ERROR_PRINT_LOG(convertRes != SUCCESS, "convert rgb to yuv failed, return origin rgb!");
-        }
+    }
+
+    if (NeedConvertToYuv(opts.desiredPixelFormat, pixelMap->GetPixelFormat())) {
+        uint32_t convertRes = ImageFormatConvert::RGBConvertImageFormatOptionUnique(
+            pixelMap, plInfo.pixelFormat, opts_.desiredPixelFormat);
+        CHECK_ERROR_PRINT_LOG(convertRes != SUCCESS, "convert rgb to yuv failed, return origin rgb!");
     }
     
     ImageUtils::FlushSurfaceBuffer(pixelMap.get());
@@ -4090,11 +4088,11 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapForYUV(uint32_t &errorCode)
             auto metadataPtr = exifMetadata_->Clone();
             pixelMap->SetExifMetadata(metadataPtr);
         }
-        if (!ImageUtils::FloatCompareZero(opts_.rotateDegrees)) {
-            pixelMap->rotate(opts_.rotateDegrees);
-        } else if (opts_.rotateNewDegrees != INT_ZERO) {
-            pixelMap->rotate(opts_.rotateNewDegrees);
-        }
+    }
+    if (!ImageUtils::FloatCompareZero(opts_.rotateDegrees)) {
+        pixelMap->rotate(opts_.rotateDegrees);
+    } else if (opts_.rotateNewDegrees != INT_ZERO) {
+        pixelMap->rotate(opts_.rotateNewDegrees);
     }
     return pixelMap;
 }
