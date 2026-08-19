@@ -1229,7 +1229,7 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index, const D
         uint32_t convertRes = ImageFormatConvert::RGBConvertImageFormatOptionUnique(
             pixelMap, plInfo.pixelFormat, opts_.desiredPixelFormat);
         CHECK_ERROR_PRINT_LOG(convertRes != SUCCESS, "convert rgb to yuv failed, return origin rgb!");
-    } 
+    }
     ImageUtils::FlushSurfaceBuffer(pixelMap.get());
     pixelMap->SetMemoryName(GetPixelMapName(pixelMap.get()));
     ImageTrace pixelMapId("CreatePixelMapExtended, pixelMapId:%u", pixelMap->GetUniqueId());
