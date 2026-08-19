@@ -1225,13 +1225,11 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index, const D
             pixelMap->SetExifMetadata(metadataPtr);
         }
     }
-
     if (NeedConvertToYuv(opts.desiredPixelFormat, pixelMap->GetPixelFormat())) {
         uint32_t convertRes = ImageFormatConvert::RGBConvertImageFormatOptionUnique(
             pixelMap, plInfo.pixelFormat, opts_.desiredPixelFormat);
         CHECK_ERROR_PRINT_LOG(convertRes != SUCCESS, "convert rgb to yuv failed, return origin rgb!");
-    }
-    
+    } 
     ImageUtils::FlushSurfaceBuffer(pixelMap.get());
     pixelMap->SetMemoryName(GetPixelMapName(pixelMap.get()));
     ImageTrace pixelMapId("CreatePixelMapExtended, pixelMapId:%u", pixelMap->GetUniqueId());
@@ -4089,11 +4087,13 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapForYUV(uint32_t &errorCode)
             pixelMap->SetExifMetadata(metadataPtr);
         }
     }
+
     if (!ImageUtils::FloatCompareZero(opts_.rotateDegrees)) {
         pixelMap->rotate(opts_.rotateDegrees);
     } else if (opts_.rotateNewDegrees != INT_ZERO) {
         pixelMap->rotate(opts_.rotateNewDegrees);
     }
+
     return pixelMap;
 }
 
