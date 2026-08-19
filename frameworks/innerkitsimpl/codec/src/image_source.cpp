@@ -716,7 +716,10 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapEx(uint32_t index, const DecodeO
     }
 
     if (IsSpecialYUV()) {
-        opts_ = opts;
+        {
+            std::unique_lock<std::recursive_mutex> guard(decodingMutex_);
+            opts_ = opts;
+        }
         return CreatePixelMapForYUV(errorCode);
     }
 
@@ -1139,13 +1142,16 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index, const D
     ImageEvent imageEvent;
     ImageDataStatistics imageDataStatistics("[ImageSource] CreatePixelMapExtended.");
     uint64_t decodeStartTime = GetNowTimeMicroSeconds();
-    opts_ = opts;
-    ImageInfo info;
-    errorCode = GetImageInfo(FIRST_FRAME, info);
-    SetAnimationSize(index, opts, info);
+    {
+        std::unique_lock<std::recursive_mutex> guard(decodingMutex_);
+        opts_ = opts;
+        ImageInfo info;
+        errorCode = GetImageInfo(FIRST_FRAME, info);
+        SetAnimationSize(index, opts, info);
 #if !defined(CROSS_PLATFORM)
-    ImageHandle::GetInstance().LowRamDeviceOptsOptimize(opts_, info);
+        ImageHandle::GetInstance().LowRamDeviceOptsOptimize(opts_, info);
 #endif
+    }
     ParseHdrType();
     if (!CheckDecodeOptions(opts)) {
         IMAGE_LOGI("CheckDecodeOptions failed.");
@@ -1221,12 +1227,13 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index, const D
             auto metadataPtr = exifMetadata_->Clone();
             pixelMap->SetExifMetadata(metadataPtr);
         }
+        if (NeedConvertToYuv(opts.desiredPixelFormat, pixelMap->GetPixelFormat())) {
+            uint32_t convertRes = ImageFormatConvert::RGBConvertImageFormatOptionUnique(
+                pixelMap, plInfo.pixelFormat, opts_.desiredPixelFormat);
+            CHECK_ERROR_PRINT_LOG(convertRes != SUCCESS, "convert rgb to yuv failed, return origin rgb!");
+        }
     }
-    if (NeedConvertToYuv(opts.desiredPixelFormat, pixelMap->GetPixelFormat())) {
-        uint32_t convertRes = ImageFormatConvert::RGBConvertImageFormatOptionUnique(
-            pixelMap, plInfo.pixelFormat, opts_.desiredPixelFormat);
-        CHECK_ERROR_PRINT_LOG(convertRes != SUCCESS, "convert rgb to yuv failed, return origin rgb!");
-    }
+    
     ImageUtils::FlushSurfaceBuffer(pixelMap.get());
     pixelMap->SetMemoryName(GetPixelMapName(pixelMap.get()));
     ImageTrace pixelMapId("CreatePixelMapExtended, pixelMapId:%u", pixelMap->GetUniqueId());
@@ -1607,8 +1614,8 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMap(uint32_t index, const DecodeOpt
         ninePatchInfo_.ninePatch = context.ninePatchContext.ninePatch;
         ninePatchInfo_.patchSize = context.ninePatchContext.patchSize;
     }
-    guard.unlock();
     if (errorCode != SUCCESS) {
+        guard.unlock();
         IMAGE_LOGE("[ImageSource]decode source fail, ret:%{public}u.", errorCode);
         imageEvent.SetDecodeErrorMsg("decode source fail, ret:." + std::to_string(errorCode));
         if (context.pixelsBuffer.buffer != nullptr) {
@@ -1641,6 +1648,7 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMap(uint32_t index, const DecodeOpt
     DecodeOptions procOpts;
     CopyOptionsToProcOpts(opts_.cropAndScaleStrategy == CropAndScaleStrategy::DEFAULT ? opts_ : opts, procOpts,
         *(pixelMap.get()));
+    guard.unlock();
     if (context.allocatorType != procOpts.allocatorType) {
         procOpts.allocatorType = context.allocatorType;
     }
@@ -4082,14 +4090,12 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapForYUV(uint32_t &errorCode)
             auto metadataPtr = exifMetadata_->Clone();
             pixelMap->SetExifMetadata(metadataPtr);
         }
+        if (!ImageUtils::FloatCompareZero(opts_.rotateDegrees)) {
+            pixelMap->rotate(opts_.rotateDegrees);
+        } else if (opts_.rotateNewDegrees != INT_ZERO) {
+            pixelMap->rotate(opts_.rotateNewDegrees);
+        } 
     }
-
-    if (!ImageUtils::FloatCompareZero(opts_.rotateDegrees)) {
-        pixelMap->rotate(opts_.rotateDegrees);
-    } else if (opts_.rotateNewDegrees != INT_ZERO) {
-        pixelMap->rotate(opts_.rotateNewDegrees);
-    }
-
     return pixelMap;
 }
 
