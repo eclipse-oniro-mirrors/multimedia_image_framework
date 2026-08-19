@@ -716,10 +716,8 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapEx(uint32_t index, const DecodeO
     }
 
     if (IsSpecialYUV()) {
-        {
-            std::unique_lock<std::recursive_mutex> guard(decodingMutex_);
-            opts_ = opts;
-        }
+        std::unique_lock<std::recursive_mutex> guard(decodingMutex_);
+        opts_ = opts;
         return CreatePixelMapForYUV(errorCode);
     }
 
