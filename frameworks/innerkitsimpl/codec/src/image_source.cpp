@@ -76,6 +76,7 @@
 #include "image_dfx.h"
 #include "image_handle.h"
 #include "xmp_metadata_accessor_factory.h"
+#include "image_memory_limit_constants.h"
 #if defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM)
 #include "include/jpeg_decoder.h"
 #else
@@ -530,6 +531,21 @@ unique_ptr<ImageSource> ImageSource::DoImageSourceCreate(std::function<unique_pt
         IMAGE_LOGD("[ImageSource]failed to create source stream.");
         ReportCreateImageSourceFault(opts.size.width, opts.size.height, traceName, "stream failed");
         return nullptr;
+    }
+
+    if (streamPtr->GetStreamType() != ImagePlugin::BUFFER_SOURCE_TYPE) {
+        size_t streamSize = streamPtr->GetStreamSize();
+        // IstreamSourceStream::CreateSourceStream uses GetInputStreamSize (seekg+tellg) to
+        // determine stream length. For an unopened/empty fstream, tellg() returns -1 which is
+        // cast to SIZE_MAX by IstreamSourceStream. Exclude SIZE_MAX from the size-limit check
+        // to preserve the historical behavior where such streams still create an ImageSource.
+        bool sizeTooLarge = streamSize > MAX_INPUT_STREAM_SIZE && streamSize != static_cast<size_t>(-1);
+        if (sizeTooLarge) {
+            IMAGE_LOGI("%{public}s input stream size %{public}zu is too large", __func__, streamPtr->GetStreamSize());
+            ReportCreateImageSourceFault(0, 0, traceName, "input stream size is too large");
+            errorCode = ERR_IMAGE_TOO_LARGE;
+            return nullptr;
+        }
     }
 
     auto sourcePtr = new (std::nothrow) ImageSource(std::move(streamPtr), opts);
