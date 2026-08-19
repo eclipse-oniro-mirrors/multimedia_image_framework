@@ -70,22 +70,11 @@ bool RestoreEglCurrentState(const EglCurrentState &state, EGLDisplay fallbackDis
 
 bool GetExpectedSurfaceFormat(GLenum glFormat, int32_t &surfaceFormat)
 {
-    switch (glFormat) {
-        case GL_RGBA:
-            surfaceFormat = GRAPHIC_PIXEL_FMT_RGBA_8888;
-            return true;
-        case GL_BGRA_EXT:
-            surfaceFormat = GRAPHIC_PIXEL_FMT_BGRA_8888;
-            return true;
-        case GL_RGB:
-            surfaceFormat = GRAPHIC_PIXEL_FMT_RGB_888;
-            return true;
-        case GL_RGB565:
-            surfaceFormat = GRAPHIC_PIXEL_FMT_RGB_565;
-            return true;
-        default:
-            return false;
+    if (glFormat != GL_RGBA) {
+        return false;
     }
+    surfaceFormat = GRAPHIC_PIXEL_FMT_RGBA_8888;
+    return true;
 }
 
 PixelMapGlResource::SurfaceBufferInfo GetSurfaceBufferInfo(const SurfaceBuffer &surfaceBuffer)

@@ -36,9 +36,6 @@ namespace OHOS {
 namespace Media {
 namespace PixelMapGlResource {
 constexpr int32_t MAX_GL_TRANSFER_DIMENSION = 8192;
-constexpr int32_t BYTES_PER_PIXEL_ALPHA = 1;
-constexpr int32_t BYTES_PER_PIXEL_RGB565 = 2;
-constexpr int32_t BYTES_PER_PIXEL_RGB = 3;
 constexpr int32_t BYTES_PER_PIXEL_RGBA = 4;
 
 inline void DeleteTexture(GLuint &textureId)
@@ -296,34 +293,11 @@ inline bool ValidateStridedBufferSize(size_t bufferSize, int32_t stride, int32_t
 inline bool ValidateTransferLayout(const Size &size, int32_t stride, int32_t pixelBytes,
     size_t &rowBytes, size_t &contiguousSize);
 
-inline bool GetGlPixelBytes(GLenum glFormat, int32_t &pixelBytes)
-{
-    switch (glFormat) {
-        case GL_RGBA:
-        case GL_BGRA_EXT:
-            pixelBytes = BYTES_PER_PIXEL_RGBA;
-            return true;
-        case GL_RGB:
-            pixelBytes = BYTES_PER_PIXEL_RGB;
-            return true;
-        case GL_RGB565:
-            pixelBytes = BYTES_PER_PIXEL_RGB565;
-            return true;
-        case GL_ALPHA8_EXT:
-            pixelBytes = BYTES_PER_PIXEL_ALPHA;
-            return true;
-        default:
-            pixelBytes = 0;
-            return false;
-    }
-}
-
 inline bool ValidateCpuImageInfo(const GlImageInfo &imageInfo, GLenum glFormat)
 {
-    int32_t expectedPixelBytes = 0;
     size_t rowBytes = 0;
     size_t contiguousSize = 0;
-    return GetGlPixelBytes(glFormat, expectedPixelBytes) && imageInfo.pixelBytes == expectedPixelBytes &&
+    return glFormat == GL_RGBA && imageInfo.pixelBytes == BYTES_PER_PIXEL_RGBA &&
         ValidateTransferLayout(imageInfo.size, imageInfo.stride, imageInfo.pixelBytes, rowBytes, contiguousSize) &&
         ValidateStridedBufferSize(imageInfo.bufferSize, imageInfo.stride, imageInfo.size.height, rowBytes);
 }
