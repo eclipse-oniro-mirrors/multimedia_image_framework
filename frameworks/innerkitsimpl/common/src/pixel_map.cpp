@@ -269,8 +269,9 @@ void PixelMap::SetPixelsAddr(void *addr, void *context, uint32_t size, Allocator
         IMAGE_LOGD("SetPixelsAddr release the existed data first");
         FreePixelMap();
     }
-    if (type == AllocatorType::SHARE_MEM_ALLOC && context == nullptr) {
+    if (type == AllocatorType::SHARE_MEM_ALLOC && context == nullptr && addr != nullptr) {
         IMAGE_LOGE("SetPixelsAddr error type %{public}d ", type);
+        return;
     }
     data_ = static_cast<uint8_t *>(addr);
     isUnMap_ = false;
@@ -297,8 +298,9 @@ void PixelMap::SetPixelsAddr(void *addr, void *context, uint32_t size, Allocator
         IMAGE_LOGD("Unmarshalling setPixelsAddr release the existed data first");
         FreePixelMap();
     }
-    if (type == AllocatorType::SHARE_MEM_ALLOC && context == nullptr) {
+    if (type == AllocatorType::SHARE_MEM_ALLOC && context == nullptr && addr != nullptr) {
         IMAGE_LOGE("Unmarshalling setPixelsAddr error type %{public}d ", type);
+        return;
     }
     data_ = static_cast<uint8_t *>(addr);
     isUnMap_ = false;
@@ -1773,7 +1775,7 @@ bool PixelMap::ARGB8888ToARGB(const uint8_t *in, uint32_t inCount, uint32_t *out
         IMAGE_LOGE("ARGB8888ToARGB invalid input parameter: in or out is null");
         return false;
     }
-    if (((inCount / ARGB_8888_BYTES) != outCount) && ((inCount % ARGB_8888_BYTES) != 0)) {
+    if (((inCount / ARGB_8888_BYTES) != outCount) || ((inCount % ARGB_8888_BYTES) != 0)) {
         IMAGE_LOGE("input count:%{public}u is not match to output count:%{public}u.", inCount, outCount);
         return false;
     }
@@ -1792,7 +1794,7 @@ bool PixelMap::RGBA8888ToARGB(const uint8_t *in, uint32_t inCount, uint32_t *out
         IMAGE_LOGE("RGBA8888ToARGB invalid input parameter: in or out is null");
         return false;
     }
-    if (((inCount / ARGB_8888_BYTES) != outCount) && ((inCount % ARGB_8888_BYTES) != 0)) {
+    if (((inCount / ARGB_8888_BYTES) != outCount) || ((inCount % ARGB_8888_BYTES) != 0)) {
         IMAGE_LOGE("input count:%{public}u is not match to output count:%{public}u.", inCount, outCount);
         return false;
     }
@@ -1811,7 +1813,7 @@ bool PixelMap::BGRA8888ToARGB(const uint8_t *in, uint32_t inCount, uint32_t *out
         IMAGE_LOGE("BGRA8888ToARGB invalid input parameter: in or out is null");
         return false;
     }
-    if (((inCount / ARGB_8888_BYTES) != outCount) && ((inCount % ARGB_8888_BYTES) != 0)) {
+    if (((inCount / ARGB_8888_BYTES) != outCount) || ((inCount % ARGB_8888_BYTES) != 0)) {
         IMAGE_LOGE("input count:%{public}u is not match to output count:%{public}u.", inCount, outCount);
         return false;
     }
@@ -2043,10 +2045,10 @@ uint32_t PixelMap::ReadPixels(const uint64_t &bufferSize, uint8_t *dst)
         uint64_t tmpSize = 0;
         uint64_t readSize = MAX_READ_COUNT;
         while (tmpSize < bufferSize && tmpSize < pixelsSize_) {
-            if (tmpSize + MAX_READ_COUNT > bufferSize) {
-                readSize = bufferSize - tmpSize;
-            } else if (tmpSize + MAX_READ_COUNT > pixelsSize_) {
+            if (tmpSize + MAX_READ_COUNT > pixelsSize_) {
                 readSize = pixelsSize_ - tmpSize;
+            } else if (tmpSize + MAX_READ_COUNT > bufferSize) {
+                readSize = bufferSize - tmpSize;
             }
             errno_t ret = memcpy_s(dst + tmpSize, readSize, data_ + tmpSize, readSize);
             if (ret != 0) {
@@ -2375,14 +2377,18 @@ uint32_t PixelMap::WritePixels(const RWPixelsOptions &opts)
     ImageInfo srcInfo =
         MakeImageInfo(opts.region.width, opts.region.height, opts.pixelFormat, AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
     if (imageInfo_.pixelFormat == PixelFormat::ARGB_8888) {
-        std::unique_ptr<uint8_t[]> tempPixels = std::make_unique<uint8_t[]>(opts.bufferSize);
+        if (opts.bufferSize > static_cast<uint64_t>(PIXEL_MAP_MAX_RAM_SIZE)) {
+            IMAGE_LOGE("WritePixels bufferSize too large: %{public}llu",
+                static_cast<unsigned long long>(opts.bufferSize));
+            return ERR_IMAGE_INVALID_PARAMETER;
+        }
+        std::unique_ptr<uint8_t[]> tempPixels = std::make_unique<uint8_t[]>(static_cast<size_t>(opts.bufferSize));
         if (tempPixels == nullptr) {
             IMAGE_LOGE("WritePixels make tempPixels failed.");
             return ERR_IMAGE_WRITE_PIXELMAP_FAILED;
         }
         void *colors = tempPixels.get();
-        ImageInfo tempInfo = MakeImageInfo(
-            opts.region.width, opts.region.height, PixelFormat::ARGB_8888,
+        ImageInfo tempInfo = MakeImageInfo(opts.region.width, opts.region.height, PixelFormat::ARGB_8888,
             AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
         BufferInfo dstInfo = {colors, 0, tempInfo};
         const void *pixels = opts.pixels;
@@ -3220,9 +3226,13 @@ bool ReadDmaMemInfoFromParcel(Parcel &parcel, const ImageInfo &imgInfo, PixelMem
         return false;
     }
     if (!pixelMemInfo.displayOnly) {
-        pixelMemInfo.base = surfaceBuffer->GetVirAddr() == nullptr
-            ? nullptr
-            : static_cast<uint8_t *>(surfaceBuffer->GetVirAddr());
+        pixelMemInfo.base = static_cast<uint8_t *>(surfaceBuffer->GetVirAddr());
+        if (pixelMemInfo.base == nullptr) {
+            IMAGE_LOGE("ReadDmaMemInfoFromParcel GetVirAddr is nullptr for non-displayOnly");
+            ImageUtils::SurfaceBuffer_Unreference(nativeBuffer);
+            pixelMemInfo.context = nullptr;
+            return false;
+        }
     }
     pixelMemInfo.context = nativeBuffer;
     return true;
@@ -4331,7 +4341,7 @@ uint32_t PixelMap::ConvertAlphaFormat(PixelMap &wPixelMap, const bool isPremul)
     int8_t srcAlphaIndex = GetAlphaIndex(srcPixelFormat);
     int32_t index = 0;
     for (int32_t i = 0; i < imageInfo_.size.height; ++i) {
-        for (int32_t j = 0; j < stride; j+=pixelBytes_) {
+        for (int32_t j = 0; j < stride; j += pixelBytes_) {
             index = i * stride + j;
             ConvertUintPixelAlpha(data_ + index, pixelBytes_, srcAlphaIndex, isPremul,
                 static_cast<uint8_t*>(dstData) + index);

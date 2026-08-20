@@ -750,6 +750,10 @@ static void FillAstcEncCheckInfo(AstcEncCheckInfo &checkInfo, Media::PixelMap* a
 
 static bool CheckAstcEncInput(TextureEncodeOptions &param, AstcEncCheckInfo checkInfo)
 {
+    if (static_cast<uint32_t>(param.stride_) > (std::numeric_limits<uint32_t>::max() >> RGBA_BYTES_PIXEL_LOG2)) {
+        IMAGE_LOGE("CheckAstcEncInput stride %{public}d too large!", param.stride_);
+        return false;
+    }
     uint32_t pixmapStride = static_cast<uint32_t>(param.stride_) << RGBA_BYTES_PIXEL_LOG2;
     if ((param.width_ <= 0) || (param.height_ <= 0) || (param.stride_ < param.width_)) {
         IMAGE_LOGE("CheckAstcEncInput width <= 0 or height <= 0 or stride < width!");
@@ -811,6 +815,10 @@ uint32_t AstcCodec::AstcSoftwareEncode(TextureEncodeOptions &param, bool enableQ
     FillAstcEncCheckInfo(checkInfo, astcPixelMap_, param.astcBytes, 0, 0);
     if (!CheckAstcEncInput(param, checkInfo)) {
         IMAGE_LOGE("CheckAstcEncInput failed");
+        return ERROR;
+    }
+    if (outBuffer == nullptr || outSize <= 0 || outSize < param.astcBytes) {
+        IMAGE_LOGE("AstcSoftwareEncode invalid outBuffer or outSize %{public}d < astcBytes", outSize);
         return ERROR;
     }
     if (!AstcSoftwareEncodeCore(param, pixmapIn, outBuffer)) {

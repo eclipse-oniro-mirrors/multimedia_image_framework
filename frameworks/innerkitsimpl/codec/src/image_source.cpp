@@ -4156,7 +4156,8 @@ static size_t GetAstcSizeBytes(const uint8_t *fileBuf, size_t fileSize)
 
 static void FreeAllExtMemSut(AstcOutInfo &astcInfo)
 {
-    for (uint8_t idx = 0; idx < astcInfo.expandNums; idx++) {
+    uint8_t maxIdx = std::min(static_cast<uint8_t>(EXPAND_ASTC_INFO_MAX_DEC), astcInfo.expandNums);
+    for (uint8_t idx = 0; idx < maxIdx; idx++) {
         if (astcInfo.expandInfoBuf[idx] != nullptr) {
             free(astcInfo.expandInfoBuf[idx]);
         }
@@ -4169,9 +4170,18 @@ static bool FillAstcSutExtInfo(AstcOutInfo &astcInfo, SutInInfo &sutInfo)
     CHECK_ERROR_RETURN_RET_LOG(cond, false, "[ImageSource] SUT dec getExpandInfoFromSutFunc_ is nullptr!");
     cond = !g_sutDecSoManager.getExpandInfoFromSutFunc_(sutInfo, astcInfo, false);
     CHECK_ERROR_RETURN_RET_LOG(cond, false, "[ImageSource] GetExpandInfoFromSut failed!");
+    if (astcInfo.expandNums > EXPAND_ASTC_INFO_MAX_DEC) {
+        IMAGE_LOGE("[ImageSource] expandNums %{public}d exceeds max %{public}d",
+            astcInfo.expandNums, EXPAND_ASTC_INFO_MAX_DEC);
+        return false;
+    }
     int32_t expandTotalBytes = 0;
     for (uint8_t idx = 0; idx < astcInfo.expandNums; idx++) {
         astcInfo.expandInfoCapacity[idx] = astcInfo.expandInfoBytes[idx];
+        if (astcInfo.expandInfoBytes[idx] <= 0) {
+            IMAGE_LOGE("[ImageSource] expandInfoBytes[%{public}d] is invalid", idx);
+            return false;
+        }
         astcInfo.expandInfoBuf[idx] = static_cast<uint8_t *>(malloc(astcInfo.expandInfoCapacity[idx]));
         if (astcInfo.expandInfoBuf[idx] == nullptr) {
             IMAGE_LOGE("[ImageSource] astcInfo.expandInfoBuf malloc failed!");
@@ -4185,15 +4195,24 @@ static bool FillAstcSutExtInfo(AstcOutInfo &astcInfo, SutInInfo &sutInfo)
 static bool CheckExtInfoForPixelmap(AstcOutInfo &astcInfo, unique_ptr<PixelAstc> &pixelAstc)
 {
     uint8_t colorSpace = 0;
+    if (astcInfo.expandNums > EXPAND_ASTC_INFO_MAX_DEC) {
+        IMAGE_LOGE("CheckExtInfoForPixelmap expandNums %{public}d exceeds max", astcInfo.expandNums);
+        return false;
+    }
     for (uint8_t idx = 0; idx < astcInfo.expandNums; idx++) {
-        if (astcInfo.expandInfoBuf[idx] != nullptr) {
-            switch (static_cast<AstcExtendInfoType>(astcInfo.expandInfoType[idx])) {
-                case AstcExtendInfoType::COLOR_SPACE:
-                    colorSpace = *astcInfo.expandInfoBuf[idx];
-                    break;
-                default:
+        if (astcInfo.expandInfoBuf[idx] == nullptr) {
+            continue;
+        }
+        switch (static_cast<AstcExtendInfoType>(astcInfo.expandInfoType[idx])) {
+            case AstcExtendInfoType::COLOR_SPACE:
+                if (astcInfo.expandInfoBytes[idx] < 1) {
+                    IMAGE_LOGE("CheckExtInfoForPixelmap COLOR_SPACE expandInfoBytes is invalid");
                     return false;
-            }
+                }
+                colorSpace = *astcInfo.expandInfoBuf[idx];
+                break;
+            default:
+                return false;
         }
     }
 #ifdef IMAGE_COLORSPACE_FLAG
@@ -4279,6 +4298,10 @@ void ReleaseExtendInfoMemory(AstcExtendInfo &extendInfo)
 
 bool HandleMetadataCopy(std::vector<uint8_t>& dest, const uint8_t *src, size_t length)
 {
+    if (length > MAX_TLV_METADATA_SIZE) {
+        IMAGE_LOGE("[AstcCodec] HandleMetadataCopy length too large: %{public}zu", length);
+        return false;
+    }
     dest.resize(length);
     if (memcpy_s(dest.data(), length, src, length) != 0) {
         IMAGE_LOGE("[AstcCodec] WriteAstcExtendInfo memcpy failed!");
@@ -4328,50 +4351,83 @@ bool ProcessAstcMetadata(PixelAstc* pixelAstc, size_t astcSize, const AstcMetada
     return false;
 }
 
-static bool GetExtInfoForPixelAstc(AstcExtendInfo &extInfo, unique_ptr<PixelAstc> &pixelAstc, size_t astcSize)
-{
+struct ExtInfoResult {
     uint8_t colorSpace = 0;
     uint8_t pixelFmt = 0;
     AstcMetadata astcMetadata;
+};
+
+static bool ProcessSingleExtInfo(AstcExtendInfoType infoType, uint8_t* infoValue, uint32_t infoLength,
+    ExtInfoResult &result)
+{
+    switch (infoType) {
+        case AstcExtendInfoType::COLOR_SPACE:
+            if (infoLength < 1) {
+                IMAGE_LOGE("GetExtInfoForPixelAstc COLOR_SPACE infoLength is 0");
+                return false;
+            }
+            result.colorSpace = *infoValue;
+            break;
+        case AstcExtendInfoType::PIXEL_FORMAT:
+            if (infoLength < 1) {
+                IMAGE_LOGE("GetExtInfoForPixelAstc PIXEL_FORMAT infoLength is 0");
+                return false;
+            }
+            result.pixelFmt = *infoValue;
+            break;
+        case AstcExtendInfoType::HDR_METADATA_TYPE:
+            if (!HandleMetadataCopy(result.astcMetadata.hdrMetadataTypeVec, infoValue, infoLength)) {
+                IMAGE_LOGE("GetExtInfoForPixelAstc HDR_METADATA_TYPE copy failed");
+                return false;
+            }
+            break;
+        case AstcExtendInfoType::HDR_COLORSPACE_INFO:
+            if (!HandleMetadataCopy(result.astcMetadata.colorSpaceInfoVec, infoValue, infoLength)) {
+                IMAGE_LOGE("GetExtInfoForPixelAstc HDR_COLORSPACE_INFO copy failed");
+                return false;
+            }
+            break;
+        case AstcExtendInfoType::HDR_STATIC_DATA:
+            if (!HandleMetadataCopy(result.astcMetadata.staticData, infoValue, infoLength)) {
+                IMAGE_LOGE("GetExtInfoForPixelAstc HDR_STATIC_DATA copy failed");
+                return false;
+            }
+            break;
+        case AstcExtendInfoType::HDR_DYNAMIC_DATA:
+            if (!HandleMetadataCopy(result.astcMetadata.dynamicData, infoValue, infoLength)) {
+                IMAGE_LOGE("GetExtInfoForPixelAstc HDR_DYNAMIC_DATA copy failed");
+                return false;
+            }
+            break;
+        default:
+            return false;
+    }
+    return true;
+}
+
+static bool GetExtInfoForPixelAstc(AstcExtendInfo &extInfo, unique_ptr<PixelAstc> &pixelAstc, size_t astcSize)
+{
+    ExtInfoResult result;
 
     for (uint8_t idx = 0; idx < extInfo.extendNums; idx++) {
         AstcExtendInfoType infoType = static_cast<AstcExtendInfoType>(extInfo.extendInfoType[idx]);
-        uint8_t* infoValue =  extInfo.extendInfoValue[idx];
+        uint8_t* infoValue = extInfo.extendInfoValue[idx];
         uint32_t infoLength = extInfo.extendInfoLength[idx];
 
         if (infoValue == nullptr) {
             continue;
         }
 
-        switch (infoType) {
-            case AstcExtendInfoType::COLOR_SPACE:
-                colorSpace = *infoValue;
-                break;
-            case AstcExtendInfoType::PIXEL_FORMAT:
-                pixelFmt = *infoValue;
-                break;
-            case AstcExtendInfoType::HDR_METADATA_TYPE:
-                HandleMetadataCopy(astcMetadata.hdrMetadataTypeVec, infoValue, infoLength);
-                break;
-            case AstcExtendInfoType::HDR_COLORSPACE_INFO:
-                HandleMetadataCopy(astcMetadata.colorSpaceInfoVec, infoValue, infoLength);
-                break;
-            case AstcExtendInfoType::HDR_STATIC_DATA:
-                HandleMetadataCopy(astcMetadata.staticData, infoValue, infoLength);
-                break;
-            case AstcExtendInfoType::HDR_DYNAMIC_DATA:
-                HandleMetadataCopy(astcMetadata.dynamicData, infoValue, infoLength);
-                break;
-            default:
-                return false;
+        if (!ProcessSingleExtInfo(infoType, infoValue, infoLength, result)) {
+            return false;
         }
     }
 #ifdef IMAGE_COLORSPACE_FLAG
-    ColorManager::ColorSpace grColorspace (static_cast<ColorManager::ColorSpaceName>(colorSpace));
+    ColorManager::ColorSpace grColorspace (static_cast<ColorManager::ColorSpaceName>(result.colorSpace));
     pixelAstc->InnerSetColorSpace(grColorspace, true);
 #endif
-    if (static_cast<PixelFormat>(pixelFmt) == PixelFormat::RGBA_1010102 &&
-        !ProcessAstcMetadata(pixelAstc.get(), astcSize, astcMetadata)) {
+    if (static_cast<PixelFormat>(result.pixelFmt) == PixelFormat::RGBA_1010102 &&
+        !ProcessAstcMetadata(pixelAstc.get(), astcSize, result.astcMetadata)) {
         IMAGE_LOGE("GetExtInfoForPixelAstc ProcessAstcMetadata failed!");
         return false;
     }
@@ -4562,6 +4618,14 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapForASTC(uint32_t &errorCode, con
     if (astcSize == 0) {
         IMAGE_LOGE("[ImageSource] astc GetAstcSizeBytes failed.");
         return nullptr;
+    }
+    if (isSUT) {
+        size_t expectedAstcSize = ImageUtils::GetAstcBytesCount(info);
+        if (astcSize > expectedAstcSize + fileSize) {
+            IMAGE_LOGE("[ImageSource] SUT astcSize too large, expected %{public}zu + fileSize %{public}zu",
+                expectedAstcSize, fileSize);
+            return nullptr;
+        }
     }
 #else
     size_t astcSize = ImageUtils::GetAstcBytesCount(info);
@@ -4799,9 +4863,9 @@ bool ImageSource::IsSupportGenAstc()
 
 static string GetExtendedCodecMimeType(AbsImageDecoder* decoder)
 {
-    const static string ENCODED_FORMAT_KEY = "EncodedFormat";
+    const static string encodedFormatKey = "EncodedFormat";
     string format;
-    if (decoder != nullptr && decoder->GetImagePropertyString(FIRST_FRAME, ENCODED_FORMAT_KEY, format) == SUCCESS) {
+    if (decoder != nullptr && decoder->GetImagePropertyString(FIRST_FRAME, encodedFormatKey, format) == SUCCESS) {
         return format;
     }
     return string();
@@ -5156,10 +5220,10 @@ uint32_t ImageSource::SetGainMapDecodeOption(std::unique_ptr<AbsImageDecoder>& d
     return errorCode;
 }
 
-bool GetStreamData(std::unique_ptr<SourceStream>& sourceStream, uint8_t* streamBuffer, uint32_t streamSize)
+bool g_getStreamData(std::unique_ptr<SourceStream>& sourceStream, uint8_t* streamBuffer, uint32_t streamSize)
 {
     bool cond = (streamBuffer == nullptr);
-    CHECK_ERROR_RETURN_RET_LOG(cond, false, "GetStreamData streamBuffer is nullptr");
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "g_getStreamData streamBuffer is nullptr");
     uint32_t readSize = 0;
     uint32_t savedPosition = sourceStream->Tell();
     sourceStream->Seek(0);
@@ -5181,7 +5245,7 @@ bool ImageSource::DecodeJpegGainMap(ImageHdrType hdrType, float scale, DecodeCon
     uint8_t* streamBuffer = sourceStreamPtr_->GetDataPtr();
     if (sourceStreamPtr_->GetStreamType() != ImagePlugin::BUFFER_SOURCE_TYPE) {
         streamBuffer = new (std::nothrow) uint8_t[streamSize];
-        if (!GetStreamData(sourceStreamPtr_, streamBuffer, streamSize)) {
+        if (!g_getStreamData(sourceStreamPtr_, streamBuffer, streamSize)) {
             delete[] streamBuffer;
             return false;
         }
@@ -6325,8 +6389,8 @@ bool ImageSource::CheckJpegSourceStream(StreamInfo &streamInfo)
     if (streamInfo.buffer == nullptr) {
         streamInfo.buffer = new (std::nothrow) uint8_t[streamInfo.size];
         streamInfo.needDelete = true;
-        if (!GetStreamData(sourceStreamPtr_, streamInfo.buffer, streamInfo.size)) {
-            IMAGE_LOGE("%{public}s GetStreamData failed!", __func__);
+        if (!g_getStreamData(sourceStreamPtr_, streamInfo.buffer, streamInfo.size)) {
+            IMAGE_LOGE("%{public}s g_getStreamData failed!", __func__);
             if (streamInfo.needDelete && streamInfo.buffer) {
                 delete[] streamInfo.buffer;
                 streamInfo.buffer = nullptr;
