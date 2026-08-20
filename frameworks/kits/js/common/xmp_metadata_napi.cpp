@@ -354,6 +354,9 @@ static void CommonCallbackRoutine(napi_env env, XMPMetadataAsyncContext* &contex
     napi_handle_scope scope = nullptr;
     napi_open_handle_scope(env, &scope);
     if (scope == nullptr) {
+        napi_delete_async_work(env, context->work);
+        delete context;
+        context = nullptr;
         IMAGE_LOGE("Failed to open handle scope");
         return;
     }

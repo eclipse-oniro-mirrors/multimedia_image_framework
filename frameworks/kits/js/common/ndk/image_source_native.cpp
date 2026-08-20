@@ -439,7 +439,7 @@ Image_ErrorCode OH_ImageSourceInfo_Create(OH_ImageSource_Info **info)
     if (info == nullptr) {
         return IMAGE_BAD_PARAMETER;
     }
-    *info = new OH_ImageSource_Info();
+    *info = new (std::nothrow) OH_ImageSource_Info();
     if (*info == nullptr) {
         return IMAGE_BAD_PARAMETER;
     }
