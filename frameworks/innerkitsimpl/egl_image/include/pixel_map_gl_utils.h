@@ -87,6 +87,22 @@ inline bool ComputePackedBufferSize(const Size &size, int32_t pixelBytes, size_t
     return true;
 }
 
+inline bool ComputeRequiredStridedBufferSize(int32_t stride, int32_t height, size_t rowBytes,
+    size_t &requiredSize)
+{
+    requiredSize = 0;
+    if (stride <= 0 || height <= 0 || rowBytes == 0 || rowBytes > static_cast<size_t>(stride)) {
+        return false;
+    }
+    const size_t rowsBeforeLast = static_cast<size_t>(height - 1);
+    const size_t strideSize = static_cast<size_t>(stride);
+    if (rowsBeforeLast > (std::numeric_limits<size_t>::max() - rowBytes) / strideSize) {
+        return false;
+    }
+    requiredSize = rowsBeforeLast * strideSize + rowBytes;
+    return true;
+}
+
 inline bool ValidateImageLayout(const Size &size, int32_t stride, int32_t pixelBytes,
     size_t &rowBytes, size_t &contiguousSize)
 {

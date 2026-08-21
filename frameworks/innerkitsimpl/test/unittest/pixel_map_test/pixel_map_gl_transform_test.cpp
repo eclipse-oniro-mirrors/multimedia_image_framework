@@ -100,11 +100,13 @@ HWTEST_F(PixelMapGlTransformTest, ProgramManagerScaleSuccess001, TestSize.Level3
     trans.sourceInfo_.size = { pixelMap->GetWidth(), pixelMap->GetHeight() };
     trans.sourceInfo_.stride = pixelMap->GetRowStride();
     trans.sourceInfo_.pixelBytes = pixelBytes;
+    trans.sourceInfo_.bufferSize = pixelMap->GetAllocationByteCount();
     trans.sourceInfo_.addr = pixelMap->GetPixels();
     trans.sourceInfo_.context = pixelMap->GetFd();
     trans.targetInfo_.size = targetSize;
     trans.targetInfo_.stride = targetSize.width * pixelBytes;
     trans.targetInfo_.pixelBytes = pixelBytes;
+    trans.targetInfo_.bufferSize = targetBuf.size();
     trans.targetInfo_.outdata = targetBuf.data();
     auto dmaMode = PixelMapGlUtils::ResolveDmaTransferMode(pixelMap->GetAllocatorType(), 0);
     trans.isSourceDma = dmaMode.isSourceDma;
@@ -157,11 +159,13 @@ HWTEST_F(PixelMapGlTransformTest, ProgramManagerRotateSuccess001, TestSize.Level
     trans.sourceInfo_.size = { srcW, srcH };
     trans.sourceInfo_.stride = pixelMap->GetRowStride();
     trans.sourceInfo_.pixelBytes = pixelBytes;
+    trans.sourceInfo_.bufferSize = pixelMap->GetAllocationByteCount();
     trans.sourceInfo_.addr = pixelMap->GetPixels();
     trans.sourceInfo_.context = pixelMap->GetFd();
     trans.targetInfo_.size = targetSize;
     trans.targetInfo_.stride = targetSize.width * pixelBytes;
     trans.targetInfo_.pixelBytes = pixelBytes;
+    trans.targetInfo_.bufferSize = targetBuf.size();
     trans.targetInfo_.outdata = targetBuf.data();
     auto dmaMode = PixelMapGlUtils::ResolveDmaTransferMode(pixelMap->GetAllocatorType(), 0);
     trans.isSourceDma = dmaMode.isSourceDma;
