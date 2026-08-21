@@ -1115,7 +1115,7 @@ static void CreatePixelMapFromPixelsExec(napi_env env, void* data)
 
     if (ImageUtils::Is10Bit(context->opts.pixelFormat)) {
         context->errCode = ERR_IMAGE_UNSUPPORTED_DATA_FORMAT;
-        context->errMsg = "10-bit formats are not supported.";
+        context->errMsg = "10-bit pixel formats are not supported.";
         return;
     }
 
@@ -1124,14 +1124,16 @@ static void CreatePixelMapFromPixelsExec(napi_env env, void* data)
 
     if (errCode == ERR_IMAGE_INVALID_PARAMETER) {
         context->errCode = ERR_IMAGE_INVALID_PARAM;
-        context->errMsg = "Invalid parameter: Invalid input values or buffer size not matching.";
+        context->errMsg = "Invalid parameter: Invalid input values, "
+            "or buffer size not matching the expected size for the given dimensions and pixel format.";
     } else if (errCode == ERR_IMAGE_DATA_ABNORMAL) {
         context->errCode = ERR_IMAGE_INVALID_PARAM;
         context->errMsg =
             "Invalid parameter: Input values are invalid or out of range causing internal configuration error.";
     } else if (errCode == ERR_IMAGE_MALLOC_ABNORMAL) {
         context->errCode = ERR_MEDIA_MEMORY_ALLOC_FAILED;
-        context->errMsg = "Failed to allocate memory.";
+        context->errMsg =
+            "Failed to allocate memory. Image size may be too large or the system may be out of memory.";
     } else if (errCode != SUCCESS || context->rPixelMap == nullptr) {
         context->errCode = ERR_IMAGE_CREATE_PIXELMAP_FAILED;
         context->errMsg = "Failed to create PixelMap from pixels data.";
@@ -1157,18 +1159,18 @@ napi_value PixelMapNapi::CreatePixelMapFromPixels(napi_env env, napi_callback_in
     IMG_JS_ARGS(env, info, status, argc, argv, thisVar);
     if (!IMG_IS_OK(status)) {
         CreatePendingErrorIfAbsent(env, context->error, ERR_IMAGE_CREATE_PIXELMAP_FAILED,
-            "Internal error: Failed to get callback info. (" + std::to_string(status) + ")");
+            "Internal error: Failed to retrieve JS call arguments. (" + std::to_string(status) + ")");
     }
 
     status = napi_get_arraybuffer_info(env, argv[NUM_0], &(context->colorsBuffer), &(context->colorsBufferSize));
     if (!IMG_IS_OK(status)) {
         CreatePendingErrorIfAbsent(env, context->error, ERR_IMAGE_INVALID_PARAM,
-            "Failed to get ArrayBuffer info. (" + std::to_string(status) + ")");
+            "The 1st argument must be an ArrayBuffer. (" + std::to_string(status) + ")");
     }
 
     if (!parseInitializationOptions(env, argv[NUM_1], &(context->opts))) {
         CreatePendingErrorIfAbsent(env, context->error, ERR_IMAGE_INVALID_PARAM,
-            "Failed to parse InitializationOptions.");
+            "Failed to parse InitializationOptions. Ensure each attribute has valid type and value.");
     }
 
     napi_create_promise(env, &(context->deferred), &result);
@@ -1212,20 +1214,20 @@ napi_value PixelMapNapi::CreatePixelMapFromPixelsSync(napi_env env, napi_callbac
     IMG_JS_ARGS(env, info, status, argc, argv, thisVar);
     if (!IMG_IS_OK(status)) {
         ImageNapiUtils::ThrowExceptionError(env, ERR_IMAGE_CREATE_PIXELMAP_FAILED,
-            "Internal error: Failed to get callback info. (" + std::to_string(status) + ")", true);
+            "Internal error: Failed to retrieve JS call arguments. (" + std::to_string(status) + ")", true);
         return result;
     }
 
     status = napi_get_arraybuffer_info(env, argv[NUM_0], &(context->colorsBuffer), &(context->colorsBufferSize));
     if (!IMG_IS_OK(status)) {
         ImageNapiUtils::ThrowExceptionError(env, ERR_IMAGE_INVALID_PARAM,
-            "Failed to get ArrayBuffer info. (" + std::to_string(status) + ")", true);
+            "The 1st argument must be an ArrayBuffer. (" + std::to_string(status) + ")", true);
         return result;
     }
 
     if (!parseInitializationOptions(env, argv[NUM_1], &(context->opts))) {
         ImageNapiUtils::ThrowExceptionError(env, ERR_IMAGE_INVALID_PARAM,
-            "Failed to parse InitializationOptions.", true);
+            "Failed to parse InitializationOptions. Ensure each attribute has valid type and value.", true);
         return result;
     }
 
@@ -1255,7 +1257,7 @@ static void CreateEmptyPixelMapExecSync(napi_env env, void* data)
 
     if (context->opts.size.width <= 0 || context->opts.size.height <= 0) {
         context->errCode = ERR_IMAGE_INVALID_PARAM;
-        context->errMsg = "Invalid image size.";
+        context->errMsg = "Invalid image size: Width and height must be positive.";
         return;
     }
 
@@ -1266,7 +1268,8 @@ static void CreateEmptyPixelMapExecSync(napi_env env, void* data)
     
     if (context->rPixelMap == nullptr) {
         context->errCode = ERR_MEDIA_MEMORY_ALLOC_FAILED;
-        context->errMsg = "Failed to allocate memory for the empty PixelMap.";
+        context->errMsg =
+            "Failed to allocate memory. Image size may be too large or the system may be out of memory.";
     }
 }
 
@@ -1290,13 +1293,13 @@ napi_value PixelMapNapi::CreateEmptyPixelMap(napi_env env, napi_callback_info in
     IMG_JS_ARGS(env, info, status, argc, argv, thisVar);
     if (!IMG_IS_OK(status)) {
         ImageNapiUtils::ThrowExceptionError(env, ERR_IMAGE_CREATE_PIXELMAP_FAILED,
-            "Internal error: Failed to get callback info. (" + std::to_string(status) + ")", true);
+            "Internal error: Failed to retrieve JS call arguments. (" + std::to_string(status) + ")", true);
         return result;
     }
 
     if (!parseInitializationOptions(env, argv[NUM_0], &(context->opts))) {
         ImageNapiUtils::ThrowExceptionError(env, ERR_IMAGE_INVALID_PARAM,
-            "Failed to parse InitializationOptions.", true);
+            "Failed to parse InitializationOptions. Ensure each attribute has valid type and value.", true);
         return result;
     }
 
@@ -1334,7 +1337,8 @@ static void ReadAllPixelsToBufferExec(napi_env env, void* data)
     
     if (context->status == ERR_IMAGE_INVALID_PARAMETER) {
         context->errCode = ERR_IMAGE_INVALID_PARAM;
-        context->errMsg = "Invalid parameter: Buffer size is too small.";
+        context->errMsg =
+            "Invalid parameter: Buffer size is too small. It must match the PixelMap's total byte count.";
     } else if (context->status == ERR_IMAGE_READ_PIXELMAP_FAILED) {
         context->errCode = ERR_MEDIA_MEMORY_COPY_FAILED;
         context->errMsg = "Failed to copy the pixel data.";
@@ -1357,7 +1361,7 @@ napi_value PixelMapNapi::ReadAllPixelsToBuffer(napi_env env, napi_callback_info 
     IMG_JS_ARGS(env, info, status, argc, argv, thisVar);
     if (!IMG_IS_OK(status)) {
         CreatePendingErrorIfAbsent(env, context->error, ERR_IMAGE_GET_IMAGE_DATA_FAILED,
-            "Internal error: Failed to get callback info. (" + std::to_string(status) + ")");
+            "Internal error: Failed to retrieve JS call arguments. (" + std::to_string(status) + ")");
     }
 
     status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&(context->nConstructor)));
@@ -1368,7 +1372,7 @@ napi_value PixelMapNapi::ReadAllPixelsToBuffer(napi_env env, napi_callback_info 
     status = napi_get_arraybuffer_info(env, argv[NUM_0], &(context->colorsBuffer), &(context->colorsBufferSize));
     if (!IMG_IS_OK(status)) {
         CreatePendingErrorIfAbsent(env, context->error, ERR_IMAGE_INVALID_PARAM,
-            "Failed to get ArrayBuffer info. (" + std::to_string(status) + ")");
+            "The 1st argument must be an ArrayBuffer. (" + std::to_string(status) + ")");
     }
 
     napi_create_promise(env, &(context->deferred), &result);
@@ -1406,7 +1410,7 @@ napi_value PixelMapNapi::ReadAllPixelsToBufferSync(napi_env env, napi_callback_i
     IMG_JS_ARGS(env, info, status, argc, argv, thisVar);
     if (!IMG_IS_OK(status)) {
         ImageNapiUtils::ThrowExceptionError(env, ERR_IMAGE_GET_IMAGE_DATA_FAILED,
-            "Internal error: Failed to get callback info. (" + std::to_string(status) + ")", true);
+            "Internal error: Failed to retrieve JS call arguments. (" + std::to_string(status) + ")", true);
         return result;
     }
 
@@ -1420,7 +1424,7 @@ napi_value PixelMapNapi::ReadAllPixelsToBufferSync(napi_env env, napi_callback_i
     status = napi_get_arraybuffer_info(env, argv[NUM_0], &(context->colorsBuffer), &(context->colorsBufferSize));
     if (!IMG_IS_OK(status)) {
         ImageNapiUtils::ThrowExceptionError(env, ERR_IMAGE_INVALID_PARAM,
-            "Failed to get ArrayBuffer info. (" + std::to_string(status) + ")", true);
+            "The 1st argument must be an ArrayBuffer. (" + std::to_string(status) + ")", true);
         return result;
     }
     
@@ -1452,7 +1456,7 @@ static void ReadPixelsToAreaExec(napi_env env, void* data)
     
     if (context->status == ERR_IMAGE_INVALID_PARAMETER) {
         context->errCode = ERR_IMAGE_INVALID_PARAM;
-        context->errMsg = "Invalid parameter.";
+        context->errMsg = "Invalid parameter. Ensure the offset, stride, and region are within range.";
     } else if (context->status == ERR_IMAGE_READ_PIXELMAP_FAILED) {
         context->errCode = ERR_MEDIA_MEMORY_COPY_FAILED;
         context->errMsg = "Failed to copy the area pixel data.";
@@ -1475,7 +1479,7 @@ napi_value PixelMapNapi::ReadPixelsToArea(napi_env env, napi_callback_info info)
     IMG_JS_ARGS(env, info, status, argc, argv, thisVar);
     if (!IMG_IS_OK(status)) {
         CreatePendingErrorIfAbsent(env, context->error, ERR_IMAGE_GET_IMAGE_DATA_FAILED,
-            "Internal error: Failed to get callback info. (" + std::to_string(status) + ")");
+            "Internal error: Failed to retrieve JS call arguments. (" + std::to_string(status) + ")");
     }
 
     status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&(context->nConstructor)));
@@ -1484,7 +1488,8 @@ napi_value PixelMapNapi::ReadPixelsToArea(napi_env env, napi_callback_info info)
     }
     
     if (!parsePositionArea(env, argv[NUM_0], &(context->area))) {
-        CreatePendingErrorIfAbsent(env, context->error, ERR_IMAGE_INVALID_PARAM, "Failed to parse PositionArea.");
+        CreatePendingErrorIfAbsent(env, context->error, ERR_IMAGE_INVALID_PARAM,
+            "Failed to parse PositionArea. Ensure the pixels buffer, offset, stride, and region are valid.");
     }
 
     napi_create_promise(env, &(context->deferred), &result);
@@ -1522,7 +1527,7 @@ napi_value PixelMapNapi::ReadPixelsToAreaSync(napi_env env, napi_callback_info i
     IMG_JS_ARGS(env, info, status, argc, argv, thisVar);
     if (!IMG_IS_OK(status)) {
         ImageNapiUtils::ThrowExceptionError(env, ERR_IMAGE_GET_IMAGE_DATA_FAILED,
-            "Internal error: Failed to get callback info. (" + std::to_string(status) + ")", true);
+            "Internal error: Failed to retrieve JS call arguments. (" + std::to_string(status) + ")", true);
         return result;
     }
 
@@ -1534,7 +1539,8 @@ napi_value PixelMapNapi::ReadPixelsToAreaSync(napi_env env, napi_callback_info i
     context->rPixelMap = context->nConstructor->nativePixelMap_;
 
     if (!parsePositionArea(env, argv[NUM_0], &(context->area))) {
-        ImageNapiUtils::ThrowExceptionError(env, ERR_IMAGE_INVALID_PARAM, "Failed to parse PositionArea.", true);
+        ImageNapiUtils::ThrowExceptionError(env, ERR_IMAGE_INVALID_PARAM,
+            "Failed to parse PositionArea. Ensure the pixels buffer, offset, stride, and region are valid.", true);
         return result;
     }
     
@@ -1568,7 +1574,7 @@ static void WriteAllPixelsFromBufferExec(napi_env env, void* data)
         context->errMsg = "The PixelMap is not editable or is locked.";
     } else if (context->status == ERR_IMAGE_INVALID_PARAMETER) {
         context->errCode = ERR_IMAGE_INVALID_PARAM;
-        context->errMsg = "Invalid parameter: Buffer size is too small.";
+        context->errMsg = "Invalid parameter: Buffer size is too small. It must match the PixelMap's total byte count.";
     } else if (context->status == ERR_IMAGE_WRITE_PIXELMAP_FAILED) {
         context->errCode = ERR_MEDIA_MEMORY_COPY_FAILED;
         context->errMsg = "Failed to copy the pixel data.";
@@ -1591,7 +1597,7 @@ napi_value PixelMapNapi::WriteAllPixelsFromBuffer(napi_env env, napi_callback_in
     IMG_JS_ARGS(env, info, status, argc, argv, thisVar);
     if (!IMG_IS_OK(status)) {
         CreatePendingErrorIfAbsent(env, context->error, ERR_IMAGE_GET_IMAGE_DATA_FAILED,
-            "Internal error: Failed to get callback info. (" + std::to_string(status) + ")");
+            "Internal error: Failed to retrieve JS call arguments. (" + std::to_string(status) + ")");
     }
 
     status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&(context->nConstructor)));
@@ -1602,7 +1608,7 @@ napi_value PixelMapNapi::WriteAllPixelsFromBuffer(napi_env env, napi_callback_in
     status = napi_get_arraybuffer_info(env, argv[NUM_0], &(context->colorsBuffer), &(context->colorsBufferSize));
     if (!IMG_IS_OK(status)) {
         CreatePendingErrorIfAbsent(env, context->error, ERR_IMAGE_INVALID_PARAM,
-            "Failed to get ArrayBuffer info. (" + std::to_string(status) + ")");
+            "The 1st argument must be an ArrayBuffer. (" + std::to_string(status) + ")");
     }
 
     napi_create_promise(env, &(context->deferred), &result);
@@ -1640,7 +1646,7 @@ napi_value PixelMapNapi::WriteAllPixelsFromBufferSync(napi_env env, napi_callbac
     IMG_JS_ARGS(env, info, status, argc, argv, thisVar);
     if (!IMG_IS_OK(status)) {
         ImageNapiUtils::ThrowExceptionError(env, ERR_IMAGE_GET_IMAGE_DATA_FAILED,
-            "Internal error: Failed to get callback info. (" + std::to_string(status) + ")", true);
+            "Internal error: Failed to retrieve JS call arguments. (" + std::to_string(status) + ")", true);
         return result;
     }
 
@@ -1654,7 +1660,7 @@ napi_value PixelMapNapi::WriteAllPixelsFromBufferSync(napi_env env, napi_callbac
     status = napi_get_arraybuffer_info(env, argv[NUM_0], &(context->colorsBuffer), &(context->colorsBufferSize));
     if (!IMG_IS_OK(status)) {
         ImageNapiUtils::ThrowExceptionError(env, ERR_IMAGE_INVALID_PARAM,
-            "Failed to get ArrayBuffer info. (" + std::to_string(status) + ")", true);
+            "The 1st argument must be an ArrayBuffer. (" + std::to_string(status) + ")", true);
         return result;
     }
     
@@ -1689,7 +1695,7 @@ static void WritePixelsFromAreaExec(napi_env env, void* data)
         context->errMsg = "The PixelMap is not editable or is locked.";
     } else if (context->status == ERR_IMAGE_INVALID_PARAMETER) {
         context->errCode = ERR_IMAGE_INVALID_PARAM;
-        context->errMsg = "Invalid parameter.";
+        context->errMsg = "Invalid parameter. Ensure the offset, stride, and region are within range.";
     } else if (context->status == ERR_IMAGE_WRITE_PIXELMAP_FAILED) {
         context->errCode = ERR_MEDIA_MEMORY_COPY_FAILED;
         context->errMsg = "Failed to copy the area pixel data.";
@@ -1712,7 +1718,7 @@ napi_value PixelMapNapi::WritePixelsFromArea(napi_env env, napi_callback_info in
     IMG_JS_ARGS(env, info, status, argc, argv, thisVar);
     if (!IMG_IS_OK(status)) {
         CreatePendingErrorIfAbsent(env, context->error, ERR_IMAGE_GET_IMAGE_DATA_FAILED,
-            "Internal error: Failed to get callback info. (" + std::to_string(status) + ")");
+            "Internal error: Failed to retrieve JS call arguments. (" + std::to_string(status) + ")");
     }
 
     status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&(context->nConstructor)));
@@ -1721,7 +1727,8 @@ napi_value PixelMapNapi::WritePixelsFromArea(napi_env env, napi_callback_info in
     }
     
     if (!parsePositionArea(env, argv[NUM_0], &(context->area))) {
-        CreatePendingErrorIfAbsent(env, context->error, ERR_IMAGE_INVALID_PARAM, "Failed to parse PositionArea.");
+        CreatePendingErrorIfAbsent(env, context->error, ERR_IMAGE_INVALID_PARAM,
+            "Failed to parse PositionArea. Ensure the pixels buffer, offset, stride, and region are valid.");
     }
 
     napi_create_promise(env, &(context->deferred), &result);
@@ -1759,7 +1766,7 @@ napi_value PixelMapNapi::WritePixelsFromAreaSync(napi_env env, napi_callback_inf
     IMG_JS_ARGS(env, info, status, argc, argv, thisVar);
     if (!IMG_IS_OK(status)) {
         ImageNapiUtils::ThrowExceptionError(env, ERR_IMAGE_GET_IMAGE_DATA_FAILED,
-            "Internal error: Failed to get callback info. (" + std::to_string(status) + ")", true);
+            "Internal error: Failed to retrieve JS call arguments. (" + std::to_string(status) + ")", true);
         return result;
     }
 
@@ -1771,7 +1778,8 @@ napi_value PixelMapNapi::WritePixelsFromAreaSync(napi_env env, napi_callback_inf
     context->wPixelMap = context->nConstructor->nativePixelMap_;
 
     if (!parsePositionArea(env, argv[NUM_0], &(context->area))) {
-        ImageNapiUtils::ThrowExceptionError(env, ERR_IMAGE_INVALID_PARAM, "Failed to parse PositionArea.", true);
+        ImageNapiUtils::ThrowExceptionError(env, ERR_IMAGE_INVALID_PARAM,
+            "Failed to parse PositionArea. Ensure the pixels buffer, offset, stride, and region are valid.", true);
         return result;
     }
     
@@ -1824,7 +1832,7 @@ static void ExtractAlphaPixelMapExec(napi_env env, void* data)
     
     if (errCode == IMAGE_RESULT_FORMAT_CONVERT_FAILED) {
         context->errCode = ERR_MEDIA_DATA_CONVERSION_FAILED;
-        context->errMsg = "Failed to convert the pixels.";
+        context->errMsg = "Failed to convert the pixels: Pixel data may be corrupted.";
     } else if (errCode == ERR_IMAGE_DECODE_FAILED) {
         context->errCode = ERR_MEDIA_DATA_CONVERSION_FAILED;
         context->errMsg = "Failed to convert the pixels: YUV formats are not supported.";
@@ -1846,7 +1854,7 @@ napi_value PixelMapNapi::ExtractAlphaPixelMap(napi_env env, napi_callback_info i
     IMG_JS_ARGS(env, info, status, argc, nullptr, thisVar);
     if (!IMG_IS_OK(status)) {
         CreatePendingErrorIfAbsent(env, context->error, ERR_IMAGE_GET_IMAGE_DATA_FAILED,
-            "Internal error: Failed to get callback info. (" + std::to_string(status) + ")");
+            "Internal error: Failed to retrieve JS call arguments. (" + std::to_string(status) + ")");
     }
 
     status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&(context->nConstructor)));
@@ -1888,7 +1896,7 @@ napi_value PixelMapNapi::ExtractAlphaPixelMapSync(napi_env env, napi_callback_in
     IMG_JS_ARGS(env, info, status, argc, nullptr, thisVar);
     if (!IMG_IS_OK(status)) {
         ImageNapiUtils::ThrowExceptionError(env, ERR_IMAGE_GET_IMAGE_DATA_FAILED,
-            "Internal error: Failed to get callback info. (" + std::to_string(status) + ")", true);
+            "Internal error: Failed to retrieve JS call arguments. (" + std::to_string(status) + ")", true);
         return result;
     }
 
@@ -1931,7 +1939,7 @@ static void SetOpacityExec(napi_env env, void* data)
     context->status = context->rPixelMap->SetAlpha(static_cast<float>(context->alpha));
     if (context->status == ERR_IMAGE_PIXELMAP_NOT_ALLOW_MODIFY) {
         context->errCode = ERR_MEDIA_UNSUPPORT_OPERATION;
-        context->errMsg = "The PixelMap is locked.";
+        context->errMsg = "The PixelMap is locked. Release the lock before modifying the PixelMap.";
     } else if (context->status == ERR_IMAGE_INVALID_PARAMETER) {
         context->errCode = ERR_IMAGE_INVALID_PARAM;
         context->errMsg = "The specified opacity value is out of range.";
@@ -1957,7 +1965,7 @@ napi_value PixelMapNapi::SetOpacity(napi_env env, napi_callback_info info)
     IMG_JS_ARGS(env, info, status, argc, argv, thisVar);
     if (!IMG_IS_OK(status)) {
         CreatePendingErrorIfAbsent(env, context->error, ERR_IMAGE_GET_IMAGE_DATA_FAILED,
-            "Internal error: Failed to get callback info. (" + std::to_string(status) + ")");
+            "Internal error: Failed to retrieve JS call arguments. (" + std::to_string(status) + ")");
     }
 
     status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&(context->nConstructor)));
@@ -1967,7 +1975,7 @@ napi_value PixelMapNapi::SetOpacity(napi_env env, napi_callback_info info)
 
     if (!IMG_IS_OK(napi_get_value_double(env, argv[NUM_0], &(context->alpha)))) {
         CreatePendingErrorIfAbsent(env, context->error, ERR_IMAGE_INVALID_PARAM,
-            "Invalid parameter: Invalid type for the 1st argument.");
+            "Invalid parameter: The 1st argument must be a number.");
     }
 
     napi_create_promise(env, &(context->deferred), &result);
@@ -2005,7 +2013,7 @@ napi_value PixelMapNapi::SetOpacitySync(napi_env env, napi_callback_info info)
     IMG_JS_ARGS(env, info, status, argc, argv, thisVar);
     if (!IMG_IS_OK(status)) {
         ImageNapiUtils::ThrowExceptionError(env, ERR_IMAGE_GET_IMAGE_DATA_FAILED,
-            "Internal error: Failed to get callback info. (" + std::to_string(status) + ")", true);
+            "Internal error: Failed to retrieve JS call arguments. (" + std::to_string(status) + ")", true);
         return result;
     }
 
@@ -2018,7 +2026,7 @@ napi_value PixelMapNapi::SetOpacitySync(napi_env env, napi_callback_info info)
 
     if (!IMG_IS_OK(napi_get_value_double(env, argv[NUM_0], &(context->alpha)))) {
         ImageNapiUtils::ThrowExceptionError(env, ERR_IMAGE_INVALID_PARAM,
-            "Invalid parameter: Invalid type for the 1st argument.", true);
+            "Invalid parameter: The 1st argument must be a number.", true);
         return result;
     }
 
@@ -2035,13 +2043,14 @@ static void HandleAffineTransformReturnStatus(uint32_t status, int32_t &errCode,
 {
     if (status == ERR_IMAGE_PIXELMAP_NOT_ALLOW_MODIFY) {
         errCode = ERR_MEDIA_UNSUPPORT_OPERATION;
-        errMsg = "The PixelMap is locked.";
+        errMsg = "The PixelMap is locked. Release the lock before modifying the PixelMap.";
     } else if (status == ERR_IMAGE_MALLOC_ABNORMAL) {
         errCode = ERR_MEDIA_MEMORY_ALLOC_FAILED;
-        errMsg = "Failed to allocate memory.";
+        errMsg =
+            "Failed to allocate memory. The resulting image size may be too large or the system may be out of memory.";
     } else if (status == ERR_IMAGE_INVALID_PARAMETER) {
         errCode = ERR_IMAGE_INVALID_PARAM;
-        errMsg = "Invalid parameter.";
+        errMsg = "Invalid parameter. Ensure the input values are within valid range.";
     } else if (status != SUCCESS) {
         errCode = ERR_IMAGE_GET_IMAGE_DATA_FAILED;
         errMsg = "Failed to " + transformType + " the PixelMap. (" + std::to_string(status) + ")";
@@ -2080,7 +2089,7 @@ napi_value PixelMapNapi::ApplyScale(napi_env env, napi_callback_info info)
     IMG_JS_ARGS(env, info, status, argc, argv, thisVar);
     if (!IMG_IS_OK(status)) {
         CreatePendingErrorIfAbsent(env, context->error, ERR_IMAGE_GET_IMAGE_DATA_FAILED,
-            "Internal error: Failed to get callback info. (" + std::to_string(status) + ")");
+            "Internal error: Failed to retrieve JS call arguments. (" + std::to_string(status) + ")");
     }
 
     status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&(context->nConstructor)));
@@ -2090,16 +2099,16 @@ napi_value PixelMapNapi::ApplyScale(napi_env env, napi_callback_info info)
 
     if (!IMG_IS_OK(napi_get_value_double(env, argv[NUM_0], &(context->xArg)))) {
         CreatePendingErrorIfAbsent(env, context->error, ERR_IMAGE_INVALID_PARAM,
-            "Invalid parameter: Invalid type for the 1st argument.");
+            "Invalid parameter: The 1st argument must be a number.");
     }
     if (!IMG_IS_OK(napi_get_value_double(env, argv[NUM_1], &(context->yArg)))) {
         CreatePendingErrorIfAbsent(env, context->error, ERR_IMAGE_INVALID_PARAM,
-            "Invalid parameter: Invalid type for the 2nd argument.");
+            "Invalid parameter: The 2nd argument must be a number.");
     }
     int32_t antiAliasing = 0;
     if (argc == NUM_3 && !IMG_IS_OK(napi_get_value_int32(env, argv[NUM_2], &antiAliasing))) {
         CreatePendingErrorIfAbsent(env, context->error, ERR_IMAGE_INVALID_PARAM,
-            "Invalid parameter: Invalid type for the 3rd argument.");
+            "Invalid parameter: The 3rd argument must be a number.");
     }
     context->antiAliasing = ParseAntiAliasingOption(antiAliasing);
 
@@ -2138,7 +2147,7 @@ napi_value PixelMapNapi::ApplyScaleSync(napi_env env, napi_callback_info info)
     IMG_JS_ARGS(env, info, status, argc, argv, thisVar);
     if (!IMG_IS_OK(status)) {
         ImageNapiUtils::ThrowExceptionError(env, ERR_IMAGE_GET_IMAGE_DATA_FAILED,
-            "Internal error: Failed to get callback info. (" + std::to_string(status) + ")", true);
+            "Internal error: Failed to retrieve JS call arguments. (" + std::to_string(status) + ")", true);
         return result;
     }
 
@@ -2151,18 +2160,18 @@ napi_value PixelMapNapi::ApplyScaleSync(napi_env env, napi_callback_info info)
 
     if (!IMG_IS_OK(napi_get_value_double(env, argv[NUM_0], &(context->xArg)))) {
         ImageNapiUtils::ThrowExceptionError(env, ERR_IMAGE_INVALID_PARAM,
-            "Invalid parameter: Invalid type for the 1st argument.", true);
+            "Invalid parameter: The 1st argument must be a number.", true);
         return result;
     }
     if (!IMG_IS_OK(napi_get_value_double(env, argv[NUM_1], &(context->yArg)))) {
         ImageNapiUtils::ThrowExceptionError(env, ERR_IMAGE_INVALID_PARAM,
-            "Invalid parameter: Invalid type for the 2nd argument.", true);
+            "Invalid parameter: The 2nd argument must be a number.", true);
         return result;
     }
     int32_t antiAliasing = 0;
     if (argc == NUM_3 && !IMG_IS_OK(napi_get_value_int32(env, argv[NUM_2], &antiAliasing))) {
         ImageNapiUtils::ThrowExceptionError(env, ERR_IMAGE_INVALID_PARAM,
-            "Invalid parameter: Invalid type for the 3rd argument.", true);
+            "Invalid parameter: The 3rd argument must be a number.", true);
         return result;
     }
     context->antiAliasing = ParseAntiAliasingOption(antiAliasing);
@@ -2207,7 +2216,7 @@ napi_value PixelMapNapi::ApplyTranslate(napi_env env, napi_callback_info info)
     IMG_JS_ARGS(env, info, status, argc, argv, thisVar);
     if (!IMG_IS_OK(status)) {
         CreatePendingErrorIfAbsent(env, context->error, ERR_IMAGE_GET_IMAGE_DATA_FAILED,
-            "Internal error: Failed to get callback info. (" + std::to_string(status) + ")");
+            "Internal error: Failed to retrieve JS call arguments. (" + std::to_string(status) + ")");
     }
 
     status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&(context->nConstructor)));
@@ -2217,11 +2226,11 @@ napi_value PixelMapNapi::ApplyTranslate(napi_env env, napi_callback_info info)
 
     if (!IMG_IS_OK(napi_get_value_double(env, argv[NUM_0], &(context->xArg)))) {
         CreatePendingErrorIfAbsent(env, context->error, ERR_IMAGE_INVALID_PARAM,
-            "Invalid parameter: Invalid type for the 1st argument.");
+            "Invalid parameter: The 1st argument must be a number.");
     }
     if (!IMG_IS_OK(napi_get_value_double(env, argv[NUM_1], &(context->yArg)))) {
         CreatePendingErrorIfAbsent(env, context->error, ERR_IMAGE_INVALID_PARAM,
-            "Invalid parameter: Invalid type for the 2nd argument.");
+            "Invalid parameter: The 2nd argument must be a number.");
     }
 
     napi_create_promise(env, &(context->deferred), &result);
@@ -2259,7 +2268,7 @@ napi_value PixelMapNapi::ApplyTranslateSync(napi_env env, napi_callback_info inf
     IMG_JS_ARGS(env, info, status, argc, argv, thisVar);
     if (!IMG_IS_OK(status)) {
         ImageNapiUtils::ThrowExceptionError(env, ERR_IMAGE_GET_IMAGE_DATA_FAILED,
-            "Internal error: Failed to get callback info. (" + std::to_string(status) + ")", true);
+            "Internal error: Failed to retrieve JS call arguments. (" + std::to_string(status) + ")", true);
         return result;
     }
 
@@ -2272,12 +2281,12 @@ napi_value PixelMapNapi::ApplyTranslateSync(napi_env env, napi_callback_info inf
 
     if (!IMG_IS_OK(napi_get_value_double(env, argv[NUM_0], &(context->xArg)))) {
         ImageNapiUtils::ThrowExceptionError(env, ERR_IMAGE_INVALID_PARAM,
-            "Invalid parameter: Invalid type for the 1st argument.", true);
+            "Invalid parameter: The 1st argument must be a number.", true);
         return result;
     }
     if (!IMG_IS_OK(napi_get_value_double(env, argv[NUM_1], &(context->yArg)))) {
         ImageNapiUtils::ThrowExceptionError(env, ERR_IMAGE_INVALID_PARAM,
-            "Invalid parameter: Invalid type for the 2nd argument.", true);
+            "Invalid parameter: The 2nd argument must be a number.", true);
         return result;
     }
     
@@ -2307,13 +2316,13 @@ static void ApplyCropExec(napi_env env, void* data)
 
     if (context->status == ERR_IMAGE_PIXELMAP_NOT_ALLOW_MODIFY) {
         context->errCode = ERR_MEDIA_UNSUPPORT_OPERATION;
-        context->errMsg = "The PixelMap is locked.";
+        context->errMsg = "The PixelMap is locked. Release the lock before modifying the PixelMap.";
     } else if (context->status == ERR_IMAGE_INVALID_PARAMETER) {
         context->errCode = ERR_MEDIA_INVALID_REGION;
         context->errMsg = "The specified region is invalid or out of range.";
     } else if (context->status == ERR_IMAGE_MALLOC_ABNORMAL) {
         context->errCode = ERR_MEDIA_MEMORY_ALLOC_FAILED;
-        context->errMsg = "Failed to allocate memory.";
+        context->errMsg = "Failed to allocate memory. The system may be out of memory.";
     } else if (context->status != SUCCESS) {
         context->errCode = ERR_IMAGE_GET_IMAGE_DATA_FAILED;
         context->errMsg = "Failed to crop the PixelMap. (" + std::to_string(context->status) + ")";
@@ -2333,7 +2342,7 @@ napi_value PixelMapNapi::ApplyCrop(napi_env env, napi_callback_info info)
     IMG_JS_ARGS(env, info, status, argc, argv, thisVar);
     if (!IMG_IS_OK(status)) {
         CreatePendingErrorIfAbsent(env, context->error, ERR_IMAGE_GET_IMAGE_DATA_FAILED,
-            "Internal error: Failed to get callback info. (" + std::to_string(status) + ")");
+            "Internal error: Failed to retrieve JS call arguments. (" + std::to_string(status) + ")");
     }
 
     status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&(context->nConstructor)));
@@ -2342,7 +2351,8 @@ napi_value PixelMapNapi::ApplyCrop(napi_env env, napi_callback_info info)
     }
     
     if (!parseRegion(env, argv[NUM_0], &(context->area.region))) {
-        CreatePendingErrorIfAbsent(env, context->error, ERR_MEDIA_INVALID_REGION, "The specified region is invalid.");
+        CreatePendingErrorIfAbsent(env, context->error, ERR_MEDIA_INVALID_REGION,
+            "The specified region is invalid. Ensure all attributes are valid integers within the PixelMap bounds.");
     }
 
     napi_create_promise(env, &(context->deferred), &result);
@@ -2380,7 +2390,7 @@ napi_value PixelMapNapi::ApplyCropSync(napi_env env, napi_callback_info info)
     IMG_JS_ARGS(env, info, status, argc, argv, thisVar);
     if (!IMG_IS_OK(status)) {
         ImageNapiUtils::ThrowExceptionError(env, ERR_IMAGE_GET_IMAGE_DATA_FAILED,
-            "Internal error: Failed to get callback info. (" + std::to_string(status) + ")", true);
+            "Internal error: Failed to retrieve JS call arguments. (" + std::to_string(status) + ")", true);
         return result;
     }
 
@@ -2392,7 +2402,8 @@ napi_value PixelMapNapi::ApplyCropSync(napi_env env, napi_callback_info info)
     context->rPixelMap = context->nConstructor->nativePixelMap_;
 
     if (!parseRegion(env, argv[NUM_0], &(context->area.region))) {
-        ImageNapiUtils::ThrowExceptionError(env, ERR_MEDIA_INVALID_REGION, "The specified region is invalid.", true);
+        ImageNapiUtils::ThrowExceptionError(env, ERR_MEDIA_INVALID_REGION, "The specified region is invalid. "
+            "Ensure all attributes are valid integers within the PixelMap bounds.", true);
         return result;
     }
     
@@ -2435,7 +2446,7 @@ napi_value PixelMapNapi::ApplyRotate(napi_env env, napi_callback_info info)
     IMG_JS_ARGS(env, info, status, argc, argv, thisVar);
     if (!IMG_IS_OK(status)) {
         CreatePendingErrorIfAbsent(env, context->error, ERR_IMAGE_GET_IMAGE_DATA_FAILED,
-            "Internal error: Failed to get callback info. (" + std::to_string(status) + ")");
+            "Internal error: Failed to retrieve JS call arguments. (" + std::to_string(status) + ")");
     }
 
     status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&(context->nConstructor)));
@@ -2445,7 +2456,7 @@ napi_value PixelMapNapi::ApplyRotate(napi_env env, napi_callback_info info)
 
     if (!IMG_IS_OK(napi_get_value_double(env, argv[NUM_0], &(context->xArg)))) {
         CreatePendingErrorIfAbsent(env, context->error, ERR_IMAGE_INVALID_PARAM,
-            "Invalid parameter: Invalid type for the 1st argument.");
+            "Invalid parameter: The 1st argument must be a number.");
     }
 
     napi_create_promise(env, &(context->deferred), &result);
@@ -2483,7 +2494,7 @@ napi_value PixelMapNapi::ApplyRotateSync(napi_env env, napi_callback_info info)
     IMG_JS_ARGS(env, info, status, argc, argv, thisVar);
     if (!IMG_IS_OK(status)) {
         ImageNapiUtils::ThrowExceptionError(env, ERR_IMAGE_GET_IMAGE_DATA_FAILED,
-            "Internal error: Failed to get callback info. (" + std::to_string(status) + ")", true);
+            "Internal error: Failed to retrieve JS call arguments. (" + std::to_string(status) + ")", true);
         return result;
     }
 
@@ -2496,7 +2507,7 @@ napi_value PixelMapNapi::ApplyRotateSync(napi_env env, napi_callback_info info)
 
     if (!IMG_IS_OK(napi_get_value_double(env, argv[NUM_0], &(context->xArg)))) {
         ImageNapiUtils::ThrowExceptionError(env, ERR_IMAGE_INVALID_PARAM,
-            "Invalid parameter: Invalid type for the 1st argument.", true);
+            "Invalid parameter: The 1st argument must be a number.", true);
         return result;
     }
 
@@ -2539,7 +2550,7 @@ napi_value PixelMapNapi::ApplyFlip(napi_env env, napi_callback_info info)
     IMG_JS_ARGS(env, info, status, argc, argv, thisVar);
     if (!IMG_IS_OK(status)) {
         CreatePendingErrorIfAbsent(env, context->error, ERR_IMAGE_GET_IMAGE_DATA_FAILED,
-            "Internal error: Failed to get callback info. (" + std::to_string(status) + ")");
+            "Internal error: Failed to retrieve JS call arguments. (" + std::to_string(status) + ")");
     }
 
     status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&(context->nConstructor)));
@@ -2549,11 +2560,11 @@ napi_value PixelMapNapi::ApplyFlip(napi_env env, napi_callback_info info)
 
     if (!IMG_IS_OK(napi_get_value_bool(env, argv[NUM_0], &(context->xBarg)))) {
         CreatePendingErrorIfAbsent(env, context->error, ERR_IMAGE_INVALID_PARAM,
-            "Invalid parameter: Invalid type for the 1st argument.");
+            "Invalid parameter: The 1st argument must be a boolean.");
     }
     if (!IMG_IS_OK(napi_get_value_bool(env, argv[NUM_1], &(context->yBarg)))) {
         CreatePendingErrorIfAbsent(env, context->error, ERR_IMAGE_INVALID_PARAM,
-            "Invalid parameter: Invalid type for the 2nd argument.");
+            "Invalid parameter: The 2nd argument must be a boolean.");
     }
 
     napi_create_promise(env, &(context->deferred), &result);
@@ -2591,7 +2602,7 @@ napi_value PixelMapNapi::ApplyFlipSync(napi_env env, napi_callback_info info)
     IMG_JS_ARGS(env, info, status, argc, argv, thisVar);
     if (!IMG_IS_OK(status)) {
         ImageNapiUtils::ThrowExceptionError(env, ERR_IMAGE_GET_IMAGE_DATA_FAILED,
-            "Internal error: Failed to get callback info. (" + std::to_string(status) + ")", true);
+            "Internal error: Failed to retrieve JS call arguments. (" + std::to_string(status) + ")", true);
         return result;
     }
 
@@ -2604,12 +2615,12 @@ napi_value PixelMapNapi::ApplyFlipSync(napi_env env, napi_callback_info info)
 
     if (!IMG_IS_OK(napi_get_value_bool(env, argv[NUM_0], &(context->xBarg)))) {
         ImageNapiUtils::ThrowExceptionError(env, ERR_IMAGE_INVALID_PARAM,
-            "Invalid parameter: Invalid type for the 1st argument.", true);
+            "Invalid parameter: The 1st argument must be a boolean.", true);
         return result;
     }
     if (!IMG_IS_OK(napi_get_value_bool(env, argv[NUM_1], &(context->yBarg)))) {
         ImageNapiUtils::ThrowExceptionError(env, ERR_IMAGE_INVALID_PARAM,
-            "Invalid parameter: Invalid type for the 2nd argument.", true);
+            "Invalid parameter: The 2nd argument must be a boolean.", true);
         return result;
     }
     
