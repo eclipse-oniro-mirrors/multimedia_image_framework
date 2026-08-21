@@ -254,6 +254,29 @@ void SvgDecoder::Reset()
     IMAGE_LOGD("[Reset] OUT");
 }
 
+static SkSVGResourceLimits ConvertLevelToSkResourceLimits(OHOS::Media::SVGResourceLimitLevel level)
+{
+    switch (level) {
+        case OHOS::Media::SVG_RESOURCE_LIMIT_LOW:
+            return SkSVGResourceLimits::MakePreset(SkSVGResourceLimits::Preset::kSmall);
+        case OHOS::Media::SVG_RESOURCE_LIMIT_MEDIUM:
+            return SkSVGResourceLimits::MakePreset(SkSVGResourceLimits::Preset::kMedium);
+        case OHOS::Media::SVG_RESOURCE_LIMIT_HIGH:
+            return SkSVGResourceLimits::MakePreset(SkSVGResourceLimits::Preset::kLarge);
+        default:
+            return SkSVGResourceLimits::MakePreset(SkSVGResourceLimits::Preset::kLarge);
+    }
+}
+ 
+uint32_t SvgDecoder::SetSVGLimits(SVGResourceLimitLevel level)
+{
+    IMAGE_LOGD("[SetSVG] IN");
+    svgResourceLimitLevel_ = level;
+    IMAGE_LOGI("[SetSVG] svgResourceLimitLevel_ stored: %{public}d", static_cast<int>(svgResourceLimitLevel_));
+    IMAGE_LOGD("[SetSVG] OUT");
+    return Media::SUCCESS;
+}
+
 uint32_t SvgDecoder::SetDecodeOptions(uint32_t index, const PixelDecodeOptions &opts, PlImageInfo &info)
 {
     bool cond = (index >= SVG_IMAGE_NUM);
@@ -458,7 +481,13 @@ bool SvgDecoder::BuildDom()
     bool cond = (svgStream_ == nullptr);
     CHECK_ERROR_RETURN_RET_LOG(cond, false, "[BuildDom] Stream is null.");
 
-    svgDom_ = SkSVGDOM::MakeFromStream(*(svgStream_.get()));
+    if (svgResourceLimitLevel_ > SVG_RESOURCE_LIMIT_NONE) {
+        IMAGE_LOGI("[BuildDom] IN svgResourceLimitLevel_:%{public}d", static_cast<int>(svgResourceLimitLevel_));
+        SkSVGResourceLimits limit = ConvertLevelToSkResourceLimits(svgResourceLimitLevel_);
+        svgDom_ = SkSVGDOM::MakeFromStreamWithLimits(*(svgStream_.get()), limit);
+    } else {
+        svgDom_ = SkSVGDOM::MakeFromStream(*(svgStream_.get()));
+    }
     cond = (svgDom_ == nullptr);
     CHECK_ERROR_RETURN_RET_LOG(cond, false, "[BuildDom] DOM is null.");
 
@@ -604,7 +633,15 @@ uint32_t SvgDecoder::DoDecode(uint32_t index, DecodeContext &context)
     CHECK_ERROR_RETURN_RET_LOG(cond, Media::ERROR, "[DoDecode] make canvas failed.");
 
     canvas->clear(SK_ColorTRANSPARENT);
-    svgDom_->render(canvas.get());
+    if (svgResourceLimitLevel_ > SVG_RESOURCE_LIMIT_NONE) {
+        IMAGE_LOGI("[DoDecode] IN svgResourceLimitLevel_:%{public}d", static_cast<int>(svgResourceLimitLevel_));
+        if (!svgDom_->renderWithLimits(canvas.get())) {
+            IMAGE_LOGE("[DoDecode] renderWithLimits failed");
+            return Media::ERROR;
+        }
+    } else {
+        svgDom_->render(canvas.get());
+    }
 
     bool result = canvas->readPixels(imageInfo, pixels, rowBytes, 0, 0);
     CHECK_ERROR_RETURN_RET_LOG(!result, Media::ERROR, "[DoDecode] read pixels failed.");

@@ -75,6 +75,7 @@ struct SourceOptions {
     int32_t baseDensity = 0;
     PixelFormat pixelFormat = PixelFormat::UNKNOWN;
     Size size;
+    SVGResourceLimitLevel svgResourceLimitLevel = SVG_RESOURCE_LIMIT_NONE;
 };
 
 struct IncrementalSourceOptions {

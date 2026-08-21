@@ -562,6 +562,13 @@ static std::vector<struct ImageEnum> sCropAndScaleStrategyMap = {
     {"CROP_FIRST", 2, ""},
 };
 
+static std::vector<struct ImageEnum> sSVGResourceLimitLevelMap = {
+    {"NONE", 0, ""},
+    {"LOW", 1, ""},
+    {"MEDIUM", 2, ""},
+    {"HIGH", 3, ""},
+};
+
 using PropertyKeyMap = std::unordered_map<std::string, std::string>;
 using MetadataMap = std::pair<PropertyKeyMap, PropertyKeyMap>;
 using MetadataMaps = std::unordered_map<NapiMetadataType, MetadataMap>;
@@ -1501,6 +1508,8 @@ napi_value ImageSourceNapi::Init(napi_env env, napi_value exports)
             ImageNapiUtils::CreateEnumTypeObject(env, napi_number, sFocusModeMap)),
         DECLARE_NAPI_PROPERTY("XmageColorMode",
             ImageNapiUtils::CreateEnumTypeObject(env, napi_number, sXmageColorModeMap)),
+        DECLARE_NAPI_PROPERTY("SVGResourceLimitLevel",
+            ImageNapiUtils::CreateEnumTypeObject(env, napi_number, sSVGResourceLimitLevelMap)),
     };
 
     struct ImageConstructorInfo info = {
@@ -1977,6 +1986,17 @@ static void parseSourceOptions(napi_env env, napi_value root, SourceOptions* opt
             IMAGE_LOGD("ParseSize error");
         }
         IMAGE_LOGI("sourceSize:(%{public}d, %{public}d)", opts->size.width, opts->size.height);
+    }
+    int32_t svgResourceLimitLevel = 0;
+    if (ImageNapiUtils::GetInt32ByName(env, root, "svgResourceLimitLevel", &svgResourceLimitLevel)) {
+        if (!ImageSystemProperties::IsSystemApp()) {
+            IMAGE_LOGE("SVGResourceLimitLevel is a system interface, non-system app not allowed");
+        } else if (svgResourceLimitLevel >= NUM_0 && svgResourceLimitLevel <= NUM_3) {
+            opts->svgResourceLimitLevel = static_cast<SVGResourceLimitLevel>(svgResourceLimitLevel);
+            IMAGE_LOGI("SVGResourceLimitLevel parsed: %{public}d", svgResourceLimitLevel);
+        } else {
+            IMAGE_LOGE("SVGResourceLimitLevel invalid: %{public}d", svgResourceLimitLevel);
+        }
     }
 }
 static void PrepareNapiEnv(napi_env env)
