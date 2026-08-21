@@ -483,13 +483,12 @@ bool IsHdrColorSpace(Media::PixelMap* pixelmap)
 {
 #ifdef IMAGE_COLORSPACE_FLAG
     OHOS::ColorManager::ColorSpace colorSpace = pixelmap->InnerGetGrColorSpace();
-    if (colorSpace.GetColorSpaceName() != ColorManager::BT2020 &&
+    bool cond = colorSpace.GetColorSpaceName() != ColorManager::BT2020 &&
         colorSpace.GetColorSpaceName() != ColorManager::BT2020_HLG &&
         colorSpace.GetColorSpaceName() != ColorManager::BT2020_PQ &&
         colorSpace.GetColorSpaceName() != ColorManager::BT2020_HLG_LIMIT &&
-        colorSpace.GetColorSpaceName() != ColorManager::BT2020_PQ_LIMIT) {
-        return false;
-    }
+        colorSpace.GetColorSpaceName() != ColorManager::BT2020_PQ_LIMIT;
+    CHECK_ERROR_RETURN_RET(cond, false);
 #endif
     return true;
 }
