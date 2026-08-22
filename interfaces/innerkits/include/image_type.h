@@ -413,6 +413,13 @@ struct SVGResize {
     uint32_t resizePercentage = 100;
 };
 
+enum SVGResourceLimitLevel {
+    SVG_RESOURCE_LIMIT_NONE = 0,
+    SVG_RESOURCE_LIMIT_LOW = 1,
+    SVG_RESOURCE_LIMIT_MEDIUM = 2,
+    SVG_RESOURCE_LIMIT_HIGH = 3,
+};
+
 struct SVGDecodeOptions {
     FillColor fillColor;
     FillColor strokeColor;

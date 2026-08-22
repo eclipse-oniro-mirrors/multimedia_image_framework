@@ -3094,6 +3094,7 @@ ImageSource::ImageSource(unique_ptr<SourceStream> &&stream, const SourceOptions 
         sourceInfo_.encodedFormat = opts.formatHint;
         sourceOptions_.formatHint = opts.formatHint;
     }
+    sourceOptions_.svgResourceLimitLevel = opts.svgResourceLimitLevel;
     imageId_ = GetNowTimeMicroSeconds();
     sourceHdrType_ = ImageHdrType::UNKNOWN;
 }
@@ -3462,6 +3463,9 @@ uint32_t ImageSource::DecodeImageInfo(uint32_t index, ImageStatusMap::iterator &
     }
     CHECK_ERROR_RETURN_RET_LOG(mainDecoder_ == nullptr, ERR_IMAGE_PLUGIN_CREATE_FAILED,
         "[ImageSource]get image size, image decode plugin is null.");
+    if (sourceInfo_.encodedFormat == InnerFormat::SVG_FORMAT) {
+        ret = mainDecoder_->SetSVGLimits(sourceOptions_.svgResourceLimitLevel);
+    }
     Size size;
     ret = mainDecoder_->GetImageSize(index, size);
     if (ret == SUCCESS) {
