@@ -413,7 +413,7 @@ uint32_t ExtDecoder::DmaAlloc(DecodeContext &context, uint64_t count, const OHOS
 
     IMAGE_LOGD("ExtDecoder::DmaMemAlloc sb stride is %{public}d, height is %{public}d, size is %{public}d",
         sb->GetStride(), sb->GetHeight(), sb->GetSize());
-    SetDecodeContextBuffer(context, AllocatorType::DMA_ALLOC, virAddr, count, nativeBuffer);
+    SetDecodeContextBuffer(context, AllocatorType::DMA_ALLOC, virAddr, sb->GetSize(), nativeBuffer);
     return SUCCESS;
 #endif
 }
@@ -2043,7 +2043,7 @@ uint32_t ExtDecoder::DecodeToYuv420(uint32_t index, DecodeContext &context)
     uint8_t *yuvBuffer = static_cast<uint8_t *>(context.pixelsBuffer.buffer);
     std::unique_ptr<JpegDecoderYuv> jpegYuvDecoder_ = std::make_unique<JpegDecoderYuv>();
     JpegDecoderYuvParameter para = {jpgSize.width, jpgSize.height, jpegBuffer, jpegBufferSize,
-        yuvBuffer, yuvBufferSize, decodeOutFormat, desiredSize.width, desiredSize.height};
+        yuvBuffer, context.pixelsBuffer.bufferSize, decodeOutFormat, desiredSize.width, desiredSize.height};
     int retDecode = jpegYuvDecoder_->DoDecode(context, para);
     if (retDecode != JpegYuvDecodeError_Success) {
         IMAGE_LOGE("DecodeToYuv420 DoDecode return %{public}d", retDecode);
