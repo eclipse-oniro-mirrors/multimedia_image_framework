@@ -258,11 +258,11 @@ static SkSVGResourceLimits ConvertLevelToSkResourceLimits(OHOS::Media::SVGResour
 {
     switch (level) {
         case OHOS::Media::SVG_RESOURCE_LIMIT_LOW:
-            return SkSVGResourceLimits::MakePreset(SkSVGResourceLimits::Preset::kSmall);
+            return SkSVGResourceLimits::MakePreset(SkSVGResourceLimits::Preset::kLarge);
         case OHOS::Media::SVG_RESOURCE_LIMIT_MEDIUM:
             return SkSVGResourceLimits::MakePreset(SkSVGResourceLimits::Preset::kMedium);
         case OHOS::Media::SVG_RESOURCE_LIMIT_HIGH:
-            return SkSVGResourceLimits::MakePreset(SkSVGResourceLimits::Preset::kLarge);
+            return SkSVGResourceLimits::MakePreset(SkSVGResourceLimits::Preset::kSmall);
         default:
             return SkSVGResourceLimits::MakePreset(SkSVGResourceLimits::Preset::kLarge);
     }
