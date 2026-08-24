@@ -6808,7 +6808,7 @@ uint32_t ImageSource::CreateFragmentMetadataByImageSource(ImageInfo info)
             return ERR_IMAGE_DATA_ABNORMAL;
         }
         uint32_t totalOffset = (streamInfo.GetCurrentAddress() - streamInfo.buffer) + fragmentPicture->offset;
-        CHECK_ERROR_RETURN_RET(totalOffset > streamInfo.size, ERR_IMAGE_DATA_ABNORMAL,
+        CHECK_ERROR_RETURN_RET_LOG(totalOffset > streamInfo.size, ERR_IMAGE_DATA_ABNORMAL,
             "Offset out of range: %u > %u", totalOffset, streamInfo.size);
         std::unique_ptr<InputDataStream> auxStream =
                 BufferSourceStream::CreateSourceStream((streamInfo.GetCurrentAddress() + fragmentPicture->offset),
