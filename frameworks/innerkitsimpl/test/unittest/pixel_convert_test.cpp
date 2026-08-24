@@ -3089,6 +3089,39 @@ HWTEST_F(PixelConvertTest, IsValidRowStrideTest001, TestSize.Level3)
 }
 
 /**
+ * @tc.name: IsValidRowStrideTest002
+ * @tc.desc: Test IsValidRowStride rejects an overflowing minimum P010 row stride.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelConvertTest, IsValidRowStrideTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelConvertTest: IsValidRowStrideTest002 start";
+    ImageInfo srcInfo;
+    srcInfo.size = {INT32_MAX, 1};
+    srcInfo.pixelFormat = PixelFormat::YCBCR_P010;
+
+    ImageInfo dstInfo;
+    dstInfo.size = {1, 1};
+    dstInfo.pixelFormat = PixelFormat::ARGB_8888;
+
+    BufferInfo srcBuffer;
+    srcBuffer.pixels = reinterpret_cast<uint8_t*>(SRC_DATA.data());
+    srcBuffer.rowStride = 1;
+    srcBuffer.imageInfo = srcInfo;
+    srcBuffer.length = static_cast<uint32_t>(SRC_DATA.size() * sizeof(uint16_t));
+
+    BufferInfo dstBuffer;
+    dstBuffer.pixels = reinterpret_cast<uint8_t*>(DST_DATA.data());
+    dstBuffer.rowStride = 0;
+    dstBuffer.imageInfo = dstInfo;
+    dstBuffer.length = static_cast<uint32_t>(DST_DATA.size() * sizeof(uint16_t));
+
+    int32_t ret = PixelConvert::PixelsConvert(srcBuffer, dstBuffer, srcBuffer.length, false);
+    ASSERT_EQ(ret, CONVERT_FAIL);
+    GTEST_LOG_(INFO) << "PixelConvertTest: IsValidRowStrideTest002 end";
+}
+
+/**
  * @tc.name: NV12ToNV21Test001
  * @tc.desc: Test NV12 to NV21 conversion.
  * @tc.type: FUNC

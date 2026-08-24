@@ -4628,6 +4628,11 @@ uint32_t PixelMap::ApplyAffineTransform(TransInfos &infos, AntiAliasingOption op
     }
 
     std::lock_guard<std::mutex> lock(*translationMutex_);
+    return ApplyAffineTransformLocked(infos, option);
+}
+
+uint32_t PixelMap::ApplyAffineTransformLocked(TransInfos &infos, AntiAliasingOption option)
+{
     ImageInfo imageInfo;
     GetImageInfo(imageInfo);
     IMAGE_LOGD("[%{public}s] width = %{public}d, height = %{public}d, pixelFormat = %{public}d, alphaType = %{public}d",
@@ -4810,6 +4815,7 @@ uint32_t PixelMap::ScaleWithSLR(float xAxis, float yAxis)
 
 bool PixelMap::resize(float xAxis, float yAxis)
 {
+    std::unique_lock<std::mutex> lock(*translationMutex_);
     Size scaledSize;
     if (!GetScaledSize(imageInfo_.size, xAxis, yAxis, scaledSize)) {
         IMAGE_LOGE("resize invalid scale ratio");
@@ -4822,10 +4828,15 @@ bool PixelMap::resize(float xAxis, float yAxis)
     ImageTrace imageTrace("PixelMap resize");
     TransInfos infos;
     infos.matrix.setScale(xAxis, yAxis);
-    if (ApplyAffineTransform(infos) != SUCCESS) {
+    if (!IsModifiable()) {
+        IMAGE_LOGE("[ApplyAffineTransform] PixelMap is not modifiable");
+        return false;
+    }
+    if (ApplyAffineTransformLocked(infos, AntiAliasingOption::NONE) != SUCCESS) {
         IMAGE_LOGE("resize falied");
         return false;
     }
+    lock.unlock();
     ImageUtils::DumpPixelMapIfDumpEnabled(*this, __func__);
     return true;
 }
@@ -4879,6 +4890,7 @@ uint32_t PixelMap::Rotate(float degrees)
     if (ImageUtils::FloatEqual(degrees, 0.0f)) {
         return SUCCESS;
     }
+    std::unique_lock<std::mutex> lock(*translationMutex_);
     if (imageInfo_.pixelFormat == PixelFormat::Y8) {
         IMAGE_LOGE("Rotate does not support Y8");
         return ERR_IMAGE_DATA_UNSUPPORT;
@@ -4886,11 +4898,16 @@ uint32_t PixelMap::Rotate(float degrees)
     ImageTrace imageTrace("PixelMap rotate degrees = %f", degrees);
     TransInfos infos;
     infos.matrix.setRotate(degrees);
-    uint32_t errCode = ApplyAffineTransform(infos);
+    if (!IsModifiable()) {
+        IMAGE_LOGE("[ApplyAffineTransform] PixelMap is not modifiable");
+        return ERR_IMAGE_PIXELMAP_NOT_ALLOW_MODIFY;
+    }
+    uint32_t errCode = ApplyAffineTransformLocked(infos, AntiAliasingOption::NONE);
     if (errCode != SUCCESS) {
         IMAGE_LOGE("rotate failed");
         return errCode;
     }
+    lock.unlock();
     ImageUtils::DumpPixelMapIfDumpEnabled(*this, __func__);
     return SUCCESS;
 }
@@ -4947,6 +4964,7 @@ uint32_t PixelMap::Crop(const Rect &rect)
         IMAGE_LOGE("[PixelMap] crop can't be performed: PixelMap is not modifiable");
         return ERR_IMAGE_PIXELMAP_NOT_ALLOW_MODIFY;
     }
+    std::unique_lock<std::mutex> lock(*translationMutex_);
     if (imageInfo_.pixelFormat == PixelFormat::Y8) {
         IMAGE_LOGE("Crop does not support Y8");
         return ERR_IMAGE_DATA_UNSUPPORT;
@@ -5030,6 +5048,7 @@ uint32_t PixelMap::Crop(const Rect &rect)
     ImageUtils::UpdateYUVDataInfo(*this);
 #endif
     ImageUtils::FlushSurfaceBuffer(this);
+    lock.unlock();
     ImageUtils::DumpPixelMapIfDumpEnabled(*this, __func__);
     return SUCCESS;
 }
