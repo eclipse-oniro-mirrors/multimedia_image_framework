@@ -222,6 +222,8 @@ public:
     NATIVEEXPORT uint32_t GetImageInfo(uint32_t index, ImageInfo &imageInfo);
     NATIVEEXPORT uint32_t GetImageInfoFromExif(uint32_t index, ImageInfo &imageInfo);
     NATIVEEXPORT const SourceInfo &GetSourceInfo(uint32_t &errorCode);
+    NATIVEEXPORT uint32_t SetSvgResourceLimitLevel(SVGResourceLimitLevel level);
+    NATIVEEXPORT SVGResourceLimitLevel GetSvgResourceLimitLevel();
     NATIVEEXPORT void RegisterListener(PeerListener *listener);
     NATIVEEXPORT void UnRegisterListener(PeerListener *listener);
     NATIVEEXPORT DecodeEvent GetDecodeEvent();
