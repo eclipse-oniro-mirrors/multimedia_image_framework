@@ -1721,10 +1721,8 @@ uint32_t ImageSource::PromoteDecoding(uint32_t index, const DecodeOptions &opts,
         IMAGE_LOGD("[ImageSource]promote decode : set decode options.");
         ImagePlugin::PlImageInfo plInfo;
         ret = SetDecodeOptions(incrementalRecordIter->second.decoder, index, opts_, plInfo);
-        if (ret != SUCCESS) {
-            IMAGE_LOGE("[ImageSource]set decode options error (image index:%{public}u), ret:%{public}u.", index, ret);
-            return ret;
-        }
+        CHECK_ERROR_RETURN_RET_LOG(ret != SUCCESS, ret,
+            "[ImageSource]set decode options error (image index:%{public}u), ret:%{public}u.", index, ret);
 
         auto iterator = decodeEventMap_.find((int)DecodeEvent::EVENT_HEADER_DECODE);
         if (iterator == decodeEventMap_.end()) {
@@ -1741,10 +1739,8 @@ uint32_t ImageSource::PromoteDecoding(uint32_t index, const DecodeOptions &opts,
         };
         PostProc::ValidCropValue(opts_.CropRect, size);
         ret = UpdatePixelMapInfo(opts_, plInfo, pixelMap);
-        if (ret != SUCCESS) {
-            IMAGE_LOGE("[ImageSource]update pixelmap info error (image index:%{public}u), ret:%{public}u.", index, ret);
-            return ret;
-        }
+        CHECK_ERROR_RETURN_RET_LOG(ret != SUCCESS, ret,
+            "[ImageSource]update pixelmap info error (image index:%{public}u), ret:%{public}u.", index, ret);
         incrementalRecordIter->second.IncrementalState = ImageDecodingState::IMAGE_DECODING;
     }
     if (incrementalRecordIter->second.IncrementalState == ImageDecodingState::IMAGE_DECODING) {
@@ -6816,17 +6812,13 @@ uint32_t ImageSource::CreateFragmentMetadataByImageSource(ImageInfo info)
             return ERR_IMAGE_DATA_ABNORMAL;
         }
         uint32_t totalOffset = (streamInfo.GetCurrentAddress() - streamInfo.buffer) + fragmentPicture->offset;
-        if (totalOffset > streamInfo.size) {
-            IMAGE_LOGE("Offset out of range: %u > %u", totalOffset, streamInfo.size);
-            return ERR_IMAGE_DATA_ABNORMAL;
-        }
+        CHECK_ERROR_RETURN_RET_LOG(totalOffset > streamInfo.size, ERR_IMAGE_DATA_ABNORMAL,
+            "Offset out of range: %u > %u", totalOffset, streamInfo.size);
         std::unique_ptr<InputDataStream> auxStream =
                 BufferSourceStream::CreateSourceStream((streamInfo.GetCurrentAddress() + fragmentPicture->offset),
                 fragmentPicture->size);
         auto fragmentMetadata = ParseJpegFragmentMetadata(auxStream);
-        if (fragmentMetadata == nullptr) {
-            return ERR_IMAGE_DATA_ABNORMAL;
-        }
+        CHECK_ERROR_RETURN_RET(fragmentMetadata == nullptr, ERR_IMAGE_DATA_ABNORMAL);
         metadatas_[MetadataType::FRAGMENT] = fragmentMetadata;
         return SUCCESS;
     } else {
