@@ -104,19 +104,19 @@ typedef enum {
  */
 typedef enum {
     /*
-    * No limit on SVG resources. 
+    * No limit on SVG resources.
     */
     SVG_RESOURCE_LIMIT_LEVEL_NONE = 0,
     /*
-    * Low limit on SVG resources. 
+    * Low limit on SVG resources.
     */
     SVG_RESOURCE_LIMIT_LEVEL_LOW = 1,
     /*
-    * Medium limit on SVG resources. 
+    * Medium limit on SVG resources.
     */
     SVG_RESOURCE_LIMIT_LEVEL_MEDIUM = 2,
     /*
-    * High limit on SVG resources. 
+    * High limit on SVG resources.
     */
     SVG_RESOURCE_LIMIT_LEVEL_HIGH = 3,
 } OH_ImageSource_SVGResourceLimitLevel;
