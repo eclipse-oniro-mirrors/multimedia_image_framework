@@ -144,6 +144,10 @@ unique_ptr<FileSourceStream> FileSourceStream::CreateSourceStream(const int fd)
 unique_ptr<FileSourceStream> FileSourceStream::CreateSourceStream(
     const int fd, int32_t offset, int32_t length)
 {
+    if (offset < 0 || length < 0) {
+        IMAGE_LOGE("[FileSourceStream]invalid offset: %{public}d or length: %{public}d", offset, length);
+        return nullptr;
+    }
     int dupFd = dup(fd);
     if (dupFd < 0) {
         IMAGE_LOGE("[FileSourceStream]dup fd failed, dupFd:[%{public}d].", dupFd);

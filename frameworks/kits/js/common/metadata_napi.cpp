@@ -105,6 +105,7 @@ struct MetadataNapiAsyncContext {
     std::vector<std::pair<std::string, std::string>> KVSArray;
     void *arrayBuffer;
     size_t arrayBufferSize;
+    napi_ref arrayBufferRef = nullptr;
     std::vector<std::pair<std::string, napi_ref>> customProperties;
 };
 using MetadataNapiAsyncContextPtr = std::unique_ptr<MetadataNapiAsyncContext>;
@@ -179,6 +180,10 @@ static void CommonCallbackRoutine(napi_env env, MetadataNapiAsyncContext* &async
     napi_open_handle_scope(env, &scope);
     if (scope == nullptr) {
         if (asyncContext != nullptr) {
+            if (asyncContext->arrayBufferRef != nullptr) {
+                napi_delete_reference(env, asyncContext->arrayBufferRef);
+                asyncContext->arrayBufferRef = nullptr;
+            }
             napi_delete_async_work(env, asyncContext->work);
             delete asyncContext;
             asyncContext = nullptr;
@@ -207,6 +212,10 @@ static void CommonCallbackRoutine(napi_env env, MetadataNapiAsyncContext* &async
         }
     }
 
+    if (asyncContext->arrayBufferRef != nullptr) {
+        napi_delete_reference(env, asyncContext->arrayBufferRef);
+        asyncContext->arrayBufferRef = nullptr;
+    }
     napi_delete_async_work(env, asyncContext->work);
     napi_close_handle_scope(env, scope);
 
@@ -2283,6 +2292,10 @@ static void SetBlobComplete(napi_env env, napi_status status, void *data)
         }
     }
 
+    if (context->arrayBufferRef != nullptr) {
+        napi_delete_reference(env, context->arrayBufferRef);
+        context->arrayBufferRef = nullptr;
+    }
     napi_delete_async_work(env, context->work);
     delete context;
     context = nullptr;
@@ -2312,6 +2325,7 @@ napi_value MetadataNapi::SetBlob(napi_env env, napi_callback_info info)
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status),
         ImageNapiUtils::ThrowExceptionError(env, IMAGE_INVALID_PARAMETER,
             "Invalid args."), IMAGE_LOGE("Fail to get blob info"));
+    napi_create_reference(env, argValue[NUM_0], NUM_1, &(asyncContext->arrayBufferRef));
     
     napi_create_promise(env, &(asyncContext->deferred), &result);
 
@@ -2322,8 +2336,14 @@ napi_value MetadataNapi::SetBlob(napi_env env, napi_callback_info info)
                 static_cast<uint8_t*>(context->arrayBuffer), static_cast<uint32_t>(context->arrayBufferSize));
         }, SetBlobComplete, asyncContext, asyncContext->work);
 
-    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status),
-        nullptr, IMAGE_LOGE("Fail to create async work"));
+    if (status != napi_ok) {
+        if (asyncContext->arrayBufferRef != nullptr) {
+            napi_delete_reference(env, asyncContext->arrayBufferRef);
+            asyncContext->arrayBufferRef = nullptr;
+        }
+        IMAGE_LOGE("Fail to create async work");
+        return nullptr;
+    }
     return result;
 }
 

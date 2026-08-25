@@ -2236,6 +2236,7 @@ bool ExifMetadata::ExtractXmageCoordinates(XmageCoordinateMetadata& coordMetadat
 
 uint32_t ExifMetadata::GetBlobSize()
 {
+    std::lock_guard<std::mutex> lock(mutex_);
     CHECK_ERROR_RETURN_RET_LOG(exifData_ == nullptr, 0, "Exif data is null");
     unsigned int size = 0;
     unsigned char* data = nullptr;
@@ -2248,6 +2249,7 @@ uint32_t ExifMetadata::GetBlobSize()
 
 uint32_t ExifMetadata::GetBlob(uint32_t bufferSize, uint8_t* dst)
 {
+    std::lock_guard<std::mutex> lock(mutex_);
     CHECK_ERROR_RETURN_RET_LOG(exifData_ == nullptr || dst == nullptr, ERR_IMAGE_INVALID_PARAMETER,
         "GetBlob failed: exifData_ is null or dst is null");
     unsigned char* exifBlob = nullptr;
@@ -2275,6 +2277,7 @@ uint32_t ExifMetadata::GetBlob(uint32_t bufferSize, uint8_t* dst)
 
 uint32_t ExifMetadata::SetBlob(const uint8_t* source, uint32_t bufferSize)
 {
+    std::lock_guard<std::mutex> lock(mutex_);
     CHECK_ERROR_RETURN_RET_LOG(source == nullptr, ERR_IMAGE_INVALID_PARAMETER, "SetBlob failed: source is null");
     CHECK_ERROR_RETURN_RET_LOG(bufferSize == 0 || bufferSize > MAX_TAG_VALUE_SIZE_FOR_STR, ERR_IMAGE_INVALID_PARAMETER,
         "Invalid blob size: %{public}u (max: %{public}u)", bufferSize, MAX_TAG_VALUE_SIZE_FOR_STR);

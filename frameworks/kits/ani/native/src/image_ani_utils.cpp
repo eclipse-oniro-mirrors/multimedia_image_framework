@@ -62,6 +62,10 @@ ImageSourceAni* ImageAniUtils::GetImageSourceAniFromEnv([[maybe_unused]] ani_env
         IMAGE_LOGE("[GetImageSourceFromEnv] Object_GetField_Long fetch failed");
         return nullptr;
     }
+    if (nativeObj == 0) {
+        IMAGE_LOGE("[GetImageSourceFromEnv] nativeObj is zero");
+        return nullptr;
+    }
     return reinterpret_cast<ImageSourceAni*>(nativeObj);
 }
 

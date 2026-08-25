@@ -331,6 +331,7 @@ static void ModifyImageProperty([[maybe_unused]] ani_env* env, [[maybe_unused]] 
     ImageSourceAni* imageSourceAni = reinterpret_cast<ImageSourceAni*>(nativeObj);
     if (imageSourceAni == nullptr) {
         IMAGE_LOGE("[ModifyImageProperty] get imageSourceAni failed");
+        return;
     }
     IMAGE_LOGE("[ModifyImageProperty] get imageSourceAni success");
 
@@ -607,6 +608,10 @@ static void Release([[maybe_unused]] ani_env* env, [[maybe_unused]] ani_object o
         return;
     }
     ImageSourceAni* imageSourceAni = reinterpret_cast<ImageSourceAni*>(nativeObj);
+    if (imageSourceAni == nullptr) {
+        IMAGE_LOGE("[Release] nativeObj is nullptr");
+        return;
+    }
     imageSourceAni->nativeImageSource_ = nullptr;
 }
 
