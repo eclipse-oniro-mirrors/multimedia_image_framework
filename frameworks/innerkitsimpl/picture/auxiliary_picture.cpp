@@ -205,26 +205,38 @@ AuxiliaryPicture *AuxiliaryPicture::Unmarshalling(Parcel &parcel, PICTURE_ERR &e
     std::unique_ptr<AuxiliaryPicture> auxPtr = std::make_unique<AuxiliaryPicture>();
 
     std::shared_ptr<PixelMap> contentPtr(PixelMap::Unmarshalling(parcel));
-    if (!contentPtr) {
-        return nullptr;
-    }
+    CHECK_ERROR_RETURN_RET(!contentPtr, nullptr);
     auxPtr->SetContentPixel(contentPtr);
     AuxiliaryPictureInfo auxiliaryPictureInfo;
-    auxiliaryPictureInfo.auxiliaryPictureType = static_cast<AuxiliaryPictureType>(parcel.ReadInt32());
-    auxiliaryPictureInfo.colorSpace = static_cast<ColorSpace>(parcel.ReadInt32());
-    auxiliaryPictureInfo.pixelFormat = static_cast<PixelFormat>(parcel.ReadInt32());
-    auxiliaryPictureInfo.rowStride = parcel.ReadUint32();
-    auxiliaryPictureInfo.size.height = parcel.ReadInt32();
-    auxiliaryPictureInfo.size.width = parcel.ReadInt32();
+    int32_t auxTypeValue = 0;
+    bool cond = !parcel.ReadInt32(auxTypeValue);
+    CHECK_ERROR_RETURN_RET_LOG(cond, nullptr, "Failed to read auxiliaryPictureType from parcel.");
+    auxiliaryPictureInfo.auxiliaryPictureType = static_cast<AuxiliaryPictureType>(auxTypeValue);
+    int32_t colorSpaceValue = 0;
+    cond = !parcel.ReadInt32(colorSpaceValue);
+    CHECK_ERROR_RETURN_RET_LOG(cond, nullptr, "Failed to read colorSpace from parcel.");
+    auxiliaryPictureInfo.colorSpace = static_cast<ColorSpace>(colorSpaceValue);
+    int32_t pixelFormatValue = 0;
+    cond = !parcel.ReadInt32(pixelFormatValue);
+    CHECK_ERROR_RETURN_RET_LOG(cond, nullptr, "Failed to read pixelFormat from parcel.");
+    auxiliaryPictureInfo.pixelFormat = static_cast<PixelFormat>(pixelFormatValue);
+    cond = !parcel.ReadUint32(auxiliaryPictureInfo.rowStride);
+    CHECK_ERROR_RETURN_RET_LOG(cond, nullptr, "Failed to read rowStride from parcel.");
+    cond = !parcel.ReadInt32(auxiliaryPictureInfo.size.height);
+    CHECK_ERROR_RETURN_RET_LOG(cond, nullptr, "Failed to read height from parcel.");
+    cond = !parcel.ReadInt32(auxiliaryPictureInfo.size.width);
+    CHECK_ERROR_RETURN_RET_LOG(cond, nullptr, "Failed to read width from parcel.");
     auxiliaryPictureInfo.jpegTagName = parcel.ReadString();
-    auxPtr->SetAuxiliaryPictureInfo(auxiliaryPictureInfo);
+    cond = auxPtr->SetAuxiliaryPictureInfo(auxiliaryPictureInfo) != SUCCESS;
+    CHECK_ERROR_RETURN_RET_LOG(cond, nullptr, "Failed to set auxiliary picture info.");
 
-    std::map<MetadataType, std::shared_ptr<ImageMetadata>> metadatas;
-    
-    uint64_t size = parcel.ReadUint64();
+    uint64_t size = 0;
+    CHECK_ERROR_RETURN_RET_LOG(!parcel.ReadUint64(size), nullptr, "Failed to read metadata size from parcel.");
     CHECK_ERROR_RETURN_RET(size > MAX_PICTURE_META_TYPE_COUNT, nullptr);
     for (size_t i = 0; i < size; ++i) {
-        MetadataType type = static_cast<MetadataType>(parcel.ReadInt32());
+        int32_t typeValue = 0;
+        CHECK_ERROR_RETURN_RET_LOG(!parcel.ReadInt32(typeValue), nullptr, "Failed to read metadata type from parcel.");
+        MetadataType type = static_cast<MetadataType>(typeValue);
         std::shared_ptr<ImageMetadata> imagedataPtr(nullptr);
 
         if (type == MetadataType::EXIF) {

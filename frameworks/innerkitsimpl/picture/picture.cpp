@@ -879,7 +879,9 @@ Picture *Picture::Unmarshalling(Parcel &data)
 
 bool Picture::UnmarshalMetadata(Parcel &parcel, Picture &picture, PICTURE_ERR &error)
 {
-    bool hasMaintenanceData = parcel.ReadBool();
+    bool hasMaintenanceData = false;
+    bool cond = !parcel.ReadBool(hasMaintenanceData);
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "Failed to read hasMaintenanceData from parcel.");
     if (hasMaintenanceData) {
         sptr<SurfaceBuffer> surfaceBuffer = SurfaceBuffer::Create();
         CHECK_ERROR_RETURN_RET_LOG(surfaceBuffer == nullptr, false, "SurfaceBuffer failed to be created.");
@@ -889,12 +891,17 @@ bool Picture::UnmarshalMetadata(Parcel &parcel, Picture &picture, PICTURE_ERR &e
         picture.maintenanceData_ = surfaceBuffer;
     }
 
-    uint64_t size = parcel.ReadUint64();
+    uint64_t size = 0;
+    cond = !parcel.ReadUint64(size);
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "Failed to read metadata size from parcel.");
     if (size > MAX_PICTURE_META_TYPE_COUNT) {
         return false;
     }
     for (size_t i = 0; i < size; ++i) {
-        MetadataType type = static_cast<MetadataType>(parcel.ReadInt32());
+        int32_t typeValue = 0;
+        cond = !parcel.ReadInt32(typeValue);
+        CHECK_ERROR_RETURN_RET_LOG(cond, false, "Failed to read metadata type from parcel.");
+        MetadataType type = static_cast<MetadataType>(typeValue);
         std::shared_ptr<ImageMetadata> imagedataPtr(nullptr);
         if (type == MetadataType::EXIF) {
             imagedataPtr.reset(ExifMetadata::Unmarshalling(parcel));
@@ -927,11 +934,15 @@ Picture *Picture::Unmarshalling(Parcel &parcel, PICTURE_ERR &error)
 
     CHECK_ERROR_RETURN_RET_LOG(!pixelmapPtr, nullptr, "Failed to unmarshal main PixelMap.");
     picture->SetMainPixel(pixelmapPtr);
-    uint64_t numAuxiliaryPictures = parcel.ReadUint64();
+    uint64_t numAuxiliaryPictures = 0;
+    bool cond = !parcel.ReadUint64(numAuxiliaryPictures);
+    CHECK_ERROR_RETURN_RET_LOG(cond, nullptr, "Failed to read numAuxiliaryPictures from parcel.");
     CHECK_ERROR_RETURN_RET(numAuxiliaryPictures > MAX_AUXILIARY_PICTURE_COUNT, nullptr);
 
     for (size_t i = NUM_0; i < numAuxiliaryPictures; ++i) {
-        int32_t type = parcel.ReadInt32();
+        int32_t type = 0;
+        cond = !parcel.ReadInt32(type);
+        CHECK_ERROR_RETURN_RET_LOG(cond, nullptr, "Failed to read auxiliary picture type from parcel.");
         std::shared_ptr<AuxiliaryPicture> auxPtr(AuxiliaryPicture::Unmarshalling(parcel));
         CHECK_ERROR_RETURN_RET_LOG(!auxPtr, nullptr, "Failed to unmarshal auxiliary picture of type %d.", type);
         picture->SetAuxiliaryPicture(auxPtr);
