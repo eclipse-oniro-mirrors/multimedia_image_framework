@@ -53,6 +53,12 @@ constexpr uint8_t JPEG_MARKER_APP2 = 0xE2;
 constexpr uint8_t JPEG_MARKER_APP5 = 0xE5;
 constexpr uint8_t JPEG_MARKER_APP8 = 0xE8;
 constexpr uint8_t JPEG_MARKER_APP11 = 0xEB;
+constexpr uint8_t JPEG_MARKER_TEM = 0x01;
+constexpr uint8_t JPEG_MARKER_RST0 = 0xD0;
+constexpr uint8_t JPEG_MARKER_RST7 = 0xD7;
+constexpr uint8_t JPEG_MARKER_SOI = 0xD8;
+constexpr uint8_t JPEG_MARKER_EOI = 0xD9;
+constexpr uint8_t JPEG_MARKER_SOS = 0xDA;
 constexpr uint32_t MOVE_ONE_BYTE = 8;
 constexpr uint32_t VIVID_BASE_IMAGE_MARKER_SIZE = 22;
 constexpr int JPEG_MARKER_LENGTH_SIZE = 2;
@@ -91,6 +97,7 @@ const float SM_LUM_SCALE = 0.0001f;
 
 constexpr static int JPEG_MARKER_LENGTH = 2;
 static constexpr uint8_t JPEG_SOI_HEADER[] = { 0xFF, 0xD8 };
+static constexpr uint8_t MPF_IDENTIFIER[MPF_TAG_SIZE] = { 'M', 'P', 'F', '\0' };
 
 static constexpr uint8_t ITUT35_TAG[ITUT35_TAG_SIZE] = {
     'I', 'T', 'U', 'T', '3', '5',
@@ -399,21 +406,124 @@ ImageHdrType HdrHelper::CheckHdrType(SkCodec* codec, uint32_t& offset) __attribu
     return type;
 }
 
+static bool MarkerHasNoLength(uint8_t marker)
+{
+    return marker == JPEG_MARKER_TEM || marker == JPEG_MARKER_SOI ||
+        (marker >= JPEG_MARKER_RST0 && marker <= JPEG_MARKER_RST7);
+}
+
+static bool GetMarkerCodeOffset(uint8_t* data, size_t size, size_t markerOffset, size_t& markerCodeOffset)
+{
+    if (data[markerOffset] != JPEG_MARKER_PREFIX) {
+        return false;
+    }
+    markerCodeOffset = markerOffset;
+    while (markerCodeOffset < size && data[markerCodeOffset] == JPEG_MARKER_PREFIX) {
+        markerCodeOffset++;
+    }
+    return markerCodeOffset < size;
+}
+
+struct JpegMarkerPayload {
+    size_t offset = 0;
+    uint32_t size = 0;
+    size_t nextMarkerOffset = 0;
+};
+
+static bool GetMarkerPayload(uint8_t* data, size_t size, size_t markerCodeOffset, JpegMarkerPayload& payload)
+{
+    size_t lengthOffset = markerCodeOffset + UINT8_BYTE_COUNT;
+    if (lengthOffset >= size || size - lengthOffset < JPEG_MARKER_LENGTH_SIZE) {
+        return false;
+    }
+    uint16_t segmentLength = static_cast<uint16_t>(data[lengthOffset] << MOVE_ONE_BYTE) |
+        data[lengthOffset + UINT8_BYTE_COUNT];
+    if (segmentLength < JPEG_MARKER_LENGTH_SIZE || segmentLength > size - lengthOffset) {
+        return false;
+    }
+    payload.offset = lengthOffset + JPEG_MARKER_LENGTH_SIZE;
+    payload.size = segmentLength - JPEG_MARKER_LENGTH_SIZE;
+    payload.nextMarkerOffset = lengthOffset + segmentLength;
+    return true;
+}
+
+static bool ParseMpfGainMapOffset(uint8_t* data, size_t payloadOffset, uint32_t payloadSize, uint32_t& offset)
+{
+    if (payloadSize < MPF_TAG_SIZE ||
+        memcmp(data + payloadOffset, MPF_IDENTIFIER, sizeof(MPF_IDENTIFIER)) != EOK) {
+        return false;
+    }
+    auto jpegMpf = std::make_unique<JpegMpfParser>();
+    if (!jpegMpf->Parsing(data + payloadOffset, payloadSize) || jpegMpf->images_.size() <= INDEX_ONE ||
+        payloadOffset > UINT32_MAX - MPF_TAG_SIZE) {
+        return false;
+    }
+    uint32_t mpfTiffOffset = static_cast<uint32_t>(payloadOffset) + MPF_TAG_SIZE;
+    bool offsetOverflow = __builtin_add_overflow(mpfTiffOffset, jpegMpf->images_[INDEX_ONE].offset, &offset);
+    CHECK_ERROR_RETURN_RET_LOG(offsetOverflow, false, "GetMpfGainMapOffset offset is overflowed");
+    return true;
+}
+
+static bool GetMpfGainMapOffset(uint8_t* data, size_t size, uint32_t& offset)
+{
+    if (data == nullptr || size < sizeof(JPEG_SOI_HEADER) ||
+        memcmp(data, JPEG_SOI_HEADER, sizeof(JPEG_SOI_HEADER)) != EOK) {
+        return false;
+    }
+
+    size_t markerOffset = sizeof(JPEG_SOI_HEADER);
+    while (markerOffset < size) {
+        size_t markerCodeOffset = 0;
+        if (!GetMarkerCodeOffset(data, size, markerOffset, markerCodeOffset)) {
+            return false;
+        }
+        uint8_t marker = data[markerCodeOffset];
+        if (marker == 0 || marker == JPEG_MARKER_EOI || marker == JPEG_MARKER_SOS) {
+            return false;
+        }
+        if (MarkerHasNoLength(marker)) {
+            markerOffset = markerCodeOffset + UINT8_BYTE_COUNT;
+            continue;
+        }
+        JpegMarkerPayload payload;
+        if (!GetMarkerPayload(data, size, markerCodeOffset, payload)) {
+            return false;
+        }
+        if (marker == JPEG_MARKER_APP2 && ParseMpfGainMapOffset(data, payload.offset, payload.size, offset)) {
+            return true;
+        }
+        markerOffset = payload.nextMarkerOffset;
+    }
+    return false;
+}
+
 bool HdrHelper::CheckGainmapOffset(ImageHdrType type, InputDataStream* stream, uint32_t& offset)
 {
     CHECK_ERROR_RETURN_RET(type == Media::ImageHdrType::HDR_LOG_DUAL, true);
     CHECK_ERROR_RETURN_RET(stream == nullptr, false);
 
     uint32_t streamSize = stream->GetStreamSize();
-    bool invalidOffset = offset >= streamSize || JPEG_MARKER_LENGTH > (streamSize - offset);
-    CHECK_ERROR_RETURN_RET_LOG(invalidOffset, false,
-        "HDR-IMAGE CheckHdrType invalid offset %{public}d for stream size %{public}d", offset, streamSize);
-
     uint8_t *outBuffer = stream->GetDataPtr();
     CHECK_ERROR_RETURN_RET_LOG(outBuffer == nullptr, false, "HDR-IMAGE CheckHdrTYpe null data pointer");
 
-    bool invalidSoi = std::memcmp(JPEG_SOI_HEADER, outBuffer + offset, JPEG_MARKER_LENGTH) != 0;
+    const uint32_t originalOffset = offset;
+    uint32_t gainMapOffset = offset;
+    if (type == Media::ImageHdrType::HDR_ISO_DUAL) {
+        CHECK_ERROR_RETURN_RET_LOG(!GetMpfGainMapOffset(outBuffer, streamSize, gainMapOffset), false,
+            "HDR-IMAGE ISO MPF physical offset resolution failed, input offset %{public}u, stream size %{public}u",
+            originalOffset, streamSize);
+    }
+    bool invalidOffset = gainMapOffset >= streamSize || JPEG_MARKER_LENGTH > (streamSize - gainMapOffset);
+    CHECK_ERROR_RETURN_RET_LOG(invalidOffset, false,
+        "HDR-IMAGE CheckHdrType invalid offset %{public}d for stream size %{public}d", gainMapOffset, streamSize);
+
+    bool invalidSoi = std::memcmp(JPEG_SOI_HEADER, outBuffer + gainMapOffset, JPEG_MARKER_LENGTH) != 0;
     CHECK_ERROR_RETURN_RET_LOG(invalidSoi, false, "HDR-IMAGE CheckHdrType gainmap memcpy SOI error");
+    offset = gainMapOffset;
+    if (type == Media::ImageHdrType::HDR_ISO_DUAL) {
+        IMAGE_LOGD("HDR-IMAGE ISO MPF physical offset validated, input offset %{public}u, "
+            "resolved offset %{public}u, stream size %{public}u", originalOffset, gainMapOffset, streamSize);
+    }
     return true;
 }
 
@@ -1368,7 +1478,8 @@ vector<uint8_t> HdrJpegPackerHelper::PackISOMetadataMarker(HdrMetadata& metadata
     return bytes;
 }
 
-static bool WriteJpegPreApp(sk_sp<SkData>& imageData, SkWStream& outputStream, uint32_t& index, uint32_t& jfifSize)
+static bool WriteJpegPreApp(sk_sp<SkData>& imageData, SkWStream& outputStream,
+    uint32_t& index, uint32_t& jfifSize)
 {
     bool cond = imageData == nullptr || imageData->data() == nullptr || imageData->size() < JPEG_MARKER_TAG_SIZE;
     CHECK_ERROR_RETURN_RET_LOG(cond, false, "hdr encode, invalid image data");
@@ -1378,21 +1489,29 @@ static bool WriteJpegPreApp(sk_sp<SkData>& imageData, SkWStream& outputStream, u
     uint32_t dataSize = imageData->size();
     outputStream.write(imageBytes, JPEG_MARKER_TAG_SIZE);
     index += JPEG_MARKER_TAG_SIZE;
+
     while (index + JPEG_HEADRE_OFFSET < dataSize) {
         cond = imageBytes[index] != JPEG_MARKER_PREFIX;
         CHECK_ERROR_RETURN_RET(cond, false);
+
         if ((imageBytes[index + INDEX_ONE] & 0xF0) != JPEG_MARKER_APP0) {
             return true;
         }
-        uint16_t markerSize = (imageBytes[index + INDEX_TWO] << MOVE_ONE_BYTE) | imageBytes[index + INDEX_THREE];
+
+        uint16_t markerSize =
+            (imageBytes[index + INDEX_TWO] << MOVE_ONE_BYTE) |
+            imageBytes[index + INDEX_THREE];
         cond = index + markerSize + JPEG_MARKER_TAG_SIZE > dataSize;
         CHECK_ERROR_RETURN_RET(cond, false);
-        outputStream.write(imageBytes + index, markerSize + JPEG_MARKER_TAG_SIZE);
+
+        outputStream.write(
+            imageBytes + index, markerSize + JPEG_MARKER_TAG_SIZE);
         if (imageBytes[index + INDEX_ONE] == JPEG_MARKER_APP0) {
             jfifSize = markerSize + JPEG_MARKER_TAG_SIZE;
         }
-        index += (markerSize + JPEG_MARKER_TAG_SIZE);
+        index += markerSize + JPEG_MARKER_TAG_SIZE;
     }
+
     return false;
 }
 

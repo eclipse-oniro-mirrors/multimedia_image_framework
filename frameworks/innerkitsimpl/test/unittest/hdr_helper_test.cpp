@@ -14,9 +14,12 @@
  */
 
 #include <gtest/gtest.h>
+#include <utility>
+#include <vector>
 #include "hdr_helper.h"
 #include "include/codec/SkCodec.h"
 #include "include/codec/SkEncodedImageFormat.h"
+#include "jpeg_mpf_parser.h"
 #include "SkStream.h"
 #include "SkData.h"
 #include "media_errors.h"
@@ -44,6 +47,7 @@ public:
 class MockInputDataStream : public InputDataStream {
 public:
     MockInputDataStream() = default;
+    explicit MockInputDataStream(std::vector<uint8_t> data) : data_(std::move(data)) {}
     ~MockInputDataStream() = default;
 
     bool Read(uint32_t desiredSize, DataStreamBuffer &outData) override { return true; }
@@ -54,9 +58,63 @@ public:
         { return true; }
     uint32_t Tell() override { return 0; }
     bool Seek(uint32_t position) override { return true; }
-    uint8_t *GetDataPtr() override { return nullptr; }
-    size_t GetStreamSize() override { return STREAM_SIZE_10; }
+    uint8_t *GetDataPtr() override { return data_.empty() ? nullptr : data_.data(); }
+    size_t GetStreamSize() override { return data_.empty() ? STREAM_SIZE_10 : data_.size(); }
+
+private:
+    std::vector<uint8_t> data_;
 };
+
+static std::vector<uint8_t> BuildIsoDualJpeg(bool validGainmapSoi, uint32_t& legacyOffset,
+    uint32_t& gainmapOffset)
+{
+    constexpr uint8_t JPEG_MARKER_PREFIX = 0xFF;
+    constexpr uint8_t JPEG_MARKER_SOI = 0xD8;
+    constexpr uint8_t JPEG_MARKER_APP1 = 0xE1;
+    constexpr uint8_t JPEG_MARKER_DQT = 0xDB;
+    constexpr uint8_t JPEG_MARKER_SOS = 0xDA;
+    constexpr uint8_t JPEG_MARKER_EOI = 0xD9;
+    constexpr uint32_t JPEG_DQT_SEGMENT_SIZE = 6;
+    constexpr uint32_t MPF_TIFF_BASE_FROM_MARKER = 8;
+    const std::vector<uint8_t> jpegPrefix = {
+        JPEG_MARKER_PREFIX, JPEG_MARKER_SOI,
+        JPEG_MARKER_PREFIX, JPEG_MARKER_APP1, 0x00, 0x06, 0x00, JPEG_MARKER_PREFIX, 0xE2, 0x00,
+        JPEG_MARKER_PREFIX, JPEG_MARKER_DQT, 0x00, 0x04, 0x00, 0x00,
+    };
+    const std::vector<uint8_t> primaryTail = {
+        JPEG_MARKER_PREFIX, JPEG_MARKER_SOS, 0x00, 0x02,
+        JPEG_MARKER_PREFIX, JPEG_MARKER_EOI,
+    };
+    const uint8_t gainmapPrefix = validGainmapSoi ? JPEG_MARKER_PREFIX : 0x00;
+    const uint8_t gainmapSoi = validGainmapSoi ? JPEG_MARKER_SOI : 0x00;
+    const std::vector<uint8_t> gainmapJpeg = {
+        gainmapPrefix, gainmapSoi,
+        JPEG_MARKER_PREFIX, JPEG_MARKER_EOI,
+    };
+    const uint32_t mpfMarkerOffset = static_cast<uint32_t>(jpegPrefix.size());
+    SingleJpegImage baseImage = {
+        .offset = 0,
+        .size = 0,
+    };
+    SingleJpegImage gainmapImage = {
+        .offset = 0,
+        .size = static_cast<uint32_t>(gainmapJpeg.size()),
+    };
+    std::vector<uint8_t> mpfMarker = JpegMpfPacker::PackHdrJpegMpfMarker(baseImage, gainmapImage);
+    gainmapOffset = mpfMarkerOffset + static_cast<uint32_t>(mpfMarker.size()) +
+        static_cast<uint32_t>(primaryTail.size());
+    gainmapImage.offset = gainmapOffset - mpfMarkerOffset - MPF_TIFF_BASE_FROM_MARKER;
+    baseImage.size = gainmapOffset;
+    mpfMarker = JpegMpfPacker::PackHdrJpegMpfMarker(baseImage, gainmapImage);
+    legacyOffset = mpfMarkerOffset - JPEG_DQT_SEGMENT_SIZE + MPF_TIFF_BASE_FROM_MARKER + gainmapImage.offset;
+
+    std::vector<uint8_t> jpeg = jpegPrefix;
+    jpeg.insert(jpeg.end(), mpfMarker.begin(), mpfMarker.end());
+    jpeg.insert(jpeg.end(), primaryTail.begin(), primaryTail.end());
+    jpeg.insert(jpeg.end(), gainmapJpeg.begin(), gainmapJpeg.end());
+    return jpeg;
+}
+
 /**
  * @tc.name: CheckHdrTypeTest001
  * @tc.desc: Test CheckHdrType when SkEncodedImageFormat is PNG
@@ -106,6 +164,66 @@ HWTEST_F(HdrHelperTest, CheckGainmapOffsetTest002, TestSize.Level3)
     bool result = HdrHelper::CheckGainmapOffset(type, stream, offset);
     ASSERT_FALSE(result);
     GTEST_LOG_(INFO) << "HdrHelperTest: CheckGainmapOffsetTest002 end";
+}
+
+/**
+ * @tc.name: CheckGainmapOffsetTest004
+ * @tc.desc: Reject an MPF-relative offset whose target is not a JPEG SOI
+ * @tc.type: FUNC
+ */
+HWTEST_F(HdrHelperTest, CheckGainmapOffsetTest004, TestSize.Level3)
+{
+    uint32_t legacyOffset = 0;
+    uint32_t gainmapOffset = 0;
+    std::vector<uint8_t> jpeg = BuildIsoDualJpeg(false, legacyOffset, gainmapOffset);
+    MockInputDataStream stream(std::move(jpeg));
+    uint32_t offset = legacyOffset;
+    ASSERT_GT(gainmapOffset, legacyOffset);
+
+    bool result = HdrHelper::CheckGainmapOffset(ImageHdrType::HDR_ISO_DUAL, &stream, offset);
+
+    ASSERT_FALSE(result);
+    ASSERT_EQ(offset, legacyOffset);
+}
+
+/**
+ * @tc.name: CheckGainmapOffsetTest005
+ * @tc.desc: Reject a truncated MPF APP2 segment without scanning beyond its declared bounds
+ * @tc.type: FUNC
+ */
+HWTEST_F(HdrHelperTest, CheckGainmapOffsetTest005, TestSize.Level3)
+{
+    std::vector<uint8_t> jpeg = {
+        0xFF, 0xD8,
+        0xFF, 0xE2, 0x00, 0x10, 'M', 'P', 'F', 0x00,
+    };
+    MockInputDataStream stream(std::move(jpeg));
+    uint32_t offset = STREAM_SIZE_10;
+
+    bool result = HdrHelper::CheckGainmapOffset(ImageHdrType::HDR_ISO_DUAL, &stream, offset);
+
+    ASSERT_FALSE(result);
+}
+
+/**
+ * @tc.name: CheckGainmapOffsetTest006
+ * @tc.desc: Reject an ISO dual JPEG without an MPF APP2 segment
+ * @tc.type: FUNC
+ */
+HWTEST_F(HdrHelperTest, CheckGainmapOffsetTest006, TestSize.Level3)
+{
+    std::vector<uint8_t> jpeg = {
+        0xFF, 0xD8,
+        0xFF, 0xDB, 0x00, 0x04, 0x00, 0x00,
+        0xFF, 0xDA, 0x00, 0x02,
+        0xFF, 0xD9,
+    };
+    MockInputDataStream stream(std::move(jpeg));
+    uint32_t offset = 0;
+
+    bool result = HdrHelper::CheckGainmapOffset(ImageHdrType::HDR_ISO_DUAL, &stream, offset);
+
+    ASSERT_FALSE(result);
 }
 
 /**
