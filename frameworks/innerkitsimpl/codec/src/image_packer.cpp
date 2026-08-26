@@ -51,6 +51,7 @@ namespace Media {
 using namespace ImagePlugin;
 using namespace MultimediaPlugin;
 static constexpr uint8_t QUALITY_MAX = 100;
+static constexpr uint32_t MAX_C2PA_DATA_SIZE_IN_BYTES = 1U << 22; // 4MB = 4194304 bytes
 const static std::string EXTENDED_ENCODER = "image/jpeg,image/png,image/webp";
 static constexpr size_t SIZE_ZERO = 0;
 static constexpr uint8_t BITS_PER_BYTE = 8;
@@ -355,6 +356,7 @@ void ImagePacker::CopyOptionsToPlugin(const PackOption &opts, PlEncodeOptions &p
     plOpts.sizeLimit.antiAliasingLevel = opts.sizeLimit.antiAliasingLevel;
     plOpts.needsPackGPS = opts.needsPackGPS;
     plOpts.astcPackingOption.enableGPUEncode = opts.astcPackingOption.enableGPUEncode;
+    plOpts.c2paDataSize = opts.c2paDataSize;
 
     if (opts.format == IMAGE_TIFF_FORMAT) {
         CopyTiffPackingOptions(opts.tiffPackingOption, plOpts.tiffPackingOption);
@@ -380,7 +382,8 @@ void ImagePacker::FreeOldPackerStream()
 
 bool ImagePacker::IsPackOptionValid(const PackOption &option)
 {
-    return !(option.quality > QUALITY_MAX || option.format.empty());
+    return !(option.quality > QUALITY_MAX || option.format.empty() ||
+        option.c2paDataSize > MAX_C2PA_DATA_SIZE_IN_BYTES);
 }
 
 uint32_t ImagePacker::DoEncodingFunc(std::function<uint32_t(ImagePlugin::AbsImageEncoder*)> func, bool forAll)

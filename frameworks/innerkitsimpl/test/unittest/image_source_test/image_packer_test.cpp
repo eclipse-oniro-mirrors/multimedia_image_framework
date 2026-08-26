@@ -44,8 +44,10 @@ namespace Multimedia {
 constexpr uint32_t NUM_1 = 1;
 constexpr uint32_t NUM_100 = 100;
 constexpr uint32_t NUM_128 = 128;
+constexpr uint32_t MAX_C2PA_DATA_SIZE = 1U << 22;
 constexpr int64_t BUFFER_SIZE = 2 * 1024 * 1024;
 constexpr uint32_t MAX_IMAGE_SIZE = 10 * 1024;
+static constexpr uint32_t BYTES_PER_KILOBYTE = 1024;
 static const std::string IMAGE_INPUT_JPEG_PATH = "/data/local/tmp/image/test_packing.jpg";
 static const std::string IMAGE_JPG_SRC = "/data/local/tmp/image/test_packing_exif.jpg";
 static const std::string IMAGE_JPG_DEST = "/data/local/tmp/image/test_jpg2jpg_out.jpg";
@@ -804,9 +806,62 @@ HWTEST_F(ImagePackerTest, IsPackOptionValidTest002, TestSize.Level3)
     PackOption option;
     option.quality = NUM_100;
     option.format = "image/jpeg";
+    option.c2paDataSize = MAX_C2PA_DATA_SIZE;
     bool ret = packer.IsPackOptionValid(option);
     ASSERT_EQ(ret, true);
     GTEST_LOG_(INFO) << "ImagePackerTest: IsPackOptionValidTest002 end";
+}
+
+/**
+ * @tc.name: IsPackOptionValidTest003
+ * @tc.desc: test IsPackOptionValid
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagePackerTest, IsPackOptionValidTest003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePackerTest: IsPackOptionValidTest003 start";
+    ImagePacker packer;
+    PackOption option;
+    option.quality = NUM_100;
+    option.format = "image/jpeg";
+    option.c2paDataSize = MAX_C2PA_DATA_SIZE + NUM_1;
+    bool ret = packer.IsPackOptionValid(option);
+    ASSERT_EQ(ret, false);
+    GTEST_LOG_(INFO) << "ImagePackerTest: IsPackOptionValidTest003 end";
+}
+
+/**
+ * @tc.name: CopyOptionsToPluginTest001
+ * @tc.desc: test C2PA size conversion for JPEG and HEIF
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagePackerTest, CopyOptionsToPluginTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePackerTest: CopyOptionsToPluginTest001 start";
+    ImagePacker packer;
+    PackOption option;
+    ImagePlugin::PlEncodeOptions pluginOptions;
+
+    option.format = "image/jpeg";
+    option.c2paDataSize = 1024 + NUM_1;
+    packer.CopyOptionsToPlugin(option, pluginOptions);
+    ASSERT_EQ(pluginOptions.c2paDataSize, BYTES_PER_KILOBYTE + NUM_1);
+
+    option.format = "image/heif";
+    option.c2paDataSize = 1024 + NUM_1;
+    packer.CopyOptionsToPlugin(option, pluginOptions);
+    ASSERT_EQ(pluginOptions.c2paDataSize, BYTES_PER_KILOBYTE + NUM_1);
+
+    option.format = "image/jpeg";
+    option.c2paDataSize = MAX_C2PA_DATA_SIZE;
+    packer.CopyOptionsToPlugin(option, pluginOptions);
+    ASSERT_EQ(pluginOptions.c2paDataSize, MAX_C2PA_DATA_SIZE);
+
+    option.format = "image/jpg";
+    option.c2paDataSize = NUM_1;
+    packer.CopyOptionsToPlugin(option, pluginOptions);
+    ASSERT_EQ(pluginOptions.c2paDataSize, 1U);
+    GTEST_LOG_(INFO) << "ImagePackerTest: CopyOptionsToPluginTest001 end";
 }
 
 /**

@@ -88,6 +88,7 @@ struct OH_PackingOptions {
     int32_t desiredDynamicRange = IMAGE_PACKER_DYNAMIC_RANGE_SDR;
     bool needsPackProperties = false;
     bool needsPackDfxData = false;
+    uint32_t c2paDataSize = 0;
 #ifndef CROSS_PLATFORM
     uint16_t loop;
     uint16_t* delayTimes;
@@ -170,6 +171,7 @@ static Image_ErrorCode CopyPackingOptions(const OH_PackingOptions *options, Pack
     packOption.quality = options->quality;
     packOption.needsPackProperties = options->needsPackProperties;
     packOption.needsPackDfxData = options->needsPackDfxData;
+    packOption.c2paDataSize = options->c2paDataSize;
     packOption.desiredDynamicRange = ParseDynamicRange(options->desiredDynamicRange);
     return IMAGE_SUCCESS;
 }
@@ -339,6 +341,40 @@ Image_ErrorCode OH_PackingOptions_SetNeedsPackDfxData(OH_PackingOptions *options
         return IMAGE_PACKER_INVALID_PARAMETER;
     }
     options->needsPackDfxData = needsPackDfxData;
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_PackingOptions_GetC2paDataSize(OH_PackingOptions *options, uint32_t *c2paDataSize)
+{
+    if (!OHOS::Media::ImageUtils::IsSystemApp()) {
+        IMAGE_LOGE("This interface can be called only by system apps.");
+        return IMAGE_PERMISSIONS_FAILED;
+    }
+    if (options == nullptr || c2paDataSize == nullptr) {
+        return IMAGE_PACKER_INVALID_PARAMETER;
+    }
+    *c2paDataSize = options->c2paDataSize;
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_PackingOptions_SetC2paDataSize(OH_PackingOptions *options, uint32_t c2paDataSize)
+{
+    if (!OHOS::Media::ImageUtils::IsSystemApp()) {
+        IMAGE_LOGE("This interface can be called only by system apps.");
+        return IMAGE_PERMISSIONS_FAILED;
+    }
+    if (options == nullptr) {
+        return IMAGE_PACKER_INVALID_PARAMETER;
+    }
+    // Consistent with ImagePacker::IsPackOptionValid, the reserved C2PA space is limited to 4MB. 
+    static constexpr uint32_t MAX_C2PA_DATA_SIZE_IN_BYTES = 1U << 22; 
+    if (c2paDataSize > MAX_C2PA_DATA_SIZE_IN_BYTES) {	 
+        IMAGE_LOGE("Invalid c2paDataSize, exceeds the maximum %{public}u bytes.", MAX_C2PA_DATA_SIZE_IN_BYTES);
+        return IMAGE_PACKER_INVALID_PARAMETER;
+    }
+    options->c2paDataSize = c2paDataSize;
     return IMAGE_SUCCESS;
 }
 

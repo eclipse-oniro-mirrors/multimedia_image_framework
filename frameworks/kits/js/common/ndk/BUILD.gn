@@ -207,6 +207,7 @@ ohos_shared_library("image_packer") {
     "$BASE_DIR/multimedia/image_framework/interfaces/kits/native/include",
     "$BASE_DIR/multimedia/image_framework/interfaces/kits/native/include/image",
     "$BASE_DIR/multimedia/image_framework/interfaces/innerkits/include",
+    "$BASE_DIR/multimedia/image_framework/plugins/manager/include/image",
     "$BASE_DIR/multimedia/image_framework/frameworks/kits/js/common/pixelmap_ndk",
     "$BASE_DIR/multimedia/image_framework/frameworks/kits/js/common/picture_ndk/include",
   ]

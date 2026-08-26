@@ -840,10 +840,9 @@ static void parseTiffOptions(napi_env env, napi_value root, PackOption* opts)
     ParseTiffOptions(env, tiffOpts, opts->tiffPackingOption);
 }
 
-static bool parsePackOptions(napi_env env, napi_value root, PackOption* opts)
+static bool parsePackFormat(napi_env env, napi_value root, PackOption* opts)
 {
     napi_value tmpValue = nullptr;
-
     if (!GET_NODE_BY_NAME(root, "format", tmpValue)) {
         IMAGE_LOGE("No format in pack option");
         return false;
@@ -885,6 +884,15 @@ static bool parsePackOptions(napi_env env, napi_value root, PackOption* opts)
         IMAGE_LOGE("Invalid pack option format type");
         return false;
     }
+    return true;
+}
+
+static bool parsePackOptions(napi_env env, napi_value root, PackOption* opts)
+{
+    if (!parsePackFormat(env, root, opts)) {
+        return false;
+    }
+
     opts->desiredDynamicRange = parseDynamicRange(env, root);
     IMAGE_LOGD("parsePackOptions format:[%{public}s]", opts->format.c_str());
     opts->needsPackProperties = parseNeedsPackProperties(env, root);
@@ -892,6 +900,9 @@ static bool parsePackOptions(napi_env env, napi_value root, PackOption* opts)
     GET_INT32_BY_NAME(root, "backgroundColor", opts->backgroundColor);
     parseSizeLimit(env, root, opts);
     GET_BOOL_BY_NAME(root, "needsPackGPS", opts->needsPackGPS);
+    if (ImageSystemProperties::IsSystemApp()) {
+        GET_UINT32_BY_NAME(root, "c2paDataSize", opts->c2paDataSize);
+    }
 
     parseTiffOptions(env, root, opts);
 
