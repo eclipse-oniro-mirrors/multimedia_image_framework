@@ -100,7 +100,7 @@ typedef enum {
 /**
  * @brief Enumerates SVG resource limit level.
  *
- * @since 26.0.1
+ * @since 26.1.0
  */
 typedef enum {
     /*
@@ -514,7 +514,7 @@ Image_ErrorCode OH_ImageSourceNative_CreateFromRawFile(RawFileDescriptor *rawFil
  *         <li>202 if a non-system application calls this system API.</li>
  *         <li>{@link IMAGE_SOURCE_INVALID_PARAMETER} source is nullptr.</li>
  *         </ul>
- * @since 26.0.1
+ * @since 26.1.0
  */
 Image_ErrorCode OH_ImageSourceNative_SetSvgResourceLimitLevel(OH_ImageSourceNative *source,
     OH_ImageSource_SVGResourceLimitLevel level);
@@ -530,7 +530,7 @@ Image_ErrorCode OH_ImageSourceNative_SetSvgResourceLimitLevel(OH_ImageSourceNati
  *         <li>202 if a non-system application calls this system API.</li>
  *         <li>{@link IMAGE_SOURCE_INVALID_PARAMETER} source or level is nullptr.</li>
  *         </ul>
- * @since 26.0.1
+ * @since 26.1.0
  */
 Image_ErrorCode OH_ImageSourceNative_GetSvgResourceLimitLevel(OH_ImageSourceNative *source,
     OH_ImageSource_SVGResourceLimitLevel *level);
