@@ -511,7 +511,7 @@ Image_ErrorCode OH_ImageSourceNative_CreateFromRawFile(RawFileDescriptor *rawFil
  * @param level Indicates the SVG resource limit level. For details, see {@link OH_ImageSource_SVGResourceLimitLevel}.
  * @return <ul>
  *         <li>{@link IMAGE_SUCCESS} if the execution is successful.</li>
- *         <li>202 if a non-system application calls this system API.</li>
+ *         <li>{@link OH_IMAGE_ERROR_NOT_SYSTEM_APPLICATION} if a non-system application calls this system API.</li>
  *         <li>{@link IMAGE_SOURCE_INVALID_PARAMETER} source is nullptr.</li>
  *         </ul>
  * @since 26.1.0
@@ -527,7 +527,7 @@ Image_ErrorCode OH_ImageSourceNative_SetSvgResourceLimitLevel(OH_ImageSourceNati
  * For details, see {@link OH_ImageSource_SVGResourceLimitLevel}.
  * @return <ul>
  *         <li>{@link IMAGE_SUCCESS} if the execution is successful.</li>
- *         <li>202 if a non-system application calls this system API.</li>
+ *         <li>{@link OH_IMAGE_ERROR_NOT_SYSTEM_APPLICATION} if a non-system application calls this system API.</li>
  *         <li>{@link IMAGE_SOURCE_INVALID_PARAMETER} source or level is nullptr.</li>
  *         </ul>
  * @since 26.1.0
