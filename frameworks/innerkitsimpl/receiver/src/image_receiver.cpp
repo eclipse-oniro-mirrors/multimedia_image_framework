@@ -15,6 +15,12 @@
 
 #include "image_receiver.h"
 
+#include <cctype>
+#if !defined(CROSS_PLATFORM)
+#include <linux/dma-buf.h>
+#include <sys/ioctl.h>
+#endif
+
 #include "image_log.h"
 #include "image_packer.h"
 #include "image_source.h"
@@ -31,6 +37,13 @@
 
 namespace OHOS {
 namespace Media {
+
+constexpr char IMAGE_RECEIVER_NUMERIC_PREFIX[] = "ImageReceiver:";
+constexpr char IMAGE_RECEIVER_LEAK_TYPE[] = "ImageReceiver";
+#if !defined(CROSS_PLATFORM)
+#define DMA_BUF_SET_LEAK_TYPE _IOW(DMA_BUF_BASE, 5, const char *)
+#endif
+
 ImageReceiver::~ImageReceiver()
 {
     std::lock_guard<std::mutex> guard(imageReceiverMutex_);
@@ -288,6 +301,7 @@ OHOS::sptr<OHOS::SurfaceBuffer> ImageReceiver::ReadNextImage(int64_t &timestamp)
         }
         DumpSurfaceBufferFromImageReceiver(buffer, "imageReceiver");
         iraContext_->currentBuffer_ = buffer;
+        TryApplyMemoryNameLocked(buffer);
     } else {
         IMAGE_LOGD("buffer is null");
     }
@@ -327,6 +341,7 @@ OHOS::sptr<OHOS::SurfaceBuffer> ImageReceiver::ReadLastImage(int64_t &timestamp)
     }
 
     iraContext_->currentBuffer_ = bufferBefore;
+    TryApplyMemoryNameLocked(bufferBefore);
     IMAGE_LOGD("[ImageReceiver] ReadLastImage %{public}lld", static_cast<long long>(timestamp));
     return iraContext_->GetCurrentBuffer();
 }
@@ -376,6 +391,71 @@ std::shared_ptr<NativeImage> ImageReceiver::LastNativeImage()
         return nullptr;
     }
     return std::make_shared<NativeImage>(surfaceBuffer, GetBufferProcessor(), timestamp);
+}
+
+std::string ImageReceiver::SanitizeMemoryName(const std::string &name)
+{
+    std::string filtered;
+    filtered.reserve(name.size());
+    for (char c : name) {
+        if (isgraph(static_cast<unsigned char>(c)) != 0) {
+            filtered.push_back(c);
+        }
+    }
+    CHECK_ERROR_RETURN_RET(filtered.empty(), "");
+    bool allDigit = true;
+    for (unsigned char c : filtered) {
+        if (!std::isdigit(c)) {
+            allDigit = false;
+            break;
+        }
+    }
+    if (allDigit) {
+        std::string prefixed = IMAGE_RECEIVER_NUMERIC_PREFIX + filtered;
+        return prefixed;
+    }
+    return filtered;
+}
+
+uint32_t ImageReceiver::ApplyDmaMemoryNameToBuffer(const OHOS::sptr<OHOS::SurfaceBuffer> &buffer,
+    const std::string &memoryName) const
+{
+#if defined(CROSS_PLATFORM)
+    (void)buffer;
+    (void)memoryName;
+    return ERR_MEMORY_NOT_SUPPORT;
+#else
+    CHECK_ERROR_RETURN_RET(buffer == nullptr || memoryName.empty(), COMMON_ERR_INVALID_PARAMETER);
+    int fd = buffer->GetFileDescriptor();
+    CHECK_ERROR_RETURN_RET_LOG(fd < 0, ERR_MEMORY_NOT_SUPPORT, "File descriptor is invalid");
+    int ret = TEMP_FAILURE_RETRY(ioctl(fd, DMA_BUF_SET_NAME_A, memoryName.c_str()));
+    CHECK_ERROR_RETURN_RET_LOG(ret != 0, ERR_MEMORY_NOT_SUPPORT, "Failed to set DMA buffer name");
+    ret = TEMP_FAILURE_RETRY(ioctl(fd, DMA_BUF_SET_LEAK_TYPE, IMAGE_RECEIVER_LEAK_TYPE));
+    if (ret != 0) {
+        IMAGE_LOGD("[ImageReceiver] set dma buf leak type failed");
+    }
+    return SUCCESS;
+#endif
+}
+
+void ImageReceiver::TryApplyMemoryNameLocked(const OHOS::sptr<OHOS::SurfaceBuffer> &buffer)
+{
+    CHECK_ERROR_RETURN(memoryName_.empty() || buffer == nullptr);
+    uint32_t ret = ApplyDmaMemoryNameToBuffer(buffer, memoryName_);
+    if (ret != SUCCESS) {
+        IMAGE_LOGD("[ImageReceiver] apply memory name to buffer failed, ret=%{public}u", ret);
+    }
+}
+
+uint32_t ImageReceiver::SetMemoryName(const std::string &name)
+{
+    constexpr size_t dmaBufNameMaxLen = 255;
+    std::lock_guard<std::mutex> guard(imageReceiverMutex_);
+    std::string sanitized = SanitizeMemoryName(name);
+    CHECK_ERROR_RETURN_RET_LOG(sanitized.empty() || sanitized.length() > dmaBufNameMaxLen,
+        COMMON_ERR_INVALID_PARAMETER, "Sanitized memory name is empty or too long");
+    memoryName_ = sanitized;
+    return SUCCESS;
 }
 } // namespace Media
 } // namespace OHOS

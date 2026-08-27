@@ -20,6 +20,7 @@
 #include "image_log.h"
 #include "image_napi_utils.h"
 #include "image_napi.h"
+#include "image_error_convert.h"
 #include "image_receiver_context.h"
 #include "image_receiver_manager.h"
 
@@ -149,6 +150,7 @@ napi_value ImageReceiverNapi::Init(napi_env env, napi_value exports)
         DECLARE_NAPI_FUNCTION("on", JsOn),
         DECLARE_NAPI_FUNCTION("off", JsOff),
         DECLARE_NAPI_FUNCTION("release", JsRelease),
+        DECLARE_NAPI_FUNCTION("setMemoryName", JsSetMemoryName),
 #ifdef IMAGE_DEBUG_FLAG
         DECLARE_NAPI_GETTER("test", JsTest),
         DECLARE_NAPI_GETTER("checkDeviceTest", JsCheckDeviceTest),
@@ -1200,6 +1202,39 @@ void ImageReceiverNapi::release()
         NativeRelease();
         isRelease = true;
     }
+}
+
+napi_value ImageReceiverNapi::JsSetMemoryName(napi_env env, napi_callback_info info)
+{
+    napi_value result = nullptr;
+    napi_get_undefined(env, &result);
+#if defined(CROSS_PLATFORM)
+    return result;
+#else
+    napi_status napiStatus;
+    napi_value thisVar = nullptr;
+    size_t argCount = ARGS1;
+    napi_value argValue[ARGS1] = {0};
+    IMG_JS_ARGS(env, info, napiStatus, argCount, argValue, thisVar);
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(napiStatus), result, IMAGE_LOGE("fail to arg info"));
+    IMG_NAPI_CHECK_RET_D(argCount == ARGS1,
+        ImageNapiUtils::ThrowExceptionError(env, IMAGE_RECEIVER_INVALID_PARAMETER, "Invalid args count", true),
+        IMAGE_LOGE("Invalid args count %{public}zu", argCount));
+
+    std::string memoryName = ImageNapiUtils::GetStringArgument(env, argValue[0]);
+    ImageReceiverNapi *receiverNapi = nullptr;
+    napiStatus = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&receiverNapi));
+    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(napiStatus, receiverNapi), result, IMAGE_LOGE("fail to unwrap context"));
+    IMG_NAPI_CHECK_RET_D(receiverNapi->imageReceiver_ != nullptr, result,
+        ImageNapiUtils::ThrowExceptionError(env, IMAGE_RECEIVER_INVALID_PARAMETER, "Invalid imageReceiver", true));
+
+    uint32_t ret = receiverNapi->imageReceiver_->SetMemoryName(memoryName);
+    if (ret != SUCCESS) {
+        auto err = ImageErrorConvert::SetMemoryNameMakeErrMsg(ret);
+        ImageNapiUtils::ThrowExceptionError(env, err.first, err.second.c_str(), true);
+    }
+    return result;
+#endif
 }
 }  // namespace Media
 }  // namespace OHOS

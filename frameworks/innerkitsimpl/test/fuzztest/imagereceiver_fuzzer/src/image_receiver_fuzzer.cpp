@@ -16,12 +16,21 @@
 #include <fuzzer/FuzzedDataProvider.h>
 #include "image_receiver.h"
 #include "image_receiver_fuzzer.h"
+#include "image_receiver_manager.h"
 
 namespace OHOS {
 namespace Media {
 
 static constexpr uint32_t OPT_SIZE = 80;
 FuzzedDataProvider* FDP;
+
+static void ReleaseImageReceiverFromManager(const std::shared_ptr<ImageReceiver> &imageReceiver)
+{
+    if (imageReceiver == nullptr || imageReceiver->iraContext_ == nullptr) {
+        return;
+    }
+    ImageReceiverManager::ReleaseReceiverById(imageReceiver->iraContext_->GetReceiverKey());
+}
 
 void CreateImageReceiverByOptionsFuzzTest()
 {
@@ -33,6 +42,27 @@ void CreateImageReceiverByOptionsFuzzTest()
     options.height = FDP->ConsumeIntegral<int32_t>();
     options.capacity = FDP->ConsumeIntegral<int32_t>();
     auto imageReceiver = ImageReceiver::CreateImageReceiver(options);
+    ReleaseImageReceiverFromManager(imageReceiver);
+}
+
+void SetMemoryNameFuzzTest()
+{
+    if (FDP == nullptr) {
+        return;
+    }
+    ImageReceiverOptions options;
+    options.width = FDP->ConsumeIntegral<int32_t>();
+    options.height = FDP->ConsumeIntegral<int32_t>();
+    options.capacity = FDP->ConsumeIntegral<int32_t>();
+    auto imageReceiver = ImageReceiver::CreateImageReceiver(options);
+    if (imageReceiver == nullptr || imageReceiver->iraContext_ == nullptr) {
+        return;
+    }
+
+    size_t nameLen = FDP->remaining_bytes();
+    std::string name = FDP->ConsumeRandomLengthString(nameLen);
+    imageReceiver->SetMemoryName(name);
+    ReleaseImageReceiverFromManager(imageReceiver);
 }
 
 } // namespace Media
@@ -48,5 +78,6 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     OHOS::Media::FDP = &fdp;
     /* Run your code on data */
     OHOS::Media::CreateImageReceiverByOptionsFuzzTest();
+    OHOS::Media::SetMemoryNameFuzzTest();
     return 0;
 }

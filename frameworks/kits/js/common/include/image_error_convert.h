@@ -35,6 +35,7 @@ public:
     static std::pair<int32_t, std::string> XMPMetadataCommonMakeErrMsg(uint32_t errorCode);
     static std::pair<int32_t, std::string> XMPMetadataGetBlobMakeErrMsg(uint32_t errorCode);
     static std::pair<int32_t, std::string> CreateImageRawDataMakeErrMsg(uint32_t errorCode);
+    static std::pair<int32_t, std::string> SetMemoryNameMakeErrMsg(uint32_t errorCode);
 };
 } // namespace Media
 } // namespace OHOS

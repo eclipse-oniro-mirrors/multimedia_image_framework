@@ -161,8 +161,14 @@ public:
     std::shared_ptr<IBufferProcessor> GetBufferProcessor();
     std::shared_ptr<NativeImage> NextNativeImage();
     std::shared_ptr<NativeImage> LastNativeImage();
+    uint32_t SetMemoryName(const std::string &name);
 private:
+    std::string SanitizeMemoryName(const std::string &raw);
+    uint32_t ApplyDmaMemoryNameToBuffer(const OHOS::sptr<OHOS::SurfaceBuffer> &buffer,
+        const std::string &memoryName) const;
+    void TryApplyMemoryNameLocked(const OHOS::sptr<OHOS::SurfaceBuffer> &buffer);
     std::shared_ptr<IBufferProcessor> bufferProcessor_;
+    std::string memoryName_;
     int32_t SaveBufferAsImageInner(int &fd, OHOS::sptr<OHOS::SurfaceBuffer> buffer,
         InitializationOptions initializationOpts);
 };

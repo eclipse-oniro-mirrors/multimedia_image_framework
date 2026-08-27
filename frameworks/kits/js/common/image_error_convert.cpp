@@ -164,5 +164,16 @@ std::pair<int32_t, std::string> ImageErrorConvert::CreateImageRawDataMakeErrMsg(
             return std::make_pair<int32_t, std::string>(IMAGE_BAD_SOURCE, "Bad image source.");
     }
 }
+
+std::pair<int32_t, std::string> ImageErrorConvert::SetMemoryNameMakeErrMsg(uint32_t errorCode)
+{
+    switch (errorCode) {
+        case COMMON_ERR_INVALID_PARAMETER:
+            return std::make_pair<int32_t, std::string>(
+                static_cast<int32_t>(IMAGE_RECEIVER_INVALID_PARAMETER), "Invalid memory name.");
+        default:
+            return std::make_pair<int32_t, std::string>(IMAGE_RECEIVER_INVALID_PARAMETER, "Memory format not support.");
+    }
+}
 }  // namespace Media
 }  // namespace OHOS
