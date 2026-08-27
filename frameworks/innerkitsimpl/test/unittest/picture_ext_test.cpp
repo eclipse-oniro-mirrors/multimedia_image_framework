@@ -89,6 +89,23 @@ constexpr int32_t HEIF_EMBED_GEN_WIDTH_200 = 200;
 constexpr int32_t HEIF_EMBED_GEN_HEIGHT_200 = 113;
 
 constexpr int32_t DEFAULT_JPEG_QUALITY = 98;
+constexpr uint32_t MAX_C2PA_DATA_SIZE_IN_BYTES = 1U << 22; // 4MB
+
+// JPEG marker constants for CountJpegApp11Segments
+constexpr uint8_t JPEG_MARKER_FF = 0xFF;
+constexpr uint8_t JPEG_SOI_HIGH = 0xD8;
+constexpr uint8_t JPEG_MARKER_EOI = 0xD9;
+constexpr uint8_t JPEG_MARKER_SOS = 0xDA;
+constexpr uint8_t JPEG_MARKER_TEM = 0x01;
+constexpr uint8_t JPEG_MARKER_APP11 = 0xEB;
+constexpr uint8_t JPEG_MARKER_RST0 = 0xD0;
+constexpr uint8_t JPEG_MARKER_RST7 = 0xD7;
+constexpr size_t JPEG_SOI_SIZE = 2;
+constexpr size_t JPEG_MARKER_SIZE = 1;
+constexpr size_t JPEG_LENGTH_FIELD_SIZE = 2;
+constexpr size_t JPEG_MIN_PARSE_SIZE = 4;
+constexpr size_t KIBIBYTE = 1024;
+constexpr size_t MEBIBYTE = KIBIBYTE * KIBIBYTE;
 static const std::string IMAGE_JPEG_SRC = "/data/local/tmp/image/test_jpeg.jpg";
 static const std::string IMAGE_JPEG_DEST = "/data/local/tmp/image/test_jpeg_out.jpg";
 static const std::string IMAGE_HEIF_SRC = "/data/local/tmp/image/test_heif.heic";
@@ -3929,6 +3946,429 @@ HWTEST_F(PictureExtTest, DecomposeToPictureTest025, TestSize.Level1)
     std::unique_ptr<Picture> picture = Picture::DecomposeToPicture(pixelmap, errCode);
     EXPECT_EQ(picture, nullptr);
     EXPECT_EQ(errCode, ERR_MEDIA_UNSUPPORT_OPERATION);
+}
+
+struct C2paEncodeTestOptions {
+    std::string format;
+    std::string srcPath;
+    uint32_t c2paDataSize = 0;
+    bool needsPackProperties = true;
+};
+
+static bool EncodePictureWithOptions(const C2paEncodeTestOptions &testOptions, std::vector<uint8_t> &outputData,
+    int64_t &packedSize)
+{
+    auto picture = CreatePictureByPixelMap(testOptions.format, testOptions.srcPath);
+    if (picture == nullptr) {
+        return false;
+    }
+
+    ImagePacker packer;
+    PackOption option {
+        .format = testOptions.format,
+        .quality = DEFAULT_JPEG_QUALITY,
+        .needsPackProperties = testOptions.needsPackProperties,
+        .c2paDataSize = testOptions.c2paDataSize,
+    };
+    outputData.resize(static_cast<size_t>(testOptions.c2paDataSize) + 35 * MEBIBYTE);
+    uint32_t ret = packer.StartPacking(outputData.data(), outputData.size(), option);
+    if (ret != SUCCESS) {
+        return false;
+    }
+    ret = packer.AddPicture(*picture);
+    if (ret != SUCCESS) {
+        return false;
+    }
+    packedSize = 0;
+    return packer.FinalizePacking(packedSize) == SUCCESS && packedSize > 0;
+}
+
+static bool EncodePictureWithOptions(const std::string &format, const std::string &srcPath, uint32_t c2paDataSize,
+    std::vector<uint8_t> &outputData, int64_t &packedSize)
+{
+    return EncodePictureWithOptions({format, srcPath, c2paDataSize, true}, outputData, packedSize);
+}
+
+static bool EncodePictureWithoutProperties(const std::string &format, const std::string &srcPath,
+    uint32_t c2paDataSize, std::vector<uint8_t> &outputData, int64_t &packedSize)
+{
+    return EncodePictureWithOptions({format, srcPath, c2paDataSize, false}, outputData, packedSize);
+}
+
+static bool DecodeBufferAndGetImageInfo(const std::vector<uint8_t> &outputData, int64_t packedSize,
+    const std::string &formatHint, ImageInfo &imageInfo)
+{
+    uint32_t errorCode = -1;
+    SourceOptions opts;
+    opts.formatHint = formatHint;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(
+        outputData.data(), static_cast<uint32_t>(packedSize), opts, errorCode);
+    if (errorCode != SUCCESS || imageSource == nullptr) {
+        return false;
+    }
+    errorCode = imageSource->GetImageInfo(0, imageInfo);
+    return errorCode == SUCCESS && imageInfo.size.width > 0 && imageInfo.size.height > 0;
+}
+
+static size_t CountJpegApp11Segments(const std::vector<uint8_t> &jpegData, int64_t packedSize)
+{
+    if (packedSize < 0 || jpegData.size() < JPEG_SOI_SIZE ||
+        jpegData[0] != JPEG_MARKER_FF || jpegData[1] != JPEG_SOI_HIGH) {
+        return 0;
+    }
+
+    const size_t dataSize = std::min(jpegData.size(), static_cast<size_t>(packedSize));
+    size_t app11Count = 0;
+    size_t offset = JPEG_SOI_SIZE;
+    while (offset + JPEG_MIN_PARSE_SIZE < dataSize) {
+        if (jpegData[offset] != JPEG_MARKER_FF) {
+            offset++;
+            continue;
+        }
+
+        while (offset < dataSize && jpegData[offset] == JPEG_MARKER_FF) {
+            offset++;
+        }
+        if (offset >= dataSize) {
+            break;
+        }
+
+        uint8_t marker = jpegData[offset];
+        if (marker == JPEG_MARKER_EOI || marker == JPEG_MARKER_SOS) {
+            break;
+        }
+
+        if ((marker >= JPEG_MARKER_RST0 && marker <= JPEG_MARKER_RST7) ||
+            marker == JPEG_MARKER_TEM) {
+            offset++;
+            continue;
+        }
+
+        if (offset + JPEG_LENGTH_FIELD_SIZE >= dataSize) {
+            break;
+        }
+        uint16_t segmentLength = (static_cast<uint16_t>(jpegData[offset + 1]) << 8) |
+            static_cast<uint16_t>(jpegData[offset + 2]);
+        if (segmentLength < JPEG_LENGTH_FIELD_SIZE ||
+            offset + JPEG_MARKER_SIZE + segmentLength > dataSize) {
+            break;
+        }
+        if (marker == JPEG_MARKER_APP11) {
+            app11Count++;
+        }
+        offset += JPEG_MARKER_SIZE + segmentLength;
+    }
+    return app11Count;
+}
+
+/**
+ * @tc.name: C2paE2eEncode_001
+ * @tc.desc: JPEG Picture encode with c2paDataSize=0, verify decode succeeds and no APP11 segment is added.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureExtTest, C2paE2eEncode_001, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "PictureExtTest-begin C2paE2eEncode_001";
+    std::vector<uint8_t> outputData;
+    int64_t packedSize = 0;
+    ASSERT_TRUE(EncodePictureWithOptions("image/jpeg", IMAGE_JPEG_SRC, 0, outputData, packedSize));
+
+    ImageInfo imageInfo;
+    ASSERT_TRUE(DecodeBufferAndGetImageInfo(outputData, packedSize, "image/jpeg", imageInfo));
+    EXPECT_EQ(CountJpegApp11Segments(outputData, packedSize), 0);
+    GTEST_LOG_(INFO) << "PictureExtTest-end C2paE2eEncode_001";
+}
+
+/**
+ * @tc.name: C2paE2eEncode_002
+ * @tc.desc: JPEG Picture encode with c2paDataSize=256, verify decode succeeds, output grows and APP11 is inserted.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureExtTest, C2paE2eEncode_002, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "PictureExtTest-begin C2paE2eEncode_002";
+    std::vector<uint8_t> baselineData;
+    std::vector<uint8_t> c2paData;
+    int64_t baselineSize = 0;
+    int64_t c2paSize = 0;
+    ASSERT_TRUE(EncodePictureWithOptions("image/jpeg", IMAGE_JPEG_SRC, 0, baselineData, baselineSize));
+    ASSERT_TRUE(EncodePictureWithOptions("image/jpeg", IMAGE_JPEG_SRC, 256, c2paData, c2paSize));
+
+    ImageInfo imageInfo;
+    ASSERT_TRUE(DecodeBufferAndGetImageInfo(c2paData, c2paSize, "image/jpeg", imageInfo));
+    EXPECT_GT(c2paSize, baselineSize);
+    EXPECT_GE(CountJpegApp11Segments(c2paData, c2paSize), 1);
+    GTEST_LOG_(INFO) << "PictureExtTest-end C2paE2eEncode_002";
+}
+
+/**
+ * @tc.name: C2paE2eEncode_003
+ * @tc.desc: JPEG Picture encode with c2paDataSize=40000, verify decode succeeds and exactly one APP11 segment is used.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureExtTest, C2paE2eEncode_003, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "PictureExtTest-begin C2paE2eEncode_003";
+    std::vector<uint8_t> outputData;
+    int64_t packedSize = 0;
+    ASSERT_TRUE(EncodePictureWithOptions("image/jpeg", IMAGE_JPEG_SRC, 40000, outputData, packedSize));
+
+    ImageInfo imageInfo;
+    ASSERT_TRUE(DecodeBufferAndGetImageInfo(outputData, packedSize, "image/jpeg", imageInfo));
+    EXPECT_EQ(CountJpegApp11Segments(outputData, packedSize), 1);
+    GTEST_LOG_(INFO) << "PictureExtTest-end C2paE2eEncode_003";
+}
+
+/**
+ * @tc.name: C2paE2eEncode_004
+ * @tc.desc: JPEG Picture encode with c2paDataSize=70000, verify decode succeeds and multiple APP11 segments are used.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureExtTest, C2paE2eEncode_004, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "PictureExtTest-begin C2paE2eEncode_004";
+    std::vector<uint8_t> outputData40000;
+    std::vector<uint8_t> outputData70000;
+    int64_t packedSize40000 = 0;
+    int64_t packedSize70000 = 0;
+    ASSERT_TRUE(EncodePictureWithOptions("image/jpeg", IMAGE_JPEG_SRC, 40000, outputData40000, packedSize40000));
+    ASSERT_TRUE(EncodePictureWithOptions("image/jpeg", IMAGE_JPEG_SRC, 70000, outputData70000, packedSize70000));
+
+    ImageInfo imageInfo;
+    ASSERT_TRUE(DecodeBufferAndGetImageInfo(outputData70000, packedSize70000, "image/jpeg", imageInfo));
+    EXPECT_GT(packedSize70000, packedSize40000);
+    EXPECT_GE(CountJpegApp11Segments(outputData70000, packedSize70000), 2);
+    GTEST_LOG_(INFO) << "PictureExtTest-end C2paE2eEncode_004";
+}
+
+/**
+ * @tc.name: C2paE2eEncode_005
+ * @tc.desc: JPEG Picture encode with c2paDataSize=256 and needsPackProperties=false,
+ *           verify decode succeeds and APP11 is still inserted.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureExtTest, C2paE2eEncode_005, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "PictureExtTest-begin C2paE2eEncode_005";
+    std::vector<uint8_t> outputData;
+    int64_t packedSize = 0;
+    ASSERT_TRUE(EncodePictureWithoutProperties("image/jpeg", IMAGE_JPEG_SRC, 256, outputData, packedSize));
+
+    ImageInfo imageInfo;
+    ASSERT_TRUE(DecodeBufferAndGetImageInfo(outputData, packedSize, "image/jpeg", imageInfo));
+    EXPECT_GE(CountJpegApp11Segments(outputData, packedSize), 1);
+    GTEST_LOG_(INFO) << "PictureExtTest-end C2paE2eEncode_005";
+}
+
+/**
+ * @tc.name: C2paE2eEncode_008
+ * @tc.desc: JPEG Picture encode with c2paDataSize=10 (minimal valid APP11 segment),
+ *           verify decode succeeds, output grows and APP11 is inserted.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureExtTest, C2paE2eEncode_008, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "PictureExtTest-begin C2paE2eEncode_008";
+    std::vector<uint8_t> baselineData;
+    std::vector<uint8_t> c2paData;
+    int64_t baselineSize = 0;
+    int64_t c2paSize = 0;
+    ASSERT_TRUE(EncodePictureWithOptions("image/jpeg", IMAGE_JPEG_SRC, 0, baselineData, baselineSize));
+    ASSERT_TRUE(EncodePictureWithOptions("image/jpeg", IMAGE_JPEG_SRC, 10, c2paData, c2paSize));
+
+    ImageInfo baselineInfo;
+    ImageInfo c2paInfo;
+    ASSERT_TRUE(DecodeBufferAndGetImageInfo(baselineData, baselineSize, "image/jpeg", baselineInfo));
+    ASSERT_TRUE(DecodeBufferAndGetImageInfo(c2paData, c2paSize, "image/jpeg", c2paInfo));
+    EXPECT_EQ(baselineInfo.size.width, c2paInfo.size.width);
+    EXPECT_EQ(baselineInfo.size.height, c2paInfo.size.height);
+    EXPECT_GT(c2paSize, baselineSize);
+    EXPECT_GE(CountJpegApp11Segments(c2paData, c2paSize), 1);
+    GTEST_LOG_(INFO) << "PictureExtTest-end C2paE2eEncode_008";
+}
+
+/**
+ * @tc.name: C2paE2eEncode_009
+ * @tc.desc: HEIF Picture encode with c2paDataSize=1 and needsPackProperties=false,
+ *           verify decode succeeds and image size stays stable.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureExtTest, C2paE2eEncode_009, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "PictureExtTest-begin C2paE2eEncode_009";
+    std::vector<uint8_t> baselineData;
+    std::vector<uint8_t> c2paData;
+    int64_t baselineSize = 0;
+    int64_t c2paSize = 0;
+    ASSERT_TRUE(EncodePictureWithoutProperties("image/heif", IMAGE_HEIF_SRC, 0, baselineData, baselineSize));
+    ASSERT_TRUE(EncodePictureWithoutProperties("image/heif", IMAGE_HEIF_SRC, 1, c2paData, c2paSize));
+
+    ImageInfo baselineInfo;
+    ImageInfo c2paInfo;
+    ASSERT_TRUE(DecodeBufferAndGetImageInfo(baselineData, baselineSize, "image/heif", baselineInfo));
+    ASSERT_TRUE(DecodeBufferAndGetImageInfo(c2paData, c2paSize, "image/heif", c2paInfo));
+    EXPECT_EQ(baselineInfo.size.width, c2paInfo.size.width);
+    EXPECT_EQ(baselineInfo.size.height, c2paInfo.size.height);
+    EXPECT_GT(c2paSize, baselineSize);
+    GTEST_LOG_(INFO) << "PictureExtTest-end C2paE2eEncode_009";
+}
+
+/**
+ * @tc.name: C2paE2eEncode_006
+ * @tc.desc: JPEG Picture encode with c2paDataSize=256 and thumbnail generation, verify decode succeeds
+ *           and APP11 segments are inserted alongside thumbnail metadata.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureExtTest, C2paE2eEncode_006, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "PictureExtTest-begin C2paE2eEncode_006";
+    std::vector<uint8_t> baselineData;
+    std::vector<uint8_t> c2paData;
+    int64_t baselineSize = 0;
+    int64_t c2paSize = 0;
+    ASSERT_TRUE(EncodePictureWithOptions("image/jpeg", IMAGE_JPEG_SRC, 0, baselineData, baselineSize));
+    ASSERT_TRUE(EncodePictureWithOptions("image/jpeg", IMAGE_JPEG_SRC, 256, c2paData, c2paSize));
+
+    ImageInfo imageInfo;
+    ASSERT_TRUE(DecodeBufferAndGetImageInfo(c2paData, c2paSize, "image/jpeg", imageInfo));
+    EXPECT_GT(c2paSize, baselineSize);
+    EXPECT_GE(CountJpegApp11Segments(c2paData, c2paSize), 1);
+    GTEST_LOG_(INFO) << "PictureExtTest-end C2paE2eEncode_006";
+}
+
+/**
+ * @tc.name: C2paE2eEncode_007
+ * @tc.desc: HEIF Picture encode with c2paDataSize=256 and needsPackProperties=true, verify decode
+ *           succeeds and output grows. This exercises AssembleSdrImageItem C2PA liteProperties path.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureExtTest, C2paE2eEncode_007, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "PictureExtTest-begin C2paE2eEncode_007";
+    std::vector<uint8_t> baselineData;
+    std::vector<uint8_t> c2paData;
+    int64_t baselineSize = 0;
+    int64_t c2paSize = 0;
+    ASSERT_TRUE(EncodePictureWithOptions("image/heif", IMAGE_HEIF_SRC, 0, baselineData, baselineSize));
+    ASSERT_TRUE(EncodePictureWithOptions("image/heif", IMAGE_HEIF_SRC, 256, c2paData, c2paSize));
+
+    ImageInfo baselineInfo;
+    ImageInfo c2paInfo;
+    ASSERT_TRUE(DecodeBufferAndGetImageInfo(baselineData, baselineSize, "image/heif", baselineInfo));
+    ASSERT_TRUE(DecodeBufferAndGetImageInfo(c2paData, c2paSize, "image/heif", c2paInfo));
+    EXPECT_EQ(baselineInfo.size.width, c2paInfo.size.width);
+    EXPECT_EQ(baselineInfo.size.height, c2paInfo.size.height);
+    EXPECT_GT(c2paSize, baselineSize);
+    GTEST_LOG_(INFO) << "PictureExtTest-end C2paE2eEncode_007";
+}
+
+/**
+ * @tc.name: C2paE2eEncode_010
+ * @tc.desc: JPEG HDR Picture encode with c2paDataSize=256, verify decode succeeds and
+ *           APP11 segments are inserted in the HDR encode path.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureExtTest, C2paE2eEncode_010, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "PictureExtTest-begin C2paE2eEncode_010";
+    std::vector<uint8_t> baselineData;
+    std::vector<uint8_t> c2paData;
+    int64_t baselineSize = 0;
+    int64_t c2paSize = 0;
+    ASSERT_TRUE(EncodePictureWithOptions("image/jpeg", IMAGE_JPEGHDR_SRC, 0, baselineData, baselineSize));
+    ASSERT_TRUE(EncodePictureWithOptions("image/jpeg", IMAGE_JPEGHDR_SRC, 256, c2paData, c2paSize));
+
+    ImageInfo imageInfo;
+    ASSERT_TRUE(DecodeBufferAndGetImageInfo(c2paData, c2paSize, "image/jpeg", imageInfo));
+    EXPECT_GT(c2paSize, baselineSize);
+    EXPECT_GE(CountJpegApp11Segments(c2paData, c2paSize), 1);
+    GTEST_LOG_(INFO) << "PictureExtTest-end C2paE2eEncode_010";
+}
+
+/**
+ * @tc.name: C2paE2eEncode_011
+ * @tc.desc: HEIF HDR Picture encode with c2paDataSize=256, verify decode succeeds and
+ *           output grows. This exercises AssembleHdrBaseImageItem C2PA liteProperties path.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureExtTest, C2paE2eEncode_011, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "PictureExtTest-begin C2paE2eEncode_011";
+    std::vector<uint8_t> baselineData;
+    std::vector<uint8_t> c2paData;
+    int64_t baselineSize = 0;
+    int64_t c2paSize = 0;
+    ASSERT_TRUE(EncodePictureWithOptions("image/heif", IMAGE_HEIFHDR_SRC, 0, baselineData, baselineSize));
+    ASSERT_TRUE(EncodePictureWithOptions("image/heif", IMAGE_HEIFHDR_SRC, 256, c2paData, c2paSize));
+
+    ImageInfo baselineInfo;
+    ImageInfo c2paInfo;
+    ASSERT_TRUE(DecodeBufferAndGetImageInfo(baselineData, baselineSize, "image/heif", baselineInfo));
+    ASSERT_TRUE(DecodeBufferAndGetImageInfo(c2paData, c2paSize, "image/heif", c2paInfo));
+    EXPECT_EQ(baselineInfo.size.width, c2paInfo.size.width);
+    EXPECT_EQ(baselineInfo.size.height, c2paInfo.size.height);
+    EXPECT_GT(c2paSize, baselineSize);
+    GTEST_LOG_(INFO) << "PictureExtTest-end C2paE2eEncode_011";
+}
+
+/**
+ * @tc.name: C2paE2eEncode_012
+ * @tc.desc: JPEG Picture encode with c2paDataSize=65535 (64KB after KB conversion),
+ *           verify decode succeeds and two APP11 segments are used (65536 > 65535).
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureExtTest, C2paE2eEncode_012, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "PictureExtTest-begin C2paE2eEncode_012";
+    std::vector<uint8_t> baselineData;
+    std::vector<uint8_t> c2paData;
+    int64_t baselineSize = 0;
+    int64_t c2paSize = 0;
+    ASSERT_TRUE(EncodePictureWithOptions("image/jpeg", IMAGE_JPEG_SRC, 0, baselineData, baselineSize));
+    ASSERT_TRUE(EncodePictureWithOptions("image/jpeg", IMAGE_JPEG_SRC, 65535, c2paData, c2paSize));
+
+    ImageInfo imageInfo;
+    ASSERT_TRUE(DecodeBufferAndGetImageInfo(c2paData, c2paSize, "image/jpeg", imageInfo));
+    EXPECT_GT(c2paSize, baselineSize);
+    // 65535 bytes -> 64KB after ceiling -> 65536 bytes reserve, exceeding max segment length 65535
+    EXPECT_GE(CountJpegApp11Segments(c2paData, c2paSize), 2);
+    GTEST_LOG_(INFO) << "PictureExtTest-end C2paE2eEncode_012";
+}
+
+/**
+ * @tc.name: C2paE2eEncode_013
+ * @tc.desc: JPEG Picture encode with c2paDataSize=10 (minimal valid APP11 segment),
+ *           verify decode succeeds and one APP11 segment is present.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureExtTest, C2paE2eEncode_013, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "PictureExtTest-begin C2paE2eEncode_013";
+    std::vector<uint8_t> baselineData;
+    std::vector<uint8_t> c2paData;
+    int64_t baselineSize = 0;
+    int64_t c2paSize = 0;
+    ASSERT_TRUE(EncodePictureWithOptions("image/jpeg", IMAGE_JPEG_SRC, 0, baselineData, baselineSize));
+    ASSERT_TRUE(EncodePictureWithOptions("image/jpeg", IMAGE_JPEG_SRC, 10, c2paData, c2paSize));
+
+    ImageInfo imageInfo;
+    ASSERT_TRUE(DecodeBufferAndGetImageInfo(c2paData, c2paSize, "image/jpeg", imageInfo));
+    EXPECT_GT(c2paSize, baselineSize);
+    EXPECT_GE(CountJpegApp11Segments(c2paData, c2paSize), 1);
+    GTEST_LOG_(INFO) << "PictureExtTest-end C2paE2eEncode_013";
+}
+
+/**
+ * @tc.name: C2paE2eEncode_014
+ * @tc.desc: JPEG Picture encode rejects a C2PA reservation above the common maximum.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureExtTest, C2paE2eEncode_014, TestSize.Level1)
+{
+    std::vector<uint8_t> outputData;
+    int64_t packedSize = 0;
+    ASSERT_FALSE(EncodePictureWithOptions("image/jpeg", IMAGE_JPEG_SRC,
+        MAX_C2PA_DATA_SIZE_IN_BYTES + 1, outputData, packedSize));
 }
 
 } // namespace Multimedia

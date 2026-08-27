@@ -309,6 +309,9 @@ static OHOS::Media::PackOption ParsePackOptions(PackingOption const& options)
     packOption.backgroundColor = options.backgroundColor.value_or(0);
     ParsePackOptionOfSizeLimit(options, packOption);
     packOption.needsPackGPS = options.needsPackGPS.value_or(true);
+    if (OHOS::Media::ImageSystemProperties::IsSystemApp()) {
+        packOption.c2paDataSize = options.c2paDataSize.value_or(0);
+    }
     packOption.tiffPackingOption = ParseTiffOptions(options.tiffPackingOptions);
     return packOption;
 }

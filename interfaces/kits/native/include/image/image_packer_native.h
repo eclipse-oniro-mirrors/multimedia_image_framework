@@ -239,6 +239,29 @@ Image_ErrorCode OH_PackingOptions_SetNeedsPackDfxData(OH_PackingOptions *options
     bool needsPackDfxData);
 
 /**
+ * @brief Sets the C2PA data size in the OH_PackingOptions struct. The default value is 0, indicating no reserved space
+ * is added.
+ * @systemapi
+ * @param options Pointer to an OH_PackingOptions struct.
+ * @param c2paDataSize Reserved space size for C2PA data, in bytes.
+ * @return {@link Image_ErrorCode} IMAGE_SUCCESS - if the operation is successful.
+ *     <br>{@link Image_ErrorCode} IMAGE_PACKER_INVALID_PARAMETER - if options is nullptr.
+ * @since 26.1.0
+ */
+Image_ErrorCode OH_PackingOptions_SetC2paDataSize(OH_PackingOptions *options, uint32_t c2paDataSize);
+
+/**
+ * @brief Obtains the C2PA data size in the OH_PackingOptions struct.
+ * @systemapi
+ * @param options Pointer to an OH_PackingOptions struct.
+ * @param c2paDataSize Pointer to the C2PA data size obtained, in bytes.
+ * @return {@link Image_ErrorCode} IMAGE_SUCCESS - if the operation is successful.
+ *     <br>{@link Image_ErrorCode} IMAGE_PACKER_INVALID_PARAMETER - if options or c2paDataSize is nullptr.
+ * @since 26.1.0
+ */
+Image_ErrorCode OH_PackingOptions_GetC2paDataSize(OH_PackingOptions *options, uint32_t *c2paDataSize);
+
+/**
  * @brief Set Loop number for PackingOptions struct.
  *
  * @param options The PackingOptions pointer will be operated.

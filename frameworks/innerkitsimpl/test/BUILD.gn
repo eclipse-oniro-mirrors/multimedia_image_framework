@@ -2257,6 +2257,34 @@ ohos_unittest("sk_ohoscodec_test") {
   ]
 }
 
+ohos_unittest("image_data_writer_test") {
+  module_out_path = module_output_path
+
+  include_dirs = [
+    "${image_subsystem}/interfaces/innerkits/include",
+    "${image_subsystem}/frameworks/innerkitsimpl/utils/include",
+    "${image_subsystem}/plugins/common/libs/image/libextplugin/include",
+  ]
+
+  sources = [
+    "${image_subsystem}/plugins/common/libs/image/libextplugin/src/image_data_writer.cpp",
+    "${image_subsystem}/frameworks/innerkitsimpl/test/unittest/image_data_writer_test.cpp",
+  ]
+
+  deps = [
+    "${image_subsystem}/plugins/common/libs/image/libextplugin:extplugin",
+    "${image_subsystem}/interfaces/innerkits:image_native",
+  ]
+
+  external_deps = [
+    "c_utils:utils",
+    "googletest:gtest",
+    "googletest:gtest_main",
+    "hilog:libhilog",
+    "skia:skia_canvaskit",
+  ]
+}
+
 ohos_unittest("memorymanagertest") {
   module_out_path = module_output_path
 
@@ -2568,6 +2596,7 @@ group("unittest") {
     ":hispeed_image_manager_test",
     ":image_native_test",
     ":image_receiver_native_test",
+    ":image_data_writer_test",
     ":imageaccessortest",
     ":imagecolorspacetest",
     ":imageeventtest",

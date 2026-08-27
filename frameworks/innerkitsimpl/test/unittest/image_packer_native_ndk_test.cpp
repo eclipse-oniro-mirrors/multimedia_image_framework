@@ -596,5 +596,25 @@ HWTEST_F(ImagePackerNdk2Test, OH_ImagePackerNative_GetSupportedFormat_NoTiff, Te
     EXPECT_FALSE(foundTiff);
     GTEST_LOG_(INFO) << "ImagePackerNdk2Test: OH_ImagePackerNative_GetSupportedFormat_NoTiff end";
 }
+
+/**
+ * @tc.name: OH_PackingOptions_C2paDataSizePermissionDenied
+ * @tc.desc: test c2paDataSize APIs reject non-system applications
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagePackerNdk2Test, OH_PackingOptions_C2paDataSizePermissionDenied, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePackerNdk2Test: OH_PackingOptions_C2paDataSizePermissionDenied start";
+    OH_PackingOptions *ops = nullptr;
+    ASSERT_EQ(OH_PackingOptions_Create(&ops), IMAGE_SUCCESS);
+    ASSERT_NE(ops, nullptr);
+
+    uint32_t c2paSize = 0;
+    EXPECT_EQ(OH_PackingOptions_GetC2paDataSize(ops, &c2paSize), IMAGE_PERMISSIONS_FAILED);
+    EXPECT_EQ(OH_PackingOptions_SetC2paDataSize(ops, 1000), IMAGE_PERMISSIONS_FAILED);
+
+    OH_PackingOptions_Release(ops);
+    GTEST_LOG_(INFO) << "ImagePackerNdk2Test: OH_PackingOptions_C2paDataSizePermissionDenied end";
+}
 }
 }

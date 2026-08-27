@@ -63,6 +63,7 @@ struct PlEncodeOptions {
     bool needsPackGPS = true;
     PlPackingOptionsForTiff tiffPackingOption;
     PlPackingOptionsForAstc astcPackingOption;
+    uint32_t c2paDataSize = 0;
 };
 
 class AbsImageEncoder {

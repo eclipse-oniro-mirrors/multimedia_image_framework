@@ -344,6 +344,7 @@ struct PackingOption {
   backgroundColor: Optional<i32>;
   sizeLimit: Optional<PackingSizeLimit>;
   needsPackGPS: Optional<bool>;
+  c2paDataSize: Optional<u32>;
   tiffPackingOptions: Optional<PackingOptionsForTiff>;
 }
 

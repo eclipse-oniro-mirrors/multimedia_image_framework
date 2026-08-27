@@ -137,6 +137,12 @@ struct PackOption {
     PackingSizeLimit sizeLimit;
 
     /**
+     * The size of the reserved C2PA data space in bytes.
+     * Default value: 0, which means no reserved space is added.
+     */
+    uint32_t c2paDataSize = 0;
+
+    /**
      * Whether to pack GPS information in EXIF metadata during encoding.
      * When set to false, GPS related EXIF tags will be removed before encoding.
      * Default value: true (keep GPS information).
