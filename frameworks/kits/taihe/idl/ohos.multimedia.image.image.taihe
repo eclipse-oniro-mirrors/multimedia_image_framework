@@ -2184,6 +2184,8 @@ interface ImageReceiver {
   ReleasePromise(): void;
 
   ReleaseSync(): void;
+
+  SetMemoryName(name: String): void;
 }
 
 interface ImageCreator {

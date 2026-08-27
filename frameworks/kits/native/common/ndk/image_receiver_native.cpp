@@ -22,6 +22,7 @@
 #include "image_receiver_native.h"
 #include "image_kits.h"
 #include "image_receiver.h"
+#include "image_error_convert.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -424,6 +425,20 @@ Image_ErrorCode OH_ImageReceiverNative_OffImageArrive(OH_ImageReceiverNative *re
     if (!receiver->ptrImgRcv->surfaceBufferAvaliableArriveListener_->UnregisterCallback(callback)) {
         IMAGE_LOGE("callback is not registered.");
         return IMAGE_RECEIVER_INVALID_PARAMETER;
+    }
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_ImageReceiverNative_SetMemoryName(OH_ImageReceiverNative *receiver, char *name, size_t size)
+{
+    if (receiver == nullptr || receiver->ptrImgRcv == nullptr || name == nullptr || size == 0) {
+        IMAGE_LOGE("Invalid parameter: receiver or name is null, or size is 0.");
+        return IMAGE_RECEIVER_INVALID_PARAMETER;
+    }
+    uint32_t ret = receiver->ptrImgRcv->SetMemoryName(std::string(name, size));
+    if (ret != OHOS::Media::SUCCESS) {
+        return static_cast<Image_ErrorCode>(OHOS::Media::ImageErrorConvert::SetMemoryNameMakeErrMsg(ret).first);
     }
     return IMAGE_SUCCESS;
 }

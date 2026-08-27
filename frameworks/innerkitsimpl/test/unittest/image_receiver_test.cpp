@@ -36,6 +36,7 @@ static constexpr int32_t RECEIVER_TEST_FORMAT = 4;
 static const std::string IMAGE_INPUT_JPG_PATH = "/data/local/tmp/image/800-500.jpg";
 static constexpr int32_t RECEIVER_TEST_TRUE_WIDTH = 800;
 static constexpr int32_t RECEIVER_TEST_TRUE_HEIGHT = 500;
+static constexpr size_t RECEIVER_DMA_BUF_NAME_MAX_LEN = 255;
 
 class ImageReceiverTest : public testing::Test {
 public:
@@ -1002,6 +1003,196 @@ HWTEST_F(ImageReceiverTest, CreateImageReceiver001, TestSize.Level3)
     EXPECT_EQ(imageReceiver->iraContext_->GetHeight(), RECEIVER_TEST_HEIGHT);
     EXPECT_EQ(imageReceiver->iraContext_->GetCapicity(), RECEIVER_TEST_CAPACITY);
     GTEST_LOG_(INFO) << "ImageReceiverTest: CreateImageReceiver001 end";
+}
+
+/**
+ * @tc.name: SetMemoryNameSanitizeTest001
+ * @tc.desc: test SanitizeMemoryName filter
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageReceiverTest, SetMemoryNameSanitizeTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageReceiverTest: SetMemoryNameSanitizeTest001 start";
+    std::shared_ptr<ImageReceiver> imageReceiver = ImageReceiver::CreateImageReceiver(
+        RECEIVER_TEST_WIDTH, RECEIVER_TEST_HEIGHT, RECEIVER_TEST_FORMAT, RECEIVER_TEST_CAPACITY);
+    ASSERT_NE(imageReceiver, nullptr);
+    EXPECT_EQ(imageReceiver->SanitizeMemoryName("my_receiver"), "my_receiver");
+    EXPECT_EQ(imageReceiver->SanitizeMemoryName("123 4"), "ImageReceiver:1234");
+    EXPECT_EQ(imageReceiver->SanitizeMemoryName("abc 123"), "abc123");
+    EXPECT_EQ(imageReceiver->SanitizeMemoryName("\n\r\t\b"), "");
+    GTEST_LOG_(INFO) << "ImageReceiverTest: SetMemoryNameSanitizeTest001 end";
+}
+
+/**
+ * @tc.name: SetMemoryNameTest001
+ * @tc.desc: test SetMemoryName returns error when sanitized name is empty
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageReceiverTest, SetMemoryNameTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageReceiverTest: SetMemoryNameTest001 start";
+    std::shared_ptr<ImageReceiver> imageReceiver = ImageReceiver::CreateImageReceiver(
+        RECEIVER_TEST_WIDTH, RECEIVER_TEST_HEIGHT, RECEIVER_TEST_FORMAT, RECEIVER_TEST_CAPACITY);
+    ASSERT_NE(imageReceiver, nullptr);
+    EXPECT_EQ(imageReceiver->SetMemoryName("  \n\t"), COMMON_ERR_INVALID_PARAMETER);
+    GTEST_LOG_(INFO) << "ImageReceiverTest: SetMemoryNameTest001 end";
+}
+
+/**
+ * @tc.name: SetMemoryNameTest002
+ * @tc.desc: test SetMemoryName saves valid name and returns success
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageReceiverTest, SetMemoryNameTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageReceiverTest: SetMemoryNameTest002 start";
+    std::shared_ptr<ImageReceiver> imageReceiver = ImageReceiver::CreateImageReceiver(
+        RECEIVER_TEST_WIDTH, RECEIVER_TEST_HEIGHT, RECEIVER_TEST_FORMAT, RECEIVER_TEST_CAPACITY);
+    ASSERT_NE(imageReceiver, nullptr);
+    EXPECT_EQ(imageReceiver->SetMemoryName("my_receiver"), SUCCESS);
+    EXPECT_EQ(imageReceiver->memoryName_, "my_receiver");
+    GTEST_LOG_(INFO) << "ImageReceiverTest: SetMemoryNameTest002 end";
+}
+
+/**
+ * @tc.name: SetMemoryNameTest003
+ * @tc.desc: test SetMemoryName saves prefixed name for pure digit input
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageReceiverTest, SetMemoryNameTest003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageReceiverTest: SetMemoryNameTest003 start";
+    std::shared_ptr<ImageReceiver> imageReceiver = ImageReceiver::CreateImageReceiver(
+        RECEIVER_TEST_WIDTH, RECEIVER_TEST_HEIGHT, RECEIVER_TEST_FORMAT, RECEIVER_TEST_CAPACITY);
+    ASSERT_NE(imageReceiver, nullptr);
+    EXPECT_EQ(imageReceiver->SetMemoryName("123"), SUCCESS);
+    EXPECT_EQ(imageReceiver->memoryName_, "ImageReceiver:123");
+    GTEST_LOG_(INFO) << "ImageReceiverTest: SetMemoryNameTest003 end";
+}
+
+/**
+ * @tc.name: SetMemoryNameTest004
+ * @tc.desc: test SetMemoryName at max name length boundary
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageReceiverTest, SetMemoryNameTest004, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageReceiverTest: SetMemoryNameTest004 start";
+    std::shared_ptr<ImageReceiver> imageReceiver = ImageReceiver::CreateImageReceiver(
+        RECEIVER_TEST_WIDTH, RECEIVER_TEST_HEIGHT, RECEIVER_TEST_FORMAT, RECEIVER_TEST_CAPACITY);
+    ASSERT_NE(imageReceiver, nullptr);
+
+    std::string nameAtMaxLen(RECEIVER_DMA_BUF_NAME_MAX_LEN, 'a');
+    std::string nameOverMaxLen(RECEIVER_DMA_BUF_NAME_MAX_LEN + 1, 'b');
+    EXPECT_EQ(imageReceiver->SetMemoryName(nameAtMaxLen), SUCCESS);
+    EXPECT_EQ(imageReceiver->memoryName_, nameAtMaxLen);
+    EXPECT_EQ(imageReceiver->SetMemoryName(nameOverMaxLen), COMMON_ERR_INVALID_PARAMETER);
+    GTEST_LOG_(INFO) << "ImageReceiverTest: SetMemoryNameTest004 end";
+}
+
+/**
+ * @tc.name: SetMemoryNameSanitizeTest002
+ * @tc.desc: test numeric sanitization and prefix length expansion
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageReceiverTest, SetMemoryNameSanitizeTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageReceiverTest: SetMemoryNameSanitizeTest002 start";
+    std::shared_ptr<ImageReceiver> imageReceiver = ImageReceiver::CreateImageReceiver(
+        RECEIVER_TEST_WIDTH, RECEIVER_TEST_HEIGHT, RECEIVER_TEST_FORMAT, RECEIVER_TEST_CAPACITY);
+    ASSERT_NE(imageReceiver, nullptr);
+
+    std::string numericName(248, '1');
+    EXPECT_EQ(imageReceiver->SanitizeMemoryName(numericName), "ImageReceiver:" + numericName);
+    EXPECT_EQ(imageReceiver->SetMemoryName(numericName), COMMON_ERR_INVALID_PARAMETER);
+    GTEST_LOG_(INFO) << "ImageReceiverTest: SetMemoryNameSanitizeTest002 end";
+}
+
+/**
+ * @tc.name: SetMemoryNameTest005
+ * @tc.desc: test invalid update does not replace the last valid name
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageReceiverTest, SetMemoryNameTest005, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageReceiverTest: SetMemoryNameTest005 start";
+    std::shared_ptr<ImageReceiver> imageReceiver = ImageReceiver::CreateImageReceiver(
+        RECEIVER_TEST_WIDTH, RECEIVER_TEST_HEIGHT, RECEIVER_TEST_FORMAT, RECEIVER_TEST_CAPACITY);
+    ASSERT_NE(imageReceiver, nullptr);
+    ASSERT_EQ(imageReceiver->SetMemoryName("valid_name"), SUCCESS);
+
+    std::string overlongName(RECEIVER_DMA_BUF_NAME_MAX_LEN + 1, 'x');
+    EXPECT_EQ(imageReceiver->SetMemoryName(overlongName), COMMON_ERR_INVALID_PARAMETER);
+    EXPECT_EQ(imageReceiver->memoryName_, "valid_name");
+    GTEST_LOG_(INFO) << "ImageReceiverTest: SetMemoryNameTest005 end";
+}
+
+/**
+ * @tc.name: ApplyDmaMemoryNameTest001
+ * @tc.desc: test DMA memory name application for null buffer guards and allocated buffer
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageReceiverTest, ApplyDmaMemoryNameTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageReceiverTest: ApplyDmaMemoryNameTest001 start";
+    std::shared_ptr<ImageReceiver> imageReceiver = ImageReceiver::CreateImageReceiver(
+        RECEIVER_TEST_WIDTH, RECEIVER_TEST_HEIGHT, RECEIVER_TEST_FORMAT, RECEIVER_TEST_CAPACITY);
+    ASSERT_NE(imageReceiver, nullptr);
+
+#if defined(CROSS_PLATFORM)
+    EXPECT_EQ(imageReceiver->ApplyDmaMemoryNameToBuffer(nullptr, "name"), ERR_MEMORY_NOT_SUPPORT);
+    EXPECT_EQ(imageReceiver->ApplyDmaMemoryNameToBuffer(nullptr, ""), ERR_MEMORY_NOT_SUPPORT);
+#else
+    EXPECT_EQ(imageReceiver->ApplyDmaMemoryNameToBuffer(nullptr, "name"), COMMON_ERR_INVALID_PARAMETER);
+    EXPECT_EQ(imageReceiver->ApplyDmaMemoryNameToBuffer(nullptr, ""), COMMON_ERR_INVALID_PARAMETER);
+    auto unallocatedSurfaceBuffer = SurfaceBuffer::Create();
+    ASSERT_NE(unallocatedSurfaceBuffer, nullptr);
+    EXPECT_EQ(imageReceiver->ApplyDmaMemoryNameToBuffer(unallocatedSurfaceBuffer, "name"), ERR_MEMORY_NOT_SUPPORT);
+    auto surfaceBuffer = SurfaceBuffer::Create();
+    ASSERT_NE(surfaceBuffer, nullptr);
+    AllocSurfaceBuffer(surfaceBuffer);
+    EXPECT_EQ(imageReceiver->ApplyDmaMemoryNameToBuffer(surfaceBuffer, "name"), SUCCESS);
+#endif
+    GTEST_LOG_(INFO) << "ImageReceiverTest: ApplyDmaMemoryNameTest001 end";
+}
+
+/**
+ * @tc.name: TryApplyMemoryNameTest001
+ * @tc.desc: test memory name application with empty and non-empty state
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageReceiverTest, TryApplyMemoryNameTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageReceiverTest: TryApplyMemoryNameTest001 start";
+    std::shared_ptr<ImageReceiver> imageReceiver = ImageReceiver::CreateImageReceiver(
+        RECEIVER_TEST_WIDTH, RECEIVER_TEST_HEIGHT, RECEIVER_TEST_FORMAT, RECEIVER_TEST_CAPACITY);
+    ASSERT_NE(imageReceiver, nullptr);
+    auto surfaceBuffer = SurfaceBuffer::Create();
+    ASSERT_NE(surfaceBuffer, nullptr);
+
+    EXPECT_NO_FATAL_FAILURE(imageReceiver->TryApplyMemoryNameLocked(nullptr));
+    imageReceiver->memoryName_ = "receiver_buffer";
+    EXPECT_NO_FATAL_FAILURE(imageReceiver->TryApplyMemoryNameLocked(nullptr));
+    EXPECT_NO_FATAL_FAILURE(imageReceiver->TryApplyMemoryNameLocked(surfaceBuffer));
+    GTEST_LOG_(INFO) << "ImageReceiverTest: TryApplyMemoryNameTest001 end";
+}
+
+/**
+ * @tc.name: ReadLastImageMemoryNameTest001
+ * @tc.desc: test ReadLastImage invokes memory name application for the last buffer
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageReceiverTest, ReadLastImageMemoryNameTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageReceiverTest: ReadLastImageMemoryNameTest001 start";
+    std::shared_ptr<ImageReceiver> imageReceiver = ImageReceiver::CreateImageReceiver(
+        RECEIVER_TEST_WIDTH, RECEIVER_TEST_HEIGHT, RECEIVER_TEST_FORMAT, RECEIVER_TEST_CAPACITY);
+    ASSERT_NE(imageReceiver, nullptr);
+    ASSERT_EQ(imageReceiver->SetMemoryName("receiver_buffer"), SUCCESS);
+
+    int64_t timestamp = 0;
+    EXPECT_EQ(imageReceiver->ReadLastImage(timestamp), nullptr);
+    GTEST_LOG_(INFO) << "ImageReceiverTest: ReadLastImageMemoryNameTest001 end";
 }
 }
 }

@@ -73,6 +73,7 @@ ohos_shared_library("image_receiver") {
   deps = [
     "${image_subsystem}/frameworks/innerkitsimpl/utils:image_utils",
     "${image_subsystem}/interfaces/innerkits:image_native",
+    "${image_subsystem}/interfaces/kits/js/common:image_error_convert",
   ]
 
   external_deps = [
