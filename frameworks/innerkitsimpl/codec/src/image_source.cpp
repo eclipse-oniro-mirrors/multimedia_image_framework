@@ -732,6 +732,7 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapEx(uint32_t index, const DecodeO
     }
 
     if (IsSpecialYUV()) {
+        std::unique_lock<std::recursive_mutex> guard(decodingMutex_);
         opts_ = opts;
         return CreatePixelMapForYUV(errorCode);
     }
@@ -1623,8 +1624,8 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMap(uint32_t index, const DecodeOpt
         ninePatchInfo_.ninePatch = context.ninePatchContext.ninePatch;
         ninePatchInfo_.patchSize = context.ninePatchContext.patchSize;
     }
-    guard.unlock();
     if (errorCode != SUCCESS) {
+        guard.unlock();
         IMAGE_LOGE("[ImageSource]decode source fail, ret:%{public}u.", errorCode);
         imageEvent.SetDecodeErrorMsg("decode source fail, ret:." + std::to_string(errorCode));
         if (context.pixelsBuffer.buffer != nullptr) {
@@ -1657,6 +1658,7 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMap(uint32_t index, const DecodeOpt
     DecodeOptions procOpts;
     CopyOptionsToProcOpts(opts_.cropAndScaleStrategy == CropAndScaleStrategy::DEFAULT ? opts_ : opts, procOpts,
         *(pixelMap.get()));
+    guard.unlock();
     if (context.allocatorType != procOpts.allocatorType) {
         procOpts.allocatorType = context.allocatorType;
     }

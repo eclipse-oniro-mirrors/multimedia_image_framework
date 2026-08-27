@@ -160,6 +160,7 @@ static Image_ErrorCode CopyPackingOptions(const OH_PackingOptions *options, Pack
         return IMAGE_BAD_PARAMETER;
     }
 
+    CHECK_ERROR_RETURN_RET(options->mimeType.data == nullptr || options->mimeType.size == 0, IMAGE_BAD_PARAMETER);
     std::string format(options->mimeType.data, options->mimeType.size);
     if (format == "image/tiff") {
         IMAGE_LOGE("Native layer does not support format: %{public}s", format.c_str());
