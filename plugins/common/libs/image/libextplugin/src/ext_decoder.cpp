@@ -1838,7 +1838,8 @@ uint32_t ExtDecoder::Decode(uint32_t index, DecodeContext &context)
     DebugInfo(info_, dstInfo_, dstOptions_);
     uint64_t rowStride = dstInfo_.minRowBytes64();
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
-    if (context.allocatorType == Media::AllocatorType::DMA_ALLOC) {
+    if (context.allocatorType == Media::AllocatorType::DMA_ALLOC &&
+        dstBuffer == context.pixelsBuffer.buffer) {
         SurfaceBuffer* sbBuffer = reinterpret_cast<SurfaceBuffer*> (context.pixelsBuffer.context);
         CHECK_ERROR_RETURN_RET_LOG(sbBuffer == nullptr, ERR_DMA_DATA_ABNORMAL,
             "%{public}s: surface buffer is nullptr", __func__);
