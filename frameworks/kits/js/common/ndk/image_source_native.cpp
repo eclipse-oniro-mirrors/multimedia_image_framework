@@ -697,6 +697,39 @@ Image_ErrorCode OH_ImageSourceNative_CreateFromRawFile(RawFileDescriptor *rawFil
 }
 
 MIDK_EXPORT
+Image_ErrorCode OH_ImageSourceNative_SetSvgResourceLimitLevel(OH_ImageSourceNative *source,
+    OH_ImageSource_SVGResourceLimitLevel level)
+{
+    if (!ImageUtils::IsSystemApp()) {
+        IMAGE_LOGE("This interface can be called only by system apps.");
+        return IMAGE_PERMISSIONS_FAILED;
+    }
+    if (source == nullptr || source->GetInnerImageSource() == nullptr) {
+        return IMAGE_SOURCE_INVALID_PARAMETER;
+    }
+    source->GetInnerImageSource()->SetSvgResourceLimitLevel(
+        static_cast<SVGResourceLimitLevel>(level));
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_ImageSourceNative_GetSvgResourceLimitLevel(OH_ImageSourceNative *source,
+    OH_ImageSource_SVGResourceLimitLevel *level)
+{
+    if (!ImageUtils::IsSystemApp()) {
+        IMAGE_LOGE("This interface can be called only by system apps.");
+        return IMAGE_PERMISSIONS_FAILED;
+    }
+    if (source == nullptr || source->GetInnerImageSource() == nullptr || level == nullptr) {
+        return IMAGE_SOURCE_INVALID_PARAMETER;
+    }
+    *level = static_cast<OH_ImageSource_SVGResourceLimitLevel>(
+        source->GetInnerImageSource()->GetSvgResourceLimitLevel());
+    return IMAGE_SUCCESS;
+}
+
+
+MIDK_EXPORT
 Image_ErrorCode OH_ImageSourceNative_CreatePixelmap(OH_ImageSourceNative *source, OH_DecodingOptions *ops,
     OH_PixelmapNative **pixelmap)
 {

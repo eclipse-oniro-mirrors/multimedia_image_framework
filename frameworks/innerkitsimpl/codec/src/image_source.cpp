@@ -2906,6 +2906,17 @@ const SourceInfo &ImageSource::GetSourceInfo(uint32_t &errorCode)
     return sourceInfo_;
 }
 
+uint32_t ImageSource::SetSvgResourceLimitLevel(SVGResourceLimitLevel level)
+{
+    sourceOptions_.svgResourceLimitLevel = level;
+    return SUCCESS;
+}
+
+SVGResourceLimitLevel ImageSource::GetSvgResourceLimitLevel()
+{
+    return sourceOptions_.svgResourceLimitLevel;
+}
+
 void ImageSource::RegisterListener(PeerListener *listener)
 {
     bool cond = (listener == nullptr);
