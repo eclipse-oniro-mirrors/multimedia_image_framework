@@ -269,9 +269,8 @@ void PixelMap::SetPixelsAddr(void *addr, void *context, uint32_t size, Allocator
         IMAGE_LOGD("SetPixelsAddr release the existed data first");
         FreePixelMap();
     }
-    if (type == AllocatorType::SHARE_MEM_ALLOC && context == nullptr && addr != nullptr) {
+    if (type == AllocatorType::SHARE_MEM_ALLOC && context == nullptr) {
         IMAGE_LOGE("SetPixelsAddr error type %{public}d ", type);
-        return;
     }
     data_ = static_cast<uint8_t *>(addr);
     isUnMap_ = false;
@@ -298,9 +297,8 @@ void PixelMap::SetPixelsAddr(void *addr, void *context, uint32_t size, Allocator
         IMAGE_LOGD("Unmarshalling setPixelsAddr release the existed data first");
         FreePixelMap();
     }
-    if (type == AllocatorType::SHARE_MEM_ALLOC && context == nullptr && addr != nullptr) {
+    if (type == AllocatorType::SHARE_MEM_ALLOC && context == nullptr) {
         IMAGE_LOGE("Unmarshalling setPixelsAddr error type %{public}d ", type);
-        return;
     }
     data_ = static_cast<uint8_t *>(addr);
     isUnMap_ = false;
@@ -2377,12 +2375,7 @@ uint32_t PixelMap::WritePixels(const RWPixelsOptions &opts)
     ImageInfo srcInfo =
         MakeImageInfo(opts.region.width, opts.region.height, opts.pixelFormat, AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
     if (imageInfo_.pixelFormat == PixelFormat::ARGB_8888) {
-        if (opts.bufferSize > static_cast<uint64_t>(PIXEL_MAP_MAX_RAM_SIZE)) {
-            IMAGE_LOGE("WritePixels bufferSize too large: %{public}llu",
-                static_cast<unsigned long long>(opts.bufferSize));
-            return ERR_IMAGE_INVALID_PARAMETER;
-        }
-        std::unique_ptr<uint8_t[]> tempPixels = std::make_unique<uint8_t[]>(static_cast<size_t>(opts.bufferSize));
+        std::unique_ptr<uint8_t[]> tempPixels = std::make_unique<uint8_t[]>(opts.bufferSize);
         if (tempPixels == nullptr) {
             IMAGE_LOGE("WritePixels make tempPixels failed.");
             return ERR_IMAGE_WRITE_PIXELMAP_FAILED;

@@ -4619,14 +4619,6 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapForASTC(uint32_t &errorCode, con
         IMAGE_LOGE("[ImageSource] astc GetAstcSizeBytes failed.");
         return nullptr;
     }
-    if (isSUT) {
-        size_t expectedAstcSize = ImageUtils::GetAstcBytesCount(info);
-        if (astcSize > expectedAstcSize + fileSize) {
-            IMAGE_LOGE("[ImageSource] SUT astcSize too large, expected %{public}zu + fileSize %{public}zu",
-                expectedAstcSize, fileSize);
-            return nullptr;
-        }
-    }
 #else
     size_t astcSize = ImageUtils::GetAstcBytesCount(info);
 #endif
@@ -4863,9 +4855,9 @@ bool ImageSource::IsSupportGenAstc()
 
 static string GetExtendedCodecMimeType(AbsImageDecoder* decoder)
 {
-    const static string encodedFormatKey = "EncodedFormat";
+    const static string ENCODED_FORMAT_KEY = "EncodedFormat";
     string format;
-    if (decoder != nullptr && decoder->GetImagePropertyString(FIRST_FRAME, encodedFormatKey, format) == SUCCESS) {
+    if (decoder != nullptr && decoder->GetImagePropertyString(FIRST_FRAME, ENCODED_FORMAT_KEY, format) == SUCCESS) {
         return format;
     }
     return string();
@@ -5220,10 +5212,10 @@ uint32_t ImageSource::SetGainMapDecodeOption(std::unique_ptr<AbsImageDecoder>& d
     return errorCode;
 }
 
-bool g_getStreamData(std::unique_ptr<SourceStream>& sourceStream, uint8_t* streamBuffer, uint32_t streamSize)
+bool GetStreamData(std::unique_ptr<SourceStream>& sourceStream, uint8_t* streamBuffer, uint32_t streamSize)
 {
     bool cond = (streamBuffer == nullptr);
-    CHECK_ERROR_RETURN_RET_LOG(cond, false, "g_getStreamData streamBuffer is nullptr");
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "GetStreamData streamBuffer is nullptr");
     uint32_t readSize = 0;
     uint32_t savedPosition = sourceStream->Tell();
     sourceStream->Seek(0);
@@ -5245,7 +5237,7 @@ bool ImageSource::DecodeJpegGainMap(ImageHdrType hdrType, float scale, DecodeCon
     uint8_t* streamBuffer = sourceStreamPtr_->GetDataPtr();
     if (sourceStreamPtr_->GetStreamType() != ImagePlugin::BUFFER_SOURCE_TYPE) {
         streamBuffer = new (std::nothrow) uint8_t[streamSize];
-        if (!g_getStreamData(sourceStreamPtr_, streamBuffer, streamSize)) {
+        if (!GetStreamData(sourceStreamPtr_, streamBuffer, streamSize)) {
             delete[] streamBuffer;
             return false;
         }
@@ -6389,8 +6381,8 @@ bool ImageSource::CheckJpegSourceStream(StreamInfo &streamInfo)
     if (streamInfo.buffer == nullptr) {
         streamInfo.buffer = new (std::nothrow) uint8_t[streamInfo.size];
         streamInfo.needDelete = true;
-        if (!g_getStreamData(sourceStreamPtr_, streamInfo.buffer, streamInfo.size)) {
-            IMAGE_LOGE("%{public}s g_getStreamData failed!", __func__);
+        if (!GetStreamData(sourceStreamPtr_, streamInfo.buffer, streamInfo.size)) {
+            IMAGE_LOGE("%{public}s GetStreamData failed!", __func__);
             if (streamInfo.needDelete && streamInfo.buffer) {
                 delete[] streamInfo.buffer;
                 streamInfo.buffer = nullptr;
