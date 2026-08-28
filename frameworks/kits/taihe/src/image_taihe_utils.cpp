@@ -14,6 +14,8 @@
  */
 
 #include "image_taihe_utils.h"
+#include "image_system_properties.h"
+#include "image_common.h"
 
 #include "image_log.h"
 #if !defined(CROSS_PLATFORM)
@@ -128,6 +130,16 @@ OHOS::Media::SourceOptions ImageTaiheUtils::ParseSourceOptions(SourceOptions con
         size.height = options.sourceSize.value().height;
     }
     opts.size = size;
+    if (options.svgResourceLimitLevel.has_value()) {
+        if (!OHOS::Media::ImageSystemProperties::IsSystemApp()) {
+            IMAGE_LOGE("svgResourceLimitLevel can be set only by system apps");
+            ImageTaiheUtils::ThrowExceptionError(IMAGE_PERMISSIONS_FAILED,
+                "svgResourceLimitLevel can be set only by system apps");
+            return opts;
+        }
+        opts.svgResourceLimitLevel =
+            static_cast<OHOS::Media::SVGResourceLimitLevel>(options.svgResourceLimitLevel->get_value());
+    }
     return opts;
 }
 
