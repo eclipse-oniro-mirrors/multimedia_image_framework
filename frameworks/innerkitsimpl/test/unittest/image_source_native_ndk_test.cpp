@@ -58,6 +58,7 @@ static const std::string IMAGE_GIF_MOVING_PATH = "/data/local/tmp/image/moving_t
 static const std::string IMAGE_GIF_LARGE_PATH = "/data/local/tmp/image/fake_large_size_test.gif";  // 50000x50000
 static const std::string IMAGE_GIF_INCOMPLETE_PATH = "/data/local/tmp/image/incomplete_test.gif";
 static const std::string IMAGE_DNG_PATH = "/data/local/tmp/image/test_dng_mock.dng";
+static const std::string IMAGE_SVG_PATH = "/data/local/tmp/image/test.svg";
 
 static const size_t IMAGE_GIF_MOVING_FRAME_COUNT = 3;
 static const size_t IMAGE_GIF_INCOMPLETE_FRAME_INDEX = 16;
@@ -4297,6 +4298,124 @@ HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceNative_DestroyImageRawDataTest001, Te
 {
     Image_ErrorCode ret = OH_ImageSourceNative_DestroyImageRawData(nullptr);
     EXPECT_EQ(ret, IMAGE_SOURCE_INVALID_PARAMETER);
+}
+
+/**
+ * @tc.name: OH_ImageSourceNative_SetAndGetSvgResourceLimitLevel001
+ * @tc.desc: Test OH_ImageSourceNative_SetSvgResourceLimitLevel and OH_ImageSourceNative_GetSvgResourceLimitLevel
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceNative_SetAndGetSvgResourceLimitLevel001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagSourceNdk2Test: OH_ImageSourceNative_SetAndGetSvgResourceLimitLevel001 start";
+
+    /**
+     * @tc.steps: step1. create NDK image source from svg file.
+     * @tc.expected: step1. create image source success.
+     */
+    OH_ImageSourceNative *source = CreateImageSourceNative(IMAGE_SVG_PATH);
+    ASSERT_NE(source, nullptr);
+
+    /**
+     * @tc.steps: step2. get default svgResourceLimitLevel before set.
+     * @tc.expected: step2. return IMAGE_PERMISSIONS_FAILED for non-system app.
+     */
+    OH_ImageSource_SVGResourceLimitLevel level = SVG_RESOURCE_LIMIT_LEVEL_HIGH;
+    Image_ErrorCode ret = OH_ImageSourceNative_GetSvgResourceLimitLevel(source, &level);
+    EXPECT_EQ(ret, IMAGE_PERMISSIONS_FAILED);
+
+    /**
+     * @tc.steps: step3. set svgResourceLimitLevel to LOW and get it.
+     * @tc.expected: step3. return IMAGE_PERMISSIONS_FAILED for non-system app.
+     */
+    ret = OH_ImageSourceNative_SetSvgResourceLimitLevel(source, SVG_RESOURCE_LIMIT_LEVEL_LOW);
+    EXPECT_EQ(ret, IMAGE_PERMISSIONS_FAILED);
+    ret = OH_ImageSourceNative_GetSvgResourceLimitLevel(source, &level);
+    EXPECT_EQ(ret, IMAGE_PERMISSIONS_FAILED);
+
+    /**
+     * @tc.steps: step4. set svgResourceLimitLevel to MEDIUM and get it.
+     * @tc.expected: step4. return IMAGE_PERMISSIONS_FAILED for non-system app.
+     */
+    ret = OH_ImageSourceNative_SetSvgResourceLimitLevel(source, SVG_RESOURCE_LIMIT_LEVEL_MEDIUM);
+    EXPECT_EQ(ret, IMAGE_PERMISSIONS_FAILED);
+    ret = OH_ImageSourceNative_GetSvgResourceLimitLevel(source, &level);
+    EXPECT_EQ(ret, IMAGE_PERMISSIONS_FAILED);
+
+    /**
+     * @tc.steps: step5. set svgResourceLimitLevel to HIGH and get it.
+     * @tc.expected: step5. return IMAGE_PERMISSIONS_FAILED for non-system app.
+     */
+    ret = OH_ImageSourceNative_SetSvgResourceLimitLevel(source, SVG_RESOURCE_LIMIT_LEVEL_HIGH);
+    EXPECT_EQ(ret, IMAGE_PERMISSIONS_FAILED);
+    ret = OH_ImageSourceNative_GetSvgResourceLimitLevel(source, &level);
+    EXPECT_EQ(ret, IMAGE_PERMISSIONS_FAILED);
+
+    /**
+     * @tc.steps: step6. set svgResourceLimitLevel back to NONE and get it.
+     * @tc.expected: step6. return IMAGE_PERMISSIONS_FAILED for non-system app.
+     */
+    ret = OH_ImageSourceNative_SetSvgResourceLimitLevel(source, SVG_RESOURCE_LIMIT_LEVEL_NONE);
+    EXPECT_EQ(ret, IMAGE_PERMISSIONS_FAILED);
+    ret = OH_ImageSourceNative_GetSvgResourceLimitLevel(source, &level);
+    EXPECT_EQ(ret, IMAGE_PERMISSIONS_FAILED);
+
+    ret = OH_ImageSourceNative_Release(source);
+    EXPECT_EQ(ret, IMAGE_SUCCESS);
+
+    GTEST_LOG_(INFO) << "ImagSourceNdk2Test: OH_ImageSourceNative_SetAndGetSvgResourceLimitLevel001 end";
+}
+
+/**
+ * @tc.name: OH_ImageSourceNative_SetSvgResourceLimitLevelNullCheck
+ * @tc.desc: Test OH_ImageSourceNative_SetSvgResourceLimitLevel with null source
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceNative_SetSvgResourceLimitLevelNullCheck, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagSourceNdk2Test: OH_ImageSourceNative_SetSvgResourceLimitLevelNullCheck start";
+
+    /**
+     * @tc.steps: step1. call SetSvgResourceLimitLevel with null source.
+     * @tc.expected: step1. return IMAGE_PERMISSIONS_FAILED for non-system app.
+     */
+    Image_ErrorCode ret = OH_ImageSourceNative_SetSvgResourceLimitLevel(nullptr, SVG_RESOURCE_LIMIT_LEVEL_LOW);
+    EXPECT_EQ(ret, IMAGE_PERMISSIONS_FAILED);
+
+    GTEST_LOG_(INFO) << "ImagSourceNdk2Test: OH_ImageSourceNative_SetSvgResourceLimitLevelNullCheck end";
+}
+
+/**
+ * @tc.name: OH_ImageSourceNative_GetSvgResourceLimitLevelNullCheck
+ * @tc.desc: Test OH_ImageSourceNative_GetSvgResourceLimitLevel with null parameters
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceNative_GetSvgResourceLimitLevelNullCheck, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagSourceNdk2Test: OH_ImageSourceNative_GetSvgResourceLimitLevelNullCheck start";
+
+    /**
+     * @tc.steps: step1. call GetSvgResourceLimitLevel with null source.
+     * @tc.expected: step1. return IMAGE_PERMISSIONS_FAILED for non-system app.
+     */
+    OH_ImageSource_SVGResourceLimitLevel level;
+    Image_ErrorCode ret = OH_ImageSourceNative_GetSvgResourceLimitLevel(nullptr, &level);
+    EXPECT_EQ(ret, IMAGE_PERMISSIONS_FAILED);
+
+    /**
+     * @tc.steps: step2. create image source and call GetSvgResourceLimitLevel with null level pointer.
+     * @tc.expected: step2. return IMAGE_PERMISSIONS_FAILED for non-system app.
+     */
+    OH_ImageSourceNative *source = CreateImageSourceNative(IMAGE_SVG_PATH);
+    ASSERT_NE(source, nullptr);
+
+    ret = OH_ImageSourceNative_GetSvgResourceLimitLevel(source, nullptr);
+    EXPECT_EQ(ret, IMAGE_PERMISSIONS_FAILED);
+
+    ret = OH_ImageSourceNative_Release(source);
+    EXPECT_EQ(ret, IMAGE_SUCCESS);
+
+    GTEST_LOG_(INFO) << "ImagSourceNdk2Test: OH_ImageSourceNative_GetSvgResourceLimitLevelNullCheck end";
 }
 
 }

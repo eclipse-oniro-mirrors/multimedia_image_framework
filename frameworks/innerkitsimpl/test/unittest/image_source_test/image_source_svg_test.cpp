@@ -366,5 +366,145 @@ HWTEST_F(ImageSourceSvgTest, SvgGetEncodedFormat002, TestSize.Level3)
     GTEST_LOG_(INFO) << "ImageSourceSvgTest: SvgGetEncodedFormat002 imageinfo2: " << imageinfo2.encodedFormat;
     GTEST_LOG_(INFO) << "ImageSourceSvgTest: SvgGetEncodedFormat002 end";
 }
+
+/**
+ * @tc.name: SvgDecodeWithResourceLimitLevelLow
+ * @tc.desc: Decode svg image with svgResourceLimitLevel set to LOW
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceSvgTest, SvgDecodeWithResourceLimitLevelLow, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageSourceSvgTest: SvgDecodeWithResourceLimitLevelLow start";
+
+    const std::string testName = TEST_FILE_SVG;
+
+    /**
+     * @tc.steps: step1. create image source with svgResourceLimitLevel set to LOW.
+     * @tc.expected: step1. create image source success.
+     */
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    opts.svgResourceLimitLevel = SVG_RESOURCE_LIMIT_LOW;
+    const std::string inName = INPUT_PATH + testName;
+    auto imageSource = ImageSource::CreateImageSource(inName, opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+
+    /**
+     * @tc.steps: step2. decode image source to pixel map.
+     * @tc.expected: step2. decode success.
+     */
+    DecodeOptions decodeOpts;
+    auto pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(pixelMap.get(), nullptr);
+
+    GTEST_LOG_(INFO) << "ImageSourceSvgTest: SvgDecodeWithResourceLimitLevelLow end";
+}
+
+/**
+ * @tc.name: SvgDecodeWithResourceLimitLevelMedium
+ * @tc.desc: Decode svg image with svgResourceLimitLevel set to MEDIUM
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceSvgTest, SvgDecodeWithResourceLimitLevelMedium, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageSourceSvgTest: SvgDecodeWithResourceLimitLevelMedium start";
+
+    const std::string testName = TEST_FILE_SVG;
+
+    /**
+     * @tc.steps: step1. create image source with svgResourceLimitLevel set to MEDIUM.
+     * @tc.expected: step1. create image source success.
+     */
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    opts.svgResourceLimitLevel = SVG_RESOURCE_LIMIT_MEDIUM;
+    const std::string inName = INPUT_PATH + testName;
+    auto imageSource = ImageSource::CreateImageSource(inName, opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+
+    /**
+     * @tc.steps: step2. decode image source to pixel map.
+     * @tc.expected: step2. decode success.
+     */
+    DecodeOptions decodeOpts;
+    auto pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(pixelMap.get(), nullptr);
+
+    GTEST_LOG_(INFO) << "ImageSourceSvgTest: SvgDecodeWithResourceLimitLevelMedium end";
+}
+
+/**
+ * @tc.name: SvgDecodeWithResourceLimitLevelHigh
+ * @tc.desc: Decode svg image with svgResourceLimitLevel set to HIGH
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceSvgTest, SvgDecodeWithResourceLimitLevelHigh, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageSourceSvgTest: SvgDecodeWithResourceLimitLevelHigh start";
+
+    const std::string testName = TEST_FILE_SVG;
+
+    /**
+     * @tc.steps: step1. create image source with svgResourceLimitLevel set to HIGH.
+     * @tc.expected: step1. create image source success.
+     */
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    opts.svgResourceLimitLevel = SVG_RESOURCE_LIMIT_HIGH;
+    const std::string inName = INPUT_PATH + testName;
+    auto imageSource = ImageSource::CreateImageSource(inName, opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+
+    /**
+     * @tc.steps: step2. decode image source to pixel map.
+     * @tc.expected: step2. decode success.
+     */
+    DecodeOptions decodeOpts;
+    auto pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(pixelMap.get(), nullptr);
+
+    GTEST_LOG_(INFO) << "ImageSourceSvgTest: SvgDecodeWithResourceLimitLevelHigh end";
+}
+
+/**
+ * @tc.name: SvgLargeDecodeWithResourceLimitLevelLow
+ * @tc.desc: Decode large svg image with svgResourceLimitLevel set to LOW
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceSvgTest, SvgLargeDecodeWithResourceLimitLevelLow, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageSourceSvgTest: SvgLargeDecodeWithResourceLimitLevelLow start";
+
+    const std::string testName = TEST_FILE_LARGE_SVG;
+
+    /**
+     * @tc.steps: step1. create image source from large svg with svgResourceLimitLevel set to LOW.
+     * @tc.expected: step1. create image source success.
+     */
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    opts.svgResourceLimitLevel = SVG_RESOURCE_LIMIT_LOW;
+    const std::string inName = INPUT_PATH + testName;
+    auto imageSource = ImageSource::CreateImageSource(inName, opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+
+    /**
+     * @tc.steps: step2. decode image source to pixel map.
+     * @tc.expected: step2. decode success.
+     */
+    DecodeOptions decodeOpts;
+    auto pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(pixelMap.get(), nullptr);
+
+    GTEST_LOG_(INFO) << "ImageSourceSvgTest: SvgLargeDecodeWithResourceLimitLevelLow end";
+}
 } // namespace Multimedia
 } // namespace OHOS
