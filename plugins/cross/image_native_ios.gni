@@ -51,6 +51,7 @@ image_native_ios_sources = [
   "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/codec/src/image_packer.cpp",
   "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/codec/src/image_packer_ex.cpp",
   "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/codec/src/image_source.cpp",
+  "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/codec/src/image_source_astc.cpp",
   "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/common/src/incremental_pixel_map.cpp",
   "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/common/src/pixel_map.cpp",
   "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/common/src/pixel_map_parcel.cpp",
