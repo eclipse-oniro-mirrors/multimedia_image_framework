@@ -397,6 +397,7 @@ typedef enum {
     DFXDATA_METADATA = 13
 } Image_MetadataType;
 
+#ifndef CROSS_PLATFORM
 /**
  * @brief Creates a <b>PictureMetadata</b> object.
  *
@@ -601,6 +602,7 @@ Image_ErrorCode OH_PictureMetadatas_Release(OH_PictureMetadata **metadatas, uint
  * @since 13
  */
 Image_ErrorCode OH_PictureMetadata_Clone(OH_PictureMetadata *oldMetadata, OH_PictureMetadata **newMetadata);
+#endif
 
 /**
  * @brief Defines the bmp mime type.

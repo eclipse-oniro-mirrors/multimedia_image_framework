@@ -20,6 +20,12 @@ image_native_android_cflags = [
 ]
 
 image_native_android_sources = [
+  # Native C API wrappers used by ArkUI-X ace_ndk.
+  "//foundation/multimedia/image_framework/frameworks/kits/js/common/ndk/image_packer_native.cpp",
+  "//foundation/multimedia/image_framework/frameworks/kits/js/common/ndk/image_packer_native_impl.cpp",
+  "//foundation/multimedia/image_framework/frameworks/kits/js/common/pixelmap_ndk/pixelmap_native.cpp",
+  "//foundation/multimedia/image_framework/frameworks/kits/js/common/pixelmap_ndk/pixelmap_native_impl.cpp",
+
   # manager
   "//foundation/multimedia/image_framework/plugins/manager/src/common/attr_data.cpp",
   "//foundation/multimedia/image_framework/plugins/manager/src/common/platform_adp.cpp",
@@ -112,7 +118,6 @@ image_native_android_sources = [
   "//foundation/multimedia/image_framework/plugins/common/libs/image/libgifplugin/src/gif_encoder.cpp",
   "//foundation/multimedia/image_framework/plugins/common/libs/image/libjpegplugin/src/icc_profile_info.cpp",
   "//foundation/multimedia/image_framework/plugins/common/libs/image/libjpegplugin/src/jpeg_decoder.cpp",
-  "//foundation/multimedia/image_framework/plugins/common/libs/image/libjpegplugin/src/jpeg_encoder.cpp",
   "//foundation/multimedia/image_framework/plugins/common/libs/image/libjpegplugin/src/jpeg_utils.cpp",
 
   # png
@@ -177,6 +182,7 @@ image_native_android_include_dirs = [
   "//foundation/multimedia/image_framework/interfaces/kits/js/common/include",
   "//foundation/multimedia/image_framework/interfaces/kits/native/include",
   "//foundation/multimedia/image_framework/interfaces/kits/native/include/image",
+  "//base/global/resource_management/interfaces/native/resource/include",
   "//utils/jni/jnikit/include",
   "//foundation/graphic/graphic_surface/interfaces/inner_api/surface",
   "//foundation/graphic/graphic_surface/interfaces/inner_api/utils",
