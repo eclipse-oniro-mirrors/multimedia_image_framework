@@ -871,12 +871,22 @@ unique_ptr<PixelMap> ImageSource::CreatePixelAstcFromImageFile(uint32_t index, c
     unique_ptr<PixelAstc> dstPixelAstc = make_unique<PixelAstc>();
     ImageInfo info;
     cond = GetImageInfoForASTC(info, reinterpret_cast<uint8_t *>(dstMemory->data.data));
-    CHECK_ERROR_RETURN_RET_LOG(!cond, nullptr, "CreatePixelAstcFromImageFile get astc image info failed.");
+    // Additional fix (not migrated code): release dstMemory before early return. The AbsMemory
+    // destructor does not call Release(), so without this the compressed ASTC buffer and its
+    // ashmem fd / SurfaceBuffer reference leak on this error path.
+    if (!cond) {
+        IMAGE_LOGE("CreatePixelAstcFromImageFile get astc image info failed.");
+        dstMemory->Release();
+        return nullptr;
+    }
     ret = dstPixelAstc->SetImageInfo(info);
     dstPixelAstc->SetAstcRealSize(info.size);
-    cond = (ret != SUCCESS);
-    CHECK_ERROR_RETURN_RET_LOG(cond, nullptr,
-        "CreatePixelAstcFromImageFile update pixelmap info error ret:%{public}u.", ret);
+    // Additional fix (not migrated code): same as above, release dstMemory before early return.
+    if (ret != SUCCESS) {
+        IMAGE_LOGE("CreatePixelAstcFromImageFile update pixelmap info error ret:%{public}u.", ret);
+        dstMemory->Release();
+        return nullptr;
+    }
     dstPixelAstc->SetPixelsAddr(dstMemory->data.data, dstMemory->extend.data, dstMemory->data.size,
         dstMemory->GetType(), nullptr);
     dstPixelAstc->SetAstc(true);
