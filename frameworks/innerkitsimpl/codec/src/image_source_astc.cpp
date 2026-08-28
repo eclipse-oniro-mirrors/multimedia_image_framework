@@ -497,16 +497,29 @@ static bool GetExtInfoForPixelAstc(AstcExtendInfo &extInfo, unique_ptr<PixelAstc
                 pixelFmt = *infoValue;
                 break;
             case AstcExtendInfoType::HDR_METADATA_TYPE:
-                HandleMetadataCopy(astcMetadata.hdrMetadataTypeVec, infoValue, infoLength);
+                // Additional fix (not migrated code): check HandleMetadataCopy return value
+                // to avoid silently swallowing memcpy failures.
+                if (!HandleMetadataCopy(astcMetadata.hdrMetadataTypeVec, infoValue, infoLength)) {
+                    return false;
+                }
                 break;
             case AstcExtendInfoType::HDR_COLORSPACE_INFO:
-                HandleMetadataCopy(astcMetadata.colorSpaceInfoVec, infoValue, infoLength);
+                // Additional fix (not migrated code): same as above.
+                if (!HandleMetadataCopy(astcMetadata.colorSpaceInfoVec, infoValue, infoLength)) {
+                    return false;
+                }
                 break;
             case AstcExtendInfoType::HDR_STATIC_DATA:
-                HandleMetadataCopy(astcMetadata.staticData, infoValue, infoLength);
+                // Additional fix (not migrated code): same as above.
+                if (!HandleMetadataCopy(astcMetadata.staticData, infoValue, infoLength)) {
+                    return false;
+                }
                 break;
             case AstcExtendInfoType::HDR_DYNAMIC_DATA:
-                HandleMetadataCopy(astcMetadata.dynamicData, infoValue, infoLength);
+                // Additional fix (not migrated code): same as above.
+                if (!HandleMetadataCopy(astcMetadata.dynamicData, infoValue, infoLength)) {
+                    return false;
+                }
                 break;
             default:
                 return false;
@@ -587,8 +600,13 @@ static bool ResolveExtInfo(const uint8_t *sourceFilePtr, size_t astcSize, size_t
         ReleaseExtendInfoMemory(extInfo);
         return false;
     }
+    // Additional fix (not migrated code): previously the GetExtInfoForPixelAstc failure was
+    // ignored and true was still returned; now propagate the failure to avoid silently
+    // swallowing HDR/colorspace metadata parse failures.
     if (!GetExtInfoForPixelAstc(extInfo, pixelAstc, astcSize)) {
         IMAGE_LOGE("ResolveExtInfo Could not get ext info!");
+        ReleaseExtendInfoMemory(extInfo);
+        return false;
     }
     ReleaseExtendInfoMemory(extInfo);
     return true;
