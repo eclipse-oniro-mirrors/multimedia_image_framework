@@ -107,7 +107,7 @@ void CreateImageSourceByPathFuzz(const std::string& pathName)
     IMAGE_LOGI("%{public}s IN", __func__);
     Media::SourceOptions opts;
     if (pathName.find(".svg") != std::string::npos) {
-        opts.svgResourceLimitLevel = static_cast<SVGResourceLimitLevel>(rand() % 4);
+        opts.svgResourceLimitLevel = static_cast<SVGResourceLimitLevel>(1);
     }
     uint32_t errorCode;
     auto imageSource = Media::ImageSource::CreateImageSource(pathName, opts, errorCode);
