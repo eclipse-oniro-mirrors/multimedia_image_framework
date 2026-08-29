@@ -5368,9 +5368,7 @@ uint64_t PixelMap::GetNoPaddingUsage()
         return 0;
     }
     SurfaceBuffer* sbBuffer = reinterpret_cast<SurfaceBuffer*>(GetFd());
-    if (!sbBuffer) {
-        return 0;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(!sbBuffer, 0, "sbBuffer is nullptr");
     if (sbBuffer->GetUsage() & BUFFER_USAGE_PREFER_NO_PADDING) {
         return BUFFER_USAGE_PREFER_NO_PADDING | BUFFER_USAGE_ALLOC_NO_IPC;
     }
