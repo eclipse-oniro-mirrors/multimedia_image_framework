@@ -108,30 +108,30 @@ typedef enum {
 typedef enum {
     /**
      * Use the default SVG resource limit. This level does not disable SVG resource protection.
-     * 
+     *
      * @since 26.1.0
      */
-    OH_IMAGE_SVG_RESOURCE_LIMIT_LEVEL_NONE = 0,
+    OH_IMAGESOURCE_SVG_RESOURCE_LIMIT_LEVEL_NONE = 0,
     /**
      * Use low-level restrictions to allow more SVG resource budgets to be used for complex SVG images.
-     * 
+     *
      * @since 26.1.0
      */
-    OH_IMAGE_SVG_RESOURCE_LIMIT_LEVEL_LOW = 1,
+    OH_IMAGESOURCE_SVG_RESOURCE_LIMIT_LEVEL_LOW = 1,
     /**
      * Allows a moderate SVG resource budget with a medium-level limit,
      * which balances SVG compatibility and resource consumption for most SVG images.
-     * 
+     *
      * @since 26.1.0
      */
-    OH_IMAGE_SVG_RESOURCE_LIMIT_LEVEL_MEDIUM = 2,
+    OH_IMAGESOURCE_SVG_RESOURCE_LIMIT_LEVEL_MEDIUM = 2,
     /**
      * Allows a smaller SVG resource budget with a high level limit, which applies to simple SVG images,
      * such as icons and basic UI resources.
-     * 
+     *
      * @since 26.1.0
      */
-    OH_IMAGE_SVG_RESOURCE_LIMIT_LEVEL_HIGH = 3,
+    OH_IMAGESOURCE_SVG_RESOURCE_LIMIT_LEVEL_HIGH = 3,
 } OH_ImageSource_SVGResourceLimitLevel;
 
 /**
