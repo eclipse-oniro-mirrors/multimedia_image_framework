@@ -5364,7 +5364,7 @@ std::unique_ptr<PixelMap> PixelMap::ConvertFromAstc(PixelMap *source, uint32_t &
 uint64_t PixelMap::GetNoPaddingUsage()
 {
 #if !defined(CROSS_PLATFORM)
-    if (allocatorType_ != AllocatorType::DMA_ALLOC) {
+    if (allocatorType_ != AllocatorType::DMA_ALLOC || GetFd() == nullptr) {
         return 0;
     }
     SurfaceBuffer* sbBuffer = reinterpret_cast<SurfaceBuffer*>(GetFd());
