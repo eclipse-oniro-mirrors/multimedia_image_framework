@@ -20,9 +20,7 @@
 #include "image_log.h"
 #include "iosfwd"
 #include "jpeg_decoder.h"
-#ifndef CROSS_PLATFORM
 #include "jpeg_encoder.h"
-#endif
 #include "jpeg_format_agent.h"
 #include "map"
 #include "plugin_class_base.h"
@@ -59,9 +57,7 @@ namespace {
 // register implement classes of this plugin.
 PLUGIN_EXPORT_REGISTER_CLASS_BEGIN
 PLUGIN_EXPORT_REGISTER_CLASS(OHOS::ImagePlugin::JpegDecoder)
-#ifndef CROSS_PLATFORM
 PLUGIN_EXPORT_REGISTER_CLASS(OHOS::ImagePlugin::JpegEncoder)
-#endif
 PLUGIN_EXPORT_REGISTER_CLASS(OHOS::ImagePlugin::JpegFormatAgent)
 PLUGIN_EXPORT_REGISTER_CLASS(OHOS::ImagePlugin::PngDecoder)
 PLUGIN_EXPORT_REGISTER_CLASS(OHOS::ImagePlugin::PngFormatAgent)
