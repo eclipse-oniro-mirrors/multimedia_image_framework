@@ -74,6 +74,10 @@ constexpr uint32_t SIZE_WIDTH = 2;
 constexpr uint32_t SIZE_HEIGHT = 2;
 constexpr uint32_t SIZE_MAX_WIDTH = 61440;
 constexpr uint32_t SIZE_MAX_HEIGHT = 61440;
+constexpr int32_t TEST_WIDTH = 4;
+constexpr int32_t TEST_HEIGHT = 3;
+constexpr int32_t ALPHA_F16_BYTES = 2;
+constexpr uint8_t ALPHA_OPAQUE = 0xFF;
 const static std::string EXIF_JPEG_PATH = "/data/local/tmp/image/test_exif.jpg";
 static const std::string IMAGE_INPUT_JPEG_HDR_PATH = "/data/local/tmp/image/hdr.jpg";
 static const std::string IMAGE_INPUT_JPEG_HDR_MEDIA_TYPE_PATH = "/data/local/tmp/image/hdr_media_type_test.jpg";
@@ -562,6 +566,49 @@ static bool CompareAlphaF16Pixels(PixelMap &pixelMap1, PixelMap &pixelMap2)
         }
     }
     return true;
+}
+
+static std::unique_ptr<PixelMap> CreateBranchTestPixelMap(PixelFormat format, AlphaType alphaType,
+    AllocatorType type = AllocatorType::HEAP_ALLOC, int32_t width = TEST_WIDTH,
+    int32_t height = TEST_HEIGHT)
+{
+    auto pixelMap = std::make_unique<PixelMap>();
+    ImageInfo info;
+    info.size.width = width;
+    info.size.height = height;
+    info.pixelFormat = format;
+    info.colorSpace = ColorSpace::SRGB;
+    info.alphaType = alphaType;
+    if (pixelMap->SetImageInfo(info) != SUCCESS) {
+        return nullptr;
+    }
+    int32_t rowDataSize = ImageUtils::GetRowDataSizeByPixelFormat(width, format);
+    if (rowDataSize <= 0) {
+        return nullptr;
+    }
+    uint32_t bufferSize = static_cast<uint32_t>(rowDataSize) * static_cast<uint32_t>(height);
+    if (bufferSize == 0) {
+        return nullptr;
+    }
+    void *buffer = malloc(bufferSize);
+    if (buffer == nullptr) {
+        return nullptr;
+    }
+    char *ch = static_cast<char *>(buffer);
+    for (uint32_t i = 0; i < bufferSize; i++) {
+        *(ch++) = static_cast<char>(i);
+    }
+    pixelMap->SetPixelsAddr(buffer, nullptr, bufferSize, type, nullptr);
+    return pixelMap;
+}
+
+static std::unique_ptr<PixelMap> CreateBranchEditablePixelMap(PixelFormat format, AlphaType alphaType)
+{
+    auto pixelMap = CreateBranchTestPixelMap(format, alphaType);
+    if (pixelMap != nullptr) {
+        pixelMap->SetEditable(true);
+    }
+    return pixelMap;
 }
 
 /**
@@ -6705,6 +6752,1902 @@ HWTEST_F(PixelMapTest, IsUseDefaultDmaNopaddingTest001, TestSize.Level3)
     pixelMap->isUseDefaultDmaNopadding_ = false;
     EXPECT_FALSE(pixelMap->IsUseDefaultDmaNopadding());
     GTEST_LOG_(INFO) << "PixelMapTest: IsUseDefaultDmaNopaddingTest001 end";
+}
+
+/**
+ * @tc.name: SetPixelsAddrInvalidAllocatorType001
+ * @tc.desc: Test SetPixelsAddr with invalid allocator type preserves existing data
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, SetPixelsAddrInvalidAllocatorType001, TestSize.Level3)
+{
+    auto pixelMap = CreateBranchTestPixelMap(PixelFormat::RGBA_8888, AlphaType::IMAGE_ALPHA_TYPE_PREMUL);
+    ASSERT_NE(pixelMap, nullptr);
+    const uint8_t *oldPixels = pixelMap->GetPixels();
+    ASSERT_NE(oldPixels, nullptr);
+    void *buffer = malloc(16);
+    ASSERT_NE(buffer, nullptr);
+    pixelMap->SetPixelsAddr(buffer, nullptr, 16, static_cast<AllocatorType>(-1), nullptr);
+    EXPECT_EQ(pixelMap->GetPixels(), oldPixels);
+    free(buffer);
+}
+
+/**
+ * @tc.name: SetPixelsAddrDisplayOnlyOverload001
+ * @tc.desc: Test SetPixelsAddrDisplayOnlyOverload001
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, SetPixelsAddrDisplayOnlyOverload001, TestSize.Level3)
+{
+    auto pixelMap = std::make_unique<PixelMap>();
+    ImageInfo info;
+    info.size.width = TEST_WIDTH;
+    info.size.height = TEST_HEIGHT;
+    info.pixelFormat = PixelFormat::RGBA_8888;
+    info.alphaType = AlphaType::IMAGE_ALPHA_TYPE_PREMUL;
+    pixelMap->SetImageInfo(info);
+    void *buffer = malloc(48);
+    ASSERT_NE(buffer, nullptr);
+    pixelMap->SetPixelsAddr(buffer, nullptr, 48, AllocatorType::HEAP_ALLOC, true);
+    EXPECT_EQ(pixelMap->GetAllocatorType(), AllocatorType::HEAP_ALLOC);
+}
+
+/**
+ * @tc.name: FreePixelMapCustomAlloc001
+ * @tc.desc: Test FreePixelMapCustomAlloc001
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, FreePixelMapCustomAlloc001, TestSize.Level3)
+{
+    g_freePixelMapHookCount = 0;
+    auto pixelMap = std::make_unique<PixelMap>();
+    ImageInfo info;
+    info.size.width = TEST_WIDTH;
+    info.size.height = TEST_HEIGHT;
+    info.pixelFormat = PixelFormat::RGBA_8888;
+    info.alphaType = AlphaType::IMAGE_ALPHA_TYPE_PREMUL;
+    pixelMap->SetImageInfo(info);
+    void *buffer = malloc(48);
+    ASSERT_NE(buffer, nullptr);
+    auto freeFunc = [](void *addr, void *context, uint32_t size) {
+        g_freePixelMapHookCount.fetch_add(1);
+        free(addr);
+    };
+    pixelMap->SetPixelsAddr(buffer, nullptr, 48, AllocatorType::CUSTOM_ALLOC, freeFunc);
+    pixelMap->FreePixelMap();
+    EXPECT_EQ(g_freePixelMapHookCount.load(), 1u);
+}
+
+/**
+ * @tc.name: FreePixelMapWithHook001
+ * @tc.desc: Test FreePixelMapWithHook001
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, FreePixelMapWithHook001, TestSize.Level3)
+{
+    g_freePixelMapHookCount = 0;
+    auto pixelMap = CreateBranchTestPixelMap(PixelFormat::RGBA_8888, AlphaType::IMAGE_ALPHA_TYPE_PREMUL);
+    ASSERT_NE(pixelMap, nullptr);
+    pixelMap->SetFreePixelMapProc(CountFreePixelMapHook);
+    pixelMap->FreePixelMap();
+    EXPECT_EQ(g_freePixelMapHookCount.load(), 1u);
+}
+
+/**
+ * @tc.name: FreePixelMapUnknownAllocType001
+ * @tc.desc: Test FreePixelMapUnknownAllocType001
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, FreePixelMapUnknownAllocType001, TestSize.Level3)
+{
+    auto pixelMap = std::make_unique<PixelMap>();
+    ImageInfo info;
+    info.size.width = TEST_WIDTH;
+    info.size.height = TEST_HEIGHT;
+    info.pixelFormat = PixelFormat::RGBA_8888;
+    info.alphaType = AlphaType::IMAGE_ALPHA_TYPE_PREMUL;
+    pixelMap->SetImageInfo(info);
+    void *buffer = malloc(48);
+    ASSERT_NE(buffer, nullptr);
+    pixelMap->data_ = static_cast<uint8_t *>(buffer);
+    pixelMap->context_ = nullptr;
+    pixelMap->pixelsSize_ = 48;
+    pixelMap->allocatorType_ = static_cast<AllocatorType>(100);
+    pixelMap->FreePixelMap();
+    free(buffer);
+    pixelMap->data_ = nullptr;
+}
+
+/**
+ * @tc.name: ReleaseBufferHeapAlloc001
+ * @tc.desc: Test ReleaseBufferHeapAlloc001
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, ReleaseBufferHeapAlloc001, TestSize.Level3)
+{
+    void *buffer = malloc(48);
+    ASSERT_NE(buffer, nullptr);
+    void *bufferPtr = buffer;
+    PixelMap::ReleaseBuffer(AllocatorType::HEAP_ALLOC, -1, 48, &bufferPtr);
+    EXPECT_EQ(bufferPtr, nullptr);
+}
+
+/**
+ * @tc.name: UnMapNonShareMem001
+ * @tc.desc: Test UnMapNonShareMem001
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, UnMapNonShareMem001, TestSize.Level3)
+{
+    auto pixelMap = CreateBranchTestPixelMap(PixelFormat::RGBA_8888, AlphaType::IMAGE_ALPHA_TYPE_PREMUL,
+        AllocatorType::HEAP_ALLOC);
+    ASSERT_NE(pixelMap, nullptr);
+    EXPECT_FALSE(pixelMap->UnMap());
+}
+
+/**
+ * @tc.name: ReMapNonShareMem001
+ * @tc.desc: Test ReMapNonShareMem001
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, ReMapNonShareMem001, TestSize.Level3)
+{
+    auto pixelMap = CreateBranchTestPixelMap(PixelFormat::RGBA_8888, AlphaType::IMAGE_ALPHA_TYPE_PREMUL,
+        AllocatorType::HEAP_ALLOC);
+    ASSERT_NE(pixelMap, nullptr);
+    EXPECT_FALSE(pixelMap->ReMap());
+}
+
+/**
+ * @tc.name: AttachAddrBySurfaceBufferNonDma001
+ * @tc.desc: Test AttachAddrBySurfaceBufferNonDma001
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, AttachAddrBySurfaceBufferNonDma001, TestSize.Level3)
+{
+    auto pixelMap = CreateBranchTestPixelMap(PixelFormat::RGBA_8888, AlphaType::IMAGE_ALPHA_TYPE_PREMUL,
+        AllocatorType::HEAP_ALLOC);
+    ASSERT_NE(pixelMap, nullptr);
+    EXPECT_TRUE(pixelMap->AttachAddrBySurfaceBuffer());
+}
+
+/**
+ * @tc.name: IsStrideAlignment001
+ * @tc.desc: Test IsStrideAlignment001
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, IsStrideAlignment001, TestSize.Level3)
+{
+    auto pixelMap = CreateBranchTestPixelMap(PixelFormat::RGBA_8888, AlphaType::IMAGE_ALPHA_TYPE_PREMUL,
+        AllocatorType::HEAP_ALLOC);
+    ASSERT_NE(pixelMap, nullptr);
+    EXPECT_FALSE(pixelMap->IsStrideAlignment());
+}
+
+/**
+ * @tc.name: SetAlphaNotModifiable001
+ * @tc.desc: Test SetAlphaNotModifiable001
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, SetAlphaNotModifiable001, TestSize.Level3)
+{
+    auto pixelMap = CreateBranchEditablePixelMap(PixelFormat::RGBA_8888, AlphaType::IMAGE_ALPHA_TYPE_PREMUL);
+    ASSERT_NE(pixelMap, nullptr);
+    pixelMap->SetModifiable(false);
+    EXPECT_EQ(pixelMap->SetAlpha(0.5f), ERR_IMAGE_PIXELMAP_NOT_ALLOW_MODIFY);
+}
+
+/**
+ * @tc.name: SetAlphaUnknownAlphaType001
+ * @tc.desc: Test SetAlphaUnknownAlphaType001
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, SetAlphaUnknownAlphaType001, TestSize.Level3)
+{
+    auto pixelMap = CreateBranchEditablePixelMap(PixelFormat::RGBA_8888, AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN);
+    ASSERT_NE(pixelMap, nullptr);
+    EXPECT_EQ(pixelMap->SetAlpha(0.5f), ERR_IMAGE_DATA_UNSUPPORT);
+}
+
+/**
+ * @tc.name: SetAlphaOpaqueAlphaType001
+ * @tc.desc: Test SetAlphaOpaqueAlphaType001
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, SetAlphaOpaqueAlphaType001, TestSize.Level3)
+{
+    auto pixelMap = CreateBranchEditablePixelMap(PixelFormat::RGBA_8888, AlphaType::IMAGE_ALPHA_TYPE_OPAQUE);
+    ASSERT_NE(pixelMap, nullptr);
+    EXPECT_EQ(pixelMap->SetAlpha(0.5f), ERR_IMAGE_DATA_UNSUPPORT);
+}
+
+/**
+ * @tc.name: SetAlphaInvalidPercent001
+ * @tc.desc: Test SetAlphaInvalidPercent001
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, SetAlphaInvalidPercent001, TestSize.Level3)
+{
+    auto pixelMap = CreateBranchEditablePixelMap(PixelFormat::RGBA_8888, AlphaType::IMAGE_ALPHA_TYPE_PREMUL);
+    ASSERT_NE(pixelMap, nullptr);
+    EXPECT_EQ(pixelMap->SetAlpha(0.0f), ERR_IMAGE_INVALID_PARAMETER);
+    EXPECT_EQ(pixelMap->SetAlpha(-0.5f), ERR_IMAGE_INVALID_PARAMETER);
+    EXPECT_EQ(pixelMap->SetAlpha(1.5f), ERR_IMAGE_INVALID_PARAMETER);
+    EXPECT_EQ(pixelMap->SetAlpha(2.0f), ERR_IMAGE_INVALID_PARAMETER);
+    float nanVal = std::numeric_limits<float>::quiet_NaN();
+    EXPECT_EQ(pixelMap->SetAlpha(nanVal), ERR_IMAGE_INVALID_PARAMETER);
+}
+
+/**
+ * @tc.name: SetAlphaRGBA1010102Format001
+ * @tc.desc: Test SetAlphaRGBA1010102Format001
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, SetAlphaRGBA1010102Format001, TestSize.Level3)
+{
+    auto pixelMap = CreateBranchEditablePixelMap(PixelFormat::RGBA_1010102, AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
+    if (pixelMap == nullptr) {
+        return;
+    }
+    EXPECT_EQ(pixelMap->SetAlpha(0.5f), SUCCESS);
+}
+
+/**
+ * @tc.name: SetAlphaAlphaF16Format001
+ * @tc.desc: Test SetAlphaAlphaF16Format001
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, SetAlphaAlphaF16Format001, TestSize.Level3)
+{
+    auto pixelMap = CreateBranchEditablePixelMap(PixelFormat::ALPHA_F16, AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
+    if (pixelMap == nullptr) {
+        return;
+    }
+    EXPECT_EQ(pixelMap->SetAlpha(0.5f), SUCCESS);
+}
+
+/**
+ * @tc.name: SetAlphaRGBAF16Format001
+ * @tc.desc: Test SetAlphaRGBAF16Format001
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, SetAlphaRGBAF16Format001, TestSize.Level3)
+{
+    auto pixelMap = CreateBranchEditablePixelMap(PixelFormat::RGBA_F16, AlphaType::IMAGE_ALPHA_TYPE_PREMUL);
+    if (pixelMap == nullptr) {
+        return;
+    }
+    EXPECT_EQ(pixelMap->SetAlpha(0.5f), SUCCESS);
+}
+
+/**
+ * @tc.name: SetAlphaUnMapped001
+ * @tc.desc: Test SetAlphaUnMapped001
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, SetAlphaUnMapped001, TestSize.Level3)
+{
+    auto pixelMap = CreateBranchEditablePixelMap(PixelFormat::RGBA_8888, AlphaType::IMAGE_ALPHA_TYPE_PREMUL);
+    ASSERT_NE(pixelMap, nullptr);
+    pixelMap->isUnMap_ = true;
+    EXPECT_EQ(pixelMap->SetAlpha(0.5f), ERR_IMAGE_DATA_UNSUPPORT);
+    pixelMap->isUnMap_ = false;
+}
+
+/**
+ * @tc.name: SetAlphaPixelBytesMismatch001
+ * @tc.desc: Test SetAlphaPixelBytesMismatch001
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, SetAlphaPixelBytesMismatch001, TestSize.Level3)
+{
+    auto pixelMap = CreateBranchEditablePixelMap(PixelFormat::ALPHA_8, AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
+    ASSERT_NE(pixelMap, nullptr);
+    pixelMap->pixelBytes_ = ARGB_8888_BYTES;
+    EXPECT_EQ(pixelMap->SetAlpha(0.5f), ERR_IMAGE_INVALID_PARAMETER);
+}
+
+/**
+ * @tc.name: CheckAlphaFormatInputNullData001
+ * @tc.desc: Test CheckAlphaFormatInputNullData001
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, CheckAlphaFormatInputNullData001, TestSize.Level3)
+{
+    auto srcPixelMap = std::make_unique<PixelMap>();
+    auto dstPixelMap = std::make_unique<PixelMap>();
+    ASSERT_NE(srcPixelMap, nullptr);
+    ASSERT_NE(dstPixelMap, nullptr);
+    ImageInfo info;
+    info.size.width = TEST_WIDTH;
+    info.size.height = TEST_HEIGHT;
+    info.pixelFormat = PixelFormat::RGBA_8888;
+    info.alphaType = AlphaType::IMAGE_ALPHA_TYPE_PREMUL;
+    srcPixelMap->SetImageInfo(info);
+    dstPixelMap->SetImageInfo(info);
+    EXPECT_EQ(srcPixelMap->CheckAlphaFormatInput(*dstPixelMap, false), ERR_IMAGE_READ_PIXELMAP_FAILED);
+}
+
+/**
+ * @tc.name: CheckAlphaFormatInputAlphaTypeMismatch001
+ * @tc.desc: Test CheckAlphaFormatInputAlphaTypeMismatch001
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, CheckAlphaFormatInputAlphaTypeMismatch001, TestSize.Level3)
+{
+    auto srcPixelMap = CreateBranchTestPixelMap(PixelFormat::RGBA_8888, AlphaType::IMAGE_ALPHA_TYPE_PREMUL);
+    auto dstPixelMap = CreateBranchTestPixelMap(PixelFormat::RGBA_8888, AlphaType::IMAGE_ALPHA_TYPE_PREMUL);
+    ASSERT_NE(srcPixelMap, nullptr);
+    ASSERT_NE(dstPixelMap, nullptr);
+    EXPECT_EQ(srcPixelMap->CheckAlphaFormatInput(*dstPixelMap, true), COMMON_ERR_INVALID_PARAMETER);
+}
+
+/**
+ * @tc.name: CheckAlphaFormatInputSizeMismatch001
+ * @tc.desc: Test CheckAlphaFormatInputSizeMismatch001
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, CheckAlphaFormatInputSizeMismatch001, TestSize.Level3)
+{
+    auto srcPixelMap = CreateBranchTestPixelMap(PixelFormat::RGBA_8888, AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL,
+        AllocatorType::HEAP_ALLOC, TEST_WIDTH, TEST_HEIGHT);
+    auto dstPixelMap = CreateBranchTestPixelMap(PixelFormat::RGBA_8888, AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL,
+        AllocatorType::HEAP_ALLOC, TEST_WIDTH, TEST_HEIGHT + 1);
+    if (srcPixelMap == nullptr || dstPixelMap == nullptr) {
+        return;
+    }
+    EXPECT_EQ(srcPixelMap->CheckAlphaFormatInput(*dstPixelMap, true), COMMON_ERR_INVALID_PARAMETER);
+}
+
+/**
+ * @tc.name: CheckAlphaFormatInputFormatMismatch001
+ * @tc.desc: Test CheckAlphaFormatInputFormatMismatch001
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, CheckAlphaFormatInputFormatMismatch001, TestSize.Level3)
+{
+    auto srcPixelMap = CreateBranchTestPixelMap(PixelFormat::RGBA_8888, AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
+    auto dstPixelMap = CreateBranchTestPixelMap(PixelFormat::BGRA_8888, AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
+    ASSERT_NE(srcPixelMap, nullptr);
+    ASSERT_NE(dstPixelMap, nullptr);
+    EXPECT_EQ(srcPixelMap->CheckAlphaFormatInput(*dstPixelMap, true), ERR_IMAGE_DATA_UNSUPPORT);
+}
+
+/**
+ * @tc.name: UpdatePixelsAlphaNullPixels001
+ * @tc.desc: Test UpdatePixelsAlphaNullPixels001
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, UpdatePixelsAlphaNullPixels001, TestSize.Level3)
+{
+    auto pixelMap = std::make_unique<PixelMap>();
+    ASSERT_NE(pixelMap, nullptr);
+    PixelMap::UpdatePixelsAlpha(AlphaType::IMAGE_ALPHA_TYPE_OPAQUE, PixelFormat::RGBA_8888, nullptr, *pixelMap);
+}
+
+/**
+ * @tc.name: UpdatePixelsAlphaOpaqueRGBA8888_001
+ * @tc.desc: Test UpdatePixelsAlphaOpaqueRGBA8888_001
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, UpdatePixelsAlphaOpaqueRGBA8888_001, TestSize.Level3)
+{
+    auto pixelMap = CreateBranchTestPixelMap(PixelFormat::RGBA_8888, AlphaType::IMAGE_ALPHA_TYPE_OPAQUE);
+    ASSERT_NE(pixelMap, nullptr);
+    uint8_t *pixels = const_cast<uint8_t *>(pixelMap->GetPixels());
+    ASSERT_NE(pixels, nullptr);
+    PixelMap::UpdatePixelsAlpha(AlphaType::IMAGE_ALPHA_TYPE_OPAQUE, PixelFormat::RGBA_8888, pixels, *pixelMap);
+    EXPECT_EQ(pixels[3], ALPHA_OPAQUE);
+}
+
+/**
+ * @tc.name: UpdatePixelsAlphaOpaqueBGRA8888_001
+ * @tc.desc: Test UpdatePixelsAlphaOpaqueBGRA8888_001
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, UpdatePixelsAlphaOpaqueBGRA8888_001, TestSize.Level3)
+{
+    auto pixelMap = CreateBranchTestPixelMap(PixelFormat::BGRA_8888, AlphaType::IMAGE_ALPHA_TYPE_OPAQUE);
+    ASSERT_NE(pixelMap, nullptr);
+    uint8_t *pixels = const_cast<uint8_t *>(pixelMap->GetPixels());
+    ASSERT_NE(pixels, nullptr);
+    PixelMap::UpdatePixelsAlpha(AlphaType::IMAGE_ALPHA_TYPE_OPAQUE, PixelFormat::BGRA_8888, pixels, *pixelMap);
+    EXPECT_EQ(pixels[3], ALPHA_OPAQUE);
+}
+
+/**
+ * @tc.name: UpdatePixelsAlphaOpaqueARGB8888_001
+ * @tc.desc: Test UpdatePixelsAlphaOpaqueARGB8888_001
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, UpdatePixelsAlphaOpaqueARGB8888_001, TestSize.Level3)
+{
+    auto pixelMap = CreateBranchTestPixelMap(PixelFormat::ARGB_8888, AlphaType::IMAGE_ALPHA_TYPE_OPAQUE);
+    ASSERT_NE(pixelMap, nullptr);
+    uint8_t *pixels = const_cast<uint8_t *>(pixelMap->GetPixels());
+    ASSERT_NE(pixels, nullptr);
+    PixelMap::UpdatePixelsAlpha(AlphaType::IMAGE_ALPHA_TYPE_OPAQUE, PixelFormat::ARGB_8888, pixels, *pixelMap);
+    EXPECT_EQ(pixels[0], ALPHA_OPAQUE);
+}
+
+/**
+ * @tc.name: ConvertAlphaFormatAstcRejection001
+ * @tc.desc: Test ConvertAlphaFormatAstcRejection001
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, ConvertAlphaFormatAstcRejection001, TestSize.Level3)
+{
+    auto srcPixelMap = CreateBranchTestPixelMap(PixelFormat::RGBA_8888, AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
+    auto dstPixelMap = CreateBranchTestPixelMap(PixelFormat::RGBA_8888, AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
+    ASSERT_NE(srcPixelMap, nullptr);
+    ASSERT_NE(dstPixelMap, nullptr);
+    srcPixelMap->isAstc_ = true;
+    EXPECT_EQ(srcPixelMap->ConvertAlphaFormat(*dstPixelMap, true), ERR_IMAGE_INVALID_PARAMETER);
+    srcPixelMap->isAstc_ = false;
+}
+
+/**
+ * @tc.name: ConvertAlphaFormatAlphaF16Path001
+ * @tc.desc: Test ConvertAlphaFormatAlphaF16Path001
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, ConvertAlphaFormatAlphaF16Path001, TestSize.Level3)
+{
+    auto srcPixelMap = CreateBranchTestPixelMap(PixelFormat::ALPHA_F16, AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
+    auto dstPixelMap = CreateBranchTestPixelMap(PixelFormat::ALPHA_F16, AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
+    if (srcPixelMap == nullptr || dstPixelMap == nullptr) {
+        return;
+    }
+    EXPECT_EQ(srcPixelMap->ConvertAlphaFormat(*dstPixelMap, true), SUCCESS);
+}
+
+/**
+ * @tc.name: ConvertAlphaFormatSuccess001
+ * @tc.desc: Test ConvertAlphaFormatSuccess001
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, ConvertAlphaFormatSuccess001, TestSize.Level3)
+{
+    auto srcPixelMap = CreateBranchTestPixelMap(PixelFormat::RGBA_8888, AlphaType::IMAGE_ALPHA_TYPE_PREMUL);
+    auto dstPixelMap = CreateBranchTestPixelMap(PixelFormat::RGBA_8888, AlphaType::IMAGE_ALPHA_TYPE_PREMUL);
+    ASSERT_NE(srcPixelMap, nullptr);
+    ASSERT_NE(dstPixelMap, nullptr);
+    EXPECT_EQ(srcPixelMap->ConvertAlphaFormat(*dstPixelMap, false), SUCCESS);
+}
+
+/**
+ * @tc.name: ALPHAF16ToARGBNullInput001
+ * @tc.desc: Test ALPHAF16ToARGBNullInput001
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, ALPHAF16ToARGBNullInput001, TestSize.Level3)
+{
+    uint32_t out = 0;
+    EXPECT_FALSE(PixelMap::ALPHAF16ToARGB(nullptr, ALPHA_F16_BYTES, &out, 1));
+}
+
+/**
+ * @tc.name: ALPHAF16ToARGBNullOutput001
+ * @tc.desc: Test ALPHAF16ToARGBNullOutput001
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, ALPHAF16ToARGBNullOutput001, TestSize.Level3)
+{
+    uint8_t in[ALPHA_F16_BYTES] = {0};
+    EXPECT_FALSE(PixelMap::ALPHAF16ToARGB(in, ALPHA_F16_BYTES, nullptr, 1));
+}
+
+/**
+ * @tc.name: ALPHAF16ToARGBCountMismatch001
+ * @tc.desc: Test ALPHAF16ToARGBCountMismatch001
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, ALPHAF16ToARGBCountMismatch001, TestSize.Level3)
+{
+    uint8_t in[4] = {0};
+    uint32_t out = 0;
+    EXPECT_FALSE(PixelMap::ALPHAF16ToARGB(in, 4, &out, 3));
+}
+
+/**
+ * @tc.name: ALPHAF16ToARGBNormal001
+ * @tc.desc: Test ALPHAF16ToARGBNormal001
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, ALPHAF16ToARGBNormal001, TestSize.Level3)
+{
+    uint8_t in[ALPHA_F16_BYTES] = {0x00, 0x3C};
+    uint32_t out = 0;
+    EXPECT_TRUE(PixelMap::ALPHAF16ToARGB(in, ALPHA_F16_BYTES, &out, 1));
+}
+
+/**
+ * @tc.name: GetPixel8WrongPixelBytes001
+ * @tc.desc: Test GetPixel8WrongPixelBytes001
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, GetPixel8WrongPixelBytes001, TestSize.Level3)
+{
+    auto pixelMap = CreateBranchTestPixelMap(PixelFormat::RGBA_8888, AlphaType::IMAGE_ALPHA_TYPE_PREMUL);
+    ASSERT_NE(pixelMap, nullptr);
+    EXPECT_EQ(pixelMap->GetPixel8(0, 0), nullptr);
+}
+
+/**
+ * @tc.name: GetPixel16WrongPixelBytes001
+ * @tc.desc: Test GetPixel16WrongPixelBytes001
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, GetPixel16WrongPixelBytes001, TestSize.Level3)
+{
+    auto pixelMap = CreateBranchTestPixelMap(PixelFormat::RGBA_8888, AlphaType::IMAGE_ALPHA_TYPE_PREMUL);
+    ASSERT_NE(pixelMap, nullptr);
+    EXPECT_EQ(pixelMap->GetPixel16(0, 0), nullptr);
+}
+
+/**
+ * @tc.name: GetPixel32WrongPixelBytes001
+ * @tc.desc: Test GetPixel32WrongPixelBytes001
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, GetPixel32WrongPixelBytes001, TestSize.Level3)
+{
+    auto pixelMap = CreateBranchTestPixelMap(PixelFormat::RGB_565, AlphaType::IMAGE_ALPHA_TYPE_OPAQUE);
+    ASSERT_NE(pixelMap, nullptr);
+    EXPECT_EQ(pixelMap->GetPixel32(0, 0), nullptr);
+}
+
+/**
+ * @tc.name: GetRGBA1010102ColorWrongFormat001
+ * @tc.desc: Test GetRGBA1010102ColorWrongFormat001
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, GetRGBA1010102ColorWrongFormat001, TestSize.Level3)
+{
+    auto pixelMap = CreateBranchTestPixelMap(PixelFormat::RGBA_8888, AlphaType::IMAGE_ALPHA_TYPE_PREMUL);
+    ASSERT_NE(pixelMap, nullptr);
+    uint32_t color = 0;
+    EXPECT_FALSE(pixelMap->GetRGBA1010102Color(0, 0, color));
+}
+
+/**
+ * @tc.name: GetRGBA1010102ColorInvalidCoords001
+ * @tc.desc: Test GetRGBA1010102ColorInvalidCoords001
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, GetRGBA1010102ColorInvalidCoords001, TestSize.Level3)
+{
+    auto pixelMap = CreateBranchTestPixelMap(PixelFormat::RGBA_1010102, AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
+    if (pixelMap == nullptr) {
+        return;
+    }
+    uint32_t color = 0;
+    EXPECT_FALSE(pixelMap->GetRGBA1010102Color(-1, 0, color));
+    EXPECT_FALSE(pixelMap->GetRGBA1010102Color(0, -1, color));
+}
+
+/**
+ * @tc.name: GetARGB32ColorNullColorProc001
+ * @tc.desc: Test GetARGB32ColorNullColorProc001
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, GetARGB32ColorNullColorProc001, TestSize.Level3)
+{
+    auto pixelMap = CreateBranchTestPixelMap(PixelFormat::RGBA_8888, AlphaType::IMAGE_ALPHA_TYPE_PREMUL);
+    ASSERT_NE(pixelMap, nullptr);
+    pixelMap->colorProc_ = nullptr;
+    uint32_t color = 0;
+    EXPECT_FALSE(pixelMap->GetARGB32Color(0, 0, color));
+}
+
+/**
+ * @tc.name: GetPixelAstcFormat001
+ * @tc.desc: Test GetPixelAstcFormat001
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, GetPixelAstcFormat001, TestSize.Level3)
+{
+    auto pixelMap = CreateBranchTestPixelMap(PixelFormat::RGBA_8888, AlphaType::IMAGE_ALPHA_TYPE_PREMUL);
+    ASSERT_NE(pixelMap, nullptr);
+    pixelMap->isAstc_ = true;
+    EXPECT_EQ(pixelMap->GetPixel(0, 0), nullptr);
+    pixelMap->isAstc_ = false;
+}
+
+/**
+ * @tc.name: GetPixelYuvFormat001
+ * @tc.desc: Test GetPixelYuvFormat001
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, GetPixelYuvFormat001, TestSize.Level3)
+{
+    auto pixelMap = std::make_unique<PixelMap>();
+    ASSERT_NE(pixelMap, nullptr);
+    ImageInfo info;
+    info.size.width = TEST_WIDTH;
+    info.size.height = TEST_HEIGHT;
+    info.pixelFormat = PixelFormat::NV12;
+    info.alphaType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
+    pixelMap->SetImageInfo(info);
+    void *buffer = malloc(48);
+    ASSERT_NE(buffer, nullptr);
+    pixelMap->SetPixelsAddr(buffer, nullptr, 48, AllocatorType::HEAP_ALLOC, nullptr);
+    EXPECT_EQ(pixelMap->GetPixel(0, 0), nullptr);
+}
+
+/**
+ * @tc.name: CloneYuvRejection001
+ * @tc.desc: Test CloneYuvRejection001
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, CloneYuvRejection001, TestSize.Level3)
+{
+    auto pixelMap = CreateBranchTestPixelMap(PixelFormat::NV12, AlphaType::IMAGE_ALPHA_TYPE_OPAQUE);
+    if (pixelMap == nullptr) {
+        return;
+    }
+    int32_t errorCode = 0;
+    auto cloned = pixelMap->Clone(errorCode);
+    EXPECT_EQ(cloned, nullptr);
+    EXPECT_EQ(errorCode, ERR_IMAGE_DATA_UNSUPPORT);
+}
+
+/**
+ * @tc.name: CopyPixelMapNullSourcePixels001
+ * @tc.desc: Test CopyPixelMapNullSourcePixels001
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, CopyPixelMapNullSourcePixels001, TestSize.Level3)
+{
+    auto srcPixelMap = std::make_unique<PixelMap>();
+    auto dstPixelMap = std::make_unique<PixelMap>();
+    ASSERT_NE(srcPixelMap, nullptr);
+    ASSERT_NE(dstPixelMap, nullptr);
+    ImageInfo info;
+    info.size.width = TEST_WIDTH;
+    info.size.height = TEST_HEIGHT;
+    info.pixelFormat = PixelFormat::RGBA_8888;
+    info.alphaType = AlphaType::IMAGE_ALPHA_TYPE_PREMUL;
+    dstPixelMap->SetImageInfo(info);
+    int32_t error = 0;
+    EXPECT_FALSE(PixelMap::CopyPixelMap(*srcPixelMap, *dstPixelMap, error));
+    EXPECT_EQ(error, ERR_IMAGE_GET_DATA_ABNORMAL);
+}
+
+/**
+ * @tc.name: CopyPixelMapInvalidBufferSize001
+ * @tc.desc: Test CopyPixelMapInvalidBufferSize001
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, CopyPixelMapInvalidBufferSize001, TestSize.Level3)
+{
+    auto srcPixelMap = std::make_unique<PixelMap>();
+    auto dstPixelMap = std::make_unique<PixelMap>();
+    ASSERT_NE(srcPixelMap, nullptr);
+    ASSERT_NE(dstPixelMap, nullptr);
+    ImageInfo info;
+    info.size.width = 0;
+    info.size.height = 0;
+    info.pixelFormat = PixelFormat::RGBA_8888;
+    info.alphaType = AlphaType::IMAGE_ALPHA_TYPE_PREMUL;
+    srcPixelMap->SetImageInfo(info);
+    void *buffer = malloc(16);
+    ASSERT_NE(buffer, nullptr);
+    srcPixelMap->SetPixelsAddr(buffer, nullptr, 16, AllocatorType::HEAP_ALLOC, nullptr);
+    int32_t error = 0;
+    EXPECT_FALSE(PixelMap::CopyPixelMap(*srcPixelMap, *dstPixelMap, error));
+    EXPECT_EQ(error, ERR_IMAGE_DATA_ABNORMAL);
+}
+
+/**
+ * @tc.name: GetRGBxRowDataSizeUnsupportedFormat001
+ * @tc.desc: Test GetRGBxRowDataSizeUnsupportedFormat001
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, GetRGBxRowDataSizeUnsupportedFormat001, TestSize.Level3)
+{
+    ImageInfo info;
+    info.size.width = TEST_WIDTH;
+    info.size.height = TEST_HEIGHT;
+    info.pixelFormat = PixelFormat::NV12;
+    EXPECT_EQ(PixelMap::GetRGBxRowDataSize(info), -1);
+    info.pixelFormat = PixelFormat::UNKNOWN;
+    EXPECT_EQ(PixelMap::GetRGBxRowDataSize(info), -1);
+}
+
+/**
+ * @tc.name: GetRGBxRowDataSizeOverflow001
+ * @tc.desc: Test GetRGBxRowDataSizeOverflow001
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, GetRGBxRowDataSizeOverflow001, TestSize.Level3)
+{
+    ImageInfo info;
+    info.size.width = INT32_MAX;
+    info.size.height = TEST_HEIGHT;
+    info.pixelFormat = PixelFormat::RGBA_8888;
+    EXPECT_EQ(PixelMap::GetRGBxRowDataSize(info), -1);
+}
+
+/**
+ * @tc.name: GetRGBxByteCountUnsupportedFormat001
+ * @tc.desc: Test GetRGBxByteCountUnsupportedFormat001
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, GetRGBxByteCountUnsupportedFormat001, TestSize.Level3)
+{
+    ImageInfo info;
+    info.size.width = TEST_WIDTH;
+    info.size.height = TEST_HEIGHT;
+    info.pixelFormat = PixelFormat::NV12;
+    EXPECT_EQ(PixelMap::GetRGBxByteCount(info), -1);
+}
+
+/**
+ * @tc.name: GetYUVByteCountNonYuvFormat001
+ * @tc.desc: Test GetYUVByteCountNonYuvFormat001
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, GetYUVByteCountNonYuvFormat001, TestSize.Level3)
+{
+    ImageInfo info;
+    info.size.width = TEST_WIDTH;
+    info.size.height = TEST_HEIGHT;
+    info.pixelFormat = PixelFormat::RGBA_8888;
+    EXPECT_EQ(PixelMap::GetYUVByteCount(info), -1);
+}
+
+/**
+ * @tc.name: GetAllocatedByteCountYuv001
+ * @tc.desc: Test GetAllocatedByteCountYuv001
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, GetAllocatedByteCountYuv001, TestSize.Level3)
+{
+    ImageInfo info;
+    info.size.width = TEST_WIDTH;
+    info.size.height = TEST_HEIGHT;
+    info.pixelFormat = PixelFormat::NV12;
+    EXPECT_GT(PixelMap::GetAllocatedByteCount(info), 0);
+}
+
+/**
+ * @tc.name: ResetConfigInvalidSize001
+ * @tc.desc: Test ResetConfigInvalidSize001
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, ResetConfigInvalidSize001, TestSize.Level3)
+{
+    auto pixelMap = CreateBranchTestPixelMap(PixelFormat::RGBA_8888, AlphaType::IMAGE_ALPHA_TYPE_PREMUL);
+    ASSERT_NE(pixelMap, nullptr);
+    Size size = {0, TEST_HEIGHT};
+    EXPECT_EQ(pixelMap->ResetConfig(size, PixelFormat::RGBA_8888), ERR_IMAGE_INVALID_PARAMETER);
+    size.width = -1;
+    EXPECT_EQ(pixelMap->ResetConfig(size, PixelFormat::RGBA_8888), ERR_IMAGE_INVALID_PARAMETER);
+    size.width = TEST_WIDTH;
+    size.height = 0;
+    EXPECT_EQ(pixelMap->ResetConfig(size, PixelFormat::RGBA_8888), ERR_IMAGE_INVALID_PARAMETER);
+}
+
+/**
+ * @tc.name: ResetConfigUnknownFormat001
+ * @tc.desc: Test ResetConfigUnknownFormat001
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, ResetConfigUnknownFormat001, TestSize.Level3)
+{
+    auto pixelMap = CreateBranchTestPixelMap(PixelFormat::RGBA_8888, AlphaType::IMAGE_ALPHA_TYPE_PREMUL);
+    ASSERT_NE(pixelMap, nullptr);
+    Size size = {2, 2};
+    EXPECT_EQ(pixelMap->ResetConfig(size, PixelFormat::UNKNOWN), ERR_IMAGE_INVALID_PARAMETER);
+}
+
+/**
+ * @tc.name: ResetConfigDstSizeExceedsPixelsSize001
+ * @tc.desc: Test ResetConfigDstSizeExceedsPixelsSize001
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, ResetConfigDstSizeExceedsPixelsSize001, TestSize.Level3)
+{
+    auto pixelMap = CreateBranchTestPixelMap(PixelFormat::RGBA_8888, AlphaType::IMAGE_ALPHA_TYPE_PREMUL,
+        AllocatorType::HEAP_ALLOC, 2, 2);
+    ASSERT_NE(pixelMap, nullptr);
+    Size size = {100, 100};
+    EXPECT_EQ(pixelMap->ResetConfig(size, PixelFormat::RGBA_8888), ERR_IMAGE_INVALID_PARAMETER);
+}
+
+/**
+ * @tc.name: GetByteCountInvalidRowDataSize001
+ * @tc.desc: Test GetByteCountInvalidRowDataSize001
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, GetByteCountInvalidRowDataSize001, TestSize.Level3)
+{
+    auto pixelMap = std::make_unique<PixelMap>();
+    ASSERT_NE(pixelMap, nullptr);
+    ImageInfo info;
+    info.size.width = TEST_WIDTH;
+    info.size.height = TEST_HEIGHT;
+    info.pixelFormat = PixelFormat::RGBA_8888;
+    info.alphaType = AlphaType::IMAGE_ALPHA_TYPE_PREMUL;
+    pixelMap->SetImageInfo(info);
+    pixelMap->rowDataSize_ = -1;
+    EXPECT_EQ(pixelMap->GetByteCount(), 0);
+}
+
+/**
+ * @tc.name: GetAllocationByteCountNullContext001
+ * @tc.desc: Test GetAllocationByteCountNullContext001
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, GetAllocationByteCountNullContext001, TestSize.Level3)
+{
+    auto pixelMap = std::make_unique<PixelMap>();
+    ASSERT_NE(pixelMap, nullptr);
+    pixelMap->allocatorType_ = AllocatorType::DMA_ALLOC;
+    pixelMap->context_ = nullptr;
+    EXPECT_EQ(pixelMap->GetAllocationByteCount(), 0u);
+}
+
+/**
+ * @tc.name: SetImageInfoInvalidSize001
+ * @tc.desc: Test SetImageInfoInvalidSize001
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, SetImageInfoInvalidSize001, TestSize.Level3)
+{
+    auto pixelMap = std::make_unique<PixelMap>();
+    ASSERT_NE(pixelMap, nullptr);
+    ImageInfo info;
+    info.size.width = 0;
+    info.size.height = TEST_HEIGHT;
+    info.pixelFormat = PixelFormat::RGBA_8888;
+    EXPECT_EQ(pixelMap->SetImageInfo(info), ERR_IMAGE_DATA_ABNORMAL);
+    info.size.width = TEST_WIDTH;
+    info.size.height = 0;
+    EXPECT_EQ(pixelMap->SetImageInfo(info), ERR_IMAGE_DATA_ABNORMAL);
+}
+
+/**
+ * @tc.name: SetImageInfoUnsupportedFormat001
+ * @tc.desc: Test SetImageInfoUnsupportedFormat001
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, SetImageInfoUnsupportedFormat001, TestSize.Level3)
+{
+    auto pixelMap = std::make_unique<PixelMap>();
+    ASSERT_NE(pixelMap, nullptr);
+    ImageInfo info;
+    info.size.width = TEST_WIDTH;
+    info.size.height = TEST_HEIGHT;
+    info.pixelFormat = static_cast<PixelFormat>(999);
+    EXPECT_EQ(pixelMap->SetImageInfo(info), ERR_IMAGE_DATA_UNSUPPORT);
+}
+
+/**
+ * @tc.name: SetImageInfoReused001
+ * @tc.desc: Test SetImageInfoReused001
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, SetImageInfoReused001, TestSize.Level3)
+{
+    auto pixelMap = CreateBranchTestPixelMap(PixelFormat::RGBA_8888, AlphaType::IMAGE_ALPHA_TYPE_PREMUL);
+    ASSERT_NE(pixelMap, nullptr);
+    ImageInfo info;
+    info.size.width = 2;
+    info.size.height = 2;
+    info.pixelFormat = PixelFormat::RGBA_8888;
+    info.alphaType = AlphaType::IMAGE_ALPHA_TYPE_PREMUL;
+    EXPECT_EQ(pixelMap->SetImageInfo(info, true), SUCCESS);
+}
+
+/**
+ * @tc.name: CheckValidParamNullData001
+ * @tc.desc: Test CheckValidParamNullData001
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, CheckValidParamNullData001, TestSize.Level3)
+{
+    auto pixelMap = std::make_unique<PixelMap>();
+    ASSERT_NE(pixelMap, nullptr);
+    ImageInfo info;
+    info.size.width = TEST_WIDTH;
+    info.size.height = TEST_HEIGHT;
+    info.pixelFormat = PixelFormat::RGBA_8888;
+    info.alphaType = AlphaType::IMAGE_ALPHA_TYPE_PREMUL;
+    pixelMap->SetImageInfo(info);
+    EXPECT_FALSE(pixelMap->CheckValidParam(0, 0));
+}
+
+/**
+ * @tc.name: CheckValidParamUnMapped001
+ * @tc.desc: Test CheckValidParamUnMapped001
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, CheckValidParamUnMapped001, TestSize.Level3)
+{
+    auto pixelMap = CreateBranchTestPixelMap(PixelFormat::RGBA_8888, AlphaType::IMAGE_ALPHA_TYPE_PREMUL);
+    ASSERT_NE(pixelMap, nullptr);
+    pixelMap->isUnMap_ = true;
+    EXPECT_FALSE(pixelMap->CheckValidParam(0, 0));
+    pixelMap->isUnMap_ = false;
+}
+
+/**
+ * @tc.name: IsAstcOrY8Format001
+ * @tc.desc: Test IsAstcOrY8Format001
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, IsAstcOrY8Format001, TestSize.Level3)
+{
+    auto pixelMap = std::make_unique<PixelMap>();
+    ASSERT_NE(pixelMap, nullptr);
+    ImageInfo info;
+    info.size.width = TEST_WIDTH;
+    info.size.height = TEST_HEIGHT;
+    info.pixelFormat = PixelFormat::RGBA_8888;
+    info.alphaType = AlphaType::IMAGE_ALPHA_TYPE_PREMUL;
+    pixelMap->SetImageInfo(info);
+    EXPECT_FALSE(pixelMap->IsAstcOrY8Format());
+    pixelMap->isAstc_ = true;
+    EXPECT_TRUE(pixelMap->IsAstcOrY8Format());
+    pixelMap->isAstc_ = false;
+}
+
+/**
+ * @tc.name: GetPixelsNullData001
+ * @tc.desc: Test GetPixelsNullData001
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, GetPixelsNullData001, TestSize.Level3)
+{
+    auto pixelMap = std::make_unique<PixelMap>();
+    ASSERT_NE(pixelMap, nullptr);
+    ImageInfo info;
+    info.size.width = TEST_WIDTH;
+    info.size.height = TEST_HEIGHT;
+    info.pixelFormat = PixelFormat::RGBA_8888;
+    info.alphaType = AlphaType::IMAGE_ALPHA_TYPE_PREMUL;
+    pixelMap->SetImageInfo(info);
+    pixelMap->data_ = nullptr;
+    pixelMap->allocatorType_ = AllocatorType::HEAP_ALLOC;
+    EXPECT_EQ(pixelMap->GetPixels(), nullptr);
+}
+
+/**
+ * @tc.name: SetToSdrColorSpaceIsSRGB001
+ * @tc.desc: Test SetToSdrColorSpaceIsSRGB001
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, SetToSdrColorSpaceIsSRGB001, TestSize.Level3)
+{
+    auto pixelMap = std::make_unique<PixelMap>();
+    ASSERT_NE(pixelMap, nullptr);
+    EXPECT_FALSE(pixelMap->GetToSdrColorSpaceIsSRGB());
+    pixelMap->SetToSdrColorSpaceIsSRGB(true);
+    EXPECT_TRUE(pixelMap->GetToSdrColorSpaceIsSRGB());
+    pixelMap->SetToSdrColorSpaceIsSRGB(false);
+    EXPECT_FALSE(pixelMap->GetToSdrColorSpaceIsSRGB());
+}
+
+/**
+ * @tc.name: SetAstcHdrAndIsHdr001
+ * @tc.desc: Test SetAstcHdrAndIsHdr001
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, SetAstcHdrAndIsHdr001, TestSize.Level3)
+{
+    auto pixelMap = std::make_unique<PixelMap>();
+    ASSERT_NE(pixelMap, nullptr);
+    ImageInfo info;
+    info.size.width = TEST_WIDTH;
+    info.size.height = TEST_HEIGHT;
+    info.pixelFormat = PixelFormat::ASTC_4x4;
+    info.alphaType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
+    pixelMap->SetImageInfo(info);
+    pixelMap->SetAstcHdr(true);
+    EXPECT_TRUE(pixelMap->IsHdr());
+    pixelMap->SetAstcHdr(false);
+    EXPECT_FALSE(pixelMap->IsHdr());
+}
+
+/**
+ * @tc.name: ToSdrAstcRejection001
+ * @tc.desc: Test ToSdrAstcRejection001
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, ToSdrAstcRejection001, TestSize.Level3)
+{
+    auto pixelMap = std::make_unique<PixelMap>();
+    ASSERT_NE(pixelMap, nullptr);
+    pixelMap->isAstc_ = true;
+    EXPECT_EQ(pixelMap->ToSdr(), ERR_IMAGE_DATA_UNSUPPORT);
+    EXPECT_EQ(pixelMap->ToSdr(PixelFormat::RGBA_8888, true), ERR_IMAGE_DATA_UNSUPPORT);
+    pixelMap->isAstc_ = false;
+}
+
+/**
+ * @tc.name: ToSdrY8Rejection001
+ * @tc.desc: Test ToSdrY8Rejection001
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, ToSdrY8Rejection001, TestSize.Level3)
+{
+    auto pixelMap = CreateBranchTestPixelMap(PixelFormat::Y8, AlphaType::IMAGE_ALPHA_TYPE_OPAQUE);
+    if (pixelMap == nullptr) {
+        return;
+    }
+    EXPECT_EQ(pixelMap->ToSdr(), ERR_IMAGE_DATA_UNSUPPORT);
+    EXPECT_EQ(pixelMap->ToSdr(PixelFormat::RGBA_8888, true), ERR_IMAGE_DATA_UNSUPPORT);
+}
+
+/**
+ * @tc.name: ReadPixelsNullDst001
+ * @tc.desc: Test ReadPixelsNullDst001
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, ReadPixelsNullDst001, TestSize.Level3)
+{
+    auto pixelMap = CreateBranchTestPixelMap(PixelFormat::RGBA_8888, AlphaType::IMAGE_ALPHA_TYPE_PREMUL);
+    ASSERT_NE(pixelMap, nullptr);
+    EXPECT_EQ(pixelMap->ReadPixels(48, nullptr), ERR_IMAGE_READ_PIXELMAP_FAILED);
+}
+
+/**
+ * @tc.name: ReadPixelsUnMapped001
+ * @tc.desc: Test ReadPixelsUnMapped001
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, ReadPixelsUnMapped001, TestSize.Level3)
+{
+    auto pixelMap = CreateBranchTestPixelMap(PixelFormat::RGBA_8888, AlphaType::IMAGE_ALPHA_TYPE_PREMUL);
+    ASSERT_NE(pixelMap, nullptr);
+    uint8_t dst[48] = {0};
+    pixelMap->isUnMap_ = true;
+    EXPECT_EQ(pixelMap->ReadPixels(48, dst), ERR_IMAGE_READ_PIXELMAP_FAILED);
+    pixelMap->isUnMap_ = false;
+}
+
+/**
+ * @tc.name: ReadPixelsBufferSizeTooSmall001
+ * @tc.desc: Test ReadPixelsBufferSizeTooSmall001
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, ReadPixelsBufferSizeTooSmall001, TestSize.Level3)
+{
+    auto pixelMap = CreateBranchTestPixelMap(PixelFormat::RGBA_8888, AlphaType::IMAGE_ALPHA_TYPE_PREMUL);
+    ASSERT_NE(pixelMap, nullptr);
+    uint8_t dst[8] = {0};
+    EXPECT_EQ(pixelMap->ReadPixels(8, dst), ERR_IMAGE_INVALID_PARAMETER);
+}
+
+/**
+ * @tc.name: ReadARGBPixelsAstc001
+ * @tc.desc: Test ReadARGBPixelsAstc001
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, ReadARGBPixelsAstc001, TestSize.Level3)
+{
+    auto pixelMap = CreateBranchTestPixelMap(PixelFormat::RGBA_8888, AlphaType::IMAGE_ALPHA_TYPE_PREMUL);
+    ASSERT_NE(pixelMap, nullptr);
+    pixelMap->isAstc_ = true;
+    uint8_t dst[48] = {0};
+    EXPECT_EQ(pixelMap->ReadARGBPixels(48, dst), ERR_IMAGE_INVALID_PARAMETER);
+    pixelMap->isAstc_ = false;
+}
+
+/**
+ * @tc.name: ReadARGBPixelsNullDst001
+ * @tc.desc: Test ReadARGBPixelsNullDst001
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, ReadARGBPixelsNullDst001, TestSize.Level3)
+{
+    auto pixelMap = CreateBranchTestPixelMap(PixelFormat::RGBA_8888, AlphaType::IMAGE_ALPHA_TYPE_PREMUL);
+    ASSERT_NE(pixelMap, nullptr);
+    EXPECT_EQ(pixelMap->ReadARGBPixels(48, nullptr), ERR_IMAGE_INVALID_PARAMETER);
+}
+
+/**
+ * @tc.name: ReadARGBPixelsUnMapped001
+ * @tc.desc: Test ReadARGBPixelsUnMapped001
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, ReadARGBPixelsUnMapped001, TestSize.Level3)
+{
+    auto pixelMap = CreateBranchTestPixelMap(PixelFormat::RGBA_8888, AlphaType::IMAGE_ALPHA_TYPE_PREMUL);
+    ASSERT_NE(pixelMap, nullptr);
+    uint8_t dst[48] = {0};
+    pixelMap->isUnMap_ = true;
+    EXPECT_EQ(pixelMap->ReadARGBPixels(48, dst), ERR_IMAGE_READ_PIXELMAP_FAILED);
+    pixelMap->isUnMap_ = false;
+}
+
+/**
+ * @tc.name: ReadPixelInvalidPos001
+ * @tc.desc: Test ReadPixelInvalidPos001
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, ReadPixelInvalidPos001, TestSize.Level3)
+{
+    auto pixelMap = CreateBranchTestPixelMap(PixelFormat::RGBA_8888, AlphaType::IMAGE_ALPHA_TYPE_PREMUL);
+    ASSERT_NE(pixelMap, nullptr);
+    Position pos = {-1, 0};
+    uint32_t dst = 0;
+    EXPECT_EQ(pixelMap->ReadPixel(pos, dst), ERR_IMAGE_INVALID_PARAMETER);
+    pos.x = TEST_WIDTH;
+    EXPECT_EQ(pixelMap->ReadPixel(pos, dst), ERR_IMAGE_INVALID_PARAMETER);
+}
+
+/**
+ * @tc.name: ReadPixelUnMapped001
+ * @tc.desc: Test ReadPixelUnMapped001
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, ReadPixelUnMapped001, TestSize.Level3)
+{
+    auto pixelMap = CreateBranchTestPixelMap(PixelFormat::RGBA_8888, AlphaType::IMAGE_ALPHA_TYPE_PREMUL);
+    ASSERT_NE(pixelMap, nullptr);
+    Position pos = {0, 0};
+    uint32_t dst = 0;
+    pixelMap->isUnMap_ = true;
+    EXPECT_EQ(pixelMap->ReadPixel(pos, dst), ERR_IMAGE_READ_PIXELMAP_FAILED);
+    pixelMap->isUnMap_ = false;
+}
+
+/**
+ * @tc.name: WritePixelNotEditable001
+ * @tc.desc: Test WritePixelNotEditable001
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, WritePixelNotEditable001, TestSize.Level3)
+{
+    auto pixelMap = CreateBranchTestPixelMap(PixelFormat::RGBA_8888, AlphaType::IMAGE_ALPHA_TYPE_PREMUL);
+    ASSERT_NE(pixelMap, nullptr);
+    Position pos = {0, 0};
+    EXPECT_EQ(pixelMap->WritePixel(pos, 0xFF), ERR_IMAGE_PIXELMAP_NOT_ALLOW_MODIFY);
+}
+
+/**
+ * @tc.name: WritePixelInvalidPos001
+ * @tc.desc: Test WritePixelInvalidPos001
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, WritePixelInvalidPos001, TestSize.Level3)
+{
+    auto pixelMap = CreateBranchEditablePixelMap(PixelFormat::RGBA_8888, AlphaType::IMAGE_ALPHA_TYPE_PREMUL);
+    ASSERT_NE(pixelMap, nullptr);
+    Position pos = {-1, 0};
+    EXPECT_EQ(pixelMap->WritePixel(pos, 0xFF), ERR_IMAGE_INVALID_PARAMETER);
+    pos.x = TEST_WIDTH;
+    EXPECT_EQ(pixelMap->WritePixel(pos, 0xFF), ERR_IMAGE_INVALID_PARAMETER);
+}
+
+/**
+ * @tc.name: WritePixelsByBufferNullSource001
+ * @tc.desc: Test WritePixelsByBufferNullSource001
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, WritePixelsByBufferNullSource001, TestSize.Level3)
+{
+    auto pixelMap = CreateBranchEditablePixelMap(PixelFormat::RGBA_8888, AlphaType::IMAGE_ALPHA_TYPE_PREMUL);
+    ASSERT_NE(pixelMap, nullptr);
+    EXPECT_EQ(pixelMap->WritePixels(nullptr, 48), ERR_IMAGE_INVALID_PARAMETER);
+}
+
+/**
+ * @tc.name: WritePixelsByBufferBufferSizeTooSmall001
+ * @tc.desc: Test WritePixelsByBufferBufferSizeTooSmall001
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, WritePixelsByBufferBufferSizeTooSmall001, TestSize.Level3)
+{
+    auto pixelMap = CreateBranchEditablePixelMap(PixelFormat::RGBA_8888, AlphaType::IMAGE_ALPHA_TYPE_PREMUL);
+    ASSERT_NE(pixelMap, nullptr);
+    uint8_t src[4] = {0};
+    EXPECT_EQ(pixelMap->WritePixels(src, 4), ERR_IMAGE_INVALID_PARAMETER);
+}
+
+/**
+ * @tc.name: WritePixelsByBufferNotEditable001
+ * @tc.desc: Test WritePixelsByBufferNotEditable001
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, WritePixelsByBufferNotEditable001, TestSize.Level3)
+{
+    auto pixelMap = CreateBranchTestPixelMap(PixelFormat::RGBA_8888, AlphaType::IMAGE_ALPHA_TYPE_PREMUL);
+    ASSERT_NE(pixelMap, nullptr);
+    uint8_t src[48] = {0};
+    EXPECT_EQ(pixelMap->WritePixels(src, 48), ERR_IMAGE_PIXELMAP_NOT_ALLOW_MODIFY);
+}
+
+/**
+ * @tc.name: WritePixelsByColorNotEditable001
+ * @tc.desc: Test WritePixelsByColorNotEditable001
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, WritePixelsByColorNotEditable001, TestSize.Level3)
+{
+    auto pixelMap = CreateBranchTestPixelMap(PixelFormat::RGBA_8888, AlphaType::IMAGE_ALPHA_TYPE_PREMUL);
+    ASSERT_NE(pixelMap, nullptr);
+    EXPECT_FALSE(pixelMap->WritePixels(0xFF000000));
+}
+
+/**
+ * @tc.name: WritePixelsByColorUnMapped001
+ * @tc.desc: Test WritePixelsByColorUnMapped001
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, WritePixelsByColorUnMapped001, TestSize.Level3)
+{
+    auto pixelMap = CreateBranchEditablePixelMap(PixelFormat::RGBA_8888, AlphaType::IMAGE_ALPHA_TYPE_PREMUL);
+    ASSERT_NE(pixelMap, nullptr);
+    pixelMap->isUnMap_ = true;
+    EXPECT_FALSE(pixelMap->WritePixels(0xFF000000));
+    pixelMap->isUnMap_ = false;
+}
+
+/**
+ * @tc.name: CheckPixelMapForWritePixelsNotEditable001
+ * @tc.desc: Test CheckPixelMapForWritePixelsNotEditable001
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, CheckPixelMapForWritePixelsNotEditable001, TestSize.Level3)
+{
+    auto pixelMap = CreateBranchTestPixelMap(PixelFormat::RGBA_8888, AlphaType::IMAGE_ALPHA_TYPE_PREMUL);
+    ASSERT_NE(pixelMap, nullptr);
+    EXPECT_EQ(pixelMap->CheckPixelMapForWritePixels(), ERR_IMAGE_PIXELMAP_NOT_ALLOW_MODIFY);
+}
+
+/**
+ * @tc.name: CheckPixelMapForWritePixelsUnMapped001
+ * @tc.desc: Test CheckPixelMapForWritePixelsUnMapped001
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, CheckPixelMapForWritePixelsUnMapped001, TestSize.Level3)
+{
+    auto pixelMap = CreateBranchEditablePixelMap(PixelFormat::RGBA_8888, AlphaType::IMAGE_ALPHA_TYPE_PREMUL);
+    ASSERT_NE(pixelMap, nullptr);
+    pixelMap->isUnMap_ = true;
+    EXPECT_EQ(pixelMap->CheckPixelMapForWritePixels(), ERR_IMAGE_WRITE_PIXELMAP_FAILED);
+    pixelMap->isUnMap_ = false;
+}
+
+/**
+ * @tc.name: ScaleNotModifiable001
+ * @tc.desc: Test ScaleNotModifiable001
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, ScaleNotModifiable001, TestSize.Level3)
+{
+    auto pixelMap = CreateBranchEditablePixelMap(PixelFormat::RGBA_8888, AlphaType::IMAGE_ALPHA_TYPE_PREMUL);
+    ASSERT_NE(pixelMap, nullptr);
+    pixelMap->SetModifiable(false);
+    EXPECT_EQ(pixelMap->Scale(2.0f, 2.0f, AntiAliasingOption::NONE), ERR_IMAGE_PIXELMAP_NOT_ALLOW_MODIFY);
+}
+
+/**
+ * @tc.name: ScaleInvalidRatio001
+ * @tc.desc: Test ScaleInvalidRatio001
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, ScaleInvalidRatio001, TestSize.Level3)
+{
+    auto pixelMap = CreateBranchEditablePixelMap(PixelFormat::RGBA_8888, AlphaType::IMAGE_ALPHA_TYPE_PREMUL);
+    ASSERT_NE(pixelMap, nullptr);
+    EXPECT_EQ(pixelMap->Scale(0.0f, 2.0f, AntiAliasingOption::NONE), ERR_IMAGE_INVALID_PARAMETER);
+    float nanVal = std::numeric_limits<float>::quiet_NaN();
+    EXPECT_EQ(pixelMap->Scale(nanVal, 2.0f, AntiAliasingOption::NONE), ERR_IMAGE_INVALID_PARAMETER);
+}
+
+/**
+ * @tc.name: ScaleAstcRejection001
+ * @tc.desc: Test ScaleAstcRejection001
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, ScaleAstcRejection001, TestSize.Level3)
+{
+    auto pixelMap = CreateBranchEditablePixelMap(PixelFormat::RGBA_8888, AlphaType::IMAGE_ALPHA_TYPE_PREMUL);
+    ASSERT_NE(pixelMap, nullptr);
+    pixelMap->isAstc_ = true;
+    EXPECT_EQ(pixelMap->Scale(2.0f, 2.0f, AntiAliasingOption::NONE), ERR_IMAGE_DATA_UNSUPPORT);
+    pixelMap->isAstc_ = false;
+}
+
+/**
+ * @tc.name: ScaleY8Rejection001
+ * @tc.desc: Test ScaleY8Rejection001
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, ScaleY8Rejection001, TestSize.Level3)
+{
+    auto pixelMap = CreateBranchTestPixelMap(PixelFormat::Y8, AlphaType::IMAGE_ALPHA_TYPE_OPAQUE);
+    if (pixelMap == nullptr) {
+        return;
+    }
+    pixelMap->SetEditable(true);
+    EXPECT_EQ(pixelMap->Scale(2.0f, 2.0f, AntiAliasingOption::NONE), ERR_IMAGE_DATA_UNSUPPORT);
+}
+
+/**
+ * @tc.name: TranslateInvalidDistance001
+ * @tc.desc: Test TranslateInvalidDistance001
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, TranslateInvalidDistance001, TestSize.Level3)
+{
+    auto pixelMap = CreateBranchEditablePixelMap(PixelFormat::RGBA_8888, AlphaType::IMAGE_ALPHA_TYPE_PREMUL);
+    ASSERT_NE(pixelMap, nullptr);
+    float nanVal = std::numeric_limits<float>::quiet_NaN();
+    EXPECT_EQ(pixelMap->Translate(nanVal, 0.0f), ERR_IMAGE_INVALID_PARAMETER);
+}
+
+/**
+ * @tc.name: TranslateY8Rejection001
+ * @tc.desc: Test TranslateY8Rejection001
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, TranslateY8Rejection001, TestSize.Level3)
+{
+    auto pixelMap = CreateBranchTestPixelMap(PixelFormat::Y8, AlphaType::IMAGE_ALPHA_TYPE_OPAQUE);
+    if (pixelMap == nullptr) {
+        return;
+    }
+    pixelMap->SetEditable(true);
+    EXPECT_EQ(pixelMap->Translate(1.0f, 1.0f), ERR_IMAGE_DATA_UNSUPPORT);
+}
+
+/**
+ * @tc.name: RotateNaN001
+ * @tc.desc: Test RotateNaN001
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, RotateNaN001, TestSize.Level3)
+{
+    auto pixelMap = CreateBranchEditablePixelMap(PixelFormat::RGBA_8888, AlphaType::IMAGE_ALPHA_TYPE_PREMUL);
+    ASSERT_NE(pixelMap, nullptr);
+    float nanVal = std::numeric_limits<float>::quiet_NaN();
+    EXPECT_EQ(pixelMap->Rotate(nanVal), ERR_IMAGE_INVALID_PARAMETER);
+}
+
+/**
+ * @tc.name: RotateY8Rejection001
+ * @tc.desc: Test RotateY8Rejection001
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, RotateY8Rejection001, TestSize.Level3)
+{
+    auto pixelMap = CreateBranchTestPixelMap(PixelFormat::Y8, AlphaType::IMAGE_ALPHA_TYPE_OPAQUE);
+    if (pixelMap == nullptr) {
+        return;
+    }
+    pixelMap->SetEditable(true);
+    EXPECT_EQ(pixelMap->Rotate(90.0f), ERR_IMAGE_DATA_UNSUPPORT);
+}
+
+/**
+ * @tc.name: FlipY8Rejection001
+ * @tc.desc: Test FlipY8Rejection001
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, FlipY8Rejection001, TestSize.Level3)
+{
+    auto pixelMap = CreateBranchTestPixelMap(PixelFormat::Y8, AlphaType::IMAGE_ALPHA_TYPE_OPAQUE);
+    if (pixelMap == nullptr) {
+        return;
+    }
+    pixelMap->SetEditable(true);
+    EXPECT_EQ(pixelMap->Flip(true, false), ERR_IMAGE_DATA_UNSUPPORT);
+}
+
+/**
+ * @tc.name: CropNotModifiable001
+ * @tc.desc: Test CropNotModifiable001
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, CropNotModifiable001, TestSize.Level3)
+{
+    auto pixelMap = CreateBranchEditablePixelMap(PixelFormat::RGBA_8888, AlphaType::IMAGE_ALPHA_TYPE_PREMUL);
+    ASSERT_NE(pixelMap, nullptr);
+    pixelMap->SetModifiable(false);
+    Rect rect = {0, 0, 2, 2};
+    EXPECT_EQ(pixelMap->Crop(rect), ERR_IMAGE_PIXELMAP_NOT_ALLOW_MODIFY);
+}
+
+/**
+ * @tc.name: CropY8Rejection001
+ * @tc.desc: Test CropY8Rejection001
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, CropY8Rejection001, TestSize.Level3)
+{
+    auto pixelMap = CreateBranchTestPixelMap(PixelFormat::Y8, AlphaType::IMAGE_ALPHA_TYPE_OPAQUE);
+    if (pixelMap == nullptr) {
+        return;
+    }
+    pixelMap->SetEditable(true);
+    Rect rect = {0, 0, 2, 2};
+    EXPECT_EQ(pixelMap->Crop(rect), ERR_IMAGE_DATA_UNSUPPORT);
+}
+
+/**
+ * @tc.name: CropInvalidRect001
+ * @tc.desc: Test CropInvalidRect001
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, CropInvalidRect001, TestSize.Level3)
+{
+    auto pixelMap = CreateBranchEditablePixelMap(PixelFormat::RGBA_8888, AlphaType::IMAGE_ALPHA_TYPE_PREMUL);
+    ASSERT_NE(pixelMap, nullptr);
+    Rect rect = {0, 0, 100, 100};
+    EXPECT_EQ(pixelMap->Crop(rect), ERR_IMAGE_INVALID_PARAMETER);
+}
+
+/**
+ * @tc.name: GetImagePropertyIntNullExif001
+ * @tc.desc: Test GetImagePropertyIntNullExif001
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, GetImagePropertyIntNullExif001, TestSize.Level3)
+{
+    auto pixelMap = std::make_unique<PixelMap>();
+    ASSERT_NE(pixelMap, nullptr);
+    int32_t value = 0;
+    EXPECT_EQ(pixelMap->GetImagePropertyInt("Orientation", value), ERR_MEDIA_NO_EXIF_DATA);
+}
+
+/**
+ * @tc.name: GetImagePropertyStringNullExif001
+ * @tc.desc: Test GetImagePropertyStringNullExif001
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, GetImagePropertyStringNullExif001, TestSize.Level3)
+{
+    auto pixelMap = std::make_unique<PixelMap>();
+    ASSERT_NE(pixelMap, nullptr);
+    std::string value;
+    EXPECT_EQ(pixelMap->GetImagePropertyString("Orientation", value), ERR_MEDIA_NO_EXIF_DATA);
+}
+
+/**
+ * @tc.name: ModifyImagePropertyNullExif001
+ * @tc.desc: Test ModifyImagePropertyNullExif001
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, ModifyImagePropertyNullExif001, TestSize.Level3)
+{
+    auto pixelMap = std::make_unique<PixelMap>();
+    ASSERT_NE(pixelMap, nullptr);
+    EXPECT_EQ(pixelMap->ModifyImageProperty("Orientation", "1"), ERR_IMAGE_DECODE_EXIF_UNSUPPORT);
+}
+
+
+/**
+ * @tc.name: SetPixelsAddrReleasesExistedData001
+ * @tc.desc: Test SetPixelsAddr releases existed data before setting new data
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, SetPixelsAddrReleasesExistedData001, TestSize.Level3)
+{
+    auto pixelMap = CreateBranchTestPixelMap(PixelFormat::RGBA_8888, AlphaType::IMAGE_ALPHA_TYPE_PREMUL);
+    ASSERT_NE(pixelMap, nullptr);
+    EXPECT_NE(pixelMap->GetPixels(), nullptr);
+    void *newBuffer = malloc(32);
+    ASSERT_NE(newBuffer, nullptr);
+    pixelMap->SetPixelsAddr(newBuffer, nullptr, 32, AllocatorType::HEAP_ALLOC, nullptr);
+    EXPECT_EQ(pixelMap->GetCapacity(), 32u);
+}
+
+/**
+ * @tc.name: SetPixelsAddrShareMemNullContext001
+ * @tc.desc: Test SetPixelsAddr with SHARE_MEM_ALLOC and null context logs error
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, SetPixelsAddrShareMemNullContext001, TestSize.Level3)
+{
+    auto pixelMap = CreateBranchTestPixelMap(PixelFormat::RGBA_8888, AlphaType::IMAGE_ALPHA_TYPE_PREMUL);
+    ASSERT_NE(pixelMap, nullptr);
+    void *buffer = malloc(16);
+    ASSERT_NE(buffer, nullptr);
+    pixelMap->SetPixelsAddr(buffer, nullptr, 16, AllocatorType::SHARE_MEM_ALLOC, nullptr);
+    free(buffer);
+}
+
+/**
+ * @tc.name: FreePixelMapHeapAlloc001
+ * @tc.desc: Test FreePixelMap with HEAP_ALLOC frees data correctly
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, FreePixelMapHeapAlloc001, TestSize.Level3)
+{
+    auto pixelMap = CreateBranchTestPixelMap(PixelFormat::RGBA_8888, AlphaType::IMAGE_ALPHA_TYPE_PREMUL);
+    ASSERT_NE(pixelMap, nullptr);
+    EXPECT_NE(pixelMap->GetPixels(), nullptr);
+    pixelMap->FreePixelMap();
+    EXPECT_EQ(pixelMap->GetPixels(), nullptr);
+}
+
+/**
+ * @tc.name: SetFreePixelMapProc001
+ * @tc.desc: Test SetFreePixelMapProc sets and clears the callback function
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, SetFreePixelMapProc001, TestSize.Level3)
+{
+    auto pixelMap = std::make_unique<PixelMap>();
+    pixelMap->SetFreePixelMapProc(CountFreePixelMapHook);
+    EXPECT_NE(pixelMap->freePixelMapProc_, nullptr);
+    pixelMap->SetFreePixelMapProc(nullptr);
+    EXPECT_EQ(pixelMap->freePixelMapProc_, nullptr);
+}
+
+/**
+ * @tc.name: SetTransformered001
+ * @tc.desc: Test SetTransformered and IsTransformered round-trip
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, SetTransformered001, TestSize.Level3)
+{
+    auto pixelMap = std::make_unique<PixelMap>();
+    EXPECT_FALSE(pixelMap->IsTransformered());
+    pixelMap->SetTransformered(true);
+    EXPECT_TRUE(pixelMap->IsTransformered());
+    pixelMap->SetTransformered(false);
+    EXPECT_FALSE(pixelMap->IsTransformered());
+}
+
+/**
+ * @tc.name: SetMemoryNameHeapAlloc001
+ * @tc.desc: Test SetMemoryName returns ERR_MEMORY_NOT_SUPPORT for HEAP_ALLOC
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, SetMemoryNameHeapAlloc001, TestSize.Level3)
+{
+    auto pixelMap = CreateBranchTestPixelMap(PixelFormat::RGBA_8888, AlphaType::IMAGE_ALPHA_TYPE_PREMUL);
+    ASSERT_NE(pixelMap, nullptr);
+    EXPECT_EQ(pixelMap->SetMemoryName("TestHeapName"), ERR_MEMORY_NOT_SUPPORT);
+    EXPECT_EQ(pixelMap->SetMemoryName(""), ERR_MEMORY_NOT_SUPPORT);
+}
+
+/**
+ * @tc.name: SetAlphaAlpha8Format001
+ * @tc.desc: Test SetAlpha with ALPHA_8 format
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, SetAlphaAlpha8Format001, TestSize.Level3)
+{
+    auto pixelMap = CreateBranchEditablePixelMap(PixelFormat::ALPHA_8, AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
+    ASSERT_NE(pixelMap, nullptr);
+    EXPECT_EQ(pixelMap->SetAlpha(0.5f), SUCCESS);
+}
+
+/**
+ * @tc.name: SetAlphaBoundaryPercent001
+ * @tc.desc: Test SetAlpha with percent = 1.0 boundary value
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, SetAlphaBoundaryPercent001, TestSize.Level3)
+{
+    auto pixelMap = CreateBranchEditablePixelMap(PixelFormat::RGBA_8888, AlphaType::IMAGE_ALPHA_TYPE_PREMUL);
+    ASSERT_NE(pixelMap, nullptr);
+    EXPECT_EQ(pixelMap->SetAlpha(1.0f), SUCCESS);
+}
+
+/**
+ * @tc.name: ALPHAF16ToARGBMultiplePixels001
+ * @tc.desc: Test ALPHAF16ToARGB with multiple pixels
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, ALPHAF16ToARGBMultiplePixels001, TestSize.Level3)
+{
+    uint8_t in[ALPHA_F16_BYTES * 4] = {0x00, 0x3C, 0x00, 0x3C, 0x00, 0x3C, 0x00, 0x3C};
+    uint32_t out[4] = {0};
+    EXPECT_TRUE(PixelMap::ALPHAF16ToARGB(in, ALPHA_F16_BYTES * 4, out, 4));
+}
+
+/**
+ * @tc.name: GetPixel8Valid001
+ * @tc.desc: Test GetPixel8 with ALPHA_8 format returns valid pointer
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, GetPixel8Valid001, TestSize.Level3)
+{
+    auto pixelMap = CreateBranchTestPixelMap(PixelFormat::ALPHA_8, AlphaType::IMAGE_ALPHA_TYPE_OPAQUE);
+    ASSERT_NE(pixelMap, nullptr);
+    EXPECT_NE(pixelMap->GetPixel8(0, 0), nullptr);
+}
+
+/**
+ * @tc.name: GetPixel16Valid001
+ * @tc.desc: Test GetPixel16 with RGB_565 format returns valid pointer
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, GetPixel16Valid001, TestSize.Level3)
+{
+    auto pixelMap = CreateBranchTestPixelMap(PixelFormat::RGB_565, AlphaType::IMAGE_ALPHA_TYPE_OPAQUE);
+    ASSERT_NE(pixelMap, nullptr);
+    EXPECT_NE(pixelMap->GetPixel16(0, 0), nullptr);
+}
+
+/**
+ * @tc.name: GetPixel32Valid001
+ * @tc.desc: Test GetPixel32 with RGBA_8888 format returns valid pointer
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, GetPixel32Valid001, TestSize.Level3)
+{
+    auto pixelMap = CreateBranchTestPixelMap(PixelFormat::RGBA_8888, AlphaType::IMAGE_ALPHA_TYPE_PREMUL);
+    ASSERT_NE(pixelMap, nullptr);
+    EXPECT_NE(pixelMap->GetPixel32(0, 0), nullptr);
+}
+
+/**
+ * @tc.name: GetRGBA1010102ColorValid001
+ * @tc.desc: Test GetRGBA1010102Color with valid coords returns true
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, GetRGBA1010102ColorValid001, TestSize.Level3)
+{
+    auto pixelMap = CreateBranchTestPixelMap(PixelFormat::RGBA_1010102, AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
+    if (pixelMap == nullptr) { return; }
+    uint32_t color = 0;
+    EXPECT_TRUE(pixelMap->GetRGBA1010102Color(0, 0, color));
+}
+
+/**
+ * @tc.name: GetARGB32ColorValid001
+ * @tc.desc: Test GetARGB32Color with valid coords returns true
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, GetARGB32ColorValid001, TestSize.Level3)
+{
+    auto pixelMap = CreateBranchTestPixelMap(PixelFormat::RGBA_8888, AlphaType::IMAGE_ALPHA_TYPE_PREMUL);
+    ASSERT_NE(pixelMap, nullptr);
+    uint32_t color = 0;
+    EXPECT_TRUE(pixelMap->GetARGB32Color(0, 0, color));
+}
+
+/**
+ * @tc.name: GetPixelValid001
+ * @tc.desc: Test GetPixel with valid coordinates returns non-null
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, GetPixelValid001, TestSize.Level3)
+{
+    auto pixelMap = CreateBranchTestPixelMap(PixelFormat::RGBA_8888, AlphaType::IMAGE_ALPHA_TYPE_PREMUL);
+    ASSERT_NE(pixelMap, nullptr);
+    EXPECT_NE(pixelMap->GetPixel(0, 0), nullptr);
+}
+
+/**
+ * @tc.name: CloneSuccess001
+ * @tc.desc: Test Clone succeeds with valid RGBA_8888 pixel map
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, CloneSuccess001, TestSize.Level3)
+{
+    auto pixelMap = CreateBranchTestPixelMap(PixelFormat::RGBA_8888, AlphaType::IMAGE_ALPHA_TYPE_PREMUL);
+    ASSERT_NE(pixelMap, nullptr);
+    int32_t errorCode = 0;
+    auto cloned = pixelMap->Clone(errorCode);
+    EXPECT_NE(cloned, nullptr);
+    EXPECT_EQ(errorCode, SUCCESS);
+}
+
+/**
+ * @tc.name: CopyPixelMapSuccess001
+ * @tc.desc: Test CopyPixelMap succeeds with valid source
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, CopyPixelMapSuccess001, TestSize.Level3)
+{
+    auto srcPixelMap = CreateBranchTestPixelMap(PixelFormat::RGBA_8888, AlphaType::IMAGE_ALPHA_TYPE_PREMUL);
+    auto dstPixelMap = std::make_unique<PixelMap>();
+    ASSERT_NE(srcPixelMap, nullptr);
+    ASSERT_NE(dstPixelMap, nullptr);
+    ImageInfo info;
+    info.size.width = TEST_WIDTH;
+    info.size.height = TEST_HEIGHT;
+    info.pixelFormat = PixelFormat::RGBA_8888;
+    info.alphaType = AlphaType::IMAGE_ALPHA_TYPE_PREMUL;
+    dstPixelMap->SetImageInfo(info);
+    int32_t error = 0;
+    EXPECT_TRUE(PixelMap::CopyPixelMap(*srcPixelMap, *dstPixelMap, error));
+    EXPECT_EQ(error, SUCCESS);
+}
+
+/**
+ * @tc.name: IsSameImageSame001
+ * @tc.desc: Test IsSameImage returns true for same pixel maps
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, IsSameImageSame001, TestSize.Level3)
+{
+    auto pixelMap = CreateBranchTestPixelMap(PixelFormat::RGBA_8888, AlphaType::IMAGE_ALPHA_TYPE_PREMUL);
+    ASSERT_NE(pixelMap, nullptr);
+    EXPECT_TRUE(pixelMap->IsSameImage(*pixelMap));
+}
+
+/**
+ * @tc.name: GetRGBxRowDataSizeValid001
+ * @tc.desc: Test GetRGBxRowDataSize returns correct value for valid input
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, GetRGBxRowDataSizeValid001, TestSize.Level3)
+{
+    ImageInfo info;
+    info.size.width = TEST_WIDTH;
+    info.size.height = TEST_HEIGHT;
+    info.pixelFormat = PixelFormat::RGBA_8888;
+    EXPECT_EQ(PixelMap::GetRGBxRowDataSize(info), TEST_WIDTH * ARGB_8888_BYTES);
+}
+
+/**
+ * @tc.name: ResetConfigSuccess001
+ * @tc.desc: Test ResetConfig succeeds with valid parameters
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, ResetConfigSuccess001, TestSize.Level3)
+{
+    auto pixelMap = CreateBranchTestPixelMap(PixelFormat::RGBA_8888, AlphaType::IMAGE_ALPHA_TYPE_PREMUL,
+        AllocatorType::HEAP_ALLOC, 6, 6);
+    ASSERT_NE(pixelMap, nullptr);
+    Size size = {3, 3};
+    EXPECT_EQ(pixelMap->ResetConfig(size, PixelFormat::RGBA_8888), SUCCESS);
+    EXPECT_EQ(pixelMap->GetWidth(), 3);
+    EXPECT_EQ(pixelMap->GetHeight(), 3);
+}
+
+/**
+ * @tc.name: SetAlphaTypeSuccess001
+ * @tc.desc: Test SetAlphaType succeeds for valid alpha type
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, SetAlphaTypeSuccess001, TestSize.Level3)
+{
+    auto pixelMap = CreateBranchTestPixelMap(PixelFormat::RGBA_8888, AlphaType::IMAGE_ALPHA_TYPE_PREMUL);
+    ASSERT_NE(pixelMap, nullptr);
+    EXPECT_TRUE(pixelMap->SetAlphaType(AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL));
+}
+
+/**
+ * @tc.name: IsYuvFormatStatic001
+ * @tc.desc: Test IsYuvFormat static method returns correct result for various formats
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, IsYuvFormatStatic001, TestSize.Level3)
+{
+    EXPECT_TRUE(PixelMap::IsYuvFormat(PixelFormat::NV12));
+    EXPECT_TRUE(PixelMap::IsYuvFormat(PixelFormat::NV21));
+    EXPECT_TRUE(PixelMap::IsYuvFormat(PixelFormat::YCBCR_P010));
+    EXPECT_TRUE(PixelMap::IsYuvFormat(PixelFormat::YCRCB_P010));
+    EXPECT_TRUE(PixelMap::IsYuvFormat(PixelFormat::Y8));
+    EXPECT_FALSE(PixelMap::IsYuvFormat(PixelFormat::RGBA_8888));
+    EXPECT_FALSE(PixelMap::IsYuvFormat(PixelFormat::UNKNOWN));
+}
+
+/**
+ * @tc.name: ReadPixelsSuccess001
+ * @tc.desc: Test ReadPixels succeeds with valid parameters
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, ReadPixelsSuccess001, TestSize.Level3)
+{
+    auto pixelMap = CreateBranchTestPixelMap(PixelFormat::RGBA_8888, AlphaType::IMAGE_ALPHA_TYPE_PREMUL);
+    ASSERT_NE(pixelMap, nullptr);
+    uint32_t bufferSize = static_cast<uint32_t>(pixelMap->GetByteCount());
+    ASSERT_GT(bufferSize, 0u);
+    uint8_t *dst = static_cast<uint8_t *>(malloc(bufferSize));
+    ASSERT_NE(dst, nullptr);
+    EXPECT_EQ(pixelMap->ReadPixels(bufferSize, dst), SUCCESS);
+    free(dst);
+}
+
+/**
+ * @tc.name: WritePixelsByColorSuccess001
+ * @tc.desc: Test WritePixels(color) succeeds with valid pixel map
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, WritePixelsByColorSuccess001, TestSize.Level3)
+{
+    auto pixelMap = CreateBranchEditablePixelMap(PixelFormat::RGBA_8888, AlphaType::IMAGE_ALPHA_TYPE_PREMUL);
+    ASSERT_NE(pixelMap, nullptr);
+    EXPECT_TRUE(pixelMap->WritePixels(0xFF000000));
+}
+
+/**
+ * @tc.name: ScaleSameSize001
+ * @tc.desc: Test Scale returns SUCCESS when target size equals current size
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, ScaleSameSize001, TestSize.Level3)
+{
+    auto pixelMap = CreateBranchEditablePixelMap(PixelFormat::RGBA_8888, AlphaType::IMAGE_ALPHA_TYPE_PREMUL);
+    ASSERT_NE(pixelMap, nullptr);
+    EXPECT_EQ(pixelMap->Scale(1.0f, 1.0f, AntiAliasingOption::NONE), SUCCESS);
+}
+
+/**
+ * @tc.name: RotateZeroDegrees001
+ * @tc.desc: Test Rotate returns SUCCESS for 0 degrees
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, RotateZeroDegrees001, TestSize.Level3)
+{
+    auto pixelMap = CreateBranchEditablePixelMap(PixelFormat::RGBA_8888, AlphaType::IMAGE_ALPHA_TYPE_PREMUL);
+    ASSERT_NE(pixelMap, nullptr);
+    EXPECT_EQ(pixelMap->Rotate(0.0f), SUCCESS);
+}
+
+/**
+ * @tc.name: FlipBothFalse001
+ * @tc.desc: Test Flip returns SUCCESS when both xAxis and yAxis are false
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, FlipBothFalse001, TestSize.Level3)
+{
+    auto pixelMap = CreateBranchEditablePixelMap(PixelFormat::RGBA_8888, AlphaType::IMAGE_ALPHA_TYPE_PREMUL);
+    ASSERT_NE(pixelMap, nullptr);
+    EXPECT_EQ(pixelMap->Flip(false, false), SUCCESS);
+}
+
+/**
+ * @tc.name: CropSameRect001
+ * @tc.desc: Test Crop returns SUCCESS when rect equals source rect
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, CropSameRect001, TestSize.Level3)
+{
+    auto pixelMap = CreateBranchEditablePixelMap(PixelFormat::RGBA_8888, AlphaType::IMAGE_ALPHA_TYPE_PREMUL);
+    ASSERT_NE(pixelMap, nullptr);
+    Rect rect = {0, 0, TEST_WIDTH, TEST_HEIGHT};
+    EXPECT_EQ(pixelMap->Crop(rect), SUCCESS);
+}
+
+/**
+ * @tc.name: GetBaseDensity001
+ * @tc.desc: Test GetBaseDensity returns the base density value
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, GetBaseDensity001, TestSize.Level3)
+{
+    auto pixelMap = std::make_unique<PixelMap>();
+    ASSERT_NE(pixelMap, nullptr);
+    ImageInfo info;
+    info.size.width = TEST_WIDTH;
+    info.size.height = TEST_HEIGHT;
+    info.pixelFormat = PixelFormat::RGBA_8888;
+    info.alphaType = AlphaType::IMAGE_ALPHA_TYPE_PREMUL;
+    info.baseDensity = 480;
+    pixelMap->SetImageInfo(info);
+    EXPECT_EQ(pixelMap->GetBaseDensity(), 480);
+}
+
+/**
+ * @tc.name: IsSameImageNullData001
+ * @tc.desc: Test IsSameImage returns false when data is null
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, IsSameImageNullData001, TestSize.Level3)
+{
+    auto pixelMap1 = std::make_unique<PixelMap>();
+    auto pixelMap2 = std::make_unique<PixelMap>();
+    ASSERT_NE(pixelMap1, nullptr);
+    ASSERT_NE(pixelMap2, nullptr);
+    EXPECT_FALSE(pixelMap1->IsSameImage(*pixelMap2));
+}
+
+/**
+ * @tc.name: CheckValidParamValid001
+ * @tc.desc: Test CheckValidParam returns true for valid parameters
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, CheckValidParamValid001, TestSize.Level3)
+{
+    auto pixelMap = CreateBranchTestPixelMap(PixelFormat::RGBA_8888, AlphaType::IMAGE_ALPHA_TYPE_PREMUL);
+    ASSERT_NE(pixelMap, nullptr);
+    EXPECT_TRUE(pixelMap->CheckValidParam(0, 0));
+    EXPECT_TRUE(pixelMap->CheckValidParam(TEST_WIDTH - 1, TEST_HEIGHT - 1));
 }
 }
 }

@@ -59,6 +59,7 @@ public:
     void ReleaseAsync();
     void ReleasePromise();
     void ReleaseSync();
+    void SetMemoryName(string_view name);
 
 #ifdef IMAGE_DEBUG_FLAG
     bool isCallBackTest = false;

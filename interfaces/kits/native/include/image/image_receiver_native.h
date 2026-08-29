@@ -292,6 +292,22 @@ Image_ErrorCode OH_ImageReceiverNative_OnImageArrive(OH_ImageReceiverNative *rec
 Image_ErrorCode OH_ImageReceiverNative_OffImageArrive(OH_ImageReceiverNative *receiver,
     OH_ImageReceiver_ImageArriveCallback callback);
 
+/**
+ * @brief Sets the memory name for an OH_ImageReceiverNative object.
+ *
+ * Only visible ASCII characters are supported. Spaces, newlines, tabs, and other control characters will be filtered
+ * out. If the filtered result consists entirely of digits, a prefix "ImageReceiver:" will be automatically prepended.
+ *
+ * @param receiver Pointer to an OH_ImageReceiverNative object.
+ * @param name Pointer to the memory name string to set.
+ * @param size The size of the name string in bytes (not including the null terminator).
+ * @return {@link Image_ErrorCode} IMAGE_SUCCESS - if the operation is successful.
+ *     <br>{@link Image_ErrorCode} IMAGE_RECEIVER_INVALID_PARAMETER - if receiver or name is null,
+ *     or size is 0, or name contains no visible characters after filtering.
+ * @since 26.1.0
+ */
+Image_ErrorCode OH_ImageReceiverNative_SetMemoryName(OH_ImageReceiverNative* receiver, char *name, size_t size);
+
 #ifdef __cplusplus
 };
 #endif

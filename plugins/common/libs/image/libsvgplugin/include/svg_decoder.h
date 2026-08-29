@@ -36,6 +36,7 @@ public:
     void SetSource(InputDataStream &sourceStream) override;
     void Reset() override;
     uint32_t SetDecodeOptions(uint32_t index, const PixelDecodeOptions &opts, PlImageInfo &info) override;
+    uint32_t SetSVGLimits(SVGResourceLimitLevel level) override;
     uint32_t Decode(uint32_t index, DecodeContext &context) override;
     uint32_t PromoteIncrementalDecode(uint32_t index, ProgDecodeContext &context) override;
     uint32_t GetTopLevelImageNum(uint32_t &num) override;
@@ -73,6 +74,7 @@ private:
     std::unique_ptr<SkMemoryStream> svgStream_;
     sk_sp<SkSVGDOM> svgDom_;
     SkSize svgSize_ {0, 0};
+    SVGResourceLimitLevel svgResourceLimitLevel_ = SVG_RESOURCE_LIMIT_NONE;
 
     PixelDecodeOptions opts_;
 };

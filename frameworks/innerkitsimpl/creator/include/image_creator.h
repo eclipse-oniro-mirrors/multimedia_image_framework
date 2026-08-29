@@ -90,7 +90,7 @@ private:
 };
 class ImageCreatorSurfaceListener : public IBufferConsumerListener {
 public:
-    std::shared_ptr<ImageCreator> ic_;
+    std::weak_ptr<ImageCreator> ic_;
     void OnBufferAvailable() override;
 };
 } // namespace Media

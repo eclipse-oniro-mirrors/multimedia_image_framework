@@ -87,6 +87,24 @@ HWTEST_F(EglImageTest, PixelMapGlUtilsImageLayoutTest001, TestSize.Level3)
 }
 
 /**
+ * @tc.name: PixelMapGlResourceRgbaValidationTest001
+ * @tc.desc: Test EGL post-processing buffer validation only accepts the supported RGBA layout.
+ * @tc.type: FUNC
+ */
+HWTEST_F(EglImageTest, PixelMapGlResourceRgbaValidationTest001, TestSize.Level3)
+{
+    GlImageInfo imageInfo;
+    imageInfo.size = {2, 2};
+    imageInfo.stride = 8;
+    imageInfo.pixelBytes = PixelMapGlResource::BYTES_PER_PIXEL_RGBA;
+    imageInfo.bufferSize = 16;
+    EXPECT_TRUE(PixelMapGlResource::ValidateCpuImageInfo(imageInfo, GL_RGBA));
+    EXPECT_FALSE(PixelMapGlResource::ValidateCpuImageInfo(imageInfo, GL_RGB));
+    imageInfo.pixelBytes = 3;
+    EXPECT_FALSE(PixelMapGlResource::ValidateCpuImageInfo(imageInfo, GL_RGBA));
+}
+
+/**
  * @tc.name: PixelMapGlUtilsBuildSlrWeightsTest001
  * @tc.desc: Test SLR weight generation is bounded and normalized.
  * @tc.type: FUNC
@@ -140,9 +158,9 @@ HWTEST_F(EglImageTest, PixelMapGlResourceCopyHelpersTest001, TestSize.Level3)
     EXPECT_EQ(static_cast<uint8_t>(linear[8]), 9);
     EXPECT_EQ(static_cast<uint8_t>(linear[15]), 16);
 
-    std::vector<uint8_t> dst(static_cast<size_t>(stride) * height, 0);
+    std::vector<uint8_t> dst(rowBytes + static_cast<size_t>(stride) * (height - 1), 0);
     EXPECT_TRUE(PixelMapGlResource::CopyLinearToStrided(
-        linear.data(), linear.size(), rowBytes, height, dst.data(), stride));
+        linear.data(), linear.size(), rowBytes, height, dst.data(), dst.size(), stride));
     EXPECT_EQ(dst[0], 1);
     EXPECT_EQ(dst[7], 8);
     EXPECT_EQ(dst[12], 9);

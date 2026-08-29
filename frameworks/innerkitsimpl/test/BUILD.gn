@@ -351,6 +351,7 @@ ohos_unittest("imagesourcetest") {
   sources = [
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_packer_test.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_source_ai_sr_hdr_test.cpp",
+    "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_source_astc_test.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_source_exif_test.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_source_gif_ex_test.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_source_gif_test.cpp",
@@ -1983,6 +1984,7 @@ ohos_unittest("image_receiver_native_test") {
     "${image_subsystem}/frameworks/innerkitsimpl/utils:image_utils",
     "${image_subsystem}/frameworks/kits/native/common/ndk:image_receiver",
     "${image_subsystem}/frameworks/kits/native/common/ndk:ohimage",
+    "${image_subsystem}/interfaces/kits/js/common:image_error_convert",
     "${image_subsystem}/interfaces/innerkits:image_native",
   ]
   resource_config_file = "$image_subsystem/test/resource/image/ohos_test.xml"
@@ -2254,6 +2256,34 @@ ohos_unittest("sk_ohoscodec_test") {
   cflags = [
     "-Dprivate=public",
     "-Dprotected=public",
+  ]
+}
+
+ohos_unittest("image_data_writer_test") {
+  module_out_path = module_output_path
+
+  include_dirs = [
+    "${image_subsystem}/interfaces/innerkits/include",
+    "${image_subsystem}/frameworks/innerkitsimpl/utils/include",
+    "${image_subsystem}/plugins/common/libs/image/libextplugin/include",
+  ]
+
+  sources = [
+    "${image_subsystem}/plugins/common/libs/image/libextplugin/src/image_data_writer.cpp",
+    "${image_subsystem}/frameworks/innerkitsimpl/test/unittest/image_data_writer_test.cpp",
+  ]
+
+  deps = [
+    "${image_subsystem}/plugins/common/libs/image/libextplugin:extplugin",
+    "${image_subsystem}/interfaces/innerkits:image_native",
+  ]
+
+  external_deps = [
+    "c_utils:utils",
+    "googletest:gtest",
+    "googletest:gtest_main",
+    "hilog:libhilog",
+    "skia:skia_canvaskit",
   ]
 }
 
@@ -2568,6 +2598,7 @@ group("unittest") {
     ":hispeed_image_manager_test",
     ":image_native_test",
     ":image_receiver_native_test",
+    ":image_data_writer_test",
     ":imageaccessortest",
     ":imagecolorspacetest",
     ":imageeventtest",

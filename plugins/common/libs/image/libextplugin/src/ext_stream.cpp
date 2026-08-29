@@ -64,20 +64,29 @@ size_t ExtStream::read(void *buffer, size_t size)
         return SIZE_ZERO;
     }
     if (buffer == nullptr) {
-        return Skip(stream_, size);
+        size_t skipped = Skip(stream_, size);
+        if (skipped == 0 && size > 0) {
+            effectiveEof_ = true;
+        }
+        return skipped;
     }
     InputStream buf;
     InputStreamInit(buf, static_cast<uint8_t *>(buffer), size);
-    
+
     uint32_t desiredSize = buf.size;
     if (stream_->GetStreamSize() != SIZE_ZERO && stream_->GetStreamSize() < desiredSize) {
         desiredSize = stream_->GetStreamSize();
     }
     if (!stream_->Read(desiredSize, buf.buf, buf.size, buf.resSize)) {
+        effectiveEof_ = true;
         IMAGE_LOGD("read failed, desire read size=%{public}u", buf.resSize);
         return 0;
     }
-    return static_cast<size_t>(buf.resSize);
+    size_t result = static_cast<size_t>(buf.resSize);
+    if (result == 0 && size > 0) {
+        effectiveEof_ = true;
+    }
+    return result;
 }
 
 size_t ExtStream::peek(void *buffer, size_t size) const
@@ -100,7 +109,7 @@ size_t ExtStream::peek(void *buffer, size_t size) const
 
 bool ExtStream::isAtEnd() const
 {
-    if (stream_ == nullptr) {
+    if (stream_ == nullptr || effectiveEof_) {
         return true;
     }
     size_t size = stream_->GetStreamSize();

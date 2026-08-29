@@ -192,11 +192,8 @@ uint32_t TiffDecoder::Decode(uint32_t index, DecodeContext& context)
     if (tiffSize_.width == 0 || tiffSize_.height == 0) {
         GetImageSize(0, tiffSize_);
     }
-    if (tiffSize_.width <= 0 || tiffSize_.height <= 0) {
-        IMAGE_LOGE("[TiffDecoder] invalid size: width=%{public}d, height=%{public}d",
-                   tiffSize_.width, tiffSize_.height);
-        return ERR_IMAGE_INVALID_PARAMETER;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(tiffSize_.width <= 0 || tiffSize_.height <= 0, ERR_IMAGE_INVALID_PARAMETER,
+        "[TiffDecoder] invalid size: width=%{public}d, height=%{public}d", tiffSize_.width, tiffSize_.height);
     context.info.size.width = tiffSize_.width;
     context.info.size.height = tiffSize_.height;
     bool cond = ImageUtils::CheckMulOverflow(tiffSize_.width, tiffSize_.height, sizeof(uint32_t));
@@ -206,10 +203,8 @@ uint32_t TiffDecoder::Decode(uint32_t index, DecodeContext& context)
     const size_t bufferSize = static_cast<size_t>(tiffSize_.width) *
                               static_cast<size_t>(tiffSize_.height) *
                               sizeof(uint32_t);
-    if (!AllocBuffer(context, bufferSize)) {
-        IMAGE_LOGE("AllocBuffer failed or buffer is too small");
-        return ERR_IMAGE_MALLOC_ABNORMAL;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(!AllocBuffer(context, bufferSize), ERR_IMAGE_MALLOC_ABNORMAL,
+        "AllocBuffer failed or buffer is too small");
     uint32_t* raster = static_cast<uint32_t*>(context.pixelsBuffer.buffer);
     std::unique_ptr<uint32_t[]> dmaTmpBuffer;
     if (context.allocatorType == AllocatorType::DMA_ALLOC && dmaStride_ > tiffSize_.width) {
@@ -250,12 +245,10 @@ uint32_t TiffDecoder::GetImageSize(uint32_t index, Size& size)
 {
     CHECK_ERROR_RETURN_RET_LOG(!tifCodec_, ERR_IMAGE_DECODE_HEAD_ABNORMAL, "tifCodec_ is nullptr");
 
-    if (!TIFFGetField(tifCodec_, TIFFTAG_IMAGEWIDTH, &size.width) ||
+    bool cond = !TIFFGetField(tifCodec_, TIFFTAG_IMAGEWIDTH, &size.width) ||
         !TIFFGetField(tifCodec_, TIFFTAG_IMAGELENGTH, &size.height) ||
-        size.width <= 0 || size.height <= 0) {
-        IMAGE_LOGE("[TiffDecoder] invalid image size");
-        return ERR_IMAGE_DECODE_HEAD_ABNORMAL;
-    }
+        size.width <= 0 || size.height <= 0;
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_DECODE_HEAD_ABNORMAL, "[TiffDecoder] invalid image size");
     IMAGE_LOGD("[TiffDecoder] tiff size is %{public}u x %{public}u", size.width, size.height);
     return SUCCESS;
 }

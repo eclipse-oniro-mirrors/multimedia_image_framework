@@ -20,6 +20,12 @@ image_native_ios_cflags = [
 ]
 
 image_native_ios_sources = [
+  # Native C API wrappers used by ArkUI-X ace_ndk.
+  "//foundation/multimedia/image_framework/frameworks/kits/js/common/ndk/image_packer_native.cpp",
+  "//foundation/multimedia/image_framework/frameworks/kits/js/common/ndk/image_packer_native_impl.cpp",
+  "//foundation/multimedia/image_framework/frameworks/kits/js/common/pixelmap_ndk/pixelmap_native.cpp",
+  "//foundation/multimedia/image_framework/frameworks/kits/js/common/pixelmap_ndk/pixelmap_native_impl.cpp",
+
   # plugin_manager
   "//foundation/multimedia/image_framework/plugins/manager/src/common/attr_data.cpp",
   "//foundation/multimedia/image_framework/plugins/manager/src/common/platform_adp.cpp",
@@ -45,6 +51,7 @@ image_native_ios_sources = [
   "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/codec/src/image_packer.cpp",
   "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/codec/src/image_packer_ex.cpp",
   "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/codec/src/image_source.cpp",
+  "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/codec/src/image_source_astc.cpp",
   "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/common/src/incremental_pixel_map.cpp",
   "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/common/src/pixel_map.cpp",
   "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/common/src/pixel_map_parcel.cpp",
@@ -113,7 +120,6 @@ image_native_ios_sources = [
   # jpeg
   "//foundation/multimedia/image_framework/plugins/common/libs/image/libjpegplugin/src/icc_profile_info.cpp",
   "//foundation/multimedia/image_framework/plugins/common/libs/image/libjpegplugin/src/jpeg_decoder.cpp",
-  "//foundation/multimedia/image_framework/plugins/common/libs/image/libjpegplugin/src/jpeg_encoder.cpp",
   "//foundation/multimedia/image_framework/plugins/common/libs/image/libjpegplugin/src/jpeg_utils.cpp",
 
   # png
@@ -226,6 +232,7 @@ image_native_ios_include_dirs = [
   "//foundation/multimedia/image_framework/plugins/common/libs/image/libjpegplugin",
   "//foundation/multimedia/image_framework/interfaces/kits/native/include",
   "//foundation/multimedia/image_framework/interfaces/kits/native/include/image",
+  "//base/global/resource_management/interfaces/native/resource/include",
   "//utils/jni/jnikit/include",
   "//foundation/graphic/graphic_surface/interfaces/inner_api/surface",
   "//foundation/graphic/graphic_surface/interfaces/inner_api/utils",

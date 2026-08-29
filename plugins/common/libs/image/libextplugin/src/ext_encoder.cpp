@@ -47,6 +47,7 @@
 #include "image_format_convert.h"
 #include "image_func_timer.h"
 #include "image_fwk_ext_manager.h"
+#include "image_data_writer.h"
 #include "hispeed_image_manager.h"
 #include "image_log.h"
 #include "image_system_properties.h"
@@ -81,6 +82,7 @@
 #include "v2_1/icodec_image.h"
 #include "iremote_object.h"
 #include "iproxy_broker.h"
+#include "codec_omx_ext.h"
 #endif
 
 #undef LOG_DOMAIN
@@ -447,20 +449,77 @@ bool IsAstc(const std::string &format)
     return format.find("image/astc") == 0;
 }
 
+enum class WriteBlobStatus {
+    kSuccess = 0,
+    kExifWriteFailed,
+    kC2paWriteFailed,
+};
+
+static bool NeedReserveJpegC2paSpace(const PlEncodeOptions &opts)
+{
+    return opts.c2paDataSize > 0 && (opts.format == "image/jpeg" || opts.format == "image/jpg");
+}
+
+static bool HasExifData(PixelMap* pixelmap, bool needExif)
+{
+    return needExif && pixelmap != nullptr && pixelmap->GetExifMetadata() != nullptr &&
+        pixelmap->GetExifMetadata()->GetExifData() != nullptr;
+}
+
+static WriteBlobStatus TryWriteBlobWithMetadataAccessor(MetadataAccessor &metadataAccessor, PixelMap *pixelmap,
+    SkWStream &outStream, const PlEncodeOptions &opts, bool needC2paSpace)
+{
+    auto metadataPtr = pixelmap->GetExifMetadata();
+    metadataAccessor.Set(metadataPtr);
+    if (metadataAccessor.Write() != SUCCESS) {
+        return WriteBlobStatus::kExifWriteFailed;
+    }
+
+    if (needC2paSpace) {
+        auto outStr = metadataAccessor.GetOutputStream();
+        if (outStr == nullptr) {
+            return WriteBlobStatus::kExifWriteFailed;
+        }
+        if (!ImageDataWriter::WriteJpegC2paDataToStream(outStream, outStr->GetAddr(), outStr->GetSize(),
+            opts.c2paDataSize)) {
+            return WriteBlobStatus::kC2paWriteFailed;
+        }
+        return WriteBlobStatus::kSuccess;
+    }
+
+    if (!metadataAccessor.WriteToOutput(outStream)) {
+        return WriteBlobStatus::kExifWriteFailed;
+    }
+    return WriteBlobStatus::kSuccess;
+}
+
 static uint32_t CreateAndWriteBlob(MetadataWStream &tStream, PixelMap *pixelmap, SkWStream& outStream,
     ImageInfo &imageInfo, PlEncodeOptions &opts)
 {
+    bool needC2paSpace = NeedReserveJpegC2paSpace(opts);
     ImageFuncTimer imageFuncTimer("insert exif data (%d, %d)", imageInfo.size.width, imageInfo.size.height);
     auto metadataAccessor =
         MetadataAccessorFactory::Create(tStream.GetAddr(), tStream.bytesWritten(), BufferMetadataStream::Dynamic);
     if (metadataAccessor != nullptr) {
-        auto metadataPtr = pixelmap->GetExifMetadata();
-        metadataAccessor->Set(metadataPtr);
-        if (metadataAccessor->Write() == SUCCESS) {
-            if (metadataAccessor->WriteToOutput(outStream)) {
-                return SUCCESS;
-            }
+        WriteBlobStatus status = TryWriteBlobWithMetadataAccessor(*metadataAccessor, pixelmap, outStream, opts,
+            needC2paSpace);
+        if (status == WriteBlobStatus::kSuccess) {
+            return SUCCESS;
         }
+        if (status == WriteBlobStatus::kC2paWriteFailed) {
+            IMAGE_LOGE("CreateAndWriteBlob: WriteC2paDataToStream failed");
+            return ERR_IMAGE_ENCODE_FAILED;
+        }
+        IMAGE_LOGW("CreateAndWriteBlob: EXIF write failed, continue with encoded image data");
+    }
+
+    if (needC2paSpace) {
+        if (!ImageDataWriter::WriteJpegC2paDataToStream(outStream, tStream.GetAddr(), tStream.bytesWritten(),
+            opts.c2paDataSize)) {
+            IMAGE_LOGE("CreateAndWriteBlob: WriteC2paDataToStream failed");
+            return ERR_IMAGE_ENCODE_FAILED;
+        }
+        return SUCCESS;
     }
     if (!outStream.write(tStream.GetAddr(), tStream.bytesWritten())) {
         ReportEncodeFault(imageInfo.size.width, imageInfo.size.height, opts.format, "Failed to encode image");
@@ -483,13 +542,12 @@ bool IsHdrColorSpace(Media::PixelMap* pixelmap)
 {
 #ifdef IMAGE_COLORSPACE_FLAG
     OHOS::ColorManager::ColorSpace colorSpace = pixelmap->InnerGetGrColorSpace();
-    if (colorSpace.GetColorSpaceName() != ColorManager::BT2020 &&
+    bool cond = colorSpace.GetColorSpaceName() != ColorManager::BT2020 &&
         colorSpace.GetColorSpaceName() != ColorManager::BT2020_HLG &&
         colorSpace.GetColorSpaceName() != ColorManager::BT2020_PQ &&
         colorSpace.GetColorSpaceName() != ColorManager::BT2020_HLG_LIMIT &&
-        colorSpace.GetColorSpaceName() != ColorManager::BT2020_PQ_LIMIT) {
-        return false;
-    }
+        colorSpace.GetColorSpaceName() != ColorManager::BT2020_PQ_LIMIT;
+    CHECK_ERROR_RETURN_RET(cond, false);
 #endif
     return true;
 }
@@ -674,7 +732,9 @@ bool ExtEncoder::HispeedEncode(SkWStream &skStream, Media::PixelMap *pixelMap, b
         encodeFormat_ != SkEncodedImageFormat::kJPEG || !IsYuvImage(pixelMap->GetPixelFormat());
     CHECK_DEBUG_RETURN_RET_LOG(unsupportedHispeedEncode, false, "HispeedEncode format not supported");
     uint32_t retCode = ERR_IMAGE_ENCODE_FAILED;
-    if (!needExif || pixelMap->GetExifMetadata() == nullptr || pixelMap->GetExifMetadata()->GetExifData() == nullptr) {
+    bool needsJpegC2paSpace = NeedReserveJpegC2paSpace(opts_);
+    bool hasExifData = HasExifData(pixelMap, needExif);
+    if (!hasExifData && !needsJpegC2paSpace) {
         retCode = HispeedImageManager::GetInstance().DoEncodeJpeg(&skStream, pixelmap_, opts_.quality, info);
         IMAGE_LOGD("HispeedEncode retCode:%{public}d", retCode);
         return (retCode == SUCCESS);
@@ -693,11 +753,11 @@ bool ExtEncoder::HardwareEncode(SkWStream &skStream, bool needExif)
 {
     uint32_t retCode = ERR_IMAGE_ENCODE_FAILED;
     if (IsHardwareEncodeSupported(opts_, pixelmap_)) {
-        if (!needExif || pixelmap_->GetExifMetadata() == nullptr ||
-            pixelmap_->GetExifMetadata()->GetExifData() == nullptr) {
-                retCode = DoHardWareEncode(&skStream);
-                IMAGE_LOGD("HardwareEncode retCode:%{public}d", retCode);
-                return (retCode == SUCCESS);
+        bool hasExifData = HasExifData(pixelmap_, needExif);
+        if (!hasExifData) {
+            retCode = DoHardWareEncode(&skStream);
+            IMAGE_LOGD("HardwareEncode retCode:%{public}d", retCode);
+            return (retCode == SUCCESS);
         }
         MetadataWStream tStream;
         retCode = DoHardWareEncode(&tStream);
@@ -705,7 +765,9 @@ bool ExtEncoder::HardwareEncode(SkWStream &skStream, bool needExif)
         CHECK_DEBUG_RETURN_RET_LOG(cond, false, "HardwareEncode failed, retCode:%{public}d", retCode);
         ImageInfo imageInfo;
         pixelmap_->GetImageInfo(imageInfo);
-        retCode = CreateAndWriteBlob(tStream, pixelmap_, skStream, imageInfo, opts_);
+        PlEncodeOptions metadataOpts = opts_;
+        metadataOpts.c2paDataSize = 0;
+        retCode = CreateAndWriteBlob(tStream, pixelmap_, skStream, imageInfo, metadataOpts);
         IMAGE_LOGD("HardwareEncode retCode :%{public}d", retCode);
         return (retCode == SUCCESS);
     }
@@ -716,9 +778,9 @@ uint32_t ExtEncoder::EncodeImageByBitmap(SkBitmap& bitmap, bool needExif, SkWStr
 {
     ImageInfo imageInfo;
     pixelmap_->GetImageInfo(imageInfo);
-    if (!needExif || pixelmap_->GetExifMetadata() == nullptr ||
-        pixelmap_->GetExifMetadata()->GetExifData() == nullptr) {
-            return DoEncode(&outStream, bitmap, encodeFormat_);
+    bool needsJpegC2paSpace = NeedReserveJpegC2paSpace(opts_);
+    if ((!HasExifData(pixelmap_, needExif)) && !needsJpegC2paSpace) {
+        return DoEncode(&outStream, bitmap, encodeFormat_);
     }
 
     MetadataWStream tStream;
@@ -1490,12 +1552,21 @@ std::shared_ptr<ImageItem> ExtEncoder::AssembleHdrBaseImageItem(sptr<SurfaceBuff
     if (hasLight) {
         propertiesSize += (sizeof(PropertyType::CONTENT_LIGHT_LEVEL) + sizeof(ContentLightLevel));
     }
+    if (opts.c2paDataSize > 0) {
+        propertiesSize += (sizeof(PropertyType) + sizeof(uint32_t));
+    }
     item->liteProperties.resize(propertiesSize);
     size_t offset = 0;
     CHECK_ERROR_RETURN_RET(!FillNclxColorProperty(item, offset, colorInfo), nullptr);
     bool fillContentLightLevelFailed = hasLight && (!FillLitePropertyItem(item->liteProperties, offset,
         PropertyType::CONTENT_LIGHT_LEVEL, &colour, sizeof(ContentLightLevel)));
     CHECK_ERROR_RETURN_RET(fillContentLightLevelFailed, nullptr);
+    if (opts.c2paDataSize > 0) {
+        uint32_t c2paSize = opts.c2paDataSize;
+        bool fillC2paFailed = !FillLitePropertyItem(item->liteProperties, offset,
+            static_cast<PropertyType>(OMX_IndexParamC2paSignSize), &c2paSize, sizeof(c2paSize));
+        CHECK_ERROR_RETURN_RET(fillC2paFailed, nullptr);
+    }
     return item;
 }
 
@@ -1603,11 +1674,21 @@ uint32_t ExtEncoder::AssembleSdrImageItem(
     item.compressType = COMPRESS_TYPE_HEVC;
     item.quality = opts_.quality;
     uint32_t litePropertiesSize = (sizeof(PropertyType::COLOR_TYPE) + sizeof(ColorType));
+    if (opts_.c2paDataSize > 0) {
+        litePropertiesSize += (sizeof(PropertyType) + sizeof(uint32_t));
+    }
     item.liteProperties.resize(litePropertiesSize);
     size_t offset = 0;
     ColorType colorType = ColorType::RICC;
     cond = !FillLitePropertyItem(item.liteProperties, offset, PropertyType::COLOR_TYPE, &colorType, sizeof(ColorType));
     CHECK_INFO_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER, "%{public}s Fill color type failed", __func__);
+    if (opts_.c2paDataSize > 0) {
+        uint32_t c2paSize = opts_.c2paDataSize;
+        cond = !FillLitePropertyItem(item.liteProperties, offset,
+            static_cast<PropertyType>(OMX_IndexParamC2paSignSize), &c2paSize, sizeof(c2paSize));
+        CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER,
+            "%{public}s Fill c2pa size failed", __func__);
+    }
     inputImgs.push_back(item);
     return SUCCESS;
 }
@@ -1974,7 +2055,7 @@ uint32_t Truncate10bBitTo8bit(VpeSurfaceBuffers& buffers, Media::PixelMap* pixel
     cond = !GetDstTruncatePixelFormat(srcPixelFormat, dstPixelFormat);
     CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER, "HDR-IMAGE Splice10bitTo8bit"
         "pixel format :[%{public}d] not support", format);
-    
+ 
     sptr<SurfaceBuffer> baseSptr = AllocSurfaceBuffer(hdrSurfaceBuffer->GetWidth(),
         hdrSurfaceBuffer->GetHeight(), dstPixelFormat);
     cond = baseSptr == nullptr;
@@ -2164,11 +2245,20 @@ uint32_t ExtEncoder::EncodeHeifSdrImage(sptr<SurfaceBuffer>& sdr, SkImageInfo sd
     cond = !tempRes;
     CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER, "EncodeSdrImage AssembleICCImageProperty failed");
     uint32_t litePropertiesSize = (sizeof(PropertyType::COLOR_TYPE) + sizeof(ColorType));
+    if (opts_.c2paDataSize > 0) {
+        litePropertiesSize += (sizeof(PropertyType) + sizeof(uint32_t));
+    }
     item.liteProperties.resize(litePropertiesSize);
     size_t offset = 0;
     ColorType colorType = ColorType::RICC;
     cond = !FillLitePropertyItem(item.liteProperties, offset, PropertyType::COLOR_TYPE, &colorType, sizeof(ColorType));
     CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER, "EncodeHeifSdrImage Fill color type failed");
+    if (opts_.c2paDataSize > 0) {
+        uint32_t c2paSize = opts_.c2paDataSize;
+        cond = !FillLitePropertyItem(item.liteProperties, offset,
+            static_cast<PropertyType>(OMX_IndexParamC2paSignSize), &c2paSize, sizeof(c2paSize));
+        CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER, "EncodeHeifSdrImage Fill c2pa size failed");
+    }
     std::vector<ImageItem> inputImgs;
     inputImgs.push_back(item);
     std::vector<MetaItem> inputMetas;
@@ -2186,7 +2276,7 @@ static bool CheckThumbnailCanSet(std::shared_ptr<ExifMetadata> &exifMetadata, ui
 {
     CHECK_ERROR_RETURN_RET_LOG(exifMetadata == nullptr, false,
         "%{public}s: exifMetadata is nullptr", __func__);
-    
+ 
     ExifData *exifData = exifMetadata->GetExifData();
     CHECK_ERROR_RETURN_RET_LOG(exifData == nullptr, false, "%{public}s: exifData is nullptr", __func__);
 
@@ -2258,7 +2348,12 @@ uint32_t ExtEncoder::ProcessJpegThumbnail()
     ScopeRestorer<SkEncodedImageFormat> encodeFormatRestorer(encodeFormat_, SkEncodedImageFormat::kJPEG);
     ScopeRestorer<EncodeDynamicRange> dynamicRangeRestorer(opts_.desiredDynamicRange, EncodeDynamicRange::SDR);
     ScopeRestorer<PixelMap*> pixelmapRestorer(pixelmap_, thumbnailPixelMap.get());
+    // Thumbnail is embedded in EXIF, not a standalone signed asset;
+    // reset to avoid reserving C2PA space in the thumbnail JPEG.
+    uint32_t savedC2paDataSize = opts_.c2paDataSize;
+    opts_.c2paDataSize = 0;
     errorCode = EncodeImageByPixelMap(thumbnailPixelMap.get(), false, wStream);
+    opts_.c2paDataSize = savedC2paDataSize;
     if (errorCode != SUCCESS) {
         IMAGE_LOGE("%{public}s: encode Picture's thumbnail failed, errorCode: %{public}d", __func__, errorCode);
         std::shared_ptr<ExifMetadata> exifMetadata = pixelMap->GetExifMetadata();
@@ -2587,6 +2682,10 @@ uint32_t ExtEncoder::EncodeJpegPictureDualVividInner(SkWStream& skStream, std::s
     pixelmap_ = mainPixelmap.get();
     sk_sp<SkData> baseImageData = GetImageEncodeData(baseSptr, baseInfo, opts_.needsPackProperties);
 
+    // Only the main picture needs C2PA space; reset to avoid
+    // reserving C2PA space in gainmap and auxiliary pictures.
+    opts_.c2paDataSize = 0;
+
     bool gainmapIsSRGB = gainmapPixelmap->GetToSdrColorSpaceIsSRGB();
     SkImageInfo gainmapInfo = GetSkInfo(gainmapPixelmap.get(), true, gainmapIsSRGB);
     ImageInfo tempInfo;
@@ -2654,6 +2753,9 @@ uint32_t ExtEncoder::EncodeJpegPictureSdr(SkWStream& skStream)
     }
     if (error == SUCCESS) {
         EncodeJpegAllBlobMetadata(skStream);
+        // Only the main picture needs C2PA space; reset to avoid
+        // reserving C2PA space in auxiliary pictures.
+        opts_.c2paDataSize = 0;
         EncodeJpegAuxiliaryPictures(skStream);
     }
     return error;
@@ -3240,12 +3342,21 @@ std::shared_ptr<ImageItem> ExtEncoder::AssemblePrimaryImageItem(sptr<SurfaceBuff
     CHECK_ERROR_RETURN_RET(!tempRes, nullptr);
     uint32_t litePropertiesSize = 0;
     litePropertiesSize += (sizeof(PropertyType::COLOR_TYPE) + sizeof(ColorType));
+    if (opts.c2paDataSize > 0) {
+        litePropertiesSize += (sizeof(PropertyType) + sizeof(uint32_t));
+    }
     item->liteProperties.resize(litePropertiesSize);
     size_t offset = 0;
     ColorType colorType = ColorType::RICC;
     cond = !FillLitePropertyItem(item->liteProperties, offset,
         PropertyType::COLOR_TYPE, &colorType, sizeof(ColorType));
     CHECK_ERROR_RETURN_RET_LOG(cond, nullptr, "AssemblePrimaryImageItem Fill color type failed");
+    if (opts.c2paDataSize > 0) {
+        uint32_t c2paSize = opts.c2paDataSize;
+        cond = !FillLitePropertyItem(item->liteProperties, offset,
+            static_cast<PropertyType>(OMX_IndexParamC2paSignSize), &c2paSize, sizeof(c2paSize));
+        CHECK_ERROR_RETURN_RET_LOG(cond, nullptr, "AssemblePrimaryImageItem Fill c2pa size failed");
+    }
     return item;
 }
 #endif

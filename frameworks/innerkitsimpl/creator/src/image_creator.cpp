@@ -89,9 +89,10 @@ std::shared_ptr<ImageCreatorContext> ImageCreatorContext ::CreateImageCreatorCon
 void ImageCreatorSurfaceListener ::OnBufferAvailable()
 {
     IMAGE_LOGD("CreatorBufferAvailable");
-    CHECK_ERROR_RETURN_LOG(ic_ == nullptr, "ic_ is nullptr");
-    if (ic_->surfaceBufferAvaliableListener_ != nullptr) {
-        ic_->surfaceBufferAvaliableListener_->OnSurfaceBufferAvaliable();
+    auto ic = ic_.lock();
+    CHECK_ERROR_RETURN_LOG(ic == nullptr, "ic_ is nullptr or expired");
+    if (ic->surfaceBufferAvaliableListener_ != nullptr) {
+        ic->surfaceBufferAvaliableListener_->OnSurfaceBufferAvaliable();
     }
 }
 

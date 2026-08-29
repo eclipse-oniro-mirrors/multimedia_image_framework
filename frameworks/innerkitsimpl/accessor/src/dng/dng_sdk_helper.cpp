@@ -252,7 +252,7 @@ uint32_t DngSdkHelper::GetImageRawData(ImagePlugin::InputDataStream* stream, std
     try {
         DngSdkInputDataStream dngStream(stream);
         DngSdkHost dngHost;
-        std::unique_ptr<dng_info> dngInfo = std::make_unique<dng_info>();
+        std::unique_ptr<DngSdkInfo> dngInfo = std::make_unique<DngSdkInfo>();
         if (!ReadDngInfo(dngStream, dngHost, dngInfo.get())) {
             return ERR_IMAGE_GET_DATA_ABNORMAL;
         }

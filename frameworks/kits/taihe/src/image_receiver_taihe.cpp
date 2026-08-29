@@ -17,6 +17,7 @@
 #include "image_receiver_taihe.h"
 #include "image_taihe.h"
 #include "image_taihe_utils.h"
+#include "image_error_convert.h"
 
 using namespace ANI::Image;
 
@@ -499,6 +500,22 @@ void ImageReceiverImpl::OffImageArrival(optional_view<callback<void(uintptr_t, u
     };
 
     OffImageArrivalProcess(args, this);
+}
+
+void ImageReceiverImpl::SetMemoryName(string_view name)
+{
+#if !defined(CROSS_PLATFORM)
+    if (imageReceiver_ == nullptr) {
+        ImageTaiheUtils::ThrowExceptionError("receiverImpl is nullptr");
+        return;
+    }
+
+    uint32_t ret = imageReceiver_->SetMemoryName(std::string(name));
+    if (ret != OHOS::Media::SUCCESS) {
+        auto err = OHOS::Media::ImageErrorConvert::SetMemoryNameMakeErrMsg(ret);
+        ImageTaiheUtils::ThrowExceptionError(err.first, err.second);
+    }
+#endif
 }
 
 static void ReleaseSyncProcess(ImageReceiverCommonArgs &args, ImageReceiverImpl *const receiverImpl)

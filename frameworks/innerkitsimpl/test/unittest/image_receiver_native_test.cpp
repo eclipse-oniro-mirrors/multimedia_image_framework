@@ -21,6 +21,7 @@
 #include "image_receiver_native.h"
 #include "image_kits.h"
 #include "image_receiver.h"
+#include "image_error_convert.h"
 
 struct OH_ImageReceiverNative {
     std::shared_ptr<OHOS::Media::ImageReceiver> ptrImgRcv;
@@ -40,12 +41,17 @@ namespace Media {
 static constexpr int32_t IMAGE_TEST_WIDTH = 8192;
 static constexpr int32_t IMAGE_TEST_HEIGHT = 8;
 static constexpr int32_t IMAGE_TEST_CAPACITY = 8;
+static constexpr int32_t RECEIVER_DMA_BUFFER_WIDTH = 64;
+static constexpr int32_t RECEIVER_DMA_BUFFER_HEIGHT = 64;
+static constexpr size_t RECEIVER_MEMORY_TEST_SIZE = 4;
+static constexpr size_t RECEIVER_DMA_BUF_NAME_MAX_LEN = 255;
 
 class ImageReceiverNativeTest : public testing::Test {
 public:
     ImageReceiverNativeTest() {}
     ~ImageReceiverNativeTest() {}
     static OH_ImageReceiverNative* CreateReceiver();
+    static void AllocDmaSurfaceBuffer(OHOS::sptr<OHOS::SurfaceBuffer> surfaceBuffer);
 };
 
 OH_ImageReceiverNative* ImageReceiverNativeTest::CreateReceiver()
@@ -77,6 +83,19 @@ OH_ImageReceiverNative* ImageReceiverNativeTest::CreateReceiver()
         return nullptr;
     }
     return pReceiver;
+}
+
+void ImageReceiverNativeTest::AllocDmaSurfaceBuffer(OHOS::sptr<OHOS::SurfaceBuffer> surfaceBuffer)
+{
+    BufferRequestConfig requestConfig = {
+        .width = RECEIVER_DMA_BUFFER_WIDTH,
+        .height = RECEIVER_DMA_BUFFER_HEIGHT,
+        .strideAlignment = 0x8,
+        .format = GRAPHIC_PIXEL_FMT_RGBA_8888,
+        .usage = BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA | BUFFER_USAGE_MEM_MMZ_CACHE,
+        .timeout = 0,
+    };
+    ASSERT_EQ(surfaceBuffer->Alloc(requestConfig), GSERROR_OK);
 }
 
 static void OH_ImageReceiver_ImageArriveCallback_Test(OH_ImageReceiverNative *receiver, void *userData) 
@@ -974,6 +993,183 @@ HWTEST_F(ImageReceiverNativeTest, OH_ImageReceiverNative_ReadNextImageTest001, T
     Image_ErrorCode nRst = OH_ImageReceiverNative_ReadNextImage(pReceiver, &pImg);
     ASSERT_EQ(nRst, IMAGE_BAD_PARAMETER);
     GTEST_LOG_(INFO) << "ImageReceiverNativeTest: OH_ImageReceiverNative_ReadNextImageTest001 end";
+}
+
+/**
+ * @tc.name: OH_ImageReceiverNative_SetMemoryNameTest001
+ * @tc.desc: test OH_ImageReceiverNative_SetMemoryName when receiver is nullptr
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageReceiverNativeTest, OH_ImageReceiverNative_SetMemoryNameTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageReceiverNativeTest: OH_ImageReceiverNative_SetMemoryNameTest001 start";
+    char name[] = "test";
+    size_t size = sizeof(name) - 1;
+    EXPECT_EQ(OH_ImageReceiverNative_SetMemoryName(nullptr, name, size), IMAGE_RECEIVER_INVALID_PARAMETER);
+    GTEST_LOG_(INFO) << "ImageReceiverNativeTest: OH_ImageReceiverNative_SetMemoryNameTest001 end";
+}
+
+/**
+ * @tc.name: OH_ImageReceiverNative_SetMemoryNameTest002
+ * @tc.desc: test OH_ImageReceiverNative_SetMemoryName when name is nullptr
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageReceiverNativeTest, OH_ImageReceiverNative_SetMemoryNameTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageReceiverNativeTest: OH_ImageReceiverNative_SetMemoryNameTest002 start";
+    OH_ImageReceiverNative *receiver = CreateReceiver();
+    ASSERT_NE(receiver, nullptr);
+    size_t size = RECEIVER_MEMORY_TEST_SIZE;
+    EXPECT_EQ(OH_ImageReceiverNative_SetMemoryName(receiver, nullptr, size), IMAGE_RECEIVER_INVALID_PARAMETER);
+    OH_ImageReceiverNative_Release(receiver);
+    GTEST_LOG_(INFO) << "ImageReceiverNativeTest: OH_ImageReceiverNative_SetMemoryNameTest002 end";
+}
+
+/**
+ * @tc.name: OH_ImageReceiverNative_SetMemoryNameTest003
+ * @tc.desc: test OH_ImageReceiverNative_SetMemoryName when size is zero
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageReceiverNativeTest, OH_ImageReceiverNative_SetMemoryNameTest003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageReceiverNativeTest: OH_ImageReceiverNative_SetMemoryNameTest003 start";
+    OH_ImageReceiverNative *receiver = CreateReceiver();
+    ASSERT_NE(receiver, nullptr);
+    char name[] = "test";
+    EXPECT_EQ(OH_ImageReceiverNative_SetMemoryName(receiver, name, 0), IMAGE_RECEIVER_INVALID_PARAMETER);
+    OH_ImageReceiverNative_Release(receiver);
+    GTEST_LOG_(INFO) << "ImageReceiverNativeTest: OH_ImageReceiverNative_SetMemoryNameTest003 end";
+}
+
+/**
+ * @tc.name: OH_ImageReceiverNative_SetMemoryNameTest004
+ * @tc.desc: test OH_ImageReceiverNative_SetMemoryName when sanitized name is empty
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageReceiverNativeTest, OH_ImageReceiverNative_SetMemoryNameTest004, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageReceiverNativeTest: OH_ImageReceiverNative_SetMemoryNameTest004 start";
+    OH_ImageReceiverNative *receiver = CreateReceiver();
+    ASSERT_NE(receiver, nullptr);
+    char invalidName[] = " \t\n";
+    size_t invalidSize = sizeof(invalidName) - 1;
+    EXPECT_EQ(OH_ImageReceiverNative_SetMemoryName(receiver, invalidName, invalidSize),
+        IMAGE_RECEIVER_INVALID_PARAMETER);
+    OH_ImageReceiverNative_Release(receiver);
+    GTEST_LOG_(INFO) << "ImageReceiverNativeTest: OH_ImageReceiverNative_SetMemoryNameTest004 end";
+}
+
+/**
+ * @tc.name: OH_ImageReceiverNative_SetMemoryNameTest005
+ * @tc.desc: test OH_ImageReceiverNative_SetMemoryName saves valid name
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageReceiverNativeTest, OH_ImageReceiverNative_SetMemoryNameTest005, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageReceiverNativeTest: OH_ImageReceiverNative_SetMemoryNameTest005 start";
+    OH_ImageReceiverNative *receiver = CreateReceiver();
+    ASSERT_NE(receiver, nullptr);
+    char name[] = "test";
+    size_t size = sizeof(name) - 1;
+    EXPECT_EQ(OH_ImageReceiverNative_SetMemoryName(receiver, name, size), IMAGE_SUCCESS);
+    OH_ImageReceiverNative_Release(receiver);
+    GTEST_LOG_(INFO) << "ImageReceiverNativeTest: OH_ImageReceiverNative_SetMemoryNameTest005 end";
+}
+
+/**
+ * @tc.name: OH_ImageReceiverNative_SetMemoryNameTest006
+ * @tc.desc: test OH_ImageReceiverNative_SetMemoryName at max name length boundary
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageReceiverNativeTest, OH_ImageReceiverNative_SetMemoryNameTest006, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageReceiverNativeTest: OH_ImageReceiverNative_SetMemoryNameTest006 start";
+    OH_ImageReceiverNative *receiver = CreateReceiver();
+    ASSERT_NE(receiver, nullptr);
+
+    std::string nameAtMaxLen(RECEIVER_DMA_BUF_NAME_MAX_LEN, 'a');
+    std::string nameOverMaxLen(RECEIVER_DMA_BUF_NAME_MAX_LEN + 1, 'b');
+    EXPECT_EQ(OH_ImageReceiverNative_SetMemoryName(receiver, nameAtMaxLen.data(), nameAtMaxLen.size()),
+        IMAGE_SUCCESS);
+    EXPECT_EQ(OH_ImageReceiverNative_SetMemoryName(receiver, nameOverMaxLen.data(), nameOverMaxLen.size()),
+        IMAGE_RECEIVER_INVALID_PARAMETER);
+
+    OH_ImageReceiverNative_Release(receiver);
+    GTEST_LOG_(INFO) << "ImageReceiverNativeTest: OH_ImageReceiverNative_SetMemoryNameTest006 end";
+}
+
+/**
+ * @tc.name: OH_ImageReceiverNative_SetMemoryNameTest007
+ * @tc.desc: test numeric name sanitization through the native API
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageReceiverNativeTest, OH_ImageReceiverNative_SetMemoryNameTest007, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageReceiverNativeTest: OH_ImageReceiverNative_SetMemoryNameTest007 start";
+    OH_ImageReceiverNative *receiver = CreateReceiver();
+    ASSERT_NE(receiver, nullptr);
+    std::string numericName = "123";
+
+    EXPECT_EQ(OH_ImageReceiverNative_SetMemoryName(receiver, numericName.data(), numericName.size()), IMAGE_SUCCESS);
+    ASSERT_NE(receiver->ptrImgRcv, nullptr);
+    EXPECT_EQ(receiver->ptrImgRcv->memoryName_, "ImageReceiver:123");
+    OH_ImageReceiverNative_Release(receiver);
+    GTEST_LOG_(INFO) << "ImageReceiverNativeTest: OH_ImageReceiverNative_SetMemoryNameTest007 end";
+}
+
+/**
+ * @tc.name: OH_ImageReceiverNative_SetMemoryNameTest008
+ * @tc.desc: test numeric prefix expansion against the length limit
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageReceiverNativeTest, OH_ImageReceiverNative_SetMemoryNameTest008, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageReceiverNativeTest: OH_ImageReceiverNative_SetMemoryNameTest008 start";
+    OH_ImageReceiverNative *receiver = CreateReceiver();
+    ASSERT_NE(receiver, nullptr);
+    std::string numericName(248, '1');
+
+    EXPECT_EQ(OH_ImageReceiverNative_SetMemoryName(receiver, numericName.data(), numericName.size()),
+        IMAGE_RECEIVER_INVALID_PARAMETER);
+    OH_ImageReceiverNative_Release(receiver);
+    GTEST_LOG_(INFO) << "ImageReceiverNativeTest: OH_ImageReceiverNative_SetMemoryNameTest008 end";
+}
+
+/**
+ * @tc.name: OH_ImageReceiverNative_SetMemoryNameTest009
+ * @tc.desc: test native API when the internal receiver is null
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageReceiverNativeTest, OH_ImageReceiverNative_SetMemoryNameTest009, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageReceiverNativeTest: OH_ImageReceiverNative_SetMemoryNameTest009 start";
+    OH_ImageReceiverNative *receiver = CreateReceiver();
+    ASSERT_NE(receiver, nullptr);
+    receiver->ptrImgRcv = nullptr;
+    char name[] = "test";
+
+    EXPECT_EQ(OH_ImageReceiverNative_SetMemoryName(receiver, name, sizeof(name) - 1),
+        IMAGE_RECEIVER_INVALID_PARAMETER);
+    OH_ImageReceiverNative_Release(receiver);
+    GTEST_LOG_(INFO) << "ImageReceiverNativeTest: OH_ImageReceiverNative_SetMemoryNameTest009 end";
+}
+
+/**
+ * @tc.name: SetMemoryNameMakeErrMsgTest001
+ * @tc.desc: test memory name error mapping for invalid and unsupported errors
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageReceiverNativeTest, SetMemoryNameMakeErrMsgTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageReceiverNativeTest: SetMemoryNameMakeErrMsgTest001 start";
+    auto invalidParameter = ImageErrorConvert::SetMemoryNameMakeErrMsg(COMMON_ERR_INVALID_PARAMETER);
+    EXPECT_EQ(invalidParameter.first, static_cast<int32_t>(IMAGE_RECEIVER_INVALID_PARAMETER));
+    EXPECT_EQ(invalidParameter.second, "Invalid memory name.");
+
+    auto unsupported = ImageErrorConvert::SetMemoryNameMakeErrMsg(ERR_MEMORY_NOT_SUPPORT);
+    EXPECT_EQ(unsupported.first, static_cast<int32_t>(IMAGE_RECEIVER_INVALID_PARAMETER));
+    EXPECT_EQ(unsupported.second, "Memory format not support.");
+    GTEST_LOG_(INFO) << "ImageReceiverNativeTest: SetMemoryNameMakeErrMsgTest001 end";
 }
 
 } // namespace Media

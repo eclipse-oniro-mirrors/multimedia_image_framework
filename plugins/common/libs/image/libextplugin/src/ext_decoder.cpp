@@ -413,7 +413,8 @@ uint32_t ExtDecoder::DmaAlloc(DecodeContext &context, uint64_t count, const OHOS
 
     IMAGE_LOGD("ExtDecoder::DmaMemAlloc sb stride is %{public}d, height is %{public}d, size is %{public}d",
         sb->GetStride(), sb->GetHeight(), sb->GetSize());
-    SetDecodeContextBuffer(context, AllocatorType::DMA_ALLOC, virAddr, count, nativeBuffer);
+    uint64_t contextSize = IsYuv420Format(context.info.pixelFormat) ? sb->GetSize() : count;
+    SetDecodeContextBuffer(context, AllocatorType::DMA_ALLOC, virAddr, contextSize, nativeBuffer);
     return SUCCESS;
 #endif
 }
@@ -1838,7 +1839,8 @@ uint32_t ExtDecoder::Decode(uint32_t index, DecodeContext &context)
     DebugInfo(info_, dstInfo_, dstOptions_);
     uint64_t rowStride = dstInfo_.minRowBytes64();
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
-    if (context.allocatorType == Media::AllocatorType::DMA_ALLOC) {
+    if (context.allocatorType == Media::AllocatorType::DMA_ALLOC &&
+        dstBuffer == context.pixelsBuffer.buffer) {
         SurfaceBuffer* sbBuffer = reinterpret_cast<SurfaceBuffer*> (context.pixelsBuffer.context);
         CHECK_ERROR_RETURN_RET_LOG(sbBuffer == nullptr, ERR_DMA_DATA_ABNORMAL,
             "%{public}s: surface buffer is nullptr", __func__);
@@ -2043,7 +2045,7 @@ uint32_t ExtDecoder::DecodeToYuv420(uint32_t index, DecodeContext &context)
     uint8_t *yuvBuffer = static_cast<uint8_t *>(context.pixelsBuffer.buffer);
     std::unique_ptr<JpegDecoderYuv> jpegYuvDecoder_ = std::make_unique<JpegDecoderYuv>();
     JpegDecoderYuvParameter para = {jpgSize.width, jpgSize.height, jpegBuffer, jpegBufferSize,
-        yuvBuffer, yuvBufferSize, decodeOutFormat, desiredSize.width, desiredSize.height};
+        yuvBuffer, context.pixelsBuffer.bufferSize, decodeOutFormat, desiredSize.width, desiredSize.height};
     int retDecode = jpegYuvDecoder_->DoDecode(context, para);
     if (retDecode != JpegYuvDecodeError_Success) {
         IMAGE_LOGE("DecodeToYuv420 DoDecode return %{public}d", retDecode);
@@ -2220,10 +2222,8 @@ uint32_t ExtDecoder::ApplyDesiredColorSpaceIfNeeded(DecodeContext &context)
     }
     hwDstInfo_ = dstInfo_;
     uint32_t csRet = ApplyDesiredColorSpace(context);
-    if (csRet != SUCCESS) {
-        IMAGE_LOGE("ApplyDesiredColorSpace failed, err=%{public}u", csRet);
-        return ERR_IMAGE_COLOR_CONVERT;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(csRet != SUCCESS, ERR_IMAGE_COLOR_CONVERT,
+        "ApplyDesiredColorSpace failed, err=%{public}u", csRet);
     return SUCCESS;
 }
 
@@ -3474,12 +3474,9 @@ bool ExtDecoder::GetHeifMetadataBlob(vector<uint8_t>& metadata, MetadataType typ
 
 int32_t ExtDecoder::GetGainmapPixelBytes(PixelFormat format)
 {
-    if (IsYuv420Format(format)) {
-        return YUV420_PIXEL_BYTE_SIZE;
-    }
-    if (format == PixelFormat::YCBCR_P010 || format == PixelFormat::YCRCB_P010) {
-        return BYTES_PER_YUV_SAMPLE;
-    }
+    CHECK_ERROR_RETURN_RET(IsYuv420Format(format), YUV420_PIXEL_BYTE_SIZE);
+    CHECK_ERROR_RETURN_RET(format == PixelFormat::YCBCR_P010 || format == PixelFormat::YCRCB_P010,
+        BYTES_PER_YUV_SAMPLE);
     return RGBA8888_PIXEL_BYTE_SIZE;
 }
 
@@ -3638,12 +3635,8 @@ int32_t ExtDecoder::PixelFormatToHeifColorFormat(PixelFormat format)
     if (IsYuv420Format(format)) {
         return (format == PixelFormat::NV12) ? kHeifColorFormat_NV12 : kHeifColorFormat_NV21;
     }
-    if (format == PixelFormat::YCBCR_P010) {
-        return kHeifColorFormat_P010_NV12;
-    }
-    if (format == PixelFormat::YCRCB_P010) {
-        return kHeifColorFormat_P010_NV21;
-    }
+    CHECK_ERROR_RETURN_RET(format == PixelFormat::YCBCR_P010, kHeifColorFormat_P010_NV12);
+    CHECK_ERROR_RETURN_RET(format == PixelFormat::YCRCB_P010, kHeifColorFormat_P010_NV21);
     return kHeifColorFormat_RGBA_8888;
 }
 
@@ -3761,13 +3754,9 @@ uint32_t ExtDecoder::GetHeifParseErr()
 void ExtDecoder::SetHeifDecodeError(OHOS::ImagePlugin::DecodeContext &context)
 {
 #ifdef HEIF_HW_DECODE_ENABLE
-    if (codec_ == nullptr || codec_->getEncodedFormat() != SkEncodedImageFormat::kHEIF) {
-        return;
-    }
+    CHECK_ERROR_RETURN(codec_ == nullptr || codec_->getEncodedFormat() != SkEncodedImageFormat::kHEIF);
     auto decoder = reinterpret_cast<HeifDecoder*>(codec_->getHeifContext());
-    if (decoder == nullptr) {
-        return;
-    }
+    CHECK_ERROR_RETURN(decoder == nullptr);
     decoder->getErrMsg(context.hardDecodeError);
 #endif
 }

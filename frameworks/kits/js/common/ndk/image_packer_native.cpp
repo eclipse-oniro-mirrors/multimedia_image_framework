@@ -18,9 +18,13 @@
 #include "common_utils.h"
 #include "image_log.h"
 #include "image_packer.h"
+#ifndef CROSS_PLATFORM
 #include "image_utils.h"
+#endif
 #include "image_packer_native_impl.h"
+#ifndef CROSS_PLATFORM
 #include "image_source_native_impl.h"
+#endif
 #include "media_errors.h"
 #include "pixelmap_native_impl.h"
 #ifndef _WIN32
@@ -35,10 +39,12 @@ using namespace Media;
 extern "C" {
 #endif
 
-constexpr size_t SIZE_ZERO = 0;
 constexpr int32_t IMAGE_BASE = 62980096;
+#ifndef CROSS_PLATFORM
+constexpr size_t SIZE_ZERO = 0;
 constexpr int32_t MASK_2 = 0x3;
 constexpr int32_t MASK_16 = 0xffff;
+#endif
 static constexpr int32_t IMAGE_BASE_19 = 19;
 static constexpr int32_t IMAGE_BASE_16 = 16;
 static constexpr int32_t IMAGE_BASE_17 = 17;
@@ -55,6 +61,7 @@ static constexpr int32_t IMAGE_BASE_9 = 9;
 static constexpr int32_t IMAGE_BASE_20 = 20;
 static constexpr int32_t IMAGE_BASE_22 = 22;
 static constexpr int32_t IMAGE_BASE_23 = 23;
+#ifndef CROSS_PLATFORM
 static std::atomic<size_t> g_supportedFormatSize{0};
 struct FreeDeleter {
     size_t count = 0;
@@ -73,6 +80,7 @@ struct FreeDeleter {
     }
 };
 static std::unique_ptr<Image_MimeType[], FreeDeleter> IMAGE_PACKER_SUPPORTED_FORMATS = nullptr;
+#endif
 
 struct OH_PackingOptions {
     Image_MimeType mimeType;
@@ -80,13 +88,17 @@ struct OH_PackingOptions {
     int32_t desiredDynamicRange = IMAGE_PACKER_DYNAMIC_RANGE_SDR;
     bool needsPackProperties = false;
     bool needsPackDfxData = false;
+    uint32_t c2paDataSize = 0;
+#ifndef CROSS_PLATFORM
     uint16_t loop;
     uint16_t* delayTimes;
     uint32_t delayTimesSize;
     uint16_t* disposalTypes;
     uint32_t disposalTypesSize;
+#endif
 };
 
+#ifndef CROSS_PLATFORM
 struct OH_PackingOptionsForSequence {
     int32_t frameCount;
     int32_t* delayTimeList;
@@ -95,6 +107,7 @@ struct OH_PackingOptionsForSequence {
     size_t disposalTypesLength;
     uint32_t loopCount = 1;
 };
+#endif
 
 static Image_ErrorCode ToNewErrorCode(int code)
 {
@@ -144,14 +157,12 @@ static EncodeDynamicRange ParseDynamicRange(int32_t val)
 
 static Image_ErrorCode CopyPackingOptions(const OH_PackingOptions *options, PackOption &packOption)
 {
-    if (options == nullptr) {
+    if (options == nullptr || options->mimeType.data == nullptr || options->mimeType.size == 0) {
         return IMAGE_BAD_PARAMETER;
     }
 
+    CHECK_ERROR_RETURN_RET(options->mimeType.data == nullptr || options->mimeType.size == 0, IMAGE_BAD_PARAMETER);
     std::string format(options->mimeType.data, options->mimeType.size);
-    if (format.empty()) {
-        return IMAGE_BAD_PARAMETER;
-    }
     if (format == "image/tiff") {
         IMAGE_LOGE("Native layer does not support format: %{public}s", format.c_str());
         return IMAGE_BAD_PARAMETER;
@@ -161,6 +172,7 @@ static Image_ErrorCode CopyPackingOptions(const OH_PackingOptions *options, Pack
     packOption.quality = options->quality;
     packOption.needsPackProperties = options->needsPackProperties;
     packOption.needsPackDfxData = options->needsPackDfxData;
+    packOption.c2paDataSize = options->c2paDataSize;
     packOption.desiredDynamicRange = ParseDynamicRange(options->desiredDynamicRange);
     return IMAGE_SUCCESS;
 }
@@ -178,6 +190,7 @@ Image_ErrorCode OH_PackingOptions_Create(OH_PackingOptions **options)
     return IMAGE_SUCCESS;
 }
 
+#ifndef CROSS_PLATFORM
 MIDK_EXPORT
 Image_ErrorCode OH_PackingOptions_GetMimeType(OH_PackingOptions *options,
     Image_MimeType *format)
@@ -234,6 +247,7 @@ Image_ErrorCode OH_PackingOptions_GetMimeTypeWithNull(OH_PackingOptions *options
 
     return IMAGE_SUCCESS;
 }
+#endif
 
 MIDK_EXPORT
 Image_ErrorCode OH_PackingOptions_SetMimeType(OH_PackingOptions *options,
@@ -260,6 +274,7 @@ Image_ErrorCode OH_PackingOptions_SetMimeType(OH_PackingOptions *options,
     return IMAGE_SUCCESS;
 }
 
+#ifndef CROSS_PLATFORM
 MIDK_EXPORT
 Image_ErrorCode OH_PackingOptions_GetQuality(OH_PackingOptions *options, uint32_t *quality)
 {
@@ -269,6 +284,7 @@ Image_ErrorCode OH_PackingOptions_GetQuality(OH_PackingOptions *options, uint32_
     *quality = options->quality;
     return IMAGE_SUCCESS;
 }
+#endif
 
 MIDK_EXPORT
 Image_ErrorCode OH_PackingOptions_SetQuality(OH_PackingOptions *options, uint32_t quality)
@@ -280,6 +296,7 @@ Image_ErrorCode OH_PackingOptions_SetQuality(OH_PackingOptions *options, uint32_
     return IMAGE_SUCCESS;
 }
 
+#ifndef CROSS_PLATFORM
 MIDK_EXPORT
 Image_ErrorCode OH_PackingOptions_GetNeedsPackProperties(OH_PackingOptions *options, bool *needsPackProperties)
 {
@@ -325,6 +342,40 @@ Image_ErrorCode OH_PackingOptions_SetNeedsPackDfxData(OH_PackingOptions *options
         return IMAGE_PACKER_INVALID_PARAMETER;
     }
     options->needsPackDfxData = needsPackDfxData;
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_PackingOptions_GetC2paDataSize(OH_PackingOptions *options, uint32_t *c2paDataSize)
+{
+    if (!OHOS::Media::ImageUtils::IsSystemApp()) {
+        IMAGE_LOGE("This interface can be called only by system apps.");
+        return IMAGE_PERMISSIONS_FAILED;
+    }
+    if (options == nullptr || c2paDataSize == nullptr) {
+        return IMAGE_PACKER_INVALID_PARAMETER;
+    }
+    *c2paDataSize = options->c2paDataSize;
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_PackingOptions_SetC2paDataSize(OH_PackingOptions *options, uint32_t c2paDataSize)
+{
+    if (!OHOS::Media::ImageUtils::IsSystemApp()) {
+        IMAGE_LOGE("This interface can be called only by system apps.");
+        return IMAGE_PERMISSIONS_FAILED;
+    }
+    if (options == nullptr) {
+        return IMAGE_PACKER_INVALID_PARAMETER;
+    }
+    // Consistent with ImagePacker::IsPackOptionValid, the reserved C2PA space is limited to 4MB. 
+    static constexpr uint32_t MAX_C2PA_DATA_SIZE_IN_BYTES = 1U << 22; 
+    if (c2paDataSize > MAX_C2PA_DATA_SIZE_IN_BYTES) {	 
+        IMAGE_LOGE("Invalid c2paDataSize, exceeds the maximum %{public}u bytes.", MAX_C2PA_DATA_SIZE_IN_BYTES);
+        return IMAGE_PACKER_INVALID_PARAMETER;
+    }
+    options->c2paDataSize = c2paDataSize;
     return IMAGE_SUCCESS;
 }
 
@@ -415,6 +466,7 @@ Image_ErrorCode OH_PackingOptions_GetDisposalTypes(OH_PackingOptions *options, u
     *disposalTypesSize = options->disposalTypesSize;
     return IMAGE_SUCCESS;
 }
+#endif
 
 MIDK_EXPORT
 Image_ErrorCode OH_PackingOptions_Release(OH_PackingOptions *options)
@@ -431,6 +483,7 @@ Image_ErrorCode OH_PackingOptions_Release(OH_PackingOptions *options)
     return IMAGE_SUCCESS;
 }
 
+#ifndef CROSS_PLATFORM
 MIDK_EXPORT
 Image_ErrorCode OH_PackingOptionsForSequence_Create(OH_PackingOptionsForSequence **options)
 {
@@ -550,6 +603,7 @@ Image_ErrorCode OH_PackingOptionsForSequence_Release(OH_PackingOptionsForSequenc
     options = nullptr;
     return IMAGE_SUCCESS;
 }
+#endif
 
 MIDK_EXPORT
 Image_ErrorCode OH_ImagePackerNative_Create(OH_ImagePackerNative **imagePacker)
@@ -557,7 +611,7 @@ Image_ErrorCode OH_ImagePackerNative_Create(OH_ImagePackerNative **imagePacker)
     if (imagePacker == nullptr) {
         return IMAGE_BAD_PARAMETER;
     }
-    auto imagePacker2 = new OH_ImagePackerNative();
+    auto imagePacker2 = new (std::nothrow) OH_ImagePackerNative();
     if (imagePacker2 == nullptr || imagePacker2->GetInnerImagePacker() == nullptr) {
         if (imagePacker2) {
             delete imagePacker2;
@@ -569,6 +623,7 @@ Image_ErrorCode OH_ImagePackerNative_Create(OH_ImagePackerNative **imagePacker)
     return IMAGE_SUCCESS;
 }
 
+#ifndef CROSS_PLATFORM
 MIDK_EXPORT
 Image_ErrorCode OH_ImagePackerNative_PackToDataFromImageSource(OH_ImagePackerNative *imagePacker,
     OH_PackingOptions *options, OH_ImageSourceNative *imageSource, uint8_t *outData, size_t *size)
@@ -638,6 +693,7 @@ Image_ErrorCode OH_ImagePackerNative_PackToFileFromImageSource(OH_ImagePackerNat
     }
     return ToNewErrorCode(imagePacker->PackToFileFromImageSource(&packOption, imageSource, fd));
 }
+#endif
 
 MIDK_EXPORT
 Image_ErrorCode OH_ImagePackerNative_PackToFileFromPixelmap(OH_ImagePackerNative *imagePacker,
@@ -655,6 +711,7 @@ Image_ErrorCode OH_ImagePackerNative_PackToFileFromPixelmap(OH_ImagePackerNative
     return ToNewErrorCode(imagePacker->PackToFileFromPixelmap(&packOption, pixelmap, fd));
 }
 
+#ifndef CROSS_PLATFORM
 MIDK_EXPORT
 Image_ErrorCode OH_ImagePackerNative_PackToFileFromPicture(OH_ImagePackerNative *imagePacker,
     OH_PackingOptions *options, OH_PictureNative *picture, int32_t fd)
@@ -760,6 +817,7 @@ Image_ErrorCode OH_ImagePackerNative_PackToFileFromPixelmapSequence(OH_ImagePack
     }
     return ToNewErrorCode(imagePacker->PackToFileMultiFrames(&packOption, pixelmaps, fd));
 }
+#endif
 
 MIDK_EXPORT
 Image_ErrorCode OH_ImagePackerNative_Release(OH_ImagePackerNative *imagePacker)
@@ -772,6 +830,7 @@ Image_ErrorCode OH_ImagePackerNative_Release(OH_ImagePackerNative *imagePacker)
     return IMAGE_SUCCESS;
 }
 
+#ifndef CROSS_PLATFORM
 MIDK_EXPORT
 Image_ErrorCode OH_ImagePackerNative_GetSupportedFormats(Image_MimeType** supportedFormat, size_t* length)
 {
@@ -816,6 +875,7 @@ Image_ErrorCode OH_ImagePackerNative_GetSupportedFormats(Image_MimeType** suppor
     *length = g_supportedFormatSize;
     return IMAGE_SUCCESS;
 }
+#endif
 
 #ifdef __cplusplus
 };

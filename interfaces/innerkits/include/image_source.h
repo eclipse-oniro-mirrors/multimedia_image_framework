@@ -75,6 +75,7 @@ struct SourceOptions {
     int32_t baseDensity = 0;
     PixelFormat pixelFormat = PixelFormat::UNKNOWN;
     Size size;
+    SVGResourceLimitLevel svgResourceLimitLevel = SVG_RESOURCE_LIMIT_NONE;
 };
 
 struct IncrementalSourceOptions {
@@ -221,6 +222,8 @@ public:
     NATIVEEXPORT uint32_t GetImageInfo(uint32_t index, ImageInfo &imageInfo);
     NATIVEEXPORT uint32_t GetImageInfoFromExif(uint32_t index, ImageInfo &imageInfo);
     NATIVEEXPORT const SourceInfo &GetSourceInfo(uint32_t &errorCode);
+    NATIVEEXPORT uint32_t SetSvgResourceLimitLevel(SVGResourceLimitLevel level);
+    NATIVEEXPORT SVGResourceLimitLevel GetSvgResourceLimitLevel();
     NATIVEEXPORT void RegisterListener(PeerListener *listener);
     NATIVEEXPORT void UnRegisterListener(PeerListener *listener);
     NATIVEEXPORT DecodeEvent GetDecodeEvent();
@@ -386,6 +389,7 @@ private:
     static std::unique_ptr<SourceStream> DecodeBase64(const uint8_t *data, uint32_t size);
     static std::unique_ptr<SourceStream> DecodeBase64(const std::string &data);
     bool IsSpecialYUV();
+    bool IsASTCSource();
     bool GetImageInfoForASTC(ImageInfo& imageInfo, const uint8_t *sourceFilePtr);
     bool ConvertYUV420ToRGBA(uint8_t *data, uint32_t size, bool isSupportOdd, bool isAddUV, uint32_t &errorCode);
     std::unique_ptr<PixelMap> CreatePixelMapForYUV(uint32_t &errorCode);

@@ -98,6 +98,30 @@ typedef enum {
 } IMAGE_DYNAMIC_RANGE;
 
 /**
+ * @brief Enumerates SVG resource limit level.
+ *
+ * @since 26.1.0
+ */
+typedef enum {
+    /**
+     * No limit on SVG resources.
+     */
+    SVG_RESOURCE_LIMIT_LEVEL_NONE = 0,
+    /**
+     * Low limit on SVG resources.
+     */
+    SVG_RESOURCE_LIMIT_LEVEL_LOW = 1,
+    /**
+     * Medium limit on SVG resources.
+     */
+    SVG_RESOURCE_LIMIT_LEVEL_MEDIUM = 2,
+    /**
+     * High limit on SVG resources.
+     */
+    SVG_RESOURCE_LIMIT_LEVEL_HIGH = 3,
+} OH_ImageSource_SVGResourceLimitLevel;
+
+/**
  * @brief Defines image allocator type for pixelmap
  *
  * @since 16
@@ -476,6 +500,40 @@ Image_ErrorCode OH_ImageSourceNative_CreateFromDataWithUserBuffer(uint8_t *data,
  * @since 12
  */
 Image_ErrorCode OH_ImageSourceNative_CreateFromRawFile(RawFileDescriptor *rawFile, OH_ImageSourceNative **res);
+
+/**
+ * @brief Sets the SVG resource limit level for the image source.
+ * This only takes effect for SVG format images. For non-SVG images, this function has no effect.
+ * Must be called before {@link OH_ImageSourceNative_CreatePixelmap} to ensure the limit
+ * takes effect on both DOM parsing and rendering stages.
+ * @systemapi
+ * @param source Indicates a pointer to the image source.
+ * @param level Indicates the SVG resource limit level. For details, see {@link OH_ImageSource_SVGResourceLimitLevel}.
+ * @return <ul>
+ *         <li>{@link IMAGE_SUCCESS} if the execution is successful.</li>
+ *         <li>{@link OH_IMAGE_ERROR_NOT_SYSTEM_APPLICATION} if a non-system application calls this system API.</li>
+ *         <li>{@link IMAGE_SOURCE_INVALID_PARAMETER} source is nullptr.</li>
+ *         </ul>
+ * @since 26.1.0
+ */
+Image_ErrorCode OH_ImageSourceNative_SetSvgResourceLimitLevel(OH_ImageSourceNative *source,
+    OH_ImageSource_SVGResourceLimitLevel level);
+
+/**
+ * @brief Gets the SVG resource limit level of the image source.
+ * @systemapi
+ * @param source Indicates a pointer to the image source.
+ * @param level Indicates the pointer to receive the SVG resource limit level.
+ * For details, see {@link OH_ImageSource_SVGResourceLimitLevel}.
+ * @return <ul>
+ *         <li>{@link IMAGE_SUCCESS} if the execution is successful.</li>
+ *         <li>{@link OH_IMAGE_ERROR_NOT_SYSTEM_APPLICATION} if a non-system application calls this system API.</li>
+ *         <li>{@link IMAGE_SOURCE_INVALID_PARAMETER} source or level is nullptr.</li>
+ *         </ul>
+ * @since 26.1.0
+ */
+Image_ErrorCode OH_ImageSourceNative_GetSvgResourceLimitLevel(OH_ImageSourceNative *source,
+    OH_ImageSource_SVGResourceLimitLevel *level);
 
 /**
  * @brief Decodes an void pointer

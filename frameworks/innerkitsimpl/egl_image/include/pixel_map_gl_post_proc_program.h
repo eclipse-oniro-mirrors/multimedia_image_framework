@@ -47,6 +47,7 @@ public:
     static bool BuildShader();
 
 private:
+    bool ValidateTransformData() const;
     bool GLMakecurrent(bool needCurrent);
     bool InitGLResource();
     bool CreateEGLImage(OHNativeWindowBuffer *nativeBuffer, EGLImageKHR &eglImage, GLuint &imageTexId);

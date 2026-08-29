@@ -264,6 +264,13 @@ enum AntiAliasingLevel: i32 {
   HIGH = 3
 }
 
+enum SVGResourceLimitLevel: i32 {
+  NONE = 0,
+  LOW = 1,
+  MEDIUM = 2,
+  HIGH = 3
+}
+
 enum ScaleMode: i32 {
   FIT_TARGET_SIZE = 0,
   CENTER_CROP = 1
@@ -344,6 +351,7 @@ struct PackingOption {
   backgroundColor: Optional<i32>;
   sizeLimit: Optional<PackingSizeLimit>;
   needsPackGPS: Optional<bool>;
+  c2paDataSize: Optional<u32>;
   tiffPackingOptions: Optional<PackingOptionsForTiff>;
 }
 
@@ -398,6 +406,7 @@ struct SourceOptions {
   sourceDensity: i32;
   sourcePixelFormat: Optional<PixelMapFormat>;
   sourceSize: Optional<Size>;
+  svgResourceLimitLevel: Optional<SVGResourceLimitLevel>;
 }
 
 struct HdrStaticMetadata {
@@ -2184,6 +2193,8 @@ interface ImageReceiver {
   ReleasePromise(): void;
 
   ReleaseSync(): void;
+
+  SetMemoryName(name: String): void;
 }
 
 interface ImageCreator {

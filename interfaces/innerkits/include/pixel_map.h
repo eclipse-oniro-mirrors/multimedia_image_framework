@@ -1022,6 +1022,7 @@ protected:
         const int32_t &height, const int32_t &rowDataSize, const int32_t &rowStride) const;
     static bool ReadTlvAttr(std::vector<uint8_t>& buff, ImageInfo& info, std::unique_ptr<AbsMemory>& mem, int32_t& csm);
     uint32_t ApplyAffineTransform(TransInfos &infos, AntiAliasingOption option = AntiAliasingOption::NONE);
+    uint32_t ApplyAffineTransformLocked(TransInfos &infos, AntiAliasingOption option);
     void UpdateImageInfo();
     static int32_t ConvertPixelAlpha(const void *srcPixels, const int32_t srcLength, const ImageInfo &srcInfo,
         void *dstPixels, const ImageInfo &dstInfo);

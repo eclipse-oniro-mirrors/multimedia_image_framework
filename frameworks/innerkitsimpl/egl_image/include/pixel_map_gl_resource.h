@@ -22,12 +22,12 @@
 
 #include <cstddef>
 #include <cstdint>
-#include <limits>
 
 #include "EGL/egl.h"
 #include "EGL/eglext.h"
 #include "GLES3/gl32.h"
 
+#include "pixel_map_gl_common.h"
 #include "pixel_map_gl_utils.h"
 #include "securec.h"
 #include "window.h"
@@ -36,6 +36,7 @@ namespace OHOS {
 namespace Media {
 namespace PixelMapGlResource {
 constexpr int32_t MAX_GL_TRANSFER_DIMENSION = 8192;
+constexpr int32_t BYTES_PER_PIXEL_RGBA = 4;
 
 inline void DeleteTexture(GLuint &textureId)
 {
@@ -284,15 +285,39 @@ inline bool IsValidGlTransferSize(const Size &size)
 
 inline bool ValidateStridedBufferSize(size_t bufferSize, int32_t stride, int32_t height, size_t rowBytes)
 {
-    if (stride <= 0 || height <= 0 || rowBytes == 0 || rowBytes > static_cast<size_t>(stride)) {
+    size_t requiredSize = 0;
+    return PixelMapGlUtils::ComputeRequiredStridedBufferSize(stride, height, rowBytes, requiredSize) &&
+        requiredSize <= bufferSize;
+}
+
+inline bool ValidateTransferLayout(const Size &size, int32_t stride, int32_t pixelBytes,
+    size_t &rowBytes, size_t &contiguousSize);
+
+inline bool ValidateCpuImageInfo(const GlImageInfo &imageInfo, GLenum glFormat)
+{
+    size_t rowBytes = 0;
+    size_t contiguousSize = 0;
+    return glFormat == GL_RGBA && imageInfo.pixelBytes == BYTES_PER_PIXEL_RGBA &&
+        ValidateTransferLayout(imageInfo.size, imageInfo.stride, imageInfo.pixelBytes, rowBytes, contiguousSize) &&
+        ValidateStridedBufferSize(imageInfo.bufferSize, imageInfo.stride, imageInfo.size.height, rowBytes);
+}
+
+struct SurfaceBufferInfo {
+    Size size {};
+    int32_t stride = 0;
+    size_t bufferSize = 0;
+    int32_t format = 0;
+};
+
+inline bool ValidateSurfaceBufferInfo(const GlImageInfo &imageInfo, const SurfaceBufferInfo &surfaceInfo,
+    GLenum glFormat, int32_t expectedSurfaceFormat)
+{
+    if (imageInfo.size.width != surfaceInfo.size.width || imageInfo.size.height != surfaceInfo.size.height ||
+        imageInfo.stride != surfaceInfo.stride || imageInfo.bufferSize != surfaceInfo.bufferSize ||
+        surfaceInfo.format != expectedSurfaceFormat) {
         return false;
     }
-    const size_t rowsBeforeLast = static_cast<size_t>(height - 1);
-    const size_t strideSize = static_cast<size_t>(stride);
-    if (rowsBeforeLast > (std::numeric_limits<size_t>::max() - rowBytes) / strideSize) {
-        return false;
-    }
-    return rowsBeforeLast * strideSize + rowBytes <= bufferSize;
+    return ValidateCpuImageInfo(imageInfo, glFormat);
 }
 
 inline bool CopyStridedToLinear(const uint8_t *src, size_t srcSize, int32_t srcStride, int32_t height,
@@ -317,19 +342,19 @@ inline bool CopyStridedToLinear(const uint8_t *src, size_t srcSize, int32_t srcS
 }
 
 inline bool CopyLinearToStrided(const char *src, size_t srcSize, size_t rowBytes, int32_t height,
-    uint8_t *dst, int32_t dstStride)
+    uint8_t *dst, size_t dstSize, int32_t dstStride)
 {
     if (src == nullptr || dst == nullptr || dstStride <= 0 || height <= 0 || rowBytes == 0) {
+        return false;
+    }
+    if (!ValidateStridedBufferSize(dstSize, dstStride, height, rowBytes) ||
+        static_cast<size_t>(height) > srcSize / rowBytes) {
         return false;
     }
     for (int32_t i = 0; i < height; ++i) {
         const size_t srcOffset = rowBytes * static_cast<size_t>(i);
         const size_t dstOffset = static_cast<size_t>(dstStride) * static_cast<size_t>(i);
-        const size_t dstRemain = static_cast<size_t>(dstStride) * static_cast<size_t>(height - i);
-        if (srcOffset > srcSize || srcSize - srcOffset < rowBytes || dstRemain < rowBytes) {
-            return false;
-        }
-        if (memcpy_s(dst + dstOffset, dstRemain, src + srcOffset, rowBytes) != EOK) {
+        if (memcpy_s(dst + dstOffset, dstSize - dstOffset, src + srcOffset, rowBytes) != EOK) {
             return false;
         }
     }

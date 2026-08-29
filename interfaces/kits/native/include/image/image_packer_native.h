@@ -35,7 +35,9 @@
 #ifndef INTERFACES_KITS_NATIVE_INCLUDE_IMAGE_IMAGE_PACKER_NATIVE_H
 #define INTERFACES_KITS_NATIVE_INCLUDE_IMAGE_IMAGE_PACKER_NATIVE_H
 #include "image_common.h"
+#ifndef CROSS_PLATFORM
 #include "image_source_native.h"
+#endif
 #include "pixelmap_native.h"
 
 #ifdef __cplusplus
@@ -88,6 +90,16 @@ typedef enum {
     IMAGE_PACKER_DYNAMIC_RANGE_SDR = 1,
 } IMAGE_PACKER_DYNAMIC_RANGE;
 
+#ifdef CROSS_PLATFORM
+Image_ErrorCode OH_PackingOptions_Create(OH_PackingOptions **options);
+Image_ErrorCode OH_PackingOptions_SetMimeType(OH_PackingOptions *options, Image_MimeType *format);
+Image_ErrorCode OH_PackingOptions_SetQuality(OH_PackingOptions *options, uint32_t quality);
+Image_ErrorCode OH_PackingOptions_Release(OH_PackingOptions *options);
+Image_ErrorCode OH_ImagePackerNative_Create(OH_ImagePackerNative **imagePacker);
+Image_ErrorCode OH_ImagePackerNative_PackToFileFromPixelmap(OH_ImagePackerNative *imagePacker,
+    OH_PackingOptions *options, OH_PixelmapNative *pixelmap, int32_t fd);
+Image_ErrorCode OH_ImagePackerNative_Release(OH_ImagePackerNative *imagePacker);
+#else
 /**
  * @brief Create a pointer for PackingOptions struct.
  *
@@ -225,6 +237,29 @@ Image_ErrorCode OH_PackingOptions_GetNeedsPackDfxData(OH_PackingOptions *options
  */
 Image_ErrorCode OH_PackingOptions_SetNeedsPackDfxData(OH_PackingOptions *options,
     bool needsPackDfxData);
+
+/**
+ * @brief Sets the C2PA data size in the OH_PackingOptions struct. The default value is 0, indicating no reserved space
+ * is added.
+ * @systemapi
+ * @param options Pointer to an OH_PackingOptions struct.
+ * @param c2paDataSize Reserved space size for C2PA data, in bytes.
+ * @return {@link Image_ErrorCode} IMAGE_SUCCESS - if the operation is successful.
+ *     <br>{@link Image_ErrorCode} IMAGE_PACKER_INVALID_PARAMETER - if options is nullptr.
+ * @since 26.1.0
+ */
+Image_ErrorCode OH_PackingOptions_SetC2paDataSize(OH_PackingOptions *options, uint32_t c2paDataSize);
+
+/**
+ * @brief Obtains the C2PA data size in the OH_PackingOptions struct.
+ * @systemapi
+ * @param options Pointer to an OH_PackingOptions struct.
+ * @param c2paDataSize Pointer to the C2PA data size obtained, in bytes.
+ * @return {@link Image_ErrorCode} IMAGE_SUCCESS - if the operation is successful.
+ *     <br>{@link Image_ErrorCode} IMAGE_PACKER_INVALID_PARAMETER - if options or c2paDataSize is nullptr.
+ * @since 26.1.0
+ */
+Image_ErrorCode OH_PackingOptions_GetC2paDataSize(OH_PackingOptions *options, uint32_t *c2paDataSize);
 
 /**
  * @brief Set Loop number for PackingOptions struct.
@@ -584,6 +619,7 @@ Image_ErrorCode OH_ImagePackerNative_PackToFileFromPixelmapSequence(OH_ImagePack
   * @since 20
  */
 Image_ErrorCode OH_ImagePackerNative_GetSupportedFormats(Image_MimeType** supportedFormat, size_t* length);
+#endif
 
 #ifdef __cplusplus
 };
