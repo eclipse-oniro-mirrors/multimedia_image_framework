@@ -98,27 +98,40 @@ typedef enum {
 } IMAGE_DYNAMIC_RANGE;
 
 /**
- * @brief Enumerates SVG resource limit level.
+ * @brief Indicates the enumeration of SVG resource restriction levels.
+ * Higher levels allow fewer resources to be used when parsing and rendering SVG images.
+ * System resource limits are enforced regardless of the level specified.
  *
+ * @systemapi
  * @since 26.1.0
  */
 typedef enum {
     /**
-     * No limit on SVG resources.
+     * Use the default SVG resource limit. This level does not disable SVG resource protection.
+     *
+     * @since 26.1.0
      */
-    SVG_RESOURCE_LIMIT_LEVEL_NONE = 0,
+    OH_IMAGESOURCE_SVG_RESOURCE_LIMIT_LEVEL_NONE = 0,
     /**
-     * Low limit on SVG resources.
+     * Use low-level restrictions to allow more SVG resource budgets to be used for complex SVG images.
+     *
+     * @since 26.1.0
      */
-    SVG_RESOURCE_LIMIT_LEVEL_LOW = 1,
+    OH_IMAGESOURCE_SVG_RESOURCE_LIMIT_LEVEL_LOW = 1,
     /**
-     * Medium limit on SVG resources.
+     * Allows a moderate SVG resource budget with a medium-level limit,
+     * which balances SVG compatibility and resource consumption for most SVG images.
+     *
+     * @since 26.1.0
      */
-    SVG_RESOURCE_LIMIT_LEVEL_MEDIUM = 2,
+    OH_IMAGESOURCE_SVG_RESOURCE_LIMIT_LEVEL_MEDIUM = 2,
     /**
-     * High limit on SVG resources.
+     * Allows a smaller SVG resource budget with a high level limit, which applies to simple SVG images,
+     * such as icons and basic UI resources.
+     *
+     * @since 26.1.0
      */
-    SVG_RESOURCE_LIMIT_LEVEL_HIGH = 3,
+    OH_IMAGESOURCE_SVG_RESOURCE_LIMIT_LEVEL_HIGH = 3,
 } OH_ImageSource_SVGResourceLimitLevel;
 
 /**
@@ -524,7 +537,7 @@ Image_ErrorCode OH_ImageSourceNative_SetSvgResourceLimitLevel(OH_ImageSourceNati
  * @systemapi
  * @param source Indicates a pointer to the image source.
  * @param level Indicates the pointer to receive the SVG resource limit level.
- * For details, see {@link OH_ImageSource_SVGResourceLimitLevel}.
+ *     For details, see {@link OH_ImageSource_SVGResourceLimitLevel}.
  * @return <ul>
  *         <li>{@link IMAGE_SUCCESS} if the execution is successful.</li>
  *         <li>{@link OH_IMAGE_ERROR_NOT_SYSTEM_APPLICATION} if a non-system application calls this system API.</li>
