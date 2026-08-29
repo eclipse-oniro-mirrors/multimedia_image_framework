@@ -4351,7 +4351,8 @@ HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceNative_SetSvgResourceLimitLevelNullCh
 {
     GTEST_LOG_(INFO) << "ImagSourceNdk2Test: OH_ImageSourceNative_SetSvgResourceLimitLevelNullCheck start";
 
-    Image_ErrorCode ret = OH_ImageSourceNative_SetSvgResourceLimitLevel(nullptr, OH_IMAGESOURCE_SVG_RESOURCE_LIMIT_LEVEL_LOW);
+    Image_ErrorCode ret = OH_ImageSourceNative_SetSvgResourceLimitLevel(nullptr,
+        OH_IMAGESOURCE_SVG_RESOURCE_LIMIT_LEVEL_LOW);
     EXPECT_EQ(ret, IMAGE_PERMISSIONS_FAILED);
 
     GTEST_LOG_(INFO) << "ImagSourceNdk2Test: OH_ImageSourceNative_SetSvgResourceLimitLevelNullCheck end";
