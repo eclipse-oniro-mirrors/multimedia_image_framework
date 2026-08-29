@@ -89,6 +89,7 @@ ohos_shared_library("textureEncoderCL") {
       "c_utils:utils",
       "hilog:libhilog",
       "opencl-headers:libcl",
+      "bounds_checking_function:libsec_shared",
     ]
   }
   cflags = [ "-O3" ]
