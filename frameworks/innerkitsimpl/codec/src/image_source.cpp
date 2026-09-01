@@ -1935,6 +1935,8 @@ uint32_t ImageSource::ModifyImagePropertyBlob(const vector<MetadataValue> &prope
 #endif
     std::unique_lock<std::recursive_mutex> guard(decodingMutex_);
     auto metadataAccessor = MetadataAccessorFactory::Create(path);
+    CHECK_ERROR_RETURN_RET_LOG(metadataAccessor == nullptr, ERR_IMAGE_SOURCE_DATA,
+        "Failed to create image accessor when attempting to modify image property blob by path.");
     return ModifyImagePropertyBlob(metadataAccessor, properties);
 }
 

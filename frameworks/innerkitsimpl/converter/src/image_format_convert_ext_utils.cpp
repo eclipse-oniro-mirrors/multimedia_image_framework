@@ -354,11 +354,12 @@ static bool YuvToRGB(const uint8_t *srcBuffer, const YUVDataInfo &yuvInfo, Pixel
     DestConvertParam destParam = {destInfo.width, destInfo.height};
     destParam.format = destFormat;
 
-    if (!YuvToRGBParam(yuvInfo, srcParam, destParam, destInfo)) {
-        IMAGE_LOGE("YuvToRGB Param failed!");
-        return false;
-    }
-    return YuvToRGBConverter(srcParam, destParam);
+    bool ret = YuvToRGBParam(yuvInfo, srcParam, destParam, destInfo);
+    CHECK_ERROR_PRINT_LOG(!ret, "YuvToRGB Param failed!");
+
+    ret = YuvToRGBConverter(srcParam, destParam);
+    CHECK_ERROR_PRINT_LOG(!ret, "YuvToRGB converter failed!");
+    return ret;
 }
 
 static bool I010Param(I010Info &i010Info)

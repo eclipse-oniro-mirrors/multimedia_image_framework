@@ -306,6 +306,17 @@ static bool CopyP010Pixels(
 static void ScaleP010(YuvPixels yuvPixels, OpenSourceLibyuv::ImageYuvConverter &converter,
     OpenSourceLibyuv::FilterMode &filterMode, YuvImageInfo &yuvInfo, YUVStrideInfo &dstStrides)
 {
+    bool cond = yuvInfo.width <= 0 || yuvInfo.height <= 0 || yuvInfo.width > (INT32_MAX / yuvInfo.height);
+    CHECK_ERROR_RETURN_LOG(cond, "ScaleP010 invalid yuvInfo size, width:%{public}d, height:%{public}d",
+        yuvInfo.width, yuvInfo.height);
+
+    int32_t dstWidth = yuvPixels.sizeType == YuvSizeType::FLOAT ?
+        yuvInfo.width * yuvPixels.xAxis + ROUND_FLOAT_NUMBER : yuvPixels.dstWidth;
+    int32_t dstHeight = yuvPixels.sizeType == YuvSizeType::FLOAT ?
+        yuvInfo.height * yuvPixels.yAxis + ROUND_FLOAT_NUMBER : yuvPixels.dstHeight;
+    cond = dstWidth <= 0 || dstHeight <= 0 || dstWidth > (INT32_MAX / dstHeight);
+    CHECK_ERROR_RETURN_LOG(cond, "ScaleP010 invalid dst size, dstWidth:%{public}d, dstHeight:%{public}d",
+        dstWidth, dstHeight);
     std::unique_ptr<uint16_t[]> srcPixels = std::make_unique<uint16_t[]>(GetImageSize(yuvInfo.width, yuvInfo.height));
     if (srcPixels == nullptr) {
         IMAGE_LOGE("ScaleP010 srcPixels make unique ptr failed");
@@ -327,10 +338,6 @@ static void ScaleP010(YuvPixels yuvPixels, OpenSourceLibyuv::ImageYuvConverter &
     int32_t srcWidth = yuvInfo.width;
     int32_t srcHeight = yuvInfo.height;
     uint16_t *dstBuffer = reinterpret_cast<uint16_t *>(yuvPixels.dstPixels);
-    int32_t dstWidth = yuvPixels.sizeType == YuvSizeType::FLOAT ?
-        yuvInfo.width * yuvPixels.xAxis + ROUND_FLOAT_NUMBER : yuvPixels.dstWidth;
-    int32_t dstHeight = yuvPixels.sizeType == YuvSizeType::FLOAT ?
-        yuvInfo.height * yuvPixels.yAxis + ROUND_FLOAT_NUMBER : yuvPixels.dstHeight;
     std::unique_ptr<uint16_t[]> dstPixels = std::make_unique<uint16_t[]>(GetImageSize(srcWidth, srcHeight));
     if (dstPixels == nullptr) {
         IMAGE_LOGE("ScaleP010 dstPixels make unique ptr failed");
@@ -443,6 +450,7 @@ bool PixelYuvExtUtils::FlipYaxis(uint8_t *src, uint8_t *dst, Size &size, PixelFo
     YUVDataInfo &info, YUVStrideInfo &dstStrides)
 {
     IMAGE_LOGE("PixelYuvExtUtils FlipYaxis");
+    CHECK_ERROR_RETURN_RET_LOG(src == nullptr || dst == nullptr, false, "FlipYaxis src or dst is nullptr");
     uint8_t *srcY = src + info.yOffset;
     uint8_t *srcUV = src + info.uvOffset;
     int srcYStride = static_cast<int>(info.yStride);

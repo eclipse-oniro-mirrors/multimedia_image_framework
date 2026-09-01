@@ -1307,6 +1307,10 @@ static void GetYuvDataInfo(PixelMap &source, YUVDataInfo &yuvDataInfo)
 std::unique_ptr<PixelMap> CreateDstPixelMap(PixelMap &source, Size targetSize, std::unique_ptr<AbsMemory> dstMemory,
     YUVStrideInfo dstStrides, int32_t &errorCode)
 {
+    if (targetSize.width <= 0 || targetSize.height <= 0) {
+        errorCode = ERR_IMAGE_INVALID_PARAMETER;
+        return nullptr;
+    }
     ImageInfo imageInfo;
     source.GetImageInfo(imageInfo);
     InitializationOptions opts;
