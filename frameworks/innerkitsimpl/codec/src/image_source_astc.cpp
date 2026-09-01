@@ -15,6 +15,7 @@
 
 #include "image_source.h"
 
+#include <algorithm>
 #include <cstdlib>
 #include <cstring>
 #include <limits>
@@ -302,7 +303,8 @@ static size_t GetAstcSizeBytes(const uint8_t *fileBuf, size_t fileSize)
 
 static void FreeAllExtMemSut(AstcOutInfo &astcInfo)
 {
-    for (uint8_t idx = 0; idx < astcInfo.expandNums; idx++) {
+    uint8_t maxIdx = std::min(static_cast<uint8_t>(EXPAND_ASTC_INFO_MAX_DEC), astcInfo.expandNums);
+    for (uint8_t idx = 0; idx < maxIdx; idx++) {
         if (astcInfo.expandInfoBuf[idx] != nullptr) {
             free(astcInfo.expandInfoBuf[idx]);
         }
@@ -315,9 +317,18 @@ static bool FillAstcSutExtInfo(AstcOutInfo &astcInfo, SutInInfo &sutInfo)
     CHECK_ERROR_RETURN_RET_LOG(cond, false, "[ImageSource] SUT dec getExpandInfoFromSutFunc_ is nullptr!");
     cond = !g_sutDecSoManager.getExpandInfoFromSutFunc_(sutInfo, astcInfo, false);
     CHECK_ERROR_RETURN_RET_LOG(cond, false, "[ImageSource] GetExpandInfoFromSut failed!");
+    if (astcInfo.expandNums > EXPAND_ASTC_INFO_MAX_DEC) {
+        IMAGE_LOGE("[ImageSource] expandNums %{public}d exceeds max %{public}d",
+            astcInfo.expandNums, EXPAND_ASTC_INFO_MAX_DEC);
+        return false;
+    }
     int32_t expandTotalBytes = 0;
     for (uint8_t idx = 0; idx < astcInfo.expandNums; idx++) {
         astcInfo.expandInfoCapacity[idx] = astcInfo.expandInfoBytes[idx];
+        if (astcInfo.expandInfoBytes[idx] <= 0) {
+            IMAGE_LOGE("[ImageSource] expandInfoBytes[%{public}d] is invalid", idx);
+            return false;
+        }
         astcInfo.expandInfoBuf[idx] = static_cast<uint8_t *>(malloc(astcInfo.expandInfoCapacity[idx]));
         if (astcInfo.expandInfoBuf[idx] == nullptr) {
             IMAGE_LOGE("[ImageSource] astcInfo.expandInfoBuf malloc failed!");
@@ -331,15 +342,24 @@ static bool FillAstcSutExtInfo(AstcOutInfo &astcInfo, SutInInfo &sutInfo)
 static bool CheckExtInfoForPixelmap(AstcOutInfo &astcInfo, unique_ptr<PixelAstc> &pixelAstc)
 {
     uint8_t colorSpace = 0;
+    if (astcInfo.expandNums > EXPAND_ASTC_INFO_MAX_DEC) {
+        IMAGE_LOGE("CheckExtInfoForPixelmap expandNums %{public}d exceeds max", astcInfo.expandNums);
+        return false;
+    }
     for (uint8_t idx = 0; idx < astcInfo.expandNums; idx++) {
-        if (astcInfo.expandInfoBuf[idx] != nullptr) {
-            switch (static_cast<AstcExtendInfoType>(astcInfo.expandInfoType[idx])) {
-                case AstcExtendInfoType::COLOR_SPACE:
-                    colorSpace = *astcInfo.expandInfoBuf[idx];
-                    break;
-                default:
+        if (astcInfo.expandInfoBuf[idx] == nullptr) {
+            continue;
+        }
+        switch (static_cast<AstcExtendInfoType>(astcInfo.expandInfoType[idx])) {
+            case AstcExtendInfoType::COLOR_SPACE:
+                if (astcInfo.expandInfoBytes[idx] < 1) {
+                    IMAGE_LOGE("CheckExtInfoForPixelmap COLOR_SPACE expandInfoBytes is invalid");
                     return false;
-            }
+                }
+                colorSpace = *astcInfo.expandInfoBuf[idx];
+                break;
+            default:
+                return false;
         }
     }
 #ifdef IMAGE_COLORSPACE_FLAG
@@ -425,6 +445,10 @@ void ReleaseExtendInfoMemory(AstcExtendInfo &extendInfo)
 
 bool HandleMetadataCopy(std::vector<uint8_t>& dest, const uint8_t *src, size_t length)
 {
+    if (length > MAX_TLV_METADATA_SIZE) {
+        IMAGE_LOGE("[AstcCodec] HandleMetadataCopy length too large: %{public}zu", length);
+        return false;
+    }
     dest.resize(length);
     if (memcpy_s(dest.data(), length, src, length) != 0) {
         IMAGE_LOGE("[AstcCodec] WriteAstcExtendInfo memcpy failed!");
@@ -491,9 +515,17 @@ static bool GetExtInfoForPixelAstc(AstcExtendInfo &extInfo, unique_ptr<PixelAstc
 
         switch (infoType) {
             case AstcExtendInfoType::COLOR_SPACE:
+                if (infoLength < 1) {
+                    IMAGE_LOGE("GetExtInfoForPixelAstc COLOR_SPACE infoLength is 0");
+                    return false;
+                }
                 colorSpace = *infoValue;
                 break;
             case AstcExtendInfoType::PIXEL_FORMAT:
+                if (infoLength < 1) {
+                    IMAGE_LOGE("GetExtInfoForPixelAstc PIXEL_FORMAT infoLength is 0");
+                    return false;
+                }
                 pixelFmt = *infoValue;
                 break;
             case AstcExtendInfoType::HDR_METADATA_TYPE:
