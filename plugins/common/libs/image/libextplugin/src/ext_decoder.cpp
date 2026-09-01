@@ -1795,7 +1795,6 @@ uint32_t ExtDecoder::Decode(uint32_t index, DecodeContext &context)
         if (progressiveResult == SUCCESS) {
             return SUCCESS;
         }
-        CHECK_ERROR_RETURN_RET(progressiveResult != ERR_IMAGE_DATA_UNSUPPORT, progressiveResult);
     }
 #endif
     if (isOutputYuv420Format && skEncodeFormat == SkEncodedImageFormat::kJPEG) {
