@@ -17,6 +17,7 @@
 
 #if !defined(CROSS_PLATFORM)
 #include "tokenid_kit.h"
+#include "accesstoken_kit.h"
 #include "ipc_skeleton.h"
 #include <iostream>
 #include <fstream>
@@ -304,8 +305,11 @@ bool ImageSystemProperties::IsSystemApp()
     if (system::GetBoolParameter("persist.multimedia.image.isSystemApp.enabled", false)) {
         return true;
     }
-    static bool isSys =
-        Security::AccessToken::TokenIdKit::IsSystemAppByFullTokenID(IPCSkeleton::GetSelfTokenID());
+    auto callerToken = IPCSkeleton::GetCallingTokenID();
+    bool isSubsystemSA = Security::AccessToken::AccessTokenKit::GetTokenTypeFlag(callerToken)
+        == Security::AccessToken::ATokenTypeEnum::TOKEN_NATIVE;
+    bool isSystem = Security::AccessToken::TokenIdKit::IsSystemAppByFullTokenID(IPCSkeleton::GetSelfTokenID());
+    static bool isSys = (isSubsystemSA || isSystem);
     return isSys;
 #else
     return false;
