@@ -331,7 +331,7 @@ static void ScaleP010(YuvPixels yuvPixels, OpenSourceLibyuv::ImageYuvConverter &
         yuvInfo.height, yuvInfo.yuvDataInfo.ToString().c_str(), yuvInfo.pixelsSize);
     YuvCopyInfo yuvCopyInfo = {yuvInfo.height, yuvInfo.pixelsSize};
     cond = !CopyP010Pixels(srcBuffer, srcStrides, srcPixels.get(), dstStride, yuvCopyInfo);
-    CHECK_ERROR_RETURN(cond, "ScaleP010 copy P010 pixels failed");
+    CHECK_ERROR_RETURN_LOG(cond, "ScaleP010 copy P010 pixels failed");
 
     uint16_t* srcY = srcPixels.get();
     uint16_t* srcUV = srcPixels.get() + GetYSize(yuvInfo.width, yuvInfo.height);
