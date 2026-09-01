@@ -413,8 +413,7 @@ uint32_t ExtDecoder::DmaAlloc(DecodeContext &context, uint64_t count, const OHOS
 
     IMAGE_LOGD("ExtDecoder::DmaMemAlloc sb stride is %{public}d, height is %{public}d, size is %{public}d",
         sb->GetStride(), sb->GetHeight(), sb->GetSize());
-    uint64_t contextSize = IsYuv420Format(context.info.pixelFormat) ? sb->GetSize() : count;
-    SetDecodeContextBuffer(context, AllocatorType::DMA_ALLOC, virAddr, contextSize, nativeBuffer);
+    SetDecodeContextBuffer(context, AllocatorType::DMA_ALLOC, virAddr, count, nativeBuffer);
     return SUCCESS;
 #endif
 }
