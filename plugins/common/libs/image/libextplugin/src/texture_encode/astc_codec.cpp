@@ -167,9 +167,9 @@ struct SutOutInfo {
     int32_t sutBytes;
 };
 #ifdef SUT_PATH_X64
-static const std::string g_textureSuperEncSo = "/system/lib64/module/hms/graphic/libtextureSuperCompress.z.so";
+static const std::string g_textureSuperEncSo = "/system/lib64/libtextureSuperCompress.z.so";
 #else
-static const std::string g_textureSuperEncSo = "/system/lib/module/hms/graphic/libtextureSuperCompress.z.so";
+static const std::string g_textureSuperEncSo = "/system/lib/libtextureSuperCompress.z.so";
 #endif
 using SuperCompressTexture = bool (*)(const AstcInInfo&, SutOutInfo&, uint32_t);
 class SutEncSoManager {
