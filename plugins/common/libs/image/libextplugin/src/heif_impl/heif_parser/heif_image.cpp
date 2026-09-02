@@ -316,6 +316,10 @@ HeifFragmentMetadata HeifImage::GetFragmentMetadata()
 
 void HeifImage::SetBlobMetadata(HeifMetadataType type, std::vector<uint8_t>& blobMetadata)
 {
+    constexpr size_t MAX_BLOB_METADATA_SIZE = 16 * 1024 * 1024;
+    if (blobMetadata.size() > MAX_BLOB_METADATA_SIZE) {
+        return;
+    }
     blobMetadataMap_[type] = blobMetadata;
 }
  

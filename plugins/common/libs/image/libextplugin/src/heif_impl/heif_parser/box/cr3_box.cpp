@@ -32,6 +32,8 @@ static const std::map<std::string, Cr3UuidBox::Cr3UuidType> CR3_UUID_STRING_TYPE
     {CR3_UUID_XMP, Cr3UuidBox::Cr3UuidType::XMP},
 };
 
+static const uint32_t MAX_CR3_CHILDREN_PER_BOX = 1000;
+
 std::shared_ptr<Cr3Box> Cr3Box::MakeCr3Box(uint32_t boxType)
 {
     std::shared_ptr<Cr3Box> box;
@@ -130,6 +132,7 @@ heif_error Cr3Box::ReadCr3Children(HeifStreamReader &reader, uint32_t &recursion
         if (error != heif_error_ok) {
             return error;
         }
+        CHECK_ERROR_RETURN_RET(children_.size() >= MAX_CR3_CHILDREN_PER_BOX, heif_error_too_many_boxes);
         if (box != nullptr) {
             auto parent = code_to_fourcc(GetBoxType());
             auto child = code_to_fourcc(box->GetBoxType());
@@ -153,6 +156,9 @@ heif_error Cr3FtypBox::ParseContent(HeifStreamReader &reader)
     uint64_t compatibleBrandNum =
         (GetBoxSize() - fixedContentSize) / UINT32_BYTES_NUM;
     for (uint64_t i = 0; i < compatibleBrandNum && !reader.HasError(); i++) {
+        if (compatibleBrands_.size() >= MAX_CR3_CHILDREN_PER_BOX) {
+            return heif_error_too_many_boxes;
+        }
         compatibleBrands_.push_back(reader.Read32());
     }
     return reader.GetError();

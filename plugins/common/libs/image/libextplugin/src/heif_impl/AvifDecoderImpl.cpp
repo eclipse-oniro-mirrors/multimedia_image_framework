@@ -72,8 +72,7 @@ static constexpr uint32_t MAX_IMAGE_SIZE = 20000;
 
 static void Dav1dFreeCallback(const uint8_t* buf, void* cookie)
 {
-    // This data is owned by the decoder; nothing to free here
-    (void)buf;
+    free(const_cast<uint8_t*>(buf));
     (void)cookie;
 }
 
@@ -233,9 +232,19 @@ std::shared_ptr<Dav1dPicture> Dav1dDecoder::GetOccurDecodeFrame(uint32_t index)
 bool Dav1dDecoder::DecodeFrame(uint32_t index, const std::vector<uint8_t> &frameData)
 {
     Dav1dData data;
-    int wrapRet = dav1d_data_wrap(&data, frameData.data(), frameData.size(), Dav1dFreeCallback, nullptr);
-    CHECK_ERROR_RETURN_RET_LOG(wrapRet != 0, false,
-        "%{public}s dav1d_data_wrap failed ret:%{public}d.", __func__, wrapRet);
+    uint8_t* buf = static_cast<uint8_t*>(malloc(frameData.size()));
+    CHECK_ERROR_RETURN_RET_LOG(!buf, false, "%{public}s malloc failed.", __func__);
+    if (memcpy_s(buf, frameData.size(), frameData.data(), frameData.size()) != EOK) {
+        free(buf);
+        IMAGE_LOGE("%{public}s memcpy_s failed.", __func__);
+        return false;
+    }
+    int wrapRet = dav1d_data_wrap(&data, buf, frameData.size(), Dav1dFreeCallback, nullptr);
+    if (wrapRet != 0) {
+        free(buf);
+        IMAGE_LOGE("%{public}s dav1d_data_wrap failed ret:%{public}d.", __func__, wrapRet);
+        return false;
+    }
     CHECK_ERROR_RETURN_RET_LOG(!ctx_, false, "ctx_ is nullptr.");
     int sendRet = dav1d_send_data(ctx_, &data);
     CHECK_ERROR_RETURN_RET_LOG(sendRet < 0, false,
@@ -461,7 +470,8 @@ void AvifDecoderImpl::SetColorSpaceInfo(HeifFrameInfo *info, const std::shared_p
 {
     auto &iccProfile = image->GetRawColorProfile();
     size_t iccSize = iccProfile != nullptr ? iccProfile->GetData().size() : 0;
-    if (iccSize > 0) {
+    constexpr size_t MAX_ICC_SIZE = 4 * 1024 * 1024;
+    if (iccSize > 0 && iccSize <= MAX_ICC_SIZE) {
         auto iccProfileData = iccProfile->GetData().data();
         info->mIccData.assign(iccProfileData, iccProfileData + iccSize);
     } else {

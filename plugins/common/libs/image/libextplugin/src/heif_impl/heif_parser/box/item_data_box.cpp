@@ -355,6 +355,9 @@ heif_error HeifIlocBox::ReadToExtentData(Item &item, const std::shared_ptr<HeifI
             continue;
         }
         CHECK_ERROR_RETURN_RET(HasOverflowed64(extent.offset, item.baseOffset), heif_error_eof);
+        if (extent.length > MAX_HEIF_IMAGE_GRID_SIZE) {
+            return heif_error_grid_too_large;
+        }
         if (item.constructionMethod == CONSTRUCTION_METHOD_FILE_OFFSET) {
             bool ret = stream->Seek(extent.offset + item.baseOffset);
             if (!ret) {
@@ -371,7 +374,9 @@ heif_error HeifIlocBox::ReadToExtentData(Item &item, const std::shared_ptr<HeifI
             if (!idatBox) {
                 return heif_error_no_idat;
             }
-            idatBox->ReadData(stream, extent.offset + item.baseOffset, extent.length, extent.data);
+            heif_error idatErr = idatBox->ReadData(stream, extent.offset + item.baseOffset,
+                extent.length, extent.data);
+            CHECK_ERROR_RETURN_RET(idatErr != heif_error_ok, idatErr);
         }
     }
 

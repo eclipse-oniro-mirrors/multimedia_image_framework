@@ -206,6 +206,9 @@ heif_error HeifIpmaBox::Write(HeifStreamWriter &writer) const
 
 void HeifIpmaBox::MergeImpaBoxes(const HeifIpmaBox &b)
 {
+    if (entries_.size() + b.entries_.size() > MAX_IPMA_ENTRY_NUM) {
+        return;
+    }
     entries_.insert(entries_.end(), b.entries_.begin(), b.entries_.end());
 }
 } // namespace ImagePlugin
