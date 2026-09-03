@@ -271,7 +271,8 @@ HWTEST_F(PixelMapCopySecurityTest, CopyRejectsAstcOverread, TestSize.Level3)
  */
 HWTEST_F(PixelMapCopySecurityTest, BaseWritePixelsRejectsYuvButVirtualWriteStillWorks, TestSize.Level3)
 {
-    for (PixelFormat format : {PixelFormat::NV12, PixelFormat::NV21, PixelFormat::YCBCR_P010, PixelFormat::YCRCB_P010}) {
+    for (PixelFormat format : {PixelFormat::NV12, PixelFormat::NV21,
+        PixelFormat::YCBCR_P010, PixelFormat::YCRCB_P010}) {
         InitializationOptions opts;
         opts.size = {64, 64};
         opts.pixelFormat = format;
