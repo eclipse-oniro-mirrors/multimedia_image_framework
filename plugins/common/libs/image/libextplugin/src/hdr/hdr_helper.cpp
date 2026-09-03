@@ -1205,6 +1205,7 @@ static bool PackVividStaticMetadata(vector<uint8_t>& bytes, uint32_t& index, vec
 #else
     HdrStaticMetadata staticMeta;
     uint32_t vecSize = sizeof(HdrStaticMetadata);
+    CHECK_ERROR_RETURN_RET_LOG(staticVec.size() < vecSize, false, "PackVividStaticMetadata staticVec size too small");
     bool cond = memcpy_s(&staticMeta, vecSize, staticVec.data(), vecSize) != EOK;
     CHECK_ERROR_RETURN_RET(cond, false);
     ImageUtils::Uint16ToBytes(VIVID_STATIC_METADATA_SIZE_IN_IMAGE, bytes, index);
