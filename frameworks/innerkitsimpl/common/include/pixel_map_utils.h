@@ -232,6 +232,15 @@ static bool ShrinkRGBXToRGB(const std::unique_ptr<AbsMemory>& srcMemory, std::un
     return true;
 }
 
+static bool CheckPixelMapRowLayout(int32_t height, int32_t rowDataSize, int32_t rowStride, uint64_t allocationSize)
+{
+    if (height <= 0 || rowDataSize <= 0 || rowStride < rowDataSize) {
+        return false;
+    }
+    const uint64_t lastRowOffset = static_cast<uint64_t>(height - 1) * static_cast<uint64_t>(rowStride);
+    return lastRowOffset <= allocationSize && static_cast<uint64_t>(rowDataSize) <= allocationSize - lastRowOffset;
+}
+
 static bool CheckPixelMapDataSize(PixelMap *pixelMap)
 {
     if (pixelMap == nullptr) {
@@ -241,16 +250,8 @@ static bool CheckPixelMapDataSize(PixelMap *pixelMap)
         return true;
     }
 
-    const int32_t height = pixelMap->GetHeight();
-    const int32_t rowDataSize = pixelMap->GetRowBytes();
-    const int32_t rowStride = pixelMap->GetRowStride();
-    if (height <= 0 || rowDataSize <= 0 || rowStride < rowDataSize) {
-        return false;
-    }
-
-    const uint64_t allocationSize = pixelMap->GetAllocationByteCount();
-    const uint64_t lastRowOffset = static_cast<uint64_t>(height - 1) * static_cast<uint64_t>(rowStride);
-    return lastRowOffset <= allocationSize && static_cast<uint64_t>(rowDataSize) <= allocationSize - lastRowOffset;
+    return CheckPixelMapRowLayout(pixelMap->GetHeight(), pixelMap->GetRowBytes(), pixelMap->GetRowStride(),
+        pixelMap->GetAllocationByteCount());
 }
 } // namespace Media
 } // namespace OHOS
