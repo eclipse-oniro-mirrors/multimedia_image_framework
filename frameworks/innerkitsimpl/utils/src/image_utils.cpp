@@ -2719,7 +2719,8 @@ PixelFormat ImageUtils::ConvertTo10BitPixelFormat(PixelFormat pixelFormat)
 bool ImageUtils::IsSystemApp()
 {
 #if !defined(CROSS_PLATFORM)
-    return ImageSystemProperties::IsSystemApp();
+    static bool isSys = Security::AccessToken::TokenIdKit::IsSystemAppByFullTokenID(IPCSkeleton::GetSelfTokenID());
+    return isSys;
 #else
     return false;
 #endif

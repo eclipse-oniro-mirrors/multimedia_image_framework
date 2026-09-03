@@ -700,7 +700,7 @@ MIDK_EXPORT
 Image_ErrorCode OH_ImageSourceNative_SetSvgResourceLimitLevel(OH_ImageSourceNative *source,
     OH_ImageSource_SVGResourceLimitLevel level)
 {
-    if (!ImageUtils::IsSystemApp()) {
+    if (!ImageSystemProperties::IsSystemAppOrNativeSA()) {
         IMAGE_LOGE("This interface can be called only by system apps.");
         return IMAGE_PERMISSIONS_FAILED;
     }
@@ -716,7 +716,7 @@ MIDK_EXPORT
 Image_ErrorCode OH_ImageSourceNative_GetSvgResourceLimitLevel(OH_ImageSourceNative *source,
     OH_ImageSource_SVGResourceLimitLevel *level)
 {
-    if (!ImageUtils::IsSystemApp()) {
+    if (!ImageSystemProperties::IsSystemAppOrNativeSA()) {
         IMAGE_LOGE("This interface can be called only by system apps.");
         return IMAGE_PERMISSIONS_FAILED;
     }
