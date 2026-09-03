@@ -22,6 +22,7 @@
 #include "image_source.h"
 #include "image_source_native_impl.h"
 #include "image_utils.h"
+#include "image_system_properties.h"
 #include "pixelmap_native_impl.h"
 #include "picture_native.h"
 #include "media_errors.h"
