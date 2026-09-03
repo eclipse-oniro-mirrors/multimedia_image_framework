@@ -208,10 +208,11 @@ HWTEST_F(PixelMapCopySecurityTest, CopyDmaRowsUsesDestinationStride, TestSize.Le
     auto source = MakeDmaLayoutPixelMap();
     ASSERT_NE(source, nullptr);
     std::vector<uint8_t> destination(DESTINATION_STRIDE * COPY_HEIGHT, PADDING_VALUE);
-    HeapMemory memory;
-    memory.data = {destination.data(), destination.size(), "CopyStrideTest",
+    MemoryData data = {destination.data(), destination.size(), "CopyStrideTest",
         {DESTINATION_STRIDE / RGBA_BYTES, COPY_HEIGHT}, PixelFormat::RGBA_8888};
-    ASSERT_TRUE(PixelMap::CopyPixMapToDst(*source, memory, COPY_WIDTH * COPY_HEIGHT * RGBA_BYTES));
+    auto memory = MemoryManager::CreateMemory(AllocatorType::HEAP_ALLOC, data);
+    ASSERT_NE(memory, nullptr);
+    ASSERT_TRUE(PixelMap::CopyPixMapToDst(*source, *memory, COPY_WIDTH * COPY_HEIGHT * RGBA_BYTES));
     for (int32_t row = 0; row < COPY_HEIGHT; ++row) {
         for (int32_t col = 0; col < DESTINATION_STRIDE; ++col) {
             EXPECT_EQ(destination[row * DESTINATION_STRIDE + col],
@@ -231,17 +232,18 @@ HWTEST_F(PixelMapCopySecurityTest, CopyDmaRowsChecksBothLastRowBounds, TestSize.
     ASSERT_NE(source, nullptr);
     constexpr uint32_t destinationEnd = (COPY_HEIGHT - 1) * DESTINATION_STRIDE + COPY_WIDTH * RGBA_BYTES;
     std::vector<uint8_t> destination(destinationEnd, PADDING_VALUE);
-    HeapMemory memory;
-    memory.data = {destination.data(), destination.size() - 1, "CopyCapacityTest",
+    MemoryData data = {destination.data(), destination.size() - 1, "CopyCapacityTest",
         {DESTINATION_STRIDE / RGBA_BYTES, COPY_HEIGHT}, PixelFormat::RGBA_8888};
-    EXPECT_FALSE(PixelMap::CopyPixMapToDst(*source, memory, COPY_WIDTH * COPY_HEIGHT * RGBA_BYTES));
+    auto memory = MemoryManager::CreateMemory(AllocatorType::HEAP_ALLOC, data);
+    ASSERT_NE(memory, nullptr);
+    EXPECT_FALSE(PixelMap::CopyPixMapToDst(*source, *memory, COPY_WIDTH * COPY_HEIGHT * RGBA_BYTES));
     EXPECT_EQ(destination.front(), PADDING_VALUE);
-    memory.data.size = destination.size();
+    memory->data.size = destination.size();
     source->pixelsSize_ = (COPY_HEIGHT - 1) * SOURCE_STRIDE + COPY_WIDTH * RGBA_BYTES - 1;
-    EXPECT_FALSE(PixelMap::CopyPixMapToDst(*source, memory, COPY_WIDTH * COPY_HEIGHT * RGBA_BYTES));
+    EXPECT_FALSE(PixelMap::CopyPixMapToDst(*source, *memory, COPY_WIDTH * COPY_HEIGHT * RGBA_BYTES));
     EXPECT_EQ(destination.front(), PADDING_VALUE);
     ++source->pixelsSize_;
-    EXPECT_TRUE(PixelMap::CopyPixMapToDst(*source, memory, COPY_WIDTH * COPY_HEIGHT * RGBA_BYTES));
+    EXPECT_TRUE(PixelMap::CopyPixMapToDst(*source, *memory, COPY_WIDTH * COPY_HEIGHT * RGBA_BYTES));
 }
 
 /**
@@ -255,11 +257,12 @@ HWTEST_F(PixelMapCopySecurityTest, CopyRejectsAstcOverread, TestSize.Level3)
     ASSERT_NE(source, nullptr);
     constexpr uint32_t oldByteCount = 261632;
     std::vector<uint8_t> destination(oldByteCount, PADDING_VALUE);
-    HeapMemory memory;
-    memory.data = {destination.data(), destination.size(), "AstcCopyTest", {511, 511}, PixelFormat::ASTC_8x8};
-    EXPECT_FALSE(PixelMap::CopyPixMapToDst(*source, memory, oldByteCount));
+    MemoryData data = {destination.data(), destination.size(), "AstcCopyTest", {511, 511}, PixelFormat::ASTC_8x8};
+    auto memory = MemoryManager::CreateMemory(AllocatorType::HEAP_ALLOC, data);
+    ASSERT_NE(memory, nullptr);
+    EXPECT_FALSE(PixelMap::CopyPixMapToDst(*source, *memory, oldByteCount));
     EXPECT_EQ(destination.front(), PADDING_VALUE);
-    EXPECT_TRUE(PixelMap::CopyPixMapToDst(*source, memory, source->GetByteCount()));
+    EXPECT_TRUE(PixelMap::CopyPixMapToDst(*source, *memory, source->GetByteCount()));
     EXPECT_EQ(destination[source->GetByteCount() - 1], PIXEL_VALUE);
     EXPECT_EQ(destination[source->GetByteCount()], PADDING_VALUE);
 }
