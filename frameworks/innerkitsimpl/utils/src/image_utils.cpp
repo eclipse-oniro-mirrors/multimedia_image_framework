@@ -19,6 +19,7 @@
 #include <sys/ioctl.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <array>
 #include <cerrno>
 #include <climits>
 #include <cmath>
@@ -959,6 +960,120 @@ void ImageUtils::DumpPixelMapBeforeEncode(PixelMap& pixelMap)
         return;
     }
     DumpPixelMap(&pixelMap, "_beforeEncode");
+}
+
+namespace {
+constexpr int32_t SAMPLE_COLS = 3;
+constexpr int32_t EDGE_COLUMN_SAMPLE_ROWS = 3;
+constexpr int32_t CENTER_COLUMN_SAMPLE_ROWS = 10;
+constexpr int32_t RGBA_8888_PIXEL_BYTES = 4;
+constexpr int32_t RGB_SAMPLE_BYTES_PER_PIXEL = 3;
+constexpr int32_t SAMPLE_COUNT = EDGE_COLUMN_SAMPLE_ROWS * 2 + CENTER_COLUMN_SAMPLE_ROWS;
+constexpr size_t RGB_SAMPLE_BYTES = SAMPLE_COUNT * RGB_SAMPLE_BYTES_PER_PIXEL;
+constexpr size_t BASE64_INPUT_GROUP_BYTES = 3;
+constexpr size_t BASE64_OUTPUT_GROUP_CHARS = 4;
+constexpr uint32_t BITS_PER_BYTE = 8;
+constexpr uint32_t BITS_PER_BASE64_CHAR = 6;
+constexpr uint32_t BASE64_VALUE_MASK = (1U << BITS_PER_BASE64_CHAR) - 1;
+constexpr size_t BASE64_TEXT_LENGTH =
+    ((RGB_SAMPLE_BYTES + BASE64_INPUT_GROUP_BYTES - 1) / BASE64_INPUT_GROUP_BYTES) * BASE64_OUTPUT_GROUP_CHARS;
+constexpr char BASE64_ALPHABET[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+constexpr char BASE64_PADDING = '=';
+static_assert(SAMPLE_COUNT == 16);
+static_assert(RGB_SAMPLE_BYTES == 48);
+static_assert(BASE64_TEXT_LENGTH == 64);
+
+using RgbSampleBuffer = std::array<uint8_t, RGB_SAMPLE_BYTES>;
+using Base64TextBuffer = std::array<char, BASE64_TEXT_LENGTH + 1>;
+
+int32_t GetSamplePosition(int32_t length, int32_t index, int32_t sampleCount)
+{
+    if (index == sampleCount - 1) {
+        return length - 1;
+    }
+    return static_cast<int32_t>(static_cast<int64_t>(length) * index / (sampleCount - 1));
+}
+
+Base64TextBuffer EncodeSamplesToBase64(const RgbSampleBuffer& samples)
+{
+    Base64TextBuffer output = {};
+    size_t inputIndex = 0;
+    size_t outputIndex = 0;
+    while (inputIndex < samples.size()) {
+        size_t remaining = samples.size() - inputIndex;
+        size_t inputBytes = remaining < BASE64_INPUT_GROUP_BYTES ? remaining : BASE64_INPUT_GROUP_BYTES;
+        uint32_t value = 0;
+        for (size_t byteIndex = 0; byteIndex < inputBytes; byteIndex++) {
+            uint32_t shift = BITS_PER_BYTE *
+                static_cast<uint32_t>(BASE64_INPUT_GROUP_BYTES - 1 - byteIndex);
+            value |= static_cast<uint32_t>(samples[inputIndex + byteIndex]) << shift;
+        }
+        for (size_t charIndex = 0; charIndex < BASE64_OUTPUT_GROUP_CHARS; charIndex++) {
+            if (charIndex > inputBytes) {
+                output[outputIndex++] = BASE64_PADDING;
+                continue;
+            }
+            uint32_t shift = BITS_PER_BASE64_CHAR *
+                static_cast<uint32_t>(BASE64_OUTPUT_GROUP_CHARS - 1 - charIndex);
+            output[outputIndex++] = BASE64_ALPHABET[(value >> shift) & BASE64_VALUE_MASK];
+        }
+        inputIndex += inputBytes;
+    }
+    output[outputIndex] = '\0';
+    return output;
+}
+
+bool CollectRgba8888Samples(PixelMap& pixelMap, RgbSampleBuffer& samples)
+{
+    ImageInfo info;
+    pixelMap.GetImageInfo(info);
+    if (info.pixelFormat != PixelFormat::RGBA_8888) {
+        return false;
+    }
+    const uint8_t* data = pixelMap.GetPixels();
+    size_t size = pixelMap.GetAllocationByteCount();
+    int32_t width = info.size.width;
+    int32_t height = info.size.height;
+    int32_t rowStride = pixelMap.GetRowStride();
+    if (data == nullptr || size == 0 || width <= 0 || height <= 0 || rowStride <= 0) {
+        return false;
+    }
+    int64_t minRowStride = static_cast<int64_t>(width) * RGBA_8888_PIXEL_BYTES;
+    if (rowStride < minRowStride) {
+        return false;
+    }
+    size_t sampleOffset = 0;
+    for (int xi = 0; xi < SAMPLE_COLS; xi++) {
+        int32_t x = GetSamplePosition(width, xi, SAMPLE_COLS);
+        int32_t sampleRows = xi == SAMPLE_COLS / 2 ? CENTER_COLUMN_SAMPLE_ROWS : EDGE_COLUMN_SAMPLE_ROWS;
+        for (int yi = 0; yi < sampleRows; yi++) {
+            int32_t y = GetSamplePosition(height, yi, sampleRows);
+            uint64_t offset = static_cast<uint64_t>(y) * static_cast<uint64_t>(rowStride) +
+                static_cast<uint64_t>(x) * RGBA_8888_PIXEL_BYTES;
+            if (offset > size || size - offset < RGBA_8888_PIXEL_BYTES) {
+                return false;
+            }
+            for (size_t channel = 0; channel < RGB_SAMPLE_BYTES_PER_PIXEL; channel++) {
+                samples[sampleOffset++] = data[static_cast<size_t>(offset) + channel];
+            }
+        }
+    }
+    return sampleOffset == samples.size();
+}
+} // anonymous namespace
+
+bool ImageUtils::SampleAndPrintPixelMap(const std::unique_ptr<PixelMap>& pixelMap)
+{
+    if (pixelMap == nullptr) {
+        return false;
+    }
+    RgbSampleBuffer samples = {};
+    if (!CollectRgba8888Samples(*pixelMap, samples)) {
+        return false;
+    }
+    Base64TextBuffer base64Text = EncodeSamplesToBase64(samples);
+    IMAGE_LOGI("%{public}s", base64Text.data());
+    return true;
 }
 
 void ImageUtils::DumpData(const char* data, const size_t& totalSize,

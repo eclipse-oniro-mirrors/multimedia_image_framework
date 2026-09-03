@@ -1081,6 +1081,7 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index, const D
             "cost %{public}lu us", static_cast<unsigned long>(imageId_), opts.desiredSize.width,
             opts.desiredSize.height, info.size.width, info.size.height, opts.desiredDynamicRange, context.hdrType,
             pixelMap->GetAllocatorType(), static_cast<unsigned long>(GetNowTimeMicroSeconds() - decodeStartTime));
+        ImageUtils::SampleAndPrintPixelMap(pixelMap);
     }
 
     {
