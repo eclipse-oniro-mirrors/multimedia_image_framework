@@ -2488,9 +2488,19 @@ uint32_t PixelMap::WritePixels(const uint8_t *source, const uint64_t &bufferSize
         return ERR_IMAGE_WRITE_PIXELMAP_FAILED;
     }
 
-    for (int i = 0; i < imageInfo_.size.height; ++i) {
-        const uint8_t* sourceRow = source + i * rowDataSize_;
-        errno_t ret = memcpy_s(data_ + i * rowStride_, rowDataSize_, sourceRow, rowDataSize_);
+    const int32_t height = imageInfo_.size.height;
+    const int32_t rowBytes = rowDataSize_;
+    const int32_t dstStride = rowStride_;
+    const uint64_t dstCapacity = GetAllocationByteCount();
+    CHECK_ERROR_RETURN_RET_LOG(!CheckPixelMapRowLayout(height, rowBytes, rowBytes, bufferSize),
+        ERR_IMAGE_INVALID_PARAMETER, "write pixels source buffer size invalid");
+    CHECK_ERROR_RETURN_RET_LOG(!CheckPixelMapRowLayout(height, rowBytes, dstStride, dstCapacity),
+        ERR_IMAGE_WRITE_PIXELMAP_FAILED, "write pixels destination layout invalid");
+
+    for (int32_t row = 0; row < height; ++row) {
+        const uint64_t srcOffset = static_cast<uint64_t>(row) * rowBytes;
+        const uint64_t dstOffset = static_cast<uint64_t>(row) * dstStride;
+        errno_t ret = memcpy_s(data_ + dstOffset, dstCapacity - dstOffset, source + srcOffset, rowBytes);
         if (ret != 0) {
             IMAGE_LOGE("write pixels by buffer memcpy the pixelmap data to dst fail, error:%{public}d", ret);
             return ERR_IMAGE_WRITE_PIXELMAP_FAILED;

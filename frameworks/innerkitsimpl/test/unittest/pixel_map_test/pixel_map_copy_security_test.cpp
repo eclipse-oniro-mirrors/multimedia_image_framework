@@ -97,6 +97,26 @@ std::unique_ptr<PixelMap> MakeDmaLayoutPixelMap()
     pixelMap->SetRowStride(SOURCE_STRIDE);
     return pixelMap;
 }
+
+std::unique_ptr<PixelMap> MakeWritableRgbaPixelMap(const Size &size, uint32_t capacity)
+{
+    auto pixelMap = std::make_unique<PixelMap>();
+    ImageInfo info;
+    info.size = size;
+    info.pixelFormat = PixelFormat::RGBA_8888;
+    info.alphaType = AlphaType::IMAGE_ALPHA_TYPE_PREMUL;
+    if (pixelMap->SetImageInfo(info) != SUCCESS) {
+        return nullptr;
+    }
+    void *pixels = malloc(capacity);
+    if (pixels == nullptr) {
+        return nullptr;
+    }
+    memset_s(pixels, capacity, PADDING_VALUE, capacity);
+    pixelMap->SetPixelsAddr(pixels, nullptr, capacity, AllocatorType::HEAP_ALLOC, nullptr);
+    pixelMap->SetEditable(true);
+    return pixelMap;
+}
 } // namespace
 
 class PixelMapCopySecurityTest : public testing::Test {};
@@ -288,6 +308,97 @@ HWTEST_F(PixelMapCopySecurityTest, BaseWritePixelsRejectsYuvButVirtualWriteStill
         EXPECT_EQ(pixelMap->PixelMap::WritePixels(input.data(), input.size()), ERR_IMAGE_DATA_UNSUPPORT);
         EXPECT_EQ(pixelMap->WritePixels(input.data(), input.size()), SUCCESS);
         EXPECT_EQ(memcmp(pixelMap->GetPixels(), input.data(), capacity), 0);
+    }
+}
+
+/**
+ * @tc.name: WritePixelsRejectsInvalidDestinationStride
+ * @tc.desc: Public stride changes must not cause partial writes, out-of-bounds writes or signed offset overflow.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapCopySecurityTest, WritePixelsRejectsInvalidDestinationStride, TestSize.Level3)
+{
+    constexpr int32_t width = 2;
+    constexpr uint32_t rowBytes = width * RGBA_BYTES;
+    for (int32_t height : {2, 3}) {
+        const uint32_t capacity = rowBytes * height;
+        auto pixelMap = MakeWritableRgbaPixelMap({width, height}, capacity);
+        ASSERT_NE(pixelMap, nullptr);
+        std::vector<uint8_t> input(capacity, PIXEL_VALUE);
+        std::vector<uint8_t> unchanged(capacity, PADDING_VALUE);
+        for (uint32_t stride : {0U, rowBytes - 1, rowBytes * 2, 1U << 30, UINT32_MAX}) {
+            pixelMap->SetRowStride(stride);
+            EXPECT_EQ(pixelMap->WritePixels(input.data(), input.size()), ERR_IMAGE_WRITE_PIXELMAP_FAILED);
+            EXPECT_EQ(memcmp(pixelMap->GetPixels(), unchanged.data(), capacity), 0);
+        }
+    }
+}
+
+/**
+ * @tc.name: WritePixelsRejectsShortSourceDespiteSmallDeclaredCapacity
+ * @tc.desc: The input must cover every source row even if the PixelMap advertises a smaller capacity.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapCopySecurityTest, WritePixelsRejectsShortSourceDespiteSmallDeclaredCapacity, TestSize.Level3)
+{
+    constexpr uint32_t rowBytes = 2 * RGBA_BYTES;
+    auto pixelMap = MakeWritableRgbaPixelMap({2, 2}, rowBytes);
+    ASSERT_NE(pixelMap, nullptr);
+    std::vector<uint8_t> unchanged(rowBytes, PADDING_VALUE);
+    for (uint32_t inputSize : {rowBytes, rowBytes * 2 - 1}) {
+        std::vector<uint8_t> input(inputSize, PIXEL_VALUE);
+        EXPECT_EQ(pixelMap->WritePixels(input.data(), input.size()), ERR_IMAGE_INVALID_PARAMETER);
+        EXPECT_EQ(memcmp(pixelMap->GetPixels(), unchanged.data(), unchanged.size()), 0);
+    }
+}
+
+/**
+ * @tc.name: WritePixelsRejectsDestinationOneByteShort
+ * @tc.desc: Reject a padded destination that is one byte short of its final row before modifying any pixel.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapCopySecurityTest, WritePixelsRejectsDestinationOneByteShort, TestSize.Level3)
+{
+    constexpr uint32_t rowBytes = 2 * RGBA_BYTES;
+    constexpr uint32_t stride = rowBytes * 2;
+    constexpr uint32_t capacity = stride + rowBytes - 1;
+    auto pixelMap = MakeWritableRgbaPixelMap({2, 2}, capacity);
+    ASSERT_NE(pixelMap, nullptr);
+    pixelMap->SetRowStride(stride);
+    std::vector<uint8_t> input(capacity, PIXEL_VALUE);
+    std::vector<uint8_t> unchanged(capacity, PADDING_VALUE);
+    EXPECT_EQ(pixelMap->WritePixels(input.data(), input.size()), ERR_IMAGE_WRITE_PIXELMAP_FAILED);
+    EXPECT_EQ(memcmp(pixelMap->GetPixels(), unchanged.data(), capacity), 0);
+}
+
+/**
+ * @tc.name: WritePixelsPreservesPaddingAndAcceptsExactBounds
+ * @tc.desc: Accept contiguous and padded layouts with exact or larger input, preserving all destination padding.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapCopySecurityTest, WritePixelsPreservesPaddingAndAcceptsExactBounds, TestSize.Level3)
+{
+    constexpr uint32_t rowBytes = 2 * RGBA_BYTES;
+    for (uint32_t stride : {rowBytes, rowBytes * 2}) {
+        for (uint32_t capacity : {stride + rowBytes, stride * 2}) {
+            for (uint32_t inputSize : {capacity, capacity * 2}) {
+                auto pixelMap = MakeWritableRgbaPixelMap({2, 2}, capacity);
+                ASSERT_NE(pixelMap, nullptr);
+                pixelMap->SetRowStride(stride);
+                std::vector<uint8_t> input(inputSize);
+                for (uint32_t i = 0; i < inputSize; ++i) {
+                    input[i] = static_cast<uint8_t>(i + 1);
+                }
+                std::vector<uint8_t> expected(capacity, PADDING_VALUE);
+                for (uint32_t row = 0; row < 2; ++row) {
+                    for (uint32_t col = 0; col < rowBytes; ++col) {
+                        expected[row * stride + col] = input[row * rowBytes + col];
+                    }
+                }
+                EXPECT_EQ(pixelMap->WritePixels(input.data(), input.size()), SUCCESS);
+                EXPECT_EQ(memcmp(pixelMap->GetPixels(), expected.data(), capacity), 0);
+            }
+        }
     }
 }
 } // namespace Multimedia
