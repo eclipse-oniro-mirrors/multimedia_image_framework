@@ -24,6 +24,7 @@ extern "C" {
 
 struct OH_ImageNative {
     OHOS::Media::NativeImage* imgNative = nullptr;
+    OHOS::sptr<OHOS::SurfaceBuffer> cachedBuffer_ = nullptr;
 };
 
 #ifdef __cplusplus

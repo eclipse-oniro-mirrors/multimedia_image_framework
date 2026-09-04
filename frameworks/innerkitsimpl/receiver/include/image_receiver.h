@@ -40,6 +40,7 @@ public:
     SurfaceBufferAvaliableListener()= default;
     virtual ~SurfaceBufferAvaliableListener()= default;
     virtual void OnSurfaceBufferAvaliable() = 0;
+    virtual void ClearCallback() {}
 };
 
 class ImageReceiverArriveListener : public SurfaceBufferAvaliableListener {
@@ -85,6 +86,12 @@ public:
             return true;
         }
         return false;
+    }
+
+    void ClearCallback() override
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        callbacks_.clear();
     }
 
     void OnSurfaceBufferAvaliable() __attribute__((no_sanitize("cfi"))) override
@@ -150,11 +157,20 @@ public:
     void RegisterBufferAvaliableListener(
         std::shared_ptr<SurfaceBufferAvaliableListener> surfaceBufferAvaliableListener)
     {
+        std::lock_guard<std::mutex> lock(imageReceiverMutex_);
         surfaceBufferAvaliableListener_ = surfaceBufferAvaliableListener;
     }
     void UnRegisterBufferAvaliableListener()
     {
-        surfaceBufferAvaliableListener_.reset();
+        std::shared_ptr<SurfaceBufferAvaliableListener> listener;
+        {
+            std::lock_guard<std::mutex> lock(imageReceiverMutex_);
+            listener = surfaceBufferAvaliableListener_;
+            surfaceBufferAvaliableListener_.reset();
+        }
+        if (listener != nullptr) {
+            listener->ClearCallback();
+        }
     }
     static sptr<Surface> getSurfaceById(std::string id);
 

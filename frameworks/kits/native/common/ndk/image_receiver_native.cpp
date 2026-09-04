@@ -30,6 +30,7 @@ extern "C" {
 
 struct OH_ImageReceiverNative {
     std::shared_ptr<OHOS::Media::ImageReceiver> ptrImgRcv;
+    std::mutex mutex_;
 };
 
 struct OH_ImageReceiverOptions {
@@ -51,18 +52,31 @@ namespace Media {
 
         ~ImageReceiverListener() override
         {
+            std::lock_guard<std::mutex> lock(callbackMutex_);
             callback_ = nullptr;
         }
 
         void OnSurfaceBufferAvaliable() __attribute__((no_sanitize("cfi"))) override
         {
-            if (nullptr != callback_) {
-                callback_(receiver_);
+            OH_ImageReceiver_OnCallback cb = nullptr;
+            {
+                std::lock_guard<std::mutex> lock(callbackMutex_);
+                cb = callback_;
             }
+            if (cb != nullptr) {
+                cb(receiver_);
+            }
+        }
+
+        void ClearCallback() override
+        {
+            std::lock_guard<std::mutex> lock(callbackMutex_);
+            callback_ = nullptr;
         }
 
         OH_ImageReceiverNative* receiver_;
         OH_ImageReceiver_OnCallback callback_;
+        std::mutex callbackMutex_;
     };
 } // namespace Media
 } // namespace OHOS
@@ -107,6 +121,9 @@ Image_ErrorCode OH_ImageReceiverOptions_SetSize(OH_ImageReceiverOptions* options
         IMAGE_LOGE("Invalid parameter: options=null.");
         return IMAGE_BAD_PARAMETER;
     }
+    bool cond = size.width == 0 || size.height == 0 || size.width > static_cast<uint32_t>(INT32_MAX) ||
+        size.height > static_cast<uint32_t>(INT32_MAX);
+    CHECK_ERROR_RETURN_RET_LOG(cond, IMAGE_BAD_PARAMETER, "Invalid size");
     options->width = static_cast<int32_t>(size.width);
     options->height = static_cast<int32_t>(size.height);
     return IMAGE_SUCCESS;
@@ -193,12 +210,17 @@ Image_ErrorCode OH_ImageReceiverNative_GetReceivingSurfaceId(OH_ImageReceiverNat
         IMAGE_LOGE("Invalid parameter: receiver=null.");
         return IMAGE_BAD_PARAMETER;
     }
-    if (nullptr == receiver->ptrImgRcv || nullptr == receiver->ptrImgRcv->iraContext_) {
+    std::shared_ptr<OHOS::Media::ImageReceiver> imgRcv;
+    {
+        std::lock_guard<std::mutex> lock(receiver->mutex_);
+        imgRcv = receiver->ptrImgRcv;
+    }
+    if (nullptr == imgRcv || nullptr == imgRcv->iraContext_) {
         IMAGE_LOGE("Bad parameter: receiver data empty.");
         return IMAGE_BAD_PARAMETER;
     }
 
-    std::string strKey = receiver->ptrImgRcv->iraContext_->GetReceiverKey();
+    std::string strKey = imgRcv->iraContext_->GetReceiverKey();
     if (strKey.empty()) {
         IMAGE_LOGE("Bad data: key string empty.");
         return IMAGE_UNKNOWN_ERROR;
@@ -223,16 +245,21 @@ Image_ErrorCode OH_ImageReceiverNative_ReadLatestImage(OH_ImageReceiverNative* r
         IMAGE_LOGE("Invalid parameter: receiver=null.");
         return IMAGE_BAD_PARAMETER;
     }
-    if (nullptr == receiver->ptrImgRcv) {
+    std::shared_ptr<OHOS::Media::ImageReceiver> imgRcv;
+    {
+        std::lock_guard<std::mutex> lock(receiver->mutex_);
+        imgRcv = receiver->ptrImgRcv;
+    }
+    if (nullptr == imgRcv) {
         IMAGE_LOGE("Bad parameter: receiver data empty.");
         return IMAGE_BAD_PARAMETER;
     }
 
-    auto bufferProcessor = receiver->ptrImgRcv->GetBufferProcessor();
+    auto bufferProcessor = imgRcv->GetBufferProcessor();
     CHECK_ERROR_RETURN_RET_LOG(nullptr == bufferProcessor, IMAGE_UNKNOWN_ERROR, "Bad data: buffer processor empty.");
 
     int64_t timestamp = 0;
-    auto surfaceBuffer = receiver->ptrImgRcv->ReadLastImage(timestamp);
+    auto surfaceBuffer = imgRcv->ReadLastImage(timestamp);
     if (nullptr == surfaceBuffer) {
         IMAGE_LOGE("Bad data: surfacebuffer empty.");
         return IMAGE_UNKNOWN_ERROR;
@@ -267,16 +294,21 @@ Image_ErrorCode OH_ImageReceiverNative_ReadNextImage(OH_ImageReceiverNative* rec
         IMAGE_LOGE("Invalid parameter: receiver=null.");
         return IMAGE_BAD_PARAMETER;
     }
-    if (nullptr == receiver->ptrImgRcv) {
+    std::shared_ptr<OHOS::Media::ImageReceiver> imgRcv;
+    {
+        std::lock_guard<std::mutex> lock(receiver->mutex_);
+        imgRcv = receiver->ptrImgRcv;
+    }
+    if (nullptr == imgRcv) {
         IMAGE_LOGE("Bad parameter: receiver data empty.");
         return IMAGE_BAD_PARAMETER;
     }
 
-    auto bufferProcessor = receiver->ptrImgRcv->GetBufferProcessor();
+    auto bufferProcessor = imgRcv->GetBufferProcessor();
     CHECK_ERROR_RETURN_RET_LOG(nullptr == bufferProcessor, IMAGE_UNKNOWN_ERROR, "Bad data: buffer processor empty.");
 
     int64_t timestamp = 0;
-    auto surfaceBuffer = receiver->ptrImgRcv->ReadNextImage(timestamp);
+    auto surfaceBuffer = imgRcv->ReadNextImage(timestamp);
     if (nullptr == surfaceBuffer) {
         IMAGE_LOGE("Bad data: surfacebuffer empty.");
         return IMAGE_UNKNOWN_ERROR;
@@ -307,14 +339,19 @@ Image_ErrorCode OH_ImageReceiverNative_On(OH_ImageReceiverNative* receiver, OH_I
         IMAGE_LOGE("OH_ImageReceiverNative_On: Invalid parameter");
         return IMAGE_BAD_PARAMETER;
     }
-    if (nullptr == receiver->ptrImgRcv) {
+    std::shared_ptr<OHOS::Media::ImageReceiver> imgRcv;
+    {
+        std::lock_guard<std::mutex> lock(receiver->mutex_);
+        imgRcv = receiver->ptrImgRcv;
+    }
+    if (nullptr == imgRcv) {
         IMAGE_LOGE("Bad parameter: receiver data empty.");
         return IMAGE_BAD_PARAMETER;
     }
 
     auto listener = std::make_shared<OHOS::Media::ImageReceiverListener>(receiver);
     listener->callback_ = callback;
-    receiver->ptrImgRcv->RegisterBufferAvaliableListener(listener);
+    imgRcv->RegisterBufferAvaliableListener(listener);
     return IMAGE_SUCCESS;
 }
 
@@ -325,12 +362,17 @@ Image_ErrorCode OH_ImageReceiverNative_Off(OH_ImageReceiverNative* receiver)
         IMAGE_LOGE("Invalid parameter: receiver=null.");
         return IMAGE_BAD_PARAMETER;
     }
-    if (nullptr == receiver->ptrImgRcv) {
+    std::shared_ptr<OHOS::Media::ImageReceiver> imgRcv;
+    {
+        std::lock_guard<std::mutex> lock(receiver->mutex_);
+        imgRcv = receiver->ptrImgRcv;
+    }
+    if (nullptr == imgRcv) {
         IMAGE_LOGE("Bad parameter: receiver data empty.");
         return IMAGE_BAD_PARAMETER;
     }
 
-    receiver->ptrImgRcv->UnRegisterBufferAvaliableListener();
+    imgRcv->UnRegisterBufferAvaliableListener();
     return IMAGE_SUCCESS;
 }
 
@@ -341,13 +383,18 @@ Image_ErrorCode OH_ImageReceiverNative_GetSize(OH_ImageReceiverNative* receiver,
         IMAGE_LOGE("OH_ImageReceiverNative_GetSize: Invalid parameter");
         return IMAGE_BAD_PARAMETER;
     }
-    if (nullptr == receiver->ptrImgRcv || nullptr == receiver->ptrImgRcv->iraContext_) {
+    std::shared_ptr<OHOS::Media::ImageReceiver> imgRcv;
+    {
+        std::lock_guard<std::mutex> lock(receiver->mutex_);
+        imgRcv = receiver->ptrImgRcv;
+    }
+    if (nullptr == imgRcv || nullptr == imgRcv->iraContext_) {
         IMAGE_LOGE("Bad parameter: receiver data empty.");
         return IMAGE_BAD_PARAMETER;
     }
 
-    size->width = static_cast<uint32_t>(receiver->ptrImgRcv->iraContext_->GetWidth());
-    size->height = static_cast<uint32_t>(receiver->ptrImgRcv->iraContext_->GetHeight());
+    size->width = static_cast<uint32_t>(imgRcv->iraContext_->GetWidth());
+    size->height = static_cast<uint32_t>(imgRcv->iraContext_->GetHeight());
     return IMAGE_SUCCESS;
 }
 
@@ -358,12 +405,17 @@ Image_ErrorCode OH_ImageReceiverNative_GetCapacity(OH_ImageReceiverNative* recei
         IMAGE_LOGE("OH_ImageReceiverNative_GetCapacity: Invalid parameter");
         return IMAGE_BAD_PARAMETER;
     }
-    if (nullptr == receiver->ptrImgRcv || nullptr == receiver->ptrImgRcv->iraContext_) {
+    std::shared_ptr<OHOS::Media::ImageReceiver> imgRcv;
+    {
+        std::lock_guard<std::mutex> lock(receiver->mutex_);
+        imgRcv = receiver->ptrImgRcv;
+    }
+    if (nullptr == imgRcv || nullptr == imgRcv->iraContext_) {
         IMAGE_LOGE("Bad parameter: receiver data empty.");
         return IMAGE_BAD_PARAMETER;
     }
 
-    *capacity = receiver->ptrImgRcv->iraContext_->GetCapicity();
+    *capacity = imgRcv->iraContext_->GetCapicity();
     return IMAGE_SUCCESS;
 }
 
@@ -374,7 +426,10 @@ Image_ErrorCode OH_ImageReceiverNative_Release(OH_ImageReceiverNative* receiver)
         IMAGE_LOGE("Invalid parameter: receiver=null.");
         return IMAGE_BAD_PARAMETER;
     }
-    receiver->ptrImgRcv.reset();
+    {
+        std::lock_guard<std::mutex> lock(receiver->mutex_);
+        receiver->ptrImgRcv.reset();
+    }
     IMAGE_LOGI("OH_ImageReceiverNative Release.");
     delete receiver;
     return IMAGE_SUCCESS;
@@ -388,15 +443,25 @@ Image_ErrorCode OH_ImageReceiverNative_OnImageArrive(OH_ImageReceiverNative* rec
         IMAGE_LOGE("OH_ImageReceiverNative_OnImageArrive: Invalid parameter");
         return IMAGE_RECEIVER_INVALID_PARAMETER;
     }
-    if (receiver->ptrImgRcv == nullptr) {
+    std::shared_ptr<OHOS::Media::ImageReceiver> imgRcv;
+    {
+        std::lock_guard<std::mutex> lock(receiver->mutex_);
+        imgRcv = receiver->ptrImgRcv;
+    }
+    if (nullptr == imgRcv) {
         IMAGE_LOGE("Bad parameter: receiver data empty.");
         return IMAGE_RECEIVER_INVALID_PARAMETER;
     }
-    if (receiver->ptrImgRcv->surfaceBufferAvaliableArriveListener_ == nullptr) {
-        receiver->ptrImgRcv->surfaceBufferAvaliableArriveListener_ =
-            std::make_shared<OHOS::Media::ImageReceiverArriveListener>(receiver);
+    std::shared_ptr<OHOS::Media::ImageReceiverArriveListener> arriveListener;
+    {
+        std::lock_guard<std::mutex> lock(imgRcv->imageReceiverMutex_);
+        if (imgRcv->surfaceBufferAvaliableArriveListener_ == nullptr) {
+            imgRcv->surfaceBufferAvaliableArriveListener_ =
+                std::make_shared<OHOS::Media::ImageReceiverArriveListener>(receiver);
+        }
+        arriveListener = imgRcv->surfaceBufferAvaliableArriveListener_;
     }
-    bool ret = receiver->ptrImgRcv->surfaceBufferAvaliableArriveListener_->RegisterCallback(callback, userdata);
+    bool ret = arriveListener->RegisterCallback(callback, userdata);
     if (!ret) {
         IMAGE_LOGD("callback has registered.");
     }
@@ -410,33 +475,52 @@ Image_ErrorCode OH_ImageReceiverNative_OffImageArrive(OH_ImageReceiverNative *re
         IMAGE_LOGE("Invalid parameter: receiver=null.");
         return IMAGE_RECEIVER_INVALID_PARAMETER;
     }
-    if (nullptr == receiver->ptrImgRcv) {
-        IMAGE_LOGE("Bad parameter: receiver data empty.");
-        return IMAGE_RECEIVER_INVALID_PARAMETER;
+    std::shared_ptr<OHOS::Media::ImageReceiver> imgRcv;
+    {
+        std::lock_guard<std::mutex> lock(receiver->mutex_);
+        imgRcv = receiver->ptrImgRcv;
     }
+    CHECK_ERROR_RETURN_RET_LOG(imgRcv == nullptr, IMAGE_RECEIVER_INVALID_PARAMETER,
+        "Bad parameter: receiver data empty.");
     if (nullptr == callback) {
-        receiver->ptrImgRcv->surfaceBufferAvaliableArriveListener_.reset();
+        std::shared_ptr<OHOS::Media::ImageReceiverArriveListener> arriveListener;
+        {
+            std::lock_guard<std::mutex> lock(imgRcv->imageReceiverMutex_);
+            arriveListener = imgRcv->surfaceBufferAvaliableArriveListener_;
+            imgRcv->surfaceBufferAvaliableArriveListener_.reset();
+        }
+        if (arriveListener != nullptr) {
+            arriveListener->ClearCallback();
+        }
         return IMAGE_SUCCESS;
     }
-    if (receiver->ptrImgRcv->surfaceBufferAvaliableArriveListener_ == nullptr) {
-        IMAGE_LOGE("listener is nullptr. not registered.");
-        return IMAGE_RECEIVER_INVALID_PARAMETER;
+    std::shared_ptr<OHOS::Media::ImageReceiverArriveListener> arriveListener;
+    {
+        std::lock_guard<std::mutex> lock(imgRcv->imageReceiverMutex_);
+        arriveListener = imgRcv->surfaceBufferAvaliableArriveListener_;
     }
-    if (!receiver->ptrImgRcv->surfaceBufferAvaliableArriveListener_->UnregisterCallback(callback)) {
-        IMAGE_LOGE("callback is not registered.");
-        return IMAGE_RECEIVER_INVALID_PARAMETER;
-    }
+    bool cond = arriveListener == nullptr;
+    CHECK_ERROR_RETURN_RET_LOG(cond, IMAGE_RECEIVER_INVALID_PARAMETER, "listener is nullptr. not registered.");
+    cond = !arriveListener->UnregisterCallback(callback);
+    CHECK_ERROR_RETURN_RET_LOG(cond, IMAGE_RECEIVER_INVALID_PARAMETER, "callback is not registered.");
     return IMAGE_SUCCESS;
 }
 
 MIDK_EXPORT
 Image_ErrorCode OH_ImageReceiverNative_SetMemoryName(OH_ImageReceiverNative *receiver, char *name, size_t size)
 {
-    if (receiver == nullptr || receiver->ptrImgRcv == nullptr || name == nullptr || size == 0) {
+    if (receiver == nullptr || name == nullptr || size == 0) {
         IMAGE_LOGE("Invalid parameter: receiver or name is null, or size is 0.");
         return IMAGE_RECEIVER_INVALID_PARAMETER;
     }
-    uint32_t ret = receiver->ptrImgRcv->SetMemoryName(std::string(name, size));
+    std::shared_ptr<OHOS::Media::ImageReceiver> imgRcv;
+    {
+        std::lock_guard<std::mutex> lock(receiver->mutex_);
+        imgRcv = receiver->ptrImgRcv;
+    }
+    CHECK_ERROR_RETURN_RET_LOG(imgRcv == nullptr, IMAGE_RECEIVER_INVALID_PARAMETER,
+        "Bad parameter: receiver data empty.");
+    uint32_t ret = imgRcv->SetMemoryName(std::string(name, size));
     if (ret != OHOS::Media::SUCCESS) {
         return static_cast<Image_ErrorCode>(OHOS::Media::ImageErrorConvert::SetMemoryNameMakeErrMsg(ret).first);
     }
