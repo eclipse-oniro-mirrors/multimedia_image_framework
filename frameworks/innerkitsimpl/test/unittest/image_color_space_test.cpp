@@ -45,6 +45,7 @@ static const std::string IMAGE_INPUT_JPEG_INCLUDE_ICC_PATH = "/data/local/tmp/im
 static const std::string IMAGE_OUTPUT_JPEG_INCLUDE_ICC_PATH = "/data/test/test_jpeg_include_icc_profile.jpg";
 static const std::string IMAGE_INPUT_JPEG_NOT_INCLUDE_ICC_PATH = "/data/local/tmp/image/test.jpg";
 static const std::string IMAGE_OUTPUT_JPEG_NOT_INCLUDE_ICC_PATH = "/data/test/test_jpeg_no_include_icc_profile.jpg";
+static const std::string IMAGE_INPUT_ADOBERGB_JPEG_PATH = "/data/local/tmp/image/adobergb.jpg";
 
 class ImageColorSpaceTest : public testing::Test {
 public:
@@ -259,6 +260,32 @@ HWTEST_F(ImageColorSpaceTest, JpegColorSpaceEncode002, TestSize.Level3)
 #ifdef IMAGE_COLORSPACE_FLAG
     OHOS::ColorManager::ColorSpace grColorSpaceTwo = pixelMapTwo->InnerGetGrColorSpace();
     EXPECT_EQ(grColorSpaceTwo.ToSkColorSpace(), nullptr);
+#endif
+}
+
+/**
+ * @tc.name: JpegToAstcColorSpaceDecode001
+ * @tc.desc: Decode jpeg with Adobe RGB color space to ASTC_4x4 and verify color space is preserved.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageColorSpaceTest, JpegToAstcColorSpaceDecode001, TestSize.Level3)
+{
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    opts.formatHint = "image/jpeg";
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_INPUT_ADOBERGB_JPEG_PATH, opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+
+    DecodeOptions decodeOpts;
+    decodeOpts.desiredPixelFormat = PixelFormat::ASTC_4x4;
+    std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(pixelMap.get(), nullptr);
+#ifdef IMAGE_COLORSPACE_FLAG
+    OHOS::ColorManager::ColorSpace grColorSpace = pixelMap->InnerGetGrColorSpace();
+    EXPECT_EQ(grColorSpace.GetColorSpaceName(), ColorManager::ColorSpaceName::ADOBE_RGB);
 #endif
 }
 } // namespace Multimedia

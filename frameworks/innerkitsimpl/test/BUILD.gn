@@ -635,7 +635,10 @@ ohos_unittest("imagecolorspacetest") {
     "$image_subsystem/plugins/manager/include",
   ]
 
-  cflags = [ "-DIMAGE_DEBUG_FLAG" ]
+  cflags = [
+    "-DIMAGE_DEBUG_FLAG",
+    "-DIMAGE_COLORSPACE_FLAG",
+  ]
 
   sources = [
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_color_space_test.cpp",
