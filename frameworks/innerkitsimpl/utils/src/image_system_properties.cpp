@@ -305,6 +305,23 @@ bool ImageSystemProperties::IsSystemApp()
     if (system::GetBoolParameter("persist.multimedia.image.isSystemApp.enabled", false)) {
         return true;
     }
+    static bool isSys =
+        Security::AccessToken::TokenIdKit::IsSystemAppByFullTokenID(IPCSkeleton::GetSelfTokenID());
+    return isSys;
+#else
+    return false;
+#endif
+}
+
+bool ImageSystemProperties::IsSystemAppOrNativeSA()
+{
+    if (g_isSystemAppForTest) {
+        return true;
+    }
+#if !defined(CROSS_PLATFORM)
+    if (system::GetBoolParameter("persist.multimedia.image.isSystemApp.enabled", false)) {
+        return true;
+    }
     auto callerToken = IPCSkeleton::GetCallingTokenID();
     bool isSubsystemSA = Security::AccessToken::AccessTokenKit::GetTokenTypeFlag(callerToken)
         == Security::AccessToken::ATokenTypeEnum::TOKEN_NATIVE;

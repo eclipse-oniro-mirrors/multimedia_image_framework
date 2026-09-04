@@ -45,6 +45,7 @@ public:
     static bool GetDecodeDfxDataEnabled();
     static bool GetEncodeDfxDataEnabled();
     static bool IsSystemApp();
+    static bool IsSystemAppOrNativeSA();
     static void SetIsSystemAppForTest(bool isSystemApp);
 private:
     ImageSystemProperties() = default;
