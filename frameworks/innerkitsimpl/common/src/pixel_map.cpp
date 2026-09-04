@@ -2500,7 +2500,7 @@ uint32_t PixelMap::WritePixels(const uint8_t *source, const uint64_t &bufferSize
     for (int32_t row = 0; row < height; ++row) {
         const uint64_t srcOffset = static_cast<uint64_t>(row) * rowBytes;
         const uint64_t dstOffset = static_cast<uint64_t>(row) * dstStride;
-        errno_t ret = memcpy_s(data_ + dstOffset, dstCapacity - dstOffset, source + srcOffset, rowBytes);
+        errno_t ret = memcpy_s(data_ + dstOffset, rowBytes, source + srcOffset, rowBytes);
         if (ret != 0) {
             IMAGE_LOGE("write pixels by buffer memcpy the pixelmap data to dst fail, error:%{public}d", ret);
             return ERR_IMAGE_WRITE_PIXELMAP_FAILED;
