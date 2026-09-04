@@ -36,7 +36,7 @@ namespace {
 constexpr tmsize_t TIFF_MAX_SINGLE_MEMORY_ALLOCATION =
     static_cast<tmsize_t>(1024) * 1024 * 1024;
 constexpr tmsize_t TIFF_MAX_CUMULATED_MEMORY_ALLOCATION =
-    static_cast<tmsize_t>(2) * 1024 * 1024 * 1024;
+    static_cast<tmsize_t>(INT32_MAX);
 }
 
 TiffDecoder::TiffDecoder()

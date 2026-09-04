@@ -946,8 +946,15 @@ static void GenerateErrMsg(std::unique_ptr<ImageSourceTaiheContext> &context, st
         case OHOS::Media::ERROR:
             errMsg = "The operation failed.";
             break;
+        case OHOS::Media::ERR_IMAGE_DATA_ABNORMAL:
+            errMsg = "The image data is abnormal.";
+            break;
         case OHOS::Media::ERR_IMAGE_DATA_UNSUPPORT:
             errMsg = "The image data is not supported.";
+            break;
+        case OHOS::Media::ERR_IMAGE_TOO_LARGE:
+            errMsg = "The image data is too large. This status code is thrown when an error occurs during "
+                "the process of checking size.";
             break;
         case OHOS::Media::ERR_IMAGE_SOURCE_DATA:
             errMsg = "The image source data is incorrect.";
@@ -956,10 +963,13 @@ static void GenerateErrMsg(std::unique_ptr<ImageSourceTaiheContext> &context, st
             errMsg = "The image source data is incomplete.";
             break;
         case OHOS::Media::ERR_IMAGE_MISMATCHED_FORMAT:
-            errMsg = "The image format does not mastch.";
+            errMsg = "The image format does not match.";
             break;
         case OHOS::Media::ERR_IMAGE_UNKNOWN_FORMAT:
             errMsg = "Unknown image format.";
+            break;
+        case OHOS::Media::ERR_MEDIA_FORMAT_UNSUPPORT:
+            errMsg = "The media format is not supported.";
             break;
         case OHOS::Media::ERR_IMAGE_INVALID_PARAMETER:
             errMsg = "Invalid image parameter.";
@@ -1142,18 +1152,29 @@ map<string, PropertyValue> ImageSourceImpl::GetImagePropertiesSync(array_view<Pr
     return result;
 }
 
-void CreateModifyErrorArray(std::multimap<std::int32_t, std::string> errMsgArray)
+void CreateModifyErrorArray(const std::unique_ptr<ImageSourceTaiheContext> &context)
 {
-    for (auto it = errMsgArray.rbegin(); it != errMsgArray.rend(); ++it) {
+    for (auto it = context->errMsgArray.rbegin(); it != context->errMsgArray.rend(); ++it) {
         if (it->first == OHOS::Media::ERR_MEDIA_WRITE_PARCEL_FAIL) {
-            ImageTaiheUtils::ThrowExceptionError(it->first,
-                "Create Fd without write permission! exif key: " + it->second);
+            if (context->fdIndex != INVALID_FD) {
+                ImageTaiheUtils::ThrowExceptionError(it->first,
+                    "Failed to write EXIF data to the file. The file may be read-only or inaccessible. exif key: " +
+                    it->second);
+            } else if (context->sourceBuffer != nullptr && context->sourceBufferSize != 0) {
+                ImageTaiheUtils::ThrowExceptionError(it->first,
+                    "Failed to write EXIF data because in-memory image sources do not support metadata modification. "
+                    "exif key: " + it->second);
+            } else {
+                ImageTaiheUtils::ThrowExceptionError(it->first,
+                    "Failed to write EXIF data to the image source. exif key: " + it->second);
+            }
         } else if (it->first == OHOS::Media::ERR_MEDIA_OUT_OF_RANGE) {
             ImageTaiheUtils::ThrowExceptionError(it->first,
-                "The given buffer size is too small to add new exif data! exif key: " + it->second);
+                "The EXIF value is out of the supported range. exif key: " + it->second);
         } else if (it->first == OHOS::Media::ERR_IMAGE_DECODE_EXIF_UNSUPPORT) {
             ImageTaiheUtils::ThrowExceptionError(it->first,
-                "The image does not support EXIF decoding. exif key: " + it->second);
+                "Failed to modify the EXIF property because the EXIF data or requested EXIF key is not supported. "
+                "exif key: " + it->second);
         } else if (it->first == OHOS::Media::ERR_MEDIA_VALUE_INVALID) {
             ImageTaiheUtils::ThrowExceptionError(it->first, it->second);
         } else {
@@ -1178,21 +1199,26 @@ static void ModifyImagePropertyComplete(std::unique_ptr<ImageSourceTaiheContext>
     }
 
     if (context->isBatch) {
-        CreateModifyErrorArray(context->errMsgArray);
+        CreateModifyErrorArray(context);
     } else {
         if (context->status == OHOS::Media::ERR_MEDIA_WRITE_PARCEL_FAIL) {
             if (context->fdIndex != INVALID_FD) {
-                ImageTaiheUtils::ThrowExceptionError(context->status, "Create Fd without write permission!");
+                ImageTaiheUtils::ThrowExceptionError(context->status,
+                    "Failed to write EXIF data to the file. The file may be read-only or inaccessible.");
+            } else if (context->sourceBuffer != nullptr && context->sourceBufferSize != 0) {
+                ImageTaiheUtils::ThrowExceptionError(context->status,
+                    "Failed to write EXIF data because in-memory image sources do not support metadata modification.");
             } else {
                 ImageTaiheUtils::ThrowExceptionError(context->status,
-                    "The EXIF data failed to be written to the file.");
+                    "Failed to write EXIF data to the image source.");
             }
         } else if (context->status == OHOS::Media::ERR_MEDIA_OUT_OF_RANGE) {
-            ImageTaiheUtils::ThrowExceptionError(context->status,
-                "The given buffer size is too small to add new exif data!");
+            const std::string errMsg = context->errMsg.empty() ?
+                "The EXIF value is out of the supported range." : context->errMsg;
+            ImageTaiheUtils::ThrowExceptionError(context->status, errMsg);
         } else if (context->status == OHOS::Media::ERR_IMAGE_DECODE_EXIF_UNSUPPORT) {
             ImageTaiheUtils::ThrowExceptionError(context->status,
-                "The exif data format is not standard, so modify it failed!");
+                "Failed to modify the image property because the EXIF data or requested EXIF key is not supported.");
         } else if (context->status == OHOS::Media::ERR_MEDIA_VALUE_INVALID) {
             ImageTaiheUtils::ThrowExceptionError(context->status, context->errMsg);
         } else {
