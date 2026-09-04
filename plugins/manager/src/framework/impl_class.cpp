@@ -353,6 +353,14 @@ PluginClassBase *ImplClass::DoCreateObject(shared_ptr<Plugin> &plugin) __attribu
         return nullptr;
     }
 
+#ifndef PLUGIN_FLAG_RTTI_ENABLE
+    // in non-RTTI mode, only one service interface is allowed per class,
+    // so set the interfaceID for runtime verification in ConvertToServiceInterface.
+    if (!services_.empty()) {
+        pluginBaseObj->SetInterfaceID(MakeIID(*services_.begin()));
+    }
+#endif
+
     return pluginBaseObj;
 }
 } // namespace MultimediaPlugin

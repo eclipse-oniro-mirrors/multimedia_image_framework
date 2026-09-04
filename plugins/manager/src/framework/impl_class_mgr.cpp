@@ -127,6 +127,10 @@ PluginClassBase *ImplClassMgr::CreateObject(uint16_t interfaceID, uint16_t servi
     auto endIter = srvSearchMultimap_.upper_bound(serviceFlag);
     for (; iter != endIter; ++iter) {
         shared_ptr<ImplClass> &temp = iter->second;
+        if (temp == nullptr) {
+            IMAGE_LOGE("CreateObject: skip null ImplClass in srvSearchMultimap_.");
+            continue;
+        }
         if ((!capabilities.empty()) && (!temp->IsCompatible(capabilities))) {
             continue;
         }
@@ -162,6 +166,10 @@ uint32_t ImplClassMgr::ImplClassMgrGetClassInfo(uint16_t interfaceID, uint16_t s
 
     for (; iter != endIter; ++iter) {
         shared_ptr<ImplClass> &temp = iter->second;
+        if (temp == nullptr) {
+            IMAGE_LOGE("ImplClassMgrGetClassInfo: skip null ImplClass in srvSearchMultimap_.");
+            continue;
+        }
         if ((capabilities.size() != 0) && (!temp->IsCompatible(capabilities))) {
             continue;
         }

@@ -29,6 +29,7 @@
 #include "plugin_service.h"
 #include "priority_scheme.h"
 #include "singleton.h"
+#include "image_log.h"
 
 namespace OHOS {
 namespace MultimediaPlugin {
@@ -172,8 +173,15 @@ private:
 #else
         // adjust pointer position when multiple inheritance.
         void *obj = dynamic_cast<void *>(pluginBase);
+        // verify the object's interfaceID matches the expected type T before static_cast.
+        uint16_t expectedIID = GetInterfaceId<T>();
+        if (pluginBase != nullptr && pluginBase->GetInterfaceID() != expectedIID) {
+            IMAGE_LOGE("interfaceID mismatch: expected %{public}u, got %{public}u",
+                       expectedIID, pluginBase->GetInterfaceID());
+            delete pluginBase;
+            return nullptr;
+        }
         // when -frtti is not enable, we use static cast.
-        // static cast is not safe enough, but we have checked before we get here.
         T *serviceObj = static_cast<T *>(obj);
 #endif
         return serviceObj;
