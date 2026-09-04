@@ -39,6 +39,7 @@ namespace Media {
 namespace {
 constexpr size_t ASTC_HEADER_SIZE = 16;
 constexpr uint32_t NORMAL_HEADER_SIZE = 4;
+const std::string IMAGE_INPUT_ADOBERGB_JPEG_PATH = "/data/local/tmp/image/adobergb.jpg";
 
 class ImageSourceAstcTest : public testing::Test {
 };
@@ -444,5 +445,28 @@ HWTEST_F(ImageSourceAstcTest, OnSourceUnresolvedShortInputNotAstc001, TestSize.L
     EXPECT_FALSE(imageSource->isAstc_.has_value());
     EXPECT_FALSE(ImageSource::IsASTC(recordingStream->GetDataPtr(), shortDataSize));
 }
+
+#ifdef IMAGE_COLORSPACE_FLAG
+/**
+ * @tc.name: CreatePixelAstcFromImageFilePreservesColorSpace001
+ * @tc.desc: Verify that decoding a JPEG to ASTC_4x4 preserves the source color space through the ASTC encoding stage.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceAstcTest, CreatePixelAstcFromImageFilePreservesColorSpace001, TestSize.Level1)
+{
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_INPUT_ADOBERGB_JPEG_PATH, opts, errorCode);
+    ASSERT_NE(imageSource, nullptr);
+
+    DecodeOptions decodeOpts;
+    decodeOpts.desiredPixelFormat = PixelFormat::ASTC_4x4;
+    auto pixelMap = imageSource->CreatePixelAstcFromImageFile(0, decodeOpts, errorCode);
+    ASSERT_NE(pixelMap, nullptr);
+    ASSERT_EQ(pixelMap->InnerGetGrColorSpace().GetColorSpaceName(),
+        ColorManager::ColorSpaceName::ADOBE_RGB);
+}
+#endif
 } // namespace Media
 } // namespace OHOS

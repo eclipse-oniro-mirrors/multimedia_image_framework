@@ -937,6 +937,7 @@ unique_ptr<PixelMap> ImageSource::CreatePixelAstcFromImageFile(uint32_t index, c
     }
     dstPixelAstc->SetPixelsAddr(dstMemory->data.data, dstMemory->extend.data, dstMemory->data.size,
         dstMemory->GetType(), nullptr);
+    dstPixelAstc->InnerSetColorSpace(rgbaPixelmap->InnerGetGrColorSpace());
 
     ImageUtils::FlushSurfaceBuffer(dstPixelAstc.get());
     return dstPixelAstc;
