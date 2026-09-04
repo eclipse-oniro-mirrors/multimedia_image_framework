@@ -68,24 +68,23 @@ std::mutex DelayedSingleton<T>::mutex_;
 template<typename T>
 std::shared_ptr<T> DelayedSingleton<T>::GetInstance()
 {
-    if (instance_ == nullptr) {
+    auto temp = std::atomic_load(&instance_);
+    if (temp == nullptr) {
         std::lock_guard<std::mutex> lock(mutex_);
-        if (instance_ == nullptr) {
-            std::shared_ptr<T> temp(new T);
-            instance_ = temp;
+        temp = std::atomic_load(&instance_);
+        if (temp == nullptr) {
+            temp.reset(new T);
+            std::atomic_store(&instance_, temp);
         }
     }
-    return instance_;
+    return temp;
 }
 
 template<typename T>
 void DelayedSingleton<T>::DestroyInstance()
 {
     std::lock_guard<std::mutex> lock(mutex_);
-    if (instance_ != nullptr) {
-        instance_.reset();
-        instance_ = nullptr;
-    }
+    std::atomic_store(&instance_, std::shared_ptr<T>());
 }
 
 template<typename T>
@@ -94,12 +93,12 @@ public:
     static T& GetInstance();
 
 private:
-    static T* instance_;
+    static std::atomic<T*> instance_;
     static std::mutex mutex_;
 };
 
 template<typename T>
-T* DelayedRefSingleton<T>::instance_ = nullptr;
+std::atomic<T*> DelayedRefSingleton<T>::instance_{nullptr};
 
 template<typename T>
 std::mutex DelayedRefSingleton<T>::mutex_;
@@ -107,13 +106,16 @@ std::mutex DelayedRefSingleton<T>::mutex_;
 template<typename T>
 T& DelayedRefSingleton<T>::GetInstance()
 {
-    if (instance_ == nullptr) {
+    auto temp = instance_.load();
+    if (temp == nullptr) {
         std::lock_guard<std::mutex> lock(mutex_);
-        if (instance_ == nullptr) {
-            instance_ = new T();
+        temp = instance_.load();
+        if (temp == nullptr) {
+            temp = new T();
+            instance_.store(temp);
         }
     }
-    return *instance_;
+    return *temp;
 }
 
 template<typename T>
