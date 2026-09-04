@@ -61,8 +61,17 @@ heif_error HeifIrefBox::ParseContent(HeifStreamReader &reader)
         if (err != heif_error_ok) {
             return err;
         }
-        ParseItemRef(reader, ref);
+        if (ref.box.GetBoxSize() < ref.box.GetHeaderSize()) {
+            return heif_error_invalid_box_size;
+        }
+        uint64_t contentSize = ref.box.GetBoxSize() - ref.box.GetHeaderSize();
+        if (!reader.CheckSize(contentSize)) {
+            return heif_error_eof;
+        }
+        HeifStreamReader contentReader(reader.GetStream(), reader.GetStream()->Tell(), contentSize);
+        ParseItemRef(contentReader, ref);
         references_.push_back(ref);
+        contentReader.SkipEnd();
     }
 
     return reader.GetError();

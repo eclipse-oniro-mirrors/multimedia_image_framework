@@ -47,6 +47,7 @@ heif_error HeifIpcoBox::ParseContentChildren(HeifStreamReader &reader, uint32_t 
 heif_error HeifIpcoBox::GetProperties(uint32_t itemId, const std::shared_ptr<class HeifIpmaBox> &ipma,
                                       std::vector<std::shared_ptr<HeifBox>> &outProperties) const
 {
+    CHECK_ERROR_RETURN_RET(!ipma, heif_error_property_not_found);
     const std::vector<PropertyAssociation> *propertyAssocs = ipma->GetProperties(itemId);
     CHECK_ERROR_RETURN_RET(!propertyAssocs, heif_error_property_not_found);
 
@@ -67,6 +68,7 @@ heif_error HeifIpcoBox::GetProperties(uint32_t itemId, const std::shared_ptr<cla
 std::shared_ptr<HeifBox> HeifIpcoBox::GetProperty(heif_item_id itemId,
     const std::shared_ptr<class HeifIpmaBox> &ipma, uint32_t boxType) const
 {
+    CHECK_ERROR_RETURN_RET(!ipma, nullptr);
     const std::vector<PropertyAssociation> *propertyAssocs = ipma->GetProperties(itemId);
     CHECK_ERROR_RETURN_RET(!propertyAssocs, nullptr);
 
