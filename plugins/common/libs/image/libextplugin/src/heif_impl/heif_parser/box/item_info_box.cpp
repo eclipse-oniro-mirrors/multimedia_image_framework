@@ -30,7 +30,7 @@ heif_error HeifIinfBox::ParseContentChildren(HeifStreamReader &reader, uint32_t 
     uint8_t boxVersion = GetVersion();
     uint32_t entryCount = (boxVersion == HEIF_BOX_VERSION_ZERO) ? reader.Read16() : reader.Read32();
     if (reader.HasError()) {
-        return reader.GetError();
+        return heif_error_invalid_box_size;
     }
     if (entryCount == 0) {
         return heif_error_ok;

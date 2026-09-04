@@ -70,8 +70,11 @@ heif_error HeifIrefBox::ParseContent(HeifStreamReader &reader)
         }
         HeifStreamReader contentReader(reader.GetStream(), reader.GetStream()->Tell(), contentSize);
         ParseItemRef(contentReader, ref);
-        references_.push_back(ref);
         contentReader.SkipEnd();
+        if (contentReader.HasError()) {
+            return contentReader.GetError();
+        }
+        references_.push_back(ref);
     }
 
     return reader.GetError();

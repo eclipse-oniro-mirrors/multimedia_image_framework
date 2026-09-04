@@ -72,7 +72,8 @@ static constexpr uint32_t MAX_IMAGE_SIZE = 20000;
 
 static void Dav1dFreeCallback(const uint8_t* buf, void* cookie)
 {
-    free(const_cast<uint8_t*>(buf));
+    // This data is owned by the decoder; nothing to free here
+    (void)buf;
     (void)cookie;
 }
 
@@ -245,10 +246,17 @@ bool Dav1dDecoder::DecodeFrame(uint32_t index, const std::vector<uint8_t> &frame
         IMAGE_LOGE("%{public}s dav1d_data_wrap failed ret:%{public}d.", __func__, wrapRet);
         return false;
     }
-    CHECK_ERROR_RETURN_RET_LOG(!ctx_, false, "ctx_ is nullptr.");
+    if (!ctx_) {
+        dav1d_data_unref(&data);
+        IMAGE_LOGE("ctx_ is nullptr.");
+        return false;
+    }
     int sendRet = dav1d_send_data(ctx_, &data);
-    CHECK_ERROR_RETURN_RET_LOG(sendRet < 0, false,
-        "%{public}s dav1d_send_data failed ret:%{public}d.", __func__, sendRet);
+    if (sendRet < 0) {
+        dav1d_data_unref(&data);
+        IMAGE_LOGE("%{public}s dav1d_send_data failed ret:%{public}d.", __func__, sendRet);
+        return false;
+    }
     std::unique_ptr<Dav1dPicture> pic = std::make_unique<Dav1dPicture>();
     CHECK_ERROR_RETURN_RET_LOG(!pic, false, "%{public}s new Dav1dPicture failed.", __func__);
     CHECK_ERROR_RETURN_RET_LOG(memset_s(pic.get(), sizeof(*pic), 0, sizeof(*pic)) != EOK, false,
