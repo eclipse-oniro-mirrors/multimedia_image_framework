@@ -3982,7 +3982,8 @@ HWTEST_F(PixelMapTest, CopyPixelMapTest001, TestSize.Level3)
         AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN, AllocatorType::DMA_ALLOC);
     ASSERT_NE(dstPixelMap, nullptr);
     bool ret = PixelMap::CopyPixelMap(*(srcPixelMap.get()), *(dstPixelMap.get()));
-    EXPECT_TRUE(ret);
+    // ConstructPixelMap supplies no SurfaceBuffer; an unverifiable DMA allocation must be rejected.
+    EXPECT_FALSE(ret);
     srcPixelMap->data_ = nullptr;
     ret = PixelMap::CopyPixelMap(*(srcPixelMap.get()), *(dstPixelMap.get()));
     EXPECT_FALSE(ret);
@@ -6664,7 +6665,8 @@ HWTEST_F(PixelMapTest, CopyPixMapToDst001, TestSize.Level3)
         AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN, AllocatorType::DMA_ALLOC);
     ASSERT_NE(dstPixelMap, nullptr);
     bool ret = PixelMap::CopyPixelMap(*(srcPixelMap.get()), *(dstPixelMap.get()));
-    EXPECT_TRUE(ret);
+    // ConstructPixelMap supplies no SurfaceBuffer; an unverifiable DMA allocation must be rejected.
+    EXPECT_FALSE(ret);
     srcPixelMap->data_ = nullptr;
     ret = PixelMap::CopyPixelMap(*(srcPixelMap.get()), *(dstPixelMap.get()));
     EXPECT_FALSE(ret);
@@ -6681,7 +6683,8 @@ HWTEST_F(PixelMapTest, SetDstPixelMapInfo001, TestSize.Level3)
         AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN, AllocatorType::DMA_ALLOC);
     ASSERT_NE(dstPixelMap, nullptr);
     bool ret = PixelMap::CopyPixelMap(*(srcPixelMap.get()), *(dstPixelMap.get()));
-    EXPECT_TRUE(ret);
+    // ConstructPixelMap supplies no SurfaceBuffer; an unverifiable DMA allocation must be rejected.
+    EXPECT_FALSE(ret);
     srcPixelMap->data_ = nullptr;
     ret = PixelMap::CopyPixelMap(*(srcPixelMap.get()), *(dstPixelMap.get()));
     EXPECT_FALSE(ret);

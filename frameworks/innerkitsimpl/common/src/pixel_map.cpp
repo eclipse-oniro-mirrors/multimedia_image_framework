@@ -1077,7 +1077,13 @@ unique_ptr<PixelMap> PixelMap::Create(PixelMap &source, const Rect &srcRect, con
         return nullptr;
     }
     if (ImageUtils::IsAstc(source.GetPixelFormat()) &&
-        ImageUtils::IsAstc(opts.pixelFormat) && ImageUtils::IsAstc(opts.srcPixelFormat)) {
+        (opts.pixelFormat == PixelFormat::UNKNOWN || opts.pixelFormat == source.GetPixelFormat() ||
+        (ImageUtils::IsAstc(opts.pixelFormat) && ImageUtils::IsAstc(opts.srcPixelFormat)))) {
+        if (!source.IsAstc()) {
+            errorCode = IMAGE_RESULT_DATA_ABNORMAL;
+            IMAGE_LOGE("ASTC source is not an ASTC pixelmap");
+            return nullptr;
+        }
         return CreateFromAstc(source, srcRect, opts, errorCode, cropType);
     }
     ImageInfo dstImageInfo;
@@ -1207,23 +1213,51 @@ void PixelMap::InitDstImageInfo(const InitializationOptions &opts, const ImageIn
     }
 }
 
-bool PixelMap::CopyPixMapToDst(PixelMap &source, void* &dstPixels, uint32_t bufferSize)
+static bool GetCopyMemoryLayout(AbsMemory &memory, uint64_t &capacity, int32_t &rowStride)
 {
-    if (source.GetAllocatorType() == AllocatorType::DMA_ALLOC) {
-        ImageInfo imageInfo;
-        source.GetImageInfo(imageInfo);
-        for (int i = 0; i < imageInfo.size.height; ++i) {
-            errno_t ret = memcpy_s(dstPixels, source.GetRowBytes(),
-                                   source.GetPixels() + i * source.GetRowStride(), source.GetRowBytes());
+    capacity = memory.data.size;
+    rowStride = ImageUtils::GetRowDataSizeByPixelFormat(memory.data.desiredSize.width, memory.data.format);
+    if (memory.GetType() == AllocatorType::DMA_ALLOC) {
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+        auto *surfaceBuffer = static_cast<SurfaceBuffer *>(memory.extend.data);
+        CHECK_ERROR_RETURN_RET_LOG(surfaceBuffer == nullptr, false, "copy destination SurfaceBuffer is null");
+        capacity = surfaceBuffer->GetSize();
+        rowStride = surfaceBuffer->GetStride();
+#else
+        return false;
+#endif
+    }
+    return memory.data.data != nullptr && capacity > 0;
+}
+
+bool PixelMap::CopyPixMapToDst(PixelMap &source, AbsMemory &dstMemory, uint32_t bufferSize)
+{
+    uint64_t dstCapacity = 0;
+    int32_t dstStride = 0;
+    CHECK_ERROR_RETURN_RET_LOG(source.GetPixels() == nullptr ||
+        !GetCopyMemoryLayout(dstMemory, dstCapacity, dstStride), false, "invalid copy memory");
+    auto *dstPixels = static_cast<uint8_t *>(dstMemory.data.data);
+    if (source.GetAllocatorType() == AllocatorType::DMA_ALLOC && !source.IsAstc()) {
+        const int32_t height = source.GetHeight();
+        const int32_t rowBytes = source.GetRowBytes();
+        const int32_t srcStride = source.GetRowStride();
+        bool invalidLayout = !CheckPixelMapRowLayout(height, rowBytes, srcStride, source.GetAllocationByteCount()) ||
+            !CheckPixelMapRowLayout(height, rowBytes, dstStride, dstCapacity);
+        CHECK_ERROR_RETURN_RET_LOG(invalidLayout, false, "copy row layout exceeds buffer capacity");
+        for (int32_t row = 0; row < height; ++row) {
+            const uint64_t srcOffset = static_cast<uint64_t>(row) * srcStride;
+            const uint64_t dstOffset = static_cast<uint64_t>(row) * dstStride;
+            errno_t ret = memcpy_s(dstPixels + dstOffset, dstCapacity - dstOffset,
+                source.GetPixels() + srcOffset, rowBytes);
             if (ret != 0) {
                 IMAGE_LOGE("copy source memory size %{public}u fail", bufferSize);
                 return false;
             }
-            // Move the destination buffer pointer to the next row
-            dstPixels = static_cast<uint8_t *>(dstPixels) + source.GetRowStride();
         }
     } else {
-        if (memcpy_s(dstPixels, bufferSize, source.GetPixels(), bufferSize) != 0) {
+        CHECK_ERROR_RETURN_RET_LOG(bufferSize == 0 || bufferSize > source.GetAllocationByteCount() ||
+            bufferSize > dstCapacity, false, "copy size exceeds buffer capacity");
+        if (memcpy_s(dstPixels, dstCapacity, source.GetPixels(), bufferSize) != 0) {
             IMAGE_LOGE("copy source memory size %{public}u fail", bufferSize);
             return false;
         }
@@ -1261,7 +1295,8 @@ bool PixelMap::CopyPixelMap(PixelMap &source, PixelMap &dstPixelMap, int32_t &er
         return false;
     }
     int32_t bufferSize = source.GetByteCount();
-    if (bufferSize <= 0 || (source.GetAllocatorType() == AllocatorType::HEAP_ALLOC &&
+    if (bufferSize <= 0 || static_cast<uint64_t>(bufferSize) > source.GetAllocationByteCount() ||
+        (source.GetAllocatorType() == AllocatorType::HEAP_ALLOC &&
         bufferSize > PIXEL_MAP_MAX_RAM_SIZE)) {
         IMAGE_LOGE("CopyPixelMap parameter bufferSize:[%{public}d] error.", bufferSize);
         error = IMAGE_RESULT_DATA_ABNORMAL;
@@ -1289,8 +1324,7 @@ bool PixelMap::CopyPixelMap(PixelMap &source, PixelMap &dstPixelMap, int32_t &er
         error = IMAGE_RESULT_MALLOC_ABNORMAL;
         return false;
     }
-    void *tmpDstPixels = dstPixels;
-    if (!CopyPixMapToDst(source, tmpDstPixels, uBufferSize)) {
+    if (!CopyPixMapToDst(source, *memory, uBufferSize)) {
         memory->Release();
         error = IMAGE_RESULT_ERR_SHAMEM_DATA_ABNORMAL;
         return false;
@@ -1319,10 +1353,22 @@ bool CheckImageInfo(const ImageInfo &imageInfo, int32_t &errorCode, AllocatorTyp
 static unique_ptr<PixelMap> CloneAstc(PixelMap *srcAstc, int32_t &errorCode)
 {
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+    const int32_t requiredSize = srcAstc->GetByteCount();
+    const uint32_t astcSize = srcAstc->GetCapacity();
+    if (srcAstc->GetPixels() == nullptr || requiredSize <= 0 || astcSize > INT32_MAX ||
+        static_cast<uint32_t>(requiredSize) > astcSize ||
+        astcSize > srcAstc->GetAllocationByteCount()) {
+        errorCode = IMAGE_RESULT_DATA_ABNORMAL;
+        IMAGE_LOGE("CloneAstc source buffer size invalid");
+        return nullptr;
+    }
     unique_ptr<PixelMap> dstAstc = make_unique<PixelAstc>();
     ImageInfo srcAstcInfo;
     srcAstc->GetImageInfo(srcAstcInfo);
-    dstAstc->SetImageInfo(srcAstcInfo);
+    if (dstAstc->SetImageInfo(srcAstcInfo) != SUCCESS) {
+        errorCode = IMAGE_RESULT_DATA_ABNORMAL;
+        return nullptr;
+    }
 
     Size astcRealSize;
     srcAstc->GetAstcRealSize(astcRealSize);
@@ -1333,16 +1379,17 @@ static unique_ptr<PixelMap> CloneAstc(PixelMap *srcAstc, int32_t &errorCode)
     dstAstc->SetAstc(true);
 
     AllocatorType allocType = srcAstc->GetAllocatorType();
-    uint32_t astcSize = srcAstc->GetCapacity();
-
-    MemoryData memoryData = {nullptr, static_cast<size_t>(astcSize), "CloneAstc", {astcSize, 1},
+    MemoryData memoryData = {nullptr, static_cast<size_t>(astcSize), "CloneAstc", {static_cast<int32_t>(astcSize), 1},
         srcAstcInfo.pixelFormat};
     auto dstMemory = MemoryManager::CreateMemory(allocType, memoryData);
     if (dstMemory == nullptr || dstMemory->data.data == nullptr) {
         IMAGE_LOGE("CloneAstc create memory failed");
         return nullptr;
     }
-    if (memcpy_s(dstMemory->data.data, astcSize, srcAstc->GetPixels(), astcSize) != 0) {
+    uint64_t dstCapacity = 0;
+    int32_t dstStride = 0;
+    if (!GetCopyMemoryLayout(*dstMemory, dstCapacity, dstStride) || astcSize > dstCapacity ||
+        memcpy_s(dstMemory->data.data, dstCapacity, srcAstc->GetPixels(), astcSize) != 0) {
         dstMemory->Release();
         IMAGE_LOGE("CloneAstc source memory size %{public}u", astcSize);
         return nullptr;
@@ -1861,14 +1908,17 @@ int32_t PixelMap::GetByteCount()
         return GetYUVByteCount(imageInfo_);
     }
 
-    int64_t rowDataSize = rowDataSize_;
-    int64_t height = imageInfo_.size.height;
     if (isAstc_) {
         Size realSize;
         GetAstcRealSize(realSize);
-        rowDataSize = ImageUtils::GetRowDataSizeByPixelFormat(realSize.width, imageInfo_.pixelFormat);
-        height = realSize.height;
+        CHECK_ERROR_RETURN_RET_LOG(realSize.width <= 0 || realSize.height <= 0, 0, "invalid ASTC real size");
+        ImageInfo astcInfo;
+        astcInfo.size = realSize;
+        astcInfo.pixelFormat = imageInfo_.pixelFormat;
+        return static_cast<int32_t>(ImageUtils::GetAstcBytesCount(astcInfo));
     }
+    int64_t rowDataSize = rowDataSize_;
+    int64_t height = imageInfo_.size.height;
     int64_t byteCount = rowDataSize * height;
     if (rowDataSize <= 0 || byteCount > INT32_MAX) {
         IMAGE_LOGE("[PixelMap] GetByteCount failed: invalid rowDataSize or byteCount overflowed");
@@ -2416,6 +2466,9 @@ uint32_t PixelMap::WritePixels(const uint8_t *source, const uint64_t &bufferSize
 uint32_t PixelMap::WritePixels(const uint8_t *source, const uint64_t &bufferSize)
 {
     ImageTrace imageTrace("WritePixels");
+    // YUV writes are implemented by PixelYuv::WritePixels using its plane layout.
+    CHECK_ERROR_RETURN_RET_LOG(IsYUV(imageInfo_.pixelFormat), ERR_IMAGE_DATA_UNSUPPORT,
+        "base PixelMap WritePixels does not support YUV");
     if (source == nullptr || bufferSize < static_cast<uint64_t>(pixelsSize_)) {
         IMAGE_LOGE("write pixels by buffer source is nullptr or size(%{public}llu) < pixelSize(%{public}u).",
             static_cast<unsigned long long>(bufferSize), pixelsSize_);
@@ -2434,28 +2487,22 @@ uint32_t PixelMap::WritePixels(const uint8_t *source, const uint64_t &bufferSize
         return ERR_IMAGE_WRITE_PIXELMAP_FAILED;
     }
 
-    if (IsYUV(imageInfo_.pixelFormat)) {
-        uint64_t tmpSize = 0;
-        uint64_t readSize = MAX_READ_COUNT;
-        while (tmpSize < bufferSize && tmpSize < pixelsSize_) {
-            if (tmpSize + MAX_READ_COUNT > pixelsSize_) {
-                readSize = pixelsSize_ - tmpSize;
-            }
-            errno_t ret = memcpy_s(data_ + tmpSize, pixelsSize_ - tmpSize, source + tmpSize, readSize);
-            if (ret != 0) {
-                IMAGE_LOGE("write pixels by buffer memcpy the pixelmap data to dst fail, error:%{public}d", ret);
-                return ERR_IMAGE_WRITE_PIXELMAP_FAILED;
-            }
-            tmpSize += readSize;
-        }
-    } else {
-        for (int i = 0; i < imageInfo_.size.height; ++i) {
-            const uint8_t* sourceRow = source + i * rowDataSize_;
-            errno_t ret = memcpy_s(data_ + i * rowStride_, rowDataSize_, sourceRow, rowDataSize_);
-            if (ret != 0) {
-                IMAGE_LOGE("write pixels by buffer memcpy the pixelmap data to dst fail, error:%{public}d", ret);
-                return ERR_IMAGE_WRITE_PIXELMAP_FAILED;
-            }
+    const int32_t height = imageInfo_.size.height;
+    const int32_t rowBytes = rowDataSize_;
+    const int32_t dstStride = rowStride_;
+    const uint64_t dstCapacity = GetAllocationByteCount();
+    CHECK_ERROR_RETURN_RET_LOG(!CheckPixelMapRowLayout(height, rowBytes, rowBytes, bufferSize),
+        ERR_IMAGE_INVALID_PARAMETER, "write pixels source buffer size invalid");
+    CHECK_ERROR_RETURN_RET_LOG(!CheckPixelMapRowLayout(height, rowBytes, dstStride, dstCapacity),
+        ERR_IMAGE_WRITE_PIXELMAP_FAILED, "write pixels destination layout invalid");
+
+    for (int32_t row = 0; row < height; ++row) {
+        const uint64_t srcOffset = static_cast<uint64_t>(row) * rowBytes;
+        const uint64_t dstOffset = static_cast<uint64_t>(row) * dstStride;
+        errno_t ret = memcpy_s(data_ + dstOffset, rowBytes, source + srcOffset, rowBytes);
+        if (ret != 0) {
+            IMAGE_LOGE("write pixels by buffer memcpy the pixelmap data to dst fail, error:%{public}d", ret);
+            return ERR_IMAGE_WRITE_PIXELMAP_FAILED;
         }
     }
     ImageUtils::FlushSurfaceBuffer(this);
@@ -3182,6 +3229,13 @@ static bool CheckDmaSurfaceBufferSize(const ImageInfo &imgInfo, const PixelMemIn
     // YUV and RGBA_F16 DMA buffer sizes are validated later by their format-specific checks.
     if (IsYUV(imgInfo.pixelFormat) || imgInfo.pixelFormat == PixelFormat::RGBA_F16) {
         return true;
+    }
+
+    // ASTC uses a BLOB SurfaceBuffer whose dimensions describe compressed storage.
+    if (!ImageUtils::IsAstc(imgInfo.pixelFormat) &&
+        (imgInfo.size.width != surfaceBuffer->GetWidth() || imgInfo.size.height != surfaceBuffer->GetHeight())) {
+        IMAGE_LOGE("ReadDmaMemInfoFromParcel image size does not match SurfaceBuffer");
+        return false;
     }
 
     uint32_t surfaceBufferSize = surfaceBuffer->GetSize();
