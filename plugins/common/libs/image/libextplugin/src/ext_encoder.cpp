@@ -416,6 +416,7 @@ static uint32_t YuvToRgbaSkInfo(ImageInfo info, SkImageInfo &skInfo, uint8_t * d
     cond  = memcpy_s(dstData, info.size.width * info.size.height * RGBA8888_PIXEL_BYTES,
         dstDataInfo.buffer, dstDataInfo.bufferSize) != 0;
     free(dstDataInfo.buffer);
+    dstDataInfo.buffer = nullptr;
     CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_ENCODE_FAILED, "YuvToSkInfo memcpy failed ");
     auto alpha = pixelMap->GetAlphaType();
     if (alpha == AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN)
@@ -1388,7 +1389,7 @@ void ExtEncoder::SetHdrColorSpaceType(sptr<SurfaceBuffer>& surfaceBuffer)
         IMAGE_LOGW("SetHdrColorSpaceType GetSbColorSpaceType failed");
         return;
     }
-    if ((colorspaceType & CM_PRIMARIES_MASK) != COLORPRIMARIES_BT2020) {
+    if (((static_cast<uint32_t>(colorspaceType)) & CM_PRIMARIES_MASK) != COLORPRIMARIES_BT2020) {
 #ifdef IMAGE_COLORSPACE_FLAG
         ColorManager::ColorSpaceName colorspace = pixelmap_->InnerGetGrColorSpace().GetColorSpaceName();
         IMAGE_LOGI("ExtEncoder SetHdrColorSpaceType, color is %{public}d", colorspace);

@@ -1374,13 +1374,13 @@ static bool WriteJpegPreApp(sk_sp<SkData>& imageData, SkWStream& outputStream, u
     bool cond = imageData == nullptr || imageData->data() == nullptr || imageData->size() < JPEG_MARKER_TAG_SIZE;
     CHECK_ERROR_RETURN_RET_LOG(cond, false, "hdr encode, invalid image data");
     const uint8_t* imageBytes = reinterpret_cast<const uint8_t*>(imageData->data());
-    cond = *imageBytes != JPEG_MARKER_PREFIX || *(imageBytes + INDEX_ONE) != JPEG_SOI;
-    CHECK_ERROR_RETURN_RET_LOG(cond, false, "hdr encode, the spliced image is not a jpeg");
+    bool invalidSoi = std::memcmp(JPEG_SOI_HEADER, imageBytes, JPEG_MARKER_TAG_SIZE) != 0;
+    CHECK_ERROR_RETURN_RET_LOG(invalidSoi, false, "HDR-IMAGE hdr encode, the spliced image is not a jpeg");
     uint32_t dataSize = imageData->size();
     outputStream.write(imageBytes, JPEG_MARKER_TAG_SIZE);
     index += JPEG_MARKER_TAG_SIZE;
     while (index + JPEG_HEADRE_OFFSET < dataSize) {
-        cond = imageBytes[index] != JPEG_MARKER_PREFIX;
+        bool cond = imageBytes[index] != JPEG_MARKER_PREFIX;
         CHECK_ERROR_RETURN_RET(cond, false);
         if ((imageBytes[index + INDEX_ONE] & 0xF0) != JPEG_MARKER_APP0) {
             return true;
