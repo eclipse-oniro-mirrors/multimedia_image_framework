@@ -15,6 +15,7 @@
 #include "pixelmap_native_impl.h"
 #include "image_common.h"
 #include "image_log.h"
+#include "media_errors.h"
 #include "pixel_map.h"
 
 using namespace OHOS::Media;
