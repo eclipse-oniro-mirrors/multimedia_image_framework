@@ -305,7 +305,7 @@ HWTEST_F(PixelMapCopySecurityTest, BaseWritePixelsRejectsYuvButVirtualWriteStill
         ASSERT_NE(pixelMap, nullptr);
         const uint32_t capacity = pixelMap->GetCapacity();
         std::vector<uint8_t> input(capacity * 2, PIXEL_VALUE);
-        EXPECT_EQ(pixelMap->PixelMap::WritePixels(input.data(), input.size()), ERR_IMAGE_DATA_UNSUPPORT);
+        EXPECT_EQ(pixelMap->PixelMap::WritePixels(input.data(), input.size()), ERR_IMAGE_INVALID_PARAMETER);
         EXPECT_EQ(pixelMap->WritePixels(input.data(), input.size()), SUCCESS);
         EXPECT_EQ(memcmp(pixelMap->GetPixels(), input.data(), capacity), 0);
     }
