@@ -4353,7 +4353,7 @@ HWTEST_F(PixelMapTest, ReadPixelsTest001, TestSize.Level3)
     const uint64_t bufferSize = static_cast<uint64_t>(pixelMap->GetByteCount());
     auto srcBuffer = std::make_unique<uint8_t[]>(bufferSize);
     uint32_t ret = pixelMap->ReadPixels(bufferSize, srcBuffer.get());
-    EXPECT_EQ(ret, ERR_IMAGE_DATA_UNSUPPORT);
+    EXPECT_EQ(ret, ERR_IMAGE_INVALID_PARAMETER);
     GTEST_LOG_(INFO) << "PixelMapTest: ReadPixelsTest001 end";
 }
 
@@ -6543,7 +6543,7 @@ HWTEST_F(PixelMapTest, Y8FormatSupportPixelOpsTest001, TestSize.Level3)
 
     uint8_t readData[16] = {0};
     ret = pixelMap->ReadPixels(16, readData);
-    EXPECT_EQ(ret, ERR_IMAGE_DATA_UNSUPPORT);
+    EXPECT_EQ(ret, ERR_IMAGE_INVALID_PARAMETER);
 
     // Test ResetConfig
     Size newSize = {SIZE_WIDTH, SIZE_HEIGHT};

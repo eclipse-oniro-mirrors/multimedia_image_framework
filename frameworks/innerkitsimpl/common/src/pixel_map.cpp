@@ -2076,7 +2076,7 @@ uint32_t PixelMap::ReadPixels(const uint64_t &bufferSize, uint8_t *dst)
 {
     ImageTrace imageTrace("ReadPixels by bufferSize");
     std::shared_lock<std::shared_mutex> lock(*pixelDataMutex_);
-    CHECK_ERROR_RETURN_RET_LOG(IsYUV(imageInfo_.pixelFormat), ERR_IMAGE_DATA_UNSUPPORT,
+    CHECK_ERROR_RETURN_RET_LOG(IsYUV(imageInfo_.pixelFormat), ERR_IMAGE_INVALID_PARAMETER,
         "base PixelMap ReadPixels does not support YUV");
     if (dst == nullptr) {
         IMAGE_LOGE("read pixels by buffer input dst address is null.");
