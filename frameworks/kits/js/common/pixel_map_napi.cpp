@@ -3022,7 +3022,15 @@ STATIC_EXEC_FUNC(CreatePixelMapUsingAllocator)
         auto pixelmap = PixelMap::Create(context->opts);
         context->rPixelMap = std::move(pixelmap);
     } else {
-        if (context->colorsBufferSize > static_cast<size_t>(INT_MAX)) {
+        Media::ImageInfo info;
+        info.size = context->opts.size;
+        info.pixelFormat = context->opts.srcPixelFormat;
+        int32_t bufferSize = Media::ImageUtils::GetByteCount(info);
+        if (bufferSize <= 0 || context->colorsBufferSize < static_cast<size_t>(bufferSize)) {
+            IMAGE_LOGE("invalid parameter: buffer size %{public}zu is less than required buffer size %{public}d",
+                context->colorsBufferSize, bufferSize);
+            context->status = ERR_MEDIA_UNSUPPORT_OPERATION;
+        } else if (context->colorsBufferSize > static_cast<size_t>(INT_MAX)) {
             context->status = ERR_MEDIA_UNSUPPORT_OPERATION;
         } else {
             auto pixelmap = PixelMap::Create(colors, static_cast<uint32_t>(context->colorsBufferSize), context->opts);

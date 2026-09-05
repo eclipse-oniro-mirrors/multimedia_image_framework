@@ -388,6 +388,17 @@ PixelMapImpl::PixelMapImpl(array_view<uint8_t> const& colors, InitializationOpti
         return;
     }
 
+    Media::ImageInfo imageInfo;
+    imageInfo.size = options.size;
+    imageInfo.pixelFormat = options.srcPixelFormat;
+    int32_t requiredBufferSize = Media::ImageUtils::GetByteCount(imageInfo);
+    if (requiredBufferSize <= 0 || colors.size() < static_cast<size_t>(requiredBufferSize)) {
+        ImageTaiheUtils::ThrowExceptionError(Media::ERR_MEDIA_UNSUPPORT_OPERATION,
+            "Buffer size " + std::to_string(colors.size()) +
+            " is less than required buffer size " + std::to_string(requiredBufferSize) + ".");
+        return;
+    }
+
     if (colors.size() > static_cast<size_t>(INT_MAX)) {
         ImageTaiheUtils::ThrowExceptionError(Media::ERR_MEDIA_UNSUPPORT_OPERATION, "Pixel buffer is too large.");
         return;
