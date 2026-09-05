@@ -18,6 +18,7 @@
 #include <map>
 #include <set>
 #include "image_utils.h"
+#include "media_errors.h"
 #include "pixel_map_napi.h"
 
 namespace {
