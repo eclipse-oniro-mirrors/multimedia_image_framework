@@ -114,7 +114,7 @@ std::unique_ptr<SkOHOSCodec> SkOHOSCodec::MakeFromCodec(std::unique_ptr<SkCodec>
         case SkEncodedImageFormat::kWBMP:
         case SkEncodedImageFormat::kHEIF:
         case SkEncodedImageFormat::kAVIF:
-            return std::make_unique<SkOHOSSampledCodec>(codec.release());
+            { auto result = std::make_unique<SkOHOSSampledCodec>(codec.get()); codec.release(); return result; }
 #ifdef SK_HAS_WUFFS_LIBRARY
         case SkEncodedImageFormat::kGIF:
 #endif
@@ -125,7 +125,7 @@ std::unique_ptr<SkOHOSCodec> SkOHOSCodec::MakeFromCodec(std::unique_ptr<SkCodec>
         case SkEncodedImageFormat::kDNG:
 #endif
 #if defined(SK_CODEC_DECODES_WEBP) || defined(SK_CODEC_DECODES_RAW) || defined(SK_HAS_WUFFS_LIBRARY)
-            return std::make_unique<SkOHOSCodecAdapter>(codec.release());
+            { auto result = std::make_unique<SkOHOSCodecAdapter>(codec.get()); codec.release(); return result; }
 #endif
 
         default:

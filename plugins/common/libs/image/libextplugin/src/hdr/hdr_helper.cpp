@@ -81,7 +81,7 @@ constexpr uint8_t VIVID_PRE_INFO_SIZE = 10;
 constexpr uint8_t VIVID_METADATA_PRE_INFO_SIZE = 10;
 constexpr uint32_t HDR_MULTI_PICTURE_APP_LENGTH = 90;
 constexpr uint32_t EXTEND_INFO_MAIN_SIZE = 60;
-constexpr uint32_t ISO_GAINMAP_METADATA_PAYLOAD_MIN_SIZE = 38;
+constexpr uint32_t ISO_GAINMAP_METADATA_PAYLOAD_MIN_SIZE = 61;
 constexpr uint32_t DENOMINATOR = 1000000;
 constexpr uint16_t EMPTY_META_SIZE = 0;
 constexpr uint8_t GAINMAP_CHANNEL_NUM_THREE = 3;
@@ -1371,8 +1371,10 @@ vector<uint8_t> HdrJpegPackerHelper::PackISOMetadataMarker(HdrMetadata& metadata
 
 static bool WriteJpegPreApp(sk_sp<SkData>& imageData, SkWStream& outputStream, uint32_t& index, uint32_t& jfifSize)
 {
+    bool cond = imageData == nullptr || imageData->data() == nullptr || imageData->size() < JPEG_MARKER_TAG_SIZE;
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "hdr encode, invalid image data");
     const uint8_t* imageBytes = reinterpret_cast<const uint8_t*>(imageData->data());
-    bool cond = *imageBytes != JPEG_MARKER_PREFIX || *(imageBytes + INDEX_ONE) != JPEG_SOI;
+    cond = *imageBytes != JPEG_MARKER_PREFIX || *(imageBytes + INDEX_ONE) != JPEG_SOI;
     CHECK_ERROR_RETURN_RET_LOG(cond, false, "hdr encode, the spliced image is not a jpeg");
     uint32_t dataSize = imageData->size();
     outputStream.write(imageBytes, JPEG_MARKER_TAG_SIZE);
@@ -1398,7 +1400,8 @@ static bool WriteJpegPreApp(sk_sp<SkData>& imageData, SkWStream& outputStream, u
 uint32_t HdrJpegPackerHelper::SpliceLogHdrStream(sk_sp<SkData>& baseImage,
     SkWStream& output, Media::HdrMetadata& metadata)
 {
-    CHECK_ERROR_RETURN_RET(baseImage == nullptr, ERR_IMAGE_ENCODE_FAILED);
+    CHECK_ERROR_RETURN_RET(baseImage == nullptr || baseImage->data() == nullptr ||
+        baseImage->size() < JPEG_MARKER_TAG_SIZE, ERR_IMAGE_ENCODE_FAILED);
     uint32_t offset = 0;
     uint32_t jfifSize = 0;
     CHECK_ERROR_RETURN_RET(!WriteJpegPreApp(baseImage, output, offset, jfifSize), ERR_IMAGE_ENCODE_FAILED);

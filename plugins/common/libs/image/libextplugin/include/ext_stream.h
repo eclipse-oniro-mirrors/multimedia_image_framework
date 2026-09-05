@@ -38,7 +38,7 @@ public:
     size_t getLength() const override;
     bool isAtEnd() const override;
 private:
-    ImagePlugin::InputDataStream *stream_;
+    ImagePlugin::InputDataStream *stream_ = nullptr;
     // Set when read() returns 0 bytes for a non-zero request, meaning the
     // underlying stream has no more data even though Tell() < GetStreamSize().
     // Without this, SkCopyStreamToData's do..while(!isAtEnd()) would spin forever.

@@ -550,9 +550,9 @@ Image_ErrorCode OH_AuxiliaryPictureNative_CreateUsingAllocator(uint8_t *data, ui
         return IMAGE_SOURCE_UNSUPPORTED_ALLOCATOR_TYPE;
     }
 
-    uint32_t dstLength = tempInfo.size.height * tempInfo.size.width *
+    uint64_t dstLength = static_cast<uint64_t>(tempInfo.size.height) * tempInfo.size.width *
         OHOS::Media::ImageUtils::GetPixelBytes(tempInfo.pixelFormat);
-    if (dstLength > dataLength) {
+    if (dstLength > UINT32_MAX || dstLength > static_cast<uint64_t>(dataLength)) {
         return IMAGE_INVALID_PARAMETER;
     }
     
