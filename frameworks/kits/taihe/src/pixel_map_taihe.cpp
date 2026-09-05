@@ -15,6 +15,7 @@
 
 #include "pixel_map_taihe.h"
 
+#include <climits>
 #include <cstdint>
 #include "ani_color_space_object_convertor.h"
 #include "image_format_convert.h"
@@ -106,15 +107,14 @@ PixelMap CreatePixelMapSync(array_view<uint8_t> colors, InitializationOptions co
         ImageTaiheUtils::ThrowExceptionError(Media::ERROR, "10-bit pixel formats are not supported.");
         return make_holder<PixelMapImpl, PixelMap>();
     }
-    if (colors.size() > UINT32_MAX) {
+    if (colors.size() > static_cast<size_t>(INT_MAX)) {
         ImageTaiheUtils::ThrowExceptionError(Media::ERROR, "Pixel buffer is too large.");
         return make_holder<PixelMapImpl, PixelMap>();
     }
-    auto [nativePixelMap, errorCode] = Media::PixelMap::CreateFromPixels(colors.data(),
+    auto nativePixelMap = Media::PixelMap::Create(reinterpret_cast<uint32_t*>(colors.data()),
         static_cast<uint32_t>(colors.size()), nativeOptions);
     if (nativePixelMap == nullptr) {
-        ImageTaiheUtils::ThrowExceptionError(Media::ERROR,
-            "Failed to create PixelMap from buffer, error: " + std::to_string(errorCode));
+        ImageTaiheUtils::ThrowExceptionError(Media::ERROR, "Failed to create PixelMap from buffer.");
         return make_holder<PixelMapImpl, PixelMap>();
     }
     return make_holder<PixelMapImpl, PixelMap>(std::move(nativePixelMap));
@@ -388,27 +388,15 @@ PixelMapImpl::PixelMapImpl(array_view<uint8_t> const& colors, InitializationOpti
         return;
     }
 
-    Media::ImageInfo imageInfo;
-    imageInfo.size = options.size;
-    imageInfo.pixelFormat = options.srcPixelFormat;
-    int32_t requiredBufferSize = Media::ImageUtils::GetByteCount(imageInfo);
-    if (requiredBufferSize <= 0 || colors.size() < static_cast<size_t>(requiredBufferSize)) {
-        ImageTaiheUtils::ThrowExceptionError(Media::ERR_MEDIA_UNSUPPORT_OPERATION,
-            "Buffer size " + std::to_string(colors.size()) +
-            " is less than required buffer size " + std::to_string(requiredBufferSize) + ".");
-        return;
-    }
-
-    if (colors.size() > UINT32_MAX) {
+    if (colors.size() > static_cast<size_t>(INT_MAX)) {
         ImageTaiheUtils::ThrowExceptionError(Media::ERR_MEDIA_UNSUPPORT_OPERATION, "Pixel buffer is too large.");
         return;
     }
-    auto [pixelMap, errorCode] = Media::PixelMap::CreateFromPixels(colors.data(),
+    nativePixelMap_ = Media::PixelMap::Create(reinterpret_cast<uint32_t*>(colors.data()),
         static_cast<uint32_t>(colors.size()), options);
-    nativePixelMap_ = std::move(pixelMap);
     if (nativePixelMap_ == nullptr) {
         ImageTaiheUtils::ThrowExceptionError(Media::ERR_MEDIA_UNSUPPORT_OPERATION,
-            "Failed to create PixelMap from buffer using allocator, error: " + std::to_string(errorCode));
+            "Failed to create PixelMap from buffer using allocator.");
     }
 }
 

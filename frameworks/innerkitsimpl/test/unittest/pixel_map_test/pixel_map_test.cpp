@@ -1364,6 +1364,61 @@ HWTEST_F(PixelMapTest, CreateFromPixelsTest008, TestSize.Level3)
 }
 
 /**
+ * @tc.name: LegacyCreateAcceptsUndersizedPixelBufferTest001
+ * @tc.desc: Verify legacy Create expands an undersized pixel buffer while CreateFromPixels stays strict.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, LegacyCreateAcceptsUndersizedPixelBufferTest001, TestSize.Level3)
+{
+    alignas(uint32_t) uint8_t pixels[] = {0x00, 0x11, 0x22, 0xFF};
+    InitializationOptions opts;
+    opts.size.width = 2;
+    opts.size.height = 2;
+    opts.srcPixelFormat = PixelFormat::BGRA_8888;
+    opts.pixelFormat = PixelFormat::BGRA_8888;
+    opts.alphaType = AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL;
+    opts.allocatorType = AllocatorType::HEAP_ALLOC;
+
+    auto legacyPixelMap = PixelMap::Create(reinterpret_cast<uint32_t *>(pixels), sizeof(pixels), opts);
+    ASSERT_NE(legacyPixelMap, nullptr);
+
+    uint8_t output[16] = {};
+    ASSERT_EQ(legacyPixelMap->ReadPixels(sizeof(output), output), SUCCESS);
+    EXPECT_EQ(memcmp(output, pixels, sizeof(pixels)), 0);
+
+    auto [strictPixelMap, errCode] = PixelMap::CreateFromPixels(pixels, sizeof(pixels), opts);
+    EXPECT_EQ(strictPixelMap, nullptr);
+    EXPECT_EQ(errCode, ERR_IMAGE_INVALID_PARAMETER);
+}
+
+/**
+ * @tc.name: LegacyCreateAcceptsUndersizedYuvBufferTest001
+ * @tc.desc: Verify legacy Create expands an undersized NV12 buffer while CreateFromPixels stays strict.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, LegacyCreateAcceptsUndersizedYuvBufferTest001, TestSize.Level3)
+{
+    alignas(uint32_t) uint8_t pixels[] = {0x10, 0x20, 0x30, 0x40};
+    InitializationOptions opts;
+    opts.size.width = 2;
+    opts.size.height = 2;
+    opts.srcPixelFormat = PixelFormat::NV12;
+    opts.pixelFormat = PixelFormat::NV12;
+    opts.alphaType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
+    opts.allocatorType = AllocatorType::HEAP_ALLOC;
+
+    auto legacyPixelMap = PixelMap::Create(reinterpret_cast<uint32_t *>(pixels), sizeof(pixels), opts);
+    ASSERT_NE(legacyPixelMap, nullptr);
+    ASSERT_NE(legacyPixelMap->GetPixels(), nullptr);
+    ASSERT_GE(legacyPixelMap->GetCapacity(), 6U);
+    EXPECT_EQ(memcmp(legacyPixelMap->GetPixels(), pixels, sizeof(pixels)), 0);
+
+    auto [strictPixelMap, errCode] = PixelMap::CreateFromPixels(pixels, sizeof(pixels), opts);
+    EXPECT_EQ(strictPixelMap, nullptr);
+    EXPECT_EQ(errCode, ERR_IMAGE_INVALID_PARAMETER);
+}
+
+/**
  * @tc.name: CreateFromPixelsArgb8888SuccessTest001
  * @tc.desc: Verify CreateFromPixels succeeds for ARGB_8888 with explicit and default source formats. [AUTO-GENERATED]
  * @tc.type: FUNC

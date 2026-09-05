@@ -2204,7 +2204,7 @@ HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_CreatePixelMap_Success, TestSize.Le
 
 /**
  * @tc.name: OH_PixelmapNative_CreatePixelMap_UndersizedBuffer
- * @tc.desc: Verify a byte buffer smaller than the source image is rejected.
+ * @tc.desc: Verify the legacy NDK API accepts a byte buffer smaller than the source image.
  * @tc.type: FUNC
  */
 HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_CreatePixelMap_UndersizedBuffer, TestSize.Level3)
@@ -2219,9 +2219,15 @@ HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_CreatePixelMap_UndersizedBuffer, Te
     ASSERT_EQ(OH_PixelmapInitializationOptions_SetPixelFormat(opts, PIXEL_FORMAT_BGRA_8888), IMAGE_SUCCESS);
 
     OH_PixelmapNative* pixelMap = nullptr;
-    EXPECT_EQ(OH_PixelmapNative_CreatePixelmap(data, sizeof(data), opts, &pixelMap), IMAGE_BAD_PARAMETER);
-    EXPECT_EQ(pixelMap, nullptr);
+    ASSERT_EQ(OH_PixelmapNative_CreatePixelmap(data, sizeof(data), opts, &pixelMap), IMAGE_SUCCESS);
+    ASSERT_NE(pixelMap, nullptr);
 
+    uint8_t output[16] = {};
+    size_t outputSize = sizeof(output);
+    ASSERT_EQ(OH_PixelmapNative_ReadPixels(pixelMap, output, &outputSize), IMAGE_SUCCESS);
+    EXPECT_EQ(memcmp(output, data, sizeof(data)), 0);
+
+    EXPECT_EQ(OH_PixelmapNative_Destroy(&pixelMap), IMAGE_SUCCESS);
     EXPECT_EQ(OH_PixelmapInitializationOptions_Release(opts), IMAGE_SUCCESS);
     GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_CreatePixelMap_UndersizedBuffer end";
 }

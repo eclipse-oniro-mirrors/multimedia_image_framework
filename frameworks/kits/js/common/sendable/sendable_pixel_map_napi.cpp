@@ -14,6 +14,7 @@
  */
 
 #include "sendable_pixel_map_napi.h"
+#include <climits>
 #include <cstdint>
 #include <mutex>
 #include "media_errors.h"
@@ -693,23 +694,19 @@ static void BuildContextError(napi_env env, napi_ref &error, const std::string e
 STATIC_EXEC_FUNC(CreateSendablePixelMap)
 {
     auto context = static_cast<SendablePixelMapAsyncContext*>(data);
-    auto pixels = static_cast<uint8_t*>(context->colorsBuffer);
+    auto colors = static_cast<uint32_t*>(context->colorsBuffer);
     if (context->opts.pixelFormat == PixelFormat::RGBA_1010102 ||
         context->opts.pixelFormat == PixelFormat::YCBCR_P010 ||
         context->opts.pixelFormat == PixelFormat::YCRCB_P010) {
         context->rPixelMap = nullptr;
     } else {
-        if (pixels == nullptr) {
+        if (colors == nullptr) {
             auto pixelmap = PixelMap::Create(context->opts);
             context->rPixelMap = std::move(pixelmap);
-        } else if (context->colorsBufferSize > UINT32_MAX) {
+        } else if (context->colorsBufferSize > static_cast<size_t>(INT_MAX)) {
             context->rPixelMap = nullptr;
         } else {
-            auto [pixelmap, errorCode] = PixelMap::CreateFromPixels(pixels,
-                static_cast<uint32_t>(context->colorsBufferSize), context->opts);
-            if (errorCode != SUCCESS) {
-                IMAGE_LOGE("CreateSendablePixelMap CreateFromPixels failed, error: %{public}d", errorCode);
-            }
+            auto pixelmap = PixelMap::Create(colors, static_cast<uint32_t>(context->colorsBufferSize), context->opts);
             context->rPixelMap = std::move(pixelmap);
         }
     }

@@ -23,6 +23,7 @@
 #include "image_trace.h"
 #include "log_tags.h"
 #include "color_space_object_convertor.h"
+#include <climits>
 #include <cstdint>
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 #include <charconv>
@@ -2701,8 +2702,8 @@ STATIC_EXEC_FUNC(CreatePixelMap)
     }
 
     auto context = static_cast<PixelMapAsyncContext*>(data);
-    auto pixels = static_cast<uint8_t*>(context->colorsBuffer);
-    if (pixels == nullptr) {
+    auto colors = static_cast<uint32_t*>(context->colorsBuffer);
+    if (colors == nullptr) {
         if (context->opts.pixelFormat == PixelFormat::RGBA_1010102 ||
             context->opts.pixelFormat == PixelFormat::YCBCR_P010 ||
             context->opts.pixelFormat == PixelFormat::YCRCB_P010) {
@@ -2713,14 +2714,11 @@ STATIC_EXEC_FUNC(CreatePixelMap)
     } else {
         if (context->opts.pixelFormat == PixelFormat::RGBA_1010102 ||
             context->opts.pixelFormat == PixelFormat::YCBCR_P010 ||
-            context->opts.pixelFormat == PixelFormat::YCRCB_P010 || context->colorsBufferSize > UINT32_MAX) {
+            context->opts.pixelFormat == PixelFormat::YCRCB_P010 ||
+            context->colorsBufferSize > static_cast<size_t>(INT_MAX)) {
             context->rPixelMap = nullptr;
         } else {
-            auto [pixelmap, errorCode] = PixelMap::CreateFromPixels(pixels,
-                static_cast<uint32_t>(context->colorsBufferSize), context->opts);
-            if (errorCode != SUCCESS) {
-                IMAGE_LOGE("CreatePixelMapExec CreateFromPixels failed, error: %{public}d", errorCode);
-            }
+            auto pixelmap = PixelMap::Create(colors, static_cast<uint32_t>(context->colorsBufferSize), context->opts);
             context->rPixelMap = std::move(pixelmap);
         }
     }
@@ -3019,19 +3017,15 @@ STATIC_EXEC_FUNC(CreatePixelMapUsingAllocator)
     }
 
     auto context = static_cast<PixelMapAsyncContext*>(data);
-    auto pixels = static_cast<uint8_t*>(context->colorsBuffer);
-    if (pixels == nullptr) {
+    auto colors = static_cast<uint32_t*>(context->colorsBuffer);
+    if (colors == nullptr) {
         auto pixelmap = PixelMap::Create(context->opts);
         context->rPixelMap = std::move(pixelmap);
     } else {
-        if (context->colorsBufferSize > UINT32_MAX) {
+        if (context->colorsBufferSize > static_cast<size_t>(INT_MAX)) {
             context->status = ERR_MEDIA_UNSUPPORT_OPERATION;
         } else {
-            auto [pixelmap, errorCode] = PixelMap::CreateFromPixels(pixels,
-                static_cast<uint32_t>(context->colorsBufferSize), context->opts);
-            if (errorCode != SUCCESS) {
-                IMAGE_LOGE("CreatePixelMapUsingAllocatorExec CreateFromPixels failed, error: %{public}d", errorCode);
-            }
+            auto pixelmap = PixelMap::Create(colors, static_cast<uint32_t>(context->colorsBufferSize), context->opts);
             context->rPixelMap = std::move(pixelmap);
         }
     }

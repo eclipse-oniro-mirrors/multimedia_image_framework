@@ -14,8 +14,6 @@
  */
 #include "pixelmap_native_impl.h"
 #include "image_common.h"
-#include "image_log.h"
-#include "media_errors.h"
 #include "pixel_map.h"
 
 using namespace OHOS::Media;
@@ -39,11 +37,7 @@ OH_PixelmapNative::OH_PixelmapNative(const uint32_t *colors, uint32_t colorLengt
         opts.pixelFormat == PixelFormat::YCRCB_P010) {
         pixelmap_ = nullptr;
     } else {
-        auto [tmpPixelmap, errorCode] = PixelMap::CreateFromPixels(reinterpret_cast<const uint8_t*>(colors),
-            colorLength, opts);
-        if (errorCode != SUCCESS) {
-            IMAGE_LOGE("CreateFromPixels failed, error: %{public}d", errorCode);
-        }
+        auto tmpPixelmap = PixelMap::Create(colors, colorLength, opts);
         pixelmap_ = std::move(tmpPixelmap);
     }
 }
@@ -52,11 +46,7 @@ OH_PixelmapNative::OH_PixelmapNative(const uint32_t *colors, uint32_t colorLengt
     const InitializationOptions &opts, int32_t alloctor)
 {
     if (alloctor <= IMAGE_ALLOCATOR_MODE_SHARED_MEMORY) {
-        auto [tmpPixelmap, errorCode] = PixelMap::CreateFromPixels(reinterpret_cast<const uint8_t*>(colors),
-            colorLength, opts);
-        if (errorCode != SUCCESS) {
-            IMAGE_LOGE("CreateFromPixels with allocator failed, error: %{public}d", errorCode);
-        }
+        auto tmpPixelmap = PixelMap::Create(colors, colorLength, opts);
         pixelmap_ = std::move(tmpPixelmap);
     }
 }

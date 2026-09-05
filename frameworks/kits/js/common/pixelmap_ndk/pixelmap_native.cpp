@@ -15,6 +15,7 @@
 
 #include "pixelmap_native.h"
 
+#include <climits>
 #include <cstdint>
 #ifndef CROSS_PLATFORM
 #include <charconv>
@@ -505,7 +506,7 @@ MIDK_EXPORT
 Image_ErrorCode OH_PixelmapNative_CreatePixelmap(uint8_t *data, size_t dataLength,
     OH_Pixelmap_InitializationOptions *options, OH_PixelmapNative **pixelmap)
 {
-    if (data == nullptr || options == nullptr || pixelmap == nullptr || dataLength > UINT32_MAX) {
+    if (data == nullptr || options == nullptr || pixelmap == nullptr || dataLength > static_cast<size_t>(INT_MAX)) {
         return IMAGE_BAD_PARAMETER;
     }
     InitializationOptions info;
@@ -556,7 +557,7 @@ MIDK_EXPORT
 Image_ErrorCode OH_PixelmapNative_CreatePixelmapUsingAllocator(uint8_t *data, size_t dataLength,
     OH_Pixelmap_InitializationOptions *options, IMAGE_ALLOCATOR_MODE allocator, OH_PixelmapNative **pixelmap)
 {
-    if (data == nullptr || options == nullptr || pixelmap == nullptr || dataLength > UINT32_MAX) {
+    if (data == nullptr || options == nullptr || pixelmap == nullptr || dataLength > static_cast<size_t>(INT_MAX)) {
         return IMAGE_BAD_PARAMETER;
     }
     InitializationOptions info;
