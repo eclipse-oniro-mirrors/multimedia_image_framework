@@ -1245,8 +1245,8 @@ bool PixelMap::CopyPixMapToDst(PixelMap &source, AbsMemory &dstMemory, uint32_t 
             !CheckPixelMapRowLayout(height, rowBytes, dstStride, dstCapacity);
         CHECK_ERROR_RETURN_RET_LOG(invalidLayout, false, "copy row layout exceeds buffer capacity");
         for (int32_t row = 0; row < height; ++row) {
-            const uint64_t srcOffset = static_cast<uint64_t>(row) * static_cast<uint64_t>(srcStride);
-            const uint64_t dstOffset = static_cast<uint64_t>(row) * static_cast<uint64_t>(dstStride);
+            const uint64_t srcOffset = static_cast<uint64_t>(row) * srcStride;
+            const uint64_t dstOffset = static_cast<uint64_t>(row) * dstStride;
             errno_t ret = memcpy_s(dstPixels + dstOffset, dstCapacity - dstOffset,
                 source.GetPixels() + srcOffset, rowBytes);
             if (ret != 0) {
