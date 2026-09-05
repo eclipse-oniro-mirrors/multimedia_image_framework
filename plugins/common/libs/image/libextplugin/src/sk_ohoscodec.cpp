@@ -125,7 +125,7 @@ std::unique_ptr<SkOHOSCodec> SkOHOSCodec::MakeFromCodec(std::unique_ptr<SkCodec>
         case SkEncodedImageFormat::kDNG:
 #endif
 #if defined(SK_CODEC_DECODES_WEBP) || defined(SK_CODEC_DECODES_RAW) || defined(SK_HAS_WUFFS_LIBRARY)
-        return std::make_unique<SkOHOSCodecAdapter>(codec.release());
+            return std::make_unique<SkOHOSCodecAdapter>(codec.release());
 #endif
 
         default:
