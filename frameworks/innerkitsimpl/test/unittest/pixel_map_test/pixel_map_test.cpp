@@ -6539,7 +6539,7 @@ HWTEST_F(PixelMapTest, Y8FormatSupportPixelOpsTest001, TestSize.Level3)
     uint8_t writeData[16] = {0x10, 0x20, 0x30, 0x40, 0x50, 0x60, 0x70, 0x80,
                               0x90, 0xA0, 0xB0, 0xC0, 0xD0, 0xE0, 0xF0, 0xFF};
     ret = pixelMap->WritePixels(writeData, 16);
-    EXPECT_EQ(ret, ERR_IMAGE_DATA_UNSUPPORT);
+    EXPECT_EQ(ret, ERR_IMAGE_INVALID_PARAMETER);
 
     uint8_t readData[16] = {0};
     ret = pixelMap->ReadPixels(16, readData);

@@ -2451,7 +2451,7 @@ uint32_t PixelMap::WritePixels(const uint8_t *source, const uint64_t &bufferSize
 {
     ImageTrace imageTrace("WritePixels");
     // YUV writes are implemented by PixelYuv::WritePixels using its plane layout.
-    CHECK_ERROR_RETURN_RET_LOG(IsYUV(imageInfo_.pixelFormat), ERR_IMAGE_DATA_UNSUPPORT,
+    CHECK_ERROR_RETURN_RET_LOG(IsYUV(imageInfo_.pixelFormat), ERR_IMAGE_INVALID_PARAMETER,
         "base PixelMap WritePixels does not support YUV");
     if (source == nullptr || bufferSize < static_cast<uint64_t>(pixelsSize_)) {
         IMAGE_LOGE("write pixels by buffer source is nullptr or size(%{public}llu) < pixelSize(%{public}u).",
