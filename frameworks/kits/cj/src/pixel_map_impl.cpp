@@ -60,7 +60,10 @@ std::unique_ptr<PixelMap> PixelMapImpl::CreatePixelMap(
         opts.pixelFormat == PixelFormat::YCRCB_P010) {
         return nullptr;
     }
-    std::unique_ptr<PixelMap> ptr_ = PixelMap::Create(colors, colorLength, opts);
+    auto [ptr_, errorCode] = PixelMap::CreateFromPixels(reinterpret_cast<const uint8_t*>(colors), colorLength, opts);
+    if (errorCode != SUCCESS) {
+        IMAGE_LOGE("[PixelMapImpl] CreateFromPixels failed, error: %{public}d", errorCode);
+    }
     if (ptr_ == nullptr) {
         IMAGE_LOGE("[PixelMapImpl] instance init failed!");
     }

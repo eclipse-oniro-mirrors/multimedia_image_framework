@@ -107,20 +107,18 @@ static int32_t PixelMapNapiCreate(napi_env env, PixelMapNapiArgs* args)
     info.size.height = static_cast<int32_t>(args->createOptions.height);
     info.size.width = static_cast<int32_t>(args->createOptions.width);
 
-    BUILD_PARAM pam;
-    pam.offset_ = 0;
-    pam.width_ = info.size.width;
-    pam.flag_ = false;
-    int32_t error = IMAGE_RESULT_SUCCESS;
     if (info.pixelFormat == PixelFormat::RGBA_1010102 ||
         info.pixelFormat == PixelFormat::YCBCR_P010 ||
         info.pixelFormat == PixelFormat::YCRCB_P010) {
-        error = IMAGE_RESULT_BAD_PARAMETER;
-        return error;
+        return IMAGE_RESULT_BAD_PARAMETER;
     }
-    auto pixelmap = PixelMap::Create(static_cast<uint32_t*>(args->inBuffer), args->bufferLen, pam, info, error);
+    if (args->bufferLen > UINT32_MAX) {
+        return IMAGE_RESULT_BAD_PARAMETER;
+    }
+    auto [pixelmap, error] = PixelMap::CreateFromPixels(static_cast<uint8_t*>(args->inBuffer),
+        static_cast<uint32_t>(args->bufferLen), info);
     if (pixelmap == nullptr) {
-        return error;
+        return error == ERR_IMAGE_INVALID_PARAMETER ? IMAGE_RESULT_BAD_PARAMETER : error;
     }
 
     *(args->outValue) = PixelMapNapi::CreatePixelMap(env, std::move(pixelmap));
