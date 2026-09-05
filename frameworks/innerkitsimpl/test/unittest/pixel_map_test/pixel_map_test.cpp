@@ -4341,7 +4341,7 @@ HWTEST_F(PixelMapTest, GetAllocationByteCountTest001, TestSize.Level3)
 
 /**
  * @tc.name: ReadPixelsTest001
- * @tc.desc: Verify ReadPixels returns error when called with invalid parameters
+ * @tc.desc: Verify base PixelMap rejects YUV buffer reads
  * @tc.type: FUNC
  */
 HWTEST_F(PixelMapTest, ReadPixelsTest001, TestSize.Level3)
@@ -4353,7 +4353,7 @@ HWTEST_F(PixelMapTest, ReadPixelsTest001, TestSize.Level3)
     const uint64_t bufferSize = static_cast<uint64_t>(pixelMap->GetByteCount());
     auto srcBuffer = std::make_unique<uint8_t[]>(bufferSize);
     uint32_t ret = pixelMap->ReadPixels(bufferSize, srcBuffer.get());
-    EXPECT_EQ(ret, ERR_IMAGE_INVALID_PARAMETER);
+    EXPECT_EQ(ret, ERR_IMAGE_DATA_UNSUPPORT);
     GTEST_LOG_(INFO) << "PixelMapTest: ReadPixelsTest001 end";
 }
 
@@ -6507,7 +6507,7 @@ HWTEST_F(PixelMapTest, Y8FormatNotSupportOperationsTest001, TestSize.Level3)
 
 /**
  * @tc.name: Y8FormatSupportPixelOpsTest001
- * @tc.desc: Test Y8 format supports pixel read/write operations
+ * @tc.desc: Test base PixelMap rejects Y8 buffer read/write operations
  * @tc.type: FUNC
  */
 HWTEST_F(PixelMapTest, Y8FormatSupportPixelOpsTest001, TestSize.Level3)
@@ -6535,16 +6535,15 @@ HWTEST_F(PixelMapTest, Y8FormatSupportPixelOpsTest001, TestSize.Level3)
     ret = pixelMap->SetAlpha(0.5f);
     EXPECT_EQ(ret, ERR_IMAGE_DATA_UNSUPPORT);
 
-    // Test WritePixels
+    // Base PixelMap does not handle YUV plane layouts.
     uint8_t writeData[16] = {0x10, 0x20, 0x30, 0x40, 0x50, 0x60, 0x70, 0x80,
                               0x90, 0xA0, 0xB0, 0xC0, 0xD0, 0xE0, 0xF0, 0xFF};
     ret = pixelMap->WritePixels(writeData, 16);
-    EXPECT_EQ(ret, SUCCESS);
+    EXPECT_EQ(ret, ERR_IMAGE_DATA_UNSUPPORT);
 
-    // Test ReadPixels
     uint8_t readData[16] = {0};
     ret = pixelMap->ReadPixels(16, readData);
-    EXPECT_EQ(ret, SUCCESS);
+    EXPECT_EQ(ret, ERR_IMAGE_DATA_UNSUPPORT);
 
     // Test ResetConfig
     Size newSize = {SIZE_WIDTH, SIZE_HEIGHT};

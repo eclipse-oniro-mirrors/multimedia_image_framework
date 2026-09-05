@@ -1245,8 +1245,8 @@ bool PixelMap::CopyPixMapToDst(PixelMap &source, AbsMemory &dstMemory, uint32_t 
             !CheckPixelMapRowLayout(height, rowBytes, dstStride, dstCapacity);
         CHECK_ERROR_RETURN_RET_LOG(invalidLayout, false, "copy row layout exceeds buffer capacity");
         for (int32_t row = 0; row < height; ++row) {
-            const uint64_t srcOffset = static_cast<uint64_t>(row) * srcStride;
-            const uint64_t dstOffset = static_cast<uint64_t>(row) * dstStride;
+            const uint64_t srcOffset = static_cast<uint64_t>(row) * static_cast<uint64_t>(srcStride);
+            const uint64_t dstOffset = static_cast<uint64_t>(row) * static_cast<uint64_t>(dstStride);
             errno_t ret = memcpy_s(dstPixels + dstOffset, dstCapacity - dstOffset,
                 source.GetPixels() + srcOffset, rowBytes);
             if (ret != 0) {
@@ -2076,6 +2076,8 @@ uint32_t PixelMap::ReadPixels(const uint64_t &bufferSize, uint8_t *dst)
 {
     ImageTrace imageTrace("ReadPixels by bufferSize");
     std::shared_lock<std::shared_mutex> lock(*pixelDataMutex_);
+    CHECK_ERROR_RETURN_RET_LOG(IsYUV(imageInfo_.pixelFormat), ERR_IMAGE_DATA_UNSUPPORT,
+        "base PixelMap ReadPixels does not support YUV");
     if (dst == nullptr) {
         IMAGE_LOGE("read pixels by buffer input dst address is null.");
         return ERR_IMAGE_READ_PIXELMAP_FAILED;
@@ -2089,32 +2091,14 @@ uint32_t PixelMap::ReadPixels(const uint64_t &bufferSize, uint8_t *dst)
             static_cast<unsigned long long>(bufferSize), pixelsSize_);
         return ERR_IMAGE_INVALID_PARAMETER;
     }
-    if (IsYUV(imageInfo_.pixelFormat)) {
-        uint64_t tmpSize = 0;
-        uint64_t readSize = MAX_READ_COUNT;
-        while (tmpSize < bufferSize && tmpSize < pixelsSize_) {
-            if (tmpSize + MAX_READ_COUNT > pixelsSize_) {
-                readSize = pixelsSize_ - tmpSize;
-            } else if (tmpSize + MAX_READ_COUNT > bufferSize) {
-                readSize = bufferSize - tmpSize;
-            }
-            errno_t ret = memcpy_s(dst + tmpSize, readSize, data_ + tmpSize, readSize);
-            if (ret != 0) {
-                IMAGE_LOGE("read pixels by buffer memcpy the pixelmap data to dst fail, error:%{public}d", ret);
-                return ERR_IMAGE_READ_PIXELMAP_FAILED;
-            }
-            tmpSize += readSize;
+    // Copy the actual pixel data without padding bytes
+    for (int i = 0; i < imageInfo_.size.height; ++i) {
+        errno_t ret = memcpy_s(dst, rowDataSize_, data_ + i * rowStride_, rowDataSize_);
+        if (ret != 0) {
+            IMAGE_LOGE("read pixels by buffer memcpy the pixelmap data to dst fail, error:%{public}d", ret);
+            return ERR_IMAGE_READ_PIXELMAP_FAILED;
         }
-    } else {
-        // Copy the actual pixel data without padding bytes
-        for (int i = 0; i < imageInfo_.size.height; ++i) {
-            errno_t ret = memcpy_s(dst, rowDataSize_, data_ + i * rowStride_, rowDataSize_);
-            if (ret != 0) {
-                IMAGE_LOGE("read pixels by buffer memcpy the pixelmap data to dst fail, error:%{public}d", ret);
-                return ERR_IMAGE_READ_PIXELMAP_FAILED;
-            }
-            dst += rowDataSize_; // Move the destination buffer pointer to the next row
-        }
+        dst += rowDataSize_; // Move the destination buffer pointer to the next row
     }
     return SUCCESS;
 }
