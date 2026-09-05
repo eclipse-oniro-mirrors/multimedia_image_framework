@@ -15,6 +15,7 @@
 
 #include "pixelmap_native.h"
 
+#include <cstdint>
 #ifndef CROSS_PLATFORM
 #include <charconv>
 #include <limits>

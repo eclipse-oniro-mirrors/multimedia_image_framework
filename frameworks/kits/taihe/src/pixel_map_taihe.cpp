@@ -15,6 +15,7 @@
 
 #include "pixel_map_taihe.h"
 
+#include <cstdint>
 #include "ani_color_space_object_convertor.h"
 #include "image_format_convert.h"
 #include "image_log.h"

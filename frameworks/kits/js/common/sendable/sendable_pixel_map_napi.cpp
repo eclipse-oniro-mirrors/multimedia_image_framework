@@ -14,6 +14,7 @@
  */
 
 #include "sendable_pixel_map_napi.h"
+#include <cstdint>
 #include <mutex>
 #include "media_errors.h"
 #include "image_log.h"

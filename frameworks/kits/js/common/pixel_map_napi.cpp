@@ -23,9 +23,9 @@
 #include "image_trace.h"
 #include "log_tags.h"
 #include "color_space_object_convertor.h"
+#include <cstdint>
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 #include <charconv>
-#include <cstdint>
 #include <memory>
 #include <regex>
 #include <vector>

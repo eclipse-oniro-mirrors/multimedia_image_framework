@@ -15,6 +15,7 @@
 
 #include "image_pixel_map_napi_kits.h"
 
+#include <cstdint>
 #include <map>
 #include <set>
 #include "image_utils.h"
