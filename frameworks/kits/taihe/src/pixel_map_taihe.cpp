@@ -111,7 +111,7 @@ PixelMap CreatePixelMapSync(array_view<uint8_t> colors, InitializationOptions co
         ImageTaiheUtils::ThrowExceptionError(Media::ERROR, "Pixel buffer is too large.");
         return make_holder<PixelMapImpl, PixelMap>();
     }
-    auto nativePixelMap = Media::PixelMap::Create(reinterpret_cast<uint32_t*>(colors.data()),
+    auto nativePixelMap = Media::PixelMap::CreateForApi(reinterpret_cast<uint32_t*>(colors.data()),
         static_cast<uint32_t>(colors.size()), nativeOptions);
     if (nativePixelMap == nullptr) {
         ImageTaiheUtils::ThrowExceptionError(Media::ERROR, "Failed to create PixelMap from buffer.");
@@ -403,7 +403,7 @@ PixelMapImpl::PixelMapImpl(array_view<uint8_t> const& colors, InitializationOpti
         ImageTaiheUtils::ThrowExceptionError(Media::ERR_MEDIA_UNSUPPORT_OPERATION, "Pixel buffer is too large.");
         return;
     }
-    nativePixelMap_ = Media::PixelMap::Create(reinterpret_cast<uint32_t*>(colors.data()),
+    nativePixelMap_ = Media::PixelMap::CreateForApi(reinterpret_cast<uint32_t*>(colors.data()),
         static_cast<uint32_t>(colors.size()), options);
     if (nativePixelMap_ == nullptr) {
         ImageTaiheUtils::ThrowExceptionError(Media::ERR_MEDIA_UNSUPPORT_OPERATION,

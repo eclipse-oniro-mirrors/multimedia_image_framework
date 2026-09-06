@@ -339,14 +339,20 @@ static int64_t GetCreateFromPixelsRequiredByteSize(const InitializationOptions &
 unique_ptr<PixelMap> PixelMap::Create(const uint32_t *colors, uint32_t colorLength, const InitializationOptions &opts)
 {
     IMAGE_LOGD("PixelMap::Create1 enter");
+    return Create(colors, colorLength, 0, opts.size.width, opts);
+}
+
+unique_ptr<PixelMap> PixelMap::CreateForApi(const uint32_t *colors, uint32_t colorLength,
+    const InitializationOptions &opts)
+{
     if (colors == nullptr || colorLength == 0 || colorLength > INT_MAX) {
-        IMAGE_LOGE("[PixelMap]Create: invalid pixel buffer or size: %{public}u", colorLength);
+        IMAGE_LOGE("[PixelMap]CreateForApi: invalid pixel buffer or size: %{public}u", colorLength);
         return nullptr;
     }
     PixelFormat srcPixelFormat = ResolveCreateFromPixelsSrcPixelFormat(opts);
     int64_t requiredBytes = GetCreateFromPixelsRequiredByteSize(opts, srcPixelFormat);
     if (requiredBytes <= 0 || requiredBytes > INT_MAX) {
-        IMAGE_LOGE("[PixelMap]Create: invalid required pixels size: %{public}lld",
+        IMAGE_LOGE("[PixelMap]CreateForApi: invalid required pixels size: %{public}lld",
             static_cast<long long>(requiredBytes));
         return nullptr;
     }
@@ -355,7 +361,7 @@ unique_ptr<PixelMap> PixelMap::Create(const uint32_t *colors, uint32_t colorLeng
         std::unique_ptr<uint8_t[]> expandedPixels(new (std::nothrow) uint8_t[expandedSize]);
         if (expandedPixels == nullptr ||
             memcpy_s(expandedPixels.get(), expandedSize, colors, colorLength) != EOK) {
-            IMAGE_LOGE("[PixelMap]Create: expand undersized pixel buffer failed");
+            IMAGE_LOGE("[PixelMap]CreateForApi: expand undersized pixel buffer failed");
             return nullptr;
         }
         return Create(reinterpret_cast<uint32_t *>(expandedPixels.get()), static_cast<uint32_t>(requiredBytes),

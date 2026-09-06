@@ -117,7 +117,7 @@ static int32_t PixelMapNapiCreate(napi_env env, PixelMapNapiArgs* args)
     if (args->bufferLen > static_cast<size_t>(INT_MAX)) {
         return IMAGE_RESULT_BAD_PARAMETER;
     }
-    auto pixelmap = PixelMap::Create(static_cast<uint32_t*>(args->inBuffer),
+    auto pixelmap = PixelMap::CreateForApi(static_cast<uint32_t*>(args->inBuffer),
         static_cast<uint32_t>(args->bufferLen), info);
     if (pixelmap == nullptr) {
         return IMAGE_RESULT_BAD_PARAMETER;

@@ -142,6 +142,17 @@ public:
                                                          const InitializationOptions &opts);
 
     /**
+     * Create a PixelMap through pixel data for a legacy external API.
+     *
+     * @param colors The pixel data.
+     * @param colorLength The length of the pixel data in bytes.
+     * @param opts Initialization Options.
+     * @return The PixelMap.
+     */
+    NATIVEEXPORT static std::unique_ptr<PixelMap> CreateForApi(const uint32_t *colors, uint32_t colorLength,
+        const InitializationOptions &opts);
+
+    /**
      * Create a PixelMap through pixel data.
      *
      * @param colors The pixel data.

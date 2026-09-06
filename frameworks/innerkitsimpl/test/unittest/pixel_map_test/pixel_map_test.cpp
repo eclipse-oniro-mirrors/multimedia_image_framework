@@ -1379,7 +1379,7 @@ HWTEST_F(PixelMapTest, LegacyCreateAcceptsUndersizedPixelBufferTest001, TestSize
     opts.alphaType = AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL;
     opts.allocatorType = AllocatorType::HEAP_ALLOC;
 
-    auto legacyPixelMap = PixelMap::Create(reinterpret_cast<uint32_t *>(pixels), sizeof(pixels), opts);
+    auto legacyPixelMap = PixelMap::CreateForApi(reinterpret_cast<uint32_t *>(pixels), sizeof(pixels), opts);
     ASSERT_NE(legacyPixelMap, nullptr);
 
     uint8_t output[16] = {};
@@ -1389,6 +1389,29 @@ HWTEST_F(PixelMapTest, LegacyCreateAcceptsUndersizedPixelBufferTest001, TestSize
     auto [strictPixelMap, errCode] = PixelMap::CreateFromPixels(pixels, sizeof(pixels), opts);
     EXPECT_EQ(strictPixelMap, nullptr);
     EXPECT_EQ(errCode, ERR_IMAGE_INVALID_PARAMETER);
+}
+
+/**
+ * @tc.name: InnerCreateDoesNotApplyApiCompatibilityTest001
+ * @tc.desc: Verify the inner Create overload does not apply external API buffer compatibility.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, InnerCreateDoesNotApplyApiCompatibilityTest001, TestSize.Level3)
+{
+    alignas(uint32_t) uint8_t pixels[16] = {0x00, 0x11, 0x22, 0xFF};
+    InitializationOptions opts;
+    opts.size.width = 2;
+    opts.size.height = 2;
+    opts.srcPixelFormat = PixelFormat::BGRA_8888;
+    opts.pixelFormat = PixelFormat::BGRA_8888;
+    opts.alphaType = AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL;
+    opts.allocatorType = AllocatorType::HEAP_ALLOC;
+
+    auto innerPixelMap = PixelMap::Create(reinterpret_cast<uint32_t *>(pixels), 3, opts);
+    EXPECT_EQ(innerPixelMap, nullptr);
+
+    auto apiPixelMap = PixelMap::CreateForApi(reinterpret_cast<uint32_t *>(pixels), 3, opts);
+    EXPECT_NE(apiPixelMap, nullptr);
 }
 
 /**
@@ -1407,7 +1430,7 @@ HWTEST_F(PixelMapTest, LegacyCreateAcceptsUndersizedYuvBufferTest001, TestSize.L
     opts.alphaType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
     opts.allocatorType = AllocatorType::HEAP_ALLOC;
 
-    auto legacyPixelMap = PixelMap::Create(reinterpret_cast<uint32_t *>(pixels), sizeof(pixels), opts);
+    auto legacyPixelMap = PixelMap::CreateForApi(reinterpret_cast<uint32_t *>(pixels), sizeof(pixels), opts);
     ASSERT_NE(legacyPixelMap, nullptr);
     ASSERT_NE(legacyPixelMap->GetPixels(), nullptr);
     ASSERT_GE(legacyPixelMap->GetCapacity(), 6U);
