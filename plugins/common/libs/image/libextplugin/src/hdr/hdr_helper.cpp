@@ -53,7 +53,6 @@ constexpr uint8_t JPEG_MARKER_APP2 = 0xE2;
 constexpr uint8_t JPEG_MARKER_APP5 = 0xE5;
 constexpr uint8_t JPEG_MARKER_APP8 = 0xE8;
 constexpr uint8_t JPEG_MARKER_APP11 = 0xEB;
-constexpr uint8_t JPEG_SOI = 0xD8;
 constexpr uint32_t MOVE_ONE_BYTE = 8;
 constexpr uint32_t VIVID_BASE_IMAGE_MARKER_SIZE = 22;
 constexpr int JPEG_MARKER_LENGTH_SIZE = 2;
