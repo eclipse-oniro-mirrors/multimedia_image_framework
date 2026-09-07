@@ -54,6 +54,8 @@ namespace OHOS {
 namespace ImagePlugin {
 heif_error HeifHvccBox::ParseNalUnitArray(HeifStreamReader& reader, std::vector<std::vector<uint8_t>>& nalUnits)
 {
+    constexpr size_t MAX_NAL_ARRAY_BYTES = 1024 * 1024;
+    size_t totalNalBytes = 0;
     int nalUnitNum = reader.Read16();
     if (nalUnitNum > MAX_NAL_UNIT_NUM_PER_ARRAY) {
         reader.SetError(true);
@@ -64,10 +66,15 @@ heif_error HeifHvccBox::ParseNalUnitArray(HeifStreamReader& reader, std::vector<
         if (!nalUnitSize || !reader.CheckSize(nalUnitSize)) {
             continue;
         }
+        if (totalNalBytes + static_cast<size_t>(nalUnitSize) > MAX_NAL_ARRAY_BYTES) {
+            reader.SetError(true);
+            return heif_error_eof;
+        }
         std::vector<uint8_t> nalUnit(nalUnitSize);
         bool res = reader.ReadData(nalUnit.data(), nalUnitSize);
         CHECK_ERROR_RETURN_RET(!res, heif_error_eof);
         nalUnits.push_back(nalUnit);
+        totalNalBytes += static_cast<size_t>(nalUnitSize);
     }
     return reader.GetError();
 }
@@ -139,6 +146,9 @@ bool HeifHvccBox::GetHeaders(std::vector<uint8_t>* outData) const
 
 void HeifHvccBox::AppendNalData(const std::vector<uint8_t>& nalData)
 {
+    if (nalData.empty()) {
+        return;
+    }
     HvccNalArray array;
     array.arrayCompleteness = 0;
     array.nalUnitType = uint8_t(nalData[0] >> 1);
@@ -210,7 +220,7 @@ uint32_t HeifHvccBox::GetGolombCode(const std::vector<uint8_t> &nalu)
         pos_++;
     }
     pos_++;
-    return GetWord(nalu, zeros) + ((BIT_SHIFT << zeros) - BIT_SHIFT);
+    return GetWord(nalu, zeros) + ((1U << zeros) - 1U);
 }
 
 uint32_t HeifHvccBox::GetNaluTypeId(std::vector<uint8_t> &nalUnits)

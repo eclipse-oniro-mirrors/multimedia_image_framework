@@ -350,7 +350,8 @@ void HeifDecoderImpl::SetColorSpaceInfo(HeifFrameInfo* info, const std::shared_p
 {
     auto &iccProfile = image->GetRawColorProfile();
     size_t iccSize = iccProfile != nullptr ? iccProfile->GetData().size() : 0;
-    if (iccSize > 0) {
+    constexpr size_t MAX_ICC_SIZE = 4 * 1024 * 1024;
+    if (iccSize > 0 && iccSize <= MAX_ICC_SIZE) {
         auto iccProfileData = iccProfile->GetData().data();
         info->mIccData.assign(iccProfileData, iccProfileData + iccSize);
     } else {
@@ -1255,10 +1256,10 @@ bool HeifDecoderImpl::ProcessChunkHead(uint8_t *data, size_t len)
     }
     size_t index = 0;
     while (index < len - CHUNK_HEAD_SIZE) {
-        size_t chunkLen = (data[index] << CHUNK_HEAD_SHIFT_24)
-                | (data[index + CHUNK_HEAD_OFFSET_1] << CHUNK_HEAD_SHIFT_16)
-                | (data[index + CHUNK_HEAD_OFFSET_2] << CHUNK_HEAD_SHIFT_8)
-                | (data[index + CHUNK_HEAD_OFFSET_3]);
+        size_t chunkLen = (static_cast<uint32_t>(data[index]) << CHUNK_HEAD_SHIFT_24)
+                | (static_cast<uint32_t>(data[index + CHUNK_HEAD_OFFSET_1]) << CHUNK_HEAD_SHIFT_16)
+                | (static_cast<uint32_t>(data[index + CHUNK_HEAD_OFFSET_2]) << CHUNK_HEAD_SHIFT_8)
+                | (static_cast<uint32_t>(data[index + CHUNK_HEAD_OFFSET_3]));
         data[index] = 0;
         data[index + CHUNK_HEAD_OFFSET_1] = 0;
         data[index + CHUNK_HEAD_OFFSET_2] = 0;

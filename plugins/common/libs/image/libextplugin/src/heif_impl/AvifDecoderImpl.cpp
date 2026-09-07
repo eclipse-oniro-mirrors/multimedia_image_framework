@@ -233,13 +233,30 @@ std::shared_ptr<Dav1dPicture> Dav1dDecoder::GetOccurDecodeFrame(uint32_t index)
 bool Dav1dDecoder::DecodeFrame(uint32_t index, const std::vector<uint8_t> &frameData)
 {
     Dav1dData data;
-    int wrapRet = dav1d_data_wrap(&data, frameData.data(), frameData.size(), Dav1dFreeCallback, nullptr);
-    CHECK_ERROR_RETURN_RET_LOG(wrapRet != 0, false,
-        "%{public}s dav1d_data_wrap failed ret:%{public}d.", __func__, wrapRet);
-    CHECK_ERROR_RETURN_RET_LOG(!ctx_, false, "ctx_ is nullptr.");
+    uint8_t* buf = static_cast<uint8_t*>(malloc(frameData.size()));
+    CHECK_ERROR_RETURN_RET_LOG(!buf, false, "%{public}s malloc failed.", __func__);
+    if (memcpy_s(buf, frameData.size(), frameData.data(), frameData.size()) != EOK) {
+        free(buf);
+        IMAGE_LOGE("%{public}s memcpy_s failed.", __func__);
+        return false;
+    }
+    int wrapRet = dav1d_data_wrap(&data, buf, frameData.size(), Dav1dFreeCallback, nullptr);
+    if (wrapRet != 0) {
+        free(buf);
+        IMAGE_LOGE("%{public}s dav1d_data_wrap failed ret:%{public}d.", __func__, wrapRet);
+        return false;
+    }
+    if (!ctx_) {
+        dav1d_data_unref(&data);
+        IMAGE_LOGE("ctx_ is nullptr.");
+        return false;
+    }
     int sendRet = dav1d_send_data(ctx_, &data);
-    CHECK_ERROR_RETURN_RET_LOG(sendRet < 0, false,
-        "%{public}s dav1d_send_data failed ret:%{public}d.", __func__, sendRet);
+    if (sendRet < 0) {
+        dav1d_data_unref(&data);
+        IMAGE_LOGE("%{public}s dav1d_send_data failed ret:%{public}d.", __func__, sendRet);
+        return false;
+    }
     std::unique_ptr<Dav1dPicture> pic = std::make_unique<Dav1dPicture>();
     CHECK_ERROR_RETURN_RET_LOG(!pic, false, "%{public}s new Dav1dPicture failed.", __func__);
     CHECK_ERROR_RETURN_RET_LOG(memset_s(pic.get(), sizeof(*pic), 0, sizeof(*pic)) != EOK, false,
@@ -461,7 +478,8 @@ void AvifDecoderImpl::SetColorSpaceInfo(HeifFrameInfo *info, const std::shared_p
 {
     auto &iccProfile = image->GetRawColorProfile();
     size_t iccSize = iccProfile != nullptr ? iccProfile->GetData().size() : 0;
-    if (iccSize > 0) {
+    constexpr size_t MAX_ICC_SIZE = 4 * 1024 * 1024;
+    if (iccSize > 0 && iccSize <= MAX_ICC_SIZE) {
         auto iccProfileData = iccProfile->GetData().data();
         info->mIccData.assign(iccProfileData, iccProfileData + iccSize);
     } else {

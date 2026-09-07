@@ -350,11 +350,17 @@ heif_error HeifIlocBox::WriteMdatBox(HeifStreamWriter &writer)
 heif_error HeifIlocBox::ReadToExtentData(Item &item, const std::shared_ptr<HeifInputStream> &stream,
     const std::shared_ptr<HeifIdatBox> &idatBox)
 {
+    uint64_t totalExtentDataSize = 0;
     for (auto &extent: item.extents) {
         if (!extent.data.empty()) {
             continue;
         }
         CHECK_ERROR_RETURN_RET(HasOverflowed64(extent.offset, item.baseOffset), heif_error_eof);
+        if (extent.length > MAX_HEIF_IMAGE_GRID_SIZE ||
+            HasOverflowed64(totalExtentDataSize, extent.length) ||
+            totalExtentDataSize + extent.length > MAX_HEIF_IMAGE_GRID_SIZE) {
+            return heif_error_grid_too_large;
+        }
         if (item.constructionMethod == CONSTRUCTION_METHOD_FILE_OFFSET) {
             bool ret = stream->Seek(extent.offset + item.baseOffset);
             if (!ret) {
@@ -367,11 +373,15 @@ heif_error HeifIlocBox::ReadToExtentData(Item &item, const std::shared_ptr<HeifI
             extent.data.resize(extent.length);
             ret = stream->Read(extent.data.data(), static_cast<size_t>(extent.length));
             CHECK_ERROR_RETURN_RET(!ret, heif_error_eof);
+            totalExtentDataSize += extent.length;
         } else if (item.constructionMethod == CONSTRUCTION_METHOD_IDAT_OFFSET) {
             if (!idatBox) {
                 return heif_error_no_idat;
             }
-            idatBox->ReadData(stream, extent.offset + item.baseOffset, extent.length, extent.data);
+            heif_error idatErr = idatBox->ReadData(stream, extent.offset + item.baseOffset,
+                extent.length, extent.data);
+            CHECK_ERROR_RETURN_RET(idatErr != heif_error_ok, idatErr);
+            totalExtentDataSize += extent.length;
         }
     }
 

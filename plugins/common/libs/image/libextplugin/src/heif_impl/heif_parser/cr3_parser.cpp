@@ -21,6 +21,7 @@
 
 namespace OHOS {
 namespace ImagePlugin {
+static const uint64_t MAX_CR3_EXIF_DATA_SIZE = 16 * 1024 * 1024;
 
 heif_error Cr3Parser::MakeFromMemory(const uint8_t *data, size_t size, bool needCopy, std::shared_ptr<Cr3Parser> &out)
 {
@@ -109,6 +110,9 @@ std::vector<uint8_t> Cr3Parser::GetCr3BoxData(const std::shared_ptr<Cr3Box> &cr3
             return {};
         }
         uint64_t length = cr3Box->GetBoxSize() - cr3Box->GetHeaderSize();
+        if (length > MAX_CR3_EXIF_DATA_SIZE) {
+            return {};
+        }
         if (cr3Box->ReadData(inputStream_, start, length, exifData) != heif_error_ok) {
             std::string boxTypeStr = code_to_fourcc(cr3Box->GetBoxType());
             IMAGE_LOGD("%{public}s boxType[%{public}s] ReadData failed", __func__, boxTypeStr.c_str());

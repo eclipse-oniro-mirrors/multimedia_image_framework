@@ -151,10 +151,10 @@ uint32_t HeifStreamReader::Read32()
         SetError(true);
         return 0;
     }
-    return static_cast<uint32_t>((buf[BUFFER_INDEX_ZERO] << THREE_BYTES_SHIFT) |
-        (buf[BUFFER_INDEX_ONE] << TWO_BYTES_SHIFT) |
-        (buf[BUFFER_INDEX_TWO] << ONE_BYTE_SHIFT) |
-        (buf[BUFFER_INDEX_THREE]));
+    return static_cast<uint32_t>((static_cast<uint32_t>(buf[BUFFER_INDEX_ZERO]) << THREE_BYTES_SHIFT) |
+        (static_cast<uint32_t>(buf[BUFFER_INDEX_ONE]) << TWO_BYTES_SHIFT) |
+        (static_cast<uint32_t>(buf[BUFFER_INDEX_TWO]) << ONE_BYTE_SHIFT) |
+        static_cast<uint32_t>(buf[BUFFER_INDEX_THREE]));
 }
 
 uint64_t HeifStreamReader::Read64()

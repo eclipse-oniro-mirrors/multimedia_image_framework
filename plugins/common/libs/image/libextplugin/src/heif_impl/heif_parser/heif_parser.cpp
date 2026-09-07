@@ -637,6 +637,11 @@ void HeifParser::ExtractThumbnailImage(std::shared_ptr<HeifImage> &thumbnailImag
     if (!masterImage) {
         return;
     }
+    for (const auto &thumb : thumbnailImage->GetThumbnailImages()) {
+        if (thumb == masterImage) {
+            return;
+        }
+    }
 
     thumbnailImage->SetThumbnailImage(masterItemId);
     masterImage->AddThumbnailImage(thumbnailImage);
@@ -857,6 +862,9 @@ heif_error HeifParser::AppendHvccNalData(heif_item_id itemId, const std::vector<
     auto hvcc = GetProperty<HeifHvccBox>(itemId);
     if (!hvcc) {
         return heif_error_no_hvcc;
+    }
+    if (data.empty()) {
+        return heif_error_ok;
     }
     hvcc->AppendNalData(data);
     return heif_error_ok;

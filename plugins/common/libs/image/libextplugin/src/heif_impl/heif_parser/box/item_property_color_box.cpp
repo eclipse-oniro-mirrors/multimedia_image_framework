@@ -27,6 +27,10 @@ heif_error HeifColrBox::ParseContent(HeifStreamReader& reader)
     uint32_t colorType = reader.Read32();
     if (colorType == COLOR_TYPE_PROF || colorType == COLOR_TYPE_RICC) {
         uint64_t profileDataSize = GetBoxSize() - GetHeaderSize() - UINT32_BYTES_NUM;
+        constexpr uint64_t MAX_COLOR_PROFILE_SIZE = 16 * 1024 * 1024;
+        if (profileDataSize > MAX_COLOR_PROFILE_SIZE) {
+            return heif_error_invalid_color_profile;
+        }
         if (!reader.CheckSize(profileDataSize)) {
             return heif_error_eof;
         }

@@ -23,9 +23,15 @@ heif_error HeifIinfBox::ParseContentChildren(HeifStreamReader &reader, uint32_t 
     if (recursionCount > MAX_RECURSION_COUNT) {
         return heif_error_too_many_recursion;
     }
-    ParseFullHeader(reader);
+    heif_error err = ParseFullHeader(reader);
+    if (err != heif_error_ok) {
+        return err;
+    }
     uint8_t boxVersion = GetVersion();
     uint32_t entryCount = (boxVersion == HEIF_BOX_VERSION_ZERO) ? reader.Read16() : reader.Read32();
+    if (reader.HasError()) {
+        return heif_error_invalid_box_size;
+    }
     if (entryCount == 0) {
         return heif_error_ok;
     }
