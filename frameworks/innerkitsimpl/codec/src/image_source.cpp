@@ -1487,6 +1487,11 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMap(uint32_t index, const DecodeOpt
             } else {
                 PixelMap::ReleaseMemory(context.allocatorType, context.pixelsBuffer.buffer,
                     context.pixelsBuffer.context, context.pixelsBuffer.bufferSize);
+                if (context.allocatorType == AllocatorType::SHARE_MEM_ALLOC &&
+                    context.pixelsBuffer.context != nullptr) {
+                    delete static_cast<int32_t *>(context.pixelsBuffer.context);
+                    context.pixelsBuffer.context = nullptr;
+                }
             }
         }
         return nullptr;
