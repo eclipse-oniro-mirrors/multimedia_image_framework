@@ -1480,18 +1480,16 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMap(uint32_t index, const DecodeOpt
         guard.unlock();
         IMAGE_LOGE("[ImageSource]decode source fail, ret:%{public}u.", errorCode);
         imageEvent.SetDecodeErrorMsg("decode source fail, ret:." + std::to_string(errorCode));
-        if (context.pixelsBuffer.buffer != nullptr) {
-            if (context.freeFunc != nullptr) {
-                context.freeFunc(context.pixelsBuffer.buffer, context.pixelsBuffer.context,
-                    context.pixelsBuffer.bufferSize);
-            } else {
-                PixelMap::ReleaseMemory(context.allocatorType, context.pixelsBuffer.buffer,
-                    context.pixelsBuffer.context, context.pixelsBuffer.bufferSize);
-                if (context.allocatorType == AllocatorType::SHARE_MEM_ALLOC &&
-                    context.pixelsBuffer.context != nullptr) {
-                    delete static_cast<int32_t *>(context.pixelsBuffer.context);
-                    context.pixelsBuffer.context = nullptr;
-                }
+        if (context.pixelsBuffer.buffer != nullptr && context.freeFunc != nullptr) {
+            context.freeFunc(context.pixelsBuffer.buffer, context.pixelsBuffer.context,
+                context.pixelsBuffer.bufferSize);
+        } else if (context.pixelsBuffer.buffer != nullptr){
+            PixelMap::ReleaseMemory(context.allocatorType, context.pixelsBuffer.buffer,
+                context.pixelsBuffer.context, context.pixelsBuffer.bufferSize);
+            if (context.allocatorType == AllocatorType::SHARE_MEM_ALLOC &&
+                context.pixelsBuffer.context != nullptr) {
+                delete static_cast<int32_t *>(context.pixelsBuffer.context);
+                context.pixelsBuffer.context = nullptr;
             }
         }
         return nullptr;
