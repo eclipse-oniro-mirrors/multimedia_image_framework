@@ -83,7 +83,7 @@ bool Cr3FormatAgent::CheckFormat(const void *headerData, uint32_t dataSize)
     uint32_t offset = 0;
     uint32_t ftypSize = EndianReadUint32(u8Ptr, offset, dataSize);
     offset += ATOM_SIZE_BYTE_SIZE;
-    CHECK_ERROR_RETURN_RET(offset + sizeof(FILE_TYPE_CRX_FLAG) > dataSize, false);
+    CHECK_ERROR_RETURN_RET(offset > dataSize || dataSize - offset < sizeof(FILE_TYPE_CRX_FLAG), false);
     // 1. Check file type "ftypcrx " at the (offset == 4) position of the file
     if (memcmp(u8Ptr + offset, FILE_TYPE_CRX_FLAG, sizeof(FILE_TYPE_CRX_FLAG)) != 0) {
         return false;
@@ -92,8 +92,9 @@ bool Cr3FormatAgent::CheckFormat(const void *headerData, uint32_t dataSize)
     offset += (ftypSize - ATOM_SIZE_BYTE_SIZE);
 
     // Skip bytes: moovSize + moovName + uuidSize + uuidName
+    CHECK_ERROR_RETURN_RET(offset > dataSize || dataSize - offset < (ATOM_SIZE_BYTE_SIZE + ATOM_NAME_BYTE_SIZE +
+        ATOM_SIZE_BYTE_SIZE + ATOM_NAME_BYTE_SIZE + sizeof(CANON_UUID_FLAG)), false);
     offset += (ATOM_SIZE_BYTE_SIZE + ATOM_NAME_BYTE_SIZE + ATOM_SIZE_BYTE_SIZE + ATOM_NAME_BYTE_SIZE);
-    CHECK_ERROR_RETURN_RET(offset + sizeof(CANON_UUID_FLAG) > dataSize, false);
     // 2. Check Canon uuid "85c0b687820f11e08111f4ce462b6a48" at the (offset == 40) position of the file
     if (memcmp(u8Ptr + offset, CANON_UUID_FLAG, sizeof(CANON_UUID_FLAG)) != 0) {
         return false;
@@ -101,8 +102,9 @@ bool Cr3FormatAgent::CheckFormat(const void *headerData, uint32_t dataSize)
     offset += ISO_UUID_BYTE_SIZE;
 
     // Skip bytes: cncvSize + cncvName
+    CHECK_ERROR_RETURN_RET(offset > dataSize || dataSize - offset < (ATOM_SIZE_BYTE_SIZE +
+        ATOM_NAME_BYTE_SIZE + sizeof(CANON_CR3_FLAG)), false);
     offset += (ATOM_SIZE_BYTE_SIZE + ATOM_NAME_BYTE_SIZE);
-    CHECK_ERROR_RETURN_RET(offset + sizeof(CANON_CR3_FLAG) > dataSize, false);
     // 3. Canon compressor tag "CanonCR3" at the (offset == 64) position of the file
     if (memcmp(u8Ptr + offset, CANON_CR3_FLAG, sizeof(CANON_CR3_FLAG)) != 0) {
         return false;

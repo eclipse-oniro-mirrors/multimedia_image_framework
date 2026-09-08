@@ -591,7 +591,9 @@ int JpegDecoderYuv::ConvertFromGray(YuvPlaneInfo &srcPlaneInfo, const DecodeCont
     int ret = 0;
     if (decodeParameter_.outfmt_ == JpegYuvFmt::OutFmt_NV12 || decodeParameter_.outfmt_ == JpegYuvFmt::OutFmt_NV21) {
         UpdateDestStride(decodeParameter_, context, dest);
-        dest.planes[UVCOM] = outYData + dest.strides[YCOM] * dest.planeHeight[YCOM];
+        if (context.allocatorType != Media::AllocatorType::DMA_ALLOC) {
+            dest.planes[UVCOM] = outYData + dest.strides[YCOM] * dest.planeHeight[YCOM];
+        }
         ret = I400ToYUV420Sp(srcPlaneInfo, dest);
     } else {
         ret = I400ToI420_wrapper(srcPlaneInfo, dest);

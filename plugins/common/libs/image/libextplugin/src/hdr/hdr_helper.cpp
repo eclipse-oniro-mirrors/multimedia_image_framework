@@ -53,7 +53,6 @@ constexpr uint8_t JPEG_MARKER_APP2 = 0xE2;
 constexpr uint8_t JPEG_MARKER_APP5 = 0xE5;
 constexpr uint8_t JPEG_MARKER_APP8 = 0xE8;
 constexpr uint8_t JPEG_MARKER_APP11 = 0xEB;
-constexpr uint8_t JPEG_SOI = 0xD8;
 constexpr uint32_t MOVE_ONE_BYTE = 8;
 constexpr uint32_t VIVID_BASE_IMAGE_MARKER_SIZE = 22;
 constexpr int JPEG_MARKER_LENGTH_SIZE = 2;
@@ -81,7 +80,7 @@ constexpr uint8_t VIVID_PRE_INFO_SIZE = 10;
 constexpr uint8_t VIVID_METADATA_PRE_INFO_SIZE = 10;
 constexpr uint32_t HDR_MULTI_PICTURE_APP_LENGTH = 90;
 constexpr uint32_t EXTEND_INFO_MAIN_SIZE = 60;
-constexpr uint32_t ISO_GAINMAP_METADATA_PAYLOAD_MIN_SIZE = 38;
+constexpr uint32_t ISO_GAINMAP_METADATA_PAYLOAD_MIN_SIZE = 61;
 constexpr uint32_t DENOMINATOR = 1000000;
 constexpr uint16_t EMPTY_META_SIZE = 0;
 constexpr uint8_t GAINMAP_CHANNEL_NUM_THREE = 3;
@@ -1205,6 +1204,7 @@ static bool PackVividStaticMetadata(vector<uint8_t>& bytes, uint32_t& index, vec
 #else
     HdrStaticMetadata staticMeta;
     uint32_t vecSize = sizeof(HdrStaticMetadata);
+    CHECK_ERROR_RETURN_RET_LOG(staticVec.size() < vecSize, false, "PackVividStaticMetadata staticVec size too small");
     bool cond = memcpy_s(&staticMeta, vecSize, staticVec.data(), vecSize) != EOK;
     CHECK_ERROR_RETURN_RET(cond, false);
     ImageUtils::Uint16ToBytes(VIVID_STATIC_METADATA_SIZE_IN_IMAGE, bytes, index);
@@ -1370,9 +1370,11 @@ vector<uint8_t> HdrJpegPackerHelper::PackISOMetadataMarker(HdrMetadata& metadata
 
 static bool WriteJpegPreApp(sk_sp<SkData>& imageData, SkWStream& outputStream, uint32_t& index, uint32_t& jfifSize)
 {
+    bool cond = imageData == nullptr || imageData->data() == nullptr || imageData->size() < JPEG_MARKER_TAG_SIZE;
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "hdr encode, invalid image data");
     const uint8_t* imageBytes = reinterpret_cast<const uint8_t*>(imageData->data());
-    bool cond = *imageBytes != JPEG_MARKER_PREFIX || *(imageBytes + INDEX_ONE) != JPEG_SOI;
-    CHECK_ERROR_RETURN_RET_LOG(cond, false, "hdr encode, the spliced image is not a jpeg");
+    bool invalidSoi = std::memcmp(JPEG_SOI_HEADER, imageBytes, JPEG_MARKER_TAG_SIZE) != 0;
+    CHECK_ERROR_RETURN_RET_LOG(invalidSoi, false, "HDR-IMAGE hdr encode, the spliced image is not a jpeg");
     uint32_t dataSize = imageData->size();
     outputStream.write(imageBytes, JPEG_MARKER_TAG_SIZE);
     index += JPEG_MARKER_TAG_SIZE;
@@ -1397,7 +1399,8 @@ static bool WriteJpegPreApp(sk_sp<SkData>& imageData, SkWStream& outputStream, u
 uint32_t HdrJpegPackerHelper::SpliceLogHdrStream(sk_sp<SkData>& baseImage,
     SkWStream& output, Media::HdrMetadata& metadata)
 {
-    CHECK_ERROR_RETURN_RET(baseImage == nullptr, ERR_IMAGE_ENCODE_FAILED);
+    CHECK_ERROR_RETURN_RET(baseImage == nullptr || baseImage->data() == nullptr ||
+        baseImage->size() < JPEG_MARKER_TAG_SIZE, ERR_IMAGE_ENCODE_FAILED);
     uint32_t offset = 0;
     uint32_t jfifSize = 0;
     CHECK_ERROR_RETURN_RET(!WriteJpegPreApp(baseImage, output, offset, jfifSize), ERR_IMAGE_ENCODE_FAILED);

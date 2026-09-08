@@ -37,7 +37,7 @@ public:
     void flush() override;
     size_t bytesWritten() const override;
 private:
-    ImagePlugin::OutputDataStream *stream_;
+    ImagePlugin::OutputDataStream *stream_ = nullptr;
 };
 
 class MetadataWStream : public SkWStream, NoCopyable {

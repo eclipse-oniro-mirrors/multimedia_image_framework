@@ -240,6 +240,31 @@ static int32_t GetUVStride(int32_t width)
     return (width + 1) / HALF * HALF;
 }
 
+struct YuvPlaneCopyInfo {
+    int32_t srcStride;
+    int32_t srcOffset;
+    int32_t dstStride;
+    int32_t dstOffset;
+    int32_t rowOffset;
+    int32_t colOffset;
+    int32_t rowBytes;
+    int32_t rowCount;
+    const char *planeName;
+};
+
+static bool CopyYuvPlane(uint8_t *dstPixels, const uint8_t *srcPixels, const YuvPlaneCopyInfo &info)
+{
+    for (int32_t row = 0; row < info.rowCount; row++) {
+        uint8_t *dstRow = dstPixels + info.dstOffset + row * info.dstStride;
+        const uint8_t *srcRow = srcPixels + info.srcOffset + (info.rowOffset + row) * info.srcStride + info.colOffset;
+        if (memcpy_s(dstRow, info.dstStride, srcRow, info.rowBytes) != EOK) {
+            IMAGE_LOGE("[PostProc]CenterDisplayYuv %{public}s memcpy failed at row %{public}d", info.planeName, row);
+            return false;
+        }
+    }
+    return true;
+}
+
 bool PostProc::CenterDisplayYuv(PixelMap &pixelMap, int32_t srcWidth, int32_t srcHeight,
                                 int32_t targetWidth, int32_t targetHeight)
 {
@@ -267,26 +292,19 @@ bool PostProc::CenterDisplayYuv(PixelMap &pixelMap, int32_t srcWidth, int32_t sr
 
     int32_t left = max(0, srcWidth - targetWidth) / HALF;
     int32_t top = max(0, srcHeight - targetHeight) / HALF;
-    int32_t dstYStride = static_cast<int32_t>(dstStrides.yStride);
-    int32_t srcYStride = static_cast<int32_t>(yuvInfo.yStride);
-    int32_t yCopyBytes = targetWidth;
-    for (int32_t row = 0; row < targetHeight; row++) {
-        uint8_t *dstRow = dstPixels + row * dstYStride;
-        const uint8_t *srcRow = srcPixels + yuvInfo.yOffset + (top + row) * srcYStride + left;
-        cond = memcpy_s(dstRow, dstYStride, srcRow, yCopyBytes) != EOK;
-        CHECK_ERROR_RETURN_RET_LOG(cond, false, "[PostProc]CenterDisplayYuv Y memcpy failed at row %{public}d", row);
+    YuvPlaneCopyInfo yInfo = { static_cast<int32_t>(yuvInfo.yStride), static_cast<int32_t>(yuvInfo.yOffset),
+        static_cast<int32_t>(dstStrides.yStride), 0, top, left, targetWidth, targetHeight, "Y" };
+    if (!CopyYuvPlane(dstPixels, srcPixels, yInfo)) {
+        dstMemory->Release();
+        return false;
     }
 
-    int32_t leftAligned = (left / HALF) * HALF;
-    int32_t topUV = top / HALF;
-    int32_t dstUvStride = static_cast<int32_t>(dstStrides.uvStride);
-    int32_t srcUVStride = static_cast<int32_t>(yuvInfo.uvStride);
-    int32_t uvCopyBytes = GetUVStride(targetWidth);
-    for (int32_t row = 0; row < (targetHeight + 1) / HALF; row++) {
-        uint8_t *dstRow = dstPixels + dstStrides.uvOffset + row * dstUvStride;
-        const uint8_t *srcRow = srcPixels + yuvInfo.uvOffset + (topUV + row) * srcUVStride + leftAligned;
-        cond = memcpy_s(dstRow, dstUvStride, srcRow, uvCopyBytes) != EOK;
-        CHECK_ERROR_RETURN_RET_LOG(cond, false, "[PostProc]CenterDisplayYuv UV memcpy failed at row %{public}d", row);
+    YuvPlaneCopyInfo uvInfo = { static_cast<int32_t>(yuvInfo.uvStride), static_cast<int32_t>(yuvInfo.uvOffset),
+        static_cast<int32_t>(dstStrides.uvStride), static_cast<int32_t>(dstStrides.uvOffset),
+        top / HALF, (left / HALF) * HALF, GetUVStride(targetWidth), (targetHeight + 1) / HALF, "UV" };
+    if (!CopyYuvPlane(dstPixels, srcPixels, uvInfo)) {
+        dstMemory->Release();
+        return false;
     }
 
     pixelMap.SetPixelsAddr(dstMemory->data.data, dstMemory->extend.data, dstMemory->data.size,

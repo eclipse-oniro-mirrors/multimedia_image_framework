@@ -437,6 +437,9 @@ bool JpegHardwareDecoder::CopySrcImgToDecodeInputBuffer(ImagePlugin::InputDataSt
 {
     // max size of pure jpeg bitstream to use DMA Pool is 256KB
     constexpr uint32_t MAX_SIZE_USE_DMA_POOL = 256 * 1024;
+    useDmaPool_ = false;
+    usedSizeInPool_ = 0;
+    usedOffsetInPool_ = 0;
     if (!GetCompressedDataStart(srcStream)) {
         JPEG_HW_LOGE("get compressed data start failed");
         return false;
@@ -462,8 +465,11 @@ bool JpegHardwareDecoder::IsStandAloneJpegMarker(uint16_t marker)
 bool JpegHardwareDecoder::JumpOverCurrentJpegMarker(ImagePlugin::InputDataStream* srcStream, unsigned int& curPos,
                                                     unsigned int totalLen, uint16_t marker)
 {
+    if (curPos > totalLen || totalLen - curPos < JpegMarker::MARKER_LEN) {
+        return false;
+    }
     curPos += JpegMarker::MARKER_LEN;
-    if (curPos + JpegMarker::MARKER_LEN > totalLen) {
+    if (totalLen - curPos < JpegMarker::MARKER_LEN) {
         JPEG_HW_LOGE("invalid pos(cur=%{public}u, total=%{public}u) after jump over marker(%{public}u)",
                      curPos, totalLen, marker);
         return false;
@@ -477,12 +483,12 @@ bool JpegHardwareDecoder::JumpOverCurrentJpegMarker(ImagePlugin::InputDataStream
     if (!readSuccess) {
         return false;
     }
-    curPos += skipBytes;
-    if (curPos > totalLen) {
+    if (skipBytes > totalLen - curPos) {
         JPEG_HW_LOGE("invalid pos(cur=%{public}u, total=%{public}u) after jump over related parameters " \
                      "for marker(%{public}u)", curPos, totalLen, marker);
         return false;
     }
+    curPos += skipBytes;
     return true;
 }
 
@@ -534,6 +540,9 @@ void JpegHardwareDecoder::RecycleAllocatedResource()
     if (useDmaPool_) {
         DmaBufferInfo bufferInfo {usedSizeInPool_, usedOffsetInPool_};
         DmaPool::GetInstance().RecycleBufferInDmaPool(bufferInfo);
+        useDmaPool_ = false;
+        usedSizeInPool_ = 0;
+        usedOffsetInPool_ = 0;
     }
 }
 } // namespace OHOS::ImagePlugin

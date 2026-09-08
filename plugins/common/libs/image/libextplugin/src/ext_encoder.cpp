@@ -415,7 +415,8 @@ static uint32_t YuvToRgbaSkInfo(ImageInfo info, SkImageInfo &skInfo, uint8_t * d
     CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_ENCODE_FAILED, "YuvToSkInfo Support YUV format RGB convert failed ");
     cond  = memcpy_s(dstData, info.size.width * info.size.height * RGBA8888_PIXEL_BYTES,
         dstDataInfo.buffer, dstDataInfo.bufferSize) != 0;
-    delete dstDataInfo.buffer;
+    free(dstDataInfo.buffer);
+    dstDataInfo.buffer = nullptr;
     CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_ENCODE_FAILED, "YuvToSkInfo memcpy failed ");
     auto alpha = pixelMap->GetAlphaType();
     if (alpha == AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN)
@@ -834,6 +835,8 @@ uint32_t ExtEncoder::EncodeImageByPixelMap(PixelMap* pixelmap, bool needExif, Sk
         rowStride = skInfo.minRowBytes64();
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
         if (pixelmap->GetAllocatorType() == AllocatorType::DMA_ALLOC) {
+            CHECK_ERROR_RETURN_RET_LOG(pixelmap->GetFd() == nullptr, ERR_IMAGE_INVALID_PARAMETER,
+                "EncodeImageByPixelMap DMA pixelmap surface buffer is null");
             SurfaceBuffer* sbBuffer = reinterpret_cast<SurfaceBuffer*> (pixelmap->GetFd());
             rowStride = static_cast<uint64_t>(sbBuffer->GetStride());
             IMAGE_LOGD("rowStride DMA: %{public}llu", static_cast<unsigned long long>(rowStride));
@@ -1382,8 +1385,11 @@ void ExtEncoder::SetHdrColorSpaceType(sptr<SurfaceBuffer>& surfaceBuffer)
         return;
     }
     CM_ColorSpaceType colorspaceType;
-    VpeUtils::GetSbColorSpaceType(surfaceBuffer, colorspaceType);
-    if ((colorspaceType & CM_PRIMARIES_MASK) != COLORPRIMARIES_BT2020) {
+    if (!VpeUtils::GetSbColorSpaceType(surfaceBuffer, colorspaceType)) {
+        IMAGE_LOGW("SetHdrColorSpaceType GetSbColorSpaceType failed");
+        return;
+    }
+    if (((static_cast<uint32_t>(colorspaceType)) & CM_PRIMARIES_MASK) != COLORPRIMARIES_BT2020) {
 #ifdef IMAGE_COLORSPACE_FLAG
         ColorManager::ColorSpaceName colorspace = pixelmap_->InnerGetGrColorSpace().GetColorSpaceName();
         IMAGE_LOGI("ExtEncoder SetHdrColorSpaceType, color is %{public}d", colorspace);
@@ -1912,7 +1918,7 @@ uint32_t ExtEncoder::AssembleHeifUltraPhotoMap(AuxiliaryPictureType auxType, std
 
 RelativeLocation GetFragmentRelLocation(std::shared_ptr<AuxiliaryPicture> &fragmentMap)
 {
-    RelativeLocation loc;
+    RelativeLocation loc{};
     auto fragmentMeta = fragmentMap->GetMetadata(MetadataType::FRAGMENT);
     bool cond = fragmentMeta == nullptr;
     CHECK_ERROR_RETURN_RET_LOG(cond, loc, "The fragmentMap has not fragmentMap");
@@ -1980,6 +1986,8 @@ uint32_t DecomposeDualVivid(VpeSurfaceBuffers& buffers, Media::PixelMap* pixelma
         (format != SkEncodedImageFormat::kJPEG && format != SkEncodedImageFormat::kHEIF);
     CHECK_ERROR_RETURN_RET(unsupportedDualVivid, ERR_IMAGE_INVALID_PARAMETER);
     bool sdrIsSRGB = pixelmap->GetToSdrColorSpaceIsSRGB();
+    CHECK_ERROR_RETURN_RET_LOG(pixelmap->GetFd() == nullptr, ERR_IMAGE_INVALID_PARAMETER,
+        "DecomposeDualVivid DMA pixelmap surface buffer is null");
     sptr<SurfaceBuffer> hdrSurfaceBuffer(reinterpret_cast<SurfaceBuffer*> (pixelmap->GetFd()));
     sptr<SurfaceBuffer> baseSptr = AllocSurfaceBuffer(hdrSurfaceBuffer->GetWidth(),
         hdrSurfaceBuffer->GetHeight());
@@ -1991,7 +1999,11 @@ uint32_t DecomposeDualVivid(VpeSurfaceBuffers& buffers, Media::PixelMap* pixelma
         return IMAGE_RESULT_CREATE_SURFAC_FAILED;
     }
     CM_ColorSpaceType colorspaceType;
-    VpeUtils::GetSbColorSpaceType(hdrSurfaceBuffer, colorspaceType);
+    if (!VpeUtils::GetSbColorSpaceType(hdrSurfaceBuffer, colorspaceType)) {
+        IMAGE_LOGE("DecomposeDualVivid GetSbColorSpaceType failed");
+        FreeBaseAndGainMapSurfaceBuffer(baseSptr, gainmapSptr);
+        return ERR_IMAGE_INVALID_PARAMETER;
+    }
     if ((colorspaceType & CM_PRIMARIES_MASK) != COLORPRIMARIES_BT2020) {
 #ifdef IMAGE_COLORSPACE_FLAG
         ColorManager::ColorSpaceName colorspace = pixelmap->InnerGetGrColorSpace().GetColorSpaceName();
@@ -2161,6 +2173,8 @@ uint32_t ExtEncoder::EncodeSdrImage(ExtWStream& outputStream)
     VpeUtils::SetSbColorSpaceType(baseSptr, CM_SRGB_FULL);
     cond = baseSptr == nullptr;
     CHECK_ERROR_RETURN_RET_LOG(cond, IMAGE_RESULT_CREATE_SURFAC_FAILED, "EncodeSdrImage sdr buffer alloc failed");
+    CHECK_ERROR_RETURN_RET_LOG(pixelmap_->GetFd() == nullptr, ERR_IMAGE_INVALID_PARAMETER,
+        "EncodeSdrImage DMA pixelmap surface buffer is null");
     sptr<SurfaceBuffer> hdrSurfaceBuffer(reinterpret_cast<SurfaceBuffer*>(pixelmap_->GetFd()));
     ImageUtils::FlushSurfaceBuffer(hdrSurfaceBuffer);
     VpeUtils::SetSbMetadataType(hdrSurfaceBuffer, CM_IMAGE_HDR_VIVID_SINGLE);
@@ -2971,6 +2985,8 @@ uint32_t ExtEncoder::SpliceFragmentStream(SkWStream& skStream, sk_sp<SkData>& sk
     bool cond = !CheckFragmentMetadata(picture_, fragmentMetadata);
     CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_PROPERTY_NOT_EXIST,
         "%{public}s: CheckFragmentMetadata failed!", __func__);
+    cond = skData == nullptr || skData->data() == nullptr || skData->size() <= JPEG_MARKER_TAG_SIZE;
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_MEDIA_VALUE_INVALID, "%{public}s: skData is null or too small!", __func__);
     const uint8_t* dataBytes = reinterpret_cast<const uint8_t*>(skData->data());
     // write JPEG SOI(0xFFD8)
     skStream.write(dataBytes, JPEG_MARKER_TAG_SIZE);
@@ -2978,9 +2994,6 @@ uint32_t ExtEncoder::SpliceFragmentStream(SkWStream& skStream, sk_sp<SkData>& sk
     // write fragment metadata
     skStream.write(packedFragmentMetadata.data(), packedFragmentMetadata.size());
     // write fragment auxiliary image data
-    cond = skData->size() <=  JPEG_MARKER_TAG_SIZE;
-    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_MEDIA_VALUE_INVALID,
-        "%{public}s: write fragment auxiliary image data failed!", __func__);
     skStream.write(dataBytes + JPEG_MARKER_TAG_SIZE, skData->size() - JPEG_MARKER_TAG_SIZE);
     return SUCCESS;
 }
@@ -3065,7 +3078,7 @@ static bool FillImagePropertyItem(const std::shared_ptr<AbsMemory> &mem, const s
 
 std::shared_ptr<AbsMemory> ExtEncoder::AllocateNewSharedMem(size_t memorySize, std::string tag)
 {
-    MemoryData memoryData;
+    MemoryData memoryData{};
     memoryData.size = memorySize;
     memoryData.tag = tag.empty() ? DEFAULT_ASHMEM_TAG.c_str() : tag.c_str();
     std::unique_ptr<AbsMemory> memory =
@@ -3266,6 +3279,8 @@ uint32_t ExtEncoder::DoHeifEncode(std::vector<ImageItem>& inputImgs, std::vector
     int32_t encodeRes = codec->DoHeifEncode(inputImgs, inputMetas, refs, outputBuffer, outSize);
     cond = encodeRes != HDF_SUCCESS;
     CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_ENCODE_FAILED, "ExtEncoder::DoHeifEncode DoHeifEncode failed");
+    cond = outputAshmem->data.data == nullptr || outSize == 0 || outSize > outputAshmem->data.size;
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_ENCODE_FAILED, "ExtEncoder::DoHeifEncode invalid output");
     IMAGE_LOGI("ExtEncoder::DoHeifEncode output type is %{public}d", output_->GetType());
     bool writeRes = output_->Write(reinterpret_cast<uint8_t *>(outputAshmem->data.data), outSize);
     cond = !writeRes;
@@ -3513,6 +3528,10 @@ bool ExtEncoder::AssembleBlobMetaItem(MetadataType type, std::vector<MetaItem>& 
     std::shared_ptr<AbsMemory> propertyAshmem = AllocateNewSharedMem(blobDataSize, info->ashmemTag);
     CHECK_ERROR_RETURN_RET_LOG(propertyAshmem == nullptr, false,
         "AssembleBlobMetaItem alloc propertyAshmem failed");
+    CHECK_ERROR_RETURN_RET_LOG(propertyAshmem->data.data == nullptr, false,
+        "AssembleBlobMetaItem propertyAshmem data is null");
+    CHECK_ERROR_RETURN_RET_LOG(propertyAshmem->extend.data == nullptr, false,
+        "AssembleBlobMetaItem propertyAshmem extend is null");
     tmpMemoryList_.push_back(propertyAshmem);
     uint8_t* memData = reinterpret_cast<uint8_t*>(propertyAshmem->data.data);
     size_t memSize = propertyAshmem->data.size;
