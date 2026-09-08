@@ -173,6 +173,7 @@ private:
         // adjust pointer position when multiple inheritance.
         void *obj = dynamic_cast<void *>(pluginBase);
         // when -frtti is not enable, we use static cast.
+        // static cast is not safe enough, but we have checked before we get here.
         T *serviceObj = static_cast<T *>(obj);
 #endif
         return serviceObj;

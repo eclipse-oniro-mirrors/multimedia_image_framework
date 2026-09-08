@@ -15,7 +15,6 @@
 
 #include "plugin.h"
 #include <utility>
-#include <iterator>
 #include "image_log.h"
 #include "impl_class_mgr.h"
 #include "json.hpp"
@@ -278,9 +277,7 @@ void Plugin::FreeLibrary()
 uint32_t Plugin::RegisterMetadata(istream &metadata, weak_ptr<Plugin> &plugin)
 {
     json root = nlohmann::json::parse(metadata, nullptr, false); // no callback, no exceptions
-    // read stream into string and check total length to prevent excessive memory consumption
     if (root.is_discarded()) {
-    std::string metadataStr{std::istreambuf_iterator<char>(metadata), std::istreambuf_iterator<char>()};
         IMAGE_LOGE("RegisterMetadata parse json failed.");
         return ERR_INVALID_PARAMETER;
     }
@@ -317,8 +314,6 @@ uint32_t Plugin::RegisterMetadata(istream &metadata, weak_ptr<Plugin> &plugin)
         IMAGE_LOGE("get array size of classes failed.");
         return ERR_INVALID_PARAMETER;
     }
-    CHECK_ERROR_RETURN_RET_LOG(classNum > MAX_CLASSES_NUM, ERR_INVALID_PARAMETER,
-        "classes count exceeds limit: %{public}zu.", classNum);
     IMAGE_LOGD("parse class num: %{public}zu.", classNum);
     for (size_t i = 0; i < classNum; i++) {
         const json &classInfo = root["classes"][i];
