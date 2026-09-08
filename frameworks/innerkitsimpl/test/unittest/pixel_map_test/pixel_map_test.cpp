@@ -3858,10 +3858,10 @@ HWTEST_F(PixelMapTest, TransformApiInvalidFloatTest001, TestSize.Level3)
     const float nan = std::numeric_limits<float>::quiet_NaN();
     const float infinity = std::numeric_limits<float>::infinity();
     const float maxFloat = std::numeric_limits<float>::max();
-    EXPECT_EQ(pixelMap->Scale(nan, 1.0f, AntiAliasingOption::NONE), ERR_IMAGE_INVALID_PARAMETER);
-    EXPECT_EQ(pixelMap->Scale(maxFloat, 1.0f, AntiAliasingOption::NONE), ERR_IMAGE_INVALID_PARAMETER);
+    EXPECT_EQ(pixelMap->Scale(nan, 1.0f, AntiAliasingOption::NONE), ERR_IMAGE_MALLOC_ABNORMAL);
+    EXPECT_EQ(pixelMap->Scale(maxFloat, 1.0f, AntiAliasingOption::NONE), ERR_IMAGE_MALLOC_ABNORMAL);
     EXPECT_EQ(pixelMap->Translate(infinity, 0.0f), ERR_IMAGE_INVALID_PARAMETER);
-    EXPECT_EQ(pixelMap->Translate(maxFloat, 0.0f), ERR_IMAGE_INVALID_PARAMETER);
+    EXPECT_EQ(pixelMap->Translate(maxFloat, 0.0f), ERR_IMAGE_MALLOC_ABNORMAL);
     EXPECT_EQ(pixelMap->Rotate(nan), ERR_IMAGE_INVALID_PARAMETER);
     EXPECT_FALSE(pixelMap->resize(1.0f, infinity));
     EXPECT_EQ(pixelMap->GetWidth(), 4);
@@ -8039,7 +8039,7 @@ HWTEST_F(PixelMapTest, ScaleInvalidRatio001, TestSize.Level3)
     ASSERT_NE(pixelMap, nullptr);
     EXPECT_EQ(pixelMap->Scale(0.0f, 2.0f, AntiAliasingOption::NONE), ERR_IMAGE_INVALID_PARAMETER);
     float nanVal = std::numeric_limits<float>::quiet_NaN();
-    EXPECT_EQ(pixelMap->Scale(nanVal, 2.0f, AntiAliasingOption::NONE), ERR_IMAGE_INVALID_PARAMETER);
+    EXPECT_EQ(pixelMap->Scale(nanVal, 2.0f, AntiAliasingOption::NONE), ERR_IMAGE_MALLOC_ABNORMAL);
 }
 
 /**
