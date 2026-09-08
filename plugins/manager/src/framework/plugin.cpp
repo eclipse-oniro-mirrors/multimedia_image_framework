@@ -277,25 +277,11 @@ void Plugin::FreeLibrary()
 
 uint32_t Plugin::RegisterMetadata(istream &metadata, weak_ptr<Plugin> &plugin)
 {
+    json root = nlohmann::json::parse(metadata, nullptr, false); // no callback, no exceptions
     // read stream into string and check total length to prevent excessive memory consumption
+    if (root.is_discarded()) {
     std::string metadataStr{std::istreambuf_iterator<char>(metadata), std::istreambuf_iterator<char>()};
-    if (metadataStr.size() > MAX_METADATA_LENGTH) {
-        IMAGE_LOGE("metadata length exceeds limit: %{public}zu.", metadataStr.size());
-        return ERR_INVALID_PARAMETER;
-    }
-
-    // parse with depth limit via callback
-    bool depthExceeded = false;
-    auto depthLimiter = [&depthExceeded](int depth, nlohmann::detail::parse_event_t, json &) -> bool {
-        if (depth > static_cast<int>(MAX_JSON_DEPTH)) {
-            depthExceeded = true;
-            return true; // discard element at excessive depth
-        }
-        return false;
-    };
-    json root = nlohmann::json::parse(metadataStr, depthLimiter, false); // no exceptions
-    if (depthExceeded || root.is_discarded()) {
-        IMAGE_LOGE("RegisterMetadata parse json failed or depth exceeded.");
+        IMAGE_LOGE("RegisterMetadata parse json failed.");
         return ERR_INVALID_PARAMETER;
     }
     if (JsonHelper::GetStringValue(root, "packageName", packageName_) != SUCCESS) {

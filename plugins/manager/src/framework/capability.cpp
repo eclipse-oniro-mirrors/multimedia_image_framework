@@ -51,9 +51,6 @@ uint32_t Capability::SetCapability(const json &capsInfo)
     }
 
     size_t capNum = capsInfo.size();
-    bool cond = capNum > MAX_CAPABILITY_NUM;
-    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_INVALID_PARAMETER,
-        "capability array size %{public}zu exceeds limit %{public}zu.", capNum, MAX_CAPABILITY_NUM);
     IMAGE_LOGD("class cap num: %{public}zu.", capNum);
     string name;
     for (size_t i = 0; i < capNum; i++) {

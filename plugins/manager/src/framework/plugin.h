@@ -60,10 +60,6 @@ private:
     static constexpr uint8_t VERSION_ARRAY_SIZE = 4;
     static constexpr uint8_t UINT16_MAX_DECIMAL_DIGITS = 5;  // uint16_t max number 65535, 5 digits.
 
-    static constexpr size_t MAX_METADATA_LENGTH = 64 * 1024;     // 64KB, actual max ~4KB
-    static constexpr size_t MAX_JSON_DEPTH = 10;                 // actual max depth = 6
-    static constexpr size_t MAX_CLASSES_NUM = 256;
-
     uint32_t ResolveLibrary();
     void FreeLibrary();
     uint32_t RegisterMetadata(std::istream &metadata, std::weak_ptr<Plugin> &plugin);

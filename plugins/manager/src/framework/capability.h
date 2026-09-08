@@ -44,7 +44,6 @@ private:
     uint32_t AnalyzeUint32Range(const nlohmann::json &capInfo, AttrData &attrData);
     uint32_t AnalyzeStringSet(const nlohmann::json &capInfo, AttrData &attrData);
 
-    static constexpr size_t MAX_CAPABILITY_NUM = 32;
     static constexpr uint32_t SET_MIN_VALUE_NUM = 1;
     static const std::string CAPABILITY_BOOL_TRUE;
     static const std::string CAPABILITY_BOOL_FALSE;

@@ -27,22 +27,13 @@ public:
     PluginClassBase() = default;
     virtual ~PluginClassBase();
     static constexpr uint32_t MAGIC_CODE = 0x1122CCFF;
-    uint16_t GetInterfaceID() const
-    {
-        return interfaceID_;
-    }
 
 private:
     friend class ImplClass;
     // the plugin manager guarantees that the key object continue to be valid until the plugin object is destroyed.
     // return MAGIC_CODE used to check if the plugin class correctly inherits the PluginClassBase class.
     uint32_t SetImplClassKey(AbsImplClassKey &key);
-    void SetInterfaceID(uint16_t id)
-    {
-        interfaceID_ = id;
-    }
     AbsImplClassKey *implClassKey_ = nullptr;
-    uint16_t interfaceID_ = 0xFFFF;
 };
 } // namespace MultimediaPlugin
 } // namespace OHOS
