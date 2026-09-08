@@ -193,7 +193,7 @@ HWTEST_F(ImageColorSpaceTest, JpegColorSpaceDecode002, TestSize.Level3)
     ASSERT_NE(pixelMap.get(), nullptr);
 #ifdef IMAGE_COLORSPACE_FLAG
     OHOS::ColorManager::ColorSpace grColorSpace = pixelMap->InnerGetGrColorSpace();
-    EXPECT_EQ(grColorSpace.ToSkColorSpace(), nullptr);
+    EXPECT_EQ(grColorSpace.GetColorSpaceName(), ColorManager::ColorSpaceName::CUSTOM);
 #endif
 }
 
@@ -229,7 +229,7 @@ HWTEST_F(ImageColorSpaceTest, JpegColorSpaceEncode002, TestSize.Level3)
     ASSERT_NE(pixelMapOne.get(), nullptr);
 #ifdef IMAGE_COLORSPACE_FLAG
     OHOS::ColorManager::ColorSpace grColorSpaceOne = pixelMapOne->InnerGetGrColorSpace();
-    EXPECT_EQ(grColorSpaceOne.ToSkColorSpace(), nullptr);
+    EXPECT_EQ(grColorSpaceOne.GetColorSpaceName(), ColorManager::ColorSpaceName::CUSTOM);
 #endif
 
     /**
@@ -259,7 +259,7 @@ HWTEST_F(ImageColorSpaceTest, JpegColorSpaceEncode002, TestSize.Level3)
     ASSERT_NE(pixelMapTwo.get(), nullptr);
 #ifdef IMAGE_COLORSPACE_FLAG
     OHOS::ColorManager::ColorSpace grColorSpaceTwo = pixelMapTwo->InnerGetGrColorSpace();
-    EXPECT_EQ(grColorSpaceTwo.ToSkColorSpace(), nullptr);
+    EXPECT_EQ(grColorSpaceTwo.GetColorSpaceName(), ColorManager::ColorSpaceName::SRGB);
 #endif
 }
 

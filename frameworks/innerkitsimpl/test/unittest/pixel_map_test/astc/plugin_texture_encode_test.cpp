@@ -72,6 +72,7 @@ constexpr uint32_t COMPRESSION_FORMAT = 4;
 constexpr uint32_t PER_BLOCK_BYTES = 16;
 constexpr uint32_t BLOCK_SIZE = 4;
 constexpr uint8_t ASTC_PER_BLOCK_BYTES = 16;
+constexpr uint8_t ASTC_INVALID_QUALITY = 100;
 constexpr uint8_t ASTC_MAGIC_0 = 0x13; // ASTC MAGIC ID 0x13
 constexpr uint8_t ASTC_MAGIC_1 = 0xAB; // ASTC MAGIC ID 0xAB
 constexpr uint8_t ASTC_MAGIC_2 = 0xA1; // ASTC MAGIC ID 0xA1
@@ -387,7 +388,7 @@ HWTEST_F(PluginTextureEncodeTest, ASTCEncode005, TestSize.Level3)
     BufferPackerStream *stream = new (std::nothrow) BufferPackerStream(output, OUTPUT_SIZE_MAX);
     ASSERT_NE(stream, nullptr);
 
-    struct PlEncodeOptions option = { "image/sdr_astc_4x4", 92, 1 };
+    struct PlEncodeOptions option = { "image/sdr_astc_4x4", ASTC_INVALID_QUALITY, 1 };
     AstcCodec astcEncoder;
     uint32_t setRet = astcEncoder.SetAstcEncode(stream, option, pixelMapPtr);
     ASSERT_EQ(setRet, SUCCESS);
@@ -430,7 +431,7 @@ HWTEST_F(PluginTextureEncodeTest, ASTCEncode006, TestSize.Level3)
     BufferPackerStream *stream = new (std::nothrow) BufferPackerStream(output, OUTPUT_SIZE_MAX);
     ASSERT_NE(stream, nullptr);
 
-    struct PlEncodeOptions option = { "image/sdr_sut_superfast_4x4", 92, 1 };
+    struct PlEncodeOptions option = { "image/sdr_sut_superfast_4x4", ASTC_INVALID_QUALITY, 1 };
     AstcCodec astcEncoder;
     uint32_t setRet = astcEncoder.SetAstcEncode(stream, option, pixelMapPtr);
     ASSERT_EQ(setRet, SUCCESS);
@@ -474,7 +475,7 @@ HWTEST_F(PluginTextureEncodeTest, ASTCEncode007, TestSize.Level3)
     BufferPackerStream *stream = new (std::nothrow) BufferPackerStream(output, OUTPUT_SIZE_MAX);
     ASSERT_NE(stream, nullptr);
 
-    struct PlEncodeOptions option = { "image/sdr_sut_superfast_4x4", 92, 1 };
+    struct PlEncodeOptions option = { "image/sdr_sut_superfast_4x4", ASTC_INVALID_QUALITY, 1 };
     AstcCodec astcEncoder;
     uint32_t setRet = astcEncoder.SetAstcEncode(stream, option, pixelMapPtr);
     ASSERT_EQ(setRet, SUCCESS);
