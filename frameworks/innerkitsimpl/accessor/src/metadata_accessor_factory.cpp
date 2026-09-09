@@ -191,7 +191,7 @@ std::shared_ptr<MetadataAccessor> MetadataAccessorFactory::Create(std::shared_pt
 EncodedFormat MetadataAccessorFactory::GetImageType(std::shared_ptr<MetadataStream> &stream, uint32_t &error)
 {
     if (stream == nullptr) {
-        IMAGE_LOGE(GetImageType stream is nullptr);
+        IMAGE_LOGE("GetImageType stream is nullptr");
         error = ERR_MEDIA_MMAP_FILE_CHANGED;
         return EncodedFormat::UNKNOWN;
     }
