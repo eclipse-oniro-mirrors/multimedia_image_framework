@@ -4779,10 +4779,14 @@ void PixelMap::scale(float xAxis, float yAxis, const AntiAliasingOption &option)
 
 uint32_t PixelMap::Scale(float xAxis, float yAxis, AntiAliasingOption option)
 {
+    if (xAxis == 0.0f || yAxis == 0.0f) {
+        IMAGE_LOGE("Invalid scale ratio: 0");
+        return ERR_IMAGE_INVALID_PARAMETER;
+    }
     Size scaledSize;
     if (!GetScaledSize(imageInfo_.size, xAxis, yAxis, scaledSize)) {
         IMAGE_LOGE("Invalid scale ratio");
-        return ERR_IMAGE_INVALID_PARAMETER;
+        return ERR_IMAGE_MALLOC_ABNORMAL; // Use this error code for backward compatibility
     }
     if (xAxis > 0.0f && yAxis > 0.0f &&
         scaledSize.width == imageInfo_.size.width && scaledSize.height == imageInfo_.size.height) {
@@ -4899,7 +4903,7 @@ uint32_t PixelMap::Translate(float xAxis, float yAxis)
         !SafeCastToInt32(static_cast<double>(imageInfo_.size.height) + yAxis, translatedHeight) ||
         translatedWidth <= 0 || translatedHeight <= 0) {
         IMAGE_LOGE("Invalid translated image size");
-        return ERR_IMAGE_INVALID_PARAMETER;
+        return ERR_IMAGE_MALLOC_ABNORMAL; // Use this error code for backward compatibility
     }
     if (imageInfo_.pixelFormat == PixelFormat::Y8) {
         IMAGE_LOGE("Translate does not support Y8");
