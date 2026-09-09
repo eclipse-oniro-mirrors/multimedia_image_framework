@@ -19,6 +19,7 @@
 #include <libexif/exif-entry.h>
 #include <libexif/exif-tag.h>
 #include <libexif/huawei/exif-mnote-data-huawei.h>
+#include <mutex>
 #include <unordered_map>
 
 #include "image_type.h"
@@ -129,6 +130,7 @@ private:
     int GetUserMakerNote(std::string& value) const;
     ExifData *exifData_;
     bool isSystemApi_ = false;
+    mutable std::mutex mutex_;
 };
 } // namespace Media
 } // namespace OHOS

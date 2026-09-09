@@ -633,9 +633,19 @@ static std::unique_ptr<ImageSource> CreateNativeImageSource(napi_env env, napi_v
         IMAGE_LOGE(
             "CreateImageSource RawFileDescriptor fd: %{public}d, offset: %{public}d, length: %{public}d",
             context->rawFileInfo.fd, context->rawFileInfo.offset, context->rawFileInfo.length);
-        int32_t fileSize = context->rawFileInfo.offset + context->rawFileInfo.length;
+        int32_t offset = context->rawFileInfo.offset;
+        int32_t length = context->rawFileInfo.length;
+        if (offset < 0 || length <= 0) {
+            IMAGE_LOGE("CreateImageSource invalid offset: %{public}d or length: %{public}d", offset, length);
+            return imageSource;
+        }
+        int64_t fileSize = static_cast<int64_t>(offset) + static_cast<int64_t>(length);
+        if (fileSize > INT32_MAX) {
+            IMAGE_LOGE("CreateImageSource fileSize overflow, offset: %{public}d, length: %{public}d", offset, length);
+            return imageSource;
+        }
         imageSource = ImageSource::CreateImageSource(context->rawFileInfo.fd,
-            context->rawFileInfo.offset, fileSize, opts, errorCode);
+            offset, static_cast<int32_t>(fileSize), opts, errorCode);
     } else { // Input Buffer
         uint32_t refCount = NUM_1;
         napi_ref arrayRef = nullptr;

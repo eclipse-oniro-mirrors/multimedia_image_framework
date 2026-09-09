@@ -506,6 +506,11 @@ unique_ptr<ImageSource> ImageSource::CreateImageSource(const int fd, int32_t off
     const SourceOptions &opts, uint32_t &errorCode)
 {
     IMAGE_LOGD("[ImageSource]create Imagesource with fd offset and length.");
+    if (offset < 0 || length < 0) {
+        IMAGE_LOGE("[ImageSource]invalid offset: %{public}d or length: %{public}d", offset, length);
+        errorCode = ERR_IMAGE_INVALID_PARAMETER;
+        return nullptr;
+    }
     ImageDataStatistics imageDataStatistics("[ImageSource]CreateImageSource with offset.");
     auto imageSource = DoImageSourceCreate(
         [&fd, offset, length]() {

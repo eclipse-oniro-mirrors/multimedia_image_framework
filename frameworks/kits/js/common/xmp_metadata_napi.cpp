@@ -73,6 +73,7 @@ struct XMPMetadataAsyncContext {
     OHOS::Media::XMPEnumerateOptions options;
     void *arrayBuffer = nullptr;
     size_t arrayBufferSize = 0;
+    napi_ref arrayBufferRef = nullptr;
     std::vector<std::pair<std::string, OHOS::Media::XMPTag>> tags;
 };
 
@@ -354,6 +355,10 @@ static void CommonCallbackRoutine(napi_env env, XMPMetadataAsyncContext* &contex
     napi_handle_scope scope = nullptr;
     napi_open_handle_scope(env, &scope);
     if (scope == nullptr) {
+        if (context->arrayBufferRef != nullptr) {
+            napi_delete_reference(env, context->arrayBufferRef);
+            context->arrayBufferRef = nullptr;
+        }
         napi_delete_async_work(env, context->work);
         delete context;
         context = nullptr;
@@ -377,6 +382,10 @@ static void CommonCallbackRoutine(napi_env env, XMPMetadataAsyncContext* &contex
         }
     }
 
+    if (context->arrayBufferRef != nullptr) {
+        napi_delete_reference(env, context->arrayBufferRef);
+        context->arrayBufferRef = nullptr;
+    }
     napi_delete_async_work(env, context->work);
     napi_close_handle_scope(env, scope);
 
@@ -894,12 +903,19 @@ napi_value XMPMetadataNapi::SetBlob(napi_env env, napi_callback_info info)
     if (status != napi_ok || asyncContext->arrayBuffer == nullptr || asyncContext->arrayBufferSize == NUM_0) {
         return ImageNapiUtils::ThrowExceptionError(env, IMAGE_INVALID_PARAMETER, "Invalid blob data", true);
     }
+    napi_create_reference(env, argValue[NUM_0], NUM_1, &(asyncContext->arrayBufferRef));
 
     napi_create_promise(env, &(asyncContext->deferred), &result);
     IMG_CREATE_CREATE_ASYNC_WORK(env, status, "SetBlob",
         SetBlobExec, SetBlobComplete, asyncContext, asyncContext->work);
-    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status),
-        nullptr, IMAGE_LOGE("Failed to create async work"));
+    if (status != napi_ok) {
+        if (asyncContext->arrayBufferRef != nullptr) {
+            napi_delete_reference(env, asyncContext->arrayBufferRef);
+            asyncContext->arrayBufferRef = nullptr;
+        }
+        IMAGE_LOGE("Failed to create async work");
+        return nullptr;
+    }
     return result;
 }
 

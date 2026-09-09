@@ -2662,9 +2662,23 @@ optional<ImageSource> CreateImageSourceByRawFileDescriptorOption(
     OHOS::Media::SourceOptions opts = ImageTaiheUtils::ParseSourceOptions(etsOpts);
 
     uint32_t errorCode = OHOS::Media::ERR_MEDIA_INVALID_VALUE;
-    int32_t fileSize = static_cast<int32_t>(offset) + static_cast<int32_t>(length);
+    if (offset < 0 || length <= 0) {
+        IMAGE_LOGE("CreateImageSource invalid offset: %{public}" PRId64 " or length: %{public}" PRId64,
+            offset, length);
+        ImageTaiheUtils::ThrowExceptionError(OHOS::Media::COMMON_ERR_INVALID_PARAMETER,
+            "invalid offset or length");
+        return optional<ImageSource>(std::nullopt);
+    }
+    int64_t fileSize = offset + length;
+    if (fileSize > INT32_MAX) {
+        IMAGE_LOGE("CreateImageSource fileSize overflow, offset: %{public}" PRId64 ", length: %{public}" PRId64,
+            offset, length);
+        ImageTaiheUtils::ThrowExceptionError(OHOS::Media::COMMON_ERR_INVALID_PARAMETER,
+            "fileSize overflow");
+        return optional<ImageSource>(std::nullopt);
+    }
     std::shared_ptr<OHOS::Media::ImageSource> imageSource = OHOS::Media::ImageSource::CreateImageSource(
-        fd, static_cast<int32_t>(offset), fileSize, opts, errorCode);
+        fd, static_cast<int32_t>(offset), static_cast<int32_t>(fileSize), opts, errorCode);
     if (imageSource == nullptr) {
         IMAGE_LOGE("CreateImageSourceExec error, errorCode: %{public}d", errorCode);
         return optional<ImageSource>(std::nullopt);
