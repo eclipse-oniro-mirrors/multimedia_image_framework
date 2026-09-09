@@ -19,6 +19,7 @@
 #include <fstream>
 #include <limits>
 #include <unistd.h>
+#include <vector>
 
 #if !defined(CROSS_PLATFORM)
 #include "surface_type.h"
@@ -86,6 +87,16 @@ class ImageUtilsTest : public testing::Test {
 public:
     ImageUtilsTest() {}
     ~ImageUtilsTest() {}
+
+    static std::unique_ptr<PixelMap> CreateRgba8888PixelMap(const Size& size)
+    {
+        InitializationOptions opts;
+        opts.size = size;
+        opts.pixelFormat = PixelFormat::RGBA_8888;
+        opts.alphaType = AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL;
+        opts.allocatorType = AllocatorType::HEAP_ALLOC;
+        return PixelMap::Create(opts);
+    }
 };
 
 /**
@@ -1490,6 +1501,210 @@ HWTEST_F(ImageUtilsTest, CheckMulOverflowTest012, TestSize.Level3)
 
     res = ImageUtils::CheckMulOverflow(INT32_MAX, mockHeight, INT32_MAX);
     EXPECT_TRUE(res);
+}
+
+/**
+ * @tc.name: SampleAndPrintPixelMapTest001
+ * @tc.desc: Reject a null PixelMap.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageUtilsTest, SampleAndPrintPixelMapTest001, TestSize.Level3)
+{
+    std::unique_ptr<PixelMap> pixelMap;
+    EXPECT_FALSE(ImageUtils::SampleAndPrintPixelMap(pixelMap));
+}
+
+/**
+ * @tc.name: SampleAndPrintPixelMapTest002
+ * @tc.desc: Reject pixel formats other than RGBA_8888.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageUtilsTest, SampleAndPrintPixelMapTest002, TestSize.Level3)
+{
+    auto pixelMap = CreateRgba8888PixelMap({1, 1});
+    ASSERT_NE(pixelMap, nullptr);
+    const PixelFormat formats[] = {
+        PixelFormat::UNKNOWN, PixelFormat::BGRA_8888, PixelFormat::ARGB_8888, PixelFormat::RGB_888,
+        PixelFormat::RGB_565, PixelFormat::ALPHA_8, PixelFormat::RGBA_F16, PixelFormat::RGBA_1010102,
+        PixelFormat::NV12, PixelFormat::NV21, PixelFormat::YCBCR_P010, PixelFormat::YCRCB_P010,
+        PixelFormat::ASTC_4x4,
+    };
+    for (const auto format : formats) {
+        SCOPED_TRACE(static_cast<int32_t>(format));
+        ScopeRestorer<PixelFormat> restorer(pixelMap->imageInfo_.pixelFormat, format);
+        EXPECT_FALSE(ImageUtils::SampleAndPrintPixelMap(pixelMap));
+    }
+}
+
+/**
+ * @tc.name: SampleAndPrintPixelMapTest003
+ * @tc.desc: Reject null pixel data even when the allocation size is nonzero.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageUtilsTest, SampleAndPrintPixelMapTest003, TestSize.Level3)
+{
+    auto pixelMap = CreateRgba8888PixelMap({1, 1});
+    ASSERT_NE(pixelMap, nullptr);
+    ASSERT_GT(pixelMap->GetAllocationByteCount(), 0U);
+    ScopeRestorer<uint8_t*> restorer(pixelMap->data_, nullptr);
+    EXPECT_FALSE(ImageUtils::SampleAndPrintPixelMap(pixelMap));
+}
+
+/**
+ * @tc.name: SampleAndPrintPixelMapTest004
+ * @tc.desc: Reject a zero allocation size even when pixel data is nonnull.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageUtilsTest, SampleAndPrintPixelMapTest004, TestSize.Level3)
+{
+    auto pixelMap = CreateRgba8888PixelMap({1, 1});
+    ASSERT_NE(pixelMap, nullptr);
+    ASSERT_NE(pixelMap->GetPixels(), nullptr);
+    ScopeRestorer<uint32_t> restorer(pixelMap->pixelsSize_, 0);
+    EXPECT_FALSE(ImageUtils::SampleAndPrintPixelMap(pixelMap));
+}
+
+/**
+ * @tc.name: SampleAndPrintPixelMapTest005
+ * @tc.desc: Reject zero or negative width and height independently.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageUtilsTest, SampleAndPrintPixelMapTest005, TestSize.Level3)
+{
+    auto pixelMap = CreateRgba8888PixelMap({1, 1});
+    ASSERT_NE(pixelMap, nullptr);
+    const Size sizes[] = {{0, 1}, {-1, 1}, {1, 0}, {1, -1}};
+    for (const auto& size : sizes) {
+        SCOPED_TRACE(testing::Message() << "width=" << size.width << ", height=" << size.height);
+        ScopeRestorer<Size> restorer(pixelMap->imageInfo_.size, size);
+        EXPECT_FALSE(ImageUtils::SampleAndPrintPixelMap(pixelMap));
+    }
+}
+
+/**
+ * @tc.name: SampleAndPrintPixelMapTest006
+ * @tc.desc: Reject nonpositive row strides and a stride smaller than one RGBA row.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageUtilsTest, SampleAndPrintPixelMapTest006, TestSize.Level3)
+{
+    auto pixelMap = CreateRgba8888PixelMap({3, 10});
+    ASSERT_NE(pixelMap, nullptr);
+    const int32_t strides[] = {0, -1, pixelMap->GetRowBytes() - 1};
+    for (const auto stride : strides) {
+        SCOPED_TRACE(stride);
+        ScopeRestorer<int32_t> restorer(pixelMap->rowStride_, stride);
+        EXPECT_FALSE(ImageUtils::SampleAndPrintPixelMap(pixelMap));
+    }
+}
+
+/**
+ * @tc.name: SampleAndPrintPixelMapTest007
+ * @tc.desc: Reject samples beyond the allocation or with fewer than four bytes remaining.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageUtilsTest, SampleAndPrintPixelMapTest007, TestSize.Level3)
+{
+    auto pixelMap = CreateRgba8888PixelMap({3, 10});
+    ASSERT_NE(pixelMap, nullptr);
+    ASSERT_EQ(pixelMap->GetRowStride(), 12);
+    ASSERT_EQ(pixelMap->GetAllocationByteCount(), 120U);
+    // The middle sample in the left column starts at byte 60; the last pixel starts at byte 116.
+    const uint32_t sizes[] = {1, 3, 59, 60, 61, 62, 63, 119};
+    for (const auto size : sizes) {
+        SCOPED_TRACE(size);
+        ScopeRestorer<uint32_t> restorer(pixelMap->pixelsSize_, size);
+        EXPECT_FALSE(ImageUtils::SampleAndPrintPixelMap(pixelMap));
+    }
+    EXPECT_TRUE(ImageUtils::SampleAndPrintPixelMap(pixelMap));
+}
+
+/**
+ * @tc.name: SampleAndPrintPixelMapTest008
+ * @tc.desc: Sample small and regular RGBA images without changing their pixel data.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageUtilsTest, SampleAndPrintPixelMapTest008, TestSize.Level3)
+{
+    const Size sizes[] = {{1, 1}, {1, 10}, {3, 1}, {2, 2}, {3, 10}, {7, 13}};
+    for (const auto& size : sizes) {
+        SCOPED_TRACE(testing::Message() << "width=" << size.width << ", height=" << size.height);
+        auto pixelMap = CreateRgba8888PixelMap(size);
+        ASSERT_NE(pixelMap, nullptr);
+        auto* pixels = static_cast<uint8_t*>(pixelMap->GetWritablePixels());
+        ASSERT_NE(pixels, nullptr);
+        const uint32_t byteCount = pixelMap->GetAllocationByteCount();
+        for (uint32_t i = 0; i < byteCount; i++) {
+            pixels[i] = static_cast<uint8_t>(i);
+        }
+        const std::vector<uint8_t> original(pixels, pixels + byteCount);
+        EXPECT_TRUE(ImageUtils::SampleAndPrintPixelMap(pixelMap));
+        EXPECT_EQ(std::vector<uint8_t>(pixels, pixels + byteCount), original);
+    }
+}
+
+/**
+ * @tc.name: SampleAndPrintPixelMapTest009
+ * @tc.desc: Use the padded row stride and require the last pixel but not trailing row padding.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageUtilsTest, SampleAndPrintPixelMapTest009, TestSize.Level3)
+{
+    auto pixelMap = CreateRgba8888PixelMap({4, 10});
+    ASSERT_NE(pixelMap, nullptr);
+    const int32_t rowStride = pixelMap->GetRowStride();
+    ImageInfo info;
+    pixelMap->GetImageInfo(info);
+    info.size.width = 3;
+    ASSERT_EQ(pixelMap->SetImageInfo(info, true), SUCCESS);
+    pixelMap->SetRowStride(rowStride);
+    ASSERT_EQ(pixelMap->GetRowStride(), 16);
+    ASSERT_EQ(pixelMap->GetByteCount(), 120);
+    ASSERT_EQ(pixelMap->GetAllocationByteCount(), 160U);
+    EXPECT_TRUE(ImageUtils::SampleAndPrintPixelMap(pixelMap));
+
+    // Nine padded rows and the last row's three pixels require exactly 156 bytes.
+    {
+        ScopeRestorer<uint32_t> restorer(pixelMap->pixelsSize_, 156);
+        EXPECT_TRUE(ImageUtils::SampleAndPrintPixelMap(pixelMap));
+    }
+    {
+        ScopeRestorer<uint32_t> restorer(pixelMap->pixelsSize_, 155);
+        EXPECT_FALSE(ImageUtils::SampleAndPrintPixelMap(pixelMap));
+    }
+}
+
+/**
+ * @tc.name: SampleAndPrintPixelMapTest010
+ * @tc.desc: Reject widths whose RGBA row size exceeds the int32_t stride range without overflow.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageUtilsTest, SampleAndPrintPixelMapTest010, TestSize.Level3)
+{
+    auto pixelMap = CreateRgba8888PixelMap({1, 1});
+    ASSERT_NE(pixelMap, nullptr);
+    ScopeRestorer<int32_t> strideRestorer(pixelMap->rowStride_, INT32_MAX);
+    const int32_t widths[] = {INT32_MAX / ARGB8888_BYTES + 1, INT32_MAX};
+    for (const auto width : widths) {
+        SCOPED_TRACE(width);
+        ScopeRestorer<int32_t> restorer(pixelMap->imageInfo_.size.width, width);
+        EXPECT_FALSE(ImageUtils::SampleAndPrintPixelMap(pixelMap));
+    }
+}
+
+/**
+ * @tc.name: SampleAndPrintPixelMapTest011
+ * @tc.desc: Reject a sample offset exceeding uint32_t without wrapping into the pixel buffer.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageUtilsTest, SampleAndPrintPixelMapTest011, TestSize.Level3)
+{
+    auto pixelMap = CreateRgba8888PixelMap({1, 1});
+    ASSERT_NE(pixelMap, nullptr);
+    // Every sampled row is divisible by four; a 32-bit row offset would wrap to zero.
+    ScopeRestorer<int32_t> heightRestorer(pixelMap->imageInfo_.size.height, 73);
+    ScopeRestorer<int32_t> strideRestorer(pixelMap->rowStride_, 1 << 30);
+    EXPECT_FALSE(ImageUtils::SampleAndPrintPixelMap(pixelMap));
 }
 
 /**
