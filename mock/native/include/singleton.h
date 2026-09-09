@@ -105,7 +105,7 @@ T& DelayedRefSingleton<T>::GetInstance()
     T* temp = instance_.load(std::memory_order_acquire);
     if (temp == nullptr) {
         std::lock_guard<std::mutex> lock(mutex_);
-        temp = instance_.load(std::memory_order_relaxed)
+        temp = instance_.load(std::memory_order_relaxed);
         if (temp == nullptr) {
             temp = new T();
             instance_.store(temp, std::memory_order_release);
