@@ -44,6 +44,42 @@ static const uint32_t MOCK_DATA = 1;
 static const uint32_t MOCK_INDEX = 1;
 static const uint32_t MOCK_INDEX_TWO = 2;
 static const uint32_t MOCK_INDEX_THREE = 3;
+
+static std::vector<uint8_t> MakeNestedMovieBoxes(const std::string &type, uint32_t depth)
+{
+    // The terminal dref is an empty full box. Other boxes each contain one child.
+    std::vector<uint8_t> data = {0, 0, 0, 16, 'd', 'r', 'e', 'f', 0, 0, 0, 0, 0, 0, 0, 0};
+    for (uint32_t i = 0; i < depth; ++i) {
+        const bool hasEntryCount = type == "dref" || type == "stsd";
+        std::vector<uint8_t> header(hasEntryCount ? 16 : 86, 0);
+        uint32_t size = static_cast<uint32_t>(header.size() + data.size());
+        for (uint32_t j = 0; j < 4; ++j) {
+            header[j] = static_cast<uint8_t>(size >> ((3 - j) * 8));
+            header[4 + j] = static_cast<uint8_t>(type[j]);
+        }
+        if (hasEntryCount) {
+            header[15] = 1;
+        }
+        header.insert(header.end(), data.begin(), data.end());
+        data = std::move(header);
+    }
+    return data;
+}
+
+HWTEST_F(HeifsDecodeTest, MovieBoxRecursionLimit, TestSize.Level1)
+{
+    for (const std::string type : {"dref", "stsd", "hvc1", "av01"}) {
+        for (uint32_t depth : {8U, 300U, 301U}) {
+            auto data = MakeNestedMovieBoxes(type, depth);
+            auto stream = std::make_shared<HeifBufferInputStream>(data.data(), data.size(), false);
+            HeifStreamReader reader(stream, 0, data.size());
+            std::shared_ptr<HeifBox> box;
+            uint32_t recursionCount = 0;
+            auto error = HeifBox::MakeFromReader(reader, &box, recursionCount);
+            EXPECT_EQ(error, depth <= 300 ? heif_error_ok : heif_error_too_many_recursion);
+        }
+    }
+}
 #ifdef HEIF_HW_DECODE_ENABLE
 static const std::string IMAGE_INPUT_HEIFS_PATH = "/data/local/tmp/image/heifs.heic";
 static const std::string IMAGE_INPUT_HEIC_PATH = "/data/local/tmp/image/test-10bit-1.heic";

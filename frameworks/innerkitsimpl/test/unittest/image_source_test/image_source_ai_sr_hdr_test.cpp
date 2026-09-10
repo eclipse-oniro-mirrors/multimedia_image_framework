@@ -34,6 +34,7 @@
 #include "buffer_source_stream.h"
 #include "file_source_stream.h"
 #include "memory_manager.h"
+#include "jpeg_mpf_parser.h"
 
 using namespace testing::ext;
 using namespace OHOS::Media;
@@ -53,6 +54,26 @@ public:
     ImageSourceAiTest() {}
     ~ImageSourceAiTest() {}
 };
+
+HWTEST_F(ImageSourceAiTest, FragmentMetadataExactLengthAndTruncation, TestSize.Level1)
+{
+    std::vector<uint8_t> metadata = {
+        0xFF, 0xEC, 0x00, 0x12, 0x01, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00,
+        0x03, 0x00, 0x00, 0x00, 0x04, 0x00, 0x00, 0x00
+    };
+    Rect rect {};
+    for (uint32_t size = 0; size < metadata.size(); ++size) {
+        EXPECT_FALSE(JpegMpfParser::ParsingFragmentMetadata(metadata.data(), size, rect, false));
+    }
+    ASSERT_TRUE(JpegMpfParser::ParsingFragmentMetadata(metadata.data(), metadata.size(), rect, false));
+    EXPECT_EQ(rect.left, 1);
+    EXPECT_EQ(rect.top, 2);
+    EXPECT_EQ(rect.width, 3);
+    EXPECT_EQ(rect.height, 4);
+    metadata.insert(metadata.begin(), 7, 0);
+    EXPECT_TRUE(JpegMpfParser::ParsingFragmentMetadata(metadata.data(), metadata.size(), rect, false));
+    EXPECT_FALSE(JpegMpfParser::ParsingFragmentMetadata(nullptr, metadata.size(), rect, false));
+}
 
 class MockAbsImageFormatAgent : public ImagePlugin::AbsImageFormatAgent {
 public:

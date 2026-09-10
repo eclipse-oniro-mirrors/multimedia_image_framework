@@ -21,22 +21,14 @@
 
 using namespace ANI::Image;
 
-namespace {
-    constexpr int32_t TEST_WIDTH = 8192;
-    constexpr int32_t TEST_HEIGHT = 8;
-    constexpr int32_t TEST_FORMAT = 4;
-    constexpr int32_t TEST_CAPACITY = 8;
-}
-
 namespace ANI::Image {
-static bool g_isCreatorTest = false;
 
 std::shared_ptr<OHOS::AppExecFwk::EventHandler> ImageCreatorImpl::mainHandler_ = nullptr;
 ImageCreatorImpl::ImageCreatorImpl() : imageCreator_(nullptr), isRelease(false) {}
 
 ImageCreatorImpl::ImageCreatorImpl(std::shared_ptr<OHOS::Media::ImageCreator> imageCreator)
 {
-    if (imageCreator != nullptr && !g_isCreatorTest) {
+    if (imageCreator != nullptr) {
         imageCreator_ = imageCreator;
     }
 }
@@ -61,9 +53,6 @@ std::shared_ptr<OHOS::Media::ImageCreator> ImageCreatorImpl::GetNativeImageCreat
 
 int32_t ImageCreatorImpl::GetCapacity()
 {
-    if (g_isCreatorTest) {
-        return TEST_CAPACITY;
-    }
     if (imageCreator_ == nullptr) {
         ImageTaiheUtils::ThrowExceptionError("Native instance is nullptr");
         return 0;
@@ -77,9 +66,6 @@ int32_t ImageCreatorImpl::GetCapacity()
 
 ImageFormat ImageCreatorImpl::GetFormat()
 {
-    if (g_isCreatorTest) {
-        return ImageFormat(static_cast<ImageFormat::key_t>(TEST_FORMAT));
-    }
     if (imageCreator_ == nullptr) {
         ImageTaiheUtils::ThrowExceptionError("Native instance is nullptr");
         return ImageFormat(static_cast<ImageFormat::key_t>(OHOS::Media::ImageFormat::UNKNOWN));
@@ -419,15 +405,8 @@ ImageCreator CreateImageCreator(Size const& size, ImageFormat format, int32_t ca
 {
     int width = size.width;
     int height = size.height;
-    if ((width == TEST_WIDTH) && (height == TEST_HEIGHT) &&
-        (format.get_value() == TEST_FORMAT) && (capacity == TEST_CAPACITY)) {
-        g_isCreatorTest = true;
-    }
-    if (!g_isCreatorTest) {
-        auto imageCreator = OHOS::Media::ImageCreator::CreateImageCreator(width, height, format.get_value(), capacity);
-        return make_holder<ImageCreatorImpl, ImageCreator>(imageCreator);
-    }
-    return make_holder<ImageCreatorImpl, ImageCreator>();
+    auto imageCreator = OHOS::Media::ImageCreator::CreateImageCreator(width, height, format.get_value(), capacity);
+    return make_holder<ImageCreatorImpl, ImageCreator>(imageCreator);
 }
 } // namespace ANI::Image
 

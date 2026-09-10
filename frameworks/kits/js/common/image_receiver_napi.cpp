@@ -151,11 +151,6 @@ napi_value ImageReceiverNapi::Init(napi_env env, napi_value exports)
         DECLARE_NAPI_FUNCTION("off", JsOff),
         DECLARE_NAPI_FUNCTION("release", JsRelease),
         DECLARE_NAPI_FUNCTION("setMemoryName", JsSetMemoryName),
-#ifdef IMAGE_DEBUG_FLAG
-        DECLARE_NAPI_GETTER("test", JsTest),
-        DECLARE_NAPI_GETTER("checkDeviceTest", JsCheckDeviceTest),
-        DECLARE_NAPI_GETTER("testYUV", JsTestYUV),
-#endif
         DECLARE_NAPI_GETTER("size", JsGetSize),
         DECLARE_NAPI_GETTER("capacity", JsGetCapacity),
         DECLARE_NAPI_GETTER("format", JsGetFormat),
@@ -614,136 +609,6 @@ napi_value ImageReceiverNapi::JsGetFormat(napi_env env, napi_callback_info info)
     return JSCommonProcess(args);
 }
 
-#ifdef IMAGE_DEBUG_FLAG
-static void TestRequestBuffer(OHOS::sptr<OHOS::Surface> &receiverSurface,
-                              OHOS::BufferRequestConfig requestConfig,
-                              OHOS::BufferFlushConfig flushConfig)
-{
-    OHOS::sptr<OHOS::SurfaceBuffer> buffer;
-    int32_t releaseFence;
-    if (receiverSurface == nullptr) {
-        IMAGE_ERR("Image receiver receiverSurface is nullptr");
-        return;
-    }
-    requestConfig.width = receiverSurface->GetDefaultWidth();
-    requestConfig.height = receiverSurface->GetDefaultHeight();
-    receiverSurface->RequestBuffer(buffer, releaseFence, requestConfig);
-    if (buffer == nullptr) {
-        IMAGE_ERR("Image receiver buffer is nullptr");
-        return;
-    }
-    IMAGE_ERR("RequestBuffer");
-    int32_t *p = reinterpret_cast<int32_t *>(buffer->GetVirAddr());
-    int32_t size = static_cast<int32_t>(buffer->GetSize() / 4);
-    if (p != nullptr) {
-        for (int32_t i = 0; i < size; i++) {
-            p[i] = i;
-        }
-    }
-    receiverSurface->FlushBuffer(buffer, -1, flushConfig);
-    IMAGE_ERR("FlushBuffer");
-}
-
-static void DoTest(std::shared_ptr<ImageReceiver> imageReceiver, int pixelFormat)
-{
-    OHOS::BufferRequestConfig requestConfig = {
-        .width = 0x100,
-        .height = 0x100,
-        .strideAlignment = 0x8,
-        .format = pixelFormat,
-        .usage = V1_2::HBM_USE_CPU_READ | V1_2::HBM_USE_CPU_WRITE | V1_2::HBM_USE_MEM_DMA,
-        .timeout = 0,
-    };
-
-    OHOS::BufferFlushConfig flushConfig = {
-        .damage = {
-            .w = 0x100,
-            .h = 0x100,
-        },
-    };
-
-    if (imageReceiver == nullptr || imageReceiver->iraContext_ == nullptr) {
-        IMAGE_ERR("Image receiver DoTest imageReceiver is nullptr");
-        return;
-    }
-    std::string receiveKey = imageReceiver->iraContext_->GetReceiverKey();
-    IMAGE_ERR("ReceiverKey = %{public}s", receiveKey.c_str());
-    OHOS::sptr<OHOS::Surface> receiverSurface = ImageReceiver::getSurfaceById(receiveKey);
-    if (receiverSurface == nullptr) {
-        IMAGE_ERR("Image receiver DoTest receiverSurface is nullptr");
-        return;
-    }
-    IMAGE_ERR("getDefaultWidth = %{public}d", receiverSurface->GetDefaultWidth());
-    IMAGE_ERR("getDefaultHeight = %{public}d", receiverSurface->GetDefaultHeight());
-    IMAGE_ERR("TestRequestBuffer 1 ...");
-    TestRequestBuffer(receiverSurface, requestConfig, flushConfig);
-    IMAGE_ERR("TestRequestBuffer 2 ...");
-    TestRequestBuffer(receiverSurface, requestConfig, flushConfig);
-    IMAGE_ERR("TestRequestBuffer 3 ...");
-    TestRequestBuffer(receiverSurface, requestConfig, flushConfig);
-}
-
-napi_value ImageReceiverNapi::JsTest(napi_env env, napi_callback_info info)
-{
-    IMAGE_FUNCTION_IN();
-    ImageReceiverCommonArgs args = {
-        .env = env, .info = info,
-        .async = CallType::GETTER,
-    };
-    args.argc = ARGS0;
-
-    args.nonAsyncBack = [](ImageReceiverCommonArgs &args, ImageReceiverInnerContext &ic) -> bool {
-        ic.context->constructor_->isCallBackTest = true;
-        DoTest(ic.context->constructor_->imageReceiver_, V1_2::PIXEL_FMT_RGBA_8888);
-        return true;
-    };
-
-    return JSCommonProcess(args);
-}
-
-napi_value ImageReceiverNapi::JsCheckDeviceTest(napi_env env, napi_callback_info info)
-{
-    IMAGE_FUNCTION_IN();
-    ImageReceiverCommonArgs args = {
-        .env = env, .info = info,
-        .async = CallType::GETTER,
-    };
-    args.argc = ARGS0;
-
-    args.nonAsyncBack = [](ImageReceiverCommonArgs &args, ImageReceiverInnerContext &ic) -> bool {
-        napi_get_undefined(args.env, &(ic.result));
-        napi_value mess = nullptr;
-        ic.context->constructor_->isCallBackTest = true;
-        napi_create_string_utf8(args.env, DEVICE_ERRCODE.c_str(), NAPI_AUTO_LENGTH, &mess);
-        ic.result = mess;
-        if (args.async != CallType::GETTER) {
-            DoTest(ic.context->constructor_->imageReceiver_, V1_2::PIXEL_FMT_RGBA_8888);
-        }
-        return true;
-    };
-
-    return JSCommonProcess(args);
-}
-
-napi_value ImageReceiverNapi::JsTestYUV(napi_env env, napi_callback_info info)
-{
-    IMAGE_FUNCTION_IN();
-    ImageReceiverCommonArgs args = {
-        .env = env, .info = info,
-        .async = CallType::GETTER,
-    };
-    args.argc = ARGS0;
-
-    args.nonAsyncBack = [](ImageReceiverCommonArgs &args, ImageReceiverInnerContext &ic) -> bool {
-        ic.context->constructor_->isCallBackTest = true;
-        DoTest(ic.context->constructor_->imageReceiver_, V1_2::PIXEL_FMT_YCBCR_422_SP);
-        return true;
-    };
-
-    return JSCommonProcess(args);
-}
-#endif
-
 napi_value ImageReceiverNapi::JsGetReceivingSurfaceId(napi_env env, napi_callback_info info)
 {
     IMAGE_FUNCTION_IN();
@@ -781,35 +646,6 @@ napi_value ImageReceiverNapi::JsGetReceivingSurfaceId(napi_env env, napi_callbac
 
     return JSCommonProcess(args);
 }
-
-#ifdef IMAGE_SAVE_BUFFER_TO_PIC
-static void DoCallBackTest(OHOS::sptr<OHOS::SurfaceBuffer> surfaceBuffer1)
-{
-    if (surfaceBuffer1 == nullptr) {
-        IMAGE_ERR("surfaceBuffer1 is null");
-        return;
-    }
-
-    ImageReceiverManager& imageReceiverManager = ImageReceiverManager::getInstance();
-    shared_ptr<ImageReceiver> imageReceiver1 = imageReceiverManager.getImageReceiverByKeyId("1");
-    if (imageReceiver1 == nullptr || imageReceiver1->iraContext_ == nullptr) {
-        return;
-    }
-    IMAGE_ERR("DoCallBackTest format %{public}d", imageReceiver1->iraContext_->GetFormat());
-
-    InitializationOptions opts;
-    opts.size.width = surfaceBuffer1->GetWidth();
-    opts.size.height = surfaceBuffer1->GetHeight();
-    opts.pixelFormat = OHOS::Media::PixelFormat::BGRA_8888;
-    opts.alphaType = OHOS::Media::AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN;
-    opts.scaleMode = OHOS::Media::ScaleMode::CENTER_CROP;
-    opts.editable = true;
-    IMAGE_ERR("DoCallBackTest Width %{public}d", opts.size.width);
-    IMAGE_ERR("DoCallBackTest Height %{public}d", opts.size.height);
-    int fd = open("/data/receiver/test.jpg", O_RDWR | O_CREAT);
-    imageReceiver1->SaveBufferAsImage(fd, surfaceBuffer1, opts);
-}
-#endif
 static void FailedCallbackRoutine(napi_env env, Context &context, uint32_t errCode)
 {
     napi_value result = nullptr;
@@ -846,14 +682,6 @@ napi_value ImageReceiverNapi::JsReadLatestImage(napi_env env, napi_callback_info
             FailedCallbackRoutine(env, context, ERR_IMAGE_INIT_ABNORMAL);
             return;
         }
-#ifdef IMAGE_DEBUG_FLAG
-        if (context->constructor_->isCallBackTest) {
-            context->constructor_->isCallBackTest = false;
-#ifdef IMAGE_SAVE_BUFFER_TO_PIC
-            DoCallBackTest(image->GetBuffer());
-#endif
-        }
-#endif
         napi_value result = ImageNapi::Create(env, image);
         if (result == nullptr) {
             IMAGE_ERR("ImageNapi Create is nullptr");
@@ -895,14 +723,6 @@ napi_value ImageReceiverNapi::JsReadNextImage(napi_env env, napi_callback_info i
             FailedCallbackRoutine(env, context, ERR_IMAGE_INIT_ABNORMAL);
             return;
         }
-#ifdef IMAGE_DEBUG_FLAG
-        if (context->constructor_->isCallBackTest) {
-            context->constructor_->isCallBackTest = false;
-#ifdef IMAGE_SAVE_BUFFER_TO_PIC
-            DoCallBackTest(image->GetBuffer());
-#endif
-        }
-#endif
         napi_value result = ImageNapi::Create(env, image);
         if (result == nullptr) {
             IMAGE_ERR("ImageNapi Create is nullptr");

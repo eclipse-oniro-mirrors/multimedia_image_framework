@@ -352,7 +352,7 @@ bool JpegMpfParser::ParsingFragmentMetadata(uint8_t* data, uint32_t size, Rect& 
     }
 
     for (uint32_t offset = 0; offset < size; offset++) {
-        if (offset + FRAGMENT_METADATA_LENGTH + sizeof(FRAGMENT_META_FLAG) > size) {
+        if (size - offset < FRAGMENT_METADATA_LENGTH) {
             return false;
         }
         if (memcmp(data + offset, FRAGMENT_META_FLAG, sizeof(FRAGMENT_META_FLAG)) == 0) {
