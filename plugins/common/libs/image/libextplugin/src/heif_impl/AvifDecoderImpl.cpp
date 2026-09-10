@@ -72,8 +72,7 @@ static constexpr uint32_t MAX_IMAGE_SIZE = 20000;
 
 static void Dav1dFreeCallback(const uint8_t* buf, void* cookie)
 {
-    // This data is owned by the decoder; nothing to free here
-    (void)buf;
+    free(const_cast<uint8_t*>(buf));
     (void)cookie;
 }
 

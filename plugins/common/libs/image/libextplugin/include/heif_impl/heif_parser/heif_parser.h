@@ -55,7 +55,7 @@ public:
 
     static heif_error MakeFromMemory(const void *data, size_t size, bool isNeedCopy, std::shared_ptr<HeifParser> *out);
 
-    void Write(HeifStreamWriter &writer);
+    heif_error Write(HeifStreamWriter &writer);
 
     std::shared_ptr<HeifImage> GetImage(heif_item_id itemId);
 
@@ -254,7 +254,7 @@ private:
 
     void SetColorProfile(heif_item_id itemId, const std::shared_ptr<const HeifColorProfile> &profile);
 
-    void CheckExtentData();
+    heif_error CheckExtentData();
 
     // writing functions for images
     void SetPrimaryImage(const std::shared_ptr<HeifImage> &image);
