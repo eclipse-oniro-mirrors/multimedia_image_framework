@@ -1034,6 +1034,28 @@ HWTEST_F(ExtDecoderTest, EncodeSdrImageTest001, TestSize.Level3)
 }
 
 /**
+ * @tc.name: EncodeSdrImageWithoutSurfaceBuffer
+ * @tc.desc: Reject a DMA pixel map without a surface before allocating the SDR output.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExtDecoderTest, EncodeSdrImageWithoutSurfaceBuffer, TestSize.Level3)
+{
+    ExtEncoder extEncoder;
+    ExtWStream outputStream;
+    Media::PixelMap pixelMap;
+    pixelMap.imageInfo_.size = {2, 2};
+    pixelMap.imageInfo_.pixelFormat = Media::PixelFormat::RGBA_1010102;
+    pixelMap.allocatorType_ = Media::AllocatorType::DMA_ALLOC;
+#ifdef IMAGE_COLORSPACE_FLAG
+    pixelMap.InnerSetColorSpace(OHOS::ColorManager::ColorSpace(OHOS::ColorManager::BT2020_HLG));
+#endif
+    extEncoder.pixelmap_ = &pixelMap;
+    ASSERT_TRUE(pixelMap.IsHdr());
+    ASSERT_EQ(pixelMap.GetFd(), nullptr);
+    EXPECT_EQ(extEncoder.EncodeSdrImage(outputStream), ERR_IMAGE_INVALID_PARAMETER);
+}
+
+/**
  * @tc.name: DataStatisticsNullTest
  * @tc.desc: test DataStatistics Null
  * @tc.type: FUNC
