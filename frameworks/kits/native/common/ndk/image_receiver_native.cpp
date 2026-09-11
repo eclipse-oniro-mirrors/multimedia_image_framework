@@ -391,10 +391,12 @@ Image_ErrorCode OH_ImageReceiverNative_OnImageArrive(OH_ImageReceiverNative* rec
     if (receiver->ptrImgRcv == nullptr) {
         IMAGE_LOGE("Bad parameter: receiver data empty.");
         return IMAGE_RECEIVER_INVALID_PARAMETER;
-    }
-    if (receiver->ptrImgRcv->surfaceBufferAvaliableArriveListener_ == nullptr) {
-        receiver->ptrImgRcv->surfaceBufferAvaliableArriveListener_ =
-            std::make_shared<OHOS::Media::ImageReceiverArriveListener>(receiver);
+    } else {
+        std::lock_guard<std::mutex> lock(receiver->ptrImgRcv->imageReceiverMutex_);
+        if (receiver->ptrImgRcv->surfaceBufferAvaliableArriveListener_ == nullptr) {
+            receiver->ptrImgRcv->surfaceBufferAvaliableArriveListener_ =
+                std::make_shared<OHOS::Media::ImageReceiverArriveListener>(receiver);
+        }
     }
     bool ret = receiver->ptrImgRcv->surfaceBufferAvaliableArriveListener_->RegisterCallback(callback, userdata);
     if (!ret) {
@@ -415,6 +417,7 @@ Image_ErrorCode OH_ImageReceiverNative_OffImageArrive(OH_ImageReceiverNative *re
         return IMAGE_RECEIVER_INVALID_PARAMETER;
     }
     if (nullptr == callback) {
+        std::lock_guard<std::mutex> lock(receiver->ptrImgRcv->imageReceiverMutex_);
         receiver->ptrImgRcv->surfaceBufferAvaliableArriveListener_.reset();
         return IMAGE_SUCCESS;
     }

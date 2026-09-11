@@ -150,10 +150,12 @@ public:
     void RegisterBufferAvaliableListener(
         std::shared_ptr<SurfaceBufferAvaliableListener> surfaceBufferAvaliableListener)
     {
+        std::lock_guard<std::mutex> lock(imageReceiverMutex_);
         surfaceBufferAvaliableListener_ = surfaceBufferAvaliableListener;
     }
     void UnRegisterBufferAvaliableListener()
     {
+        std::lock_guard<std::mutex> lock(imageReceiverMutex_);
         surfaceBufferAvaliableListener_.reset();
     }
     static sptr<Surface> getSurfaceById(std::string id);
