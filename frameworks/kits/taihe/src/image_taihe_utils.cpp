@@ -262,6 +262,9 @@ template
 bool ImageTaiheUtils::GetEnumKeyByValue<ComponentType, int32_t>(int32_t value, typename ComponentType::key_t &key);
 
 template
+bool ImageTaiheUtils::IsValidPtr<PixelMap>(PixelMap data);
+
+template
 bool ImageTaiheUtils::IsValidPtr<weak::PixelMap>(weak::PixelMap data);
 
 template
@@ -270,5 +273,7 @@ bool ImageTaiheUtils::IsValidPtr<weak::ImageSource>(weak::ImageSource data);
 template
 bool ImageTaiheUtils::IsValidPtr<weak::Picture>(weak::Picture data);
 
+template
+bool ImageTaiheUtils::IsValidPtr<weak::PositionArea>(weak::PositionArea data);
 
 } // namespace ANI::Image

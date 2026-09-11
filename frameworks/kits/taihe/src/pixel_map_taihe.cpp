@@ -293,6 +293,11 @@ PixelMap CreatePixelMapFromParcel(uintptr_t sequence)
 
 static void ConvertPixelMapAlphaFormat(weak::PixelMap const& src, weak::PixelMap const& dst, bool isPremul)
 {
+    if (!ImageTaiheUtils::IsValidPtr(src) || !ImageTaiheUtils::IsValidPtr(dst)) {
+        ImageTaiheUtils::ThrowExceptionError(Media::ERR_IMAGE_READ_PIXELMAP_FAILED, "Failed to unwrap PixelMap.");
+        return;
+    }
+
     PixelMapImpl* rPixelMapImpl = reinterpret_cast<PixelMapImpl*>(src->GetImplPtr());
     PixelMapImpl* wPixelMapImpl = reinterpret_cast<PixelMapImpl*>(dst->GetImplPtr());
     if (rPixelMapImpl == nullptr || wPixelMapImpl == nullptr) {
@@ -447,7 +452,13 @@ PixelMapImpl::PixelMapImpl(std::shared_ptr<Media::PixelMap> pixelMap)
 
 PixelMapImpl::PixelMapImpl(int64_t aniPtr)
 {
-    Media::PixelMapTaiheAni* pixelMapAni = reinterpret_cast<Media::PixelMapTaiheAni*>(aniPtr);
+    std::unique_ptr<Media::PixelMapTaiheAni> pixelMapAni(reinterpret_cast<Media::PixelMapTaiheAni*>(aniPtr));
+    if (pixelMapAni == nullptr) {
+        ImageTaiheUtils::ThrowExceptionError(Media::COMMON_ERR_INVALID_PARAMETER,
+            "Failed to construct PixelMapImpl: The argument is null.");
+        return;
+    }
+
     nativePixelMap_ = pixelMapAni->nativePixelMap_;
     if (nativePixelMap_ == nullptr) {
         ImageTaiheUtils::ThrowExceptionError(Media::COMMON_ERR_INVALID_PARAMETER,
@@ -472,9 +483,13 @@ std::shared_ptr<Media::PixelMap> PixelMapImpl::GetNativePtr()
 
 std::shared_ptr<Media::PixelMap> PixelMapImpl::GetPixelMap(PixelMap etsPixelMap)
 {
+    if (!ImageTaiheUtils::IsValidPtr(etsPixelMap)) {
+        IMAGE_LOGE("[%{public}s] etsPixelMap is invalid", __func__);
+        return nullptr;
+    }
     PixelMapImpl *pixelMapImpl = reinterpret_cast<PixelMapImpl *>(etsPixelMap->GetImplPtr());
     if (pixelMapImpl == nullptr) {
-        IMAGE_LOGE("[%{public}s] etsPixelMap is nullptr", __func__);
+        IMAGE_LOGE("[%{public}s] pixelMapImpl is nullptr", __func__);
         return nullptr;
     }
     return pixelMapImpl->GetNativePtr();
@@ -556,6 +571,10 @@ void PixelMapImpl::ReadPixelsToAreaWrapperImpl(weak::PositionArea const& area, a
         ImageTaiheUtils::ThrowExceptionError(Media::ERR_IMAGE_PIXELMAP_RELEASED, "The PixelMap has been released.");
         return;
     }
+    if (!ImageTaiheUtils::IsValidPtr(area)) {
+        ImageTaiheUtils::ThrowExceptionError(Media::ERR_IMAGE_INVALID_PARAM, "Invalid PositionArea.");
+        return;
+    }
 
     ohos::multimedia::image::image::Region etsRegion = area->GetRegion();
     Media::Rect region = {etsRegion.x, etsRegion.y, etsRegion.size.width, etsRegion.size.height};
@@ -622,6 +641,10 @@ void PixelMapImpl::WritePixelsFromAreaImpl(weak::PositionArea const& area)
         ImageTaiheUtils::ThrowExceptionError(Media::ERR_IMAGE_PIXELMAP_RELEASED, "The PixelMap has been released.");
         return;
     }
+    if (!ImageTaiheUtils::IsValidPtr(area)) {
+        ImageTaiheUtils::ThrowExceptionError(Media::ERR_IMAGE_INVALID_PARAM, "Invalid PositionArea.");
+        return;
+    }
 
     ohos::multimedia::image::image::Region etsRegion = area->GetRegion();
     Media::Rect region = {etsRegion.x, etsRegion.y, etsRegion.size.width, etsRegion.size.height};
@@ -683,6 +706,10 @@ void PixelMapImpl::ReadPixelsSync(weak::PositionArea area)
         IMAGE_LOGE("[%{public}s] Native PixelMap is nullptr", __func__);
         return;
     }
+    if (!ImageTaiheUtils::IsValidPtr(area)) {
+        IMAGE_LOGE("[%{public}s] Invalid PositionArea", __func__);
+        return;
+    }
 
     ohos::multimedia::image::image::Region etsRegion = area->GetRegion();
     Media::Rect region = {etsRegion.x, etsRegion.y, etsRegion.size.width, etsRegion.size.height};
@@ -733,6 +760,10 @@ void PixelMapImpl::WritePixelsSync(weak::PositionArea area)
 {
     if (nativePixelMap_ == nullptr) {
         IMAGE_LOGE("[%{public}s] Native PixelMap is nullptr", __func__);
+        return;
+    }
+    if (!ImageTaiheUtils::IsValidPtr(area)) {
+        IMAGE_LOGE("[%{public}s] Invalid PositionArea", __func__);
         return;
     }
 
@@ -1497,10 +1528,17 @@ static HdrStaticMetadata BuildHdrStaticMetadata(
     return dstMetadata;
 }
 
-static HDI::Display::Graphic::Common::V1_0::HdrStaticMetadata ParseHdrStaticMetadata(
-    HdrStaticMetadata const& srcStaticMetadata)
+static bool ParseHdrStaticMetadata(HdrStaticMetadata const& srcStaticMetadata,
+    HDI::Display::Graphic::Common::V1_0::HdrStaticMetadata &dstMetadata)
 {
-    HDI::Display::Graphic::Common::V1_0::HdrStaticMetadata dstMetadata{};
+    if (srcStaticMetadata.displayPrimariesX.size() < METADATA_CHANNEL_COUNT ||
+        srcStaticMetadata.displayPrimariesY.size() < METADATA_CHANNEL_COUNT) {
+        IMAGE_LOGE("[%{public}s] Invalid HDR primary metadata array length, displayPrimariesX: %{public}zu, "
+            "displayPrimariesY: %{public}zu, expected at least 3",
+            __func__, srcStaticMetadata.displayPrimariesX.size(), srcStaticMetadata.displayPrimariesY.size());
+        return false;
+    }
+
     dstMetadata.smpte2086.displayPrimaryRed.x = srcStaticMetadata.displayPrimariesX[METADATA_RED_INDEX];
     dstMetadata.smpte2086.displayPrimaryGreen.x = srcStaticMetadata.displayPrimariesX[METADATA_GREEN_INDEX];
     dstMetadata.smpte2086.displayPrimaryBlue.x = srcStaticMetadata.displayPrimariesX[METADATA_BLUE_INDEX];
@@ -1513,7 +1551,7 @@ static HDI::Display::Graphic::Common::V1_0::HdrStaticMetadata ParseHdrStaticMeta
     dstMetadata.smpte2086.minLuminance = srcStaticMetadata.minLuminance;
     dstMetadata.cta861.maxContentLightLevel = srcStaticMetadata.maxContentLightLevel;
     dstMetadata.cta861.maxFrameAverageLightLevel = srcStaticMetadata.maxFrameAverageLightLevel;
-    return dstMetadata;
+    return true;
 }
 
 static HdrGainmapMetadata BuildHdrGainmapMetadata(Media::HDRVividExtendMetadata const& srcGainmapMetadata)
@@ -1538,9 +1576,15 @@ static HdrGainmapMetadata BuildHdrGainmapMetadata(Media::HDRVividExtendMetadata 
     return dstMetadata;
 }
 
-static void ParseHdrGainmapMetadata(HdrGainmapMetadata const& srcGainmapMetadata,
+static bool ParseHdrGainmapMetadata(HdrGainmapMetadata const& srcGainmapMetadata,
     Media::HDRVividExtendMetadata &dstMetadata)
 {
+    if (srcGainmapMetadata.channels.size() < METADATA_CHANNEL_COUNT) {
+        IMAGE_LOGE("[%{public}s] Invalid gainmap channel count: %{public}zu, expected at least 3",
+            __func__, srcGainmapMetadata.channels.size());
+        return false;
+    }
+
     dstMetadata.metaISO.writeVersion = static_cast<unsigned short>(srcGainmapMetadata.writerVersion);
     dstMetadata.metaISO.miniVersion = static_cast<unsigned short>(srcGainmapMetadata.miniVersion);
     dstMetadata.metaISO.gainmapChannelNum = static_cast<unsigned char>(srcGainmapMetadata.gainmapChannelCount);
@@ -1554,6 +1598,7 @@ static void ParseHdrGainmapMetadata(HdrGainmapMetadata const& srcGainmapMetadata
         dstMetadata.metaISO.enhanceMappingBaselineOffset[i] = srcGainmapMetadata.channels[i].baseOffset;
         dstMetadata.metaISO.enhanceMappingAlternateOffset[i] = srcGainmapMetadata.channels[i].alternateOffset;
     }
+    return true;
 }
 
 static bool GetMetadataType(sptr<SurfaceBuffer> const& surfaceBuffer, HdrMetadataValue &metadataValue)
@@ -1617,7 +1662,10 @@ static bool SetStaticMetadata(sptr<SurfaceBuffer> &surfaceBuffer, HdrMetadataVal
         return false;
     }
 
-    auto staticMetadata = ParseHdrStaticMetadata(metadataValue.get_hdrStaticMetadata_ref());
+    HDI::Display::Graphic::Common::V1_0::HdrStaticMetadata staticMetadata{};
+    if (!ParseHdrStaticMetadata(metadataValue.get_hdrStaticMetadata_ref(), staticMetadata)) {
+        return false;
+    }
     uint32_t vecSize = sizeof(HDI::Display::Graphic::Common::V1_0::HdrStaticMetadata);
     std::vector<uint8_t> staticDataVec(vecSize);
     if (memcpy_s(staticDataVec.data(), vecSize, &staticMetadata, vecSize) != EOK) {
@@ -1706,7 +1754,9 @@ static bool SetGainmapMetadata(sptr<SurfaceBuffer> &surfaceBuffer, Media::PixelM
         gainmapMetadata.useBaseColorFlag ? primary : static_cast<uint8_t>(Media::CM_BT2020_HLG_FULL);
     extendMetadata.gainmapColorMeta.alternateColorPrimary = static_cast<uint8_t>(Media::CM_BT2020_HLG_FULL);
 
-    ParseHdrGainmapMetadata(gainmapMetadata, extendMetadata);
+    if (!ParseHdrGainmapMetadata(gainmapMetadata, extendMetadata)) {
+        return false;
+    }
     
     if (memcpy_s(gainmapDataVec.data(), vecSize, &extendMetadata, vecSize) != EOK) {
         IMAGE_LOGE("[%{public}s] memcpy failed", __func__);
@@ -1734,6 +1784,11 @@ HdrMetadataValue PixelMapImpl::GetMetadata(HdrMetadataKey key)
     bool success = false;
     HdrMetadataValue metadataValue = HdrMetadataValue::make_hdrMetadataType(HdrMetadataType::key_t::NONE);
     sptr<SurfaceBuffer> surfaceBuffer(reinterpret_cast<SurfaceBuffer*>(nativePixelMap_->GetFd()));
+    if (surfaceBuffer == nullptr) {
+        ImageTaiheUtils::ThrowExceptionError(Media::COMMON_ERR_INVALID_PARAMETER,
+            "Surface buffer of the PixelMap is missing.");
+        return HdrMetadataValue::make_hdrMetadataType(HdrMetadataType::key_t::NONE);
+    }
     switch (key.get_key()) {
         case HdrMetadataKey::key_t::HDR_METADATA_TYPE:
             success = GetMetadataType(surfaceBuffer, metadataValue);
@@ -1777,6 +1832,11 @@ void PixelMapImpl::SetMetadataSync(HdrMetadataKey key, HdrMetadataValue const& v
 
     bool success = false;
     sptr<SurfaceBuffer> surfaceBuffer(reinterpret_cast<SurfaceBuffer*>(nativePixelMap_->GetFd()));
+    if (surfaceBuffer == nullptr) {
+        ImageTaiheUtils::ThrowExceptionError(Media::ERR_IMAGE_INVALID_PARAMETER,
+            "Surface buffer of the PixelMap is missing.");
+        return;
+    }
     switch (key.get_key()) {
         case HdrMetadataKey::key_t::HDR_METADATA_TYPE:
             success = SetMetadataType(surfaceBuffer, value);
