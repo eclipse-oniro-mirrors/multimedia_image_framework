@@ -2715,7 +2715,7 @@ STATIC_EXEC_FUNC(CreatePixelMap)
         if (context->opts.pixelFormat == PixelFormat::RGBA_1010102 ||
             context->opts.pixelFormat == PixelFormat::YCBCR_P010 ||
             context->opts.pixelFormat == PixelFormat::YCRCB_P010 ||
-            context->colorsBufferSize > static_cast<size_t>(INT_MAX)) {
+            context->colorsBufferSize > static_cast<size_t>(INT32_MAX)) {
             context->rPixelMap = nullptr;
         } else {
             auto pixelmap = PixelMap::CreateForApi(colors, static_cast<uint32_t>(context->colorsBufferSize),
@@ -3028,10 +3028,10 @@ STATIC_EXEC_FUNC(CreatePixelMapUsingAllocator)
         info.pixelFormat = context->opts.srcPixelFormat;
         int32_t bufferSize = Media::ImageUtils::GetByteCount(info);
         if (bufferSize <= 0 || context->colorsBufferSize < static_cast<size_t>(bufferSize)) {
-            IMAGE_LOGE("invalid parameter: buffer size %{public}zu is less than required buffer size %{public}d",
+            IMAGE_LOGE("Invalid parameter: buffer size %{public}zu is less than required buffer size %{public}d",
                 context->colorsBufferSize, bufferSize);
             context->status = ERR_MEDIA_UNSUPPORT_OPERATION;
-        } else if (context->colorsBufferSize > static_cast<size_t>(INT_MAX)) {
+        } else if (context->colorsBufferSize > static_cast<size_t>(INT32_MAX)) {
             context->status = ERR_MEDIA_UNSUPPORT_OPERATION;
         } else {
             auto pixelmap = PixelMap::CreateForApi(colors, static_cast<uint32_t>(context->colorsBufferSize),

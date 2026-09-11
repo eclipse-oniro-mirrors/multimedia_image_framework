@@ -2204,7 +2204,7 @@ HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_CreatePixelMap_Success, TestSize.Le
 
 /**
  * @tc.name: OH_PixelmapNative_CreatePixelMap_UndersizedBuffer
- * @tc.desc: Verify the legacy NDK API accepts a byte buffer smaller than the source image.
+ * @tc.desc: Verify the legacy API accepts a byte buffer smaller than the source image.
  * @tc.type: FUNC
  */
 HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_CreatePixelMap_UndersizedBuffer, TestSize.Level3)

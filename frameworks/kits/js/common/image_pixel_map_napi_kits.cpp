@@ -111,10 +111,8 @@ static int32_t PixelMapNapiCreate(napi_env env, PixelMapNapiArgs* args)
 
     if (info.pixelFormat == PixelFormat::RGBA_1010102 ||
         info.pixelFormat == PixelFormat::YCBCR_P010 ||
-        info.pixelFormat == PixelFormat::YCRCB_P010) {
-        return IMAGE_RESULT_BAD_PARAMETER;
-    }
-    if (args->bufferLen > static_cast<size_t>(INT_MAX)) {
+        info.pixelFormat == PixelFormat::YCRCB_P010 ||
+        args->bufferLen > static_cast<size_t>(INT32_MAX)) {
         return IMAGE_RESULT_BAD_PARAMETER;
     }
     auto pixelmap = PixelMap::CreateForApi(static_cast<uint32_t*>(args->inBuffer),

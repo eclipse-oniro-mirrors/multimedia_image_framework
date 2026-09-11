@@ -703,7 +703,7 @@ STATIC_EXEC_FUNC(CreateSendablePixelMap)
         if (colors == nullptr) {
             auto pixelmap = PixelMap::Create(context->opts);
             context->rPixelMap = std::move(pixelmap);
-        } else if (context->colorsBufferSize > static_cast<size_t>(INT_MAX)) {
+        } else if (context->colorsBufferSize > static_cast<size_t>(INT32_MAX)) {
             context->rPixelMap = nullptr;
         } else {
             auto pixelmap = PixelMap::CreateForApi(colors, static_cast<uint32_t>(context->colorsBufferSize),

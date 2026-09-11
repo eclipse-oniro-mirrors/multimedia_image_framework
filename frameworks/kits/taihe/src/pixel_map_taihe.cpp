@@ -107,7 +107,7 @@ PixelMap CreatePixelMapSync(array_view<uint8_t> colors, InitializationOptions co
         ImageTaiheUtils::ThrowExceptionError(Media::ERROR, "10-bit pixel formats are not supported.");
         return make_holder<PixelMapImpl, PixelMap>();
     }
-    if (colors.size() > static_cast<size_t>(INT_MAX)) {
+    if (colors.size() > static_cast<size_t>(INT32_MAX)) {
         ImageTaiheUtils::ThrowExceptionError(Media::ERROR, "Pixel buffer is too large.");
         return make_holder<PixelMapImpl, PixelMap>();
     }
@@ -399,7 +399,7 @@ PixelMapImpl::PixelMapImpl(array_view<uint8_t> const& colors, InitializationOpti
         return;
     }
 
-    if (colors.size() > static_cast<size_t>(INT_MAX)) {
+    if (colors.size() > static_cast<size_t>(INT32_MAX)) {
         ImageTaiheUtils::ThrowExceptionError(Media::ERR_MEDIA_UNSUPPORT_OPERATION, "Pixel buffer is too large.");
         return;
     }

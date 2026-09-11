@@ -142,7 +142,7 @@ public:
                                                          const InitializationOptions &opts);
 
     /**
-     * Create a PixelMap through pixel data for a legacy external API.
+     * Create a PixelMap through pixel data with improved parameter validation for legacy external APIs.
      *
      * @param colors The pixel data.
      * @param colorLength The length of the pixel data in bytes.
