@@ -297,7 +297,8 @@ heif_error HeifDrefBox::ParseContent(HeifStreamReader &reader)
         return heif_error_invalid_dref;
     }
     for (uint32_t i = 0; i < entryCount_; i++) {
-        uint32_t recursionCount = recursionDepth_;
+        uint32_t recursionCount = recursionDepth_ + 1;
+        CHECK_ERROR_RETURN_RET(recursionCount > MAX_RECURSION_COUNT, heif_error_too_many_recursion);
         std::shared_ptr<HeifBox> entry;
         heif_error error = HeifBox::MakeFromReader(reader, &entry, recursionCount);
         CHECK_ERROR_RETURN_RET(error != heif_error_ok, error);
@@ -330,7 +331,8 @@ heif_error HeifStsdBox::ParseContent(HeifStreamReader &reader)
         return heif_error_invalid_stsd;
     }
     for (uint32_t i = 0; i < entryCount_; i++) {
-        uint32_t recursionCount = recursionDepth_;
+        uint32_t recursionCount = recursionDepth_ + 1;
+        CHECK_ERROR_RETURN_RET(recursionCount > MAX_RECURSION_COUNT, heif_error_too_many_recursion);
         std::shared_ptr<HeifBox> entry;
         heif_error error = HeifBox::MakeFromReader(reader, &entry, recursionCount);
         CHECK_ERROR_RETURN_RET(error != heif_error_ok, error);
@@ -599,7 +601,8 @@ heif_error HeifHvc1Box::ParseContent(HeifStreamReader &reader)
     for (uint32_t i = 0; i < HVC1_SKIP_OFFSET; i++) {
         reader.Read8();
     }
-    uint32_t recursionCount = recursionDepth_;
+    uint32_t recursionCount = recursionDepth_ + 1;
+    CHECK_ERROR_RETURN_RET(recursionCount > MAX_RECURSION_COUNT, heif_error_too_many_recursion);
     heif_error error = HeifBox::MakeFromReader(reader, &hvccBox_, recursionCount);
     CHECK_ERROR_RETURN_RET(error != heif_error_ok, error);
     return reader.GetError();
@@ -627,7 +630,8 @@ heif_error HeifAv01Box::ParseContent(HeifStreamReader &reader)
     depth_ = reader.Read16();
     SkipBytes(reader, PRE_DEFINED3_SIZE);
 
-    uint32_t recursionCount = recursionDepth_;
+    uint32_t recursionCount = recursionDepth_ + 1;
+    CHECK_ERROR_RETURN_RET(recursionCount > MAX_RECURSION_COUNT, heif_error_too_many_recursion);
     heif_error error = HeifBox::MakeFromReader(reader, &av1cBox_, recursionCount);
     CHECK_ERROR_RETURN_RET(error != heif_error_ok, error);
     return reader.GetError();

@@ -258,6 +258,8 @@ heif_error HeifBox::MakeFromReader(HeifStreamReader &reader,
     if (BoxContentChildren(box)) {
         err = box->ParseContentChildren(contentReader, recursionCount);
     } else {
+        recursionCount++;
+        CHECK_ERROR_RETURN_RET(recursionCount > MAX_RECURSION_COUNT, heif_error_too_many_recursion);
         err = box->ParseContent(contentReader);
     }
     if (!err) {
