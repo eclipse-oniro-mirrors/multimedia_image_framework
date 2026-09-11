@@ -941,7 +941,9 @@ static std::string GetExifValueArgumentForKey(napi_env env, napi_value value, co
             }
             if (IsBooleanTypeKey(keyStr)) {
                 bool boolValue = false;
-                napi_get_value_bool(env, value, &boolValue);
+                napi_status status = napi_get_value_bool(env, value, &boolValue);
+                CHECK_ERROR_RETURN_RET_LOG(status != napi_ok, "",
+                    "%{public}s: Failed to get boolean value for key %{public}s", __func__, keyStr.c_str());
                 return boolValue ? "1" : "0";
             }
             return std::to_string(GetIntArgument(env, value));
@@ -5424,6 +5426,7 @@ static void CreatePictureComplete(napi_env env, napi_status status, void *data)
     IMAGE_LOGD("CreatePictureComplete IN");
     napi_value result = nullptr;
     auto context = static_cast<ImageSourceAsyncContext*>(data);
+    CHECK_ERROR_RETURN_LOG(context == nullptr, "context is nullptr");
 
     if (context->status == SUCCESS) {
         result = PictureNapi::CreatePicture(env, context->rPicture);
