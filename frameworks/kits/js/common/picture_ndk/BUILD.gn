@@ -89,6 +89,7 @@ ohos_shared_library("picture") {
     "${image_subsystem}/frameworks/kits/js/common/picture_ndk:image_common",
     "${image_subsystem}/frameworks/kits/js/common/pixelmap_ndk:pixelmap",
     "${image_subsystem}/interfaces/innerkits:image_native",
+    "${image_subsystem}/interfaces/kits/js/common:image"
   ]
 
   external_deps = [
