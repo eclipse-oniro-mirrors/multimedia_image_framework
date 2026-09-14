@@ -243,7 +243,7 @@ void Plugin::FreeLibrary()
             stopFunc_();
         }
     }
-    if (handle_ == NULL) {
+    if (hDll == NULL) {
         return;
     }
     platformAdp_.AdpFreeLibrary(hDll);
