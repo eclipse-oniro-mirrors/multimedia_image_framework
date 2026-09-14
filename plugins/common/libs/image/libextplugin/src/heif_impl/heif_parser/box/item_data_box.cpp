@@ -55,10 +55,8 @@ heif_error HeifIlocBox::ParseExtents(Item& item, HeifStreamReader &reader,
     // with a non-trivial count since they carry no useful data.
     size_t perExtentBytes = static_cast<size_t>(indexSize) + static_cast<size_t>(offsetSize) +
         static_cast<size_t>(lengthSize);
-    if (perExtentBytes == 0) {
-        if (extentNum > 1) {
-            return heif_error_invalid_data;
-        }
+    if (perExtentBytes == 0 && extentNum > 1) {
+        return heif_error_invalid_data;
     } else if (static_cast<size_t>(extentNum) * perExtentBytes > reader.GetRemainSize()) {
         return heif_error_invalid_data;
     }
