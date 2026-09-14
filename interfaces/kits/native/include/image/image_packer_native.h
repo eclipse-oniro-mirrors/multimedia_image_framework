@@ -35,7 +35,9 @@
 #ifndef INTERFACES_KITS_NATIVE_INCLUDE_IMAGE_IMAGE_PACKER_NATIVE_H
 #define INTERFACES_KITS_NATIVE_INCLUDE_IMAGE_IMAGE_PACKER_NATIVE_H
 #include "image_common.h"
+#ifndef CROSS_PLATFORM
 #include "image_source_native.h"
+#endif
 #include "pixelmap_native.h"
 
 #ifdef __cplusplus
@@ -88,6 +90,16 @@ typedef enum {
     IMAGE_PACKER_DYNAMIC_RANGE_SDR = 1,
 } IMAGE_PACKER_DYNAMIC_RANGE;
 
+#ifdef CROSS_PLATFORM
+Image_ErrorCode OH_PackingOptions_Create(OH_PackingOptions **options);
+Image_ErrorCode OH_PackingOptions_SetMimeType(OH_PackingOptions *options, Image_MimeType *format);
+Image_ErrorCode OH_PackingOptions_SetQuality(OH_PackingOptions *options, uint32_t quality);
+Image_ErrorCode OH_PackingOptions_Release(OH_PackingOptions *options);
+Image_ErrorCode OH_ImagePackerNative_Create(OH_ImagePackerNative **imagePacker);
+Image_ErrorCode OH_ImagePackerNative_PackToFileFromPixelmap(OH_ImagePackerNative *imagePacker,
+    OH_PackingOptions *options, OH_PixelmapNative *pixelmap, int32_t fd);
+Image_ErrorCode OH_ImagePackerNative_Release(OH_ImagePackerNative *imagePacker);
+#else
 /**
  * @brief Create a pointer for PackingOptions struct.
  *
@@ -584,6 +596,7 @@ Image_ErrorCode OH_ImagePackerNative_PackToFileFromPixelmapSequence(OH_ImagePack
   * @since 20
  */
 Image_ErrorCode OH_ImagePackerNative_GetSupportedFormats(Image_MimeType** supportedFormat, size_t* length);
+#endif
 
 #ifdef __cplusplus
 };
