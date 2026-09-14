@@ -7260,11 +7260,6 @@ static bool ParseStaticMetadata(napi_env env, napi_value &hdrStaticMetadata, std
         IMAGE_LOGI("parse displayPrimariesY failed");
         return false;
     }
-    if (displayPrimariesX.size() < METADATA_CHANNEL_COUNT || displayPrimariesY.size() < METADATA_CHANNEL_COUNT) {
-        IMAGE_LOGE("Invalid display primaries array size, displayPrimariesX: %{public}zu, "
-            "displayPrimariesY: %{public}zu", displayPrimariesX.size(), displayPrimariesY.size());
-        return false;
-    }
     staticMetadata.smpte2086.displayPrimaryRed.x = displayPrimariesX[NUM_0];
     staticMetadata.smpte2086.displayPrimaryRed.y = displayPrimariesY[NUM_0];
     staticMetadata.smpte2086.displayPrimaryGreen.x = displayPrimariesX[NUM_1];

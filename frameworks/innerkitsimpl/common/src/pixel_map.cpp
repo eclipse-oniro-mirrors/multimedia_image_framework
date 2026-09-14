@@ -358,8 +358,7 @@ unique_ptr<PixelMap> PixelMap::CreateForApi(const uint32_t *colors, uint32_t col
     }
     if (requiredBytes > static_cast<int64_t>(colorLength)) {
         size_t expandedSize = static_cast<size_t>(requiredBytes);
-        // Intentionally leave the buffer uninitialized to preserve original behavior
-        std::unique_ptr<uint8_t[]> expandedPixels(new (std::nothrow) uint8_t[expandedSize]);
+        std::unique_ptr<uint8_t[]> expandedPixels = std::make_unique<uint8_t[]>(expandedSize);
         if (expandedPixels == nullptr || memcpy_s(expandedPixels.get(), expandedSize, colors, colorLength) != EOK) {
             IMAGE_LOGE("[PixelMap] CreateForApi: expand undersized pixel buffer failed");
             return nullptr;
