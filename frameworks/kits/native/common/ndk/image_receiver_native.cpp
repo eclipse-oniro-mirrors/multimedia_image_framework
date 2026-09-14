@@ -121,9 +121,6 @@ Image_ErrorCode OH_ImageReceiverOptions_SetSize(OH_ImageReceiverOptions* options
         IMAGE_LOGE("Invalid parameter: options=null.");
         return IMAGE_BAD_PARAMETER;
     }
-    bool cond = size.width == 0 || size.height == 0 || size.width > static_cast<uint32_t>(INT32_MAX) ||
-        size.height > static_cast<uint32_t>(INT32_MAX);
-    CHECK_ERROR_RETURN_RET_LOG(cond, IMAGE_BAD_PARAMETER, "Invalid size");
     options->width = static_cast<int32_t>(size.width);
     options->height = static_cast<int32_t>(size.height);
     return IMAGE_SUCCESS;

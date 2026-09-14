@@ -14,6 +14,7 @@
  */
 
 #include <gtest/gtest.h>
+#include <mutex>
 #define private public
 #define protected public
 #include "common_utils.h"
@@ -25,6 +26,7 @@
 
 struct OH_ImageReceiverNative {
     std::shared_ptr<OHOS::Media::ImageReceiver> ptrImgRcv;
+    std::mutex mutex_;
 };
 
 struct OH_ImageReceiverOptions {
