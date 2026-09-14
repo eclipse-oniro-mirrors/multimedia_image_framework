@@ -15,6 +15,8 @@
 
 #include "pixel_map_taihe.h"
 
+#include <climits>
+#include <cstdint>
 #include "ani_color_space_object_convertor.h"
 #include "image_format_convert.h"
 #include "image_log.h"
@@ -105,8 +107,12 @@ PixelMap CreatePixelMapSync(array_view<uint8_t> colors, InitializationOptions co
         ImageTaiheUtils::ThrowExceptionError(Media::ERROR, "10-bit pixel formats are not supported.");
         return make_holder<PixelMapImpl, PixelMap>();
     }
-    auto nativePixelMap =
-        Media::PixelMap::Create(reinterpret_cast<uint32_t*>(colors.data()), colors.size(), nativeOptions);
+    if (colors.size() > static_cast<size_t>(INT32_MAX)) {
+        ImageTaiheUtils::ThrowExceptionError(Media::ERROR, "Pixel buffer is too large.");
+        return make_holder<PixelMapImpl, PixelMap>();
+    }
+    auto nativePixelMap = Media::PixelMap::CreateForApi(reinterpret_cast<uint32_t*>(colors.data()),
+        static_cast<uint32_t>(colors.size()), nativeOptions);
     if (nativePixelMap == nullptr) {
         ImageTaiheUtils::ThrowExceptionError(Media::ERROR, "Failed to create PixelMap from buffer.");
         return make_holder<PixelMapImpl, PixelMap>();
@@ -393,7 +399,12 @@ PixelMapImpl::PixelMapImpl(array_view<uint8_t> const& colors, InitializationOpti
         return;
     }
 
-    nativePixelMap_ = Media::PixelMap::Create(reinterpret_cast<uint32_t*>(colors.data()), colors.size(), options);
+    if (colors.size() > static_cast<size_t>(INT32_MAX)) {
+        ImageTaiheUtils::ThrowExceptionError(Media::ERR_MEDIA_UNSUPPORT_OPERATION, "Pixel buffer is too large.");
+        return;
+    }
+    nativePixelMap_ = Media::PixelMap::CreateForApi(reinterpret_cast<uint32_t*>(colors.data()),
+        static_cast<uint32_t>(colors.size()), options);
     if (nativePixelMap_ == nullptr) {
         ImageTaiheUtils::ThrowExceptionError(Media::ERR_MEDIA_UNSUPPORT_OPERATION,
             "Failed to create PixelMap from buffer using allocator.");

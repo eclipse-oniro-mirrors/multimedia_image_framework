@@ -23,9 +23,10 @@
 #include "image_trace.h"
 #include "log_tags.h"
 #include "color_space_object_convertor.h"
+#include <climits>
+#include <cstdint>
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 #include <charconv>
-#include <cstdint>
 #include <memory>
 #include <regex>
 #include <vector>
@@ -2713,10 +2714,12 @@ STATIC_EXEC_FUNC(CreatePixelMap)
     } else {
         if (context->opts.pixelFormat == PixelFormat::RGBA_1010102 ||
             context->opts.pixelFormat == PixelFormat::YCBCR_P010 ||
-            context->opts.pixelFormat == PixelFormat::YCRCB_P010) {
+            context->opts.pixelFormat == PixelFormat::YCRCB_P010 ||
+            context->colorsBufferSize > static_cast<size_t>(INT32_MAX)) {
             context->rPixelMap = nullptr;
         } else {
-            auto pixelmap = PixelMap::Create(colors, context->colorsBufferSize, context->opts);
+            auto pixelmap = PixelMap::CreateForApi(colors, static_cast<uint32_t>(context->colorsBufferSize),
+                context->opts);
             context->rPixelMap = std::move(pixelmap);
         }
     }
@@ -3025,11 +3028,14 @@ STATIC_EXEC_FUNC(CreatePixelMapUsingAllocator)
         info.pixelFormat = context->opts.srcPixelFormat;
         int32_t bufferSize = Media::ImageUtils::GetByteCount(info);
         if (bufferSize <= 0 || context->colorsBufferSize < static_cast<size_t>(bufferSize)) {
-            IMAGE_LOGE("invalid parameter: buffer size %{public}zu is less than required buffer size %{public}d",
-            context->colorsBufferSize, bufferSize);
+            IMAGE_LOGE("Invalid parameter: buffer size %{public}zu is less than required buffer size %{public}d",
+                context->colorsBufferSize, bufferSize);
+            context->status = ERR_MEDIA_UNSUPPORT_OPERATION;
+        } else if (context->colorsBufferSize > static_cast<size_t>(INT32_MAX)) {
             context->status = ERR_MEDIA_UNSUPPORT_OPERATION;
         } else {
-            auto pixelmap = PixelMap::Create(colors, context->colorsBufferSize, context->opts);
+            auto pixelmap = PixelMap::CreateForApi(colors, static_cast<uint32_t>(context->colorsBufferSize),
+                context->opts);
             context->rPixelMap = std::move(pixelmap);
         }
     }
@@ -7191,22 +7197,34 @@ static HdrMetadataType ParseHdrMetadataType(napi_env env, napi_value &hdrMetadat
 
 static bool ParseArrayDoubleNode(napi_env env, napi_value &root, std::vector<float> &vec)
 {
-    uint32_t vecSize = 0;
-    napi_get_array_length(env, root, &vecSize);
-    if (vecSize > 0) {
-        for (uint32_t i = 0; i < NUM_3; i++) {
-            napi_value tempDiv = nullptr;
-            napi_get_element(env, root, i, &tempDiv);
-            double gamma = 0.0f;
-            if (napi_get_value_double(env, tempDiv, &gamma) != napi_ok) {
-                IMAGE_LOGD("ParseArrayDoubleNode get value failed");
-                return false;
-            }
-            vec.emplace_back((float)gamma);
-        }
-        return true;
+    if (root == nullptr) {
+        return false;
     }
-    return false;
+    bool isArray = false;
+    if (napi_is_array(env, root, &isArray) != napi_ok || !isArray) {
+        return false;
+    }
+    uint32_t vecSize = 0;
+    if (napi_get_array_length(env, root, &vecSize) != napi_ok || vecSize < NUM_3) {
+        return false;
+    }
+    std::vector<float> parsedValues;
+    parsedValues.reserve(NUM_3);
+    for (uint32_t i = 0; i < NUM_3; i++) {
+        napi_value tempDiv = nullptr;
+        if (napi_get_element(env, root, i, &tempDiv) != napi_ok) {
+            IMAGE_LOGD("ParseArrayDoubleNode get element failed");
+            return false;
+        }
+        double gamma = 0.0f;
+        if (napi_get_value_double(env, tempDiv, &gamma) != napi_ok) {
+            IMAGE_LOGD("ParseArrayDoubleNode get value failed");
+            return false;
+        }
+        parsedValues.emplace_back(static_cast<float>(gamma));
+    }
+    vec = std::move(parsedValues);
+    return true;
 }
 
 static bool ParseDoubleMetadataNode(napi_env env, napi_value &root,
@@ -7226,19 +7244,17 @@ static bool ParseStaticMetadata(napi_env env, napi_value &hdrStaticMetadata, std
     HDI::Display::Graphic::Common::V1_0::HdrStaticMetadata staticMetadata{};
     napi_value displayX = nullptr;
     std::vector<float> displayPrimariesX;
-    if (!GET_NODE_BY_NAME(hdrStaticMetadata, "displayPrimariesX", displayX)) {
+    if (!GET_NODE_BY_NAME(hdrStaticMetadata, "displayPrimariesX", displayX) ||
+        !ParseArrayDoubleNode(env, displayX, displayPrimariesX)) {
         IMAGE_LOGI("parse displayPrimariesX failed");
-    }
-    if (!ParseArrayDoubleNode(env, displayX, displayPrimariesX)) {
-        IMAGE_LOGI("parse array x failed");
+        return false;
     }
     std::vector<float> displayPrimariesY;
     napi_value displayY = nullptr;
-    if (!GET_NODE_BY_NAME(hdrStaticMetadata, "displayPrimariesY", displayY)) {
+    if (!GET_NODE_BY_NAME(hdrStaticMetadata, "displayPrimariesY", displayY) ||
+        !ParseArrayDoubleNode(env, displayY, displayPrimariesY)) {
         IMAGE_LOGI("parse displayPrimariesY failed");
-    }
-    if (!ParseArrayDoubleNode(env, displayY, displayPrimariesY)) {
-        IMAGE_LOGI("parse array y failed");
+        return false;
     }
     staticMetadata.smpte2086.displayPrimaryRed.x = displayPrimariesX[NUM_0];
     staticMetadata.smpte2086.displayPrimaryRed.y = displayPrimariesY[NUM_0];
