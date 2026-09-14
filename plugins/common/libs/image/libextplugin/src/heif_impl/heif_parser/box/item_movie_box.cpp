@@ -589,7 +589,6 @@ heif_error HeifStssBox::ParseContent(HeifStreamReader &reader)
 
 heif_error HeifHvc1Box::ParseContent(HeifStreamReader &reader)
 {
-    CHECK_ERROR_RETURN_RET(recursionDepth_ >= MAX_RECURSION_COUNT, heif_error_too_many_recursion);
     for (uint32_t i = 0; i < HVC1_RESERVED_OFFSET; i++) {
         reserved_[i] = reader.Read8();
     }
@@ -611,7 +610,6 @@ heif_error HeifHvc1Box::ParseContent(HeifStreamReader &reader)
 
 heif_error HeifAv01Box::ParseContent(HeifStreamReader &reader)
 {
-    CHECK_ERROR_RETURN_RET(recursionDepth_ >= MAX_RECURSION_COUNT, heif_error_too_many_recursion);
     SkipBytes(reader, RESERVED1_SIZE);
     dataRefIndex_ = reader.Read16();
     SkipBytes(reader, PRE_DEFINED1_SIZE);
