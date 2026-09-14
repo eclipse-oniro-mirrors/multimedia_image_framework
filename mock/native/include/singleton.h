@@ -17,6 +17,7 @@
 #define MOCK_NATIVE_INCLUDE_SINGLETON_H
 
 #include "nocopyable.h"
+#include <atomic>
 #include <mutex>
 #include <memory>
 
@@ -68,12 +69,9 @@ std::mutex DelayedSingleton<T>::mutex_;
 template<typename T>
 std::shared_ptr<T> DelayedSingleton<T>::GetInstance()
 {
+    std::lock_guard<std::mutex> lock(mutex_);
     if (instance_ == nullptr) {
-        std::lock_guard<std::mutex> lock(mutex_);
-        if (instance_ == nullptr) {
-            std::shared_ptr<T> temp(new T);
-            instance_ = temp;
-        }
+        instance_.reset(new T);
     }
     return instance_;
 }
@@ -82,10 +80,7 @@ template<typename T>
 void DelayedSingleton<T>::DestroyInstance()
 {
     std::lock_guard<std::mutex> lock(mutex_);
-    if (instance_ != nullptr) {
-        instance_.reset();
-        instance_ = nullptr;
-    }
+    instance_.reset();
 }
 
 template<typename T>
@@ -94,12 +89,12 @@ public:
     static T& GetInstance();
 
 private:
-    static T* instance_;
+    static std::atomic<T*> instance_;
     static std::mutex mutex_;
 };
 
 template<typename T>
-T* DelayedRefSingleton<T>::instance_ = nullptr;
+std::atomic<T*> DelayedRefSingleton<T>::instance_{nullptr};
 
 template<typename T>
 std::mutex DelayedRefSingleton<T>::mutex_;
@@ -107,13 +102,16 @@ std::mutex DelayedRefSingleton<T>::mutex_;
 template<typename T>
 T& DelayedRefSingleton<T>::GetInstance()
 {
-    if (instance_ == nullptr) {
+    T* temp = instance_.load(std::memory_order_acquire);
+    if (temp == nullptr) {
         std::lock_guard<std::mutex> lock(mutex_);
-        if (instance_ == nullptr) {
-            instance_ = new T();
+        temp = instance_.load(std::memory_order_relaxed);
+        if (temp == nullptr) {
+            temp = new T();
+            instance_.store(temp, std::memory_order_release);
         }
     }
-    return *instance_;
+    return *temp;
 }
 
 template<typename T>
