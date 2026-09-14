@@ -495,10 +495,12 @@ bool SvgDecoder::BuildDom()
     cond = svgSize_.isEmpty();
     CHECK_ERROR_RETURN_RET_LOG(cond, false, "[BuildDom] size is empty.");
 
-    auto width = Float2UInt32(svgSize_.width());
-    auto height = Float2UInt32(svgSize_.height());
+    uint32_t widthVal = Float2UInt32(svgSize_.width());
+    uint32_t heightVal = Float2UInt32(svgSize_.height());
+    cond = (widthVal > static_cast<uint32_t>(INT32_MAX) || heightVal > static_cast<uint32_t>(INT32_MAX));
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "[BuildDom] size overflow: (%{public}u, %{public}u)", widthVal, heightVal);
 
-    IMAGE_LOGD("[BuildDom] OUT size=(%{public}u, %{public}u)", width, height);
+    IMAGE_LOGD("[BuildDom] OUT size=(%{public}u, %{public}u)", widthVal, heightVal);
     return true;
 }
 
@@ -569,8 +571,13 @@ uint32_t SvgDecoder::DoSetDecodeOptions(uint32_t index, const PixelDecodeOptions
         svgDom_->setResizePercentage(DEFAULT_RESIZE_PERCENTAGE * scaleFitDesired);
     }
 
-    opts_.desiredSize.width = static_cast<int32_t>(Float2UInt32(svgDom_->containerSize().width()));
-    opts_.desiredSize.height = static_cast<int32_t>(Float2UInt32(svgDom_->containerSize().height()));
+    uint32_t desiredWidth = Float2UInt32(svgDom_->containerSize().width());
+    uint32_t desiredHeight = Float2UInt32(svgDom_->containerSize().height());
+    cond = (desiredWidth > static_cast<uint32_t>(INT32_MAX) || desiredHeight > static_cast<uint32_t>(INT32_MAX));
+    CHECK_ERROR_RETURN_RET_LOG(cond, Media::ERROR,
+        "[DoSetDecodeOptions] size overflow: (%{public}u, %{public}u)", desiredWidth, desiredHeight);
+    opts_.desiredSize.width = static_cast<int32_t>(desiredWidth);
+    opts_.desiredSize.height = static_cast<int32_t>(desiredHeight);
 
     info.size.width = opts_.desiredSize.width;
     info.size.height = opts_.desiredSize.height;
@@ -595,8 +602,13 @@ uint32_t SvgDecoder::DoGetImageSize(uint32_t index, Size &size)
     cond = (svgSize.isEmpty());
     CHECK_ERROR_RETURN_RET_LOG(cond, Media::ERROR, "[DoGetImageSize] size is empty.");
 
-    size.width = static_cast<int32_t>(Float2UInt32(svgSize.width()));
-    size.height = static_cast<int32_t>(Float2UInt32(svgSize.height()));
+    uint32_t widthVal = Float2UInt32(svgSize.width());
+    uint32_t heightVal = Float2UInt32(svgSize.height());
+    cond = (widthVal > static_cast<uint32_t>(INT32_MAX) || heightVal > static_cast<uint32_t>(INT32_MAX));
+    CHECK_ERROR_RETURN_RET_LOG(cond, Media::ERROR,
+        "[DoGetImageSize] size overflow: (%{public}u, %{public}u)", widthVal, heightVal);
+    size.width = static_cast<int32_t>(widthVal);
+    size.height = static_cast<int32_t>(heightVal);
 
     IMAGE_LOGD("[DoGetImageSize] OUT size=(%{public}u, %{public}u)", size.width, size.height);
     return Media::SUCCESS;

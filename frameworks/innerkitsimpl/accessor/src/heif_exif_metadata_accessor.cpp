@@ -134,7 +134,9 @@ uint32_t HeifExifMetadataAccessor::WriteMetadata(DataBuf &dataBuf)
     }
 
     HeifStreamWriter writer;
-    parser->Write(writer);
+    heif_error writeRet = parser->Write(writer);
+    CHECK_ERROR_RETURN_RET_LOG(writeRet != heif_error_ok, ERR_IMAGE_DECODE_EXIF_UNSUPPORT,
+        "Failed to write HEIF metadata, error: %{public}d", writeRet);
     size_t dataSize = writer.GetDataSize();
     CHECK_ERROR_RETURN_RET_LOG(dataSize == 0, ERR_IMAGE_DECODE_EXIF_UNSUPPORT,
         "The EXIF data failed to be written to the file.");

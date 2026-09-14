@@ -334,9 +334,139 @@ HWTEST_F(HeifParserTest, WriteTest003, TestSize.Level3)
     HeifParser heifParser;
     HeifStreamWriter write;
     heifParser.ilocBox_ = std::make_shared<HeifIlocBox>();
-    heifParser.Write(write);
+    ASSERT_EQ(heifParser.Write(write), heif_error_ok);
     ASSERT_EQ(heifParser.ilocBox_->WriteMdatBox(write), heif_error_ok);
     GTEST_LOG_(INFO) << "HeifParserTest: WriteTest003 end";
+}
+
+/**
+ * @tc.name: WriteRejectsOversizedExtent
+ * @tc.desc: An extent read failure must not write boxes or change its declared length.
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserTest, WriteRejectsOversizedExtent, TestSize.Level3)
+{
+    const uint64_t oversizedLength = 128ULL * 1024 * 1024 + 1;
+    const std::vector<uint8_t> source = {MOCK_DATA_1};
+    auto stream = std::make_shared<HeifBufferInputStream>(source.data(), source.size(), false);
+    HeifParser parser(stream);
+    parser.ilocBox_ = std::make_shared<HeifIlocBox>();
+    parser.topBoxes_.push_back(parser.ilocBox_);
+    HeifIlocBox::Item item;
+    HeifIlocBox::Extent extent;
+    extent.length = oversizedLength;
+    item.extents.push_back(extent);
+    parser.ilocBox_->items_.push_back(item);
+
+    HeifStreamWriter writer;
+    EXPECT_EQ(parser.Write(writer), heif_error_grid_too_large);
+    EXPECT_EQ(writer.GetDataSize(), 0);
+    EXPECT_EQ(parser.ilocBox_->GetItems()[0].extents[0].length, oversizedLength);
+    EXPECT_TRUE(parser.ilocBox_->GetItems()[0].extents[0].data.empty());
+}
+
+/**
+ * @tc.name: WriteRejectsTruncatedExtent
+ * @tc.desc: Failure after reading one extent must leave the output unchanged.
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserTest, WriteRejectsTruncatedExtent, TestSize.Level3)
+{
+    const std::vector<uint8_t> source = {MOCK_DATA_1};
+    auto stream = std::make_shared<HeifBufferInputStream>(source.data(), source.size(), false);
+    HeifParser parser(stream);
+    parser.ilocBox_ = std::make_shared<HeifIlocBox>();
+    parser.topBoxes_.push_back(parser.ilocBox_);
+    HeifIlocBox::Item item;
+    HeifIlocBox::Extent extent;
+    extent.length = source.size();
+    item.extents.push_back(extent);
+    extent.offset = source.size();
+    item.extents.push_back(extent);
+    parser.ilocBox_->items_.push_back(item);
+
+    HeifStreamWriter writer;
+    writer.Write8(MOCK_FILL_BYTE);
+    const auto originalOutput = writer.GetData();
+    EXPECT_EQ(parser.Write(writer), heif_error_eof);
+    EXPECT_EQ(writer.GetData(), originalOutput);
+    EXPECT_EQ(parser.ilocBox_->GetItems()[0].extents[0].data, source);
+    EXPECT_EQ(parser.ilocBox_->GetItems()[0].extents[1].length, source.size());
+}
+
+/**
+ * @tc.name: WriteRejectsMissingIdat
+ * @tc.desc: A missing idat box must stop serialization.
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserTest, WriteRejectsMissingIdat, TestSize.Level3)
+{
+    HeifParser parser;
+    parser.ilocBox_ = std::make_shared<HeifIlocBox>();
+    parser.topBoxes_.push_back(parser.ilocBox_);
+    HeifIlocBox::Item item;
+    item.constructionMethod = 1;
+    HeifIlocBox::Extent extent;
+    extent.length = 1;
+    item.extents.push_back(extent);
+    parser.ilocBox_->items_.push_back(item);
+
+    HeifStreamWriter writer;
+    EXPECT_EQ(parser.Write(writer), heif_error_no_idat);
+    EXPECT_EQ(writer.GetDataSize(), 0);
+}
+
+/**
+ * @tc.name: WritePreservesExtentData
+ * @tc.desc: Successful serialization must retain all bytes in the input extent.
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserTest, WritePreservesExtentData, TestSize.Level3)
+{
+    const std::vector<uint8_t> source = {MOCK_DATA_1, MOCK_DATA_2, MOCK_FILL_BYTE};
+    auto stream = std::make_shared<HeifBufferInputStream>(source.data(), source.size(), false);
+    HeifParser parser(stream);
+    parser.ilocBox_ = std::make_shared<HeifIlocBox>();
+    parser.topBoxes_.push_back(parser.ilocBox_);
+    HeifIlocBox::Item item;
+    HeifIlocBox::Extent extent;
+    extent.length = source.size();
+    item.extents.push_back(extent);
+    parser.ilocBox_->items_.push_back(item);
+
+    HeifStreamWriter writer;
+    ASSERT_EQ(parser.Write(writer), heif_error_ok);
+    const auto &writtenExtent = parser.ilocBox_->GetItems()[0].extents[0];
+    EXPECT_EQ(writtenExtent.length, source.size());
+    EXPECT_EQ(writtenExtent.data, source);
+    const auto &output = writer.GetData();
+    ASSERT_LE(writtenExtent.offset, output.size());
+    ASSERT_LE(source.size(), output.size() - writtenExtent.offset);
+    std::vector<uint8_t> writtenData(output.begin() + writtenExtent.offset,
+        output.begin() + writtenExtent.offset + source.size());
+    EXPECT_EQ(writtenData, source);
+}
+
+/**
+ * @tc.name: WritePropagatesBoxError
+ * @tc.desc: A box serialization error must be returned to the metadata writer.
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserTest, WritePropagatesBoxError, TestSize.Level3)
+{
+    class FailingBox : public HeifBox {
+    public:
+        FailingBox() : HeifBox(BOX_TYPE_ILOC) {}
+        heif_error Write(HeifStreamWriter &) const override
+        {
+            return heif_error_invalid_box_size;
+        }
+    };
+    HeifParser parser;
+    parser.topBoxes_.push_back(std::make_shared<FailingBox>());
+    HeifStreamWriter writer;
+    EXPECT_EQ(parser.Write(writer), heif_error_invalid_box_size);
+    EXPECT_EQ(writer.GetDataSize(), 0);
 }
 
 /**

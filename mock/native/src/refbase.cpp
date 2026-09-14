@@ -17,6 +17,10 @@
 #include "refbase.h"
 
 namespace OHOS {
+// Bit 0 in atomicFlags_ to mark that callback_() has been invoked,
+// preventing double-free when multiple threads satisfy the destroy condition concurrently.
+static constexpr unsigned int FLAG_CALLBACK_INVOKED = 0x00000001;
+
 WeakRefCounter::WeakRefCounter(RefCounter *counter, void *cookie)
     : atomicWeak_(0), refCounter_(counter), cookie_(cookie)
 {
@@ -149,7 +153,10 @@ int RefCounter::DecWeakRefCount(const void * /*objectId*/)
     }
     int strongRefCount = GetStrongRefCount();
     if ((curCount == 1) || (strongRefCount == 0 && !IsLifeTimeExtended())) {
-        if (callback_) {
+        // Atomically set FLAG_CALLBACK_INVOKED; only the first thread to succeed
+        // will invoke callback_(), preventing double-free under concurrent DecWeakRefCount.
+        unsigned int oldFlags = atomicFlags_.fetch_or(FLAG_CALLBACK_INVOKED, std::memory_order_acq_rel);
+        if (!(oldFlags & FLAG_CALLBACK_INVOKED) && callback_) {
             callback_();
         }
     }

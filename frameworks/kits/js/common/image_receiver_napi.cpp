@@ -270,8 +270,8 @@ napi_value ImageReceiverNapi::Constructor(napi_env env, napi_callback_info info)
         IMAGE_ERR("Create native image receiver failed");
         return undefineVar;
     }
-    napi_status status = napi_wrap(env, inputArgs.thisVar, reinterpret_cast<void *>(reference.get()),
-        ImageReceiverNapi::Destructor, nullptr, nullptr);
+    napi_status status = napi_wrap_s(env, inputArgs.thisVar, reinterpret_cast<void *>(reference.get()),
+        ImageReceiverNapi::Destructor, nullptr, &ImageReceiverNapi::NAPI_TYPE_TAG, nullptr);
     if (status == napi_ok) {
         reference.release();
         return inputArgs.thisVar;
@@ -479,7 +479,8 @@ napi_value ImageReceiverNapi::JSCommonProcess(ImageReceiverCommonArgs &args)
         if (ic.context == nullptr) {
             return ic.result;
         }
-        ic.status = napi_unwrap(args.env, ic.thisVar, reinterpret_cast<void**>(&(ic.context->constructor_)));
+        ic.status = napi_unwrap_s(args.env, ic.thisVar, &ImageReceiverNapi::NAPI_TYPE_TAG,
+            reinterpret_cast<void**>(&(ic.context->constructor_)));
 
         IMG_NAPI_CHECK_RET_D(IMG_IS_READY(ic.status, ic.context->constructor_),
             ic.result, IMAGE_ERR("fail to unwrap context"));
@@ -1223,7 +1224,8 @@ napi_value ImageReceiverNapi::JsSetMemoryName(napi_env env, napi_callback_info i
 
     std::string memoryName = ImageNapiUtils::GetStringArgument(env, argValue[0]);
     ImageReceiverNapi *receiverNapi = nullptr;
-    napiStatus = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&receiverNapi));
+    napiStatus = napi_unwrap_s(env, thisVar, &ImageReceiverNapi::NAPI_TYPE_TAG,
+        reinterpret_cast<void **>(&receiverNapi));
     IMG_NAPI_CHECK_RET_D(IMG_IS_READY(napiStatus, receiverNapi), result, IMAGE_LOGE("fail to unwrap context"));
     IMG_NAPI_CHECK_RET_D(receiverNapi->imageReceiver_ != nullptr, result,
         ImageNapiUtils::ThrowExceptionError(env, IMAGE_RECEIVER_INVALID_PARAMETER, "Invalid imageReceiver", true));

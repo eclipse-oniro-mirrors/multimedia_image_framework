@@ -85,17 +85,20 @@ heif_error HeifParser::MakeFromStream(const std::shared_ptr<HeifInputStream> &st
     return errorBox;
 }
 
-void HeifParser::Write(HeifStreamWriter &writer)
+heif_error HeifParser::Write(HeifStreamWriter &writer)
 {
-    CheckExtentData();
+    heif_error err = CheckExtentData();
+    CHECK_ERROR_RETURN_RET(err != heif_error_ok, err);
     for (auto &box: topBoxes_) {
         box->InferAllFullBoxVersion();
-        box->Write(writer);
+        err = box->Write(writer);
+        CHECK_ERROR_RETURN_RET(err != heif_error_ok, err);
     }
 
     if (ilocBox_) {
-        ilocBox_->WriteMdatBox(writer);
+        return ilocBox_->WriteMdatBox(writer);
     }
+    return heif_error_ok;
 }
 
 heif_item_id HeifParser::GetPrimaryItemId() const
@@ -917,13 +920,15 @@ void HeifParser::SetColorProfile(heif_item_id itemId, const std::shared_ptr<cons
     AddProperty(itemId, colr, false);
 }
 
-void HeifParser::CheckExtentData()
+heif_error HeifParser::CheckExtentData()
 {
-    CHECK_ERROR_RETURN(!ilocBox_);
+    CHECK_ERROR_RETURN_RET(!ilocBox_, heif_error_ok);
     const std::vector<HeifIlocBox::Item>& items = ilocBox_->GetItems();
     for (const HeifIlocBox::Item& item: items) {
-        ilocBox_->ReadToExtentData(const_cast<HeifIlocBox::Item &>(item), inputStream_, idatBox_);
+        heif_error err = ilocBox_->ReadToExtentData(const_cast<HeifIlocBox::Item &>(item), inputStream_, idatBox_);
+        CHECK_ERROR_RETURN_RET(err != heif_error_ok, err);
     }
+    return heif_error_ok;
 }
 
 void HeifParser::SetPrimaryImage(const std::shared_ptr<HeifImage> &image)

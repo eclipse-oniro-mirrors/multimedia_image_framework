@@ -42,6 +42,19 @@ static const uint32_t YUV420_BYTES = 2;
 static const uint32_t YUV444_BYTES = 3;
 
 #ifdef AVIF_DECODE_ENABLE
+/**
+ * @tc.name: DecodeFrameWithoutContext
+ * @tc.desc: Release wrapped frame data on failure; run with a leak sanitizer.
+ * @tc.type: FUNC
+ */
+HWTEST_F(AvifDecodeTest, DecodeFrameWithoutContext, TestSize.Level3)
+{
+    Dav1dDecoder decoder;
+    const std::vector<uint8_t> frameData = {0x01, 0x02, 0x03, 0x04};
+    EXPECT_FALSE(decoder.DecodeFrame(0, frameData));
+    EXPECT_EQ(decoder.GetOccurDecodeFrame(0), nullptr);
+}
+
 namespace {
     enum class ImageType {
         AVIF,

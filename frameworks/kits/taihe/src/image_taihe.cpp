@@ -403,7 +403,8 @@ static HdrGainmapMetadata BuildHdrGainmapMetadata(Media::HDRVividExtendMetadata 
 static bool GetMetadataType(sptr<SurfaceBuffer> const& surfaceBuffer, HdrMetadataValue &metadataValue)
 {
     HDI::Display::Graphic::Common::V1_0::CM_HDR_Metadata_Type type;
-    Media::VpeUtils::GetSbMetadataType(surfaceBuffer, type);
+    bool cond = !Media::VpeUtils::GetSbMetadataType(surfaceBuffer, type);
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "[%{public}s] GetSbMetadataType failed", __func__);
     if (MetadataEtsMap.find(type) != MetadataEtsMap.end()) {
         std::vector<uint8_t> gainmapDataVec;
         if (type == HDI::Display::Graphic::Common::V1_0::CM_HDR_Metadata_Type::CM_METADATA_NONE &&

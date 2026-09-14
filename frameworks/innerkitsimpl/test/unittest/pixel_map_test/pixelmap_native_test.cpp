@@ -2203,6 +2203,36 @@ HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_CreatePixelMap_Success, TestSize.Le
 }
 
 /**
+ * @tc.name: OH_PixelmapNative_CreatePixelMap_UndersizedBuffer
+ * @tc.desc: Verify the legacy API accepts a byte buffer smaller than the source image.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_CreatePixelMap_UndersizedBuffer, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_CreatePixelMap_UndersizedBuffer start";
+
+    uint8_t data[] = {0xFF, 0x00, 0x00, 0xFF};
+    OH_Pixelmap_InitializationOptions* opts = nullptr;
+    ASSERT_EQ(OH_PixelmapInitializationOptions_Create(&opts), IMAGE_SUCCESS);
+    ASSERT_EQ(OH_PixelmapInitializationOptions_SetWidth(opts, 2), IMAGE_SUCCESS);
+    ASSERT_EQ(OH_PixelmapInitializationOptions_SetHeight(opts, 2), IMAGE_SUCCESS);
+    ASSERT_EQ(OH_PixelmapInitializationOptions_SetPixelFormat(opts, PIXEL_FORMAT_BGRA_8888), IMAGE_SUCCESS);
+
+    OH_PixelmapNative* pixelMap = nullptr;
+    ASSERT_EQ(OH_PixelmapNative_CreatePixelmap(data, sizeof(data), opts, &pixelMap), IMAGE_SUCCESS);
+    ASSERT_NE(pixelMap, nullptr);
+
+    uint8_t output[16] = {};
+    size_t outputSize = sizeof(output);
+    ASSERT_EQ(OH_PixelmapNative_ReadPixels(pixelMap, output, &outputSize), IMAGE_SUCCESS);
+    EXPECT_EQ(memcmp(output, data, sizeof(data)), 0);
+
+    EXPECT_EQ(OH_PixelmapNative_Destroy(&pixelMap), IMAGE_SUCCESS);
+    EXPECT_EQ(OH_PixelmapInitializationOptions_Release(opts), IMAGE_SUCCESS);
+    GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_CreatePixelMap_UndersizedBuffer end";
+}
+
+/**
  * @tc.name: OH_PixelmapNative_CreatePixelMap_DifferentFormats
  * @tc.desc: Test OH_PixelmapNative_CreatePixelMap with different pixel formats
  * @tc.type: FUNC

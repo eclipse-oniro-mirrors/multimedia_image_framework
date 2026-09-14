@@ -60,7 +60,7 @@ std::unique_ptr<PixelMap> PixelMapImpl::CreatePixelMap(
         opts.pixelFormat == PixelFormat::YCRCB_P010) {
         return nullptr;
     }
-    std::unique_ptr<PixelMap> ptr_ = PixelMap::Create(colors, colorLength, opts);
+    std::unique_ptr<PixelMap> ptr_ = PixelMap::CreateForApi(colors, colorLength, opts);
     if (ptr_ == nullptr) {
         IMAGE_LOGE("[PixelMapImpl] instance init failed!");
     }

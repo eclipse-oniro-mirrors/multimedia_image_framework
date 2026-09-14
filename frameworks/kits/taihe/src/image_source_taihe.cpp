@@ -2669,14 +2669,14 @@ optional<ImageSource> CreateImageSourceByRawFileDescriptorOption(
             "invalid offset or length");
         return optional<ImageSource>(std::nullopt);
     }
-    int64_t fileSize = offset + length;
-    if (fileSize > INT32_MAX) {
+    if (offset > INT32_MAX || length > INT32_MAX - offset) {
         IMAGE_LOGE("CreateImageSource fileSize overflow, offset: %{public}" PRId64 ", length: %{public}" PRId64,
             offset, length);
         ImageTaiheUtils::ThrowExceptionError(OHOS::Media::COMMON_ERR_INVALID_PARAMETER,
             "fileSize overflow");
         return optional<ImageSource>(std::nullopt);
     }
+    int64_t fileSize = offset + length;
     std::shared_ptr<OHOS::Media::ImageSource> imageSource = OHOS::Media::ImageSource::CreateImageSource(
         fd, static_cast<int32_t>(offset), static_cast<int32_t>(fileSize), opts, errorCode);
     if (imageSource == nullptr) {

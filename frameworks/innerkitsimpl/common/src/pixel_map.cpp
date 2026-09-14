@@ -333,9 +333,42 @@ static bool g_setImageInfoAndValidate(std::unique_ptr<PixelMap> &pixelMap, Image
     return true;
 }
 
+static PixelFormat ResolveCreateFromPixelsSrcPixelFormat(const InitializationOptions &options);
+static int64_t GetCreateFromPixelsRequiredByteSize(const InitializationOptions &options, PixelFormat srcPixelFormat);
+
 unique_ptr<PixelMap> PixelMap::Create(const uint32_t *colors, uint32_t colorLength, const InitializationOptions &opts)
 {
     IMAGE_LOGD("PixelMap::Create1 enter");
+    return Create(colors, colorLength, 0, opts.size.width, opts);
+}
+
+unique_ptr<PixelMap> PixelMap::CreateForApi(const uint32_t *colors, uint32_t colorLength,
+    const InitializationOptions &opts)
+{
+    if (colors == nullptr || colorLength == 0 || colorLength > INT32_MAX) {
+        IMAGE_LOGE("[PixelMap] CreateForApi: invalid pixel buffer or size: %{public}u", colorLength);
+        return nullptr;
+    }
+    PixelFormat srcPixelFormat = ResolveCreateFromPixelsSrcPixelFormat(opts);
+    int64_t requiredBytes = GetCreateFromPixelsRequiredByteSize(opts, srcPixelFormat);
+    if (requiredBytes <= 0 || requiredBytes > INT32_MAX) {
+        IMAGE_LOGE("[PixelMap] CreateForApi: invalid required pixels size: %{public}lld",
+            static_cast<long long>(requiredBytes));
+        return nullptr;
+    }
+    if (requiredBytes > static_cast<int64_t>(colorLength)) {
+        size_t expandedSize = static_cast<size_t>(requiredBytes);
+        // Intentionally leave the buffer uninitialized to preserve original behavior
+        std::unique_ptr<uint8_t[]> expandedPixels(new (std::nothrow) uint8_t[expandedSize]);
+        if (expandedPixels == nullptr || memcpy_s(expandedPixels.get(), expandedSize, colors, colorLength) != EOK) {
+            IMAGE_LOGE("[PixelMap] CreateForApi: expand undersized pixel buffer failed");
+            return nullptr;
+        }
+        IMAGE_LOGD("[PixelMap] CreateForApi: pixel buffer undersized (%{public}u), expanded to %{public}zu",
+            colorLength, expandedSize);
+        return Create(reinterpret_cast<uint32_t*>(expandedPixels.get()), static_cast<uint32_t>(requiredBytes),
+            0, opts.size.width, opts);
+    }
     return Create(colors, colorLength, 0, opts.size.width, opts);
 }
 
@@ -467,8 +500,8 @@ static bool ValidateCreateFromPixelsInput(const uint8_t *pixels, uint32_t byteSi
         IMAGE_LOGE("[CreateFromPixels] Invalid pixel buffer or size (%{public}u)", byteSize);
         return false;
     }
-    int64_t requiredSize = GetCreateFromPixelsRequiredByteSize(options, srcPixelFormat);
-    if (requiredSize <= 0 || requiredSize > static_cast<int64_t>(byteSize)) {
+    int64_t requiredBytes = GetCreateFromPixelsRequiredByteSize(options, srcPixelFormat);
+    if (requiredBytes <= 0 || requiredBytes > static_cast<int64_t>(byteSize)) {
         IMAGE_LOGE("[CreateFromPixels] Invalid pixels size: %{public}u", byteSize);
         return false;
     }

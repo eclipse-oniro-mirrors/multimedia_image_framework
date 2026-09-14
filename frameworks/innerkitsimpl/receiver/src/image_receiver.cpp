@@ -198,11 +198,20 @@ void ImageReceiverSurfaceListener ::OnBufferAvailable()
 {
     IMAGE_LOGD("OnBufferAvailable");
     auto ir = ir_.lock();
-    if (ir && ir->surfaceBufferAvaliableListener_ != nullptr) {
-        ir->surfaceBufferAvaliableListener_->OnSurfaceBufferAvaliable();
-    }
-    if (ir && ir->surfaceBufferAvaliableArriveListener_ != nullptr) {
-        ir->surfaceBufferAvaliableArriveListener_->OnSurfaceBufferAvaliable();
+    if (ir) {
+        std::shared_ptr<SurfaceBufferAvaliableListener> listener;
+        std::shared_ptr<ImageReceiverArriveListener> arriveListener;
+        {
+            std::lock_guard<std::mutex> lock(ir->imageReceiverMutex_);
+            listener = ir->surfaceBufferAvaliableListener_;
+            arriveListener = ir->surfaceBufferAvaliableArriveListener_;
+        }
+        if (listener != nullptr) {
+            listener->OnSurfaceBufferAvaliable();
+        }
+        if (arriveListener != nullptr) {
+            arriveListener->OnSurfaceBufferAvaliable();
+        }
     }
 }
 

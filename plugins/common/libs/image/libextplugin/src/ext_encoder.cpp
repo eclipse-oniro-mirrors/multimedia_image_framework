@@ -838,6 +838,7 @@ uint32_t ExtEncoder::EncodeImageByPixelMap(PixelMap* pixelmap, bool needExif, Sk
             CHECK_ERROR_RETURN_RET_LOG(pixelmap->GetFd() == nullptr, ERR_IMAGE_INVALID_PARAMETER,
                 "EncodeImageByPixelMap DMA pixelmap surface buffer is null");
             SurfaceBuffer* sbBuffer = reinterpret_cast<SurfaceBuffer*> (pixelmap->GetFd());
+            CHECK_ERROR_RETURN_RET_LOG(sbBuffer == nullptr, ERR_IMAGE_ENCODE_FAILED, "sbBuffer is nullptr");
             rowStride = static_cast<uint64_t>(sbBuffer->GetStride());
             IMAGE_LOGD("rowStride DMA: %{public}llu", static_cast<unsigned long long>(rowStride));
         }
@@ -2164,6 +2165,8 @@ uint32_t ExtEncoder::EncodeSdrImage(ExtWStream& outputStream)
     }
     bool cond = pixelmap_->GetAllocatorType() != AllocatorType::DMA_ALLOC;
     CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER, "pixelmap is 10bit, but not dma buffer");
+    CHECK_ERROR_RETURN_RET_LOG(pixelmap_->GetFd() == nullptr, ERR_IMAGE_INVALID_PARAMETER,
+        "EncodeSdrImage DMA pixelmap surface buffer is null");
     ImageInfo info;
     pixelmap_->GetImageInfo(info);
     bool sdrIsSRGB = pixelmap_->GetToSdrColorSpaceIsSRGB();
@@ -2173,8 +2176,6 @@ uint32_t ExtEncoder::EncodeSdrImage(ExtWStream& outputStream)
     VpeUtils::SetSbColorSpaceType(baseSptr, CM_SRGB_FULL);
     cond = baseSptr == nullptr;
     CHECK_ERROR_RETURN_RET_LOG(cond, IMAGE_RESULT_CREATE_SURFAC_FAILED, "EncodeSdrImage sdr buffer alloc failed");
-    CHECK_ERROR_RETURN_RET_LOG(pixelmap_->GetFd() == nullptr, ERR_IMAGE_INVALID_PARAMETER,
-        "EncodeSdrImage DMA pixelmap surface buffer is null");
     sptr<SurfaceBuffer> hdrSurfaceBuffer(reinterpret_cast<SurfaceBuffer*>(pixelmap_->GetFd()));
     ImageUtils::FlushSurfaceBuffer(hdrSurfaceBuffer);
     VpeUtils::SetSbMetadataType(hdrSurfaceBuffer, CM_IMAGE_HDR_VIVID_SINGLE);
