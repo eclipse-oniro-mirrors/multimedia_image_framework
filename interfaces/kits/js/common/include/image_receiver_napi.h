@@ -59,6 +59,11 @@ public:
 
     static napi_value CreateImageReceiver(napi_env env, std::shared_ptr<ImageReceiver> imageReceiver);
 
+    static constexpr napi_type_tag NAPI_TYPE_TAG = {
+        .lower = 0x8a3f7c2d1e5b4a90,
+        .upper = 0x6d2e9f1a3c8b7e04
+    };
+
 private:
     static napi_value Constructor(napi_env env, napi_callback_info info);
     static void Destructor(napi_env env, void *nativeObject, void *finalize);

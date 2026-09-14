@@ -49,6 +49,17 @@ heif_error HeifIlocBox::ParseExtents(Item& item, HeifStreamReader &reader,
     if (extentNum > MAX_HEIF_EXTENT_NUM) {
         return heif_error_extent_num_too_large;
     }
+    // Cross-validate: each extent consumes indexSize + offsetSize + lengthSize bytes.
+    // When all field widths are 0, extents consume zero input but still allocate a 48-byte
+    // struct each, causing uncontrolled memory allocation. Reject such zero-width extents
+    // with a non-trivial count since they carry no useful data.
+    size_t perExtentBytes = static_cast<size_t>(indexSize) + static_cast<size_t>(offsetSize) +
+        static_cast<size_t>(lengthSize);
+    if (perExtentBytes == 0 && extentNum > 1) {
+        return heif_error_invalid_data;
+    } else if (static_cast<size_t>(extentNum) * perExtentBytes > reader.GetRemainSize()) {
+        return heif_error_invalid_data;
+    }
     item.extents.resize(extentNum);
     for (int extentIndex = 0; extentIndex < extentNum; extentIndex++) {
         // indexSize is taken from the set {0, 4, 8} and indicates the length in bytes of 'index'
@@ -101,6 +112,18 @@ heif_error HeifIlocBox::ParseContent(HeifStreamReader &reader)
     uint32_t itemCount = GetVersion() < HEIF_BOX_VERSION_TWO ? reader.Read16() : reader.Read32();
     if (itemCount > MAX_HEIF_ITEM_COUNT) {
         return heif_error_too_many_item;
+    }
+    // Cross-validate declared item count against remaining input bytes to prevent memory exhaustion.
+    // Only validate per-item fixed headers here; per-extent input bytes are validated in ParseExtents
+    // for each item individually.
+    // Per-item fixed header: itemId(2 or 4) + constructionMethod(0 or 2) + dataRefIndex(2) +
+    //                        baseOffset(baseOffsetSize) + extent_count(2)
+    size_t perItemFixed = (GetVersion() < HEIF_BOX_VERSION_TWO ? UINT16_BYTES_NUM : UINT32_BYTES_NUM) +
+        (GetVersion() >= HEIF_BOX_VERSION_ONE ? UINT16_BYTES_NUM : 0) +
+        UINT16_BYTES_NUM + static_cast<size_t>(baseOffsetSize) + UINT16_BYTES_NUM;
+    size_t totalMinBytes = static_cast<size_t>(itemCount) * perItemFixed;
+    if (totalMinBytes > reader.GetRemainSize()) {
+        return heif_error_invalid_data;
     }
     for (uint32_t itemIndex = 0; itemIndex < itemCount; ++itemIndex) {
         Item item;

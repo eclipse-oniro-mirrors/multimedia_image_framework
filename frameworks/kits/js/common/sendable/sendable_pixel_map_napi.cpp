@@ -14,6 +14,8 @@
  */
 
 #include "sendable_pixel_map_napi.h"
+#include <climits>
+#include <cstdint>
 #include <mutex>
 #include "media_errors.h"
 #include "image_log.h"
@@ -701,8 +703,11 @@ STATIC_EXEC_FUNC(CreateSendablePixelMap)
         if (colors == nullptr) {
             auto pixelmap = PixelMap::Create(context->opts);
             context->rPixelMap = std::move(pixelmap);
+        } else if (context->colorsBufferSize > static_cast<size_t>(INT32_MAX)) {
+            context->rPixelMap = nullptr;
         } else {
-            auto pixelmap = PixelMap::Create(colors, context->colorsBufferSize, context->opts);
+            auto pixelmap = PixelMap::CreateForApi(colors, static_cast<uint32_t>(context->colorsBufferSize),
+                context->opts);
             context->rPixelMap = std::move(pixelmap);
         }
     }
