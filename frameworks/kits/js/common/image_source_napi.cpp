@@ -4516,11 +4516,12 @@ static void UpdateDataExecute(napi_env env, void *data)
 {
     auto context = static_cast<ImageSourceAsyncContext*>(data);
     uint8_t *buffer = static_cast<uint8_t*>(context->updataBuffer);
+    uint32_t lastSize = 0;
     if (context->updataBufferOffset < context->updataBufferSize) {
         buffer = buffer + context->updataBufferOffset;
+        lastSize = context->updataBufferSize - context->updataBufferOffset;
     }
 
-    uint32_t lastSize = context->updataBufferSize - context->updataBufferOffset;
     uint32_t size = context->updataLength < lastSize ? context->updataLength : lastSize;
 
     uint32_t res = context->rImageSource->UpdateData(buffer, size,
