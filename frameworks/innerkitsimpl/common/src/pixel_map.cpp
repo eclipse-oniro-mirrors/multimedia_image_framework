@@ -349,6 +349,14 @@ unique_ptr<PixelMap> PixelMap::CreateForApi(const uint32_t *colors, uint32_t col
         IMAGE_LOGE("[PixelMap] CreateForApi: invalid pixel buffer or size: %{public}u", colorLength);
         return nullptr;
     }
+    BUILD_PARAM info;
+    info.offset_ = 0;
+    info.width_ = opts.size.width;
+    info.flag_ = true;
+    if (!CheckParams(colors, colorLength, info.offset_, info.width_, opts)) {
+        IMAGE_LOGE("[PixelMap] CreateForApi: check params failed");
+        return nullptr;
+    }
     PixelFormat srcPixelFormat = ResolveCreateFromPixelsSrcPixelFormat(opts);
     int64_t requiredBytes = GetCreateFromPixelsRequiredByteSize(opts, srcPixelFormat);
     if (requiredBytes <= 0 || requiredBytes > INT32_MAX) {
@@ -356,20 +364,20 @@ unique_ptr<PixelMap> PixelMap::CreateForApi(const uint32_t *colors, uint32_t col
             static_cast<long long>(requiredBytes));
         return nullptr;
     }
+    int errorCode = SUCCESS;
     if (requiredBytes > static_cast<int64_t>(colorLength)) {
         size_t expandedSize = static_cast<size_t>(requiredBytes);
-        // Intentionally leave the buffer uninitialized to preserve original behavior
-        std::unique_ptr<uint8_t[]> expandedPixels(new (std::nothrow) uint8_t[expandedSize]);
+        std::unique_ptr<uint8_t[]> expandedPixels = std::make_unique<uint8_t[]>(expandedSize);
         if (expandedPixels == nullptr || memcpy_s(expandedPixels.get(), expandedSize, colors, colorLength) != EOK) {
             IMAGE_LOGE("[PixelMap] CreateForApi: expand undersized pixel buffer failed");
             return nullptr;
         }
         IMAGE_LOGD("[PixelMap] CreateForApi: pixel buffer undersized (%{public}u), expanded to %{public}zu",
             colorLength, expandedSize);
-        return Create(reinterpret_cast<uint32_t*>(expandedPixels.get()), static_cast<uint32_t>(requiredBytes),
-            0, opts.size.width, opts);
+        return CreateWithValidatedParams(reinterpret_cast<uint32_t*>(expandedPixels.get()),
+            static_cast<uint32_t>(requiredBytes), info, opts, errorCode);
     }
-    return Create(colors, colorLength, 0, opts.size.width, opts);
+    return CreateWithValidatedParams(colors, colorLength, info, opts, errorCode);
 }
 
 unique_ptr<PixelMap> PixelMap::Create(const uint32_t *colors, uint32_t colorLength, int32_t offset, int32_t width,
@@ -656,6 +664,13 @@ unique_ptr<PixelMap> PixelMap::Create(const uint32_t *colors, uint32_t colorLeng
         errorCode = IMAGE_RESULT_BAD_PARAMETER;
         return nullptr;
     }
+    return CreateWithValidatedParams(colors, colorLength, info, opts, errorCode);
+}
+
+unique_ptr<PixelMap> PixelMap::CreateWithValidatedParams(const uint32_t *colors, uint32_t colorLength,
+    BUILD_PARAM &info, const InitializationOptions &opts, int &errorCode)
+{
+    int offset = info.offset_;
     unique_ptr<PixelMap> dstPixelMap;
     if (!ChoosePixelmap(dstPixelMap, opts.pixelFormat, errorCode)) {
         return nullptr;
