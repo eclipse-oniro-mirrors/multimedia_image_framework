@@ -61,10 +61,6 @@ public:
     void ReleaseSync();
     void SetMemoryName(string_view name);
 
-#ifdef IMAGE_DEBUG_FLAG
-    bool isCallBackTest = false;
-#endif
-
 private:
     void UnRegisterReceiverListener();
     void NativeRelease();

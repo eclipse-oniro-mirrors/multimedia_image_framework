@@ -53,9 +53,6 @@ public:
     void NativeRelease();
     static napi_value CreateImageCreator(napi_env env, std::shared_ptr<ImageCreator> imageCreator);
     std::shared_ptr<ImageCreator> GetNativeImageCreator();
-#ifdef IMAGE_DEBUG_FLAG
-    bool isCallBackTest = false;
-#endif
 
 private:
     static napi_value Constructor(napi_env env, napi_callback_info info);
@@ -77,9 +74,6 @@ private:
                                       napi_event_priority prio, const char* taskName);
     static napi_value JsOffOneArg(napi_env env, napi_callback_info info);
     static napi_value JsOffTwoArgs(napi_env env, napi_callback_info info);
-#ifdef IMAGE_DEBUG_FLAG
-    static napi_value JsTest(napi_env env, napi_callback_info info);
-#endif
     void release();
     bool isRelease = false;
 

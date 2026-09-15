@@ -48,6 +48,19 @@ struct SendableImageAsyncContext {
     NativeImage* image = nullptr;
     NativeComponent* component = nullptr;
     bool isTestContext = false;
+
+    ~SendableImageAsyncContext()
+    {
+        if (thisRef != nullptr) {
+            napi_delete_reference(env, thisRef);
+        }
+        if (callbackRef != nullptr) {
+            napi_delete_reference(env, callbackRef);
+        }
+        if (work != nullptr) {
+            napi_delete_async_work(env, work);
+        }
+    }
 };
 ImageHolderManager<NativeImage> SendableImageNapi::sNativeImageHolder_;
 thread_local napi_ref SendableImageNapi::sConstructor_ = nullptr;
@@ -175,7 +188,7 @@ napi_value SendableImageNapi::Create(napi_env env)
 {
     napi_value constructor = nullptr;
     napi_value result = nullptr;
-    napi_value argv[NUM1];
+    napi_value argv[NUM1] = {nullptr};
 
     IMAGE_FUNCTION_IN();
     if (env == nullptr) {
@@ -185,9 +198,11 @@ napi_value SendableImageNapi::Create(napi_env env)
     if (napi_get_reference_value(env, sConstructor_, &constructor) == napi_ok && constructor != nullptr) {
         if (napi_create_string_utf8(env, MY_NAME.c_str(), NAPI_AUTO_LENGTH, &(argv[NUM0])) != napi_ok) {
             IMAGE_ERR("Create native image id Failed");
+            return nullptr;
         }
         if (napi_new_instance(env, constructor, NUM1, argv, &result) != napi_ok) {
             IMAGE_ERR("New instance could not be obtained");
+            return nullptr;
         }
     }
     IMAGE_FUNCTION_OUT();
@@ -197,7 +212,7 @@ napi_value SendableImageNapi::Create(napi_env env, std::shared_ptr<NativeImage> 
 {
     napi_value constructor = nullptr;
     napi_value result = nullptr;
-    napi_value argv[NUM1];
+    napi_value argv[NUM1] = {nullptr};
 
     IMAGE_FUNCTION_IN();
     if (env == nullptr || nativeImage == nullptr) {
@@ -208,9 +223,13 @@ napi_value SendableImageNapi::Create(napi_env env, std::shared_ptr<NativeImage> 
         auto id = sNativeImageHolder_.save(nativeImage);
         if (napi_create_string_utf8(env, id.c_str(), NAPI_AUTO_LENGTH, &(argv[NUM0])) != napi_ok) {
             IMAGE_ERR("Create native image id Failed");
+            sNativeImageHolder_.release(id);
+            return nullptr;
         }
         if (napi_new_instance(env, constructor, NUM1, argv, &result) != napi_ok) {
             IMAGE_ERR("New instance could not be obtained");
+            sNativeImageHolder_.release(id);
+            return nullptr;
         }
     }
     IMAGE_FUNCTION_OUT();
@@ -282,14 +301,16 @@ static std::unique_ptr<SendableImageAsyncContext> UnwrapContext(napi_env env, na
     }
 
     std::unique_ptr<SendableImageAsyncContext> ctx = std::make_unique<SendableImageAsyncContext>();
+    ctx->env = env;
     if (napi_unwrap_sendable_s(env, thisVar, &SendableImageNapi::NAPI_TYPE_TAG,
         reinterpret_cast<void**>(&ctx->napi)) != napi_ok || ctx->napi == nullptr) {
         IMAGE_ERR("fail to unwrap ets image object, image maybe released");
         return nullptr;
     }
     ctx->image = ctx->napi->GetNative();
-    if (needCreateRef) {
-        napi_create_reference(env, thisVar, NUM1, &(ctx->thisRef));
+    if (needCreateRef && napi_create_reference(env, thisVar, NUM1, &(ctx->thisRef)) != napi_ok) {
+        IMAGE_ERR("Fail to create image reference");
+        return nullptr;
     }
     return ctx;
 }
@@ -333,9 +354,8 @@ static void CommonCallbackRoutine(napi_env env, SendableImageAsyncContext* &cont
         ProcessPromise(env, context->deferred, result, context->status == SUCCESS);
     } else {
         ProcessCallback(env, context->callbackRef, result);
+        context->callbackRef = nullptr;
     }
-
-    napi_delete_async_work(env, context->work);
 
     delete context;
     context = nullptr;
@@ -492,12 +512,14 @@ static void JSReleaseCallBack(napi_env env, napi_status status,
         napi_value thisVar;
         napi_get_reference_value(env, context->thisRef, &thisVar);
         napi_delete_reference(env, context->thisRef);
-        if (thisVar != nullptr) {
-            SendableImageNapi *tmp = nullptr;
-            auto status_ = napi_remove_wrap_sendable(env, thisVar, reinterpret_cast<void**>(&tmp));
-            if (status_ != napi_ok) {
-                IMAGE_ERR("NAPI remove wrap failed status %{public}d", status_);
-            }
+        context->thisRef = nullptr;
+        SendableImageNapi *imgNapi = nullptr;
+        napi_unwrap_sendable_s(env, thisVar, &SendableImageNapi::NAPI_TYPE_TAG,
+            reinterpret_cast<void**>(&imgNapi));
+        if (imgNapi != nullptr && imgNapi->asyncWorkCount_.load() == 0) {
+            napi_remove_wrap_sendable(env, thisVar, reinterpret_cast<void**>(&imgNapi));
+        } else if (imgNapi != nullptr) {
+            imgNapi->pendingRelease_ = true;
         }
     }
 
@@ -594,10 +616,13 @@ static void TestGetComponentCallBack(napi_env env, napi_status status, SendableI
         IMAGE_ERR("Invalid input context");
         return;
     }
-    napi_value result;
+    napi_value result = nullptr;
+    napi_get_undefined(env, &result);
     napi_value array;
     void *nativePtr = nullptr;
     if (napi_create_arraybuffer(env, NUM1, &nativePtr, &array) != napi_ok || nativePtr == nullptr) {
+        context->status = ERROR;
+        CommonCallbackRoutine(env, context, result);
         return;
     }
     napi_create_object(env, &result);
@@ -615,16 +640,35 @@ static void JsGetComponentCallBack(napi_env env, napi_status status, SendableIma
     napi_value result;
     napi_get_undefined(env, &result);
 
-    if (context != nullptr && context->napi != nullptr && context->isTestContext) {
-        TestGetComponentCallBack(env, status, context);
-        return;
-    }
-
     if (context == nullptr) {
         IMAGE_ERR("Invalid input context");
         return;
     }
+
+    bool pendingRelease = false;
+    if (context->thisRef != nullptr) {
+        napi_value thisVar = nullptr;
+        napi_get_reference_value(env, context->thisRef, &thisVar);
+        uint32_t remaining = --context->napi->asyncWorkCount_;
+        pendingRelease = context->napi->pendingRelease_.load();
+        napi_delete_reference(env, context->thisRef);
+        context->thisRef = nullptr;
+        if (remaining == 0 && pendingRelease && thisVar != nullptr) {
+            SendableImageNapi *tmp = nullptr;
+            napi_remove_wrap_sendable(env, thisVar, reinterpret_cast<void**>(&tmp));
+        }
+    }
+
     context->status = ERROR;
+    // Do not read or expose component buffers after release has completed.
+    if (pendingRelease) {
+        CommonCallbackRoutine(env, context, result);
+        return;
+    }
+    if (context->napi != nullptr && context->isTestContext) {
+        TestGetComponentCallBack(env, status, context);
+        return;
+    }
     NativeComponent* component = context->component;
     if (component == nullptr) {
         IMAGE_ERR("Invalid component");
@@ -713,7 +757,7 @@ napi_value SendableImageNapi::JsGetComponent(napi_env env, napi_callback_info in
     napi_value argv[NUM2] = {0};
 
     napi_get_undefined(env, &result);
-    auto context = UnwrapContext(env, info, &argc, argv);
+    auto context = UnwrapContext(env, info, &argc, argv, true);
     if (context == nullptr) {
         return ImageNapiUtils::ThrowExceptionError(env, static_cast<int32_t>(napi_invalid_arg),
             "fail to unwrap ets image object, image maybe released");
@@ -729,6 +773,7 @@ napi_value SendableImageNapi::JsGetComponent(napi_env env, napi_callback_info in
     }
 
     if (JsCreateWork(env, "JsGetComponent", JsGetComponentExec, JsGetComponentCallBack, context.get())) {
+        context->napi->asyncWorkCount_++;
         context.release();
     }
 

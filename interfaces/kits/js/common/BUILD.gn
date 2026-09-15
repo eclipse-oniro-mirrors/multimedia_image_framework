@@ -157,6 +157,7 @@ if (use_clang_ios) {
       "hilog:libhilog",
       "ipc:ipc_single",
       "napi:ace_napi",
+      "node:node_header_notice",
     ]
 
     output_name = "libimage"
@@ -193,6 +194,7 @@ if (use_clang_ios) {
       "hilog:libhilog",
       "ipc:ipc_single",
       "napi:ace_napi",
+      "node:node_header_notice",
     ]
 
     output_name = "libsendableimage"
@@ -271,7 +273,11 @@ if (use_clang_ios) {
       "-DIMAGE_DEBUG_FLAG",
       "-DIMAGE_COLORSPACE_FLAG",
     ]
-    external_deps = [ "skia:libjpegm133", "libjpeg-turbo:turbojpeg"]
+    external_deps = [
+      "skia:libjpegm133",
+      "libjpeg-turbo:turbojpeg",
+      "node:node_header_notice",
+    ]
     if (enable_libexif) {
       external_deps += [ "libexif:libexif" ]
     }

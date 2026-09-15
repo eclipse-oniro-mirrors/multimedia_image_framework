@@ -103,8 +103,8 @@ struct ImageSourceAsyncContext {
     std::string defaultValueStr;
     int32_t valueInt;
     int32_t deufltValueInt;
-    void *updataBuffer;
-    size_t updataBufferSize;
+    void *updataBuffer = nullptr;
+    size_t updataBufferSize = 0;
     uint32_t updataBufferOffset = 0;
     uint32_t updataLength = 0;
     bool isCompleted = false;
@@ -149,6 +149,7 @@ struct ImageSourceAsyncContext {
     std::vector<uint8_t> imageRawData;
     uint32_t bitsPerSample = 0;
     bool hasUnSupportMetadata = false;
+    napi_ref updataBufferRef = nullptr;
 };
 
 struct ImageSourceSyncContext {
@@ -4550,6 +4551,8 @@ static void UpdateDataComplete(napi_env env, napi_status status, void *data)
 
     auto context = static_cast<ImageSourceAsyncContext*>(data);
 
+    NAPI_CHECK_AND_DELETE_REF(env, context->updataBufferRef);
+
     napi_get_boolean(env, context->isSuccess, &result);
     ImageSourceCallbackRoutine(env, context, result);
 }
@@ -4597,6 +4600,9 @@ napi_value ImageSourceNapi::UpdateData(napi_env env, napi_callback_info info)
         status = napi_get_typedarray_info(env, argValue[NUM_0], &type,
             &(asyncContext->updataBufferSize), &(asyncContext->updataBuffer),
             &arraybuffer, &offset);
+        if (status == napi_ok) {
+            status = napi_create_reference(env, arraybuffer, NUM_1, &(asyncContext->updataBufferRef));
+        }
     }
 
     if (argCount >= NUM_2 && ImageNapiUtils::getType(env, argValue[NUM_1]) == napi_boolean) {
@@ -4617,6 +4623,7 @@ napi_value ImageSourceNapi::UpdateData(napi_env env, napi_callback_info info)
 
     if (!IMG_IS_OK(status)) {
         IMAGE_LOGE("fail to UpdateData");
+        NAPI_CHECK_AND_DELETE_REF(env, asyncContext->updataBufferRef);
         napi_get_undefined(env, &result);
         return result;
     }
@@ -4638,8 +4645,11 @@ napi_value ImageSourceNapi::UpdateData(napi_env env, napi_callback_info info)
     IMG_CREATE_CREATE_ASYNC_WORK(env, status, "UpdateData",
         UpdateDataExecute, UpdateDataComplete, asyncContext, asyncContext->work);
 
-    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status),
-        nullptr, IMAGE_LOGE("fail to create async work"));
+    if (!IMG_IS_OK(status)) {
+        IMAGE_LOGE("fail to create async work");
+        NAPI_CHECK_AND_DELETE_REF(env, asyncContext->updataBufferRef);
+        return nullptr;
+    }
     return result;
 }
 

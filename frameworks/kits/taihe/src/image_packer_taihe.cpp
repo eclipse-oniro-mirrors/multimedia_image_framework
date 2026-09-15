@@ -358,6 +358,9 @@ static std::shared_ptr<std::vector<std::shared_ptr<OHOS::Media::PixelMap>>> GetP
         if (ImageTaiheUtils::IsValidPtr<weak::PixelMap>(pixelmapSequence[i])) {
             pixelMap = GetPixelMap(pixelmapSequence[i]->GetImplPtr());
         }
+        if (pixelMap == nullptr) {
+            return nullptr;
+        }
         PixelMaps->push_back(pixelMap);
     }
     return PixelMaps;
@@ -410,6 +413,10 @@ static bool FinalizePackToFile(std::unique_ptr<ImagePackerTaiheContext> &context
 
 static bool PackToFileExec(std::unique_ptr<ImagePackerTaiheContext> &context)
 {
+    if (context->rImagePacker == nullptr) {
+        ImageTaiheUtils::ThrowExceptionError(OHOS::Media::ERR_IMAGE_INVALID_PARAMETER, "ImagePacker is released");
+        return false;
+    }
     auto startRes = context->rImagePacker->StartPacking(context->fd, context->packOption);
     if (startRes != OHOS::Media::SUCCESS) {
         if (context->packType == TYPE_PICTURE) {
@@ -753,6 +760,10 @@ static bool FinalizePacking(std::unique_ptr<ImagePackerTaiheContext> &context, i
 
 static bool PackingExec(std::unique_ptr<ImagePackerTaiheContext> &context)
 {
+    if (context->rImagePacker == nullptr) {
+        ThrowPackingError(context, OHOS::Media::ERR_IMAGE_INVALID_PARAMETER, "ImagePacker is released");
+        return false;
+    }
     IMAGE_LOGD("ImagePacker BufferSize %{public}" PRId64, context->resultBufferSize);
     context->resultBuffer = std::make_unique<uint8_t[]>(
         (context->resultBufferSize <= 0) ? GetDefaultBufferSize(context) : context->resultBufferSize);

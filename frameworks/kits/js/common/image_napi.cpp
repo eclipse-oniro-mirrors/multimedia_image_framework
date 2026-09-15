@@ -59,6 +59,19 @@ struct ImageAsyncContext {
     NativeImage* image = nullptr;
     NativeComponent* component = nullptr;
     bool isTestContext = false;
+
+    ~ImageAsyncContext()
+    {
+        if (thisRef != nullptr) {
+            napi_delete_reference(env, thisRef);
+        }
+        if (callbackRef != nullptr) {
+            napi_delete_reference(env, callbackRef);
+        }
+        if (work != nullptr) {
+            napi_delete_async_work(env, work);
+        }
+    }
 };
 
 #if !defined(CROSS_PLATFORM)
@@ -335,13 +348,15 @@ static std::unique_ptr<ImageAsyncContext> UnwrapContext(napi_env env, napi_callb
     }
 
     std::unique_ptr<ImageAsyncContext> ctx = std::make_unique<ImageAsyncContext>();
+    ctx->env = env;
     if (napi_unwrap(env, thisVar, reinterpret_cast<void**>(&ctx->napi)) != napi_ok || ctx->napi == nullptr) {
         IMAGE_ERR("fail to unwrap constructor_");
         return nullptr;
     }
     ctx->image = ctx->napi->GetNative();
-    if (needCreateRef) {
-        napi_create_reference(env, thisVar, NUM1, &(ctx->thisRef));
+    if (needCreateRef && napi_create_reference(env, thisVar, NUM1, &(ctx->thisRef)) != napi_ok) {
+        IMAGE_ERR("Fail to create image reference");
+        return nullptr;
     }
     return ctx;
 }
@@ -392,9 +407,8 @@ static void CommonCallbackRoutine(napi_env env, ImageAsyncContext* &context, con
         ProcessPromise(env, context->deferred, result, context->status == SUCCESS);
     } else {
         ProcessCallback(env, context->callbackRef, result);
+        context->callbackRef = nullptr;
     }
-
-    napi_delete_async_work(env, context->work);
 
     delete context;
     context = nullptr;
@@ -941,12 +955,14 @@ static void JSReleaseCallBack(napi_env env, napi_status status,
         napi_value thisVar;
         napi_get_reference_value(env, context->thisRef, &thisVar);
         napi_delete_reference(env, context->thisRef);
-        if (thisVar != nullptr) {
-            ImageNapi *tmp = nullptr;
-            auto status_ = napi_remove_wrap(env, thisVar, reinterpret_cast<void**>(&tmp));
-            if (status_ != napi_ok) {
-                IMAGE_ERR("NAPI remove wrap failed status %{public}d", status_);
-            }
+        context->thisRef = nullptr;
+        ImageNapi *imgNapi = nullptr;
+        napi_unwrap(env, thisVar, reinterpret_cast<void**>(&imgNapi));
+        if (imgNapi != nullptr && imgNapi->asyncWorkCount_.load() == 0) {
+            napi_remove_wrap(env, thisVar, reinterpret_cast<void**>(&imgNapi));
+            IMAGE_DEBUG("image release asyncWorkCount_ is 0");
+        } else if (imgNapi != nullptr) {
+            imgNapi->pendingRelease_ = true;
         }
     }
 
@@ -1030,12 +1046,13 @@ static void TestGetComponentCallBack(napi_env env, napi_status status, ImageAsyn
         IMAGE_ERR("Invalid input context");
         return;
     }
-    napi_value result;
+    napi_value result = nullptr;
+    napi_get_undefined(env, &result);
     napi_value array;
     void *nativePtr = nullptr;
     if (napi_create_arraybuffer(env, NUM1, &nativePtr, &array) != napi_ok || nativePtr == nullptr) {
-        delete context;
-        context = nullptr;
+        context->status = ERROR;
+        CommonCallbackRoutine(env, context, result);
         return;
     }
     napi_create_object(env, &result);
@@ -1053,16 +1070,36 @@ static void JsGetComponentCallBack(napi_env env, napi_status status, ImageAsyncC
     napi_value result;
     napi_get_undefined(env, &result);
 
-    if (context != nullptr && context->napi != nullptr && context->isTestContext) {
-        TestGetComponentCallBack(env, status, context);
-        return;
-    }
-
     if (context == nullptr) {
         IMAGE_ERR("Invalid input context");
         return;
     }
+
+    bool pendingRelease = false;
+    if (context->thisRef != nullptr) {
+        napi_value thisVar = nullptr;
+        napi_get_reference_value(env, context->thisRef, &thisVar);
+        uint32_t remaining = --context->napi->asyncWorkCount_;
+        pendingRelease = context->napi->pendingRelease_.load();
+        napi_delete_reference(env, context->thisRef);
+        context->thisRef = nullptr;
+        if (remaining == 0 && pendingRelease && thisVar != nullptr) {
+            IMAGE_DEBUG("image release pendingRelease_ is true");
+            ImageNapi *tmp = nullptr;
+            napi_remove_wrap(env, thisVar, reinterpret_cast<void**>(&tmp));
+        }
+    }
+
     context->status = ERROR;
+    // Do not read or expose component buffers after release has completed.
+    if (pendingRelease) {
+        CommonCallbackRoutine(env, context, result);
+        return;
+    }
+    if (context->napi != nullptr && context->isTestContext) {
+        TestGetComponentCallBack(env, status, context);
+        return;
+    }
     NativeComponent* component = context->component;
     if (component == nullptr) {
         IMAGE_ERR("Invalid component");
@@ -1153,7 +1190,7 @@ napi_value ImageNapi::JsGetComponent(napi_env env, napi_callback_info info)
     napi_value argv[NUM2] = {0};
 
     napi_get_undefined(env, &result);
-    auto context = UnwrapContext(env, info, &argc, argv);
+    auto context = UnwrapContext(env, info, &argc, argv, true);
     if (context == nullptr) {
         return ImageNapiUtils::ThrowExceptionError(env, static_cast<int32_t>(napi_invalid_arg),
             "fail to unwrap constructor_ ");
@@ -1169,6 +1206,7 @@ napi_value ImageNapi::JsGetComponent(napi_env env, napi_callback_info info)
     }
 
     if (JsCreateWork(env, "JsGetComponent", JsGetComponentExec, JsGetComponentCallBack, context.get())) {
+        context->napi->asyncWorkCount_++;
         context.release();
     }
 

@@ -23,6 +23,7 @@
 #include "media_errors.h"
 #include "picture_native.h"
 #include "picture_native_impl.h"
+#include "picture_napi.h"
 #include "pixelmap_native_impl.h"
 #ifdef __cplusplus
 extern "C" {
@@ -1022,6 +1023,56 @@ Image_ErrorCode OH_PictureNative_DecomposeToPicture(
     if (*picture == nullptr) {
         return IMAGE_ALLOC_FAILED;
     }
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_PictureNative_ConvertPictureNativeToNapi(napi_env env, OH_PictureNative *pictureNative,
+    napi_value *outPictureNapi)
+{
+    if (!OHOS::Media::ImageSystemProperties::IsSystemApp()) {
+        return IMAGE_PERMISSIONS_FAILED;
+    }
+    if (env == nullptr || pictureNative == nullptr || outPictureNapi == nullptr ||
+        pictureNative->GetInnerPicture() == nullptr) {
+        return IMAGE_INVALID_PARAMETER;
+    }
+    std::shared_ptr<OHOS::Media::Picture> picture = pictureNative->GetInnerPicture();
+    *outPictureNapi = OHOS::Media::PictureNapi::CreatePicture(env, picture);
+    napi_valuetype valueType = napi_undefined;
+    napi_typeof(env, *outPictureNapi, &valueType);
+    return (valueType == napi_undefined) ? IMAGE_UNKNOWN_ERROR : IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_PictureNative_ConvertPictureNativeFromNapi(napi_env env, napi_value pictureNapi,
+    OH_PictureNative **outPictureNative)
+{
+    if (!OHOS::Media::ImageSystemProperties::IsSystemApp()) {
+        return IMAGE_PERMISSIONS_FAILED;
+    }
+    if (env == nullptr || pictureNapi == nullptr || outPictureNative == nullptr) {
+        return IMAGE_INVALID_PARAMETER;
+    }
+    napi_valuetype valueType = napi_undefined;
+    napi_status typeofStatus = napi_typeof(env, pictureNapi, &valueType);
+    if (typeofStatus != napi_ok || valueType != napi_object) {
+        return IMAGE_INVALID_PARAMETER;
+    }
+    OHOS::Media::PictureNapi *pictureNapiObj = nullptr;
+    napi_status status = napi_unwrap(env, pictureNapi, reinterpret_cast<void**>(&pictureNapiObj));
+    if (status != napi_ok || pictureNapiObj == nullptr) {
+        return IMAGE_UNKNOWN_ERROR;
+    }
+    std::shared_ptr<OHOS::Media::Picture> picture = pictureNapiObj->GetNativePicture();
+    if (picture == nullptr) {
+        return IMAGE_INVALID_PARAMETER;
+    }
+    auto pictureTmp = std::make_unique<OH_PictureNative>(picture);
+    if (!pictureTmp || !pictureTmp->GetInnerPicture()) {
+        return IMAGE_ALLOC_FAILED;
+    }
+    *outPictureNative = pictureTmp.release();
     return IMAGE_SUCCESS;
 }
 

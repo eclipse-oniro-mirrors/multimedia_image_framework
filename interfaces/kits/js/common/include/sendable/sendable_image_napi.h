@@ -19,6 +19,7 @@
 #include "native_image.h"
 #include "napi/native_api.h"
 #include "image_holder_manager.h"
+#include <atomic>
 
 namespace OHOS {
 namespace Media {
@@ -34,6 +35,8 @@ public:
 
     NativeImage* GetNative();
     void NativeRelease();
+    std::atomic<uint32_t> asyncWorkCount_{0};
+    std::atomic<bool> pendingRelease_{false};
     static constexpr napi_type_tag NAPI_TYPE_TAG = {
         .lower = 0x828ec1899f0e4b7f,
         .upper = 0x8e065715ca644d8b
@@ -53,6 +56,8 @@ private:
     static ImageHolderManager<NativeImage> sNativeImageHolder_;
     std::shared_ptr<NativeImage> native_;
     bool isTestImage_;
+
+    friend struct SendableImageAsyncContext;
 };
 
 } // namespace Media

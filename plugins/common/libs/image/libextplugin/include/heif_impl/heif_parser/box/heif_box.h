@@ -92,7 +92,7 @@ public:
         return (int) children_.size() - 1;
     }
 
-    const uint32_t MAX_RECURSION_COUNT = 300;
+    static const uint32_t MAX_RECURSION_COUNT = 300;
 
 private:
     uint64_t boxSize_ = 0;

@@ -110,6 +110,7 @@ taihe_shared_library("image_taihe") {
     "runtime_core:ani_helpers",
     "egl:libEGL",
     "opengles:libGLES",
+    "node:node_header_notice",
   ]
 
   if (enable_libexif) {

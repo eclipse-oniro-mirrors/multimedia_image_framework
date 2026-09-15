@@ -35,20 +35,11 @@ using std::make_unique;
 #undef LOG_TAG
 #define LOG_TAG "ImageCreatorNapi"
 
-namespace {
-    constexpr int32_t TEST_WIDTH = 8192;
-    constexpr int32_t TEST_HEIGHT = 8;
-    constexpr int32_t TEST_FORMAT = 4;
-    constexpr int32_t TEST_CAPACITY = 8;
-}
-
 namespace OHOS {
 namespace Media {
 static const std::string CLASS_NAME = "ImageCreator";
 shared_ptr<ImageCreator> ImageCreatorNapi::staticInstance_ = nullptr;
 thread_local napi_ref ImageCreatorNapi::sConstructor_ = nullptr;
-static bool g_isCreatorTest = false;
-static std::shared_ptr<ImageCreatorReleaseListener> g_listener = nullptr;
 
 const int ARGS0 = 0;
 const int ARGS1 = 1;
@@ -125,10 +116,6 @@ napi_value ImageCreatorNapi::Init(napi_env env, napi_value exports)
         DECLARE_NAPI_FUNCTION("on", JsOn),
         DECLARE_NAPI_FUNCTION("off", JsOff),
         DECLARE_NAPI_FUNCTION("release", JsRelease),
-
-#ifdef IMAGE_DEBUG_FLAG
-        DECLARE_NAPI_GETTER("test", JsTest),
-#endif
         DECLARE_NAPI_GETTER("capacity", JsGetCapacity),
         DECLARE_NAPI_GETTER("format", JsGetFormat),
         DECLARE_NAPI_GETTER("size", JsGetSize),
@@ -189,9 +176,7 @@ napi_value ImageCreatorNapi::Constructor(napi_env env, napi_callback_info info)
         std::unique_ptr<ImageCreatorNapi> reference = std::make_unique<ImageCreatorNapi>();
         if (reference != nullptr) {
             reference->env_ = env;
-            if (!g_isCreatorTest) {
-                reference->imageCreator_ = staticInstance_;
-            }
+            reference->imageCreator_ = staticInstance_;
             status = napi_wrap(env, thisVar, reinterpret_cast<void *>(reference.get()),
                                ImageCreatorNapi::Destructor, nullptr, nullptr);
             if (status == napi_ok) {
@@ -261,17 +246,6 @@ std::shared_ptr<ImageCreator> ImageCreatorNapi::GetNativeImageCreator()
     return imageCreator_;
 }
 
-static bool isTest(const int32_t* args, const int32_t len)
-{
-    if ((args[PARAM0] ==  TEST_WIDTH) &&
-        (args[PARAM1] ==  TEST_HEIGHT) &&
-        (args[PARAM2] ==  TEST_FORMAT) &&
-        (args[PARAM3] ==  TEST_CAPACITY) &&
-        (len == ARGS4)) {
-        return true;
-    }
-    return false;
-}
 napi_value ImageCreatorNapi::JSCreateImageCreator(napi_env env, napi_callback_info info)
 {
     napi_status status;
@@ -294,16 +268,10 @@ napi_value ImageCreatorNapi::JSCreateImageCreator(napi_env env, napi_callback_in
     if (!ImageNapiUtils::ParseImageCreatorReceiverArgs(env, argc, argv, args, errMsg)) {
         return ImageNapiUtils::ThrowExceptionError(env, COMMON_ERR_INVALID_PARAMETER, errMsg);
     }
-    int32_t len = sizeof(args) / sizeof(args[PARAM0]);
-    if (isTest(args, len)) {
-        g_isCreatorTest = true;
-    }
     status = napi_get_reference_value(env, sConstructor_, &constructor);
     if (IMG_IS_OK(status)) {
-        if (!g_isCreatorTest) {
-            staticInstance_ = ImageCreator::CreateImageCreator(args[PARAM0],
-                args[PARAM1], args[PARAM2], args[PARAM3]);
-        }
+        staticInstance_ = ImageCreator::CreateImageCreator(args[PARAM0],
+            args[PARAM1], args[PARAM2], args[PARAM3]);
         status = napi_new_instance(env, constructor, 0, nullptr, &result);
         if (status == napi_ok) {
             IMAGE_FUNCTION_OUT();
@@ -389,12 +357,10 @@ napi_value ImageCreatorNapi::JSCommonProcess(ImageCreatorCommonArgs &args)
         if (ic.context->constructor_ == nullptr) {
             return ic.result;
         }
-        if (!g_isCreatorTest) {
-            ic.context->creator_ = ic.context->constructor_->imageCreator_;
+        ic.context->creator_ = ic.context->constructor_->imageCreator_;
 
-            IMG_NAPI_CHECK_RET_D(IMG_IS_READY(ic.status, ic.context->creator_),
-                ic.result, IMAGE_ERR("empty native creator"));
-        }
+        IMG_NAPI_CHECK_RET_D(IMG_IS_READY(ic.status, ic.context->creator_),
+            ic.result, IMAGE_ERR("empty native creator"));
     }
     if (args.async != CreatorCallType::GETTER && !args.queryArgs(args, ic)) {
         return ic.result;
@@ -440,11 +406,6 @@ napi_value ImageCreatorNapi::JsGetSize(napi_env env, napi_callback_info info)
 
     args.nonAsyncBack = [](ImageCreatorCommonArgs &args, ImageCreatorInnerContext &ic) -> bool {
         napi_get_undefined(args.env, &(ic.result));
-        if (g_isCreatorTest) {
-            ic.result = BuildJsSize(args.env, TEST_WIDTH, TEST_HEIGHT);
-            return true;
-        }
-
         auto native = ic.context->constructor_->imageCreator_;
         if (native == nullptr) {
             IMAGE_ERR("Native instance is nullptr");
@@ -475,10 +436,6 @@ napi_value ImageCreatorNapi::JsGetCapacity(napi_env env, napi_callback_info info
 
     args.nonAsyncBack = [](ImageCreatorCommonArgs &args, ImageCreatorInnerContext &ic) -> bool {
         napi_get_undefined(args.env, &(ic.result));
-        if (g_isCreatorTest) {
-            napi_create_int32(args.env, TEST_CAPACITY, &(ic.result));
-            return true;
-        }
         auto native = ic.context->constructor_->imageCreator_;
         if (native == nullptr) {
             IMAGE_ERR("Native instance is nullptr");
@@ -507,10 +464,6 @@ napi_value ImageCreatorNapi::JsGetFormat(napi_env env, napi_callback_info info)
 
     args.nonAsyncBack = [](ImageCreatorCommonArgs &args, ImageCreatorInnerContext &ic) -> bool {
         napi_get_undefined(args.env, &(ic.result));
-        if (g_isCreatorTest) {
-            napi_create_int32(args.env, TEST_FORMAT, &(ic.result));
-            return true;
-        }
         auto native = ic.context->constructor_->imageCreator_;
         if (native == nullptr) {
             IMAGE_ERR("Native instance is nullptr");
@@ -527,76 +480,6 @@ napi_value ImageCreatorNapi::JsGetFormat(napi_env env, napi_callback_info info)
 
     return JSCommonProcess(args);
 }
-
-#ifdef IMAGE_DEBUG_FLAG
-static void TestAcquireBuffer(OHOS::sptr<OHOS::IConsumerSurface> &creatorSurface, int32_t &fence,
-    int64_t &timestamp, OHOS::Rect &damage, std::shared_ptr<ImageCreator> imageCreator)
-{
-    OHOS::sptr<OHOS::SurfaceBuffer> buffer;
-    if (creatorSurface == nullptr) {
-        IMAGE_ERR("Creator Surface is nullptr");
-        return;
-    }
-    creatorSurface->AcquireBuffer(buffer, fence, timestamp, damage);
-    if (buffer == nullptr) {
-        IMAGE_ERR("Creator Surface is nullptr");
-        return;
-    }
-    IMAGE_ERR("...AcquireBuffer...");
-    InitializationOptions opts;
-    opts.size.width = creatorSurface->GetDefaultWidth();
-    opts.size.height = creatorSurface->GetDefaultHeight();
-    opts.pixelFormat = OHOS::Media::PixelFormat::BGRA_8888;
-    opts.alphaType = OHOS::Media::AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN;
-    opts.scaleMode = OHOS::Media::ScaleMode::CENTER_CROP;
-    opts.editable = true;
-    imageCreator->SaveSenderBufferAsImage(buffer, opts);
-}
-
-static void DoTest(std::shared_ptr<ImageCreator> imageCreator)
-{
-    if (imageCreator == nullptr || imageCreator->iraContext_ == nullptr) {
-        IMAGE_ERR("image creator is nullptr");
-        return;
-    }
-    std::string creatorKey = imageCreator->iraContext_->GetCreatorKey();
-    IMAGE_ERR("CreatorKey = %{public}s", creatorKey.c_str());
-    OHOS::sptr<OHOS::IConsumerSurface> creatorSurface = ImageCreator::getSurfaceById(creatorKey);
-    if (creatorSurface == nullptr) {
-        return;
-    }
-    IMAGE_ERR("getDefaultWidth = %{public}d", creatorSurface->GetDefaultWidth());
-    IMAGE_ERR("getDefaultHeight = %{public}d", creatorSurface->GetDefaultHeight());
-    int32_t flushFence = 0;
-    int64_t timestamp = 0;
-    OHOS::Rect damage = {};
-    IMAGE_ERR("TestAcquireBuffer 1...");
-    TestAcquireBuffer(creatorSurface, flushFence, timestamp, damage, imageCreator);
-}
-static void DoCallBackAfterWork(uv_work_t *work, int status);
-napi_value ImageCreatorNapi::JsTest(napi_env env, napi_callback_info info)
-{
-    IMAGE_FUNCTION_IN();
-    ImageCreatorCommonArgs args = {
-        .env = env, .info = info,
-        .async = CreatorCallType::GETTER,
-    };
-    args.argc = ARGS0;
-
-    args.nonAsyncBack = [](ImageCreatorCommonArgs &args, ImageCreatorInnerContext &ic) -> bool {
-        DoTest(ic.context->creator_);
-        if (g_isCreatorTest && g_listener != nullptr) {
-            unique_ptr<uv_work_t> work = make_unique<uv_work_t>();
-            work->data = reinterpret_cast<void *>(g_listener->context.get());
-            DoCallBackAfterWork(work.release(), ARGS0);
-            g_listener = nullptr;
-        }
-        return true;
-    };
-
-    return JSCommonProcess(args);
-}
-#endif
 
 napi_value ImageCreatorNapi::JsDequeueImage(napi_env env, napi_callback_info info)
 {
@@ -615,12 +498,6 @@ napi_value ImageCreatorNapi::JsDequeueImage(napi_env env, napi_callback_info inf
         IMAGE_LINE_IN();
         napi_value result = nullptr;
         napi_get_undefined(env, &result);
-        if (g_isCreatorTest) {
-            result = ImageNapi::Create(env);
-            context->status = SUCCESS;
-            CommonCallbackRoutine(env, context, result);
-            return;
-        }
 
         auto native = context->constructor_->imageCreator_;
         if (native != nullptr) {
@@ -646,16 +523,6 @@ napi_value ImageCreatorNapi::JsDequeueImage(napi_env env, napi_callback_info inf
     return JSCommonProcess(args);
 }
 
-static bool IsTestImageArgs(napi_env env, napi_value value)
-{
-    if (g_isCreatorTest) {
-        ImageNapi* image = nullptr;
-        napi_status status = napi_unwrap(env, value, reinterpret_cast<void**>(&image));
-        return (status == napi_ok && image != nullptr);
-    }
-    return false;
-}
-
 static bool JsQueueArgs(napi_env env, size_t argc, napi_value* argv,
                         std::shared_ptr<NativeImage> &imageNapi_, napi_ref* callbackRef)
 {
@@ -663,7 +530,7 @@ static bool JsQueueArgs(napi_env env, size_t argc, napi_value* argv,
         auto argType0 = ImageNapiUtils::getType(env, argv[PARAM0]);
         if (argType0 == napi_object) {
             imageNapi_ = ImageNapi::GetNativeImage(env, argv[PARAM0]);
-            if (imageNapi_ == nullptr && !IsTestImageArgs(env, argv[PARAM0])) {
+            if (imageNapi_ == nullptr) {
                 ImageNapiUtils::ThrowExceptionError(env, static_cast<int32_t>(napi_invalid_arg),
                     "Could not get queue type object");
                 return false;
@@ -702,11 +569,6 @@ bool ImageCreatorNapi::JsQueueImageSendEvent(napi_env env, ImageCreatorAsyncCont
         IMAGE_FUNCTION_IN();
         napi_value result = nullptr;
         napi_get_undefined(env, &result);
-        if (g_isCreatorTest) {
-            context->status = SUCCESS;
-            CommonCallbackRoutine(env, const_cast<ImageCreatorAsyncContext *&>(context), result);
-            return;
-        }
         auto native = context->constructor_->imageCreator_;
         if (native == nullptr || context->imageNapi_ == nullptr) {
             IMAGE_ERR("Native instance is nullptr");
@@ -832,39 +694,6 @@ static bool JsOnQueryArgs(ImageCreatorCommonArgs &args, ImageCreatorInnerContext
     napi_get_undefined(args.env, &ic.result);
     return true;
 }
-static void DoCallBackAfterWork(uv_work_t *work, int status)
-{
-    IMAGE_LINE_IN();
-    Contextc context = reinterpret_cast<Contextc>(work->data);
-    if (context == nullptr) {
-        IMAGE_ERR("context is empty");
-    } else {
-        if (context->env != nullptr && context->callbackRef != nullptr) {
-            napi_handle_scope scope = nullptr;
-            napi_open_handle_scope(context->env, &scope);
-            if (scope == nullptr) {
-                delete work;
-                return;
-            }
-            napi_value result[PARAM2] = {0};
-            napi_value retVal = nullptr;
-            napi_value callback = nullptr;
-            napi_create_uint32(context->env, SUCCESS, &result[0]);
-            napi_get_undefined(context->env, &result[1]);
-            napi_get_reference_value(context->env, context->callbackRef, &callback);
-            if (callback != nullptr) {
-                napi_call_function(context->env, nullptr, callback, PARAM2, result, &retVal);
-            } else {
-                IMAGE_ERR("napi_get_reference_value callback is empty");
-            }
-            napi_close_handle_scope(context->env, scope);
-        } else {
-            IMAGE_ERR("env or callbackRef is empty");
-        }
-    }
-    delete work;
-    IMAGE_LINE_OUT();
-}
 
 static void DoCallBackNoUvWork(napi_env env, ImageCreatorAsyncContext* context)
 {
@@ -929,13 +758,6 @@ napi_value ImageCreatorNapi::JsOn(napi_env env, napi_callback_info info)
     args.queryArgs = JsOnQueryArgs;
     args.nonAsyncBack = [](ImageCreatorCommonArgs &args, ImageCreatorInnerContext &ic) -> bool {
         IMAGE_LINE_IN();
-        if (g_isCreatorTest) {
-            g_listener = make_shared<ImageCreatorReleaseListener>();
-            g_listener->context = std::move(ic.context);
-            g_listener->context->env = args.env;
-            g_listener->name = args.name;
-            return true;
-        }
         napi_get_undefined(args.env, &(ic.result));
 
         auto native = ic.context->constructor_->imageCreator_;
@@ -997,13 +819,9 @@ napi_value ImageCreatorNapi::JsOffOneArg(napi_env env, napi_callback_info info)
         IMAGE_LINE_IN();
         napi_get_undefined(args.env, &ic.result);
 
-        if (g_isCreatorTest && g_listener != nullptr) {
-            g_listener.reset();
-        } else {
-            if (ic.context != nullptr && ic.context->constructor_ != nullptr
-                && ic.context->constructor_->imageCreator_ != nullptr) {
-                ic.context->constructor_->imageCreator_->UnRegisterBufferReleaseListener();
-            }
+        if (ic.context != nullptr && ic.context->constructor_ != nullptr
+            && ic.context->constructor_->imageCreator_ != nullptr) {
+            ic.context->constructor_->imageCreator_->UnRegisterBufferReleaseListener();
         }
         ic.context->status = SUCCESS;
         napi_create_uint32(args.env, ic.context->status, &ic.result);

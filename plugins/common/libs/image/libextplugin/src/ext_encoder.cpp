@@ -144,7 +144,7 @@ const std::map<PixelFormat, GraphicPixelFormat> SURFACE_FORMAT_MAP = {
 #endif
 
 namespace {
-    const static size_t DEFAULT_OUTPUT_SIZE = 35 * 1024 * 1024; // 35M
+    const static size_t DEFAULT_OUTPUT_SIZE = 80 * 1024 * 1024; // 80M
     const static uint16_t STATIC_METADATA_COLOR_SCALE = 50000;
     const static uint16_t STATIC_METADATA_LUM_SCALE = 10000;
     const static uint8_t INDEX_ZERO = 0;

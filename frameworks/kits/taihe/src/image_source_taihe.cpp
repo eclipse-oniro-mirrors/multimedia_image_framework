@@ -32,6 +32,8 @@
 #include "exif_metadata_formatter.h"
 #include "xmp_metadata_taihe.h"
 
+#include <climits>
+#include <cmath>
 #include <iomanip>
 #include <sstream>
 
@@ -2317,10 +2319,13 @@ static std::string HandleIntArrayCase(const std::vector<int64_t> &intArray, cons
     return oss.str();
 }
 
-static std::string FormatTimePart(double value)
+static bool FormatTimePart(double value, std::string &result)
 {
     double intPart;
     double fracPart = std::modf(value, &intPart);
+    if (!std::isfinite(value) || intPart < INT_MIN || intPart > INT_MAX) {
+        return false;
+    }
     std::ostringstream oss;
     oss << std::setfill('0') << std::setw(NUM_2) << static_cast<int>(intPart);
     if (std::abs(fracPart) > 1e-6) {
@@ -2341,17 +2346,26 @@ static std::string FormatTimePart(double value)
             }
         }
     }
-    return oss.str();
+    result = oss.str();
+    return true;
 }
 
-static std::string HandleDoubleArrayCase(const std::vector<double> &doubleArray, const std::string &keyStr)
+static bool HandleDoubleArrayCase(const std::vector<double> &doubleArray, const std::string &keyStr,
+    std::string &result)
 {
     if (keyStr != "GPSTimeStamp" || doubleArray.size() < NUM_3) {
-        return OHOS::Media::ImageUtils::ArrayToString(doubleArray);
+        result = OHOS::Media::ImageUtils::ArrayToString(doubleArray);
+        return true;
     }
-    return FormatTimePart(doubleArray[0]) + ":" +
-           FormatTimePart(doubleArray[1]) + ":" +
-           FormatTimePart(doubleArray[NUM_2]);
+    std::string hour;
+    std::string minute;
+    std::string second;
+    if (!FormatTimePart(doubleArray[0], hour) || !FormatTimePart(doubleArray[1], minute) ||
+        !FormatTimePart(doubleArray[NUM_2], second)) {
+        return false;
+    }
+    result = hour + ":" + minute + ":" + second;
+    return true;
 }
 
 template<typename T>
@@ -2364,14 +2378,18 @@ static bool UnwrapMetadataValue(const T &storedValue, OHOS::Media::MetadataValue
         dest.bufferValue.assign(storedValue.begin(), storedValue.end());
     } else {
         std::string stringValue;
-        if constexpr (std::is_same_v<U, int32_t> || std::is_same_v<U, double>) {
+        if constexpr (std::is_same_v<U, taihe::string>) {
+            stringValue = std::string(storedValue);
+        } else if constexpr (std::is_same_v<U, int32_t> || std::is_same_v<U, double>) {
             stringValue = std::to_string(storedValue);
         } else if constexpr (std::is_same_v<U, taihe::array<int32_t>>) {
             std::vector<int64_t> intValueArray(storedValue.begin(), storedValue.end());
             stringValue = HandleIntArrayCase(intValueArray, dest.key);
         } else if constexpr (std::is_same_v<U, taihe::array<double>>) {
             std::vector<double> doubleValueArray(storedValue.begin(), storedValue.end());
-            stringValue = HandleDoubleArrayCase(doubleValueArray, dest.key);
+            if (!HandleDoubleArrayCase(doubleValueArray, dest.key, stringValue)) {
+                return false;
+            }
         } else if constexpr (std::is_same_v<U, bool>) {
             stringValue = storedValue ? "1" : "0";
         } else if constexpr (std::is_same_v<U, Orientation> || std::is_same_v<U, XmageColorMode> ||
@@ -2402,9 +2420,12 @@ static void UnwrapImageMetadataProperties(std::unique_ptr<ImageSourceTaiheContex
             }
         });
 
-        if (status == true) {
-            context->kValueTypeArray.emplace_back(std::move(dest));
+        if (!status) {
+            context->status = OHOS::Media::ERR_MEDIA_VALUE_INVALID;
+            context->errMsg = "Invalid metadata value";
+            return;
         }
+        context->kValueTypeArray.emplace_back(std::move(dest));
     }
 }
 
@@ -2468,6 +2489,8 @@ static void WriteImageMetadataPackageExecute(std::unique_ptr<ImageSourceTaiheCon
     IMAGE_LOGI("%{public}s start.", __func__);
     CHECK_ERROR_RETURN_LOG(context == nullptr || context->rImageSource == nullptr,
         "context or native imageSource is nullptr");
+
+    CHECK_ERROR_RETURN(context->status != OHOS::Media::SUCCESS);
 
     auto start = std::chrono::high_resolution_clock::now();
     RemoveAllPropertiesIfNeeded(context);
@@ -2554,6 +2577,10 @@ optional<ImageSource> CreateImageSourceByUri(string_view uri)
 
 optional<ImageSource> CreateImageSourceByFdOption(double fd, SourceOptions const& options)
 {
+    if (!std::isfinite(fd) || std::trunc(fd) != fd || fd < 0 || fd > INT32_MAX) {
+        IMAGE_LOGE("Invalid file descriptor");
+        return optional<ImageSource>(std::nullopt);
+    }
     int32_t fdInt = static_cast<int32_t>(fd);
     OHOS::Media::SourceOptions opts = ImageTaiheUtils::ParseSourceOptions(options);
     uint32_t errorCode = OHOS::Media::ERR_MEDIA_INVALID_VALUE;
@@ -2669,16 +2696,15 @@ optional<ImageSource> CreateImageSourceByRawFileDescriptorOption(
             "invalid offset or length");
         return optional<ImageSource>(std::nullopt);
     }
-    if (offset > INT32_MAX || length > INT32_MAX - offset) {
+    if (offset > INT32_MAX || length > INT32_MAX || offset > INT32_MAX - length) {
         IMAGE_LOGE("CreateImageSource fileSize overflow, offset: %{public}" PRId64 ", length: %{public}" PRId64,
             offset, length);
         ImageTaiheUtils::ThrowExceptionError(OHOS::Media::COMMON_ERR_INVALID_PARAMETER,
             "fileSize overflow");
         return optional<ImageSource>(std::nullopt);
     }
-    int64_t fileSize = offset + length;
     std::shared_ptr<OHOS::Media::ImageSource> imageSource = OHOS::Media::ImageSource::CreateImageSource(
-        fd, static_cast<int32_t>(offset), static_cast<int32_t>(fileSize), opts, errorCode);
+        fd, static_cast<int32_t>(offset), static_cast<int32_t>(offset + length), opts, errorCode);
     if (imageSource == nullptr) {
         IMAGE_LOGE("CreateImageSourceExec error, errorCode: %{public}d", errorCode);
         return optional<ImageSource>(std::nullopt);
