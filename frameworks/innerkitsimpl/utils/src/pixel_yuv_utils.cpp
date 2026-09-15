@@ -293,7 +293,7 @@ static void FillDstFrameInfo(AVFrame *frame, uint8_t *pixels, YuvImageInfo &info
 {
     if (info.format == AVPixelFormat::AV_PIX_FMT_NV21 || info.format == AVPixelFormat::AV_PIX_FMT_NV12) {
         frame->data[0] = pixels;
-        frame->data[1] = pixels + GetYSize(info.yuvDataInfo.yStride, info.height);
+        frame->data[1] = pixels + info.yuvDataInfo.uvOffset;
         frame->linesize[0] = static_cast<int32_t>(info.yuvDataInfo.yStride);
         frame->linesize[1] = GetUVStride(info.yuvDataInfo.uvStride);
     } else if (info.format == AVPixelFormat::AV_PIX_FMT_P010LE) {
