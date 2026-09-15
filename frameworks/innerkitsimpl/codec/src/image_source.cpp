@@ -1139,7 +1139,7 @@ static void ResizeCropPixelmap(PixelMap &pixelmap, int32_t srcDensity, int32_t w
 bool ImageSource::IsYuvFormat(PixelFormat format)
 {
     return format == PixelFormat::NV21 || format == PixelFormat::NV12 ||
-        format == PixelFormat::YCRCB_P010 || format == PixelFormat::YCBCR_P010;
+        format == PixelFormat::YCRCB_P010 || format == PixelFormat::YCBCR_P010 || format == PixelFormat::Y8;
 }
 
 static void CopyYuvInfo(YUVDataInfo &yuvInfo, ImagePlugin::PlImageInfo &plInfo)

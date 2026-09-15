@@ -1393,7 +1393,7 @@ HWTEST_F(PixelMapTest, LegacyCreateAcceptsUndersizedPixelBufferTest001, TestSize
 
 /**
  * @tc.name: InnerCreateDoesNotApplyApiCompatibilityTest001
- * @tc.desc: Verify the inner Create overload does not apply external API buffer compatibility.
+ * @tc.desc: Verify CreateForApi respects CheckParams and only expands buffers that pass it.
  * @tc.type: FUNC
  */
 HWTEST_F(PixelMapTest, InnerCreateDoesNotApplyApiCompatibilityTest001, TestSize.Level3)
@@ -1410,7 +1410,10 @@ HWTEST_F(PixelMapTest, InnerCreateDoesNotApplyApiCompatibilityTest001, TestSize.
     auto innerPixelMap = PixelMap::Create(reinterpret_cast<uint32_t *>(pixels), 3, opts);
     EXPECT_EQ(innerPixelMap, nullptr);
 
-    auto apiPixelMap = PixelMap::CreateForApi(reinterpret_cast<uint32_t *>(pixels), 3, opts);
+    auto apiPixelMapTooSmall = PixelMap::CreateForApi(reinterpret_cast<uint32_t *>(pixels), 3, opts);
+    EXPECT_EQ(apiPixelMapTooSmall, nullptr);
+
+    auto apiPixelMap = PixelMap::CreateForApi(reinterpret_cast<uint32_t *>(pixels), 4, opts);
     EXPECT_NE(apiPixelMap, nullptr);
 }
 
