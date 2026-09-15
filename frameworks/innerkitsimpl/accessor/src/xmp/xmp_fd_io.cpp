@@ -38,6 +38,7 @@ constexpr mode_t DEFAULT_TEMP_FILE_MODE = S_IRUSR | S_IWUSR;
 constexpr int MAX_TEMP_FILE_SUFFIX = 100;
 constexpr int TEMP_SUFFIX_DIGITS = 2;
 constexpr size_t DERIVED_TEMP_SUFFIX_BUFFER_SIZE = 16;
+const static uint64_t XMP_FD_IO_FDSAN_TAG = LOG_TAG_DOMAIN_ID_IMAGE;
 
 void ResetDerivedTemp(XMP_IO *&derivedTemp)
 {
@@ -57,7 +58,7 @@ void RemoveTempFile(std::string &tempFilePath)
 void CloseOwnedFd(int &fd, bool ownsFd)
 {
     CHECK_ERROR_RETURN(!ownsFd || fd < 0);
-    close(fd);
+    fdsan_close_with_tag(fd, XMP_FD_IO_FDSAN_TAG);
     fd = -1;
 }
 
@@ -91,7 +92,7 @@ struct TempFileGuard {
     ~TempFileGuard()
     {
         if (fd >= 0) {
-            close(fd);
+            fdsan_close_with_tag(fd, XMP_FD_IO_FDSAN_TAG);
         }
         if (!path.empty()) {
             unlink(path.c_str());
@@ -152,6 +153,7 @@ bool TryCreateDerivedTempFd(const std::string &sourcePath, int &tempFd, std::str
 
         tempFd = open(tempPath.c_str(), O_CREAT | O_EXCL | O_RDWR, DEFAULT_TEMP_FILE_MODE);
         if (tempFd >= 0) {
+            fdsan_exchange_owner_tag(tempFd, 0, XMP_FD_IO_FDSAN_TAG);
             return true;
         }
         if (errno == EEXIST) {
@@ -198,6 +200,7 @@ XMPFd_IO::XMPFd_IO(const std::string &filePath, bool readOnly)
     this->ValidateAccessModeOrThrow("XMPFd_IO::XMPFd_IO(open)");
     this->ValidateSeekableOrThrow("XMPFd_IO::XMPFd_IO(open)");
     guard.Release();
+    fdsan_exchange_owner_tag(fd_, 0, XMP_FD_IO_FDSAN_TAG);
     XMP_CATCH_THROW();
 }
 

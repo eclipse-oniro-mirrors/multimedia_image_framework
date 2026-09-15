@@ -133,6 +133,7 @@ constexpr int32_t DMA_SIZE = 512 * 512; // DMA minimum effective size
 constexpr int32_t NOPADDING_DMA_SIZE = 256 * 256;
 constexpr int32_t FAULT_API_VERSION = -1;
 constexpr int32_t BUNDLE_MGR_SERVICE_SYS_ABILITY_ID = 401;
+const static uint64_t IMAGE_UTILS_FDSAN_TAG = LOG_TAG_DOMAIN_ID_IMAGE;
 struct binder_write_read {
     uint64_t write_size;
     uint64_t write_consumed;
@@ -2142,11 +2143,12 @@ static bool TryGetBinder()
         IMAGE_LOGE("TryGetBinder failed, cannot open binder device, errno=%{public}d", errno);
         return false;
     }
+    fdsan_exchange_owner_tag(fd, 0, IMAGE_UTILS_FDSAN_TAG);
     // Perform a no-op BINDER_WRITE_READ ioctl to verify the binder driver is functional;
     // an empty binder_write_read with zero counts acts as a probe without sending any commands
     struct binder_write_read bwr = {0};
     int res = ioctl(fd, BINDER_WRITE_READ, &bwr);
-    close(fd);
+    fdsan_close_with_tag(fd, IMAGE_UTILS_FDSAN_TAG);
     if (res < 0) {
         IMAGE_LOGE("TryGetBinder ioctl BINDER_WRITE_READ failed, errno=%{public}d", errno);
         return false;
