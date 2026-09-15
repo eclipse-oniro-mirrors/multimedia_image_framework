@@ -75,6 +75,7 @@ struct AuxiliaryPictureNapiAsyncContext {
     std::shared_ptr<OHOS::ColorManager::ColorSpace> AuxColorSpace = nullptr;
     PixelFormat pixelFormat = PixelFormat::RGBA_8888;
     AllocatorType allocatorType = AllocatorType::DEFAULT;
+    napi_ref arrayBufferRef = nullptr;
 };
 
 using AuxiliaryPictureNapiAsyncContextPtr = std::unique_ptr<AuxiliaryPictureNapiAsyncContext>;
@@ -860,6 +861,7 @@ static void EmptyResultComplete(napi_env env, napi_status status, void *data)
     napi_value result = nullptr;
     napi_get_undefined(env, &result);
     auto context = static_cast<AuxiliaryPictureNapiAsyncContext*>(data);
+    NAPI_CHECK_AND_DELETE_REF(env, context->arrayBufferRef);
     CommonCallbackRoutine(env, context, result);
 }
 
@@ -883,11 +885,15 @@ napi_value AuxiliaryPictureNapi::WritePixelsFromBuffer(napi_env env, napi_callba
     asyncContext->rAuxiliaryPicture = asyncContext->nConstructor->nativeAuxiliaryPicture_;
     IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->rAuxiliaryPicture),
         nullptr, IMAGE_LOGE("Empty native auxiliary picture"));
+    napi_create_reference(env, argValue[NUM_0], NUM_1, &asyncContext->arrayBufferRef);
     status = napi_get_arraybuffer_info(env, argValue[NUM_0],
         &(asyncContext->arrayBuffer), &(asyncContext->arrayBufferSize));
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status),
         ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER,
-            "Invalid args."), IMAGE_LOGE("Fail to get buffer info"));
+            "Invalid args."), {
+            IMAGE_LOGE("Fail to get buffer info");
+            NAPI_CHECK_AND_DELETE_REF(env, asyncContext->arrayBufferRef);
+        });
 
     napi_create_promise(env, &(asyncContext->deferred), &result);
     IMG_CREATE_CREATE_ASYNC_WORK(env, status, "WritePixelsFromBuffer",
@@ -897,8 +903,11 @@ napi_value AuxiliaryPictureNapi::WritePixelsFromBuffer(napi_env env, napi_callba
                 static_cast<uint8_t*>(context->arrayBuffer), context->arrayBufferSize);
         }, EmptyResultComplete, asyncContext, asyncContext->work);
 
-    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status),
-        nullptr, IMAGE_LOGE("Fail to create async work"));
+    if (!IMG_IS_OK(status)) {
+        IMAGE_LOGE("Fail to create async work");
+        NAPI_CHECK_AND_DELETE_REF(env, asyncContext->arrayBufferRef);
+        return nullptr;
+    }
     return result;
 }
 

@@ -144,6 +144,7 @@ namespace {
 }
 const static uint64_t MAX_AUXILIARY_PICTURE_COUNT = 32;
 const static uint64_t MAX_PICTURE_META_TYPE_COUNT = 64;
+const static uint64_t MAX_UNMARSHALLING_TOTAL_BYTES = 2ULL * 1024 * 1024 * 1024;
 
 const static int32_t HDR_ALLOC_FORMAT_INVALID = -1;
 
@@ -934,6 +935,9 @@ Picture *Picture::Unmarshalling(Parcel &parcel, PICTURE_ERR &error)
 
     CHECK_ERROR_RETURN_RET_LOG(!pixelmapPtr, nullptr, "Failed to unmarshal main PixelMap.");
     picture->SetMainPixel(pixelmapPtr);
+    uint64_t totalBytes = static_cast<uint64_t>(pixelmapPtr->GetAllocationByteCount());
+    CHECK_ERROR_RETURN_RET_LOG(totalBytes > MAX_UNMARSHALLING_TOTAL_BYTES, nullptr,
+        "Total pixelmap bytes exceed budget: %{public}llu", static_cast<unsigned long long>(totalBytes));
     uint64_t numAuxiliaryPictures = 0;
     bool cond = !parcel.ReadUint64(numAuxiliaryPictures);
     CHECK_ERROR_RETURN_RET_LOG(cond, nullptr, "Failed to read numAuxiliaryPictures from parcel.");
@@ -945,6 +949,13 @@ Picture *Picture::Unmarshalling(Parcel &parcel, PICTURE_ERR &error)
         CHECK_ERROR_RETURN_RET_LOG(cond, nullptr, "Failed to read auxiliary picture type from parcel.");
         std::shared_ptr<AuxiliaryPicture> auxPtr(AuxiliaryPicture::Unmarshalling(parcel));
         CHECK_ERROR_RETURN_RET_LOG(!auxPtr, nullptr, "Failed to unmarshal auxiliary picture of type %d.", type);
+        auto auxContent = auxPtr->GetContentPixel();
+        if (auxContent != nullptr) {
+            totalBytes += static_cast<uint64_t>(auxContent->GetAllocationByteCount());
+        }
+        cond = totalBytes > MAX_UNMARSHALLING_TOTAL_BYTES;
+        CHECK_ERROR_RETURN_RET_LOG(cond, nullptr,
+            "Total pixelmap bytes exceed budget: %{public}llu", static_cast<unsigned long long>(totalBytes));
         picture->SetAuxiliaryPicture(auxPtr);
     }
     CHECK_ERROR_RETURN_RET_LOG(!UnmarshalMetadata(parcel, *picture, error), nullptr, "Failed to unmarshal metadata.");
