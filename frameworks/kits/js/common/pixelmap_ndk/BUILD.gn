@@ -100,6 +100,7 @@ ohos_shared_library("pixelmap") {
     "hilog:libhilog",
     "egl:libEGL",
     "opengles:libGLES",
+    "node:node_header_notice",
   ]
 
   innerapi_tags = [ "ndk" ]

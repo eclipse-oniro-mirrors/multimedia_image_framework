@@ -227,34 +227,6 @@ string ImageReceiverImpl::GetReceivingSurfaceIdSync()
     return GetReceivingSurfaceIdSyncProcess(args, this);
 }
 
-#ifdef IMAGE_SAVE_BUFFER_TO_PIC
-static void DoCallBackTest(OHOS::sptr<OHOS::SurfaceBuffer> surfaceBuffer1)
-{
-    if (surfaceBuffer1 == nullptr) {
-        IMAGE_LOGE("surfaceBuffer1 is null");
-        return;
-    }
-
-    ImageReceiverManager& imageReceiverManager = ImageReceiverManager::getInstance();
-    shared_ptr<ImageReceiver> imageReceiver1 = imageReceiverManager.getImageReceiverByKeyId("1");
-    if (imageReceiver1 == nullptr || imageReceiver1->iraContext_ == nullptr) {
-        return;
-    }
-    IMAGE_LOGE("DoCallBackTest format %{public}d", imageReceiver1->iraContext_->GetFormat());
-
-    InitializationOptions opts;
-    opts.size.width = surfaceBuffer1->GetWidth();
-    opts.size.height = surfaceBuffer1->GetHeight();
-    opts.pixelFormat = OHOS::Media::PixelFormat::BGRA_8888;
-    opts.alphaType = OHOS::Media::AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN;
-    opts.scaleMode = OHOS::Media::ScaleMode::CENTER_CROP;
-    opts.editable = true;
-    IMAGE_LOGE("DoCallBackTest Width %{public}d", opts.size.width);
-    IMAGE_LOGE("DoCallBackTest Height %{public}d", opts.size.height);
-    int fd = open("/data/receiver/test.jpg", O_RDWR | O_CREAT);
-    imageReceiver1->SaveBufferAsImage(fd, surfaceBuffer1, opts);
-}
-#endif
 
 static struct Image ReadImageSyncProcess(ImageReceiverCommonArgs &args, ImageReceiverImpl *const receiverImpl)
 {
@@ -318,14 +290,6 @@ struct Image ImageReceiverImpl::ReadLatestImageSync()
             context->status = OHOS::Media::ERR_IMAGE_INIT_ABNORMAL;
             return std::monostate{};
         }
-#ifdef IMAGE_DEBUG_FLAG
-        if (context->receiverImpl_->isCallBackTest) {
-            context->receiverImpl_->isCallBackTest = false;
-#ifdef IMAGE_SAVE_BUFFER_TO_PIC
-            DoCallBackTest(nativeImage->GetBuffer());
-#endif
-        }
-#endif
         struct Image image = ImageImpl::Create(nativeImage);
         context->status = OHOS::Media::SUCCESS;
         return image;
@@ -364,14 +328,6 @@ struct Image ImageReceiverImpl::ReadNextImageSync()
             context->status = OHOS::Media::ERR_IMAGE_INIT_ABNORMAL;
             return std::monostate{};
         }
-#ifdef IMAGE_DEBUG_FLAG
-        if (context->receiverImpl_->isCallBackTest) {
-            context->receiverImpl_->isCallBackTest = false;
-#ifdef IMAGE_SAVE_BUFFER_TO_PIC
-            DoCallBackTest(nativeImage->GetBuffer());
-#endif
-        }
-#endif
         struct Image image = ImageImpl::Create(nativeImage);
         if (::taihe::has_error()) {
             IMAGE_LOGE("%{public}s ImageImpl::Create failed!", context->name.c_str());
@@ -494,7 +450,7 @@ void ImageReceiverImpl::OffImageArrival(optional_view<callback<void(uintptr_t, u
             context->status = OHOS::Media::ERR_IMAGE_INIT_ABNORMAL;
             return std::monostate{};
         }
-        context->receiverImpl_->imageReceiver_->UnRegisterBufferAvaliableListener();
+        context->receiverImpl_->UnRegisterReceiverListener();
         context->status = OHOS::Media::SUCCESS;
         return std::monostate{};
     };

@@ -58,9 +58,6 @@ public:
     void UnRegisterReceiverListener();
 
     static napi_value CreateImageReceiver(napi_env env, std::shared_ptr<ImageReceiver> imageReceiver);
-#ifdef IMAGE_DEBUG_FLAG
-    bool isCallBackTest = false;
-#endif
 
     static constexpr napi_type_tag NAPI_TYPE_TAG = {
         .lower = 0x8a3f7c2d1e5b4a90,
@@ -87,11 +84,6 @@ private:
     static napi_value JSCommonProcess(ImageReceiverCommonArgs &args);
     static napi_value JsOffOneArg(napi_env env, napi_callback_info info);
     static napi_value JsOffTwoArgs(napi_env env, napi_callback_info info);
-#ifdef IMAGE_DEBUG_FLAG
-    static napi_value JsTest(napi_env env, napi_callback_info info);
-    static napi_value JsCheckDeviceTest(napi_env env, napi_callback_info info);
-    static napi_value JsTestYUV(napi_env env, napi_callback_info info);
-#endif
     void release();
     static thread_local napi_ref sConstructor_;
     static std::shared_ptr<ImageReceiver> staticInstance_;

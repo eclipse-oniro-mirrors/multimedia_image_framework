@@ -51,6 +51,7 @@ ohos_shared_library("image_ndk") {
     "graphic_surface:surface",
     "ipc:ipc_single",
     "napi:ace_napi",
+    "node:node_header_notice",
   ]
 
   innerapi_tags = [ "ndk" ]
@@ -75,6 +76,7 @@ ohos_shared_library("image_receiver_ndk") {
     "graphic_surface:surface",
     "napi:ace_napi",
     "ipc:ipc_single",
+    "node:node_header_notice",
   ]
 
   innerapi_tags = [ "ndk" ]
@@ -100,6 +102,7 @@ ohos_shared_library("image_source_ndk") {
     "ipc:ipc_single",
     "napi:ace_napi",
     "resource_management:librawfile",
+    "node:node_header_notice",
   ]
 
   if (image_framework_histogram_enable) {
@@ -131,6 +134,7 @@ ohos_shared_library("image_packer_ndk") {
     "c_utils:utils",
     "ipc:ipc_single",
     "napi:ace_napi",
+    "node:node_header_notice",
   ]
 
   innerapi_tags = [ "ndk" ]
@@ -181,6 +185,7 @@ ohos_shared_library("image_source") {
     "libjpeg-turbo:turbojpeg",
     "resource_management:librawfile",
     "ipc:ipc_single",
+    "node:node_header_notice",
   ]
 
   innerapi_tags = [ "ndk" ]
@@ -227,6 +232,7 @@ ohos_shared_library("image_packer") {
     "napi:ace_napi",
     "resource_management:librawfile",
     "ipc:ipc_single",
+    "node:node_header_notice",
   ]
 
   innerapi_tags = [ "ndk" ]

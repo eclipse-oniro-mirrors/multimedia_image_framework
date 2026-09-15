@@ -55,9 +55,6 @@ public:
     static napi_value CreateImageReceiverJsObject(napi_env env, struct SendableImageReceiverCreateArgs args);
     void NativeRelease();
     void UnRegisterReceiverListener();
-#ifdef IMAGE_DEBUG_FLAG
-    bool isCallBackTest = false;
-#endif
     static constexpr napi_type_tag NAPI_TYPE_TAG = {
         .lower = 0x5a98981179594d59,
         .upper = 0xb5c22a46fe287867
@@ -78,11 +75,6 @@ private:
 
     static bool GetNativeFromEnv(napi_env env, napi_callback_info info, std::shared_ptr<ImageReceiver> &native);
     static napi_value JSCommonProcess(SendableImageReceiverCommonArgs &args);
-#ifdef IMAGE_DEBUG_FLAG
-    static napi_value JsTest(napi_env env, napi_callback_info info);
-    static napi_value JsCheckDeviceTest(napi_env env, napi_callback_info info);
-    static napi_value JsTestYUV(napi_env env, napi_callback_info info);
-#endif
     void release();
     static thread_local napi_ref sConstructor_;
     static std::shared_ptr<ImageReceiver> staticInstance_;
