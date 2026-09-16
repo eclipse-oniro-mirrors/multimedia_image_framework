@@ -2290,36 +2290,50 @@ HWTEST_F(ExtDecoderTest, DecodeIncompleteGifImageTest001, TestSize.Level3)
 }
 
 #if defined(HEIF_HW_DECODE_ENABLE) && defined(IMAGE_COLORSPACE_FLAG)
+constexpr size_t COLOR_SPACE_BYTES_PER_PIXEL = 4;
+constexpr uint8_t COLOR_SPACE_MAX_CHANNEL_VALUE = 255;
+constexpr int32_t COLOR_SPACE_PATTERN_PERIOD = 2;
+constexpr int32_t COLOR_SPACE_ORIGINAL_DIMENSION = 512;
+
+struct ColorSpaceTestContext {
+    DecodeContext context {};
+
+    ~ColorSpaceTestContext()
+    {
+        if (context.pixelsBuffer.context != nullptr) {
+            ImageUtils::SurfaceBuffer_Unreference(context.pixelsBuffer.context);
+        }
+    }
+};
+
 static void FillColorSpaceTestPixels(uint8_t* pixels, const Size& size, size_t rowStride)
 {
-    constexpr size_t bytesPerPixel = 4;
     for (int32_t y = 0; y < size.height; ++y) {
         auto* row = pixels + static_cast<size_t>(y) * rowStride;
         for (int32_t x = 0; x < size.width; ++x) {
-            const size_t offset = static_cast<size_t>(x) * bytesPerPixel;
-            const uint8_t value = (x + y) % 2 == 0 ? 0 : 255;
-            row[offset] = value;
-            row[offset + 1] = value;
-            row[offset + 2] = value;
-            row[offset + 3] = 255;
+            const size_t offset = static_cast<size_t>(x) * COLOR_SPACE_BYTES_PER_PIXEL;
+            const uint8_t value = (x + y) % COLOR_SPACE_PATTERN_PERIOD == 0 ? 0 : COLOR_SPACE_MAX_CHANNEL_VALUE;
+            for (size_t channel = 0; channel < COLOR_SPACE_BYTES_PER_PIXEL - 1; ++channel) {
+                row[offset + channel] = value;
+            }
+            row[offset + COLOR_SPACE_BYTES_PER_PIXEL - 1] = COLOR_SPACE_MAX_CHANNEL_VALUE;
         }
     }
 }
 
 static void CheckColorSpaceTestPixels(SurfaceBuffer& buffer, const Size& size)
 {
-    constexpr size_t bytesPerPixel = 4;
     auto* pixels = static_cast<const uint8_t*>(buffer.GetVirAddr());
     ASSERT_NE(pixels, nullptr);
     for (int32_t y = 0; y < size.height; ++y) {
         const auto* row = pixels + static_cast<size_t>(y) * buffer.GetStride();
         for (int32_t x = 0; x < size.width; ++x) {
-            const size_t offset = static_cast<size_t>(x) * bytesPerPixel;
-            const int value = (x + y) % 2 == 0 ? 0 : 255;
-            for (size_t channel = 0; channel < bytesPerPixel - 1; ++channel) {
+            const size_t offset = static_cast<size_t>(x) * COLOR_SPACE_BYTES_PER_PIXEL;
+            const int value = (x + y) % COLOR_SPACE_PATTERN_PERIOD == 0 ? 0 : COLOR_SPACE_MAX_CHANNEL_VALUE;
+            for (size_t channel = 0; channel < COLOR_SPACE_BYTES_PER_PIXEL - 1; ++channel) {
                 ASSERT_NEAR(static_cast<int>(row[offset + channel]), value, 1);
             }
-            ASSERT_EQ(row[offset + bytesPerPixel - 1], 255);
+            ASSERT_EQ(row[offset + COLOR_SPACE_BYTES_PER_PIXEL - 1], COLOR_SPACE_MAX_CHANNEL_VALUE);
         }
     }
 }
@@ -2327,21 +2341,16 @@ static void CheckColorSpaceTestPixels(SurfaceBuffer& buffer, const Size& size)
 static void CheckColorSpaceBufferConversion(const Size& bufferSize, const Size& plannedSize, int32_t strideAlignment)
 {
     ExtDecoder decoder;
-    decoder.info_ = SkImageInfo::Make(512, 512, kRGBA_8888_SkColorType, kPremul_SkAlphaType,
-        SkColorSpace::MakeSRGB());
+    decoder.info_ = SkImageInfo::Make(COLOR_SPACE_ORIGINAL_DIMENSION, COLOR_SPACE_ORIGINAL_DIMENSION,
+        kRGBA_8888_SkColorType, kPremul_SkAlphaType, SkColorSpace::MakeSRGB());
     decoder.dstInfo_ = decoder.info_.makeWH(plannedSize.width, plannedSize.height);
     decoder.srcColorSpace_ = std::make_shared<ColorManager::ColorSpace>(ColorManager::ColorSpaceName::SRGB);
     decoder.dstColorSpace_ = std::make_shared<ColorManager::ColorSpace>(ColorManager::ColorSpaceName::DISPLAY_P3);
-    auto releaseContext = [](DecodeContext* context) {
-        if (context->pixelsBuffer.context != nullptr) {
-            ImageUtils::SurfaceBuffer_Unreference(context->pixelsBuffer.context);
-        }
-        delete context;
-    };
-    std::unique_ptr<DecodeContext, decltype(releaseContext)> context(new DecodeContext{}, releaseContext);
-    context->pixelFormat = PixelFormat::RGBA_8888;
-    context->info.pixelFormat = PixelFormat::RGBA_8888;
-    context->info.alphaType = AlphaType::IMAGE_ALPHA_TYPE_PREMUL;
+    ColorSpaceTestContext testContext;
+    auto& context = testContext.context;
+    context.pixelFormat = PixelFormat::RGBA_8888;
+    context.info.pixelFormat = PixelFormat::RGBA_8888;
+    context.info.alphaType = AlphaType::IMAGE_ALPHA_TYPE_PREMUL;
     auto bufferInfo = decoder.info_.makeWH(bufferSize.width, bufferSize.height);
     BufferRequestConfig requestConfig = {
         .width = bufferSize.width,
@@ -2351,8 +2360,8 @@ static void CheckColorSpaceBufferConversion(const Size& bufferSize, const Size& 
         .usage = BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA | BUFFER_USAGE_MEM_MMZ_CACHE,
         .timeout = 0,
     };
-    ASSERT_EQ(decoder.DmaAlloc(*context, bufferInfo.computeMinByteSize(), requestConfig), SUCCESS);
-    auto* srcBuffer = static_cast<SurfaceBuffer*>(context->pixelsBuffer.context);
+    ASSERT_EQ(decoder.DmaAlloc(context, bufferInfo.computeMinByteSize(), requestConfig), SUCCESS);
+    auto* srcBuffer = static_cast<SurfaceBuffer*>(context.pixelsBuffer.context);
     ASSERT_NE(srcBuffer, nullptr);
     ASSERT_GT(srcBuffer->GetStride(), 0);
     const size_t srcRowStride = static_cast<size_t>(srcBuffer->GetStride());
@@ -2361,8 +2370,8 @@ static void CheckColorSpaceBufferConversion(const Size& bufferSize, const Size& 
     ASSERT_NE(srcBuffer->GetVirAddr(), nullptr);
     FillColorSpaceTestPixels(static_cast<uint8_t*>(srcBuffer->GetVirAddr()), bufferSize, srcRowStride);
 
-    ASSERT_EQ(decoder.ApplyDesiredColorSpaceIfNeeded(*context), SUCCESS);
-    auto* dstBuffer = static_cast<SurfaceBuffer*>(context->pixelsBuffer.context);
+    ASSERT_EQ(decoder.ApplyDesiredColorSpaceIfNeeded(context), SUCCESS);
+    auto* dstBuffer = static_cast<SurfaceBuffer*>(context.pixelsBuffer.context);
     ASSERT_NE(dstBuffer, nullptr);
     ASSERT_EQ(dstBuffer->GetWidth(), bufferSize.width);
     ASSERT_EQ(dstBuffer->GetHeight(), bufferSize.height);

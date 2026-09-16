@@ -2170,6 +2170,26 @@ void ExtDecoder::ReleaseOutputBuffer(DecodeContext &context, Media::AllocatorTyp
     context.pixelsBuffer.context = nullptr;
 }
 
+static bool GetColorSpaceDestinationLayout(const SkImageInfo& dstInfo, const AbsMemory& memory,
+    AllocatorType allocatorType, size_t& rowStride)
+{
+    rowStride = dstInfo.minRowBytes();
+    size_t capacity = memory.data.size;
+    if (allocatorType == AllocatorType::DMA_ALLOC) {
+        auto* buffer = static_cast<SurfaceBuffer*>(memory.extend.data);
+        CHECK_ERROR_RETURN_RET_LOG(buffer == nullptr || buffer->GetStride() <= 0, false,
+            "applyColorSpace invalid destination buffer");
+        rowStride = static_cast<size_t>(buffer->GetStride());
+        capacity = static_cast<size_t>(buffer->GetSize());
+    }
+    CHECK_ERROR_RETURN_RET_LOG(!dstInfo.validRowBytes(rowStride), false,
+        "applyColorSpace invalid destination stride");
+    const size_t requiredSize = dstInfo.computeByteSize(rowStride);
+    CHECK_ERROR_RETURN_RET_LOG(SkImageInfo::ByteSizeOverflowed(requiredSize) || requiredSize > capacity, false,
+        "applyColorSpace destination buffer too small");
+    return true;
+}
+
 uint32_t ExtDecoder::ApplyDesiredColorSpace(DecodeContext &context)
 {
     SurfaceBuffer* sbuffer = static_cast<SurfaceBuffer*>(context.pixelsBuffer.context);
@@ -2203,27 +2223,9 @@ uint32_t ExtDecoder::ApplyDesiredColorSpace(DecodeContext &context)
     auto m = MemoryManager::CreateMemory(allocatorType, memoryData);
     CHECK_ERROR_RETURN_RET_LOG(m == nullptr, ERR_IMAGE_COLOR_CONVERT, "applyColorSpace CreateMemory failed");
 
-    size_t dstRowStride = dst.info.minRowBytes();
-    size_t dstCapacity = m->data.size;
-    if (allocatorType == AllocatorType::DMA_ALLOC) {
-        auto* dstBuffer = static_cast<SurfaceBuffer*>(m->extend.data);
-        if (dstBuffer == nullptr || dstBuffer->GetStride() <= 0) {
-            m->Release();
-            IMAGE_LOGE("applyColorSpace invalid destination buffer");
-            return ERR_IMAGE_COLOR_CONVERT;
-        }
-        dstRowStride = static_cast<size_t>(dstBuffer->GetStride());
-        dstCapacity = static_cast<size_t>(dstBuffer->GetSize());
-    }
-    if (!dst.info.validRowBytes(dstRowStride)) {
+    size_t dstRowStride = 0;
+    if (!GetColorSpaceDestinationLayout(dst.info, *m, allocatorType, dstRowStride)) {
         m->Release();
-        IMAGE_LOGE("applyColorSpace invalid destination stride");
-        return ERR_IMAGE_COLOR_CONVERT;
-    }
-    const size_t requiredSize = dst.info.computeByteSize(dstRowStride);
-    if (SkImageInfo::ByteSizeOverflowed(requiredSize) || requiredSize > dstCapacity) {
-        m->Release();
-        IMAGE_LOGE("applyColorSpace destination buffer too small");
         return ERR_IMAGE_COLOR_CONVERT;
     }
 
