@@ -175,7 +175,7 @@ std::shared_ptr<NativeImage> ImageNapi::GetNativeImage(napi_env env, napi_value 
 {
     ImageNapi* napi = nullptr;
 
-    napi_status status = napi_unwrap(env, image, reinterpret_cast<void**>(&napi));
+    napi_status status = napi_unwrap_s(env, image, &ImageNapi::NAPI_TYPE_TAG, reinterpret_cast<void**>(&napi));
     if (!IMG_IS_OK(status) || napi == nullptr) {
         IMAGE_ERR("GetImage napi unwrap failed");
         return nullptr;
@@ -214,8 +214,8 @@ napi_value ImageNapi::Constructor(napi_env env, napi_callback_info info)
             return undefineVar;
         }
     }
-    status = napi_wrap(env, thisVar,
-        reinterpret_cast<void *>(napi.get()), ImageNapi::Destructor, nullptr, nullptr);
+    status = napi_wrap_s(env, thisVar,
+        reinterpret_cast<void *>(napi.get()), ImageNapi::Destructor, nullptr, &ImageNapi::NAPI_TYPE_TAG, nullptr);
     if (status != napi_ok) {
         IMAGE_ERR("Failure wrapping js to native napi");
         return undefineVar;
@@ -349,7 +349,8 @@ static std::unique_ptr<ImageAsyncContext> UnwrapContext(napi_env env, napi_callb
 
     std::unique_ptr<ImageAsyncContext> ctx = std::make_unique<ImageAsyncContext>();
     ctx->env = env;
-    if (napi_unwrap(env, thisVar, reinterpret_cast<void**>(&ctx->napi)) != napi_ok || ctx->napi == nullptr) {
+    if (napi_unwrap_s(env, thisVar, &ImageNapi::NAPI_TYPE_TAG,
+        reinterpret_cast<void**>(&ctx->napi)) != napi_ok || ctx->napi == nullptr) {
         IMAGE_ERR("fail to unwrap constructor_");
         return nullptr;
     }
@@ -578,10 +579,14 @@ static bool CreateArrayBuffer(napi_env env, uint8_t* src, size_t srcLen, napi_va
         IMAGE_LOGE("Invalid input src or srcLen");
         return false;
     }
-    auto status = napi_create_external_arraybuffer(env, src, srcLen,
-        [](napi_env env, void* data, void* hint) { }, nullptr, res);
-    if (status != napi_ok) {
+    void *dst = nullptr;
+    auto status = napi_create_arraybuffer(env, srcLen, &dst, res);
+    if (status != napi_ok || dst == nullptr) {
         IMAGE_LOGE("Failed to create arraybuffer");
+        return false;
+    }
+    if (memcpy_s(dst, srcLen, src, srcLen) != EOK) {
+        IMAGE_LOGE("Failed to copy arraybuffer data");
         return false;
     }
     return true;
@@ -906,7 +911,8 @@ static bool prepareNapiEnv(napi_env env, napi_callback_info info, struct NapiVal
         return false;
     }
     nVal->context = std::make_unique<ImageAsyncContext>();
-    nVal->status = napi_unwrap(env, nVal->thisVar, reinterpret_cast<void**>(&(nVal->context->napi)));
+    nVal->status = napi_unwrap_s(env, nVal->thisVar, &ImageNapi::NAPI_TYPE_TAG,
+        reinterpret_cast<void**>(&(nVal->context->napi)));
     if (nVal->status != napi_ok) {
         IMAGE_LOGE("fail to unwrap context");
         return false;
@@ -957,7 +963,7 @@ static void JSReleaseCallBack(napi_env env, napi_status status,
         napi_delete_reference(env, context->thisRef);
         context->thisRef = nullptr;
         ImageNapi *imgNapi = nullptr;
-        napi_unwrap(env, thisVar, reinterpret_cast<void**>(&imgNapi));
+        napi_unwrap_s(env, thisVar, &ImageNapi::NAPI_TYPE_TAG, reinterpret_cast<void**>(&imgNapi));
         if (imgNapi != nullptr && imgNapi->asyncWorkCount_.load() == 0) {
             napi_remove_wrap(env, thisVar, reinterpret_cast<void**>(&imgNapi));
             IMAGE_DEBUG("image release asyncWorkCount_ is 0");

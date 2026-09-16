@@ -37,6 +37,10 @@ public:
     void NativeRelease();
     std::atomic<uint32_t> asyncWorkCount_{0};
     std::atomic<bool> pendingRelease_{false};
+    static constexpr napi_type_tag NAPI_TYPE_TAG = {
+        .lower = 0x4f1a7c93d2e8b561,
+        .upper = 0xa3c7f0921d4e6b85
+    };
 
 private:
     static napi_value Constructor(napi_env env, napi_callback_info info);
