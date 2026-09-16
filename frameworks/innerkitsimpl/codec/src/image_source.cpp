@@ -1025,7 +1025,6 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index, const D
         errorCode = ERR_MEDIA_INVALID_OPERATION;
         return nullptr;
     }
-    QosGuard qosGuard(info.size);
     UpdateHdrCanvasFlagFromExif();
     SetDecodeInfoOptions(index, opts, info, imageEvent);
     std::string pluginType = mainDecoder_->GetPluginType();
@@ -1384,6 +1383,7 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMap(uint32_t index, const DecodeOpt
         SetImageEventHeifParseErr(imageEvent);
         return nullptr;
     }
+    QosGuard qosGuard(iter->second.imageInfo.size);
     if (ImageSystemProperties::GetSkiaEnabled()) {
         if (IsExtendedCodec(mainDecoder_.get())) {
             InitDecoderForJpeg();
