@@ -2028,7 +2028,7 @@ static void parseSourceOptions(napi_env env, napi_value root, SourceOptions* opt
         if (!ParseSize(env, tmpValue, &(opts->size))) {
             IMAGE_LOGD("ParseSize error");
         }
-        IMAGE_LOGI("sourceSize:(%{public}d, %{public}d)", opts->size.width, opts->size.height);
+        IMAGE_LOGD("sourceSize:(%{public}d, %{public}d)", opts->size.width, opts->size.height);
     }
     int32_t svgResourceLimitLevel = 0;
     if (ImageNapiUtils::GetInt32ByName(env, root, "svgResourceLimitLevel", &svgResourceLimitLevel)) {
