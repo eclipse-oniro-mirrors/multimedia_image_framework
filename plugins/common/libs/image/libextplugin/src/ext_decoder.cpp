@@ -1636,6 +1636,7 @@ bool ExtDecoder::DoHeifSwDecode(OHOS::ImagePlugin::DecodeContext &context)
     //If the HWdecode failed, software does not support setting samplesize, allocate memory based on original image.
     cond = false;
     sampleSize_ = DEFAULT_SAMPLE_SIZE;
+    dstInfo_ = dstInfo_.makeWH(info_.width(), info_.height());
     context.outInfo.size.width = info_.width();
     context.outInfo.size.height = info_.height();
     if (IsHeifToYuvDecode(context)) {
@@ -2184,7 +2185,7 @@ uint32_t ExtDecoder::ApplyDesiredColorSpace(DecodeContext &context)
 
     sk_sp<SkColorSpace> srcSkColorSpace = (srcColorSpace_ != nullptr) ?
         srcColorSpace_->ToSkColorSpace() : info_.refColorSpace();
-    SkImageInfo srcInfo = SkImageInfo::Make(info_.width(), info_.height(),
+    SkImageInfo srcInfo = SkImageInfo::Make(width, height,
         info_.colorType(), info_.alphaType(), srcSkColorSpace);
     bool cond = !src.bitmap.installPixels(srcInfo, srcData, rowStride);
     CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_COLOR_CONVERT, "apply colorspace get install failed.");
@@ -2193,16 +2194,43 @@ uint32_t ExtDecoder::ApplyDesiredColorSpace(DecodeContext &context)
     SkTransInfo dst;
     dst.info = SkImageInfo::Make(width, height, colorType, alphaType, dstColorSpace_->ToSkColorSpace());
 
-    MemoryData memoryData = {nullptr, hwDstInfo_.computeMinByteSize(),
-        "Trans ImageData", {hwDstInfo_.width(), hwDstInfo_.height()}, context.pixelFormat};
+    const size_t byteCount = dst.info.computeMinByteSize();
+    CHECK_ERROR_RETURN_RET_LOG(SkImageInfo::ByteSizeOverflowed(byteCount), ERR_IMAGE_COLOR_CONVERT,
+        "applyColorSpace invalid destination size");
+    MemoryData memoryData = {nullptr, byteCount,
+        "Trans ImageData", {dst.info.width(), dst.info.height()}, context.pixelFormat};
     AllocatorType allocatorType = context.allocatorType;
     auto m = MemoryManager::CreateMemory(allocatorType, memoryData);
     CHECK_ERROR_RETURN_RET_LOG(m == nullptr, ERR_IMAGE_COLOR_CONVERT, "applyColorSpace CreateMemory failed");
 
-    // Transfor pixels by readPixels
-    if (!src.bitmap.readPixels(dst.info, m->data.data, rowStride, 0, 0)) {
+    size_t dstRowStride = dst.info.minRowBytes();
+    size_t dstCapacity = m->data.size;
+    if (allocatorType == AllocatorType::DMA_ALLOC) {
+        auto* dstBuffer = static_cast<SurfaceBuffer*>(m->extend.data);
+        if (dstBuffer == nullptr || dstBuffer->GetStride() <= 0) {
+            m->Release();
+            IMAGE_LOGE("applyColorSpace invalid destination buffer");
+            return ERR_IMAGE_COLOR_CONVERT;
+        }
+        dstRowStride = static_cast<size_t>(dstBuffer->GetStride());
+        dstCapacity = static_cast<size_t>(dstBuffer->GetSize());
+    }
+    if (!dst.info.validRowBytes(dstRowStride)) {
         m->Release();
-        IMAGE_LOGE("applyColorSpace ReadPixels failded");
+        IMAGE_LOGE("applyColorSpace invalid destination stride");
+        return ERR_IMAGE_COLOR_CONVERT;
+    }
+    const size_t requiredSize = dst.info.computeByteSize(dstRowStride);
+    if (SkImageInfo::ByteSizeOverflowed(requiredSize) || requiredSize > dstCapacity) {
+        m->Release();
+        IMAGE_LOGE("applyColorSpace destination buffer too small");
+        return ERR_IMAGE_COLOR_CONVERT;
+    }
+
+    // Convert pixels using the destination buffer's own row stride.
+    if (!src.bitmap.readPixels(dst.info, m->data.data, dstRowStride, 0, 0)) {
+        m->Release();
+        IMAGE_LOGE("applyColorSpace ReadPixels failed");
         return ERR_IMAGE_COLOR_CONVERT;
     }
     FreeContextBuffer(context.freeFunc, context.allocatorType, context.pixelsBuffer);
