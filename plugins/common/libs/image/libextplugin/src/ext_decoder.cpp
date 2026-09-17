@@ -1636,6 +1636,7 @@ bool ExtDecoder::DoHeifSwDecode(OHOS::ImagePlugin::DecodeContext &context)
     //If the HWdecode failed, software does not support setting samplesize, allocate memory based on original image.
     cond = false;
     sampleSize_ = DEFAULT_SAMPLE_SIZE;
+    dstInfo_ = dstInfo_.makeWH(info_.width(), info_.height());
     context.outInfo.size.width = info_.width();
     context.outInfo.size.height = info_.height();
     if (IsHeifToYuvDecode(context)) {
@@ -2169,6 +2170,26 @@ void ExtDecoder::ReleaseOutputBuffer(DecodeContext &context, Media::AllocatorTyp
     context.pixelsBuffer.context = nullptr;
 }
 
+static bool GetColorSpaceDestinationLayout(const SkImageInfo& dstInfo, const AbsMemory& memory,
+    AllocatorType allocatorType, size_t& rowStride)
+{
+    rowStride = dstInfo.minRowBytes();
+    size_t capacity = memory.data.size;
+    if (allocatorType == AllocatorType::DMA_ALLOC) {
+        auto* buffer = static_cast<SurfaceBuffer*>(memory.extend.data);
+        CHECK_ERROR_RETURN_RET_LOG(buffer == nullptr || buffer->GetStride() <= 0, false,
+            "applyColorSpace invalid destination buffer");
+        rowStride = static_cast<size_t>(buffer->GetStride());
+        capacity = static_cast<size_t>(buffer->GetSize());
+    }
+    CHECK_ERROR_RETURN_RET_LOG(!dstInfo.validRowBytes(rowStride), false,
+        "applyColorSpace invalid destination stride");
+    const size_t requiredSize = dstInfo.computeByteSize(rowStride);
+    CHECK_ERROR_RETURN_RET_LOG(SkImageInfo::ByteSizeOverflowed(requiredSize) || requiredSize > capacity, false,
+        "applyColorSpace destination buffer too small");
+    return true;
+}
+
 uint32_t ExtDecoder::ApplyDesiredColorSpace(DecodeContext &context)
 {
     SurfaceBuffer* sbuffer = static_cast<SurfaceBuffer*>(context.pixelsBuffer.context);
@@ -2184,7 +2205,7 @@ uint32_t ExtDecoder::ApplyDesiredColorSpace(DecodeContext &context)
 
     sk_sp<SkColorSpace> srcSkColorSpace = (srcColorSpace_ != nullptr) ?
         srcColorSpace_->ToSkColorSpace() : info_.refColorSpace();
-    SkImageInfo srcInfo = SkImageInfo::Make(info_.width(), info_.height(),
+    SkImageInfo srcInfo = SkImageInfo::Make(width, height,
         info_.colorType(), info_.alphaType(), srcSkColorSpace);
     bool cond = !src.bitmap.installPixels(srcInfo, srcData, rowStride);
     CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_COLOR_CONVERT, "apply colorspace get install failed.");
@@ -2193,16 +2214,25 @@ uint32_t ExtDecoder::ApplyDesiredColorSpace(DecodeContext &context)
     SkTransInfo dst;
     dst.info = SkImageInfo::Make(width, height, colorType, alphaType, dstColorSpace_->ToSkColorSpace());
 
-    MemoryData memoryData = {nullptr, hwDstInfo_.computeMinByteSize(),
-        "Trans ImageData", {hwDstInfo_.width(), hwDstInfo_.height()}, context.pixelFormat};
+    const size_t byteCount = dst.info.computeMinByteSize();
+    CHECK_ERROR_RETURN_RET_LOG(SkImageInfo::ByteSizeOverflowed(byteCount), ERR_IMAGE_COLOR_CONVERT,
+        "applyColorSpace invalid destination size");
+    MemoryData memoryData = {nullptr, byteCount,
+        "Trans ImageData", {dst.info.width(), dst.info.height()}, context.pixelFormat};
     AllocatorType allocatorType = context.allocatorType;
     auto m = MemoryManager::CreateMemory(allocatorType, memoryData);
     CHECK_ERROR_RETURN_RET_LOG(m == nullptr, ERR_IMAGE_COLOR_CONVERT, "applyColorSpace CreateMemory failed");
 
-    // Transfor pixels by readPixels
-    if (!src.bitmap.readPixels(dst.info, m->data.data, rowStride, 0, 0)) {
+    size_t dstRowStride = 0;
+    if (!GetColorSpaceDestinationLayout(dst.info, *m, allocatorType, dstRowStride)) {
         m->Release();
-        IMAGE_LOGE("applyColorSpace ReadPixels failded");
+        return ERR_IMAGE_COLOR_CONVERT;
+    }
+
+    // Convert pixels using the destination buffer's own row stride.
+    if (!src.bitmap.readPixels(dst.info, m->data.data, dstRowStride, 0, 0)) {
+        m->Release();
+        IMAGE_LOGE("applyColorSpace ReadPixels failed");
         return ERR_IMAGE_COLOR_CONVERT;
     }
     FreeContextBuffer(context.freeFunc, context.allocatorType, context.pixelsBuffer);

@@ -30,6 +30,7 @@
 #include "file_source_stream.h"
 #include "image_data_statistics.h"
 #include "image_source.h"
+#include "image_utils.h"
 #include "HeifDecoderImpl.h"
 #include "heif_impl/heif_parser/heif_image.h"
 #ifdef SK_ENABLE_OHOS_CODEC
@@ -2287,6 +2288,129 @@ HWTEST_F(ExtDecoderTest, DecodeIncompleteGifImageTest001, TestSize.Level3)
     EXPECT_EQ(errorCode, OHOS::Media::SUCCESS);
     EXPECT_NE(pixelmap, nullptr);
 }
+
+#if defined(HEIF_HW_DECODE_ENABLE) && defined(IMAGE_COLORSPACE_FLAG)
+constexpr size_t COLOR_SPACE_BYTES_PER_PIXEL = 4;
+constexpr uint8_t COLOR_SPACE_MAX_CHANNEL_VALUE = 255;
+constexpr int32_t COLOR_SPACE_PATTERN_PERIOD = 2;
+constexpr int32_t COLOR_SPACE_ORIGINAL_DIMENSION = 512;
+
+struct ColorSpaceTestContext {
+    DecodeContext context {};
+
+    ~ColorSpaceTestContext()
+    {
+        if (context.pixelsBuffer.context != nullptr) {
+            ImageUtils::SurfaceBuffer_Unreference(context.pixelsBuffer.context);
+        }
+    }
+};
+
+static void FillColorSpaceTestPixels(uint8_t* pixels, const Size& size, size_t rowStride)
+{
+    for (int32_t y = 0; y < size.height; ++y) {
+        auto* row = pixels + static_cast<size_t>(y) * rowStride;
+        for (int32_t x = 0; x < size.width; ++x) {
+            const size_t offset = static_cast<size_t>(x) * COLOR_SPACE_BYTES_PER_PIXEL;
+            const uint8_t value = (x + y) % COLOR_SPACE_PATTERN_PERIOD == 0 ? 0 : COLOR_SPACE_MAX_CHANNEL_VALUE;
+            for (size_t channel = 0; channel < COLOR_SPACE_BYTES_PER_PIXEL - 1; ++channel) {
+                row[offset + channel] = value;
+            }
+            row[offset + COLOR_SPACE_BYTES_PER_PIXEL - 1] = COLOR_SPACE_MAX_CHANNEL_VALUE;
+        }
+    }
+}
+
+static void CheckColorSpaceTestPixels(SurfaceBuffer& buffer, const Size& size)
+{
+    auto* pixels = static_cast<const uint8_t*>(buffer.GetVirAddr());
+    ASSERT_NE(pixels, nullptr);
+    for (int32_t y = 0; y < size.height; ++y) {
+        const auto* row = pixels + static_cast<size_t>(y) * buffer.GetStride();
+        for (int32_t x = 0; x < size.width; ++x) {
+            const size_t offset = static_cast<size_t>(x) * COLOR_SPACE_BYTES_PER_PIXEL;
+            const int value = (x + y) % COLOR_SPACE_PATTERN_PERIOD == 0 ? 0 : COLOR_SPACE_MAX_CHANNEL_VALUE;
+            for (size_t channel = 0; channel < COLOR_SPACE_BYTES_PER_PIXEL - 1; ++channel) {
+                ASSERT_NEAR(static_cast<int>(row[offset + channel]), value, 1);
+            }
+            ASSERT_EQ(row[offset + COLOR_SPACE_BYTES_PER_PIXEL - 1], COLOR_SPACE_MAX_CHANNEL_VALUE);
+        }
+    }
+}
+
+static void CheckColorSpaceBufferConversion(const Size& bufferSize, const Size& plannedSize, int32_t strideAlignment)
+{
+    ExtDecoder decoder;
+    decoder.info_ = SkImageInfo::Make(COLOR_SPACE_ORIGINAL_DIMENSION, COLOR_SPACE_ORIGINAL_DIMENSION,
+        kRGBA_8888_SkColorType, kPremul_SkAlphaType, SkColorSpace::MakeSRGB());
+    decoder.dstInfo_ = decoder.info_.makeWH(plannedSize.width, plannedSize.height);
+    decoder.srcColorSpace_ = std::make_shared<ColorManager::ColorSpace>(ColorManager::ColorSpaceName::SRGB);
+    decoder.dstColorSpace_ = std::make_shared<ColorManager::ColorSpace>(ColorManager::ColorSpaceName::DISPLAY_P3);
+    ColorSpaceTestContext testContext;
+    auto& context = testContext.context;
+    context.pixelFormat = PixelFormat::RGBA_8888;
+    context.info.pixelFormat = PixelFormat::RGBA_8888;
+    context.info.alphaType = AlphaType::IMAGE_ALPHA_TYPE_PREMUL;
+    auto bufferInfo = decoder.info_.makeWH(bufferSize.width, bufferSize.height);
+    BufferRequestConfig requestConfig = {
+        .width = bufferSize.width,
+        .height = bufferSize.height,
+        .strideAlignment = strideAlignment,
+        .format = GRAPHIC_PIXEL_FMT_RGBA_8888,
+        .usage = BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA | BUFFER_USAGE_MEM_MMZ_CACHE,
+        .timeout = 0,
+    };
+    ASSERT_EQ(decoder.DmaAlloc(context, bufferInfo.computeMinByteSize(), requestConfig), SUCCESS);
+    auto* srcBuffer = static_cast<SurfaceBuffer*>(context.pixelsBuffer.context);
+    ASSERT_NE(srcBuffer, nullptr);
+    ASSERT_GT(srcBuffer->GetStride(), 0);
+    const size_t srcRowStride = static_cast<size_t>(srcBuffer->GetStride());
+    ASSERT_TRUE(bufferInfo.validRowBytes(srcRowStride));
+    ASSERT_LE(bufferInfo.computeByteSize(srcRowStride), static_cast<size_t>(srcBuffer->GetSize()));
+    ASSERT_NE(srcBuffer->GetVirAddr(), nullptr);
+    FillColorSpaceTestPixels(static_cast<uint8_t*>(srcBuffer->GetVirAddr()), bufferSize, srcRowStride);
+
+    ASSERT_EQ(decoder.ApplyDesiredColorSpaceIfNeeded(context), SUCCESS);
+    auto* dstBuffer = static_cast<SurfaceBuffer*>(context.pixelsBuffer.context);
+    ASSERT_NE(dstBuffer, nullptr);
+    ASSERT_EQ(dstBuffer->GetWidth(), bufferSize.width);
+    ASSERT_EQ(dstBuffer->GetHeight(), bufferSize.height);
+    ASSERT_GT(dstBuffer->GetStride(), 0);
+    ASSERT_LE(bufferInfo.computeByteSize(static_cast<size_t>(dstBuffer->GetStride())),
+        static_cast<size_t>(dstBuffer->GetSize()));
+    CheckColorSpaceTestPixels(*dstBuffer, bufferSize);
+}
+
+/**
+ * @tc.name: ApplyDesiredColorSpaceScaledBuffer
+ * @tc.desc: Convert a sampled buffer whose dimensions differ from the original image.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExtDecoderTest, ApplyDesiredColorSpaceScaledBuffer, TestSize.Level3)
+{
+    CheckColorSpaceBufferConversion({64, 64}, {64, 64}, 8);
+}
+
+/**
+ * @tc.name: ApplyDesiredColorSpaceStaleScaledInfo
+ * @tc.desc: Allocate for the full-size buffer even when the planned decode size is still sampled.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExtDecoderTest, ApplyDesiredColorSpaceStaleScaledInfo, TestSize.Level3)
+{
+    CheckColorSpaceBufferConversion({512, 512}, {64, 64}, 8);
+}
+
+/**
+ * @tc.name: ApplyDesiredColorSpacePaddedBuffer
+ * @tc.desc: Preserve pixel rows when source allocation requests a larger stride alignment.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExtDecoderTest, ApplyDesiredColorSpacePaddedBuffer, TestSize.Level3)
+{
+    CheckColorSpaceBufferConversion({65, 33}, {65, 33}, 1024);
+}
+#endif
 
 #ifdef HEIF_HW_DECODE_ENABLE
 /**
