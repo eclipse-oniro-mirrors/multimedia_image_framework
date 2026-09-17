@@ -3454,6 +3454,8 @@ static bool CheckF16PixelMapBufferSize(const ImageInfo& imgInfo, PixelMemInfo& p
     int32_t memBufSizeInt = pixelMemInfo.bufferSize;
     if (pixelMemInfo.allocatorType == AllocatorType::DMA_ALLOC && pixelMemInfo.context != nullptr) {
         SurfaceBuffer* sb = static_cast<SurfaceBuffer*>(pixelMemInfo.context);
+        cond = imgInfo.size.width != sb->GetWidth() || imgInfo.size.height != sb->GetHeight();
+        CHECK_ERROR_RETURN_RET_LOG(cond, false, "Invalid F16 image size: no match SurfaceBuffer.");
         uint32_t sbSize = sb->GetSize();
         if (memBufSizeInt <= 0 || sbSize == 0) {
             IMAGE_LOGE("Invalid F16 buffer size: memBufSize[%{public}d]/sbSize[%{public}u]", memBufSizeInt, sbSize);
