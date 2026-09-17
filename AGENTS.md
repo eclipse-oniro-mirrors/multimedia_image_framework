@@ -79,6 +79,27 @@ Co-Authored-By: Agent
 
 没有明确项目要求时，`type` 优先使用 `fix`、`feat`、`refactor`、`test`、`docs`、`build`，`scope` 使用模块名或目录名。若关联 issue、缺陷单或需求单，在 body 中写清编号和影响范围。
 
+### Issue、PR 与门禁闭环
+
+用户要求完成推送、Issue/PR 和门禁时，按以下流程推进；只要求某一步时按授权范围执行。下文 `<仓库>` 指上游 `owner/repo`，占位符须按实际替换。
+
+1. **准备**：用 `git status --short`、`git remote -v`、`git branch --show-current` 核对工作区、fork、上游和分支；检查 `oh-gc --version`、`oh-gc auth status`。
+2. **Issue**：用 `oh-gc issue list --search "<关键词>" --state all --repo <仓库>` 查重；需新建时执行 `oh-gc issue create --repo <仓库> --title "<标题>" --body "<说明>" --json`。说明包含问题、原因、修复范围和验证缺口；记录编号和链接，用于提交说明及 PR 关联。
+3. **提交推送**：执行 `git diff --check`，用 `git add -- <本次文件>` 精确暂存、`git diff --cached` 复核，再执行 `git commit -s -F <提交说明文件>` 和 `git push -u <fork-remote> HEAD:refs/heads/<分支>`。按上文保留两个 trailer，用 `git log -1 --format=full` 核对 SHA 和签名。CRLF 文件用 `git -c core.whitespace=cr-at-eol diff --check` 检查。
+4. **PR 创建与关联**：
+   - 模板：`oh-gc file raw .gitcode/PULL_REQUEST_TEMPLATE.md <目标分支> --repo <仓库>`；存在时按模板填写，确认不存在时自行组织说明。
+   - 创建：`oh-gc pr create --repo <仓库> --head <fork-owner>:<分支> --base <目标分支> --title "<标题>" --body "<说明>" --json`。
+   - 关联：`oh-gc pr link <PR编号> <Issue编号> --repo <仓库> --json`。
+   - 核对：分别执行 `oh-gc pr view`、`oh-gc pr files`、`oh-gc pr linked-issues`，均追加 `<PR编号> --repo <仓库> --json`，确认源仓库、分支、SHA、文件范围和关联结果。
+5. **触发门禁**：确认 PR 已收到最新 SHA，再执行 `oh-gc pr comment <PR编号> --repo <仓库> --body 'start build'`；已有本轮构建时直接跟踪。用 `oh-gc pr comments <PR编号> --repo <仓库> --latest --limit 10 --full-body --json` 获取报告，核对报告对应的 SHA。
+6. **修复重跑**：按具体 CodeCheck、编译或测试错误修复并验证，重复第 3 步向同一分支追加签名提交；用 `oh-gc pr update <PR编号> --repo <仓库> --body "<更新后的说明>"` 更新记录，再按第 5 步重跑，直到最新提交门禁通过。无法自行解决的阻塞须说明原因和待处理事项。
+
+多行正文在 PowerShell 中用 `Get-Content -Raw` 读取后传给 `--body`；`oh-gc pr comments` 提供报告入口，具体错误需读取对应 CI 报告。
+
+同一任务、同一影响范围内，沿用用户已确认的检视选择和缺少真机验证时的 push 授权；新增影响范围按下文确认。不得通过删测试、屏蔽检查或 `oh-gc pr review/test` 手工标记代替 CI，通过后不自动合并 PR。
+
+最终提供 Issue/PR 链接、最新 SHA、门禁结果和验证缺口。准确区分实际通过、`IGNORE`、`NA` 和未执行；编译成功或 `Upgrade only` 冒烟通过不代表新增用例已执行。
+
 ## 知识路由
 
 稳定背景知识放在 `docs/knowledge/`。改动前按场景读取对应文件：
