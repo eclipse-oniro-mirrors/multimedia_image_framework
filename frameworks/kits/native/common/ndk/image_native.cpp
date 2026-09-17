@@ -280,8 +280,7 @@ Image_ErrorCode OH_ImageNative_GetBufferData(OH_ImageNative *image, OH_ImageBuff
     imageBufferData->numStride = static_cast<int32_t>(bufferData->rowStride.size());
     imageBufferData->bufferSize = bufferData->size;
     sptr<SurfaceBuffer> buffer = image->imgNative->GetBuffer();
-    CHECK_ERROR_RETURN_RET_LOG(bufferData == nullptr, IMAGE_BAD_PARAMETER,
-        "get surface buffer failed, buffer is nullptr");
+    CHECK_ERROR_RETURN_RET_LOG(buffer == nullptr, IMAGE_BAD_PARAMETER, "get surface buffer failed, buffer is nullptr");
     {
         std::lock_guard<std::mutex> lock(image->cachedBufferMutex_);
         image->cachedBuffer_ = nullptr;
