@@ -2143,12 +2143,18 @@ static bool TryGetBinder()
         IMAGE_LOGE("TryGetBinder failed, cannot open binder device, errno=%{public}d", errno);
         return false;
     }
+#if !defined(CROSS_PLATFORM)
     fdsan_exchange_owner_tag(fd, 0, IMAGE_UTILS_FDSAN_TAG);
+#endif
     // Perform a no-op BINDER_WRITE_READ ioctl to verify the binder driver is functional;
     // an empty binder_write_read with zero counts acts as a probe without sending any commands
     struct binder_write_read bwr = {0};
     int res = ioctl(fd, BINDER_WRITE_READ, &bwr);
+#if !defined(CROSS_PLATFORM)
     fdsan_close_with_tag(fd, IMAGE_UTILS_FDSAN_TAG);
+#else
+    close(fd);
+#endif
     if (res < 0) {
         IMAGE_LOGE("TryGetBinder ioctl BINDER_WRITE_READ failed, errno=%{public}d", errno);
         return false;
