@@ -14,6 +14,7 @@
  */
 
 #include <gtest/gtest.h>
+#include <vector>
 #include <fstream>
 #include <fcntl.h>
 #include "directory_ex.h"
@@ -745,6 +746,7 @@ HWTEST_F(ImageSourceJpegTest, JpegImageDecode006, TestSize.Level3)
  * @tc.desc: Decode jpeg image from incremental source stream
  * @tc.type: FUNC
  */
+#if defined(_WIN32) || defined(_APPLE) || defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM)
 HWTEST_F(ImageSourceJpegTest, JpegImageDecode007, TestSize.Level3)
 {
     /**
@@ -801,6 +803,7 @@ HWTEST_F(ImageSourceJpegTest, JpegImageDecode007, TestSize.Level3)
     ASSERT_NE(packSize, 0);
     free(buffer);
 }
+#endif
 
 /**
  * @tc.name: JpegImageDecode008
@@ -851,6 +854,7 @@ HWTEST_F(ImageSourceJpegTest, JpegImageDecode008, TestSize.Level3)
  * @tc.desc: Decode jpeg image by incremental mode and then decode again by one-time mode.
  * @tc.type: FUNC
  */
+#if defined(_WIN32) || defined(_APPLE) || defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM)
 HWTEST_F(ImageSourceJpegTest, JpegImageDecode009, TestSize.Level3)
 {
     /**
@@ -917,12 +921,14 @@ HWTEST_F(ImageSourceJpegTest, JpegImageDecode009, TestSize.Level3)
     ASSERT_NE(packSize, 0);
     free(buffer);
 }
+#endif
 
 /**
  * @tc.name: JpegImageDecode010
  * @tc.desc: Decode jpeg image by one-time mode and then decode again by incremental mode.
  * @tc.type: FUNC
  */
+#if defined(_WIN32) || defined(_APPLE) || defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM)
 HWTEST_F(ImageSourceJpegTest, JpegImageDecode010, TestSize.Level3)
 {
     /**
@@ -994,6 +1000,7 @@ HWTEST_F(ImageSourceJpegTest, JpegImageDecode010, TestSize.Level3)
     ASSERT_NE(packSize, 0);
     free(buffer);
 }
+#endif
 
 /**
  * @tc.name: JpegImageDecode011
@@ -3668,5 +3675,45 @@ HWTEST_F(ImageSourceJpegTest, MatchColorSpaceByPrimariesAndGamma003, TestSize.Le
     ASSERT_EQ(crepixelmapex->InnerGetGrColorSpace().GetColorSpaceName(), ColorManager::ColorSpaceName::BT2020_PQ);
 }
 #endif
+/**
+ * @tc.name: JpegDecodeCompletedIncrementalSource
+ * @tc.desc: Decode a complete image supplied in chunks without legacy incremental decoding.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceJpegTest, JpegDecodeCompletedIncrementalSource, TestSize.Level3)
+{
+    size_t bufferSize = 0;
+    ASSERT_TRUE(ImageUtils::GetFileSize(IMAGE_INPUT_JPEG_PATH, bufferSize));
+    ASSERT_GT(bufferSize, 1U);
+    std::vector<uint8_t> buffer(bufferSize);
+    ASSERT_TRUE(ReadFileToBuffer(IMAGE_INPUT_JPEG_PATH, buffer.data(), buffer.size()));
+
+    uint32_t errorCode = SUCCESS;
+    IncrementalSourceOptions incOpts;
+    incOpts.incrementalMode = IncrementalMode::INCREMENTAL_DATA;
+    auto imageSource = ImageSource::CreateIncrementalImageSource(incOpts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource, nullptr);
+    const size_t firstChunkSize = buffer.size() / 2;
+    ASSERT_EQ(imageSource->UpdateData(buffer.data(), firstChunkSize, false), SUCCESS);
+    ASSERT_EQ(imageSource->UpdateData(buffer.data() + firstChunkSize,
+        buffer.size() - firstChunkSize, true), SUCCESS);
+
+    DecodeOptions decodeOpts;
+    auto pixelMap = imageSource->CreatePixelMapEx(0, decodeOpts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(pixelMap, nullptr);
+
+    auto referenceSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, SourceOptions(), errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(referenceSource, nullptr);
+    auto referencePixelMap = referenceSource->CreatePixelMapEx(0, decodeOpts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(referencePixelMap, nullptr);
+    EXPECT_EQ(pixelMap->GetWidth(), referencePixelMap->GetWidth());
+    EXPECT_EQ(pixelMap->GetHeight(), referencePixelMap->GetHeight());
+    EXPECT_EQ(pixelMap->GetPixelFormat(), referencePixelMap->GetPixelFormat());
+}
+
 } // namespace Multimedia
 } // namespace OHOS

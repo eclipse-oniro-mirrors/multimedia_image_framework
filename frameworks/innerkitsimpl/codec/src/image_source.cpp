@@ -3099,11 +3099,14 @@ uint32_t ImageSource::GetFormatExtended(string &format) __attribute__((no_saniti
     auto decoderPtr = unique_ptr<AbsImageDecoder>(codec);
     cond = (decoderPtr == nullptr);
     CHECK_ERROR_RETURN_RET_LOG(cond, ERR_MEDIA_NULL_POINTER, "Decoder pointer is null.");
+    // Cross-platform builds retain the legacy incremental decoders.
+#if defined(_WIN32) || defined(_APPLE) || defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM)
     ProgDecodeContext context;
     if (IsIncrementalSource() &&
         decoderPtr->PromoteIncrementalDecode(UINT32_MAX, context) == ERR_IMAGE_DATA_UNSUPPORT) {
         return ERR_IMAGE_DATA_UNSUPPORT;
     }
+#endif
     errorCode = decoderPtr->GetImagePropertyString(FIRST_FRAME, EXT_ENCODED_FORMAT_KEY, format);
     if (errorCode != SUCCESS) {
         if (decoderPtr->GetHeifParseErr() != 0) {
