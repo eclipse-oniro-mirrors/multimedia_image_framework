@@ -38,7 +38,9 @@ using namespace OHOS::Media;
 using namespace OHOS::ImageSourceUtil;
 namespace OHOS {
 namespace Multimedia {
+#if defined(_WIN32) || defined(_APPLE) || defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM)
 static constexpr uint32_t DEFAULT_DELAY_UTIME = 10000;  // 10 ms.
+#endif
 
 class ImageSourcePngTest : public testing::Test {
 public:
