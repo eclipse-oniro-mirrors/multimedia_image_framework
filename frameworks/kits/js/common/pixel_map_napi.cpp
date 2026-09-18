@@ -56,6 +56,7 @@ namespace {
     constexpr uint32_t NUM_2 = 2;
     constexpr uint32_t NUM_3 = 3;
     constexpr uint32_t NUM_4 = 4;
+    constexpr uint32_t METADATA_CHANNEL_COUNT = 3;
 }
 
 enum class FormatType:int8_t {
@@ -411,7 +412,7 @@ static bool HoldArrayBufferReference(napi_env env, napi_value arrayBuffer, Pixel
     return true;
 }
 
-static bool HoldPositionAreaBufferReference(napi_env env, napi_value root, PixelMapAsyncContext &context)
+static bool ParseAndRetainPositionArea(napi_env env, napi_value root, PixelMapAsyncContext &context)
 {
     napi_value arrayBuffer = nullptr;
     if (!parsePositionArea(env, root, &context.area, &arrayBuffer)) {
@@ -1516,7 +1517,7 @@ napi_value PixelMapNapi::ReadPixelsToArea(napi_env env, napi_callback_info info)
         context->rPixelMap = context->nConstructor->nativePixelMap_;
     }
     
-    if (!HoldPositionAreaBufferReference(env, argv[NUM_0], *context)) {
+    if (!ParseAndRetainPositionArea(env, argv[NUM_0], *context)) {
         CreatePendingErrorIfAbsent(env, context->error, ERR_IMAGE_INVALID_PARAM,
             "Failed to parse PositionArea. Ensure the pixels buffer, offset, stride, and region are valid.");
     }
@@ -1758,7 +1759,7 @@ napi_value PixelMapNapi::WritePixelsFromArea(napi_env env, napi_callback_info in
         context->wPixelMap = context->nConstructor->nativePixelMap_;
     }
     
-    if (!HoldPositionAreaBufferReference(env, argv[NUM_0], *context)) {
+    if (!ParseAndRetainPositionArea(env, argv[NUM_0], *context)) {
         CreatePendingErrorIfAbsent(env, context->error, ERR_IMAGE_INVALID_PARAM,
             "Failed to parse PositionArea. Ensure the pixels buffer, offset, stride, and region are valid.");
     }
@@ -3923,9 +3924,9 @@ napi_value PixelMapNapi::GetNativeUniqueId(napi_env env, napi_callback_info info
     status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&pixelMapNapi));
 
     IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, pixelMapNapi), result, IMAGE_LOGE("fail to unwrap context"));
-    IMG_NAPI_CHECK_RET_D(pixelMapNapi->GetPixelNapiEditable(),
+    IMG_NAPI_CHECK_RET(pixelMapNapi->GetPixelNapiEditable(),
         ImageNapiUtils::ThrowExceptionError(env, ERR_MEDIA_UNSUPPORT_OPERATION,
-        "Pixelmap has crossed threads. GetUniqueId failed"), {});
+        "Pixelmap has crossed threads. GetUniqueId failed"));
     if (pixelMapNapi->nativePixelMap_ == nullptr) {
         return ImageNapiUtils::ThrowExceptionError(env, ERR_MEDIA_UNSUPPORT_OPERATION, "native pixelmap is nullptr");
     }
@@ -4001,8 +4002,8 @@ static napi_value CropScaleClonePixelMap(napi_env env, PixelMapNapi* pixelMapNap
         if (clonePixelMap == nullptr) {
             return BuildClonePixelMapError(env, errorCode);
         }
-        IMG_NAPI_CHECK_RET_D(SUCCESS == clonePixelMap->crop(args.region), ImageNapiUtils::ThrowExceptionError(env,
-            ERR_MEDIA_INVALID_REGION, "Crop failed, region or properties invalid"), {});
+        IMG_NAPI_CHECK_RET(SUCCESS == clonePixelMap->crop(args.region), ImageNapiUtils::ThrowExceptionError(env,
+            ERR_MEDIA_INVALID_REGION, "Crop failed, region or properties invalid"));
         if (args.canScale) {
             clonePixelMap->scale(args.scaleX, args.scaleY, ParsePublicAntiAliasingOption(args.antiAliasing));
         } else {
@@ -4030,32 +4031,32 @@ napi_value PixelMapNapi::CreateCroppedAndScaledPixelMapSync(napi_env env, napi_c
     IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, pixelMapNapi),
         nullptr, IMAGE_LOGE("fail to unwrap context %{public}d", status));
 
-    IMG_NAPI_CHECK_RET_D(pixelMapNapi->nativePixelMap_ != nullptr,
-        ImageNapiUtils::ThrowExceptionError(env, ERR_MEDIA_UNSUPPORT_OPERATION, "native pixelmap has released"), {});
+    IMG_NAPI_CHECK_RET(pixelMapNapi->nativePixelMap_ != nullptr,
+        ImageNapiUtils::ThrowExceptionError(env, ERR_MEDIA_UNSUPPORT_OPERATION, "native pixelmap has released"));
 
-    IMG_NAPI_CHECK_RET_D(pixelMapNapi->GetPixelNapiEditable(), ImageNapiUtils::ThrowExceptionError(env,
-        ERR_MEDIA_UNSUPPORT_OPERATION, "Pixelmap has crossed threads. CreateCroppedAndScaledPixelMapSync failed"), {});
+    IMG_NAPI_CHECK_RET(pixelMapNapi->GetPixelNapiEditable(), ImageNapiUtils::ThrowExceptionError(env,
+        ERR_MEDIA_UNSUPPORT_OPERATION, "Pixelmap has crossed threads. CreateCroppedAndScaledPixelMapSync failed"));
 
-    IMG_NAPI_CHECK_RET_D((argCount == NUM_3 || argCount == NUM_4), ImageNapiUtils::ThrowExceptionError(env,
-        ERR_MEDIA_UNSUPPORT_OPERATION, "Invalid argument count"), {});
+    IMG_NAPI_CHECK_RET((argCount == NUM_3 || argCount == NUM_4), ImageNapiUtils::ThrowExceptionError(env,
+        ERR_MEDIA_UNSUPPORT_OPERATION, "Invalid argument count"));
 
     CropScaleArgs args;
     double xArg = 0;
     double yArg = 0;
-    IMG_NAPI_CHECK_RET_D(parseRegion(env, argValue[NUM_0], &args.region),
-        ImageNapiUtils::ThrowExceptionError(env, ERR_MEDIA_INVALID_REGION, "Invalid argument region type"), {});
-    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(napi_get_value_double(env, argValue[NUM_1], &xArg)),
-        ImageNapiUtils::ThrowExceptionError(env, ERR_MEDIA_UNSUPPORT_OPERATION, "Invalid argument x"), {});
-    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(napi_get_value_double(env, argValue[NUM_2], &yArg)),
-        ImageNapiUtils::ThrowExceptionError(env, ERR_MEDIA_UNSUPPORT_OPERATION, "Invalid argument y"), {});
+    IMG_NAPI_CHECK_RET(parseRegion(env, argValue[NUM_0], &args.region),
+        ImageNapiUtils::ThrowExceptionError(env, ERR_MEDIA_INVALID_REGION, "Invalid argument region type"));
+    IMG_NAPI_CHECK_RET(IMG_IS_OK(napi_get_value_double(env, argValue[NUM_1], &xArg)),
+        ImageNapiUtils::ThrowExceptionError(env, ERR_MEDIA_UNSUPPORT_OPERATION, "Invalid argument x"));
+    IMG_NAPI_CHECK_RET(IMG_IS_OK(napi_get_value_double(env, argValue[NUM_2], &yArg)),
+        ImageNapiUtils::ThrowExceptionError(env, ERR_MEDIA_UNSUPPORT_OPERATION, "Invalid argument y"));
     args.canScale = ImageNapiUtils::ConvertDoubleToFloat(xArg, &args.scaleX) &&
         ImageNapiUtils::ConvertDoubleToFloat(yArg, &args.scaleY);
     if (argCount == NUM_4) {
-        IMG_NAPI_CHECK_RET_D(IMG_IS_OK(napi_get_value_int32(env, argValue[NUM_3], &args.antiAliasing)),
-            ImageNapiUtils::ThrowExceptionError(env, ERR_MEDIA_UNSUPPORT_OPERATION, "Invalid antiAliasing"), {});
-        IMG_NAPI_CHECK_RET_D(args.antiAliasing >= static_cast<int32_t>(AntiAliasingOption::NONE) &&
+        IMG_NAPI_CHECK_RET(IMG_IS_OK(napi_get_value_int32(env, argValue[NUM_3], &args.antiAliasing)),
+            ImageNapiUtils::ThrowExceptionError(env, ERR_MEDIA_UNSUPPORT_OPERATION, "Invalid antiAliasing"));
+        IMG_NAPI_CHECK_RET(args.antiAliasing >= static_cast<int32_t>(AntiAliasingOption::NONE) &&
             args.antiAliasing <= static_cast<int32_t>(AntiAliasingOption::HIGH),
-            ImageNapiUtils::ThrowExceptionError(env, ERR_MEDIA_UNSUPPORT_OPERATION, "Not support antiAliasing"), {});
+            ImageNapiUtils::ThrowExceptionError(env, ERR_MEDIA_UNSUPPORT_OPERATION, "Not support antiAliasing"));
     }
     return CropScaleClonePixelMap(env, pixelMapNapi, args);
 }
@@ -4169,32 +4170,32 @@ napi_value PixelMapNapi::CreateCroppedAndScaledPixelMap(napi_env env, napi_callb
     status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->nConstructor));
     IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->nConstructor),
         nullptr, IMAGE_LOGE("fail to unwrap context %{public}d", status));
-    IMG_NAPI_CHECK_RET_D(asyncContext->nConstructor->nativePixelMap_ != nullptr,
-        ImageNapiUtils::ThrowExceptionError(env, ERR_MEDIA_UNSUPPORT_OPERATION, "native pixelmap has released"), {});
+    IMG_NAPI_CHECK_RET(asyncContext->nConstructor->nativePixelMap_ != nullptr,
+        ImageNapiUtils::ThrowExceptionError(env, ERR_MEDIA_UNSUPPORT_OPERATION, "native pixelmap has released"));
     asyncContext->wPixelMap = asyncContext->nConstructor->nativePixelMap_;
-    IMG_NAPI_CHECK_RET_D(asyncContext->nConstructor->GetPixelNapiEditable(),
+    IMG_NAPI_CHECK_RET(asyncContext->nConstructor->GetPixelNapiEditable(),
         ImageNapiUtils::ThrowExceptionError(env, ERR_MEDIA_UNSUPPORT_OPERATION,
-        "Pixelmap has crossed threads. CreateCroppedAndScaledPixelMap failed"), {});
+        "Pixelmap has crossed threads. CreateCroppedAndScaledPixelMap failed"));
 
     IMG_NAPI_CHECK_RET_D((argCount == NUM_3 || argCount == NUM_4),
         ImageNapiUtils::ThrowExceptionError(env, ERR_MEDIA_UNSUPPORT_OPERATION, "Invalid argument count"),
         IMAGE_LOGE("%{public}s Invalid argument count", __func__));
     int32_t antiAliasing = 0;
     asyncContext->antiAliasing = AntiAliasingOption::NONE;
-    IMG_NAPI_CHECK_RET_D(parseRegion(env, argValue[NUM_0], &(asyncContext->area.region)),
-        ImageNapiUtils::ThrowExceptionError(env, ERR_MEDIA_INVALID_REGION, "Invalid argument region type"), {});
+    IMG_NAPI_CHECK_RET(parseRegion(env, argValue[NUM_0], &(asyncContext->area.region)),
+        ImageNapiUtils::ThrowExceptionError(env, ERR_MEDIA_INVALID_REGION, "Invalid argument region type"));
 
-    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(napi_get_value_double(env, argValue[NUM_1], &(asyncContext->xArg))),
-        ImageNapiUtils::ThrowExceptionError(env, ERR_MEDIA_UNSUPPORT_OPERATION, "Invalid argument x"), {});
+    IMG_NAPI_CHECK_RET(IMG_IS_OK(napi_get_value_double(env, argValue[NUM_1], &(asyncContext->xArg))),
+        ImageNapiUtils::ThrowExceptionError(env, ERR_MEDIA_UNSUPPORT_OPERATION, "Invalid argument x"));
 
-    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(napi_get_value_double(env, argValue[NUM_2], &(asyncContext->yArg))),
-        ImageNapiUtils::ThrowExceptionError(env, ERR_MEDIA_UNSUPPORT_OPERATION, "Invalid argument y"), {});
+    IMG_NAPI_CHECK_RET(IMG_IS_OK(napi_get_value_double(env, argValue[NUM_2], &(asyncContext->yArg))),
+        ImageNapiUtils::ThrowExceptionError(env, ERR_MEDIA_UNSUPPORT_OPERATION, "Invalid argument y"));
     if (argCount == NUM_4) {
-        IMG_NAPI_CHECK_RET_D(IMG_IS_OK(napi_get_value_int32(env, argValue[NUM_3], &antiAliasing)),
-            ImageNapiUtils::ThrowExceptionError(env, ERR_MEDIA_UNSUPPORT_OPERATION, "Invalid antiAliasing"), {});
-        IMG_NAPI_CHECK_RET_D(antiAliasing >= static_cast<int32_t>(AntiAliasingOption::NONE) &&
+        IMG_NAPI_CHECK_RET(IMG_IS_OK(napi_get_value_int32(env, argValue[NUM_3], &antiAliasing)),
+            ImageNapiUtils::ThrowExceptionError(env, ERR_MEDIA_UNSUPPORT_OPERATION, "Invalid antiAliasing"));
+        IMG_NAPI_CHECK_RET(antiAliasing >= static_cast<int32_t>(AntiAliasingOption::NONE) &&
             antiAliasing <= static_cast<int32_t>(AntiAliasingOption::HIGH),
-            ImageNapiUtils::ThrowExceptionError(env, ERR_MEDIA_UNSUPPORT_OPERATION, "Not support antiAliasing"), {});
+            ImageNapiUtils::ThrowExceptionError(env, ERR_MEDIA_UNSUPPORT_OPERATION, "Not support antiAliasing"));
         asyncContext->antiAliasing = ParsePublicAntiAliasingOption(antiAliasing);
     }
 
@@ -4369,7 +4370,7 @@ napi_value PixelMapNapi::ReadPixels(napi_env env, napi_callback_info info)
     IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->rPixelMap),
         nullptr, IMAGE_LOGE("empty native pixelmap"));
 
-    IMG_NAPI_CHECK_RET_D(HoldPositionAreaBufferReference(env, argValue[NUM_0], *asyncContext),
+    IMG_NAPI_CHECK_RET_D(ParseAndRetainPositionArea(env, argValue[NUM_0], *asyncContext),
         nullptr, IMAGE_LOGE("fail to parse position area"));
 
     if (argCount == NUM_2 && ImageNapiUtils::getType(env, argValue[argCount - 1]) == napi_function) {
@@ -4468,7 +4469,7 @@ napi_value PixelMapNapi::WritePixels(napi_env env, napi_callback_info info)
     IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->rPixelMap),
         nullptr, IMAGE_LOGE("empty native pixelmap"));
 
-    IMG_NAPI_CHECK_RET_D(HoldPositionAreaBufferReference(env, argValue[NUM_0], *asyncContext),
+    IMG_NAPI_CHECK_RET_D(ParseAndRetainPositionArea(env, argValue[NUM_0], *asyncContext),
         nullptr, IMAGE_LOGE("fail to parse position area"));
 
     if (argCount == NUM_2 && ImageNapiUtils::getType(env, argValue[argCount - 1]) == napi_function) {
@@ -7125,8 +7126,11 @@ static napi_status BuildHdrMetadataValue(napi_env env, napi_value argv[],
 {
     uint32_t metadataKey = 0;
     napi_get_value_uint32(env, argv[NUM_0], &metadataKey);
-    OHOS::sptr<OHOS::SurfaceBuffer> surfaceBuffer(
-        reinterpret_cast<OHOS::SurfaceBuffer*>(pixelMap->GetFd()));
+    OHOS::sptr<OHOS::SurfaceBuffer> surfaceBuffer(reinterpret_cast<OHOS::SurfaceBuffer*>(pixelMap->GetFd()));
+    if (surfaceBuffer == nullptr) {
+        IMAGE_LOGE("BuildHdrMetadataValue surfaceBuffer is nullptr");
+        return napi_invalid_arg;
+    }
     switch (HdrMetadataKey(metadataKey)) {
         case HDR_METADATA_TYPE:
             return GetMetadataType(env, surfaceBuffer, metadataValue);
@@ -7205,12 +7209,12 @@ static bool ParseArrayDoubleNode(napi_env env, napi_value &root, std::vector<flo
         return false;
     }
     uint32_t vecSize = 0;
-    if (napi_get_array_length(env, root, &vecSize) != napi_ok || vecSize < NUM_3) {
+    if (napi_get_array_length(env, root, &vecSize) != napi_ok || vecSize < METADATA_CHANNEL_COUNT) {
         return false;
     }
     std::vector<float> parsedValues;
-    parsedValues.reserve(NUM_3);
-    for (uint32_t i = 0; i < NUM_3; i++) {
+    parsedValues.reserve(METADATA_CHANNEL_COUNT);
+    for (uint32_t i = 0; i < METADATA_CHANNEL_COUNT; i++) {
         napi_value tempDiv = nullptr;
         if (napi_get_element(env, root, i, &tempDiv) != napi_ok) {
             IMAGE_LOGD("ParseArrayDoubleNode get element failed");
@@ -7266,8 +7270,7 @@ static bool ParseStaticMetadata(napi_env env, napi_value &hdrStaticMetadata, std
     ParseDoubleMetadataNode(env, hdrStaticMetadata, "whitePointY", staticMetadata.smpte2086.whitePoint.y);
     ParseDoubleMetadataNode(env, hdrStaticMetadata, "maxLuminance", staticMetadata.smpte2086.maxLuminance);
     ParseDoubleMetadataNode(env, hdrStaticMetadata, "minLuminance", staticMetadata.smpte2086.minLuminance);
-    ParseDoubleMetadataNode(env, hdrStaticMetadata, "maxContentLightLevel",
-        staticMetadata.cta861.maxContentLightLevel);
+    ParseDoubleMetadataNode(env, hdrStaticMetadata, "maxContentLightLevel", staticMetadata.cta861.maxContentLightLevel);
     ParseDoubleMetadataNode(env, hdrStaticMetadata, "maxFrameAverageLightLevel",
         staticMetadata.cta861.maxFrameAverageLightLevel);
     uint32_t vecSize = sizeof(HDI::Display::Graphic::Common::V1_0::HdrStaticMetadata);
@@ -7352,10 +7355,11 @@ static void ParseGainmapNode(napi_env env, napi_value &root, HDRVividExtendMetad
     }
     uint32_t vecSize = 0;
     napi_get_array_length(env, gainmap, &vecSize);
-    if (vecSize <= 0) {
+    if (vecSize < METADATA_CHANNEL_COUNT) {
+        IMAGE_LOGE("Invalid gainmap channel count: %{public}u, expected at least 3", vecSize);
         return;
     }
-    for (uint32_t i = 0; i < NUM_3; i++) {
+    for (uint32_t i = 0; i < METADATA_CHANNEL_COUNT; i++) {
         napi_value tempDiv = nullptr;
         napi_get_element(env, gainmap, i, &tempDiv);
         ParseGainmapChannel(env, tempDiv, extendMetadata, i);
@@ -7410,45 +7414,44 @@ static napi_status ParseHdrMetadataValue(napi_env env, napi_value argv[],
     uint32_t metadataKey = 0;
     napi_get_value_uint32(env, argv[0], &metadataKey);
     napi_value &hdrMetadataValue = argv[NUM_1];
-    OHOS::sptr<OHOS::SurfaceBuffer> surfaceBuffer(
-        reinterpret_cast<OHOS::SurfaceBuffer*>(pixelMap->GetFd()));
+    OHOS::sptr<OHOS::SurfaceBuffer> surfaceBuffer(reinterpret_cast<OHOS::SurfaceBuffer*>(pixelMap->GetFd()));
+    if (surfaceBuffer == nullptr) {
+        IMAGE_LOGE("ParseHdrMetadataValue surfaceBuffer is nullptr");
+        return napi_invalid_arg;
+    }
     switch (HdrMetadataKey(metadataKey)) {
-        case HDR_METADATA_TYPE:
-            {
-                HdrMetadataType type = ParseHdrMetadataType(env, hdrMetadataValue);
-                if (EtsMetadataMap.find(type) != EtsMetadataMap.end()) {
-                    VpeUtils::SetSbMetadataType(surfaceBuffer, EtsMetadataMap[type]);
-                } else {
-                    IMAGE_LOGE("SetSbMetadataType failed");
-                    return napi_invalid_arg;
-                }
+        case HDR_METADATA_TYPE: {
+            HdrMetadataType type = ParseHdrMetadataType(env, hdrMetadataValue);
+            if (EtsMetadataMap.find(type) != EtsMetadataMap.end()) {
+                VpeUtils::SetSbMetadataType(surfaceBuffer, EtsMetadataMap[type]);
+            } else {
+                IMAGE_LOGE("SetSbMetadataType failed");
+                return napi_invalid_arg;
             }
             break;
+        }
         case HDR_STATIC_METADATA:
             return SetStaticMetadata(env, hdrMetadataValue, surfaceBuffer);
-            break;
-        case HDR_DYNAMIC_METADATA:
-            {
-                std::vector<uint8_t> dynamicMetadataVec;
-                if (!ParseDynamicMetadata(env, hdrMetadataValue, dynamicMetadataVec)) {
-                    return napi_invalid_arg;
-                }
-                if (!VpeUtils::SetSbDynamicMetadata(surfaceBuffer, dynamicMetadataVec)) {
-                    return napi_invalid_arg;
-                }
+        case HDR_DYNAMIC_METADATA: {
+            std::vector<uint8_t> dynamicMetadataVec;
+            if (!ParseDynamicMetadata(env, hdrMetadataValue, dynamicMetadataVec)) {
+                return napi_invalid_arg;
+            }
+            if (!VpeUtils::SetSbDynamicMetadata(surfaceBuffer, dynamicMetadataVec)) {
+                return napi_invalid_arg;
             }
             break;
-        case HDR_GAINMAP_METADATA:
-            {
-                std::vector<uint8_t> gainmapMetadataVec(sizeof(HDRVividExtendMetadata));
-                if (!ParseGainmapMetedata(env, *(pixelMap.get()), hdrMetadataValue, gainmapMetadataVec)) {
-                    return napi_invalid_arg;
-                }
-                if (!VpeUtils::SetSbDynamicMetadata(surfaceBuffer, gainmapMetadataVec)) {
-                    return napi_invalid_arg;
-                }
+        }
+        case HDR_GAINMAP_METADATA: {
+            std::vector<uint8_t> gainmapMetadataVec(sizeof(HDRVividExtendMetadata));
+            if (!ParseGainmapMetedata(env, *(pixelMap.get()), hdrMetadataValue, gainmapMetadataVec)) {
+                return napi_invalid_arg;
+            }
+            if (!VpeUtils::SetSbDynamicMetadata(surfaceBuffer, gainmapMetadataVec)) {
+                return napi_invalid_arg;
             }
             break;
+        }
         default:
             return napi_invalid_arg;
     }

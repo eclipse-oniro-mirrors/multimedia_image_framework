@@ -1599,6 +1599,10 @@ Image_ErrorCode OH_PixelmapNative_SetMetadata(OH_PixelmapNative *pixelmap, OH_Pi
 
     OHOS::sptr<OHOS::SurfaceBuffer> surfaceBuffer(
         reinterpret_cast<OHOS::SurfaceBuffer*>(pixelmap->GetInnerPixelmap()->GetFd()));
+    if (surfaceBuffer == nullptr) {
+        IMAGE_LOGE("OH_PixelmapNative_SetMetadata surfaceBuffer is nullptr");
+        return IMAGE_BAD_PARAMETER;
+    }
     if (!SetHdrMetadata(*(pixelmap->GetInnerPixelmap().get()), surfaceBuffer, key, *value)) {
         return IMAGE_COPY_FAILED;
     }
