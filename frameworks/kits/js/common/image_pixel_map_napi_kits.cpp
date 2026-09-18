@@ -15,8 +15,6 @@
 
 #include "image_pixel_map_napi_kits.h"
 
-#include <climits>
-#include <cstdint>
 #include <map>
 #include <set>
 #include "image_utils.h"
@@ -109,16 +107,20 @@ static int32_t PixelMapNapiCreate(napi_env env, PixelMapNapiArgs* args)
     info.size.height = static_cast<int32_t>(args->createOptions.height);
     info.size.width = static_cast<int32_t>(args->createOptions.width);
 
+    BUILD_PARAM pam;
+    pam.offset_ = 0;
+    pam.width_ = info.size.width;
+    pam.flag_ = false;
+    int32_t error = IMAGE_RESULT_SUCCESS;
     if (info.pixelFormat == PixelFormat::RGBA_1010102 ||
         info.pixelFormat == PixelFormat::YCBCR_P010 ||
-        info.pixelFormat == PixelFormat::YCRCB_P010 ||
-        args->bufferLen > static_cast<size_t>(INT32_MAX)) {
-        return IMAGE_RESULT_BAD_PARAMETER;
+        info.pixelFormat == PixelFormat::YCRCB_P010) {
+        error = IMAGE_RESULT_BAD_PARAMETER;
+        return error;
     }
-    auto pixelmap = PixelMap::CreateForApi(static_cast<uint32_t*>(args->inBuffer),
-        static_cast<uint32_t>(args->bufferLen), info);
+    auto pixelmap = PixelMap::Create(static_cast<uint32_t*>(args->inBuffer), args->bufferLen, pam, info, error);
     if (pixelmap == nullptr) {
-        return IMAGE_RESULT_BAD_PARAMETER;
+        return error;
     }
 
     *(args->outValue) = PixelMapNapi::CreatePixelMap(env, std::move(pixelmap));
