@@ -124,4 +124,54 @@ if (image_build_legacy_codec_plugins) {
     subsystem_name = "multimedia"
     part_name = "image_framework"
   }
+} else {
+  # RawDecoder directly uses JpegDecoder. Link only its implementation into RAW
+  # on OS, without building the standalone JPEG plugin or its registration entry.
+  ohos_source_set("jpegplugin") {
+    sanitize = {
+      cfi = true
+      cfi_cross_dso = true
+      cfi_vcall_icall_only = true
+      debug = false
+    }
+    sources = [
+      "src/icc_profile_info.cpp",
+      "src/jpeg_decoder.cpp",
+      "src/jpeg_utils.cpp",
+    ]
+    cflags = [
+      "-DIMAGE_DEBUG_FLAG",
+      "-DIMAGE_COLORSPACE_FLAG",
+    ]
+    defines = [ "DUAL_ADAPTER" ]
+    if (image_use_new_skia) {
+      defines += [ "USE_M133_SKIA" ]
+    }
+    include_dirs = [
+      "//foundation/multimedia/image_framework/interfaces/innerkits/include",
+      "//foundation/multimedia/image_framework/plugins/manager/include",
+      "//foundation/multimedia/image_framework/plugins/manager/include/image",
+      "//foundation/multimedia/image_framework/plugins/manager/include/pluginbase",
+      "//foundation/multimedia/image_framework/plugins/common/libs/image/libjpegplugin/include",
+      "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/include",
+    ]
+    deps = [
+      "${image_subsystem}/frameworks/innerkitsimpl/utils:image_utils",
+      "//foundation/multimedia/image_framework/interfaces/innerkits:image_native",
+      "//foundation/multimedia/image_framework/plugins/manager:pluginmanager",
+    ]
+    external_deps = [
+      "c_utils:utils",
+      "graphic_2d:color_manager",
+      "graphic_surface:surface",
+      "hilog:libhilog",
+      "hitrace:hitrace_meter",
+      "libexif:libexif",
+      "libjpeg-turbo:turbojpeg",
+      "skia:libjpegm133",
+      "skia:skia_canvaskit",
+    ]
+    part_name = "image_framework"
+    subsystem_name = "multimedia"
+  }
 }
