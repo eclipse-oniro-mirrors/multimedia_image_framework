@@ -68,12 +68,6 @@ group("fuzztest") {
     "image_fuzzer:ImageFuzzTest",
     "imagereceiver_fuzzer:ImageReceiverFuzzTest",
   ]
-  if (image_build_legacy_codec_plugins) {
-    deps += [
-      "imagepngplugin_fuzzer:ImagePngPluginFuzzTest",
-      "imagepngplugin2_fuzzer:ImagePngPlugin2FuzzTest",
-    ]
-  }
   if (has_libtiff) {
     deps += [
       "imagetiffplugin_fuzzer:ImageTiffPluginFuzzTest",
