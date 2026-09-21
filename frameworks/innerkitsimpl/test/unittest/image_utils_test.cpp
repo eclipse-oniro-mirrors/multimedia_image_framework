@@ -2234,5 +2234,27 @@ HWTEST_F(ImageUtilsTest, PixelFormat2GraphicFormatTest001, TestSize.Level1)
     EXPECT_EQ(ImageUtils::PixelFormat2GraphicFormat(PixelFormat::RGBA_F16),
         static_cast<int32_t>(GRAPHIC_PIXEL_FMT_RGBA16_FLOAT));
 }
+
+/**
+ * @tc.name: AuxiliaryPictureCarrierTypesAreExcludedFromCodecSet
+ * @tc.desc: Verify OXY/MEL are valid Picture types without becoming codec-supported types.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageUtilsTest, AuxiliaryPictureCarrierTypesAreExcludedFromCodecSet, TestSize.Level1)
+{
+    EXPECT_EQ(static_cast<int32_t>(AuxiliaryPictureType::OXY_MAP), 11);
+    EXPECT_EQ(static_cast<int32_t>(AuxiliaryPictureType::MEL_MAP), 12);
+    EXPECT_FALSE(ImageUtils::IsAuxiliaryPictureTypeSupported(AuxiliaryPictureType::OXY_MAP));
+    EXPECT_FALSE(ImageUtils::IsAuxiliaryPictureTypeSupported(AuxiliaryPictureType::MEL_MAP));
+    EXPECT_TRUE(ImageUtils::IsAuxiliaryPictureTypeSupportedForPicture(AuxiliaryPictureType::OXY_MAP));
+    EXPECT_TRUE(ImageUtils::IsAuxiliaryPictureTypeSupportedForPicture(AuxiliaryPictureType::MEL_MAP));
+
+    const auto &codecTypes = ImageUtils::GetAllAuxiliaryPictureType();
+    EXPECT_EQ(codecTypes.size(), 10);
+    EXPECT_EQ(codecTypes.count(AuxiliaryPictureType::OXY_MAP), 0);
+    EXPECT_EQ(codecTypes.count(AuxiliaryPictureType::MEL_MAP), 0);
+    EXPECT_FALSE(ImageUtils::IsAuxiliaryPictureEncoded(AuxiliaryPictureType::OXY_MAP));
+    EXPECT_FALSE(ImageUtils::IsAuxiliaryPictureEncoded(AuxiliaryPictureType::MEL_MAP));
+}
 } // namespace Multimedia
 } // namespace OHOS

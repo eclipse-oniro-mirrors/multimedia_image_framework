@@ -174,6 +174,17 @@ const std::set<OHOS::Media::AuxiliaryPictureType> &ImageTaiheUtils::GetTaiheSupp
     return auxTypes;
 }
 
+const std::set<OHOS::Media::AuxiliaryPictureType> &ImageTaiheUtils::GetTaiheSupportedAuxTypesForPicture()
+{
+    static const std::set<OHOS::Media::AuxiliaryPictureType> auxTypes = [] {
+        auto types = GetTaiheSupportedAuxTypes();
+        types.insert(OHOS::Media::AuxiliaryPictureType::OXY_MAP);
+        types.insert(OHOS::Media::AuxiliaryPictureType::MEL_MAP);
+        return types;
+    }();
+    return auxTypes;
+}
+
 std::vector<std::string> ImageTaiheUtils::GetArrayString(const array<string> &src)
 {
     std::vector<std::string> result(src.begin(), src.end());

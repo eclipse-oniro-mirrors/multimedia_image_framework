@@ -1137,5 +1137,49 @@ HWTEST_F(PictureTest, SetThumbnailPixelmapTest001, TestSize.Level1)
     EXPECT_NE(thumbnailPixelMapByGet, nullptr);
     EXPECT_EQ(thumbnailPixelMapByGet->GetHeight(), SIZE_HEIGHT);
 }
+
+/**
+ * @tc.name: SetAndGetCameraAuxiliaryPictureTypes
+ * @tc.desc: Verify Picture carries OXY/MEL auxiliary pictures in memory and across Parcel.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureTest, SetAndGetCameraAuxiliaryPictureTypes, TestSize.Level1)
+{
+    const AuxiliaryPictureType types[] = {
+        AuxiliaryPictureType::OXY_MAP,
+        AuxiliaryPictureType::MEL_MAP,
+    };
+    std::unique_ptr<Picture> picture = CreatePicture();
+    ASSERT_NE(picture, nullptr);
+
+    for (const auto type : types) {
+        auto auxiliaryPicture = CreateAuxiliaryPicture(type);
+        ASSERT_NE(auxiliaryPicture, nullptr);
+        auto contentPixel = auxiliaryPicture->GetContentPixel();
+        ASSERT_NE(contentPixel, nullptr);
+
+        picture->SetAuxiliaryPicture(auxiliaryPicture);
+        auxiliaryPicture.reset();
+
+        auto obtainedAuxiliaryPicture = picture->GetAuxiliaryPicture(type);
+        ASSERT_NE(obtainedAuxiliaryPicture, nullptr);
+        EXPECT_EQ(obtainedAuxiliaryPicture->GetType(), type);
+        EXPECT_EQ(obtainedAuxiliaryPicture->GetContentPixel(), contentPixel);
+        EXPECT_TRUE(picture->HasAuxiliaryPicture(type));
+    }
+
+    Parcel data;
+    ASSERT_TRUE(picture->Marshalling(data));
+    std::unique_ptr<Picture> unmarshalledPicture(Picture::Unmarshalling(data));
+    ASSERT_NE(unmarshalledPicture, nullptr);
+    for (const auto type : types) {
+        auto auxiliaryPicture = unmarshalledPicture->GetAuxiliaryPicture(type);
+        ASSERT_NE(auxiliaryPicture, nullptr);
+        EXPECT_EQ(auxiliaryPicture->GetType(), type);
+        ASSERT_NE(auxiliaryPicture->GetContentPixel(), nullptr);
+        EXPECT_EQ(auxiliaryPicture->GetContentPixel()->GetWidth(), SIZE_WIDTH);
+        EXPECT_EQ(auxiliaryPicture->GetContentPixel()->GetHeight(), SIZE_HEIGHT);
+    }
+}
 } // namespace Media
 } // namespace OHOS

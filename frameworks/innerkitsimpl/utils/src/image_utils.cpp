@@ -1875,6 +1875,12 @@ bool ImageUtils::IsAuxiliaryPictureTypeSupported(AuxiliaryPictureType type)
     return (auxTypes.find(type) != auxTypes.end());
 }
 
+bool ImageUtils::IsAuxiliaryPictureTypeSupportedForPicture(AuxiliaryPictureType type)
+{
+    return type == AuxiliaryPictureType::OXY_MAP || type == AuxiliaryPictureType::MEL_MAP ||
+        IsAuxiliaryPictureTypeSupported(type);
+}
+
 bool ImageUtils::IsAuxiliaryPictureEncoded(AuxiliaryPictureType type)
 {
     return AuxiliaryPictureType::GAINMAP == type || AuxiliaryPictureType::UNREFOCUS_MAP == type ||

@@ -37,6 +37,7 @@ namespace {
     constexpr uint32_t NUM_1 = 1;
     constexpr uint32_t NUM_2 = 2;
     constexpr uint32_t NUM_3 = 3;
+    constexpr char GET_IMAGE_DATA_FAILED_MSG[] = "Failed to get image data.";
 }
 
 namespace OHOS {
@@ -111,6 +112,7 @@ AuxiliaryPictureNapi::~AuxiliaryPictureNapi()
 napi_value AuxiliaryPictureNapi::Init(napi_env env, napi_value exports)
 {
     napi_property_descriptor props[] = {
+        DECLARE_NAPI_FUNCTION("acquirePixelmap", AcquirePixelMap),
         DECLARE_NAPI_FUNCTION("readPixelsToBuffer", ReadPixelsToBuffer),
         DECLARE_NAPI_FUNCTION("writePixelsFromBuffer", WritePixelsFromBuffer),
         DECLARE_NAPI_FUNCTION("getType", GetType),
@@ -301,7 +303,8 @@ static bool ParseBuffer(napi_env env, napi_value argValue,
 
 static AuxiliaryPictureType ParseAuxiliaryPictureType(int32_t val)
 {
-    if (!ImageNapiUtils::GetNapiSupportedAuxiliaryPictureType().count(static_cast<AuxiliaryPictureType>(val))) {
+    if (!ImageNapiUtils::GetNapiSupportedAuxiliaryPictureTypeForPicture().count(
+        static_cast<AuxiliaryPictureType>(val))) {
         IMAGE_LOGE("%{public}s auxiliaryPictureType is invalid: %{public}d", __func__, val);
         return AuxiliaryPictureType::NONE;
     }
@@ -344,7 +347,8 @@ napi_value AuxiliaryPictureNapi::CreateAuxiliaryPicture(napi_env env, napi_callb
     }
     status = napi_get_value_uint32(env, argValue[NUM_2], &auxiType);
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), result, IMAGE_LOGE("Fail to get auxiliary picture Type"));
-    if (!ImageNapiUtils::GetNapiSupportedAuxiliaryPictureType().count(static_cast<AuxiliaryPictureType>(auxiType))) {
+    if (!ImageNapiUtils::GetNapiSupportedAuxiliaryPictureTypeForPicture().count(
+        static_cast<AuxiliaryPictureType>(auxiType))) {
         IMAGE_LOGE("Auxiliary picture type is invalid");
         return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER, "Invalid args.");
     }
@@ -359,6 +363,35 @@ napi_value AuxiliaryPictureNapi::CreateAuxiliaryPicture(napi_env env, napi_callb
         status = napi_new_instance(env, constructor, NUM_0, nullptr, &result);
     }
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, IMAGE_LOGE("Fail to create picture sync"));
+    return result;
+}
+
+napi_value AuxiliaryPictureNapi::AcquirePixelMap(napi_env env, napi_callback_info info)
+{
+    napi_value thisVar = nullptr;
+    size_t argCount = NUM_0;
+    napi_status status;
+    IMG_JS_ARGS(env, info, status, argCount, nullptr, thisVar);
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status),
+        ImageNapiUtils::ThrowExceptionError(env, ERR_IMAGE_GET_IMAGE_DATA_FAILED, GET_IMAGE_DATA_FAILED_MSG, true),
+        IMAGE_LOGE("Fail to call napi_get_cb_info"));
+
+    AuxiliaryPictureNapi *auxiliaryPictureNapi = nullptr;
+    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&auxiliaryPictureNapi));
+    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, auxiliaryPictureNapi),
+        ImageNapiUtils::ThrowExceptionError(env, ERR_IMAGE_GET_IMAGE_DATA_FAILED, GET_IMAGE_DATA_FAILED_MSG, true),
+        IMAGE_LOGE("Fail to unwrap context"));
+
+    auto auxiliaryPicture = auxiliaryPictureNapi->nativeAuxiliaryPicture_;
+    IMG_NAPI_CHECK_RET_D(auxiliaryPicture != nullptr && auxiliaryPicture->GetContentPixel() != nullptr,
+        ImageNapiUtils::ThrowExceptionError(env, ERR_IMAGE_GET_IMAGE_DATA_FAILED, GET_IMAGE_DATA_FAILED_MSG, true),
+        IMAGE_LOGE("Empty native auxiliary picture or pixelmap"));
+    napi_value result = PixelMapNapi::CreatePixelMap(env, auxiliaryPicture->GetContentPixel());
+    napi_valuetype resultType = napi_undefined;
+    status = result == nullptr ? napi_invalid_arg : napi_typeof(env, result, &resultType);
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status) && resultType == napi_object,
+        ImageNapiUtils::ThrowExceptionError(env, ERR_IMAGE_GET_IMAGE_DATA_FAILED, GET_IMAGE_DATA_FAILED_MSG, true),
+        IMAGE_LOGE("Fail to create PixelMap wrapper"));
     return result;
 }
 
@@ -377,7 +410,8 @@ napi_value AuxiliaryPictureNapi::GetType(napi_env env, napi_callback_info info)
     if (auxPictureNapi->nativeAuxiliaryPicture_ != nullptr) {
         auto auxType = auxPictureNapi->nativeAuxiliaryPicture_->GetType();
         IMAGE_LOGD("AuxiliaryPictureNapi::GetType %{public}d", auxType);
-        if (ImageNapiUtils::GetNapiSupportedAuxiliaryPictureType().count(static_cast<AuxiliaryPictureType>(auxType))) {
+        if (ImageNapiUtils::GetNapiSupportedAuxiliaryPictureTypeForPicture().count(
+            static_cast<AuxiliaryPictureType>(auxType))) {
             napi_create_int32(env, static_cast<int32_t>(auxType), &nVal.result);
         }
     } else {

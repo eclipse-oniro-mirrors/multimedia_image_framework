@@ -25,6 +25,7 @@
 #include "media_errors.h"
 #include "metadata_taihe.h"
 #include "pixel_map.h"
+#include "pixel_map_taihe.h"
 using namespace ANI::Image;
 
 namespace ANI::Image {
@@ -58,6 +59,16 @@ AuxiliaryPictureImpl::~AuxiliaryPictureImpl()
 int64_t AuxiliaryPictureImpl::GetImplPtr()
 {
     return static_cast<int64_t>(reinterpret_cast<uintptr_t>(this));
+}
+
+PixelMap AuxiliaryPictureImpl::AcquirePixelMap()
+{
+    if (nativeAuxiliaryPicture_ == nullptr || nativeAuxiliaryPicture_->GetContentPixel() == nullptr) {
+        ImageTaiheUtils::ThrowExceptionError(OHOS::Media::ERR_IMAGE_GET_IMAGE_DATA_FAILED,
+            "Failed to get image data.");
+        return make_holder<PixelMapImpl, PixelMap>();
+    }
+    return PixelMapImpl::CreatePixelMap(nativeAuxiliaryPicture_->GetContentPixel());
 }
 
 void AuxiliaryPictureImpl::WritePixelsFromBufferSync(array_view<uint8_t> data)
@@ -122,7 +133,8 @@ optional<AuxiliaryPictureType> AuxiliaryPictureImpl::GetType()
 
     OHOS::Media::AuxiliaryPictureType auxType = nativeAuxiliaryPicture_->GetType();
     IMAGE_LOGD("AuxiliaryPictureImpl::GetType %{public}d", static_cast<int32_t>(auxType));
-    if (!ImageTaiheUtils::GetTaiheSupportedAuxTypes().count(static_cast<OHOS::Media::AuxiliaryPictureType>(auxType))) {
+    if (!ImageTaiheUtils::GetTaiheSupportedAuxTypesForPicture().count(
+        static_cast<OHOS::Media::AuxiliaryPictureType>(auxType))) {
         IMAGE_LOGE("%{public}s auxiliary picture type is not supported: %{public}d",
             __func__, static_cast<int32_t>(auxType));
         return optional<AuxiliaryPictureType>(std::nullopt);
@@ -270,7 +282,8 @@ optional<AuxiliaryPictureInfo> AuxiliaryPictureImpl::GetAuxiliaryPictureInfo()
 
 static OHOS::Media::AuxiliaryPictureType ParseAuxiliaryPictureType(int32_t val)
 {
-    if (!ImageTaiheUtils::GetTaiheSupportedAuxTypes().count(static_cast<OHOS::Media::AuxiliaryPictureType>(val))) {
+    if (!ImageTaiheUtils::GetTaiheSupportedAuxTypesForPicture().count(
+        static_cast<OHOS::Media::AuxiliaryPictureType>(val))) {
         IMAGE_LOGE("%{public}s auxiliaryPictureType is invalid: %{public}d", __func__, val);
         return OHOS::Media::AuxiliaryPictureType::NONE;
     }

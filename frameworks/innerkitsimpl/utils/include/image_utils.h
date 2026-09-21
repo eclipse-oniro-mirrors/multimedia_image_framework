@@ -199,6 +199,7 @@ public:
     static void FlushContextSurfaceBuffer(ImagePlugin::DecodeContext& context);
     static void InvalidateContextSurfaceBuffer(ImagePlugin::DecodeContext& context);
     static bool IsAuxiliaryPictureTypeSupported(AuxiliaryPictureType auxiliaryPictureType);
+    static bool IsAuxiliaryPictureTypeSupportedForPicture(AuxiliaryPictureType auxiliaryPictureType);
     static bool IsAuxiliaryPictureEncoded(AuxiliaryPictureType type);
     static bool IsMetadataTypeSupported(MetadataType metadataType);
     static bool isBlobMetadataType(MetadataType metadataType);
