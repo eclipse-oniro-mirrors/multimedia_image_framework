@@ -30,6 +30,7 @@ public:
     explicit AuxiliaryPictureImpl(std::shared_ptr<OHOS::Media::AuxiliaryPicture> auxiliaryPicture);
     ~AuxiliaryPictureImpl();
     int64_t GetImplPtr();
+    PixelMap AcquirePixelMap();
     std::shared_ptr<OHOS::Media::AuxiliaryPicture> GetNativeAuxiliaryPic()
     {
         return nativeAuxiliaryPicture_;

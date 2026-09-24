@@ -463,6 +463,8 @@ enum AuxiliaryPictureType: i32 {
   LINEAR_MAP = 4,
   FRAGMENT_MAP = 5,
   LHDR_GAINMAP = 10,
+  OXY_MAP = 11,
+  MEL_MAP = 12,
 }
 
 enum MetadataType: i32 {
@@ -1075,6 +1077,8 @@ interface Picture {
 
 interface AuxiliaryPicture {
   GetImplPtr(): i64;
+
+  AcquirePixelMap(): PixelMap;
 
   @promise @rename("writePixelsFromBuffer")
   WritePixelsFromBufferSync(data: @arraybuffer Array<u8>): void;

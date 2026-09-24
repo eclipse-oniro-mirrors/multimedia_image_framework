@@ -119,7 +119,8 @@ OH_PictureNative *CreateNativePicture(std::vector<Image_AuxiliaryPictureType>& a
     return picture;
 }
 
-OH_AuxiliaryPictureNative *CreateAuxiliaryPictureNative()
+OH_AuxiliaryPictureNative *CreateAuxiliaryPictureNative(
+    Image_AuxiliaryPictureType type = Image_AuxiliaryPictureType::AUXILIARY_PICTURE_TYPE_GAINMAP)
 {
     std::unique_ptr<uint32_t[]> color = std::make_unique<uint32_t[]>(BUFFER_LENGTH);
     if (color == nullptr) {
@@ -136,10 +137,55 @@ OH_AuxiliaryPictureNative *CreateAuxiliaryPictureNative()
     OH_AuxiliaryPictureNative *picture = nullptr;
 
     Image_ErrorCode ret = OH_AuxiliaryPictureNative_Create(reinterpret_cast<uint8_t*>(color.get()), dataLength, &size,
-        Image_AuxiliaryPictureType::AUXILIARY_PICTURE_TYPE_GAINMAP, &picture);
+        type, &picture);
     EXPECT_EQ(ret, IMAGE_SUCCESS);
 
     return picture;
+}
+
+/**
+ * @tc.name: OH_PictureNative_CameraAuxiliaryPictureTypes001
+ * @tc.desc: Carry OXY/MEL in Picture and acquire their PixelMap without copying its native storage.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureNdkTest, OH_PictureNative_CameraAuxiliaryPictureTypes001, TestSize.Level1)
+{
+    const Image_AuxiliaryPictureType types[] = {
+        Image_AuxiliaryPictureType::OH_IMAGE_NATIVE_MODULE_AUXILIARY_PICTURE_TYPE_OXY_MAP,
+        Image_AuxiliaryPictureType::OH_IMAGE_NATIVE_MODULE_AUXILIARY_PICTURE_TYPE_MEL_MAP,
+    };
+    for (const auto type : types) {
+        OH_AuxiliaryPictureNative *auxiliaryPicture = CreateAuxiliaryPictureNative(type);
+        ASSERT_NE(auxiliaryPicture, nullptr);
+
+        Image_AuxiliaryPictureType obtainedType = Image_AuxiliaryPictureType::AUXILIARY_PICTURE_TYPE_GAINMAP;
+        ASSERT_EQ(OH_AuxiliaryPictureNative_GetType(auxiliaryPicture, &obtainedType), IMAGE_SUCCESS);
+        EXPECT_EQ(obtainedType, type);
+
+        OH_PixelmapNative *mainPixelmap = nullptr;
+        ASSERT_EQ(OH_AuxiliaryPictureNative_AcquirePixelmap(auxiliaryPicture, &mainPixelmap), IMAGE_SUCCESS);
+        ASSERT_NE(mainPixelmap, nullptr);
+
+        OH_PictureNative *picture = nullptr;
+        ASSERT_EQ(OH_PictureNative_CreatePicture(mainPixelmap, &picture), IMAGE_SUCCESS);
+        ASSERT_NE(picture, nullptr);
+        ASSERT_EQ(OH_PictureNative_SetAuxiliaryPicture(picture, type, auxiliaryPicture), IMAGE_SUCCESS);
+
+        OH_AuxiliaryPictureNative *obtainedAuxPicture = nullptr;
+        ASSERT_EQ(OH_PictureNative_GetAuxiliaryPicture(picture, type, &obtainedAuxPicture), IMAGE_SUCCESS);
+        ASSERT_NE(obtainedAuxPicture, nullptr);
+        OH_PixelmapNative *obtainedPixelmap = nullptr;
+        ASSERT_EQ(OH_AuxiliaryPictureNative_AcquirePixelmap(obtainedAuxPicture, &obtainedPixelmap), IMAGE_SUCCESS);
+        ASSERT_NE(obtainedPixelmap, nullptr);
+        EXPECT_EQ(obtainedPixelmap->GetInnerPixelmap(), mainPixelmap->GetInnerPixelmap());
+
+        EXPECT_EQ(OH_AuxiliaryPictureNative_Release(auxiliaryPicture), IMAGE_SUCCESS);
+        EXPECT_NE(obtainedPixelmap->GetInnerPixelmap(), nullptr);
+        EXPECT_EQ(OH_PixelmapNative_Destroy(&obtainedPixelmap), IMAGE_SUCCESS);
+        EXPECT_EQ(OH_AuxiliaryPictureNative_Release(obtainedAuxPicture), IMAGE_SUCCESS);
+        EXPECT_EQ(OH_PictureNative_Release(picture), IMAGE_SUCCESS);
+        EXPECT_EQ(OH_PixelmapNative_Destroy(&mainPixelmap), IMAGE_SUCCESS);
+    }
 }
 
 /**

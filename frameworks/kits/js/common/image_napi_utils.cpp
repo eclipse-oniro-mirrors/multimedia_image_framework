@@ -370,6 +370,17 @@ const std::set<AuxiliaryPictureType> &ImageNapiUtils::GetNapiSupportedAuxiliaryP
     return auxTypes;
 }
 
+const std::set<AuxiliaryPictureType> &ImageNapiUtils::GetNapiSupportedAuxiliaryPictureTypeForPicture()
+{
+    static const std::set<AuxiliaryPictureType> auxTypes = [] {
+        auto types = GetNapiSupportedAuxiliaryPictureType();
+        types.insert(AuxiliaryPictureType::OXY_MAP);
+        types.insert(AuxiliaryPictureType::MEL_MAP);
+        return types;
+    }();
+    return auxTypes;
+}
+
 bool ImageNapiUtils::CheckTypeByName(napi_env env, napi_value root, const char *name)
 {
     napi_value constructor = nullptr;

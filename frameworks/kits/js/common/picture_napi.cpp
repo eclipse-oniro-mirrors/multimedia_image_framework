@@ -83,6 +83,8 @@ static std::vector<struct ImageEnum> auxiliaryPictureTypeMap = {
     {"FRAGMENT_MAP", static_cast<uint32_t>(AuxiliaryPictureType::FRAGMENT_MAP), ""},
     {"THUMBNAIL", static_cast<uint32_t>(AuxiliaryPictureType::THUMBNAIL), ""},
     {"LHDR_GAINMAP", static_cast<uint32_t>(AuxiliaryPictureType::LHDR_GAINMAP), ""},
+    {"OXY_MAP", static_cast<uint32_t>(AuxiliaryPictureType::OXY_MAP), ""},
+    {"MEL_MAP", static_cast<uint32_t>(AuxiliaryPictureType::MEL_MAP), ""},
 };
 
 static std::vector<struct ImageEnum> metadataTypeMap = {
@@ -400,7 +402,8 @@ bool GetNativePicture(void *pictureNapi, std::shared_ptr<Picture> &picture)
 
 static AuxiliaryPictureType ParseAuxiliaryPictureType(int32_t val)
 {
-    if (!ImageNapiUtils::GetNapiSupportedAuxiliaryPictureType().count(static_cast<AuxiliaryPictureType>(val))) {
+    if (!ImageNapiUtils::GetNapiSupportedAuxiliaryPictureTypeForPicture().count(
+        static_cast<AuxiliaryPictureType>(val))) {
         IMAGE_LOGE("%{public}s auxiliaryPictureType is invalid: %{public}d", __func__, val);
         return AuxiliaryPictureType::NONE;
     }

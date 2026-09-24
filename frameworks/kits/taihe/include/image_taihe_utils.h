@@ -53,6 +53,7 @@ public:
 
     // Taihe helpers
     static const std::set<OHOS::Media::AuxiliaryPictureType> &GetTaiheSupportedAuxTypes();
+    static const std::set<OHOS::Media::AuxiliaryPictureType> &GetTaiheSupportedAuxTypesForPicture();
     static std::vector<std::string> GetArrayString(const array<string> &src);
 
     static ImageInfo ToTaiheImageInfo(const OHOS::Media::ImageInfo &src, bool isHdr);

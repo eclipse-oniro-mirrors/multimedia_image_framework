@@ -513,6 +513,8 @@ enum class AuxiliaryPictureType : int32_t {
     PAN_MAP = 8,
     PAN_GAINMAP = 9,
     LHDR_GAINMAP = 10,
+    OXY_MAP = 11,
+    MEL_MAP = 12,
     THUMBNAIL = 101,
 };
 

@@ -148,6 +148,22 @@ HWTEST_F(NapiTest, ImageNapiUtilsConvertDoubleToFloatPreservesCompatibleValues, 
 }
 
 /**
+ * @tc.name: NapiSupportedAuxiliaryPictureTypesContainOxyAndMel
+ * @tc.desc: Verify ArkTS argument validation accepts the public OXY/MEL auxiliary picture values.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiTest, NapiSupportedAuxiliaryPictureTypesContainOxyAndMel, TestSize.Level1)
+{
+    const auto &codecTypes = ImageNapiUtils::GetNapiSupportedAuxiliaryPictureType();
+    EXPECT_EQ(codecTypes.count(AuxiliaryPictureType::OXY_MAP), 0);
+    EXPECT_EQ(codecTypes.count(AuxiliaryPictureType::MEL_MAP), 0);
+
+    const auto &pictureTypes = ImageNapiUtils::GetNapiSupportedAuxiliaryPictureTypeForPicture();
+    EXPECT_EQ(pictureTypes.count(AuxiliaryPictureType::OXY_MAP), 1);
+    EXPECT_EQ(pictureTypes.count(AuxiliaryPictureType::MEL_MAP), 1);
+}
+
+/**
  * @tc.name: NapiTest001
  * @tc.desc: IsLockPixelMap
  * @tc.type: FUNC

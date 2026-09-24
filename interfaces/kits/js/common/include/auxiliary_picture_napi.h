@@ -43,6 +43,7 @@ public:
 private:
     static napi_value Constructor(napi_env env, napi_callback_info info);
     static void Destructor(napi_env env, void *nativeObject, void *finalize);
+    static napi_value AcquirePixelMap(napi_env env, napi_callback_info info);
     static napi_value ReadPixelsToBuffer(napi_env env, napi_callback_info info);
     static napi_value WritePixelsFromBuffer(napi_env env, napi_callback_info info);
     static napi_value CreateAuxiliaryPicture(napi_env env, napi_callback_info info);

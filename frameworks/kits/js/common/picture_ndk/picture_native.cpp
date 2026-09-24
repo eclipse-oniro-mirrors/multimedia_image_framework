@@ -287,7 +287,7 @@ Image_ErrorCode OH_PictureNative_RemoveAuxiliaryPicture(OH_PictureNative *pictur
         return IMAGE_INVALID_PARAMETER;
     }
     auto auxPicType = AuxTypeNativeToInner(type);
-    if (!OHOS::Media::ImageUtils::IsAuxiliaryPictureTypeSupported(auxPicType)) {
+    if (!OHOS::Media::ImageUtils::IsAuxiliaryPictureTypeSupportedForPicture(auxPicType)) {
         return IMAGE_INVALID_PARAMETER;
     }
     picture->GetInnerPicture()->DropAuxiliaryPicture(auxPicType);
@@ -388,7 +388,7 @@ Image_ErrorCode OH_PictureNative_SetAuxiliaryPicture(OH_PictureNative *picture, 
     }
 
     auto auxPicTypeUser = AuxTypeNativeToInner(type);
-    if (!OHOS::Media::ImageUtils::IsAuxiliaryPictureTypeSupported(auxPicTypeUser)) {
+    if (!OHOS::Media::ImageUtils::IsAuxiliaryPictureTypeSupportedForPicture(auxPicTypeUser)) {
         return IMAGE_BAD_PARAMETER;
     }
 
@@ -410,7 +410,7 @@ Image_ErrorCode OH_PictureNative_GetAuxiliaryPicture(OH_PictureNative *picture, 
     }
 
     auto auxPicTypeInner = AuxTypeNativeToInner(type);
-    if (!OHOS::Media::ImageUtils::IsAuxiliaryPictureTypeSupported(auxPicTypeInner)) {
+    if (!OHOS::Media::ImageUtils::IsAuxiliaryPictureTypeSupportedForPicture(auxPicTypeInner)) {
         return IMAGE_BAD_PARAMETER;
     }
 
@@ -487,7 +487,7 @@ Image_ErrorCode OH_AuxiliaryPictureNative_Create(uint8_t *data, size_t dataLengt
     }
 
     auto auxPicTypeInner = AuxTypeNativeToInner(type);
-    if (!OHOS::Media::ImageUtils::IsAuxiliaryPictureTypeSupported(auxPicTypeInner)) {
+    if (!OHOS::Media::ImageUtils::IsAuxiliaryPictureTypeSupportedForPicture(auxPicTypeInner)) {
         return IMAGE_BAD_PARAMETER;
     }
 
@@ -543,7 +543,7 @@ Image_ErrorCode OH_AuxiliaryPictureNative_CreateUsingAllocator(uint8_t *data, ui
     auto tempInfo = *(info->GetInnerAuxiliaryPictureInfo().get());
     auto auxPicTypeInner = AuxTypeNativeToInner(static_cast<Image_AuxiliaryPictureType>(tempInfo.auxiliaryPictureType));
     if (tempInfo.size.height <= 0 || tempInfo.size.width <= 0 ||
-        !OHOS::Media::ImageUtils::IsAuxiliaryPictureTypeSupported(auxPicTypeInner)) {
+        !OHOS::Media::ImageUtils::IsAuxiliaryPictureTypeSupportedForPicture(auxPicTypeInner)) {
         return IMAGE_INVALID_PARAMETER;
     }
     if (tempInfo.auxiliaryPictureType == OHOS::Media::AuxiliaryPictureType::GAINMAP &&
@@ -812,7 +812,7 @@ Image_ErrorCode OH_AuxiliaryPictureInfo_SetType(OH_AuxiliaryPictureInfo *info, I
     }
 
     auto auxPicTypeInner = AuxTypeNativeToInner(type);
-    if (!OHOS::Media::ImageUtils::IsAuxiliaryPictureTypeSupported(auxPicTypeInner)) {
+    if (!OHOS::Media::ImageUtils::IsAuxiliaryPictureTypeSupportedForPicture(auxPicTypeInner)) {
         return IMAGE_BAD_PARAMETER;
     }
 

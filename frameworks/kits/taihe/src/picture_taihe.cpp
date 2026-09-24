@@ -181,7 +181,8 @@ void PictureImpl::HdrComposeToMainPixelmapSync()
 
 static OHOS::Media::AuxiliaryPictureType ParseAuxiliaryPictureType(int32_t val)
 {
-    if (!ImageTaiheUtils::GetTaiheSupportedAuxTypes().count(static_cast<OHOS::Media::AuxiliaryPictureType>(val))) {
+    if (!ImageTaiheUtils::GetTaiheSupportedAuxTypesForPicture().count(
+        static_cast<OHOS::Media::AuxiliaryPictureType>(val))) {
         IMAGE_LOGE("%{public}s auxiliary picture type is not supported: %{public}d", __func__, val);
         return OHOS::Media::AuxiliaryPictureType::NONE;
     }
