@@ -16,6 +16,7 @@
 #ifndef FRAMEWORKS_KITS_NATIVE_COMMON_INCLUDE_IMAGE2_KITS_H
 #define FRAMEWORKS_KITS_NATIVE_COMMON_INCLUDE_IMAGE2_KITS_H
 
+#include <mutex>
 #include "native_image.h"
 
 #ifdef __cplusplus
@@ -25,6 +26,7 @@ extern "C" {
 struct OH_ImageNative {
     OHOS::Media::NativeImage* imgNative = nullptr;
     OHOS::sptr<OHOS::SurfaceBuffer> cachedBuffer_ = nullptr;
+    std::mutex cachedBufferMutex_;
 };
 
 #ifdef __cplusplus

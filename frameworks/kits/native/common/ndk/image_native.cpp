@@ -125,6 +125,7 @@ Image_ErrorCode OH_ImageNative_GetByteBuffer(OH_ImageNative* image,
 
     auto buffer = image->imgNative->GetBuffer();
     if (buffer != nullptr) {
+        std::lock_guard<std::mutex> lock(image->cachedBufferMutex_);
         image->cachedBuffer_ = buffer;
         *nativeBuffer = buffer->SurfaceBufferToNativeBuffer();
     }
@@ -204,7 +205,10 @@ Image_ErrorCode OH_ImageNative_Release(OH_ImageNative* image)
         IMAGE_LOGE("OH_ImageNative_Release: Invalid parameter");
         return IMAGE_BAD_PARAMETER;
     }
-    image->cachedBuffer_ = nullptr;
+    {
+        std::lock_guard<std::mutex> lock(image->cachedBufferMutex_);
+        image->cachedBuffer_ = nullptr;
+    }
     if (nullptr != image->imgNative) {
         image->imgNative->release();
         delete image->imgNative;
@@ -276,9 +280,11 @@ Image_ErrorCode OH_ImageNative_GetBufferData(OH_ImageNative *image, OH_ImageBuff
     imageBufferData->numStride = static_cast<int32_t>(bufferData->rowStride.size());
     imageBufferData->bufferSize = bufferData->size;
     sptr<SurfaceBuffer> buffer = image->imgNative->GetBuffer();
-    CHECK_ERROR_RETURN_RET_LOG(bufferData == nullptr, IMAGE_BAD_PARAMETER,
-        "get surface buffer failed, buffer is nullptr");
-    image->cachedBuffer_ = buffer;
+    CHECK_ERROR_RETURN_RET_LOG(buffer == nullptr, IMAGE_BAD_PARAMETER, "get surface buffer failed, buffer is nullptr");
+    {
+        std::lock_guard<std::mutex> lock(image->cachedBufferMutex_);
+        image->cachedBuffer_ = nullptr;
+    }
     imageBufferData->nativeBuffer = buffer->SurfaceBufferToNativeBuffer();
     return IMAGE_SUCCESS;
 }
