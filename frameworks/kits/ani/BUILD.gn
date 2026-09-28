@@ -58,6 +58,7 @@ ohos_shared_library("image_ani_core") {
     "runtime_core:ani",
     "runtime_core:ani_helpers",
   ]
+  version_script = "libimage_ani_core.versionscript"
   subsystem_name = "multimedia"
   part_name = "image_framework"
   output_extension = "so"
@@ -97,6 +98,7 @@ ohos_shared_library("image_ani") {
     "runtime_core:ani",
     "runtime_core:ani_helpers",
   ]
+  version_script = "libimage_ani.versionscript"
   subsystem_name = "multimedia"
   part_name = "image_framework"
   output_extension = "so"
