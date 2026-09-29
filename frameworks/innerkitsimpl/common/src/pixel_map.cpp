@@ -2126,17 +2126,16 @@ uint32_t PixelMap::ReadPixels(const uint64_t &bufferSize, uint8_t *dst)
     std::shared_lock<std::shared_mutex> lock(*pixelDataMutex_);
     CHECK_ERROR_RETURN_RET_LOG(IsYUV(imageInfo_.pixelFormat), ERR_IMAGE_INVALID_PARAMETER,
         "base PixelMap ReadPixels does not support YUV");
-    if (dst == nullptr) {
-        IMAGE_LOGE("read pixels by buffer input dst address is null.");
-        return ERR_IMAGE_READ_PIXELMAP_FAILED;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(dst == nullptr, ERR_IMAGE_READ_PIXELMAP_FAILED,
+        "read pixels by buffer input dst address is null.");
     if (isUnMap_ || data_ == nullptr) {
         IMAGE_LOGE("read pixels by buffer current PixelMap data is null, isUnMap %{public}d.", isUnMap_);
         return ERR_IMAGE_READ_PIXELMAP_FAILED;
     }
-    if (bufferSize < static_cast<uint64_t>(pixelsSize_)) {
-        IMAGE_LOGE("read pixels by buffer input dst buffer(%{public}llu) < current pixelmap size(%{public}u).",
-            static_cast<unsigned long long>(bufferSize), pixelsSize_);
+    int32_t requiredBufferSize = GetByteCount();
+    if (bufferSize < static_cast<uint64_t>(requiredBufferSize)) {
+        IMAGE_LOGE("read pixels by buffer input buffer size (%{public}llu) < current pixelmap size (%{public}d).",
+            static_cast<unsigned long long>(bufferSize), requiredBufferSize);
         return ERR_IMAGE_INVALID_PARAMETER;
     }
     // Copy the actual pixel data without padding bytes
@@ -2501,9 +2500,12 @@ uint32_t PixelMap::WritePixels(const uint8_t *source, const uint64_t &bufferSize
     // YUV writes are implemented by PixelYuv::WritePixels using its plane layout.
     CHECK_ERROR_RETURN_RET_LOG(IsYUV(imageInfo_.pixelFormat), ERR_IMAGE_INVALID_PARAMETER,
         "base PixelMap WritePixels does not support YUV");
-    if (source == nullptr || bufferSize < static_cast<uint64_t>(pixelsSize_)) {
-        IMAGE_LOGE("write pixels by buffer source is nullptr or size(%{public}llu) < pixelSize(%{public}u).",
-            static_cast<unsigned long long>(bufferSize), pixelsSize_);
+    CHECK_ERROR_RETURN_RET_LOG(source == nullptr, ERR_IMAGE_INVALID_PARAMETER,
+        "write pixels by buffer source is nullptr");
+    int32_t requiredBufferSize = GetByteCount();
+    if (bufferSize < static_cast<uint64_t>(requiredBufferSize)) {
+        IMAGE_LOGE("write pixels by buffer input buffer size (%{public}llu) < current pixelmap size (%{public}d).",
+            static_cast<unsigned long long>(bufferSize), requiredBufferSize);
         return ERR_IMAGE_INVALID_PARAMETER;
     }
     if (!IsEditable() || !IsModifiable()) {
