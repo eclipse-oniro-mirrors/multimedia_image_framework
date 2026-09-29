@@ -5375,6 +5375,32 @@ static bool isSameColorSpace(const OHOS::ColorManager::ColorSpace &src,
     return SkColorSpace::Equals(skSrc.get(), skDst.get());
 }
 
+// The destination stride must come from the newly allocated buffer, not from the source pixelmap.
+static bool GetColorSpaceDstRowStride(AbsMemory &memory, const SkImageInfo &dstInfo, uint64_t &dstRowStride)
+{
+    dstRowStride = dstInfo.minRowBytes();
+    uint64_t capacity = memory.data.size;
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+    if (memory.GetType() == AllocatorType::DMA_ALLOC) {
+        auto *surfaceBuffer = static_cast<SurfaceBuffer *>(memory.extend.data);
+        CHECK_ERROR_RETURN_RET_LOG(surfaceBuffer == nullptr, false, "ApplyColorSpace dst SurfaceBuffer is null");
+        dstRowStride = static_cast<uint64_t>(surfaceBuffer->GetStride());
+        capacity = surfaceBuffer->GetSize();
+    }
+#endif
+    uint64_t rowBytes = dstInfo.minRowBytes();
+    CHECK_ERROR_RETURN_RET_LOG(dstRowStride > INT32_MAX || rowBytes > INT32_MAX, false,
+        "ApplyColorSpace dst stride invalid, stride:%{public}llu, rowBytes:%{public}llu",
+        static_cast<unsigned long long>(dstRowStride), static_cast<unsigned long long>(rowBytes));
+    bool isValid = CheckPixelMapRowLayout(dstInfo.height(), static_cast<int32_t>(rowBytes),
+        static_cast<int32_t>(dstRowStride), capacity);
+    CHECK_ERROR_RETURN_RET_LOG(!isValid, false,
+        "ApplyColorSpace dst layout exceeds capacity, stride:%{public}llu, height:%{public}d, "
+        "capacity:%{public}llu", static_cast<unsigned long long>(dstRowStride), dstInfo.height(),
+        static_cast<unsigned long long>(capacity));
+    return true;
+}
+
 uint32_t PixelMap::ApplyColorSpace(const OHOS::ColorManager::ColorSpace &grColorSpace)
 {
     if (IsAstcOrY8Format()) {
@@ -5417,8 +5443,13 @@ uint32_t PixelMap::ApplyColorSpace(const OHOS::ColorManager::ColorSpace &grColor
         IMAGE_LOGE("applyColorSpace CreateMemory failed");
         return ERR_IMAGE_COLOR_CONVERT;
     }
+    uint64_t dstRowStride = 0;
+    if (!GetColorSpaceDstRowStride(*m, dst.info, dstRowStride)) {
+        m->Release();
+        return ERR_IMAGE_COLOR_CONVERT;
+    }
     // Transfor pixels by readPixels
-    if (!src.bitmap.readPixels(dst.info, m->data.data, rowStride, 0, 0)) {
+    if (!src.bitmap.readPixels(dst.info, m->data.data, dstRowStride, 0, 0)) {
         m->Release();
         IMAGE_LOGE("ReadPixels failed");
         return ERR_IMAGE_COLOR_CONVERT;
