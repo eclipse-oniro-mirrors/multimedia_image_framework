@@ -605,6 +605,11 @@ public:
 #ifdef IMAGE_QOS_ENABLE
         active_ = ImageUtils::IsSizeSupportDma(size) && getpid() != gettid();
         if (active_) {
+            OHOS::QOS::QosLevel prevLevel;
+            hasPrevQos_ = (OHOS::QOS::GetThreadQos(prevLevel) == 0);
+            if (hasPrevQos_) {
+                prevLevel_ = prevLevel;
+            }
             OHOS::QOS::SetThreadQos(OHOS::QOS::QosLevel::QOS_USER_INTERACTIVE);
         }
 #endif
@@ -613,7 +618,11 @@ public:
     {
 #ifdef IMAGE_QOS_ENABLE
         if (active_) {
-            OHOS::QOS::ResetThreadQos();
+            if (hasPrevQos_) {
+                OHOS::QOS::SetThreadQos(prevLevel_);
+            } else {
+                OHOS::QOS::ResetThreadQos();
+            }
         }
 #endif
     }
@@ -621,6 +630,10 @@ public:
     QosGuard &operator=(const QosGuard &) = delete;
 private:
     bool active_ = false;
+#ifdef IMAGE_QOS_ENABLE
+    bool hasPrevQos_ = false;
+    OHOS::QOS::QosLevel prevLevel_ = OHOS::QOS::QosLevel::QOS_DEFAULT;
+#endif
 };
 } // namespace
 
