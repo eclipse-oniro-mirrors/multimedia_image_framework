@@ -1089,8 +1089,6 @@ protected:
     bool toSdrColorIsSRGB_ = false;
     std::shared_ptr<std::shared_mutex> pixelDataMutex_ = std::make_shared<std::shared_mutex>();
 private:
-    // The caller must hold pixelDataMutex_ exclusively.
-    void SetPixelsAddrLocked(void *addr, void *context, uint32_t size, AllocatorType type, CustomFreePixelMap func);
     void SetPixelsAddrAndImageInfo(void *addr, void *context, uint32_t size, AllocatorType type, ImageInfo &info);
     uint32_t ScaleWithSLR(float xAxis, float yAxis);
 
