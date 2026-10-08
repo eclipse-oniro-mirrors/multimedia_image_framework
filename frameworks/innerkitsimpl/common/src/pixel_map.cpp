@@ -261,6 +261,12 @@ void PixelMap::SetTransformered(bool isTransformered)
 void PixelMap::SetPixelsAddr(void *addr, void *context, uint32_t size, AllocatorType type, CustomFreePixelMap func)
 {
     std::unique_lock<std::shared_mutex> lock(*pixelDataMutex_);
+    SetPixelsAddrLocked(addr, context, size, type, func);
+}
+
+void PixelMap::SetPixelsAddrLocked(void *addr, void *context, uint32_t size, AllocatorType type,
+    CustomFreePixelMap func)
+{
     if (type < AllocatorType::DEFAULT || type > AllocatorType::DMA_ALLOC) {
         IMAGE_LOGE("SetPixelsAddr error: invalid allocatorType");
         return;
@@ -285,6 +291,14 @@ void PixelMap::SetPixelsAddr(void *addr, void *context, uint32_t size, Allocator
     if (!isUnmarshalling_) {
         MarkPropertiesDirty();
     }
+}
+
+void PixelMap::SetPixelsAddrAndImageInfo(void *addr, void *context, uint32_t size, AllocatorType type,
+    ImageInfo &info)
+{
+    std::unique_lock<std::shared_mutex> lock(*pixelDataMutex_);
+    SetPixelsAddrLocked(addr, context, size, type, nullptr);
+    SetImageInfo(info, true);
 }
 
 void PixelMap::SetPixelsAddr(void *addr, void *context, uint32_t size, AllocatorType type, bool displayOnly)
@@ -4792,8 +4806,7 @@ uint32_t PixelMap::ApplyAffineTransformLocked(TransInfos &infos, AntiAliasingOpt
         m = shrinkedMemory.get();
     }
 
-    SetPixelsAddr(m->data.data, m->extend.data, m->data.size, m->GetType(), nullptr);
-    SetImageInfo(imageInfo, true);
+    SetPixelsAddrAndImageInfo(m->data.data, m->extend.data, m->data.size, m->GetType(), imageInfo);
     ImageUtils::FlushSurfaceBuffer(this);
     return SUCCESS;
 }
@@ -5138,8 +5151,7 @@ uint32_t PixelMap::Crop(const Rect &rect)
         m = shrinkedMemory.get();
     }
 
-    SetPixelsAddr(m->data.data, m->extend.data, m->data.size, m->GetType(), nullptr);
-    SetImageInfo(imageInfo, true);
+    SetPixelsAddrAndImageInfo(m->data.data, m->extend.data, m->data.size, m->GetType(), imageInfo);
 #if !defined(CROSS_PLATFORM)
     ImageUtils::UpdateYUVDataInfo(*this);
 #endif
