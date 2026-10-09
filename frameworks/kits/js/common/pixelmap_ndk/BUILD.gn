@@ -85,6 +85,8 @@ ohos_shared_library("pixelmap") {
 
   cflags = [ "-DIMAGE_COLORSPACE_FLAG" ]
 
+  version_script = "libpixelmap.versionscript"
+
   public_external_deps = [ "napi:ace_napi" ]
 
   external_deps = [
