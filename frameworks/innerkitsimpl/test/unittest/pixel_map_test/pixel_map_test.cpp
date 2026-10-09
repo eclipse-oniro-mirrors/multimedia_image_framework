@@ -8616,40 +8616,53 @@ static void CheckMarshallingWaitsForBaseCommit(bool crop)
     info.size = {8, 4};
     info.pixelFormat = PixelFormat::RGBA_8888;
     info.alphaType = AlphaType::IMAGE_ALPHA_TYPE_PREMUL;
-    ASSERT_EQ(pixelMap.SetImageInfo(info, false), SUCCESS);
+    uint32_t initResult = pixelMap.SetImageInfo(info, false);
+    EXPECT_EQ(initResult, SUCCESS);
     constexpr uint32_t bufferSize = 8 * 4 * 4;
     void *buffer = malloc(bufferSize);
-    ASSERT_NE(buffer, nullptr);
-    memset_s(buffer, bufferSize, 0x7F, bufferSize);
-    pixelMap.SetPixelsAddr(buffer, nullptr, bufferSize, AllocatorType::HEAP_ALLOC, nullptr);
+    EXPECT_NE(buffer, nullptr);
+    bool initialized = initResult == SUCCESS && buffer != nullptr;
+    if (buffer != nullptr) {
+        int fillResult = memset_s(buffer, bufferSize, 0x7F, bufferSize);
+        EXPECT_EQ(fillResult, 0);
+        initialized = initialized && fillResult == 0;
+        pixelMap.SetPixelsAddr(buffer, nullptr, bufferSize, AllocatorType::HEAP_ALLOC, nullptr);
+    }
 
     auto commitReached = pixelMap.commitReached_.get_future();
     pixelMap.pauseCommit_ = true;
     auto operation = std::async(std::launch::async, [&]() {
-        return crop ? pixelMap.PixelMap::Crop({0, 0, 4, 2}) : pixelMap.PixelMap::Rotate(90.0f);
+        uint32_t result = ERR_IMAGE_MALLOC_ABNORMAL;
+        if (initialized) {
+            result = crop ? pixelMap.PixelMap::Crop({0, 0, 4, 2}) : pixelMap.PixelMap::Rotate(90.0f);
+        }
+        return result;
     });
     // Pause after the new buffer is bound, before the new ImageInfo is applied.
     auto commitStatus = commitReached.wait_for(std::chrono::seconds(5));
     EXPECT_EQ(commitStatus, std::future_status::ready);
-    if (commitStatus != std::future_status::ready) {
-        pixelMap.resumeCommit_.set_value();
-        EXPECT_EQ(operation.get(), SUCCESS);
-        return;
-    }
 
     Parcel parcel;
     std::promise<void> readerStarted;
     auto readerStartedFuture = readerStarted.get_future();
-    auto reader = std::async(std::launch::async, [&]() {
-        readerStarted.set_value();
-        return pixelMap.Marshalling(parcel);
-    });
-    EXPECT_EQ(readerStartedFuture.wait_for(std::chrono::seconds(1)), std::future_status::ready);
-    EXPECT_EQ(reader.wait_for(std::chrono::milliseconds(100)), std::future_status::timeout);
+    std::future<bool> reader;
+    bool readerReady = false;
+    bool readerBlocked = false;
+    if (commitStatus == std::future_status::ready) {
+        reader = std::async(std::launch::async, [&]() {
+            readerStarted.set_value();
+            return pixelMap.Marshalling(parcel);
+        });
+        readerReady = readerStartedFuture.wait_for(std::chrono::seconds(1)) == std::future_status::ready;
+        readerBlocked = reader.wait_for(std::chrono::milliseconds(100)) == std::future_status::timeout;
+    }
 
     pixelMap.resumeCommit_.set_value();
     EXPECT_EQ(operation.get(), SUCCESS);
-    EXPECT_TRUE(reader.get());
+    EXPECT_TRUE(readerReady);
+    EXPECT_TRUE(readerBlocked);
+    bool marshallingResult = reader.valid() ? reader.get() : pixelMap.Marshalling(parcel);
+    EXPECT_TRUE(marshallingResult);
     EXPECT_EQ(parcel.ReadInt32(), 4);
     EXPECT_EQ(parcel.ReadInt32(), crop ? 2 : 8);
     EXPECT_EQ(parcel.ReadInt32(), static_cast<int32_t>(PixelFormat::RGBA_8888));
