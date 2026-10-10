@@ -260,6 +260,13 @@ void PixelMap::SetTransformered(bool isTransformered)
 
 void PixelMap::SetPixelsAddr(void *addr, void *context, uint32_t size, AllocatorType type, CustomFreePixelMap func)
 {
+    std::unique_lock<std::shared_mutex> lock(*pixelDataMutex_);
+    SetPixelsAddrLocked(addr, context, size, type, func);
+}
+
+void PixelMap::SetPixelsAddrLocked(void *addr, void *context, uint32_t size, AllocatorType type,
+    CustomFreePixelMap func)
+{
     if (type < AllocatorType::DEFAULT || type > AllocatorType::DMA_ALLOC) {
         IMAGE_LOGE("SetPixelsAddr error: invalid allocatorType");
         return;
@@ -290,7 +297,7 @@ void PixelMap::SetPixelsAddrAndImageInfo(void *addr, void *context, uint32_t siz
     ImageInfo &info)
 {
     std::unique_lock<std::shared_mutex> lock(*pixelDataMutex_);
-    SetPixelsAddr(addr, context, size, type, nullptr);
+    SetPixelsAddrLocked(addr, context, size, type, nullptr);
     SetImageInfo(info, true);
 }
 
