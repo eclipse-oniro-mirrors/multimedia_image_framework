@@ -678,7 +678,7 @@ static bool MallocCStringArray(char** value, const std::vector<std::string>& val
 {
     for (size_t i = 0; i < valueStrArray.size(); i++) {
         value[i] = Utils::MallocCString(valueStrArray[i]);
-        if (value[i] == nullptr) {
+        if (value[i] == nullptr && !valueStrArray[i].empty()) {
             IMAGE_LOGE("[ImageSource] MallocCString failed at index %{public}zu", i);
             for (size_t j = 0; j < i; j++) {
                 free(value[j]);
