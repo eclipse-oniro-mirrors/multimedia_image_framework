@@ -14,6 +14,7 @@
  */
 
 #include <gtest/gtest.h>
+#include <vector>
 #include <fstream>
 #include "directory_ex.h"
 #include "image_log.h"
@@ -37,7 +38,6 @@ using namespace OHOS::Media;
 using namespace OHOS::ImageSourceUtil;
 namespace OHOS {
 namespace Multimedia {
-static constexpr uint32_t DEFAULT_DELAY_UTIME = 10000;  // 10 ms.
 
 class ImageSourcePngTest : public testing::Test {
 public:
@@ -225,68 +225,6 @@ HWTEST_F(ImageSourcePngTest, PngImageDecode006, TestSize.Level3)
 }
 
 /**
- * @tc.name: PngImageDecode007
- * @tc.desc: Decode png image from incremental source stream
- * @tc.type: FUNC
- */
-HWTEST_F(ImageSourcePngTest, PngImageDecode007, TestSize.Level3)
-{
-    /**
-     * @tc.steps: step1. create image source by incremental source stream and default format hit
-     * @tc.expected: step1. create image source success.
-     */
-    size_t bufferSize = 0;
-    bool fileRet = ImageUtils::GetFileSize("/data/local/tmp/image/test.png", bufferSize);
-    ASSERT_EQ(fileRet, true);
-    uint8_t *buffer = static_cast<uint8_t *>(malloc(bufferSize));
-    ASSERT_NE(buffer, nullptr);
-    fileRet = ReadFileToBuffer("/data/local/tmp/image/test.png", buffer, bufferSize);
-    ASSERT_EQ(fileRet, true);
-    uint32_t errorCode = 0;
-    IncrementalSourceOptions incOpts;
-    incOpts.incrementalMode = IncrementalMode::INCREMENTAL_DATA;
-    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateIncrementalImageSource(incOpts, errorCode);
-    ASSERT_EQ(errorCode, SUCCESS);
-    ASSERT_NE(imageSource.get(), nullptr);
-    /**
-     * @tc.steps: step2. update incremental stream every 10 ms with random data size and promote decode
-     * image to pixel map by default decode options
-     * @tc.expected: step2. decode image source to pixel map success.
-     */
-    DecodeOptions decodeOpts;
-    std::unique_ptr<IncrementalPixelMap> incPixelMap = imageSource->CreateIncrementalPixelMap(0, decodeOpts, errorCode);
-    uint32_t updateSize = 0;
-    srand(time(nullptr));
-    bool isCompleted = false;
-    while (updateSize < bufferSize) {
-        uint32_t updateOnceSize = rand() % 1024;
-        if (updateSize + updateOnceSize > bufferSize) {
-            updateOnceSize = bufferSize - updateSize;
-            isCompleted = true;
-        }
-        uint32_t ret = imageSource->UpdateData(buffer + updateSize, updateOnceSize, isCompleted);
-        ASSERT_EQ(ret, SUCCESS);
-        uint8_t decodeProgress = 0;
-        IMAGE_LOGD("updateOnceSize:%{public}u,updateSize:%{public}u,bufferSize:%{public}zu",
-                     updateOnceSize, updateSize, bufferSize);
-        incPixelMap->PromoteDecoding(decodeProgress);
-        updateSize += updateOnceSize;
-        usleep(DEFAULT_DELAY_UTIME);
-    }
-    incPixelMap->DetachFromDecoding();
-    IncrementalDecodingStatus status = incPixelMap->GetDecodingStatus();
-    ASSERT_EQ(status.decodingProgress, 100);
-
-    /**
-     * @tc.steps: step3. compress the pixel map to jpeg file.
-     * @tc.expected: step3. pack pixel map success and the jpeg compress file size equals to PNG_PACK_SIZE.
-     */
-    int64_t packSize = PackImage("/data/local/tmp/image/test_file.jpg", std::move(incPixelMap));
-    ASSERT_NE(packSize, 0);
-    free(buffer);
-}
-
-/**
  * @tc.name: PngImageDecode008
  * @tc.desc: Decode png image multiple times from one ImageSource
  * @tc.type: FUNC
@@ -326,147 +264,6 @@ HWTEST_F(ImageSourcePngTest, PngImageDecode008, TestSize.Level3)
     ASSERT_NE(packSize, 0);
     packSize = PackImage("/data/local/tmp/image/test_png_file2.jpg", std::move(pixelMap2));
     ASSERT_NE(packSize, 0);
-}
-
-/**
- * @tc.name: PngImageDecode009
- * @tc.desc: Decode png image by incremental mode and then decode again by one-time mode.
- * @tc.type: FUNC
- */
-HWTEST_F(ImageSourcePngTest, PngImageDecode009, TestSize.Level3)
-{
-    /**
-     * @tc.steps: step1. create image source by incremental source stream and default format hit
-     * @tc.expected: step1. create image source success.
-     */
-    size_t bufferSize = 0;
-    bool fileRet = ImageUtils::GetFileSize("/data/local/tmp/image/test.png", bufferSize);
-    ASSERT_EQ(fileRet, true);
-    uint8_t *buffer = static_cast<uint8_t *>(malloc(bufferSize));
-    ASSERT_NE(buffer, nullptr);
-    fileRet = ReadFileToBuffer("/data/local/tmp/image/test.png", buffer, bufferSize);
-    ASSERT_EQ(fileRet, true);
-    uint32_t errorCode = 0;
-    IncrementalSourceOptions incOpts;
-    incOpts.incrementalMode = IncrementalMode::INCREMENTAL_DATA;
-    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateIncrementalImageSource(incOpts, errorCode);
-    ASSERT_EQ(errorCode, SUCCESS);
-    ASSERT_NE(imageSource.get(), nullptr);
-    /**
-     * @tc.steps: step2. update incremental stream every 10 ms with random data size and promote decode
-     * image to pixel map by default decode options
-     * @tc.expected: step2. decode image source to pixel map success.
-     */
-    DecodeOptions decodeOpts;
-    std::unique_ptr<IncrementalPixelMap> incPixelMap = imageSource->CreateIncrementalPixelMap(0, decodeOpts, errorCode);
-    uint32_t updateSize = 0;
-    srand(time(nullptr));
-    bool isCompleted = false;
-    while (updateSize < bufferSize) {
-        uint32_t updateOnceSize = rand() % 1024;
-        if (updateSize + updateOnceSize > bufferSize) {
-            updateOnceSize = bufferSize - updateSize;
-            isCompleted = true;
-        }
-        uint32_t ret = imageSource->UpdateData(buffer + updateSize, updateOnceSize, isCompleted);
-        ASSERT_EQ(ret, SUCCESS);
-        uint8_t decodeProgress = 0;
-        incPixelMap->PromoteDecoding(decodeProgress);
-        updateSize += updateOnceSize;
-        usleep(DEFAULT_DELAY_UTIME);
-    }
-    incPixelMap->DetachFromDecoding();
-    IncrementalDecodingStatus status = incPixelMap->GetDecodingStatus();
-    ASSERT_EQ(status.decodingProgress, 100);
-    /**
-     * @tc.steps: step3. decode image source to pixel map by default decode options again.
-     * @tc.expected: step3. decode image source to pixel map success.
-     */
-    std::unique_ptr<PixelMap> pixelMap1 = imageSource->CreatePixelMap(decodeOpts, errorCode);
-    ASSERT_EQ(errorCode, SUCCESS);
-    ASSERT_NE(pixelMap1.get(), nullptr);
-    /**
-     * @tc.steps: step4. compress the pixel map to jpeg file.
-     * @tc.expected: step4. pack bitmap success and the jpeg compress file size equals to PNG_PACK_SIZE.
-     */
-    int64_t packSize = PackImage("/data/local/tmp/image/test_png_inc1.jpg", std::move(incPixelMap));
-    ASSERT_NE(packSize, 0);
-    packSize = PackImage("/data/local/tmp/image/test_png_onetime1.jpg", std::move(pixelMap1));
-    ASSERT_NE(packSize, 0);
-    free(buffer);
-}
-
-/**
- * @tc.name: PngImageDecode010
- * @tc.desc: Decode jpeg image by one-time mode and then decode again by incremental mode.
- * @tc.type: FUNC
- */
-HWTEST_F(ImageSourcePngTest, PngImageDecode010, TestSize.Level3)
-{
-    /**
-     * @tc.steps: step1. create image source by incremental source stream and default format hit
-     * @tc.expected: step1. create image source success.
-     */
-    size_t bufferSize = 0;
-    bool fileRet = ImageUtils::GetFileSize("/data/local/tmp/image/test.png", bufferSize);
-    ASSERT_EQ(fileRet, true);
-    uint8_t *buffer = static_cast<uint8_t *>(malloc(bufferSize));
-    ASSERT_NE(buffer, nullptr);
-    fileRet = ReadFileToBuffer("/data/local/tmp/image/test.png", buffer, bufferSize);
-    ASSERT_EQ(fileRet, true);
-    uint32_t errorCode = 0;
-    IncrementalSourceOptions incOpts;
-    incOpts.incrementalMode = IncrementalMode::INCREMENTAL_DATA;
-    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateIncrementalImageSource(incOpts, errorCode);
-    ASSERT_EQ(errorCode, SUCCESS);
-    ASSERT_NE(imageSource.get(), nullptr);
-    /**
-     * @tc.steps: step2. update incremental stream every 10 ms with random data size.
-     * @tc.expected: step2. update success.
-     */
-    uint32_t updateSize = 0;
-    srand(time(nullptr));
-    bool isCompleted = false;
-    while (updateSize < bufferSize) {
-        uint32_t updateOnceSize = rand() % 1024;
-        if (updateSize + updateOnceSize > bufferSize) {
-            updateOnceSize = bufferSize - updateSize;
-            isCompleted = true;
-        }
-        uint32_t ret = imageSource->UpdateData(buffer + updateSize, updateOnceSize, isCompleted);
-        ASSERT_EQ(ret, SUCCESS);
-        updateSize += updateOnceSize;
-        usleep(DEFAULT_DELAY_UTIME);
-    }
-
-    /**
-     * @tc.steps: step3. decode image source to pixel map by default decode options.
-     * @tc.expected: step3. decode image source to pixel map success.
-     */
-    DecodeOptions decodeOpts;
-    std::unique_ptr<PixelMap> pixelMap1 = imageSource->CreatePixelMap(decodeOpts, errorCode);
-    ASSERT_EQ(errorCode, SUCCESS);
-    ASSERT_NE(pixelMap1.get(), nullptr);
-
-    /**
-     * @tc.steps: step4. decode image source to pixel map by incremental mode again.
-     * @tc.expected: step4. decode image source to pixel map success.
-     */
-    std::unique_ptr<IncrementalPixelMap> incPixelMap = imageSource->CreateIncrementalPixelMap(0, decodeOpts, errorCode);
-    uint8_t decodeProgress = 0;
-    incPixelMap->PromoteDecoding(decodeProgress);
-    incPixelMap->DetachFromDecoding();
-    IncrementalDecodingStatus status = incPixelMap->GetDecodingStatus();
-    ASSERT_EQ(status.decodingProgress, 100);
-    /**
-     * @tc.steps: step4. compress the pixel map to jpeg file.
-     * @tc.expected: step4. pack pixel map success and the jpeg compress file size equals to PNG_PACK_SIZE.
-     */
-    int64_t packSize = PackImage("/data/local/tmp/image/test_png_inc2.jpg", std::move(incPixelMap));
-    ASSERT_NE(packSize, 0);
-    packSize = PackImage("/data/local/tmp/image/test_png_onetime2.jpg", std::move(pixelMap1));
-    ASSERT_NE(packSize, 0);
-    free(buffer);
 }
 
 /**
@@ -698,5 +495,46 @@ HWTEST_F(ImageSourcePngTest, PngSampleDecodeTest004, TestSize.Level3)
 {
     SampleDecodePngTest(8);
 }
+
+/**
+ * @tc.name: PngDecodeCompletedIncrementalSource
+ * @tc.desc: Decode a complete image supplied in chunks without legacy incremental decoding.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourcePngTest, PngDecodeCompletedIncrementalSource, TestSize.Level3)
+{
+    size_t bufferSize = 0;
+    ASSERT_TRUE(ImageUtils::GetFileSize("/data/local/tmp/image/test.png", bufferSize));
+    ASSERT_GT(bufferSize, 1U);
+    std::vector<uint8_t> buffer(bufferSize);
+    ASSERT_TRUE(ReadFileToBuffer("/data/local/tmp/image/test.png", buffer.data(), buffer.size()));
+
+    uint32_t errorCode = SUCCESS;
+    IncrementalSourceOptions incOpts;
+    incOpts.incrementalMode = IncrementalMode::INCREMENTAL_DATA;
+    auto imageSource = ImageSource::CreateIncrementalImageSource(incOpts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource, nullptr);
+    const size_t firstChunkSize = buffer.size() / 2;
+    ASSERT_EQ(imageSource->UpdateData(buffer.data(), firstChunkSize, false), SUCCESS);
+    ASSERT_EQ(imageSource->UpdateData(buffer.data() + firstChunkSize,
+        buffer.size() - firstChunkSize, true), SUCCESS);
+
+    DecodeOptions decodeOpts;
+    auto pixelMap = imageSource->CreatePixelMapEx(0, decodeOpts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(pixelMap, nullptr);
+
+    auto referenceSource = ImageSource::CreateImageSource("/data/local/tmp/image/test.png", SourceOptions(), errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(referenceSource, nullptr);
+    auto referencePixelMap = referenceSource->CreatePixelMapEx(0, decodeOpts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(referencePixelMap, nullptr);
+    EXPECT_EQ(pixelMap->GetWidth(), referencePixelMap->GetWidth());
+    EXPECT_EQ(pixelMap->GetHeight(), referencePixelMap->GetHeight());
+    EXPECT_EQ(pixelMap->GetPixelFormat(), referencePixelMap->GetPixelFormat());
+}
+
 } // namespace Multimedia
 } // namespace OHOS

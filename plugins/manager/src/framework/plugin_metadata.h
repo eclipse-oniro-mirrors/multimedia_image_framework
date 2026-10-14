@@ -19,6 +19,7 @@
 namespace OHOS {
 namespace MultimediaPlugin {
 const std::vector<std::string> META_DATA = {
+#if defined(_WIN32) || defined(_APPLE) || defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM)
     R"({
         "packageName":"LibJpegPlugin",
         "version":"1.0.0.0",
@@ -51,6 +52,7 @@ const std::vector<std::string> META_DATA = {
             }
         ]
     })",
+#endif
 
     R"({
         "packageName":"LibRawPlugin",

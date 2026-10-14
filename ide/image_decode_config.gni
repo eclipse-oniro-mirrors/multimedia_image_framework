@@ -24,6 +24,10 @@ use_clang_mac = "${current_os}_${current_cpu}" == "mac_x64"
 use_clang_ios = current_os == "ios" || current_os == "tvos"
 use_clang_android = current_os == "android"
 
+# Legacy JPEG/PNG codec plugins are used by cross-platform builds.
+image_build_legacy_codec_plugins =
+    use_mingw_win || use_clang_mac || use_clang_android || use_clang_ios
+
 # Toolchain
 windows_buildtool = "//build/toolchain/mingw:mingw_x86_64"
 mac_buildtool = "//build/toolchain/mac:clang_x64"

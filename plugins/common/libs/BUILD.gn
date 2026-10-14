@@ -48,10 +48,6 @@ group("multimediaplugin") {
 
       "image/libextplugin:extplugin",
       "image/libextplugin:extpluginmetadata",
-      "image/libjpegplugin:jpegplugin",
-      "image/libjpegplugin:jpegpluginmetadata",
-      "image/libpngplugin:pngplugin",
-      "image/libpngplugin:pngpluginmetadata",
       #"image/librawplugin:rawplugin",
       "image/librawplugin:rawpluginmetadata",
       "image/libsvgplugin:svgplugin",

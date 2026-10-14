@@ -545,11 +545,14 @@ static std::shared_ptr<PixelMap> CreatePixelMapInner(SendableImageSourceNapi *th
     }
 
     std::shared_ptr<PixelMap> pixelMap;
+#if defined(_WIN32) || defined(_APPLE) || defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM)
     auto incPixelMap = thisPtr->GetIncrementalPixelMap();
     if (incPixelMap != nullptr) {
         IMAGE_LOGD("Get Incremental PixelMap!!!");
         pixelMap = incPixelMap;
-    } else {
+    } else
+#endif
+    {
         decodeOpts.invokeType = JS_INTERFACE;
         pixelMap = imageSource->CreatePixelMapEx(index, decodeOpts, status);
     }

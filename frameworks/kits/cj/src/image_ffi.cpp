@@ -424,6 +424,7 @@ FFI_EXPORT uint32_t FfiOHOSUpdateData(int64_t id, UpdateDataInfo info)
     }
     uint32_t size = info.updateLen < lastSize ? info.updateLen : lastSize;
     uint32_t ret = instance->UpdateData(buffer, size, info.isCompleted);
+#if defined(_WIN32) || defined(_APPLE) || defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM)
     if (ret == 0) {
         auto incPixelMap = instance->GetIncrementalPixelMap();
         if (incPixelMap != nullptr) {
@@ -437,6 +438,7 @@ FFI_EXPORT uint32_t FfiOHOSUpdateData(int64_t id, UpdateDataInfo info)
             }
         }
     }
+#endif
 
     IMAGE_LOGD("[ImageSource] FfiOHOSUpdateData success");
     return ret;

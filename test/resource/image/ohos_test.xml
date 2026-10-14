@@ -201,13 +201,6 @@
             <option name="push" value="images/test.jpg -> /data/local/tmp/image" src="res"/>
         </preparer>
     </target>
-    <target name="pluginlibjpegtest">
-        <preparer>
-            <option name="push" value="images/test.txt -> /data/local/tmp/image" src="res"/>
-            <option name="push" value="images/test_null.jpg -> /data/local/tmp/image" src="res"/>
-            <option name="push" value="images/test_exif.jpg -> /data/local/tmp/image" src="res"/>
-        </preparer>
-    </target>
     <target name="interfacetest">
         <preparer>
             <option name="push" value="images/test.jpg -> /data/local/tmp/image" src="res"/>
@@ -403,12 +396,6 @@
             <option name="push" value="images/test_exif.jpg -> /data/local/tmp/image" src="res"/>
         </preparer>
     </target>
-    <target name="jpegdecoderextest">
-        <preparer>
-            <option name="push" value="images/800-500.jpg -> /data/local/tmp/image" src="res"/>
-            <option name="push" value="images/test_exif.jpg -> /data/local/tmp/image" src="res"/>
-        </preparer>
-    </target>
     <target name="pixelastctest">
         <preparer>
             <option name="push" value="images/test.astc -> /data/local/tmp/image" src="res"/>
@@ -546,7 +533,7 @@
             <option name="push" value="images/test_raw_dng.dng -> /data/local/tmp/image" src="res"/>
         </preparer>
     </target>
-    <target name="pngtest">
+    <target name="svgdecodertest">
         <preparer>
             <option name="push" value="images/test.svg -> /data/local/tmp/image" src="res"/>
         </preparer>

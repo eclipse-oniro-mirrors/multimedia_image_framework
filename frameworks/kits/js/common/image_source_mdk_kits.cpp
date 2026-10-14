@@ -470,7 +470,10 @@ static int32_t ImageSourceNapiCreatePixelmap(struct ImageSourceArgs* args)
         IMAGE_LOGE("ImageSourceNapiCreatePixelmap args or napi is nullptr");
         return IMAGE_RESULT_BAD_PARAMETER;
     }
-    std::shared_ptr<PixelMap> nativePixelMap = args->napi->GetIncrementalPixelMap();
+    std::shared_ptr<PixelMap> nativePixelMap;
+#if defined(_WIN32) || defined(_APPLE) || defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM)
+    nativePixelMap = args->napi->GetIncrementalPixelMap();
+#endif
     if (nativePixelMap == nullptr) {
         DecodeOptions decOps;
         uint32_t index = DEFAULT_INDEX;
@@ -698,6 +701,7 @@ static int32_t ImageSourceNapiModifyImageProperty(struct ImageSourceArgs* args)
 
 static int32_t ProcessIncrementalPixelMap(struct ImageSourceArgs* args, bool completed)
 {
+#if defined(_WIN32) || defined(_APPLE) || defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM)
     auto incPixelMap = args->napi->GetIncrementalPixelMap();
     if (incPixelMap == nullptr) {
         IMAGE_LOGE("ProcessIncrementalPixelMap incremental pixelmap is nullptr");
@@ -712,6 +716,7 @@ static int32_t ProcessIncrementalPixelMap(struct ImageSourceArgs* args, bool com
         IMAGE_LOGE("ProcessIncrementalPixelMap promote decoding failed");
         return IMAGE_RESULT_BAD_PARAMETER;
     }
+#endif
     return IMAGE_RESULT_SUCCESS;
 }
 

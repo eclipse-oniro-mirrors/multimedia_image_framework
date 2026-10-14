@@ -2410,11 +2410,14 @@ static std::shared_ptr<PixelMap> CreatePixelMapInner(ImageSourceNapi *thisPtr,
     }
 
     std::shared_ptr<PixelMap> pixelMap;
+#if defined(_WIN32) || defined(_APPLE) || defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM)
     auto incPixelMap = (thisPtr == nullptr) ? nullptr : thisPtr->GetIncrementalPixelMap();
     if (incPixelMap != nullptr) {
         IMAGE_LOGD("Get Incremental PixelMap!!!");
         pixelMap = incPixelMap;
-    } else {
+    } else
+#endif
+    {
         decodeOpts.invokeType = JS_INTERFACE;
         pixelMap = (imageSource == nullptr) ? nullptr : imageSource->CreatePixelMapEx((index >= NUM_0) ? index : NUM_0,
             decodeOpts, status);
@@ -4528,6 +4531,7 @@ static void UpdateDataExecute(napi_env env, void *data)
     uint32_t res = context->rImageSource->UpdateData(buffer, size,
                                                      context->isCompleted);
     context->isSuccess = res == 0;
+#if defined(_WIN32) || defined(_APPLE) || defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM)
     if (context->isSuccess && context->constructor_ != nullptr) {
         auto incPixelMap = context->constructor_->GetIncrementalPixelMap();
         if (incPixelMap != nullptr) {
@@ -4542,6 +4546,7 @@ static void UpdateDataExecute(napi_env env, void *data)
             }
         }
     }
+#endif
 }
 
 static void UpdateDataComplete(napi_env env, napi_status status, void *data)

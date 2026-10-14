@@ -553,11 +553,14 @@ static std::shared_ptr<OHOS::Media::PixelMap> CreatePixelMapInner(ImageSourceImp
     }
 
     std::shared_ptr<OHOS::Media::PixelMap> pixelMap;
+#if defined(_WIN32) || defined(_APPLE) || defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM)
     auto incPixelMap = (thisPtr == nullptr) ? nullptr : thisPtr->GetIncrementalPixelMap();
     if (incPixelMap != nullptr) {
         IMAGE_LOGD("Get Incremental PixelMap!!!");
         pixelMap = incPixelMap;
-    } else {
+    } else
+#endif
+    {
         decodeOpts.invokeType = OHOS::Media::JS_INTERFACE;
         pixelMap = (imageSource == nullptr) ? nullptr : imageSource->CreatePixelMapEx((index >= NUM_0) ? index : NUM_0,
             decodeOpts, status);
@@ -1369,6 +1372,7 @@ static void UpdateDataExecute(std::unique_ptr<ImageSourceTaiheContext> &context)
     uint32_t res = context->rImageSource->UpdateData(buffer, size,
                                                      context->isCompleted);
     context->isSuccess = res == 0;
+#if defined(_WIN32) || defined(_APPLE) || defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM)
     if (context->isSuccess && context->thisPtr != nullptr) {
         auto incPixelMap = context->thisPtr->GetIncrementalPixelMap();
         if (incPixelMap != nullptr) {
@@ -1384,6 +1388,7 @@ static void UpdateDataExecute(std::unique_ptr<ImageSourceTaiheContext> &context)
             }
         }
     }
+#endif
 }
 
 static void ModifyImagePropertiesEnhancedExecute(std::unique_ptr<ImageSourceTaiheContext> &context)
