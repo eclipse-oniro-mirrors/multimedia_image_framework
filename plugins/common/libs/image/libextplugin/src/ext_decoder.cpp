@@ -1326,7 +1326,7 @@ OHOS::Media::Size ExtDecoder::GetHeifRegionGridSize()
 
 void ExtDecoder::SetHeifDecodeRegion(DecodeContext &context, int32_t gridTileWidth, int32_t gridTileHeight)
 {
-    if (gridTileWidth == ZERO || gridTileHeight == ZERO) {
+    if (gridTileWidth <= ZERO || gridTileHeight <= ZERO) {
         return;
     }
     double tempRegionColCount = ((desiredRegion_.left % gridTileWidth) + desiredRegion_.width) /

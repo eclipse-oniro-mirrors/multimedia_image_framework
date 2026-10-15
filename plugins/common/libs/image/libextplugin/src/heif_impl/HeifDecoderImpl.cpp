@@ -1381,6 +1381,8 @@ bool HeifDecoderImpl::IsHeifGainmapDivisibility(int32_t primaryDisplayWidth, int
 
 void HeifDecoderImpl::SetDecodeRegion(int32_t colCount, int32_t rowCount, int32_t left, int32_t top, size_t rowStride)
 {
+    CHECK_ERROR_RETURN_LOG(colCount <= 0 || rowCount <= 0,
+        "SetDecodeRegion invalid colCount: %{public}d or rowCount: %{public}d", colCount, rowCount);
     regionInfo_.colCount = static_cast<uint32_t>(colCount);
     regionInfo_.rowCount = static_cast<uint32_t>(rowCount);
     regionInfo_.left = static_cast<uint32_t>(left);
