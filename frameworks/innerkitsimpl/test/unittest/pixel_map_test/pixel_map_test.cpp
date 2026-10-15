@@ -8593,6 +8593,102 @@ HWTEST_F(PixelMapTest, SetAlphaTypeSuccess001, TestSize.Level3)
     EXPECT_TRUE(pixelMap->SetAlphaType(AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL));
 }
 
+class CommitPausingPixelMap : public PixelMap {
+public:
+    uint32_t SetImageInfo(ImageInfo &info, bool isReused) override
+    {
+        if (pauseCommit_) {
+            commitReached_.set_value();
+            resumeCommit_.get_future().wait();
+        }
+        return PixelMap::SetImageInfo(info, isReused);
+    }
+
+    bool pauseCommit_ = false;
+    std::promise<void> commitReached_;
+    std::promise<void> resumeCommit_;
+};
+
+static void CheckMarshallingWaitsForBaseCommit(bool crop)
+{
+    CommitPausingPixelMap pixelMap;
+    ImageInfo info;
+    info.size = {8, 4};
+    info.pixelFormat = PixelFormat::RGBA_8888;
+    info.alphaType = AlphaType::IMAGE_ALPHA_TYPE_PREMUL;
+    uint32_t initResult = pixelMap.SetImageInfo(info, false);
+    EXPECT_EQ(initResult, SUCCESS);
+    constexpr uint32_t bufferSize = 8 * 4 * 4;
+    void *buffer = malloc(bufferSize);
+    EXPECT_NE(buffer, nullptr);
+    bool initialized = initResult == SUCCESS && buffer != nullptr;
+    if (buffer != nullptr) {
+        int fillResult = memset_s(buffer, bufferSize, 0x7F, bufferSize);
+        EXPECT_EQ(fillResult, 0);
+        initialized = initialized && fillResult == 0;
+        pixelMap.SetPixelsAddr(buffer, nullptr, bufferSize, AllocatorType::HEAP_ALLOC, nullptr);
+    }
+
+    auto commitReached = pixelMap.commitReached_.get_future();
+    pixelMap.pauseCommit_ = true;
+    auto operation = std::async(std::launch::async, [&]() {
+        uint32_t result = ERR_IMAGE_MALLOC_ABNORMAL;
+        if (initialized) {
+            result = crop ? pixelMap.PixelMap::Crop({0, 0, 4, 2}) : pixelMap.PixelMap::Rotate(90.0f);
+        }
+        return result;
+    });
+    // Pause after the new buffer is bound, before the new ImageInfo is applied.
+    auto commitStatus = commitReached.wait_for(std::chrono::seconds(5));
+    EXPECT_EQ(commitStatus, std::future_status::ready);
+
+    Parcel parcel;
+    std::promise<void> readerStarted;
+    auto readerStartedFuture = readerStarted.get_future();
+    std::future<bool> reader;
+    bool readerReady = false;
+    bool readerBlocked = false;
+    if (commitStatus == std::future_status::ready) {
+        reader = std::async(std::launch::async, [&]() {
+            readerStarted.set_value();
+            return pixelMap.Marshalling(parcel);
+        });
+        readerReady = readerStartedFuture.wait_for(std::chrono::seconds(1)) == std::future_status::ready;
+        readerBlocked = reader.wait_for(std::chrono::milliseconds(100)) == std::future_status::timeout;
+    }
+
+    pixelMap.resumeCommit_.set_value();
+    EXPECT_EQ(operation.get(), SUCCESS);
+    EXPECT_TRUE(readerReady);
+    EXPECT_TRUE(readerBlocked);
+    bool marshallingResult = reader.valid() ? reader.get() : pixelMap.Marshalling(parcel);
+    EXPECT_TRUE(marshallingResult);
+    EXPECT_EQ(parcel.ReadInt32(), 4);
+    EXPECT_EQ(parcel.ReadInt32(), crop ? 2 : 8);
+    EXPECT_EQ(parcel.ReadInt32(), static_cast<int32_t>(PixelFormat::RGBA_8888));
+    EXPECT_EQ(pixelMap.GetByteCount(), crop ? 4 * 2 * 4 : 4 * 8 * 4);
+}
+
+/**
+ * @tc.name: MarshallingWaitsForBaseTransformCommit001
+ * @tc.desc: Marshalling cannot enter between the base transform buffer and ImageInfo updates
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, MarshallingWaitsForBaseTransformCommit001, TestSize.Level3)
+{
+    CheckMarshallingWaitsForBaseCommit(false);
+}
+
+/**
+ * @tc.name: MarshallingWaitsForBaseCropCommit001
+ * @tc.desc: Marshalling cannot enter between the base crop buffer and ImageInfo updates
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, MarshallingWaitsForBaseCropCommit001, TestSize.Level3)
+{
+    CheckMarshallingWaitsForBaseCommit(true);
+}
+
 /**
  * @tc.name: IsYuvFormatStatic001
  * @tc.desc: Test IsYuvFormat static method returns correct result for various formats
