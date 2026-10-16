@@ -150,6 +150,8 @@ static Image_ErrorCode ToNewErrorCode(int code)
             return IMAGE_UNSUPPORTED_DATA_FORMAT;
         case IMAGE_RESULT_TOO_LARGE:
             return IMAGE_TOO_LARGE;
+        case ERR_IMAGE_WRITE_PIXELMAP_FAILED:
+            return IMAGE_COPY_FAILED;
         default:
             return IMAGE_UNKNOWN_ERROR;
     }
@@ -858,6 +860,17 @@ Image_ErrorCode OH_PixelmapNative_WritePixels(OH_PixelmapNative *pixelmap, uint8
 }
 
 MIDK_EXPORT
+Image_ErrorCode OH_PixelmapNative_WritePixelsWithPixelFormat(OH_PixelmapNative *pixelmap,
+    const uint8_t *source, uint32_t bufferSize, PIXEL_FORMAT sourcePixelFormat)
+{
+    if (pixelmap == nullptr || source == nullptr || !pixelmap->GetInnerPixelmap()) {
+        return IMAGE_BAD_PARAMETER;
+    }
+    return ToNewErrorCode(pixelmap->GetInnerPixelmap()->WritePixels(
+        source, static_cast<uint64_t>(bufferSize), static_cast<PixelFormat>(sourcePixelFormat)));
+}
+
+MIDK_EXPORT
 Image_ErrorCode OH_PixelmapNative_ReadPixelsFromArea(OH_PixelmapNative *pixelmap, Image_PositionArea *area)
 {
     if (pixelmap == nullptr || !pixelmap->GetInnerPixelmap() || area == nullptr || area->pixels == nullptr) {
@@ -885,6 +898,23 @@ Image_ErrorCode OH_PixelmapNative_WritePixelsToArea(OH_PixelmapNative *pixelmap,
     }
     return ToNewErrorCode(pixelmap->GetInnerPixelmap()->WritePixels(
         area->pixels, area->pixelsSize, area->offset, area->stride, region));
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_PixelmapNative_WritePixelsToAreaWithPixelFormat(OH_PixelmapNative *pixelmap,
+    const Image_PositionArea *area, PIXEL_FORMAT sourcePixelFormat)
+{
+    if (pixelmap == nullptr || !pixelmap->GetInnerPixelmap() ||
+        area == nullptr || area->pixels == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
+    OHOS::Media::Rect region;
+    if (!ConvertImageRegionToRect(area->region, region)) {
+        return IMAGE_BAD_PARAMETER;
+    }
+    RWPixelsOptions opts{area->pixels, static_cast<uint64_t>(area->pixelsSize),
+        area->offset, area->stride, region, static_cast<PixelFormat>(sourcePixelFormat)};
+    return ToNewErrorCode(pixelmap->GetInnerPixelmap()->WritePixels(opts));
 }
 
 MIDK_EXPORT

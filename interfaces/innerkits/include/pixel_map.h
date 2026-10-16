@@ -681,6 +681,18 @@ public:
      * @return Return 0 if successful, otherwise return errorcode.
      */
     NATIVEEXPORT virtual uint32_t WritePixels(const uint8_t *source, const uint64_t &bufferSize);
+
+    /**
+     * Write pixels with source pixel format.
+     *
+     * @param source pixels addr.
+     * @param bufferSize buffer size.
+     * @param srcPixelFormat source pixel format.
+     * @return Return 0 if successful, otherwise return errorcode.
+     */
+    NATIVEEXPORT virtual uint32_t WritePixels(const uint8_t *source, const uint64_t &bufferSize,
+                                              PixelFormat srcPixelFormat);
+
     NATIVEEXPORT virtual bool WritePixels(const uint32_t &color);
     /**
      * Release the pixel buffer.

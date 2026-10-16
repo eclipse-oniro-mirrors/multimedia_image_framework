@@ -2447,6 +2447,11 @@ uint32_t PixelMap::WritePixels(const RWPixelsOptions &opts)
         return ERR_IMAGE_INVALID_PARAMETER;
     }
 
+    if (isAstc_ || IsYUV(imageInfo_.pixelFormat)) {
+        IMAGE_LOGE("write pixel by rect unsupported conversion for target format: %{public}d", imageInfo_.pixelFormat);
+        return ERR_IMAGE_COLOR_CONVERT;
+    }
+
     uint32_t ret = CheckPixelMapForWritePixels();
     if (ret != SUCCESS) {
         return ret;
@@ -2541,6 +2546,31 @@ uint32_t PixelMap::WritePixels(const uint8_t *source, const uint64_t &bufferSize
     }
     ImageUtils::FlushSurfaceBuffer(this);
     return SUCCESS;
+}
+
+uint32_t PixelMap::WritePixels(const uint8_t *source, const uint64_t &bufferSize, PixelFormat srcPixelFormat)
+{
+    if (srcPixelFormat != PixelFormat::BGRA_8888 &&
+        srcPixelFormat != PixelFormat::RGBA_8888 &&
+        srcPixelFormat != PixelFormat::RGB_888 &&
+        srcPixelFormat != PixelFormat::RGB_565 &&
+        srcPixelFormat != PixelFormat::RGBA_F16) {
+        IMAGE_LOGE("write pixels with format unsupported source pixel format: %{public}d", srcPixelFormat);
+        return ERR_IMAGE_INVALID_PARAMETER;
+    }
+    if (isAstc_ || IsYUV(imageInfo_.pixelFormat)) {
+        IMAGE_LOGE("write pixels with format unsupported conversion for target format: %{public}d",
+            imageInfo_.pixelFormat);
+        return ERR_IMAGE_COLOR_CONVERT;
+    }
+    int32_t pixelBytes = ImageUtils::GetPixelBytes(srcPixelFormat);
+    if (pixelBytes <= 0) {
+        IMAGE_LOGE("write pixels with format get pixel bytes failed, format: %{public}d", srcPixelFormat);
+        return ERR_IMAGE_INVALID_PARAMETER;
+    }
+    uint32_t stride = static_cast<uint32_t>(imageInfo_.size.width) * static_cast<uint32_t>(pixelBytes);
+    Rect region = { 0, 0, imageInfo_.size.width, imageInfo_.size.height };
+    return WritePixels(RWPixelsOptions{source, bufferSize, 0, stride, region, srcPixelFormat});
 }
 
 bool PixelMap::WritePixels(const uint32_t &color)

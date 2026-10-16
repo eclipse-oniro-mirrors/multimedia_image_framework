@@ -399,6 +399,32 @@ void FuzzTestWritePixelsWith5Args(bool isEditable)
     pixelmap->WritePixels(regionBuffer_with_write.get(), dstSize, offset, regionStride, region);
 }
 
+void FuzzTestWritePixelsWithPixelFormat(bool isEditable)
+{
+    Media::InitializationOptions opts = GetInitialRandomOpts();
+    if (opts.pixelFormat == PixelFormat::ALPHA_8) {
+        return;
+    }
+    opts.editable = isEditable;
+    std::unique_ptr<Media::PixelMap> pixelmap = GetPixelMapFromOpts(opts);
+    if (!pixelmap) {
+        return;
+    }
+    // Random source format - may or may not be supported
+    PixelFormat srcFormat = static_cast<PixelFormat>(GetData<uint32_t>() % PIXELFORMAT_MODULO);
+    // Random buffer size - may be too small or larger than needed
+    int32_t targetSize = pixelmap->GetByteCount();
+    if (targetSize <= 0) {
+        return;
+    }
+    uint64_t bufferSize = GetData<uint32_t>() % (static_cast<uint32_t>(targetSize) * 2 + 1);
+    if (bufferSize == 0) {
+        bufferSize = 1;
+    }
+    std::unique_ptr<uint8_t[]> buffer = std::make_unique<uint8_t[]>(bufferSize);
+    pixelmap->WritePixels(buffer.get(), bufferSize, srcFormat);
+}
+
 void FuzzTestCrop()
 {
     Media::InitializationOptions opts = GetInitialRandomOpts();
@@ -495,6 +521,7 @@ void PixelMapInterfaceFuzzTest()
     FuzzTestRGBA_F16PixelMapSetAlpha();
     FuzzTestRGBA_1010102PixelMapSetAlpha();
     FuzzTestWritePixelsWith5Args(GetData<uint32_t>() % 2); // 2: true or false
+    FuzzTestWritePixelsWithPixelFormat(GetData<uint32_t>() % 2); // 2: true or false
     FuzzTestCrop();
     FuzzTestSetFunc();
     FuzzTestClone();

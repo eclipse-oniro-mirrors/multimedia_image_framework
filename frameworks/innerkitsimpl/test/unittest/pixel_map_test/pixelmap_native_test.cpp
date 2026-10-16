@@ -2352,6 +2352,160 @@ HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_WritePixels_Success, TestSize.Level
 }
 
 /**
+ * @tc.name: OH_PixelmapNative_WritePixelsWithPixelFormat_Success
+ * @tc.desc: Test OH_PixelmapNative_WritePixelsWithPixelFormat with valid RGBA_8888 source
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_WritePixelsWithPixelFormat_Success, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_WritePixelsWithPixelFormat_Success start";
+
+    size_t dataSize = ARGB_8888_BYTES;
+    uint8_t initData[] = {0x00, 0x00, 0x00, 0xFF};
+
+    OH_Pixelmap_InitializationOptions* opts = nullptr;
+    ASSERT_EQ(OH_PixelmapInitializationOptions_Create(&opts), IMAGE_SUCCESS);
+    OH_PixelmapInitializationOptions_SetWidth(opts, 1);
+    OH_PixelmapInitializationOptions_SetHeight(opts, 1);
+    OH_PixelmapInitializationOptions_SetPixelFormat(opts, PIXEL_FORMAT_BGRA_8888);
+    OH_PixelmapInitializationOptions_SetEditable(opts, true);
+
+    OH_PixelmapNative* pixelMap = nullptr;
+    ASSERT_EQ(OH_PixelmapNative_CreatePixelmap(initData, dataSize, opts, &pixelMap), IMAGE_SUCCESS);
+
+    uint8_t writeData[] = {0x11, 0x22, 0x33, 0x44};
+    ASSERT_EQ(OH_PixelmapNative_WritePixelsWithPixelFormat(pixelMap, writeData, sizeof(writeData),
+        PIXEL_FORMAT_RGBA_8888), IMAGE_SUCCESS);
+
+    OH_PixelmapNative_Destroy(&pixelMap);
+    OH_PixelmapInitializationOptions_Release(opts);
+
+    GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_WritePixelsWithPixelFormat_Success end";
+}
+
+/**
+ * @tc.name: OH_PixelmapNative_WritePixelsWithPixelFormat_NullParam
+ * @tc.desc: Test OH_PixelmapNative_WritePixelsWithPixelFormat with null parameters
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_WritePixelsWithPixelFormat_NullParam, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_WritePixelsWithPixelFormat_NullParam start";
+
+    uint8_t data[] = {0x00, 0x00, 0x00, 0xFF};
+    EXPECT_EQ(OH_PixelmapNative_WritePixelsWithPixelFormat(nullptr, data, sizeof(data),
+        PIXEL_FORMAT_RGBA_8888), IMAGE_BAD_PARAMETER);
+
+    OH_Pixelmap_InitializationOptions* opts = nullptr;
+    ASSERT_EQ(OH_PixelmapInitializationOptions_Create(&opts), IMAGE_SUCCESS);
+    OH_PixelmapInitializationOptions_SetWidth(opts, 1);
+    OH_PixelmapInitializationOptions_SetHeight(opts, 1);
+    OH_PixelmapInitializationOptions_SetPixelFormat(opts, PIXEL_FORMAT_BGRA_8888);
+    OH_PixelmapInitializationOptions_SetEditable(opts, true);
+    OH_PixelmapNative* pixelMap = nullptr;
+    ASSERT_EQ(OH_PixelmapNative_CreatePixelmap(data, sizeof(data), opts, &pixelMap), IMAGE_SUCCESS);
+
+    EXPECT_EQ(OH_PixelmapNative_WritePixelsWithPixelFormat(pixelMap, nullptr, sizeof(data),
+        PIXEL_FORMAT_RGBA_8888), IMAGE_BAD_PARAMETER);
+
+    OH_PixelmapNative_Destroy(&pixelMap);
+    OH_PixelmapInitializationOptions_Release(opts);
+
+    GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_WritePixelsWithPixelFormat_NullParam end";
+}
+
+/**
+ * @tc.name: OH_PixelmapNative_WritePixelsWithPixelFormat_UnsupportedFormat
+ * @tc.desc: Test OH_PixelmapNative_WritePixelsWithPixelFormat with unsupported source format
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_WritePixelsWithPixelFormat_UnsupportedFormat, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_WritePixelsWithPixelFormat_UnsupportedFormat start";
+
+    uint8_t initData[] = {0x00, 0x00, 0x00, 0xFF};
+    OH_Pixelmap_InitializationOptions* opts = nullptr;
+    ASSERT_EQ(OH_PixelmapInitializationOptions_Create(&opts), IMAGE_SUCCESS);
+    OH_PixelmapInitializationOptions_SetWidth(opts, 1);
+    OH_PixelmapInitializationOptions_SetHeight(opts, 1);
+    OH_PixelmapInitializationOptions_SetPixelFormat(opts, PIXEL_FORMAT_BGRA_8888);
+    OH_PixelmapInitializationOptions_SetEditable(opts, true);
+    OH_PixelmapNative* pixelMap = nullptr;
+    ASSERT_EQ(OH_PixelmapNative_CreatePixelmap(initData, sizeof(initData), opts, &pixelMap), IMAGE_SUCCESS);
+
+    uint8_t writeData[] = {0x00, 0x00, 0x00, 0xFF};
+    EXPECT_EQ(OH_PixelmapNative_WritePixelsWithPixelFormat(pixelMap, writeData, sizeof(writeData),
+        PIXEL_FORMAT_NV12), IMAGE_BAD_PARAMETER);
+
+    OH_PixelmapNative_Destroy(&pixelMap);
+    OH_PixelmapInitializationOptions_Release(opts);
+
+    GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_WritePixelsWithPixelFormat_UnsupportedFormat end";
+}
+
+/**
+ * @tc.name: OH_PixelmapNative_WritePixelsToAreaWithPixelFormat_Success
+ * @tc.desc: Test OH_PixelmapNative_WritePixelsToAreaWithPixelFormat with valid inputs
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_WritePixelsToAreaWithPixelFormat_Success, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_WritePixelsToAreaWithPixelFormat_Success start";
+
+    uint8_t initData[] = {0, 0, 0, 0xFF, 0, 0, 0, 0xFF, 0, 0, 0, 0xFF, 0, 0, 0, 0xFF};
+    OH_Pixelmap_InitializationOptions* opts = nullptr;
+    ASSERT_EQ(OH_PixelmapInitializationOptions_Create(&opts), IMAGE_SUCCESS);
+    OH_PixelmapInitializationOptions_SetWidth(opts, 2);
+    OH_PixelmapInitializationOptions_SetHeight(opts, 2);
+    OH_PixelmapInitializationOptions_SetPixelFormat(opts, PIXEL_FORMAT_BGRA_8888);
+    OH_PixelmapInitializationOptions_SetEditable(opts, true);
+    OH_PixelmapNative* pixelMap = nullptr;
+    ASSERT_EQ(OH_PixelmapNative_CreatePixelmap(initData, sizeof(initData), opts, &pixelMap), IMAGE_SUCCESS);
+
+    size_t pixelsSize = 4;
+    std::unique_ptr<uint8_t[]> pixels = std::make_unique<uint8_t[]>(pixelsSize);
+    pixels[0] = 0x11; pixels[1] = 0x22; pixels[2] = 0x33; pixels[3] = 0x44;
+    Image_PositionArea area = {
+        .pixels = pixels.get(),
+        .pixelsSize = pixelsSize,
+        .offset = 0,
+        .stride = pixelsSize,
+        .region = {0, 0, 1, 1}
+    };
+    ASSERT_EQ(OH_PixelmapNative_WritePixelsToAreaWithPixelFormat(pixelMap, &area,
+        PIXEL_FORMAT_RGBA_8888), IMAGE_SUCCESS);
+
+    OH_PixelmapNative_Destroy(&pixelMap);
+    OH_PixelmapInitializationOptions_Release(opts);
+
+    GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_WritePixelsToAreaWithPixelFormat_Success end";
+}
+
+/**
+ * @tc.name: OH_PixelmapNative_WritePixelsToAreaWithPixelFormat_NullParam
+ * @tc.desc: Test OH_PixelmapNative_WritePixelsToAreaWithPixelFormat with null parameters
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_WritePixelsToAreaWithPixelFormat_NullParam, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_WritePixelsToAreaWithPixelFormat_NullParam start";
+
+    size_t pixelsSize = 4;
+    std::unique_ptr<uint8_t[]> pixels = std::make_unique<uint8_t[]>(pixelsSize);
+    Image_PositionArea area = {
+        .pixels = pixels.get(),
+        .pixelsSize = pixelsSize,
+        .offset = 0,
+        .stride = pixelsSize,
+        .region = {0, 0, 1, 1}
+    };
+    EXPECT_EQ(OH_PixelmapNative_WritePixelsToAreaWithPixelFormat(nullptr, &area,
+        PIXEL_FORMAT_RGBA_8888), IMAGE_BAD_PARAMETER);
+
+    GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_WritePixelsToAreaWithPixelFormat_NullParam end";
+}
+
+/**
  * @tc.name: OH_PixelmapNative_GetImageInfo_Success
  * @tc.desc: Test OH_PixelmapNative_GetImageInfo with valid inputs
  * @tc.type: FUNC
