@@ -354,46 +354,49 @@ uint8_t *FileSourceStream::GetDataPtr(bool populate)
         return fileData_;
     }
 
-    if (!useMmap_) {
-        size_t streamSize = GetStreamSize();
-        CHECK_ERROR_RETURN_RET_LOG(streamSize > UINT32_MAX, nullptr, "[FileSourceStream] GetStreamSize overflow");
-        uint32_t size = static_cast<uint32_t>(streamSize);
-        uint8_t* buffer = new (std::nothrow) uint8_t [size];
-        if (buffer == nullptr) {
-            IMAGE_LOGE("[FileSourceStream] Failed to new stream buffer.");
-            return nullptr;
-        }
-        uint32_t savedPosition = Tell();
-        if (!Seek(0)) {
-            IMAGE_LOGE("[FileSourceStream] GetDataPtr seek start failed.");
-            delete[] buffer;
-            return nullptr;
-        }
-        uint32_t readSize = 0;
-        bool retRead = Read(size, buffer, size, readSize);
-        if (!Seek(savedPosition) || !retRead) {
-            IMAGE_LOGE("[FileSourceStream] GetDataPtr read failed.");
-            delete[] buffer;
-            return nullptr;
-        }
-        IMAGE_LOGD("[FileSourceStream] UseMmap is false, read buffer success.");
-        fileData_ = buffer;
-        return fileData_;
-    }
-
-#ifdef SUPPORT_MMAP
     CHECK_ERROR_RETURN_RET(filePtr_ == nullptr, nullptr);
-    CHECK_ERROR_RETURN_RET(!DupFd(filePtr_, mmapFd_), nullptr);
     CHECK_ERROR_RETURN_RET(fileSize_ < fileOriginalOffset_, nullptr);
-    auto mmptr = ::mmap(nullptr, fileSize_ - fileOriginalOffset_, PROT_READ,
-        populate ? MAP_SHARED | MAP_POPULATE : MAP_SHARED, mmapFd_, fileOriginalOffset_);
-    if (mmptr == MAP_FAILED) {
+#ifdef SUPPORT_MMAP
+    if (useMmap_) {
+        size_t actualFileSize = 0;
+        CHECK_ERROR_RETURN_RET_LOG(!ImageUtils::GetFileSize(fileno(filePtr_), actualFileSize) ||
+            fileSize_ > actualFileSize, nullptr, "[FileSourceStream] Invalid mmap range.");
+        CHECK_ERROR_RETURN_RET(!DupFd(filePtr_, mmapFd_), nullptr);
+        auto mmptr = ::mmap(nullptr, fileSize_ - fileOriginalOffset_, PROT_READ,
+            populate ? MAP_SHARED | MAP_POPULATE : MAP_SHARED, mmapFd_, fileOriginalOffset_);
+        if (mmptr != MAP_FAILED) {
+            fileData_ = static_cast<uint8_t*>(mmptr);
+            return fileData_;
+        }
         IMAGE_LOGE("[FileSourceStream] mmap failed, errno:%{public}d", errno);
         fdsan_close_with_tag(mmapFd_, FILE_SOURCE_FDSAN_TAG);
+        mmapFd_ = -1;
+    }
+#endif
+    useMmap_ = false;
+    size_t streamSize = GetStreamSize();
+    CHECK_ERROR_RETURN_RET_LOG(streamSize > UINT32_MAX, nullptr, "[FileSourceStream] GetStreamSize overflow");
+    uint32_t size = static_cast<uint32_t>(streamSize);
+    uint8_t* buffer = new (std::nothrow) uint8_t [size];
+    if (buffer == nullptr) {
+        IMAGE_LOGE("[FileSourceStream] Failed to new stream buffer.");
         return nullptr;
     }
-    fileData_ = static_cast<uint8_t*>(mmptr);
-#endif
+    uint32_t savedPosition = Tell();
+    if (!Seek(0)) {
+        IMAGE_LOGE("[FileSourceStream] GetDataPtr seek start failed.");
+        delete[] buffer;
+        return nullptr;
+    }
+    uint32_t readSize = 0;
+    bool retRead = Read(size, buffer, size, readSize);
+    if (!Seek(savedPosition) || !retRead) {
+        IMAGE_LOGE("[FileSourceStream] GetDataPtr read failed.");
+        delete[] buffer;
+        return nullptr;
+    }
+    IMAGE_LOGD("[FileSourceStream] UseMmap is false, read buffer success.");
+    fileData_ = buffer;
     return fileData_;
 }
 
@@ -428,19 +431,16 @@ int FileSourceStream::GetMMapFd()
 
 bool FileSourceStream::ShouldUseMmap(int fd)
 {
+#ifdef SUPPORT_MMAP
     int offset = INVALID_POSITION;
-    bool useMmap = false;
     int err = ioctl(fd, HMDFS_IOC_GET_LOCATION, &offset);
-    if (err != IOCTL_SUCCESS) {
-        IMAGE_LOGD("[FileSourceStream] ioctl failed, error: %{public}d, errno: %{public}d.", err, errno);
-        return useMmap;
+    IMAGE_LOGD("[FileSourceStream]error: %{public}d, errno: %{public}d, offset: %{public}d.",
+        err, errno, offset);
+    if (err != IOCTL_SUCCESS || offset == LOCAL_FILE_POSITION) {
+        return true;
     }
-
-    if (offset == LOCAL_FILE_POSITION) {
-        useMmap = true;
-    }
-    IMAGE_LOGD("[FileSourceStream] File offset: %{public}d.", offset);
-    return useMmap;
+#endif
+    return false;
 }
 
 } // namespace Media
