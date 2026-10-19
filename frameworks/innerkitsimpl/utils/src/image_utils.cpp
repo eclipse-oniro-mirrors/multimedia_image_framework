@@ -1233,7 +1233,7 @@ void ImageUtils::DumpHdrExtendMetadataEnabled(sptr<SurfaceBuffer>& buffer, const
         IMAGE_LOGE("%{public}s memcpy_s extendMetadata fail, error: %{public}d", __func__, memCpyRes);
         return;
     }
-
+    SafeResetExtendMetadataVectors(extendMetadata);
     std::string hdrExtendMetadataStr = StringifyHDRVividExtendMetadata(extendMetadata);
     DumpData(reinterpret_cast<const char*>(hdrExtendMetadataStr.data()), hdrExtendMetadataStr.size(), fileSuffix,
         buffer->GetBufferId());

@@ -106,6 +106,14 @@ struct LogResMapMetadata {
     uint16_t matrix;
     uint16_t range;
 };
+
+static inline void SafeResetExtendMetadataVectors(HDRVividExtendMetadata& meta)
+{
+    new (&meta.gainmapColorMeta.enhanceICC) std::vector<unsigned char>();
+    new (&meta.gainmapColorMeta.combineMapping) std::vector<unsigned char>();
+    new (&meta.baseColorMeta.baseICC) std::vector<unsigned char>();
+    new (&meta.baseColorMeta.baseMapping) std::vector<unsigned char>();
+}
 } // namespace Media
 } // namespace OHOS
 
