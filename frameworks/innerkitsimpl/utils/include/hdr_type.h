@@ -109,10 +109,10 @@ struct LogResMapMetadata {
 
 static inline void SafeResetExtendMetadataVectors(HDRVividExtendMetadata& meta)
 {
-    new (&meta.gainmapColorMeta.enhanceICC) std::vector<unsigned char>();
-    new (&meta.gainmapColorMeta.combineMapping) std::vector<unsigned char>();
-    new (&meta.baseColorMeta.baseICC) std::vector<unsigned char>();
-    new (&meta.baseColorMeta.baseMapping) std::vector<unsigned char>();
+    meta.gainmapColorMeta.enhanceICC = std::vector<unsigned char>();
+    meta.gainmapColorMeta.combineMapping = std::vector<unsigned char>();
+    meta.baseColorMeta.baseICC = std::vector<unsigned char>();
+    meta.baseColorMeta.baseMapping = std::vector<unsigned char>();
 }
 } // namespace Media
 } // namespace OHOS
