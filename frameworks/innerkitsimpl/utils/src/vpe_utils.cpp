@@ -555,6 +555,7 @@ void VpeUtils::SetSurfaceBufferInfo(sptr<SurfaceBuffer>& buffer, bool isGainmap,
     std::vector<uint8_t> extendMetadataVec(sizeof(HDRVividExtendMetadata));
     int memCpyRes = 0;
     if (metadata.extendMetaFlag) {
+        SafeResetExtendMetadataVectors(metadata.extendMeta);
         memCpyRes = memcpy_s(extendMetadataVec.data(), extendMetadataVec.size(),
             &metadata.extendMeta, sizeof(HDRVividExtendMetadata));
     } else {
@@ -563,8 +564,6 @@ void VpeUtils::SetSurfaceBufferInfo(sptr<SurfaceBuffer>& buffer, bool isGainmap,
             &defaultExtendMetadata, sizeof(HDRVividExtendMetadata));
     }
     CHECK_ERROR_RETURN_LOG(memCpyRes != EOK, "SetSurfaceBufferInfo failed, memcpy_s error:%{public}d", memCpyRes);
-    HDRVividExtendMetadata* raw = reinterpret_cast<HDRVividExtendMetadata*>(extendMetadataVec.data());
-    SafeResetExtendMetadataVectors(*raw);
     VpeUtils::SetSbDynamicMetadata(buffer, extendMetadataVec);
 }
 
