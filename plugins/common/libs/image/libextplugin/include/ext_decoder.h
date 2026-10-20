@@ -30,6 +30,7 @@
 #include "plugin_class_base.h"
 #include "jpeg_yuv_decoder/jpeg_decoder_yuv.h"
 #include "heif_type.h"
+#include "bandjpeg/fast_manager.h"
 
 namespace OHOS {
     struct BufferRequestConfig;
