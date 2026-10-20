@@ -1497,32 +1497,16 @@ SkCodec::Result ExtDecoder::DoSampleDecode(DecodeContext &context)
         rowStride = static_cast<uint64_t>(sbBuffer->GetStride());
     }
 
-    auto SkOHOSCodec = SkOHOSCodec::MakeFromCodec(std::move(codec_));
+    auto skCodec = SkOHOSCodec::MakeFromCodec(std::move(codec_));
+    CHECK_ERROR_RETURN_RET_LOG(skCodec == nullptr, SkCodec::kErrorInInput,
+        "%{public}s failed, SkOHOSCodec is nullptr", __func__);
     SkOHOSCodec::OHOSOptions options;
     options.fSampleSize = softSampleSize_;
-    CHECK_ERROR_RETURN_RET_LOG(SkOHOSCodec == nullptr, SkCodec::kErrorInInput,
-        "%{public}s failed, SkOHOSCodec is nullptr", __func__);
 
-    bool isOutputYuv420Format = IsYuv420Format(context.info.pixelFormat);
-    Media::PixelFormat swPixelFormat = context.info.pixelFormat;
-    FASTManager& fastManager = FASTManager::GetInstance();
-    fast::image::RGBFormat fastRgbFormat = swPixelFormat == Media::PixelFormat::BGRA_8888 ?
-        fast::image::RGBFormat::BGRA8888 : fast::image::RGBFormat::RGBA8888;
-    fast::image::ColorInfo fastSrcColorInfo;
-    fast::image::ColorInfo fastDstColorInfo;
-    bool useFastGamutConvert = fastManager.IsGamutAvailable() &&
-        IsSupportFastGamutConvert(isOutputYuv420Format) &&
-        PrepareFastGamutConvertParams(fastRgbFormat, info_.alphaType(), dstInfo_.alphaType(),
-            fastSrcColorInfo, fastDstColorInfo);
-    SkImageInfo sampleDecodeInfo = dstInfo_;
-    if (useFastGamutConvert) {
-        sampleDecodeInfo = dstInfo_.makeColorSpace(info_.refColorSpace());
-        if (info_.alphaType() == kPremul_SkAlphaType ||
-            info_.alphaType() == kUnpremul_SkAlphaType) {
-            sampleDecodeInfo = sampleDecodeInfo.makeAlphaType(info_.alphaType());
-        }
-    }
-    SkCodec::Result result = SkOHOSCodec->getOHOSPixels(sampleDecodeInfo, dstBuffer, rowStride, &options);
+    auto fastCtx = BuildFastGamutContext(context.info.pixelFormat,
+        IsYuv420Format(context.info.pixelFormat));
+
+    SkCodec::Result result = skCodec->getOHOSPixels(fastCtx.decodeInfo, dstBuffer, rowStride, &options);
     switch (result) {
         case SkCodec::kSuccess:
         case SkCodec::kIncompleteInput:
@@ -1534,19 +1518,12 @@ SkCodec::Result ExtDecoder::DoSampleDecode(DecodeContext &context)
             IMAGE_LOGE("Error: Could not get pixels with message %{public}s", SkCodec::ResultToString(result));
             return result;
     }
-    if (useFastGamutConvert) {
-        ImageTrace imageTrace("ExtDecoder::DoSampleDecode fastManager.ColorSpaceConvert");
-        auto code = fastManager.ColorSpaceConvert(
-            dstBuffer, static_cast<uint32_t>(rowStride), fastDstColorInfo,
-            dstBuffer, static_cast<uint32_t>(rowStride), fastSrcColorInfo,
-            static_cast<uint32_t>(dstInfo_.width()), static_cast<uint32_t>(dstInfo_.height()));
-        if (!IsFastGamutConvertSuccess(code)) {
-            result = SkOHOSCodec->getOHOSPixels(dstInfo_, dstBuffer, rowStride, &options);
+    if (fastCtx.enabled) {
+        if (!ApplyFastGamutPostDecode(fastCtx, dstBuffer, rowStride, context)) {
+            result = skCodec->getOHOSPixels(dstInfo_, dstBuffer, rowStride, &options);
             bool cond = result != SkCodec::kSuccess && result != SkCodec::kIncompleteInput &&
                 result != SkCodec::kErrorInInput;
             CHECK_ERROR_RETURN_RET(cond, result);
-        } else {
-            context.grColorSpaceName = dstColorSpace_->GetColorSpaceName();
         }
     }
     return SkCodec::kSuccess;
@@ -1874,6 +1851,46 @@ bool ExtDecoder::PrepareFastGamutConvertParams(fast::image::RGBFormat format,
     return true;
 }
 
+ExtDecoder::FastGamutContext ExtDecoder::BuildFastGamutContext(
+    Media::PixelFormat pixelFormat, bool isOutputYuv420Format)
+{
+    FastGamutContext ctx;
+    ctx.decodeInfo = dstInfo_;
+    FASTManager& fastManager = FASTManager::GetInstance();
+    fast::image::RGBFormat rgbFormat = pixelFormat == Media::PixelFormat::BGRA_8888 ?
+        fast::image::RGBFormat::BGRA8888 : fast::image::RGBFormat::RGBA8888;
+    ctx.enabled = fastManager.IsGamutAvailable() &&
+        IsSupportFastGamutConvert(isOutputYuv420Format) &&
+        PrepareFastGamutConvertParams(rgbFormat, info_.alphaType(), dstInfo_.alphaType(),
+            ctx.srcColorInfo, ctx.dstColorInfo);
+    if (ctx.enabled) {
+        ctx.decodeInfo = dstInfo_.makeColorSpace(info_.refColorSpace());
+        if (info_.alphaType() == kPremul_SkAlphaType ||
+            info_.alphaType() == kUnpremul_SkAlphaType) {
+            ctx.decodeInfo = ctx.decodeInfo.makeAlphaType(info_.alphaType());
+        }
+    }
+    return ctx;
+}
+
+bool ExtDecoder::ApplyFastGamutPostDecode(const FastGamutContext& fastCtx,
+    uint8_t* dstBuffer, uint64_t rowStride, DecodeContext& context)
+{
+    if (!fastCtx.enabled) {
+        return false;
+    }
+    FASTManager& fastManager = FASTManager::GetInstance();
+    auto code = fastManager.ColorSpaceConvert(
+        dstBuffer, static_cast<uint32_t>(rowStride), fastCtx.dstColorInfo,
+        dstBuffer, static_cast<uint32_t>(rowStride), fastCtx.srcColorInfo,
+        static_cast<uint32_t>(dstInfo_.width()), static_cast<uint32_t>(dstInfo_.height()));
+    if (IsFastGamutConvertSuccess(code)) {
+        context.grColorSpaceName = dstColorSpace_->GetColorSpaceName();
+        return true;
+    }
+    return false;
+}
+
 uint32_t ExtDecoder::Decode(uint32_t index, DecodeContext &context)
 {
 #ifdef SK_ENABLE_OHOS_CODEC
@@ -2006,50 +2023,26 @@ uint32_t ExtDecoder::Decode(uint32_t index, DecodeContext &context)
     }
     CHECK_ERROR_RETURN_RET_LOG(codec_ == nullptr, ERR_IMAGE_DECODE_FAILED, "codec_ is nullptr");
     ImageTrace imageTrace("ExtDecoder::Decode start SW");
-    Media::PixelFormat swPixelFormat = context.info.pixelFormat;
-    FASTManager& fastManager = FASTManager::GetInstance();
-    fast::image::RGBFormat fastRgbFormat = swPixelFormat == Media::PixelFormat::BGRA_8888 ?
-        fast::image::RGBFormat::BGRA8888 : fast::image::RGBFormat::RGBA8888;
-    fast::image::ColorInfo fastSrcColorInfo;
-    fast::image::ColorInfo fastDstColorInfo;
-    bool useFastGamutConvert = FASTManager::GetInstance().IsGamutAvailable() &&
-        IsSupportFastGamutConvert(isOutputYuv420Format) &&
-        PrepareFastGamutConvertParams(fastRgbFormat, info_.alphaType(), dstInfo_.alphaType(),
-            fastSrcColorInfo, fastDstColorInfo);
-    SkImageInfo fastGamutInfo = dstInfo_;
-    if (useFastGamutConvert) {
-        fastGamutInfo = dstInfo_.makeColorSpace(info_.refColorSpace());
-        if (info_.alphaType() == kPremul_SkAlphaType ||
-            info_.alphaType() == kUnpremul_SkAlphaType) {
-            fastGamutInfo = fastGamutInfo.makeAlphaType(info_.alphaType());
-        }
-    }
-    SkCodec::Result ret = codec_->getPixels(fastGamutInfo, dstBuffer, rowStride, &dstOptions_);
+    auto fastCtx = BuildFastGamutContext(context.info.pixelFormat, isOutputYuv420Format);
+    SkCodec::Result ret = codec_->getPixels(fastCtx.decodeInfo, dstBuffer, rowStride, &dstOptions_);
     if (ret == SkCodec::kIncompleteInput || ret == SkCodec::kErrorInInput) {
         IMAGE_LOGI("Decode broken data success. Triggered kIncompleteInput feature of skia!");
     } else if (ret != SkCodec::kSuccess && ResetCodec()) {
-        ret = codec_->getPixels(fastGamutInfo, dstBuffer, rowStride, &dstOptions_); // Try again
+        ret = codec_->getPixels(fastCtx.decodeInfo, dstBuffer, rowStride, &dstOptions_);
     }
     if (ret != SkCodec::kSuccess && ret != SkCodec::kIncompleteInput && ret != SkCodec::kErrorInInput) {
         IMAGE_LOGE("Decode failed, get pixels failed, ret=%{public}d", ret);
         SetHeifDecodeError(context);
-        ResetCodec(); // release old jpeg codec
+        ResetCodec();
         return ERR_IMAGE_DECODE_ABNORMAL;
     }
     bool decodedOk = ret == SkCodec::kSuccess || ret == SkCodec::kIncompleteInput || ret == SkCodec::kErrorInInput;
-    if (useFastGamutConvert && decodedOk) {
-        ImageTrace imageTrace("ExtDecoder::Decode fastManager.ColorSpaceConvert SW");
-        auto code = fastManager.ColorSpaceConvert(
-            dstBuffer, static_cast<uint32_t>(rowStride), fastDstColorInfo,
-            dstBuffer, static_cast<uint32_t>(rowStride), fastSrcColorInfo,
-            static_cast<uint32_t>(dstInfo_.width()), static_cast<uint32_t>(dstInfo_.height()));
-        if (!IsFastGamutConvertSuccess(code)) {
+    if (fastCtx.enabled && decodedOk) {
+        if (!ApplyFastGamutPostDecode(fastCtx, dstBuffer, rowStride, context)) {
             ret = codec_->getPixels(dstInfo_, dstBuffer, rowStride, &dstOptions_);
             bool cond = ret != SkCodec::kSuccess && ret != SkCodec::kIncompleteInput && ret != SkCodec::kErrorInInput;
             CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_DECODE_ABNORMAL,
                 "Decode failed, get pixels failed, ret=%{public}d", static_cast<int>(ret));
-        } else {
-            context.grColorSpaceName = dstColorSpace_->GetColorSpaceName();
         }
     }
     if (dstInfo_.colorType() == SkColorType::kRGB_888x_SkColorType) {

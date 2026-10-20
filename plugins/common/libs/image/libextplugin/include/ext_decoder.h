@@ -265,6 +265,15 @@ private:
     bool PrepareFastGamutConvertParams(fast::image::RGBFormat format,
         SkAlphaType srcAlphaType, SkAlphaType dstAlphaType,
         fast::image::ColorInfo& srcColorInfo, fast::image::ColorInfo& dstColorInfo);
+    struct FastGamutContext {
+        bool enabled = false;
+        SkImageInfo decodeInfo;
+        fast::image::ColorInfo srcColorInfo;
+        fast::image::ColorInfo dstColorInfo;
+    };
+    FastGamutContext BuildFastGamutContext(Media::PixelFormat pixelFormat, bool isOutputYuv420Format);
+    bool ApplyFastGamutPostDecode(const FastGamutContext& fastCtx,
+        uint8_t* dstBuffer, uint64_t rowStride, DecodeContext& context);
     OHOS::ColorManager::ColorSpaceName heifColorSpaceName_ = ColorManager::ColorSpaceName::NONE;
     bool heifIsColorSpaceFromCicp_ = false;
 #endif
