@@ -859,11 +859,23 @@ Image_ErrorCode OH_PixelmapNative_WritePixels(OH_PixelmapNative *pixelmap, uint8
     return ToNewErrorCode(pixelmap->GetInnerPixelmap()->WritePixels(source, bufferSize));
 }
 
+static bool IsSupportedWritePixelFormat(PIXEL_FORMAT format)
+{
+    return format == PIXEL_FORMAT_BGRA_8888 ||
+           format == PIXEL_FORMAT_RGBA_8888 ||
+           format == PIXEL_FORMAT_RGB_888 ||
+           format == PIXEL_FORMAT_RGB_565 ||
+           format == PIXEL_FORMAT_RGBA_F16;
+}
+
 MIDK_EXPORT
 Image_ErrorCode OH_PixelmapNative_WritePixelsWithPixelFormat(OH_PixelmapNative *pixelmap,
     const uint8_t *source, uint32_t bufferSize, PIXEL_FORMAT sourcePixelFormat)
 {
     if (pixelmap == nullptr || source == nullptr || !pixelmap->GetInnerPixelmap()) {
+        return IMAGE_BAD_PARAMETER;
+    }
+    if (!IsSupportedWritePixelFormat(sourcePixelFormat)) {
         return IMAGE_BAD_PARAMETER;
     }
     return ToNewErrorCode(pixelmap->GetInnerPixelmap()->WritePixels(
@@ -906,6 +918,9 @@ Image_ErrorCode OH_PixelmapNative_WritePixelsToAreaWithPixelFormat(OH_PixelmapNa
 {
     if (pixelmap == nullptr || !pixelmap->GetInnerPixelmap() ||
         area == nullptr || area->pixels == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
+    if (!IsSupportedWritePixelFormat(sourcePixelFormat)) {
         return IMAGE_BAD_PARAMETER;
     }
     OHOS::Media::Rect region;

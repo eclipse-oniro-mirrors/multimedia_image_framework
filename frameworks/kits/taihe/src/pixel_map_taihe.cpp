@@ -68,6 +68,15 @@ static Media::PixelFormat ParsePixelFormat(PixelMapFormat const& etsFormat)
     return format;
 }
 
+static bool IsSupportedWritePixelFormat(Media::PixelFormat format)
+{
+    return format == Media::PixelFormat::BGRA_8888 ||
+           format == Media::PixelFormat::RGBA_8888 ||
+           format == Media::PixelFormat::RGB_888 ||
+           format == Media::PixelFormat::RGB_565 ||
+           format == Media::PixelFormat::RGBA_F16;
+}
+
 static void ParseInitializationOptions(InitializationOptions const& etsOptions,
     Media::InitializationOptions &options)
 {
@@ -657,6 +666,11 @@ void PixelMapImpl::WriteAllPixelsFromBufferWithSourcePixelFormatImpl(array_view<
     }
 
     Media::PixelFormat srcFormat = ParsePixelFormat(sourcePixelFormat);
+    if (!IsSupportedWritePixelFormat(srcFormat)) {
+        ImageTaiheUtils::ThrowExceptionError(Media::ERR_IMAGE_INVALID_PARAM,
+            "The source pixel format is not supported.");
+        return;
+    }
     uint32_t status = nativePixelMap_->WritePixels(src.data(), src.size(), srcFormat);
     if (status == Media::ERR_IMAGE_PIXELMAP_NOT_ALLOW_MODIFY) {
         ImageTaiheUtils::ThrowExceptionError(Media::ERR_MEDIA_UNSUPPORT_OPERATION,
@@ -746,6 +760,11 @@ void PixelMapImpl::WritePixelsFromAreaWithSourcePixelFormatImpl(weak::PositionAr
     Media::Rect region = {etsRegion.x, etsRegion.y, etsRegion.size.width, etsRegion.size.height};
     array<uint8_t> etsPixels = area->GetPixels();
     Media::PixelFormat srcFormat = ParsePixelFormat(sourcePixelFormat);
+    if (!IsSupportedWritePixelFormat(srcFormat)) {
+        ImageTaiheUtils::ThrowExceptionError(Media::ERR_IMAGE_INVALID_PARAM,
+            "The source pixel format is not supported.");
+        return;
+    }
     Media::RWPixelsOptions opts{etsPixels.data(), static_cast<uint64_t>(etsPixels.size()),
         area->GetOffset(), area->GetStride(), region, srcFormat};
     uint32_t status = nativePixelMap_->WritePixels(opts);

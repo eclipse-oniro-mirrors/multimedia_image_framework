@@ -2550,14 +2550,6 @@ uint32_t PixelMap::WritePixels(const uint8_t *source, const uint64_t &bufferSize
 
 uint32_t PixelMap::WritePixels(const uint8_t *source, const uint64_t &bufferSize, PixelFormat srcPixelFormat)
 {
-    if (srcPixelFormat != PixelFormat::BGRA_8888 &&
-        srcPixelFormat != PixelFormat::RGBA_8888 &&
-        srcPixelFormat != PixelFormat::RGB_888 &&
-        srcPixelFormat != PixelFormat::RGB_565 &&
-        srcPixelFormat != PixelFormat::RGBA_F16) {
-        IMAGE_LOGE("write pixels with format unsupported source pixel format: %{public}d", srcPixelFormat);
-        return ERR_IMAGE_INVALID_PARAMETER;
-    }
     if (isAstc_ || IsYUV(imageInfo_.pixelFormat)) {
         IMAGE_LOGE("write pixels with format unsupported conversion for target format: %{public}d",
             imageInfo_.pixelFormat);

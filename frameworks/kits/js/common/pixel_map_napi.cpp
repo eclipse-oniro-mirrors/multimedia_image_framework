@@ -1584,6 +1584,15 @@ napi_value PixelMapNapi::ReadPixelsToAreaSync(napi_env env, napi_callback_info i
     return result;
 }
 
+static bool IsSupportedWritePixelFormat(PixelFormat format)
+{
+    return format == PixelFormat::BGRA_8888 ||
+           format == PixelFormat::RGBA_8888 ||
+           format == PixelFormat::RGB_888 ||
+           format == PixelFormat::RGB_565 ||
+           format == PixelFormat::RGBA_F16;
+}
+
 static void ParseSourcePixelFormat(napi_env env, napi_value arg, PixelMapAsyncContext &context)
 {
     int32_t value = 0;
@@ -1593,7 +1602,13 @@ static void ParseSourcePixelFormat(napi_env env, napi_value arg, PixelMapAsyncCo
             "The 2nd argument must be a PixelMapFormat. (" + std::to_string(status) + ")");
         return;
     }
-    context.sourcePixelFormat = static_cast<PixelFormat>(value);
+    PixelFormat fmt = static_cast<PixelFormat>(value);
+    if (!IsSupportedWritePixelFormat(fmt)) {
+        CreatePendingErrorIfAbsent(env, context.error, ERR_IMAGE_INVALID_PARAM,
+            "The source pixel format is not supported.");
+        return;
+    }
+    context.sourcePixelFormat = fmt;
     context.hasSourcePixelFormat = true;
 }
 
@@ -1722,15 +1737,11 @@ napi_value PixelMapNapi::WriteAllPixelsFromBufferSync(napi_env env, napi_callbac
     }
 
     if (argc >= NUM_2) {
-        int32_t sourcePixelFormatValue = 0;
-        status = napi_get_value_int32(env, argv[NUM_1], &sourcePixelFormatValue);
-        if (!IMG_IS_OK(status)) {
-            ImageNapiUtils::ThrowExceptionError(env, ERR_IMAGE_INVALID_PARAM,
-                "The 2nd argument must be a PixelMapFormat. (" + std::to_string(status) + ")", true);
+        ParseSourcePixelFormat(env, argv[NUM_1], *context);
+        if (context->error != nullptr) {
+            ImageNapiUtils::Throw(env, context->error);
             return result;
         }
-        context->sourcePixelFormat = static_cast<PixelFormat>(sourcePixelFormatValue);
-        context->hasSourcePixelFormat = true;
     }
     
     WriteAllPixelsFromBufferExec(env, static_cast<void*>(context.get()));
@@ -1868,15 +1879,11 @@ napi_value PixelMapNapi::WritePixelsFromAreaSync(napi_env env, napi_callback_inf
     }
 
     if (argc >= NUM_2) {
-        int32_t sourcePixelFormatValue = 0;
-        status = napi_get_value_int32(env, argv[NUM_1], &sourcePixelFormatValue);
-        if (!IMG_IS_OK(status)) {
-            ImageNapiUtils::ThrowExceptionError(env, ERR_IMAGE_INVALID_PARAM,
-                "The 2nd argument must be a PixelMapFormat. (" + std::to_string(status) + ")", true);
+        ParseSourcePixelFormat(env, argv[NUM_1], *context);
+        if (context->error != nullptr) {
+            ImageNapiUtils::Throw(env, context->error);
             return result;
         }
-        context->sourcePixelFormat = static_cast<PixelFormat>(sourcePixelFormatValue);
-        context->hasSourcePixelFormat = true;
     }
     
     WritePixelsFromAreaExec(env, static_cast<void*>(context.get()));

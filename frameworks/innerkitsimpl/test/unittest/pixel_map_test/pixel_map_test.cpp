@@ -8201,7 +8201,7 @@ HWTEST_F(PixelMapTest, WritePixelsWithFormat_RGB_565_To_BGRA_001, TestSize.Level
 
 /**
  * @tc.name: WritePixelsWithFormat_UnsupportedSource_001
- * @tc.desc: Test WritePixels with unsupported source format (NV12)
+ * @tc.desc: Test WritePixels with unsupported source format (UNKNOWN)
  * @tc.type: FUNC
  */
 HWTEST_F(PixelMapTest, WritePixelsWithFormat_UnsupportedSource_001, TestSize.Level3)
@@ -8209,7 +8209,7 @@ HWTEST_F(PixelMapTest, WritePixelsWithFormat_UnsupportedSource_001, TestSize.Lev
     auto pixelMap = CreateBranchEditablePixelMap(PixelFormat::BGRA_8888, AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
     ASSERT_NE(pixelMap, nullptr);
     uint8_t src[48] = {0};
-    EXPECT_EQ(pixelMap->WritePixels(src, 48, PixelFormat::NV12), ERR_IMAGE_INVALID_PARAMETER);
+    EXPECT_EQ(pixelMap->WritePixels(src, 48, PixelFormat::UNKNOWN), ERR_IMAGE_INVALID_PARAMETER);
 }
 
 /**
