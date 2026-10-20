@@ -1323,6 +1323,7 @@ static HdrMetadata GetHdrMetadata(sptr<SurfaceBuffer>& hdr, sptr<SurfaceBuffer>&
         metadata.extendMetaFlag = false;
     } else {
         metadata.extendMetaFlag = true;
+        SafeResetExtendMetadataVectors(metadata.extendMeta);
     }
     return metadata;
 }

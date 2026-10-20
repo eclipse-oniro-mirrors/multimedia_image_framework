@@ -331,6 +331,7 @@ static void ConvertGainmapHdrMetadata(sptr<SurfaceBuffer> &gainmapSptr, bool con
         gainmapDynamicMetadata.data(), gainmapDynamicMetadata.size());
     CHECK_ERROR_RETURN_LOG(memCpyRes != EOK,
         "%{public}s memcpy_s ISOMetadata fail, error: %{public}d", __func__, memCpyRes);
+    SafeResetExtendMetadataVectors(extendMetadata);
     if (convertToHDI) {
         combineColorPrimary = ColorUtils::ConvertCicpToCMColor(
             extendMetadata.gainmapColorMeta.combineColorPrimary);

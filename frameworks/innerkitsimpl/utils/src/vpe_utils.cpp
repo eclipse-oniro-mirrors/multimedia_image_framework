@@ -555,6 +555,7 @@ void VpeUtils::SetSurfaceBufferInfo(sptr<SurfaceBuffer>& buffer, bool isGainmap,
     std::vector<uint8_t> extendMetadataVec(sizeof(HDRVividExtendMetadata));
     int memCpyRes = 0;
     if (metadata.extendMetaFlag) {
+        SafeResetExtendMetadataVectors(metadata.extendMeta);
         memCpyRes = memcpy_s(extendMetadataVec.data(), extendMetadataVec.size(),
             &metadata.extendMeta, sizeof(HDRVividExtendMetadata));
     } else {
