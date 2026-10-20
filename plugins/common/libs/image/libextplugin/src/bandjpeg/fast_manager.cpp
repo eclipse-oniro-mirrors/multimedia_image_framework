@@ -20,6 +20,7 @@
 
 namespace OHOS {
 namespace ImagePlugin {
+constexpr const char* FAST_LIB = "libfast_image.so";
 FASTManager& FASTManager::GetInstance()
 {
     static FASTManager instance;
@@ -28,7 +29,7 @@ FASTManager& FASTManager::GetInstance()
 
 FASTManager::FASTManager()
 {
-    FASTHandle_ = dlopen(FASTLib_, RTLD_NOW);
+    FASTHandle_ = dlopen(FAST_LIB, RTLD_NOW);
     CHECK_ERROR_RETURN_LOG(FASTHandle_ == nullptr, "FASTManager dlopen FASTlib is failed: %{public}s", dlerror());
 
     DecodeImage = reinterpret_cast<fast::image::FastErrCode (*)(const uint8_t*, size_t, uint8_t*, uint32_t, uint32_t,
@@ -52,6 +53,13 @@ FASTManager::FASTManager()
         isInitialized_ = false;
         return;
     }
+
+    ColorSpaceConvert = reinterpret_cast<fast::image::IMAGE_ErrorCode (*)(uint8_t*, uint32_t,
+        fast::image::ColorInfo, uint8_t*, uint32_t, fast::image::ColorInfo, uint32_t, uint32_t)>(
+        dlsym(FASTHandle_, "_ZN4fast5image17ColorSpaceConvertEPhjNS0_9ColorInfoES1_jS2_jj"));
+    if (ColorSpaceConvert == nullptr) {
+        IMAGE_LOGW("FAST ColorSpaceConvert not found: %{public}s", dlerror());
+    }
     
     isInitialized_ = true;
     IMAGE_LOGI("FASTManager initialized successfully");
@@ -64,6 +72,7 @@ FASTManager::~FASTManager()
         FASTHandle_ = nullptr;
         DecodeImage = nullptr;
         DecodeImageYUV = nullptr;
+        ColorSpaceConvert = nullptr;
         isInitialized_ = false;
     }
 }

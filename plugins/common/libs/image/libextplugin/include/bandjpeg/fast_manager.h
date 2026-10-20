@@ -30,6 +30,14 @@ enum class FastErrCode {
     OOM,
 };
 
+enum class IMAGE_ErrorCode {
+    SUCCESS,
+    SUCCESS_PARTIAL,
+    ILLEGAL_INPUT,
+    INVALID_PTR,
+    UNSUPPORTED,
+};
+
 enum class YUVFormat {
     NV12,
     NV21,
@@ -40,6 +48,38 @@ enum class RGBFormat {
     RGBA8888,
     BGRA8888,
     RGB565,
+};
+
+enum class AlphaType {
+    UNKNOWN,
+    OPAQUE,
+    PREMUL,
+    UNPREMUL,
+};
+
+struct TransferFunction {
+    float g;
+    float a;
+    float b;
+    float c;
+    float d;
+    float e;
+    float f;
+};
+
+struct Matrix3x3 {
+    float vals[3][3];
+};
+
+struct ColorSpace {
+    TransferFunction fTransferFn;
+    Matrix3x3 fToXYZD50;
+};
+
+struct ColorInfo {
+    ColorSpace colorSpace;
+    RGBFormat formatType;
+    AlphaType fAlphaType = AlphaType::UNKNOWN;
 };
 }
 
@@ -52,10 +92,14 @@ public:
 
     bool IsInitialized() const { return isInitialized_; }
 
+    bool IsGamutAvailable() const { return isInitialized_ && ColorSpaceConvert != nullptr; }
+
     fast::image::FastErrCode (*DecodeImage)(const uint8_t*, size_t, uint8_t*, uint32_t,
         uint32_t, size_t, fast::image::RGBFormat) = nullptr;
     fast::image::FastErrCode (*DecodeImageYUV)(const uint8_t*, size_t, uint8_t*, uint8_t*, uint32_t,
         uint32_t, size_t, size_t, fast::image::YUVFormat) = nullptr;
+    fast::image::IMAGE_ErrorCode (*ColorSpaceConvert)(uint8_t*, uint32_t, fast::image::ColorInfo,
+        uint8_t*, uint32_t, fast::image::ColorInfo, uint32_t, uint32_t) = nullptr;
 
 private:
     FASTManager();
@@ -66,7 +110,6 @@ private:
     FASTManager& operator=(const FASTManager&&) = delete;
 
     void* FASTHandle_ = nullptr;
-    const char* FASTLib_ = "/system/lib64/ndk/libfast_image.so";
     bool isInitialized_ = false; // initialization flag
 };
 }
