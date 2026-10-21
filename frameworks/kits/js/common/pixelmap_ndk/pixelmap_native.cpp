@@ -873,13 +873,14 @@ Image_ErrorCode OH_PixelmapNative_WritePixelsWithPixelFormat(OH_PixelmapNative *
     const uint8_t *source, uint32_t bufferSize, PIXEL_FORMAT sourcePixelFormat)
 {
     if (pixelmap == nullptr || source == nullptr || !pixelmap->GetInnerPixelmap()) {
-        return IMAGE_BAD_PARAMETER;
+        return IMAGE_INVALID_PARAMETER;
     }
     if (!IsSupportedWritePixelFormat(sourcePixelFormat)) {
-        return IMAGE_BAD_PARAMETER;
+        return IMAGE_INVALID_PARAMETER;
     }
-    return ToNewErrorCode(pixelmap->GetInnerPixelmap()->WritePixels(
+    Image_ErrorCode ret = ToNewErrorCode(pixelmap->GetInnerPixelmap()->WritePixels(
         source, static_cast<uint64_t>(bufferSize), static_cast<PixelFormat>(sourcePixelFormat)));
+    return ret == IMAGE_BAD_PARAMETER ? IMAGE_INVALID_PARAMETER : ret;
 }
 
 MIDK_EXPORT
@@ -916,20 +917,20 @@ MIDK_EXPORT
 Image_ErrorCode OH_PixelmapNative_WritePixelsToAreaWithPixelFormat(OH_PixelmapNative *pixelmap,
     const Image_PositionArea *area, PIXEL_FORMAT sourcePixelFormat)
 {
-    if (pixelmap == nullptr || !pixelmap->GetInnerPixelmap() ||
-        area == nullptr || area->pixels == nullptr) {
-        return IMAGE_BAD_PARAMETER;
+    if (pixelmap == nullptr || !pixelmap->GetInnerPixelmap() || area == nullptr || area->pixels == nullptr) {
+        return IMAGE_INVALID_PARAMETER;
     }
     if (!IsSupportedWritePixelFormat(sourcePixelFormat)) {
-        return IMAGE_BAD_PARAMETER;
+        return IMAGE_INVALID_PARAMETER;
     }
     OHOS::Media::Rect region;
     if (!ConvertImageRegionToRect(area->region, region)) {
-        return IMAGE_BAD_PARAMETER;
+        return IMAGE_INVALID_PARAMETER;
     }
     RWPixelsOptions opts{area->pixels, static_cast<uint64_t>(area->pixelsSize),
         area->offset, area->stride, region, static_cast<PixelFormat>(sourcePixelFormat)};
-    return ToNewErrorCode(pixelmap->GetInnerPixelmap()->WritePixels(opts));
+    Image_ErrorCode ret = ToNewErrorCode(pixelmap->GetInnerPixelmap()->WritePixels(opts));
+    return ret == IMAGE_BAD_PARAMETER ? IMAGE_INVALID_PARAMETER : ret;
 }
 
 MIDK_EXPORT

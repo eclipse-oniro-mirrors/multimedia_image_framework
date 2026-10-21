@@ -786,11 +786,11 @@ Image_ErrorCode OH_PixelmapNative_WritePixels(OH_PixelmapNative *pixelmap, uint8
  *     RGBA_8888, RGB_888, RGB_565, and RGBA_F16 are supported.
  * @return <ul>
  *         <li>{@link IMAGE_SUCCESS} if the operation is successful.</li>
- *         <li>{@link IMAGE_BAD_PARAMETER} if pixelmap or source is NULL, bufferSize is insufficient, or
- *             sourcePixelFormat is invalid or unsupported.</li>
  *         <li>{@link IMAGE_UNSUPPORTED_OPERATION} if the PixelMap is not editable or is locked.</li>
  *         <li>{@link IMAGE_UNSUPPORTED_CONVERSION} if conversion between sourcePixelFormat and the PixelMap pixel
  *             format is not supported.</li>
+ *         <li>{@link IMAGE_INVALID_PARAMETER} if pixelmap or source is NULL, bufferSize is insufficient, or
+ *             sourcePixelFormat is invalid or unsupported.</li>
  *         <li>{@link IMAGE_ALLOC_FAILED} if memory allocation fails.</li>
  *         <li>{@link IMAGE_COPY_FAILED} if the pixel data cannot be copied or converted.</li>
  *         </ul>
@@ -859,11 +859,11 @@ Image_ErrorCode OH_PixelmapNative_WritePixelsToArea(OH_PixelmapNative *pixelmap,
  *     RGBA_8888, RGB_888, RGB_565, and RGBA_F16 are supported.
  * @return <ul>
  *         <li>{@link IMAGE_SUCCESS} if the operation is successful.</li>
- *         <li>{@link IMAGE_BAD_PARAMETER} if pixelmap, area, or area->pixels is NULL; the buffer size, offset, stride,
- *             or region is invalid; or sourcePixelFormat is invalid or unsupported.</li>
  *         <li>{@link IMAGE_UNSUPPORTED_OPERATION} if the PixelMap is not editable or is locked.</li>
  *         <li>{@link IMAGE_UNSUPPORTED_CONVERSION} if conversion between sourcePixelFormat and the PixelMap pixel
  *             format is not supported.</li>
+ *         <li>{@link IMAGE_INVALID_PARAMETER} if pixelmap, area, or area->pixels is NULL; the buffer size, offset,
+ *             stride, or region is invalid; or sourcePixelFormat is invalid or unsupported.</li>
  *         <li>{@link IMAGE_ALLOC_FAILED} if memory allocation fails.</li>
  *         <li>{@link IMAGE_COPY_FAILED} if the pixel data cannot be copied or converted.</li>
  *         </ul>

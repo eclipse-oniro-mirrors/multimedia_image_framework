@@ -2394,7 +2394,7 @@ HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_WritePixelsWithPixelFormat_NullPara
 
     uint8_t data[] = {0x00, 0x00, 0x00, 0xFF};
     EXPECT_EQ(OH_PixelmapNative_WritePixelsWithPixelFormat(nullptr, data, sizeof(data),
-        PIXEL_FORMAT_RGBA_8888), IMAGE_BAD_PARAMETER);
+        PIXEL_FORMAT_RGBA_8888), IMAGE_INVALID_PARAMETER);
 
     OH_Pixelmap_InitializationOptions* opts = nullptr;
     ASSERT_EQ(OH_PixelmapInitializationOptions_Create(&opts), IMAGE_SUCCESS);
@@ -2406,7 +2406,7 @@ HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_WritePixelsWithPixelFormat_NullPara
     ASSERT_EQ(OH_PixelmapNative_CreatePixelmap(data, sizeof(data), opts, &pixelMap), IMAGE_SUCCESS);
 
     EXPECT_EQ(OH_PixelmapNative_WritePixelsWithPixelFormat(pixelMap, nullptr, sizeof(data),
-        PIXEL_FORMAT_RGBA_8888), IMAGE_BAD_PARAMETER);
+        PIXEL_FORMAT_RGBA_8888), IMAGE_INVALID_PARAMETER);
 
     OH_PixelmapNative_Destroy(&pixelMap);
     OH_PixelmapInitializationOptions_Release(opts);
@@ -2435,7 +2435,7 @@ HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_WritePixelsWithPixelFormat_Unsuppor
 
     uint8_t writeData[] = {0x00, 0x00, 0x00, 0xFF};
     EXPECT_EQ(OH_PixelmapNative_WritePixelsWithPixelFormat(pixelMap, writeData, sizeof(writeData),
-        PIXEL_FORMAT_NV12), IMAGE_BAD_PARAMETER);
+        PIXEL_FORMAT_NV12), IMAGE_INVALID_PARAMETER);
 
     OH_PixelmapNative_Destroy(&pixelMap);
     OH_PixelmapInitializationOptions_Release(opts);
@@ -2500,7 +2500,7 @@ HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_WritePixelsToAreaWithPixelFormat_Nu
         .region = {0, 0, 1, 1}
     };
     EXPECT_EQ(OH_PixelmapNative_WritePixelsToAreaWithPixelFormat(nullptr, &area,
-        PIXEL_FORMAT_RGBA_8888), IMAGE_BAD_PARAMETER);
+        PIXEL_FORMAT_RGBA_8888), IMAGE_INVALID_PARAMETER);
 
     GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_WritePixelsToAreaWithPixelFormat_NullParam end";
 }
