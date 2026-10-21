@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 #include <cmath>
+#include <cstdio>
 #include "pixel_yuv.h"
 
 #include "image_utils.h"
@@ -58,6 +59,24 @@ constexpr uint8_t Y_SHIFT = 16;
 constexpr uint8_t U_SHIFT = 8;
 constexpr uint8_t V_SHIFT = 0;
 constexpr int32_t MAX_DIMENSION = INT32_MAX >> NUM_2;
+
+#if !defined(CROSS_PLATFORM) && !defined(_WIN32) && !defined(_APPLE) && \
+    !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+const uint64_t PIXEL_YUV_FDSAN_TAG =
+    fdsan_create_owner_tag(FDSAN_OWNER_TYPE_DEFAULT, LOG_TAG_DOMAIN_ID_IMAGE);
+
+static void TagPixelYuvFd(int fd)
+{
+    if (fd >= 0) {
+        fdsan_exchange_owner_tag(fd, 0, PIXEL_YUV_FDSAN_TAG);
+    }
+}
+#else
+static void TagPixelYuvFd(int fd)
+{
+    (void)fd;
+}
+#endif
 
 struct TransInfos {
     SkMatrix matrix;
@@ -911,6 +930,9 @@ void PixelYuv::SetPixelsAddr(void *addr, void *context, uint32_t size, Allocator
     }
     if (type == AllocatorType::SHARE_MEM_ALLOC && context == nullptr) {
         IMAGE_LOGE("SetPixelsAddr error type %{public}d ", type);
+    }
+    if (type == AllocatorType::SHARE_MEM_ALLOC && context != nullptr) {
+        TagPixelYuvFd(*static_cast<int *>(context));
     }
     data_ = static_cast<uint8_t *>(addr);
     context_ = context;

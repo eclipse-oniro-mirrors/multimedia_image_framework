@@ -19,14 +19,9 @@
 #include "pixel_map_gl_utils.h"
 
 #include <cerrno>
-#include <fcntl.h>
+#include <cstdio>
 #include <inttypes.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <unistd.h>
 
-#include <filesystem>
-#include <fstream>
 #include <limits>
 #include <memory>
 #include <sstream>
@@ -83,17 +78,18 @@ static bool checkProgram(GLuint &programId)
     return true;
 }
 
-static bool ReadFileFully(int fd, unsigned char *data, size_t size)
+static bool ReadFileFully(std::FILE *file, unsigned char *data, size_t size)
 {
     size_t totalRead = 0;
     while (totalRead < size) {
         errno = 0;
-        const ssize_t readLen = read(fd, data + totalRead, size - totalRead);
+        const size_t readLen = std::fread(data + totalRead, sizeof(uint8_t), size - totalRead, file);
         if (readLen > 0) {
-            totalRead += static_cast<size_t>(readLen);
+            totalRead += readLen;
             continue;
         }
-        if (readLen < 0 && errno == EINTR) {
+        if (std::ferror(file) != 0 && errno == EINTR) {
+            std::clearerr(file);
             continue;
         }
         return false;
@@ -108,50 +104,56 @@ static bool loadShaderFromFileLocked(unsigned char*&shaderBinary, GLenum &binary
         return true;
     }
 
-    int binaryFd = open(filePath, O_RDONLY);
-    if (binaryFd < 0) {
+    std::FILE *binaryFile = std::fopen(filePath, "rb");
+    if (binaryFile == nullptr) {
         IMAGE_LOGE("slr_gpu shader cache open failed! error %{public}d", errno);
         return false;
     }
-
-    struct stat fileStat;
-    if (fstat(binaryFd, &fileStat) != 0) {
-        const int statError = errno;
-        close(binaryFd);
-        IMAGE_LOGE("slr_gpu shader cache fstat failed! error %{public}d", statError);
+    if (std::fseek(binaryFile, 0, SEEK_END) != 0) {
+        const int seekError = errno;
+        std::fclose(binaryFile);
+        IMAGE_LOGE("slr_gpu shader cache seek failed! error %{public}d", seekError);
         return false;
     }
 
     const size_t minSize = sizeof(GLenum) + sizeof(version);
-    if (fileStat.st_size < 0) {
-        close(binaryFd);
-        IMAGE_LOGE("slr_gpu shader cache file size failed! size:%{public}lld",
-            static_cast<long long>(fileStat.st_size));
+    const long fileSizeValue = std::ftell(binaryFile);
+    if (fileSizeValue < 0) {
+        const int tellError = errno;
+        std::fclose(binaryFile);
+        IMAGE_LOGE("slr_gpu shader cache file size failed! error:%{public}d", tellError);
         return false;
     }
-    const uint64_t fileSize64 = static_cast<uint64_t>(fileStat.st_size);
+    const uint64_t fileSize64 = static_cast<uint64_t>(fileSizeValue);
     const uint64_t maxSize = static_cast<uint64_t>(std::numeric_limits<size_t>::max());
-    const uint64_t maxReadSize = static_cast<uint64_t>(std::numeric_limits<ssize_t>::max());
     if (!PixelMapGlShaderUtils::IsShaderCacheFileSizeValid(fileSize64, minSize) ||
-        fileSize64 > maxSize || fileSize64 > maxReadSize) {
-        close(binaryFd);
+        fileSize64 > maxSize) {
+        std::fclose(binaryFile);
         IMAGE_LOGE("slr_gpu shader cache file size failed! size:%{public}llu",
             static_cast<unsigned long long>(fileSize64));
         return false;
     }
     const size_t fileSize = static_cast<size_t>(fileSize64);
     if (fileSize - minSize > std::numeric_limits<GLuint>::max()) {
-        close(binaryFd);
+        std::fclose(binaryFile);
         IMAGE_LOGE("slr_gpu shader cache file too large");
         return false;
     }
+    if (std::fseek(binaryFile, 0, SEEK_SET) != 0) {
+        const int seekError = errno;
+        std::fclose(binaryFile);
+        IMAGE_LOGE("slr_gpu shader cache rewind failed! error %{public}d", seekError);
+        return false;
+    }
     auto binaryData = std::make_unique<unsigned char[]>(fileSize);
-    const bool readSuccess = ReadFileFully(binaryFd, binaryData.get(), fileSize);
+    const bool readSuccess = ReadFileFully(binaryFile, binaryData.get(), fileSize);
     const int readError = errno;
-    close(binaryFd);
+    const int closeResult = std::fclose(binaryFile);
+    const int closeError = errno;
 
-    if (!readSuccess) {
-        IMAGE_LOGE("slr_gpu shader cache read failed! error %{public}d", readError);
+    if (!readSuccess || closeResult != 0) {
+        IMAGE_LOGE("slr_gpu shader cache read failed! error %{public}d",
+            readSuccess ? closeError : readError);
         return false;
     }
     binarySize = static_cast<uint32_t>(fileSize - minSize);
@@ -201,22 +203,24 @@ static bool saveShaderToFileLocked(unsigned char*&shaderBinary, GLenum &binaryFo
         IMAGE_LOGE("slr_gpu shaderBinary == nullptr saveShaderToFile failed");
         return false;
     }
-    if (std::filesystem::exists(filePath)) {
-        std::filesystem::remove(filePath);
-    }
-    int binaryFd = open(filePath, O_WRONLY | O_CREAT | O_TRUNC, 0644);
-    if (binaryFd < 0) {
+    std::FILE *binaryFile = std::fopen(filePath, "wb");
+    if (binaryFile == nullptr) {
         IMAGE_LOGE("slr_gpu shader cache open(write) failed! error %{public}d", errno);
         return false;
     }
-    if (write(binaryFd, shaderBinary, binarySize) != static_cast<ssize_t>(binarySize) ||
-        write(binaryFd, &binaryFormat, sizeof(GLenum)) != static_cast<ssize_t>(sizeof(GLenum)) ||
-        write(binaryFd, &g_shaderVersion, sizeof(g_shaderVersion)) != static_cast<ssize_t>(sizeof(g_shaderVersion))) {
-        close(binaryFd);
-        IMAGE_LOGE("slr_gpu shader cache write failed! error %{public}d", errno);
+    errno = 0;
+    const bool writeSuccess =
+        std::fwrite(shaderBinary, sizeof(uint8_t), binarySize, binaryFile) == binarySize &&
+        std::fwrite(&binaryFormat, sizeof(binaryFormat), 1, binaryFile) == 1 &&
+        std::fwrite(&g_shaderVersion, sizeof(g_shaderVersion), 1, binaryFile) == 1;
+    const int writeError = errno;
+    const int closeResult = std::fclose(binaryFile);
+    const int closeError = errno;
+    if (!writeSuccess || closeResult != 0) {
+        IMAGE_LOGE("slr_gpu shader cache write failed! error %{public}d",
+            writeSuccess ? closeError : writeError);
         return false;
     }
-    close(binaryFd);
     return true;
 }
 

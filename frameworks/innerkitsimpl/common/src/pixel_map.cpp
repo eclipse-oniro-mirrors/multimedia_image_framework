@@ -21,6 +21,7 @@
 #include <charconv>
 #include <chrono>
 #include <cmath>
+#include <cstdio>
 #include <iostream>
 #include <limits>
 #include <unistd.h>
@@ -116,6 +117,50 @@ constexpr uint32_t MAX_READ_COUNT = 2048;
 constexpr uint8_t FILL_NUMBER = 3;
 constexpr uint8_t ALIGN_NUMBER = 4;
 constexpr uint8_t YUV420_P010_Y_BYTES = 2; // Bytes per pixel for Y plane
+
+#if !defined(CROSS_PLATFORM) && !defined(_WIN32) && !defined(_APPLE) && \
+    !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+const uint64_t PIXEL_MAP_FDSAN_TAG =
+    fdsan_create_owner_tag(FDSAN_OWNER_TYPE_DEFAULT, LOG_TAG_DOMAIN_ID_IMAGE);
+
+static void TagPixelMapFd(int fd)
+{
+    if (fd >= 0) {
+        fdsan_exchange_owner_tag(fd, 0, PIXEL_MAP_FDSAN_TAG);
+    }
+}
+
+static void ClosePixelMapFd(int fd)
+{
+    if (fd >= 0) {
+        fdsan_close_with_tag(fd, PIXEL_MAP_FDSAN_TAG);
+    }
+}
+
+static void TransferPixelMapFd(int fd)
+{
+    if (fd >= 0) {
+        fdsan_exchange_owner_tag(fd, PIXEL_MAP_FDSAN_TAG, 0);
+    }
+}
+#else
+static void TagPixelMapFd(int fd)
+{
+    (void)fd;
+}
+
+static void ClosePixelMapFd(int fd)
+{
+    if (fd >= 0) {
+        ::close(fd);
+    }
+}
+
+static void TransferPixelMapFd(int fd)
+{
+    (void)fd;
+}
+#endif
 
 static constexpr uint8_t NUM_1 = 1;
 static constexpr uint8_t NUM_2 = 2;
@@ -241,7 +286,7 @@ void PixelMap::ReleaseSharedMemory(void *addr, void *context, uint32_t size)
         ::munmap(addr, size);
     }
     if (fd != nullptr) {
-        ::close(*fd);
+        ClosePixelMapFd(*fd);
         delete fd;
     }
 #endif
@@ -278,6 +323,9 @@ void PixelMap::SetPixelsAddrLocked(void *addr, void *context, uint32_t size, All
     if (type == AllocatorType::SHARE_MEM_ALLOC && context == nullptr) {
         IMAGE_LOGE("SetPixelsAddr error type %{public}d ", type);
     }
+    if (type == AllocatorType::SHARE_MEM_ALLOC && context != nullptr) {
+        TagPixelMapFd(*static_cast<int *>(context));
+    }
     data_ = static_cast<uint8_t *>(addr);
     isUnMap_ = false;
     context_ = context;
@@ -313,6 +361,9 @@ void PixelMap::SetPixelsAddr(void *addr, void *context, uint32_t size, Allocator
     }
     if (type == AllocatorType::SHARE_MEM_ALLOC && context == nullptr) {
         IMAGE_LOGE("Unmarshalling setPixelsAddr error type %{public}d ", type);
+    }
+    if (type == AllocatorType::SHARE_MEM_ALLOC && context != nullptr) {
+        TagPixelMapFd(*static_cast<int *>(context));
     }
     data_ = static_cast<uint8_t *>(addr);
     isUnMap_ = false;
@@ -808,7 +859,7 @@ void PixelMap::ReleaseBuffer(AllocatorType allocatorType, int fd, uint64_t dataS
     if (allocatorType == AllocatorType::SHARE_MEM_ALLOC) {
         if (buffer != nullptr && *buffer != nullptr) {
             ::munmap(*buffer, dataSize);
-            ::close(fd);
+            ClosePixelMapFd(fd);
         }
         return;
     }
@@ -881,17 +932,18 @@ void *PixelMap::AllocSharedMemory(const uint64_t bufferSize, int &fd, uint32_t u
         IMAGE_LOGE("AllocSharedMemory fd error");
         return nullptr;
     }
+    TagPixelMapFd(fd);
     int result = AshmemSetProt(fd, PROT_READ | PROT_WRITE);
     if (result < 0) {
         IMAGE_LOGE("AshmemSetProt error");
-        ::close(fd);
+        ClosePixelMapFd(fd);
         return nullptr;
     }
     void* ptr = ::mmap(nullptr, bufferSize, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
     if (ptr == MAP_FAILED) {
         IMAGE_LOGE("mmap error, errno: %{public}s, fd %{public}d, bufferSize %{public}lld",
             strerror(errno), fd, (long long)bufferSize);
-        ::close(fd);
+        ClosePixelMapFd(fd);
         return nullptr;
     }
     return ptr;
@@ -1229,6 +1281,7 @@ bool PixelMap::SourceCropAndConvert(PixelMap &source, const ImageInfo &srcImageI
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     void *fdBuffer = new int32_t();
     *static_cast<int32_t *>(fdBuffer) = fd;
+    TransferPixelMapFd(fd);
     dstPixelMap.SetPixelsAddr(dstPixels, fdBuffer, uBufferSize, AllocatorType::SHARE_MEM_ALLOC, nullptr);
 #else
     dstPixelMap.SetPixelsAddr(dstPixels, nullptr, uBufferSize, AllocatorType::HEAP_ALLOC, nullptr);
@@ -2621,7 +2674,8 @@ void PixelMap::ReleaseMemory(AllocatorType allocType, void *addr, void *context,
                 ::munmap(addr, size);
             }
             if (fd != nullptr) {
-                ::close(*fd);
+                TagPixelMapFd(*fd);
+                ClosePixelMapFd(*fd);
             }
             context = nullptr;
             addr = nullptr;
@@ -2660,16 +2714,17 @@ bool PixelMap::WriteAshmemDataToParcel(Parcel &parcel, size_t size) const
     if (fd < 0) {
         return false;
     }
+    TagPixelMapFd(fd);
 
     int result = AshmemSetProt(fd, PROT_READ | PROT_WRITE);
     IMAGE_LOGD("AshmemSetProt:[%{public}d].", result);
     if (result < 0) {
-        ::close(fd);
+        ClosePixelMapFd(fd);
         return false;
     }
     void *ptr = ::mmap(nullptr, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
     if (ptr == MAP_FAILED) {
-        ::close(fd);
+        ClosePixelMapFd(fd);
         IMAGE_LOGE("WriteAshmemData map failed, errno:%{public}d", errno);
         return false;
     }
@@ -2677,20 +2732,20 @@ bool PixelMap::WriteAshmemDataToParcel(Parcel &parcel, size_t size) const
 
     if (memcpy_s(ptr, size, data, size) != EOK) {
         ::munmap(ptr, size);
-        ::close(fd);
+        ClosePixelMapFd(fd);
         IMAGE_LOGE("WriteAshmemData memcpy_s error");
         return false;
     }
 
     if (!WriteFileDescriptor(parcel, fd)) {
         ::munmap(ptr, size);
-        ::close(fd);
+        ClosePixelMapFd(fd);
         IMAGE_LOGE("WriteAshmemData WriteFileDescriptor error");
         return false;
     }
     IMAGE_LOGD("WriteAshmemData WriteFileDescriptor success");
     ::munmap(ptr, size);
-    ::close(fd);
+    ClosePixelMapFd(fd);
     return true;
 #endif
     IMAGE_LOGE("WriteAshmemData not support crossplatform");
@@ -2750,39 +2805,43 @@ uint8_t *PixelMap::ReadAshmemDataFromParcel(Parcel &parcel, int32_t bufferSize,
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     auto readFdDefaultFunc = [](Parcel &parcel) -> int { return ReadFileDescriptor(parcel); };
     int fd = ((readSafeFdFunc != nullptr) ? readSafeFdFunc(parcel, readFdDefaultFunc) : readFdDefaultFunc(parcel));
+    TagPixelMapFd(fd);
     if (!CheckAshmemSize(fd, bufferSize)) {
-        ::close(fd);
+        ClosePixelMapFd(fd);
         IMAGE_LOGE("ReadAshmemDataFromParcel check ashmem size failed, fd:[%{public}d].", fd);
         return nullptr;
     }
     if (bufferSize <= 0 || bufferSize > PIXEL_MAP_MAX_RAM_SIZE) {
-        ::close(fd);
+        ClosePixelMapFd(fd);
         IMAGE_LOGE("malloc parameter bufferSize:[%{public}d] error.", bufferSize);
         return nullptr;
     }
 
     void *ptr = ::mmap(nullptr, bufferSize, PROT_READ, MAP_SHARED, fd, 0);
     if (ptr == MAP_FAILED) {
-        ::close(fd);
+        ClosePixelMapFd(fd);
         IMAGE_LOGE("ReadImageData map failed, errno:%{public}d", errno);
         return nullptr;
     }
 
     base = static_cast<uint8_t *>(malloc(bufferSize));
     if (base == nullptr) {
-        ReleaseMemory(AllocatorType::SHARE_MEM_ALLOC, ptr, &fd, bufferSize);
+        ::munmap(ptr, bufferSize);
+        ClosePixelMapFd(fd);
         IMAGE_LOGE("alloc output pixel memory size:[%{public}d] error.", bufferSize);
         return nullptr;
     }
     if (memcpy_s(base, bufferSize, ptr, bufferSize) != 0) {
-        ReleaseMemory(AllocatorType::SHARE_MEM_ALLOC, ptr, &fd, bufferSize);
+        ::munmap(ptr, bufferSize);
+        ClosePixelMapFd(fd);
         free(base);
         base = nullptr;
         IMAGE_LOGE("memcpy pixel data size:[%{public}d] error.", bufferSize);
         return nullptr;
     }
 
-    ReleaseMemory(AllocatorType::SHARE_MEM_ALLOC, ptr, &fd, bufferSize);
+    ::munmap(ptr, bufferSize);
+    ClosePixelMapFd(fd);
 #endif
     return base;
 }
@@ -2813,8 +2872,15 @@ bool PixelMap::WriteFileDescriptor(Parcel &parcel, int fd)
         IMAGE_LOGE("WriteFileDescriptor dup fd failed, dupFd:[%{public}d].", dupFd);
         return false;
     }
+    TagPixelMapFd(dupFd);
     sptr<IPCFileDescriptor> descriptor = new IPCFileDescriptor(dupFd);
-    return parcel.WriteObject<IPCFileDescriptor>(descriptor);
+    if (!parcel.WriteObject<IPCFileDescriptor>(descriptor)) {
+        IMAGE_LOGE("WriteFileDescriptor write object failed, dupFd: %{public}d.", dupFd);
+        ClosePixelMapFd(dupFd);
+        return false;
+    }
+    TransferPixelMapFd(dupFd);
+    return true;
 #else
     IMAGE_LOGE("[Pixemap] Not support Cross-Platform");
     return false;
@@ -2933,19 +2999,20 @@ static bool WriteRecoveredAshMemToParcel(Parcel &parcel, const uint8_t *src, int
         IMAGE_LOGE("[PixelMap] failed to create new ashmem for recovery");
         return false;
     }
+    TagPixelMapFd(newFd);
     if (AshmemSetProt(newFd, PROT_READ | PROT_WRITE) < 0) {
-        ::close(newFd);
+        ClosePixelMapFd(newFd);
         IMAGE_LOGE("[PixelMap] failed to set ashmem prot for recovery");
         return false;
     }
     void* newAddr = mmap(nullptr, bufferSize, PROT_READ | PROT_WRITE, MAP_SHARED, newFd, 0);
     if (newAddr == MAP_FAILED) {
-        ::close(newFd);
+        ClosePixelMapFd(newFd);
         IMAGE_LOGE("[PixelMap] failed to mmap mem for recovery, errno:%{public}d", errno);
         return false;
     }
     if (memcpy_s(newAddr, bufferSize, src, bufferSize) != 0) {
-        ::close(newFd);
+        ClosePixelMapFd(newFd);
         ::munmap(newAddr, bufferSize);
         IMAGE_LOGE("[PixelMap] failed to copy mem for recovery, errno:%{public}d", errno);
         return false;
@@ -2954,10 +3021,11 @@ static bool WriteRecoveredAshMemToParcel(Parcel &parcel, const uint8_t *src, int
     bool writeSuccess = parcel.WriteObject<IPCFileDescriptor>(descriptor);
     ::munmap(newAddr, bufferSize);
     if (!writeSuccess) {
-        ::close(newFd);
+        ClosePixelMapFd(newFd);
         IMAGE_LOGE("[PixelMap] failed to write recovered fd to parcel");
         return false;
     }
+    TransferPixelMapFd(newFd);
     return true;
 #else
     return false;
@@ -3342,16 +3410,17 @@ bool PixelMap::ReadMemInfoFromParcel(Parcel &parcel, const ImageInfo &imgInfo, P
     if (pixelMemInfo.allocatorType == AllocatorType::SHARE_MEM_ALLOC) {
         auto readFdDefaultFunc = [](Parcel &parcel) -> int { return ReadFileDescriptor(parcel); };
         int fd = ((readSafeFdFunc != nullptr) ? readSafeFdFunc(parcel, readFdDefaultFunc) : readFdDefaultFunc(parcel));
+        TagPixelMapFd(fd);
         if (!CheckAshmemSize(fd, pixelMemInfo.bufferSize, pixelMemInfo.isAstc)) {
             PixelMap::ConstructPixelMapError(error, ERR_IMAGE_GET_FD_BAD, "fd acquisition failed");
-            ::close(fd);
+            ClosePixelMapFd(fd);
             return false;
         }
         void* ptr = ::mmap(nullptr, pixelMemInfo.bufferSize, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
         if (ptr == MAP_FAILED) {
             ptr = ::mmap(nullptr, pixelMemInfo.bufferSize, PROT_READ, MAP_SHARED, fd, 0);
             if (ptr == MAP_FAILED) {
-                ::close(fd);
+                ClosePixelMapFd(fd);
                 IMAGE_LOGE("shared memory map in memalloc failed, errno:%{public}d", errno);
                 PixelMap::ConstructPixelMapError(error, ERR_IMAGE_GET_FD_BAD, "shared memory map in memalloc failed");
                 return false;
@@ -3360,7 +3429,7 @@ bool PixelMap::ReadMemInfoFromParcel(Parcel &parcel, const ImageInfo &imgInfo, P
         pixelMemInfo.context = new(std::nothrow) int32_t();
         if (pixelMemInfo.context == nullptr) {
             ::munmap(ptr, pixelMemInfo.bufferSize);
-            ::close(fd);
+            ClosePixelMapFd(fd);
             return false;
         }
         *static_cast<int32_t *>(pixelMemInfo.context) = fd;
@@ -3399,6 +3468,9 @@ bool PixelMap::UpdatePixelMapMemInfo(PixelMap *pixelMap, ImageInfo &imgInfo, Pix
         if (pixelMap->freePixelMapProc_ != nullptr) {
             pixelMap->freePixelMapProc_(pixelMemInfo.base, pixelMemInfo.context, pixelMemInfo.bufferSize);
         }
+        if (pixelMemInfo.allocatorType == AllocatorType::SHARE_MEM_ALLOC && pixelMemInfo.context != nullptr) {
+            TransferPixelMapFd(*static_cast<int32_t *>(pixelMemInfo.context));
+        }
         ReleaseMemory(pixelMemInfo.allocatorType, pixelMemInfo.base, pixelMemInfo.context, pixelMemInfo.bufferSize);
         if (pixelMemInfo.allocatorType == AllocatorType::SHARE_MEM_ALLOC && pixelMemInfo.context != nullptr) {
             delete static_cast<int32_t *>(pixelMemInfo.context);
@@ -3406,6 +3478,9 @@ bool PixelMap::UpdatePixelMapMemInfo(PixelMap *pixelMap, ImageInfo &imgInfo, Pix
         }
         IMAGE_LOGE("create pixel map from parcel failed, set image info error.");
         return false;
+    }
+    if (pixelMemInfo.allocatorType == AllocatorType::SHARE_MEM_ALLOC && pixelMemInfo.context != nullptr) {
+        TransferPixelMapFd(*static_cast<int32_t *>(pixelMemInfo.context));
     }
     pixelMap->SetPixelsAddr(pixelMemInfo.base, pixelMemInfo.context,
         pixelMemInfo.bufferSize, pixelMemInfo.allocatorType, pixelMap->IsDisplayOnly());
