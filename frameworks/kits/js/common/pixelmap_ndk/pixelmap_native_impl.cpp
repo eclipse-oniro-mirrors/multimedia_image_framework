@@ -67,7 +67,7 @@ OH_PixelmapNative::OH_PixelmapNative(const InitializationOptions &opts, int32_t 
 
 OH_PixelmapNative::OH_PixelmapNative(OH_PixelmapNative *OH_PixelmapNative, const InitializationOptions &opts)
 {
-    if (OH_PixelmapNative == nullptr) {
+    if (OH_PixelmapNative == nullptr || OH_PixelmapNative->GetInnerPixelmap() == nullptr) {
         pixelmap_ = nullptr;
         return;
     }

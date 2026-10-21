@@ -647,6 +647,68 @@ HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_ScaleWithAntiAliasing, TestSize.Lev
 }
 
 /**
+ * @tc.name: OH_PixelmapNative_ScaleWithAntiAliasing_NullInnerPixelmap
+ * @tc.desc: Reject a non-null handle with no inner PixelMap.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_ScaleWithAntiAliasing_NullInnerPixelmap, TestSize.Level3)
+{
+    OH_PixelmapNative pixelmap(nullptr);
+    EXPECT_EQ(OH_PixelmapNative_ScaleWithAntiAliasing(&pixelmap, 0.5f, 0.5f,
+        OH_PixelmapNative_AntiAliasing_NONE), IMAGE_BAD_PARAMETER);
+}
+
+/**
+ * @tc.name: OH_PixelMapNative_ConvertPixelFormat_NullSource
+ * @tc.desc: Reject null handles and null inner PixelMaps without changing the output.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapNdk2Test, OH_PixelMapNative_ConvertPixelFormat_NullSource, TestSize.Level3)
+{
+    OH_PixelmapNative pixelmap(nullptr);
+    OH_PixelmapNative *destination = &pixelmap;
+    EXPECT_EQ(OH_PixelMapNative_ConvertPixelFormat(nullptr, &destination, PIXEL_FORMAT_NV12), IMAGE_BAD_PARAMETER);
+    EXPECT_EQ(destination, &pixelmap);
+    EXPECT_EQ(OH_PixelMapNative_ConvertPixelFormat(&pixelmap, &destination, PIXEL_FORMAT_NV12), IMAGE_BAD_PARAMETER);
+    EXPECT_EQ(destination, &pixelmap);
+}
+
+/**
+ * @tc.name: OH_PixelMapNative_ConvertPixelFormat_NullDestination
+ * @tc.desc: Reject a null output pointer for both RGB and YUV sources.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapNdk2Test, OH_PixelMapNative_ConvertPixelFormat_NullDestination, TestSize.Level3)
+{
+    for (const auto format : {PixelFormat::BGRA_8888, PixelFormat::NV12}) {
+        auto innerPixelmap = std::make_shared<PixelMap>();
+        ImageInfo info;
+        info.size = {FOUR, FOUR};
+        info.pixelFormat = format;
+        info.alphaType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
+        ASSERT_EQ(innerPixelmap->SetImageInfo(info), SUCCESS);
+        OH_PixelmapNative pixelmap(innerPixelmap);
+        const auto destinationFormat = format == PixelFormat::NV12 ? PIXEL_FORMAT_BGRA_8888 : PIXEL_FORMAT_NV12;
+        EXPECT_EQ(OH_PixelMapNative_ConvertPixelFormat(&pixelmap, nullptr, destinationFormat), IMAGE_BAD_PARAMETER);
+    }
+}
+
+/**
+ * @tc.name: OH_PixelmapNative_CopyConstructor_NullSource
+ * @tc.desc: Keep the inner PixelMap null when the source handle or its inner PixelMap is null.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_CopyConstructor_NullSource, TestSize.Level3)
+{
+    InitializationOptions options;
+    OH_PixelmapNative pixelmap(nullptr);
+    OH_PixelmapNative copyFromNull(nullptr, options);
+    EXPECT_EQ(copyFromNull.GetInnerPixelmap(), nullptr);
+    OH_PixelmapNative copyFromEmpty(&pixelmap, options);
+    EXPECT_EQ(copyFromEmpty.GetInnerPixelmap(), nullptr);
+}
+
+/**
  * @tc.name: OH_PixelmapNative_Translate
  * @tc.desc: OH_PixelmapNative_Translate
  * @tc.type: FUNC
