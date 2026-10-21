@@ -13,7 +13,9 @@
  * limitations under the License.
  */
 
+#include <algorithm>
 #include <gtest/gtest.h>
+#include <vector>
 #include "image_source.h"
 #include "media_errors.h"
 #include "pixel_map.h"
@@ -2400,6 +2402,96 @@ HWTEST_F(ImagePixelMapTest, ImagePixelMapCreate002, TestSize.Level3)
     ASSERT_EQ(ret, 0);
 
     GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMapCreate002 scale end";
+}
+
+static std::unique_ptr<PixelMap> CreateRowPatternDmaPixelMap(int32_t width, int32_t height)
+{
+    std::vector<uint32_t> colors(static_cast<size_t>(width) * height);
+    for (int32_t row = 0; row < height; row++) {
+        uint32_t rowColor = 0xFF000000 | (static_cast<uint32_t>(row) << 16) |
+            (static_cast<uint32_t>(0xFF - row) << 8) | (static_cast<uint32_t>(row * 2) & 0xFF);
+        std::fill_n(colors.begin() + static_cast<size_t>(row) * width, width, rowColor);
+    }
+    InitializationOptions opts;
+    opts.size.width = width;
+    opts.size.height = height;
+    opts.pixelFormat = PixelFormat::RGBA_8888;
+    opts.alphaType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
+    opts.allocatorType = AllocatorType::DMA_ALLOC;
+    opts.editable = true;
+    auto pixelMap = PixelMap::Create(colors.data(), static_cast<uint32_t>(colors.size()), opts);
+    if (pixelMap == nullptr) {
+        return nullptr;
+    }
+    pixelMap->InnerSetColorSpace(OHOS::ColorManager::ColorSpace(OHOS::ColorManager::ColorSpaceName::SRGB));
+    return pixelMap;
+}
+
+/**
+* @tc.name: ImagePixelMapApplyColorSpace001
+* @tc.desc: ApplyColorSpace on a DMA pixelmap whose ImageInfo was shrunk in place (CenterDisplay failure state)
+*           must write the destination with its own stride instead of the stale source stride.
+* @tc.type: FUNC
+*/
+HWTEST_F(ImagePixelMapTest, ImagePixelMapApplyColorSpace001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMapApplyColorSpace001 start";
+    const int32_t srcWidth = 170;
+    const int32_t targetSize = 128;
+    auto shrunkPixelMap = CreateRowPatternDmaPixelMap(srcWidth, targetSize);
+    ASSERT_NE(shrunkPixelMap, nullptr);
+    ASSERT_EQ(shrunkPixelMap->GetAllocatorType(), AllocatorType::DMA_ALLOC);
+    ImageInfo info;
+    shrunkPixelMap->GetImageInfo(info);
+    info.size.width = targetSize;
+    ASSERT_EQ(shrunkPixelMap->SetImageInfo(info, true), SUCCESS);
+
+    auto refPixelMap = CreateRowPatternDmaPixelMap(targetSize, targetSize);
+    ASSERT_NE(refPixelMap, nullptr);
+
+    auto p3 = OHOS::ColorManager::ColorSpace(OHOS::ColorManager::ColorSpaceName::DISPLAY_P3);
+    ASSERT_EQ(shrunkPixelMap->ApplyColorSpace(p3), SUCCESS);
+    ASSERT_EQ(refPixelMap->ApplyColorSpace(p3), SUCCESS);
+    ASSERT_EQ(shrunkPixelMap->GetWidth(), targetSize);
+    ASSERT_EQ(shrunkPixelMap->GetHeight(), targetSize);
+    ASSERT_EQ(shrunkPixelMap->GetRowStride(), refPixelMap->GetRowStride());
+    for (int32_t row = 0; row < targetSize; row++) {
+        const uint32_t *actual = shrunkPixelMap->GetPixel32(targetSize - 1, row);
+        const uint32_t *expected = refPixelMap->GetPixel32(targetSize - 1, row);
+        ASSERT_NE(actual, nullptr);
+        ASSERT_NE(expected, nullptr);
+        ASSERT_EQ(*actual, *expected) << "row " << row;
+    }
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMapApplyColorSpace001 end";
+}
+
+/**
+* @tc.name: ImagePixelMapApplyColorSpace002
+* @tc.desc: ApplyColorSpace on a normal DMA pixelmap with a padded stride keeps every row intact.
+* @tc.type: FUNC
+*/
+HWTEST_F(ImagePixelMapTest, ImagePixelMapApplyColorSpace002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMapApplyColorSpace002 start";
+    const int32_t width = 170;
+    const int32_t height = 16;
+    auto pixelMap = CreateRowPatternDmaPixelMap(width, height);
+    ASSERT_NE(pixelMap, nullptr);
+    ASSERT_EQ(pixelMap->GetAllocatorType(), AllocatorType::DMA_ALLOC);
+
+    auto p3 = OHOS::ColorManager::ColorSpace(OHOS::ColorManager::ColorSpaceName::DISPLAY_P3);
+    ASSERT_EQ(pixelMap->ApplyColorSpace(p3), SUCCESS);
+    ASSERT_EQ(pixelMap->GetWidth(), width);
+    ASSERT_EQ(pixelMap->GetHeight(), height);
+    for (int32_t row = 1; row < height; row++) {
+        const uint32_t *prev = pixelMap->GetPixel32(width - 1, row - 1);
+        const uint32_t *curr = pixelMap->GetPixel32(width - 1, row);
+        ASSERT_NE(prev, nullptr);
+        ASSERT_NE(curr, nullptr);
+        EXPECT_NE(*prev, *curr) << "row " << row;
+        EXPECT_EQ(*curr, *pixelMap->GetPixel32(0, row)) << "row " << row;
+    }
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMapApplyColorSpace002 end";
 }
 } // namespace Multimedia
 } // namespace OHOS
