@@ -348,9 +348,8 @@ bool HeifHvccBox::ParseSpsSyntax(std::vector<uint8_t> &nalUnits)
     spsConfig_.spsTemporalIdNestingFlag = GetWord(nalUnits, READ_BIT_NUM_FLAG);
 
     //go to profile_tier_level parser
-    ProfileTierLevel(nalUnits,
-                     spsConfig_.spsTemporalIdNestingFlag,
-                     spsConfig_.spsMaxSubLayersMinus1);
+    //profile_tier_level() is always invoked with profilePresentFlag = 1 from a sequence parameter set
+    ProfileTierLevel(nalUnits, READ_BIT_NUM_FLAG, spsConfig_.spsMaxSubLayersMinus1);
 
     spsConfig_.spsVideoParameterSetId = GetGolombCode(nalUnits);
     spsConfig_.chromaFormatIdc = GetGolombCode(nalUnits);

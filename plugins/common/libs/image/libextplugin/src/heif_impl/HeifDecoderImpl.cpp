@@ -1589,6 +1589,16 @@ bool HeifDecoderImpl::SwDecodeHeifsImage(uint32_t index, HevcSoftDecodeParam &pa
 {
     CHECK_ERROR_RETURN_RET(!parser_, false);
     param.gridInfo.decodeMode = DecodeMode::VIDEO;
+    //The frame buffer is allocated with dstWidth_/dstHeight_ (declared image size), while the software
+    //decoder writes the size carried by the sample entry SPS. Reject the sequence when the SPS size is
+    //larger than the buffer to avoid an out-of-bounds write in the software decoder.
+    uint32_t spsWidth = 0;
+    uint32_t spsHeight = 0;
+    auto sizeRet = parser_->GetHeifsDecoderImageSize(spsWidth, spsHeight);
+    bool sizeOverflow = sizeRet != heif_error_ok || spsWidth > dstWidth_ || spsHeight > dstHeight_;
+    CHECK_ERROR_RETURN_RET_LOG(sizeOverflow, false,
+        "heifs sps size %{public}ux%{public}u exceeds dst size %{public}ux%{public}u",
+        spsWidth, spsHeight, dstWidth_, dstHeight_);
     if (!HasDecodedFrame(index) || params_[index].bufferSize > param.bufferSize) {
         DeleteParamsBuffer();
         if (!isFirstFrameDecoded_) {
