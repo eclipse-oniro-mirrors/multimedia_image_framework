@@ -1382,7 +1382,7 @@ heif_error HeifParser::GetHeifsDecoderImageSize(uint32_t &width, uint32_t &heigh
     CHECK_ERROR_RETURN_RET(!stsdBox_, heif_error_no_stsd);
     auto hvcc = std::dynamic_pointer_cast<HeifHvccBox>(stsdBox_->GetHvccBox(0));
     CHECK_ERROR_RETURN_RET(!hvcc, heif_error_no_hvcc);
-    hvcc->ParserHvccColorRangeFlag(hvcc->GetNalArrays());
+    hvcc->ParserHvccColorRangeFlag(hvcc->GetNalArraysRef());
     const HvccSpsConfig &spsConfig = hvcc->GetSpsConfig();
     //The decoder outputs the cropped picture size, and the conformance window offsets are in chroma samples.
     uint64_t subWidthC = (spsConfig.chromaFormatIdc == 1 || spsConfig.chromaFormatIdc == 2) ? 2 : 1;

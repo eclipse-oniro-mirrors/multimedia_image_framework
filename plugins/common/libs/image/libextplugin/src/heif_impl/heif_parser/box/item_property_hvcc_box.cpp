@@ -279,7 +279,6 @@ void HeifHvccBox::ProfileTierLevel(std::vector<uint8_t> &nalUnits, uint32_t prof
     std::vector<uint32_t> subLayerProfilePresentFlag;
     std::vector<uint32_t> subLayerLevelPresentFlags;
     std::vector<uint32_t> subLayerProfileIdcs;
-    std::vector<std::vector<uint32_t>> subLayerProfileCompatibilityFlags;
     if (profilePresentFlag) {
         GetWord(nalUnits, TEMPORAL_ID_NESTED_SHIFT);
         GetWord(nalUnits, READ_BIT_NUM_FLAG);
@@ -308,17 +307,12 @@ void HeifHvccBox::ProfileTierLevel(std::vector<uint8_t> &nalUnits, uint32_t prof
     }
 
     subLayerProfileIdcs.resize(maxNumSubLayerMinus1);
-    subLayerProfileCompatibilityFlags.resize(maxNumSubLayerMinus1,
-                                             std::vector<uint32_t>(GENERAL_PROFILE_SIZE));
     for (uint32_t i = 0; i < maxNumSubLayerMinus1; i++) {
         if (subLayerProfilePresentFlag[i]) {
             GetWord(nalUnits, SUB_LAYER_PRESENT_PROFILE_SIZE);
             subLayerProfileIdcs[i] = GetWord(nalUnits, SUB_LAYER_PROFILE_IDC_SIZE);
-            for (uint32_t j = 0; j < GENERAL_PROFILE_SIZE; ++j) {
-                subLayerProfileCompatibilityFlags[i][j] = GetWord(nalUnits, READ_BIT_NUM_FLAG);
-            }
-
-            // skip sub_layer_profile_idcs judge;
+            //skip sub_layer_profile_compatibility_flags(32 bits) and the sub layer constraint flags(48 bits)
+            GetWord(nalUnits, READ_GENERAL_PROFILE_IDC_NUM);
             GetWord(nalUnits, READ_SUB_LAYER_PROFILE_IDCS);
         }
         if (subLayerLevelPresentFlags[i]) {
@@ -329,6 +323,8 @@ void HeifHvccBox::ProfileTierLevel(std::vector<uint8_t> &nalUnits, uint32_t prof
 
 bool HeifHvccBox::ParseNalUnitAnalysisSps(std::vector<uint8_t> &nalUnits)
 {
+    //reset the bit cursor so that the same SPS can be parsed again after the initial parse
+    pos_ = 0;
     boxBitLength_ = nalUnits.size() * BIT_DEPTH_DIFF;
     spsConfig_.forbiddenZeroBit = GetWord(nalUnits, READ_BIT_NUM_FLAG);
     spsConfig_.nalUnitType = GetWord(nalUnits, NALU_TYPE_ID_SIZE);

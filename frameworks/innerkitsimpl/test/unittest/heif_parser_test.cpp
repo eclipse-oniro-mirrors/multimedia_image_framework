@@ -2064,7 +2064,42 @@ HWTEST_F(HeifParserTest, GetHeifsDecoderImageSizeTest002, TestSize.Level3)
     ASSERT_EQ(heifParser.GetHeifsDecoderImageSize(width, height), heif_error_ok);
     ASSERT_EQ(width, 1920);
     ASSERT_EQ(height, 1080);
+    //The SPS must be parseable again on the next decode request.
+    width = 0;
+    height = 0;
+    ASSERT_EQ(heifParser.GetHeifsDecoderImageSize(width, height), heif_error_ok);
+    ASSERT_EQ(width, 1920);
+    ASSERT_EQ(height, 1080);
     GTEST_LOG_(INFO) << "HeifParserTest: GetHeifsDecoderImageSizeTest002 end";
+}
+
+/**
+ * @tc.name: GetHeifsDecoderImageSizeTest003
+ * @tc.desc: Test GetHeifsDecoderImageSize when the SPS carries sub layer profile information
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserTest, GetHeifsDecoderImageSizeTest003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserTest: GetHeifsDecoderImageSizeTest003 start";
+    //640x360 SPS with sps_max_sub_layers_minus1 = 1 and sub_layer_profile_present_flag[0] = 1.
+    std::vector<uint8_t> spsData = {0x42, 0x01, 0x03, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x78, 0xbf, 0xff, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0xa0, 0x05, 0x02, 0x01, 0x69, 0x40};
+    auto hvcc = std::make_shared<HeifHvccBox>();
+    hvcc->AppendNalData(spsData);
+    auto hvc1 = std::make_shared<HeifHvc1Box>();
+    hvc1->hvccBox_ = hvcc;
+    auto stsd = std::make_shared<HeifStsdBox>();
+    stsd->entries_.emplace_back(hvc1);
+
+    HeifParser heifParser;
+    heifParser.stsdBox_ = stsd;
+    uint32_t width = 0;
+    uint32_t height = 0;
+    ASSERT_EQ(heifParser.GetHeifsDecoderImageSize(width, height), heif_error_ok);
+    ASSERT_EQ(width, 640);
+    ASSERT_EQ(height, 360);
+    GTEST_LOG_(INFO) << "HeifParserTest: GetHeifsDecoderImageSizeTest003 end";
 }
 }
 }
