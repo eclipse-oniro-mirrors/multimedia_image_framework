@@ -150,8 +150,6 @@ static Image_ErrorCode ToNewErrorCode(int code)
             return IMAGE_UNSUPPORTED_DATA_FORMAT;
         case IMAGE_RESULT_TOO_LARGE:
             return IMAGE_TOO_LARGE;
-        case ERR_IMAGE_WRITE_PIXELMAP_FAILED:
-            return IMAGE_COPY_FAILED;
         default:
             return IMAGE_UNKNOWN_ERROR;
     }
@@ -878,9 +876,15 @@ Image_ErrorCode OH_PixelmapNative_WritePixelsWithPixelFormat(OH_PixelmapNative *
     if (!IsSupportedWritePixelFormat(sourcePixelFormat)) {
         return IMAGE_INVALID_PARAMETER;
     }
-    Image_ErrorCode ret = ToNewErrorCode(pixelmap->GetInnerPixelmap()->WritePixels(
-        source, static_cast<uint64_t>(bufferSize), static_cast<PixelFormat>(sourcePixelFormat)));
-    return ret == IMAGE_BAD_PARAMETER ? IMAGE_INVALID_PARAMETER : ret;
+    uint32_t innerRet = pixelmap->GetInnerPixelmap()->WritePixels(
+        source, static_cast<uint64_t>(bufferSize), static_cast<PixelFormat>(sourcePixelFormat));
+    Image_ErrorCode ret = ToNewErrorCode(innerRet);
+    if (ret == IMAGE_BAD_PARAMETER) {
+        ret = IMAGE_INVALID_PARAMETER;
+    } else if (innerRet == ERR_IMAGE_WRITE_PIXELMAP_FAILED) {
+        ret = IMAGE_COPY_FAILED;
+    }
+    return ret;
 }
 
 MIDK_EXPORT
@@ -929,8 +933,14 @@ Image_ErrorCode OH_PixelmapNative_WritePixelsToAreaWithPixelFormat(OH_PixelmapNa
     }
     RWPixelsOptions opts{area->pixels, static_cast<uint64_t>(area->pixelsSize),
         area->offset, area->stride, region, static_cast<PixelFormat>(sourcePixelFormat)};
-    Image_ErrorCode ret = ToNewErrorCode(pixelmap->GetInnerPixelmap()->WritePixels(opts));
-    return ret == IMAGE_BAD_PARAMETER ? IMAGE_INVALID_PARAMETER : ret;
+    uint32_t innerRet = pixelmap->GetInnerPixelmap()->WritePixels(opts);
+    Image_ErrorCode ret = ToNewErrorCode(innerRet);
+    if (ret == IMAGE_BAD_PARAMETER) {
+        ret = IMAGE_INVALID_PARAMETER;
+    } else if (innerRet == ERR_IMAGE_WRITE_PIXELMAP_FAILED) {
+        ret = IMAGE_COPY_FAILED;
+    }
+    return ret;
 }
 
 MIDK_EXPORT

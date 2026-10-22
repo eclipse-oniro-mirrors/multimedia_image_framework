@@ -2440,16 +2440,64 @@ uint32_t PixelMap::CheckPixelMapForWritePixels()
     return SUCCESS;
 }
 
+uint32_t PixelMap::WritePixelsToARGB(const RWPixelsOptions &opts, const ImageInfo &srcInfo, const Position &dstPosition)
+{
+    int32_t srcBpp = ImageUtils::GetPixelBytes(opts.pixelFormat);
+    uint32_t rowBytes = static_cast<uint32_t>(opts.region.width) * static_cast<uint32_t>(srcBpp);
+    // Skia has no native ARGB_8888 type, so WritePixelsConvert cannot directly write to ARGB targets.
+    // Two-step conversion: first convert source to ARGB_8888 via PixelsConvert, then copy ARGB temp to PixelMap
+    // via WritePixelsConvert (ARGB->ARGB, treated as RGBA->RGBA by Skia, i.e. plain copy).
+    // PixelsConvert does not handle source offset/stride, so extract compact rows first when needed.
+    const uint8_t *compactSrc = opts.pixels + opts.offset;
+    std::unique_ptr<uint8_t[]> compactPixels;
+    if (opts.offset != 0 || opts.stride != rowBytes) {
+        uint64_t compactSize = static_cast<uint64_t>(rowBytes) * opts.region.height;
+        compactPixels = std::make_unique<uint8_t[]>(compactSize);
+        if (compactPixels == nullptr) {
+            IMAGE_LOGE("WritePixelsToARGB make compactPixels failed.");
+            return ERR_IMAGE_WRITE_PIXELMAP_FAILED;
+        }
+        for (int32_t y = 0; y < opts.region.height; y++) {
+            errno_t memRet = memcpy_s(compactPixels.get() + static_cast<uint64_t>(y) * rowBytes,
+                compactSize - static_cast<uint64_t>(y) * rowBytes,
+                opts.pixels + opts.offset + static_cast<uint64_t>(y) * opts.stride, rowBytes);
+            if (memRet != EOK) {
+                IMAGE_LOGE("WritePixelsToARGB extract compact row failed.");
+                return ERR_IMAGE_WRITE_PIXELMAP_FAILED;
+            }
+        }
+        compactSrc = compactPixels.get();
+    }
+    uint64_t tempSize = static_cast<uint64_t>(opts.region.width) * opts.region.height * BGRA_BYTES;
+    std::unique_ptr<uint8_t[]> tempPixels = std::make_unique<uint8_t[]>(tempSize);
+    if (tempPixels == nullptr) {
+        IMAGE_LOGE("WritePixelsToARGB make tempPixels failed.");
+        return ERR_IMAGE_WRITE_PIXELMAP_FAILED;
+    }
+    void *colors = tempPixels.get();
+    ImageInfo tempInfo = MakeImageInfo(opts.region.width, opts.region.height, PixelFormat::ARGB_8888,
+        AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
+    BufferInfo dstInfo = {colors, 0, tempInfo};
+    BufferInfo srcBufferInfo = {const_cast<uint8_t*>(compactSrc), 0, srcInfo};
+    int32_t dstLength = PixelConvert::PixelsConvert(srcBufferInfo, dstInfo, false);
+    if (dstLength < 0) {
+        IMAGE_LOGE("WritePixelsToARGB pixel convert failed.");
+        return ERR_IMAGE_WRITE_PIXELMAP_FAILED;
+    }
+    uint32_t tempStride = static_cast<uint32_t>(opts.region.width) * BGRA_BYTES;
+    if (!PixelConvertAdapter::WritePixelsConvert(colors, tempStride, tempInfo,
+        data_, dstPosition, rowStride_, imageInfo_)) {
+        IMAGE_LOGE("WritePixelsToARGB writePixelsConvert fail.");
+        return ERR_IMAGE_WRITE_PIXELMAP_FAILED;
+    }
+    return SUCCESS;
+}
+
 uint32_t PixelMap::WritePixels(const RWPixelsOptions &opts)
 {
     if (!ImageUtils::CheckPixelsInput(this, opts)) {
         IMAGE_LOGE("write pixel by rect input parameter fail.");
         return ERR_IMAGE_INVALID_PARAMETER;
-    }
-
-    if (isAstc_ || IsYUV(imageInfo_.pixelFormat)) {
-        IMAGE_LOGE("write pixel by rect unsupported conversion for target format: %{public}d", imageInfo_.pixelFormat);
-        return ERR_IMAGE_COLOR_CONVERT;
     }
 
     uint32_t ret = CheckPixelMapForWritePixels();
@@ -2461,26 +2509,9 @@ uint32_t PixelMap::WritePixels(const RWPixelsOptions &opts)
     ImageInfo srcInfo =
         MakeImageInfo(opts.region.width, opts.region.height, opts.pixelFormat, AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
     if (imageInfo_.pixelFormat == PixelFormat::ARGB_8888) {
-        std::unique_ptr<uint8_t[]> tempPixels = std::make_unique<uint8_t[]>(opts.bufferSize);
-        if (tempPixels == nullptr) {
-            IMAGE_LOGE("WritePixels make tempPixels failed.");
-            return ERR_IMAGE_WRITE_PIXELMAP_FAILED;
-        }
-        void *colors = tempPixels.get();
-        ImageInfo tempInfo = MakeImageInfo(opts.region.width, opts.region.height, PixelFormat::ARGB_8888,
-            AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
-        BufferInfo dstInfo = {colors, 0, tempInfo};
-        const void *pixels = opts.pixels;
-        BufferInfo srcBufferInfo = {const_cast<void*>(pixels), 0, srcInfo};
-        int32_t dstLength = PixelConvert::PixelsConvert(srcBufferInfo, dstInfo, false);
-        if (dstLength < 0) {
-            IMAGE_LOGE("WritePixels pixel convert to BGRA_8888 failed.");
-            return ERR_IMAGE_WRITE_PIXELMAP_FAILED;
-        }
-        if (!PixelConvertAdapter::WritePixelsConvert((uint8_t*)colors + opts.offset, opts.stride, tempInfo,
-            data_, dstPosition, rowStride_, imageInfo_)) {
-            IMAGE_LOGE("write pixel by rect call WritePixelsConvert fail.");
-            return ERR_IMAGE_WRITE_PIXELMAP_FAILED;
+        ret = WritePixelsToARGB(opts, srcInfo, dstPosition);
+        if (ret != SUCCESS) {
+            return ret;
         }
     } else {
         if (!PixelConvertAdapter::WritePixelsConvert(opts.pixels + opts.offset, opts.stride, srcInfo,
@@ -2550,11 +2581,6 @@ uint32_t PixelMap::WritePixels(const uint8_t *source, const uint64_t &bufferSize
 
 uint32_t PixelMap::WritePixels(const uint8_t *source, const uint64_t &bufferSize, PixelFormat srcPixelFormat)
 {
-    if (isAstc_ || IsYUV(imageInfo_.pixelFormat)) {
-        IMAGE_LOGE("write pixels with format unsupported conversion for target format: %{public}d",
-            imageInfo_.pixelFormat);
-        return ERR_IMAGE_COLOR_CONVERT;
-    }
     int32_t pixelBytes = ImageUtils::GetPixelBytes(srcPixelFormat);
     if (pixelBytes <= 0) {
         IMAGE_LOGE("write pixels with format get pixel bytes failed, format: %{public}d", srcPixelFormat);

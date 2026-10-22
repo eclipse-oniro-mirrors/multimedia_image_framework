@@ -1595,6 +1595,10 @@ static bool IsSupportedWritePixelFormat(PixelFormat format)
 
 static void ParseSourcePixelFormat(napi_env env, napi_value arg, PixelMapAsyncContext &context)
 {
+    napi_valuetype type = ImageNapiUtils::getType(env, arg);
+    if (type == napi_undefined || type == napi_null) {
+        return;
+    }
     int32_t value = 0;
     napi_status status = napi_get_value_int32(env, arg, &value);
     if (!IMG_IS_OK(status)) {

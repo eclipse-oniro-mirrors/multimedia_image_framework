@@ -8264,6 +8264,102 @@ HWTEST_F(PixelMapTest, WritePixelsWithFormat_NullSource_001, TestSize.Level3)
 }
 
 /**
+ * @tc.name: WritePixelsWithFormat_RGB_565_To_ARGB_001
+ * @tc.desc: Test WritePixels RGB_565 source to ARGB_8888 target (security: heap overflow fix)
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, WritePixelsWithFormat_RGB_565_To_ARGB_001, TestSize.Level3)
+{
+    auto pixelMap = CreateBranchEditablePixelMap(PixelFormat::ARGB_8888, AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
+    ASSERT_NE(pixelMap, nullptr);
+    int32_t srcBpp = ImageUtils::GetPixelBytes(PixelFormat::RGB_565);
+    int32_t srcSize = srcBpp * TEST_WIDTH * TEST_HEIGHT;
+    auto src = std::make_unique<uint8_t[]>(srcSize);
+    memset_s(src.get(), srcSize, 0x5A, srcSize);
+    EXPECT_EQ(pixelMap->WritePixels(src.get(), static_cast<uint64_t>(srcSize), PixelFormat::RGB_565), SUCCESS);
+}
+
+/**
+ * @tc.name: WritePixelsWithFormat_RGB_888_To_ARGB_001
+ * @tc.desc: Test WritePixels RGB_888 source to ARGB_8888 target (security: heap overflow fix)
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, WritePixelsWithFormat_RGB_888_To_ARGB_001, TestSize.Level3)
+{
+    auto pixelMap = CreateBranchEditablePixelMap(PixelFormat::ARGB_8888, AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
+    ASSERT_NE(pixelMap, nullptr);
+    int32_t srcBpp = ImageUtils::GetPixelBytes(PixelFormat::RGB_888);
+    int32_t srcSize = srcBpp * TEST_WIDTH * TEST_HEIGHT;
+    auto src = std::make_unique<uint8_t[]>(srcSize);
+    memset_s(src.get(), srcSize, 0x77, srcSize);
+    EXPECT_EQ(pixelMap->WritePixels(src.get(), static_cast<uint64_t>(srcSize), PixelFormat::RGB_888), SUCCESS);
+}
+
+/**
+ * @tc.name: WritePixelsWithFormat_RGB_888_StridePadding_001
+ * @tc.desc: Test WritePixels RGB_888 source with stride > width*3 (security: heap overflow fix)
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, WritePixelsWithFormat_RGB_888_StridePadding_001, TestSize.Level3)
+{
+    auto pixelMap = CreateBranchEditablePixelMap(PixelFormat::BGRA_8888, AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
+    ASSERT_NE(pixelMap, nullptr);
+    int32_t srcBpp = ImageUtils::GetPixelBytes(PixelFormat::RGB_888);
+    uint32_t rowBytes = static_cast<uint32_t>(TEST_WIDTH) * static_cast<uint32_t>(srcBpp);
+    uint32_t stride = rowBytes + 4; // stride with padding
+    uint64_t bufferSize = static_cast<uint64_t>(stride) * TEST_HEIGHT;
+    auto src = std::make_unique<uint8_t[]>(bufferSize);
+    memset_s(src.get(), bufferSize, 0, bufferSize);
+    // Fill valid pixel data per row, leave padding as 0
+    for (int32_t y = 0; y < TEST_HEIGHT; y++) {
+        memset_s(src.get() + static_cast<uint64_t>(y) * stride, rowBytes, 0x77, rowBytes);
+    }
+    Rect region = {0, 0, TEST_WIDTH, TEST_HEIGHT};
+    RWPixelsOptions opts{src.get(), bufferSize, 0, stride, region, PixelFormat::RGB_888};
+    EXPECT_EQ(pixelMap->WritePixels(opts), SUCCESS);
+}
+
+/**
+ * @tc.name: WritePixelsWithFormat_RGBA_F16_To_ARGB_001
+ * @tc.desc: Test WritePixels RGBA_F16 source to ARGB_8888 target (8Bpp -> ARGB two-step)
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, WritePixelsWithFormat_RGBA_F16_To_ARGB_001, TestSize.Level3)
+{
+    auto pixelMap = CreateBranchEditablePixelMap(PixelFormat::ARGB_8888, AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
+    ASSERT_NE(pixelMap, nullptr);
+    int32_t srcBpp = ImageUtils::GetPixelBytes(PixelFormat::RGBA_F16);
+    int32_t srcSize = srcBpp * TEST_WIDTH * TEST_HEIGHT;
+    auto src = std::make_unique<uint8_t[]>(srcSize);
+    memset_s(src.get(), srcSize, 0x3C, srcSize);
+    EXPECT_EQ(pixelMap->WritePixels(src.get(), static_cast<uint64_t>(srcSize), PixelFormat::RGBA_F16), SUCCESS);
+}
+
+/**
+ * @tc.name: WritePixelsWithFormat_RGB_565_To_ARGB_WithOffset_001
+ * @tc.desc: Test area write RGB_565 with offset to ARGB_8888 target (compact extraction path)
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, WritePixelsWithFormat_RGB_565_To_ARGB_WithOffset_001, TestSize.Level3)
+{
+    auto pixelMap = CreateBranchEditablePixelMap(PixelFormat::ARGB_8888, AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
+    ASSERT_NE(pixelMap, nullptr);
+    int32_t srcBpp = ImageUtils::GetPixelBytes(PixelFormat::RGB_565);
+    uint32_t rowBytes = static_cast<uint32_t>(TEST_WIDTH) * static_cast<uint32_t>(srcBpp);
+    uint32_t stride = rowBytes + 4; // stride with padding
+    uint32_t offset = 8;
+    uint64_t bufferSize = offset + static_cast<uint64_t>(stride) * (TEST_HEIGHT - 1) + rowBytes;
+    auto src = std::make_unique<uint8_t[]>(bufferSize);
+    memset_s(src.get(), bufferSize, 0, bufferSize);
+    for (int32_t y = 0; y < TEST_HEIGHT; y++) {
+        memset_s(src.get() + offset + static_cast<uint64_t>(y) * stride, rowBytes, 0x5A, rowBytes);
+    }
+    Rect region = {0, 0, TEST_WIDTH, TEST_HEIGHT};
+    RWPixelsOptions opts{src.get(), bufferSize, offset, stride, region, PixelFormat::RGB_565};
+    EXPECT_EQ(pixelMap->WritePixels(opts), SUCCESS);
+}
+
+/**
  * @tc.name: ScaleNotModifiable001
  * @tc.desc: Test ScaleNotModifiable001
  * @tc.type: FUNC
