@@ -927,13 +927,17 @@ Image_ErrorCode OH_PixelmapNative_WritePixelsToAreaWithPixelFormat(OH_PixelmapNa
     if (!IsSupportedWritePixelFormat(sourcePixelFormat)) {
         return IMAGE_INVALID_PARAMETER;
     }
+    auto inner = pixelmap->GetInnerPixelmap();
+    if (inner->IsAstc() || inner->IsYUVFormat()) {
+        return IMAGE_UNSUPPORTED_CONVERSION;
+    }
     OHOS::Media::Rect region;
     if (!ConvertImageRegionToRect(area->region, region)) {
         return IMAGE_INVALID_PARAMETER;
     }
     RWPixelsOptions opts{area->pixels, static_cast<uint64_t>(area->pixelsSize),
         area->offset, area->stride, region, static_cast<PixelFormat>(sourcePixelFormat)};
-    uint32_t innerRet = pixelmap->GetInnerPixelmap()->WritePixels(opts);
+    uint32_t innerRet = inner->WritePixels(opts);
     Image_ErrorCode ret = ToNewErrorCode(innerRet);
     if (ret == IMAGE_BAD_PARAMETER) {
         ret = IMAGE_INVALID_PARAMETER;

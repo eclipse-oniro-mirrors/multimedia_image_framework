@@ -8320,8 +8320,37 @@ HWTEST_F(PixelMapTest, WritePixelsWithFormat_RGB_888_StridePadding_001, TestSize
 }
 
 /**
+ * @tc.name: WritePixelsWithFormat_BGRA_To_ARGB_PixelVerify_001
+ * @tc.desc: Test WritePixels BGRA source to ARGB_8888 target with pixel value verification
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, WritePixelsWithFormat_BGRA_To_ARGB_PixelVerify_001, TestSize.Level3)
+{
+    auto pixelMap = CreateBranchEditablePixelMap(PixelFormat::ARGB_8888, AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
+    ASSERT_NE(pixelMap, nullptr);
+    int32_t bufferSize = pixelMap->GetByteCount();
+    ASSERT_GT(bufferSize, 0);
+    auto src = std::make_unique<uint8_t[]>(bufferSize);
+    for (int i = 0; i < bufferSize; i += 4) {
+        src[i] = 0x11;     // B
+        src[i + 1] = 0x22; // G
+        src[i + 2] = 0x33; // R
+        src[i + 3] = 0x44; // A
+    }
+    EXPECT_EQ(pixelMap->WritePixels(src.get(), static_cast<uint64_t>(bufferSize), PixelFormat::BGRA_8888),
+        SUCCESS);
+    const uint8_t *dst = pixelMap->GetPixels();
+    for (int i = 0; i < bufferSize; i += 4) {
+        EXPECT_EQ(dst[i], 0x44);     // A (was at src[3])
+        EXPECT_EQ(dst[i + 1], 0x33); // R (was at src[2])
+        EXPECT_EQ(dst[i + 2], 0x22); // G (was at src[1])
+        EXPECT_EQ(dst[i + 3], 0x11); // B (was at src[0])
+    }
+}
+
+/**
  * @tc.name: WritePixelsWithFormat_RGBA_F16_To_ARGB_001
- * @tc.desc: Test WritePixels RGBA_F16 source to ARGB_8888 target (8Bpp -> ARGB two-step)
+ * @tc.desc: Test WritePixels RGBA_F16 source to ARGB_8888 target with non-zero output verification
  * @tc.type: FUNC
  */
 HWTEST_F(PixelMapTest, WritePixelsWithFormat_RGBA_F16_To_ARGB_001, TestSize.Level3)
@@ -8331,8 +8360,20 @@ HWTEST_F(PixelMapTest, WritePixelsWithFormat_RGBA_F16_To_ARGB_001, TestSize.Leve
     int32_t srcBpp = ImageUtils::GetPixelBytes(PixelFormat::RGBA_F16);
     int32_t srcSize = srcBpp * TEST_WIDTH * TEST_HEIGHT;
     auto src = std::make_unique<uint8_t[]>(srcSize);
-    memset_s(src.get(), srcSize, 0x3C, srcSize);
+    // Fill with half-float 1.0 (0x3C00) for each channel: R=1.0, G=1.0, B=1.0, A=1.0
+    for (int i = 0; i < srcSize; i += 2) {
+        src[i] = 0x00;
+        src[i + 1] = 0x3C;
+    }
     EXPECT_EQ(pixelMap->WritePixels(src.get(), static_cast<uint64_t>(srcSize), PixelFormat::RGBA_F16), SUCCESS);
+    // half-float 1.0 should convert to 0xFF for each channel
+    const uint8_t *dst = pixelMap->GetPixels();
+    for (int i = 0; i < pixelMap->GetByteCount(); i += 4) {
+        EXPECT_EQ(dst[i], 0xFF);     // A
+        EXPECT_EQ(dst[i + 1], 0xFF); // R
+        EXPECT_EQ(dst[i + 2], 0xFF); // G
+        EXPECT_EQ(dst[i + 3], 0xFF); // B
+    }
 }
 
 /**

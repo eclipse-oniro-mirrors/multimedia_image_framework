@@ -966,6 +966,13 @@ static void RGBAF16ConvertARGB8888(void *destinationRow, const uint8_t *sourceRo
     RGBAF16Convert(newDestinationRow, sourceRow, sourceWidth, BRANCH_RGBAF16_TO_ARGB8888, extension);
 }
 
+void PixelConvert::ConvertRGBAF16ToARGB8888(uint8_t *dstRow, const uint8_t *srcRow, uint32_t width)
+{
+    ProcFuncExtension extension;
+    extension.alphaConvertType = AlphaConvertType::NO_CONVERT;
+    RGBAF16ConvertARGB8888(dstRow, srcRow, width, extension);
+}
+
 static void RGBAF16ConvertRGBA8888(void *destinationRow, const uint8_t *sourceRow, uint32_t sourceWidth,
     const ProcFuncExtension &extension)
 {

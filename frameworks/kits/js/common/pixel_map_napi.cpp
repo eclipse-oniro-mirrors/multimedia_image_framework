@@ -1772,6 +1772,11 @@ static void WritePixelsFromAreaExec(napi_env env, void* data)
 
     PositionArea area = context->area;
     if (context->hasSourcePixelFormat) {
+        if (context->wPixelMap->IsAstc() || context->wPixelMap->IsYUVFormat()) {
+            context->errCode = ERR_IMAGE_UNSUPPORTED_CONVERSION;
+            context->errMsg = "Unsupported conversion between the source pixel format and the PixelMap pixel format.";
+            return;
+        }
         RWPixelsOptions opts{
             static_cast<const uint8_t*>(area.pixels), static_cast<uint64_t>(area.size),
             area.offset, area.stride, area.region, context->sourcePixelFormat
