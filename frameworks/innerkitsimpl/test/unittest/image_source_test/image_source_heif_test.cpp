@@ -82,6 +82,7 @@ class ImageSourceHeifTest : public testing::Test {
 public:
     ImageSourceHeifTest() {}
     ~ImageSourceHeifTest() {}
+    static bool SetMovieSampleEntrySize(std::vector<uint8_t> &data, uint16_t width, uint16_t height);
 };
 
 /**
@@ -1593,7 +1594,7 @@ static constexpr int32_t HEIFS_BURST_HEIGHT = 360;
 
 // Rewrites the width/height of the first stsd hvc1 sample entry, to craft a file whose declared
 // size differs from the frame size carried by the SPS.
-static bool SetMovieSampleEntrySize(std::vector<uint8_t> &data, uint16_t width, uint16_t height)
+bool ImageSourceHeifTest::SetMovieSampleEntrySize(std::vector<uint8_t> &data, uint16_t width, uint16_t height)
 {
     for (size_t i = 0; i + BOX_TYPE_SIZE <= data.size(); ++i) {
         if (memcmp(&data[i], STSD_BOX_TYPE, BOX_TYPE_SIZE) != 0) {
@@ -1645,7 +1646,7 @@ HWTEST_F(ImageSourceHeifTest, TC062, TestSize.Level3)
     ASSERT_EQ(pixelMap->GetHeight(), HEIFS_BURST_HEIGHT);
 
     // Craft a file whose stsd hvc1 entry declares 2x2 while the SPS of the frames is still 640x360.
-    ASSERT_TRUE(SetMovieSampleEntrySize(data, CRAFTED_ENTRY_SIZE, CRAFTED_ENTRY_SIZE));
+    ASSERT_TRUE(ImageSourceHeifTest::SetMovieSampleEntrySize(data, CRAFTED_ENTRY_SIZE, CRAFTED_ENTRY_SIZE));
     errorCode = 0;
     std::unique_ptr<ImageSource> craftedSource = ImageSource::CreateImageSource(
         data.data(), static_cast<uint32_t>(data.size()), SourceOptions(), errorCode);
