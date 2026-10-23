@@ -765,7 +765,7 @@ void PixelMapImpl::WritePixelsFromAreaWithSourcePixelFormatImpl(weak::PositionAr
             "The source pixel format is not supported.");
         return;
     }
-    if (nativePixelMap_->IsAstc() || nativePixelMap_->IsYUVFormat()) {
+    if (nativePixelMap_->IsAstc() || nativePixelMap_->IsYuvFormat()) {
         ImageTaiheUtils::ThrowExceptionError(Media::ERR_IMAGE_UNSUPPORTED_CONVERSION,
             "Unsupported conversion between the source pixel format and the PixelMap pixel format.");
         return;

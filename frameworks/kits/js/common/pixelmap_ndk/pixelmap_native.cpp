@@ -928,7 +928,7 @@ Image_ErrorCode OH_PixelmapNative_WritePixelsToAreaWithPixelFormat(OH_PixelmapNa
         return IMAGE_INVALID_PARAMETER;
     }
     auto inner = pixelmap->GetInnerPixelmap();
-    if (inner->IsAstc() || inner->IsYUVFormat()) {
+    if (inner->IsAstc() || inner->IsYuvFormat()) {
         return IMAGE_UNSUPPORTED_CONVERSION;
     }
     OHOS::Media::Rect region;

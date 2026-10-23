@@ -2485,7 +2485,7 @@ uint32_t PixelMap::WritePixelsToARGB(const RWPixelsOptions &opts, const ImageInf
 {
     // Skia has no native ARGB_8888 type (maps to kRGBA_8888), so WritePixelsConvert cannot
     // directly write to ARGB targets. Two-step conversion: source -> ARGB temp -> copy to target.
-    // F16: use ConvertRGBAF16ToARGB8888 (correct half-float). Others: ffmpeg PixelsConvert.
+    // F16: use ConvertRGBAF16ToARGB8888 (normalized half-float to 8 bit). Others: ffmpeg PixelsConvert.
     uint32_t tempStride = static_cast<uint32_t>(opts.region.width) * BGRA_BYTES;
     uint64_t tempSize = static_cast<uint64_t>(tempStride) * opts.region.height;
     std::unique_ptr<uint8_t[]> tempPixels = std::make_unique<uint8_t[]>(tempSize);
@@ -2598,10 +2598,6 @@ uint32_t PixelMap::WritePixels(const uint8_t *source, const uint64_t &bufferSize
     if (pixelBytes <= 0) {
         IMAGE_LOGE("write pixels with format get pixel bytes failed, format: %{public}d", srcPixelFormat);
         return ERR_IMAGE_INVALID_PARAMETER;
-    }
-    uint32_t ret = CheckPixelMapForWritePixels();
-    if (ret != SUCCESS) {
-        return ret;
     }
     if (isAstc_ || IsYUV(imageInfo_.pixelFormat)) {
         IMAGE_LOGE("write pixels with format unsupported target format: %{public}d", imageInfo_.pixelFormat);

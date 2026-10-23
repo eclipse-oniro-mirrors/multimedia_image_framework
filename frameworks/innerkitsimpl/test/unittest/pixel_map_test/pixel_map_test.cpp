@@ -8226,6 +8226,20 @@ HWTEST_F(PixelMapTest, WritePixelsWithFormat_YuvTarget_001, TestSize.Level3)
 }
 
 /**
+ * @tc.name: WritePixelsWithFormat_YuvTarget_002
+ * @tc.desc: Test WritePixels with a non-editable YUV target reports ERR_IMAGE_COLOR_CONVERT before the edit check
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, WritePixelsWithFormat_YuvTarget_002, TestSize.Level3)
+{
+    auto pixelMap = CreateBranchTestPixelMap(PixelFormat::NV12, AlphaType::IMAGE_ALPHA_TYPE_OPAQUE);
+    ASSERT_NE(pixelMap, nullptr);
+    pixelMap->SetEditable(false);
+    uint8_t src[48] = {0};
+    EXPECT_EQ(pixelMap->WritePixels(src, 48, PixelFormat::RGBA_8888), ERR_IMAGE_COLOR_CONVERT);
+}
+
+/**
  * @tc.name: WritePixelsWithFormat_NotEditable_001
  * @tc.desc: Test WritePixels with format on non-editable PixelMap
  * @tc.type: FUNC
@@ -8373,6 +8387,33 @@ HWTEST_F(PixelMapTest, WritePixelsWithFormat_RGBA_F16_To_ARGB_001, TestSize.Leve
         EXPECT_EQ(dst[i + 1], 0xFF); // R
         EXPECT_EQ(dst[i + 2], 0xFF); // G
         EXPECT_EQ(dst[i + 3], 0xFF); // B
+    }
+}
+
+/**
+ * @tc.name: WritePixelsWithFormat_RGBA_F16_To_ARGB_002
+ * @tc.desc: Test RGBA_F16 to ARGB_8888 scales normalized values, clamps out-of-range values and keeps channel order
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, WritePixelsWithFormat_RGBA_F16_To_ARGB_002, TestSize.Level3)
+{
+    auto pixelMap = CreateBranchEditablePixelMap(PixelFormat::ARGB_8888, AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
+    ASSERT_NE(pixelMap, nullptr);
+    int32_t srcSize = ImageUtils::GetPixelBytes(PixelFormat::RGBA_F16) * TEST_WIDTH * TEST_HEIGHT;
+    auto src = std::make_unique<uint8_t[]>(srcSize);
+    // Little-endian half-floats per pixel: R=0.5 (0x3800), G=2.0 (0x4000), B=-1.0 (0xBC00), A=1.0 (0x3C00)
+    const uint8_t pixel[] = {0x00, 0x38, 0x00, 0x40, 0x00, 0xBC, 0x00, 0x3C};
+    for (int32_t i = 0; i < srcSize; i += static_cast<int32_t>(sizeof(pixel))) {
+        ASSERT_EQ(memcpy_s(src.get() + i, srcSize - i, pixel, sizeof(pixel)), EOK);
+    }
+    EXPECT_EQ(pixelMap->WritePixels(src.get(), static_cast<uint64_t>(srcSize), PixelFormat::RGBA_F16), SUCCESS);
+    const uint8_t *dst = pixelMap->GetPixels();
+    ASSERT_NE(dst, nullptr);
+    for (int32_t i = 0; i < pixelMap->GetByteCount(); i += 4) {
+        EXPECT_EQ(dst[i], 0xFF);     // A: 1.0
+        EXPECT_EQ(dst[i + 1], 0x80); // R: 0.5 * 255, rounded
+        EXPECT_EQ(dst[i + 2], 0xFF); // G: 2.0 clamped to 1.0
+        EXPECT_EQ(dst[i + 3], 0x00); // B: -1.0 clamped to 0.0
     }
 }
 

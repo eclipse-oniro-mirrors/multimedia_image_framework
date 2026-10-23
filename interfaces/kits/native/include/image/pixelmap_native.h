@@ -760,8 +760,11 @@ Image_ErrorCode OH_PixelmapNative_WritePixels(OH_PixelmapNative *pixelmap, uint8
 /**
  * @brief Writes pixel data in the specified pixel format from a buffer to the entire PixelMap.
  *
- * Supported source pixel formats are {@link PIXEL_FORMAT_RGBA_8888}, {@link PIXEL_FORMAT_RGB_888},
- * {@link PIXEL_FORMAT_RGB_565}, and {@link PIXEL_FORMAT_RGBA_F16}.
+ * Supported source pixel formats are {@link PIXEL_FORMAT_BGRA_8888}, {@link PIXEL_FORMAT_RGBA_8888},
+ * {@link PIXEL_FORMAT_RGB_888}, {@link PIXEL_FORMAT_RGB_565}, and {@link PIXEL_FORMAT_RGBA_F16}.
+ * RGBA_F16 source values are treated as normalized values in the range [0, 1]; values outside the range are clamped.
+ * Writing to a PixelMap in a YUV or ASTC format is not supported; this is checked before whether the PixelMap is
+ * editable.
  * Source rows must be tightly packed without row padding. The minimum required buffer size is the PixelMap width
  * multiplied by the PixelMap height and the number of bytes per pixel of sourcePixelFormat. To write source data with
  * a customized row stride or offset, use {@link OH_PixelmapNative_WritePixelsToAreaWithPixelFormat}.
@@ -775,23 +778,22 @@ Image_ErrorCode OH_PixelmapNative_WritePixels(OH_PixelmapNative *pixelmap, uint8
  * it to become writable. Failed operations are not automatically retried.
  * A failed write does not guarantee that the PixelMap pixel data remains unchanged. Do not use the pixel contents
  * from a failed write; restore them from a known-good source or recreate the PixelMap after resolving the failure.
- * For parameter or conversion errors, correct the input or select a supported format. For allocation or copy errors,
- * check the available memory and buffer validity before performing another write.
+ * For parameter or conversion errors, correct the input or select a supported format. For copy errors, check the
+ * available memory and buffer validity before performing another write.
  *
  * @param pixelmap [in,out] Pointer to the PixelMap whose pixel data will be modified. This pointer must not be NULL.
  * @param source [in] Pointer to the source pixel buffer. This pointer must not be NULL.
  * @param bufferSize [in] Size of the source buffer, in bytes. It must be at least the minimum required buffer size
- *     described above and must not exceed UINT32_MAX.
+ *     described above.
  * @param sourcePixelFormat [in] Pixel format of the source data.
- *     RGBA_8888, RGB_888, RGB_565, and RGBA_F16 are supported.
+ *     BGRA_8888, RGBA_8888, RGB_888, RGB_565, and RGBA_F16 are supported.
  * @return <ul>
  *         <li>{@link IMAGE_SUCCESS} if the operation is successful.</li>
  *         <li>{@link IMAGE_UNSUPPORTED_OPERATION} if the PixelMap is not editable or is locked.</li>
- *         <li>{@link IMAGE_UNSUPPORTED_CONVERSION} if conversion between sourcePixelFormat and the PixelMap pixel
- *             format is not supported.</li>
+ *         <li>{@link IMAGE_UNSUPPORTED_CONVERSION} if the PixelMap is in a YUV or ASTC format, or conversion
+ *             between sourcePixelFormat and the PixelMap pixel format is not supported.</li>
  *         <li>{@link IMAGE_INVALID_PARAMETER} if pixelmap or source is NULL, bufferSize is insufficient, or
  *             sourcePixelFormat is invalid or unsupported.</li>
- *         <li>{@link IMAGE_ALLOC_FAILED} if memory allocation fails.</li>
  *         <li>{@link IMAGE_COPY_FAILED} if the pixel data cannot be copied or converted.</li>
  *         </ul>
  * @since 26.2.0
@@ -831,8 +833,11 @@ Image_ErrorCode OH_PixelmapNative_WritePixelsToArea(OH_PixelmapNative *pixelmap,
 /**
  * @brief Writes pixel data in the specified pixel format from a buffer to a certain area of the PixelMap.
  *
- * Supported source pixel formats are {@link PIXEL_FORMAT_RGBA_8888}, {@link PIXEL_FORMAT_RGB_888},
- * {@link PIXEL_FORMAT_RGB_565}, and {@link PIXEL_FORMAT_RGBA_F16}.
+ * Supported source pixel formats are {@link PIXEL_FORMAT_BGRA_8888}, {@link PIXEL_FORMAT_RGBA_8888},
+ * {@link PIXEL_FORMAT_RGB_888}, {@link PIXEL_FORMAT_RGB_565}, and {@link PIXEL_FORMAT_RGBA_F16}.
+ * RGBA_F16 source values are treated as normalized values in the range [0, 1]; values outside the range are clamped.
+ * Writing to a PixelMap in a YUV or ASTC format is not supported; this is checked before whether the PixelMap is
+ * editable.
  * area->stride must be greater than or equal to area->region.width multiplied by the number of bytes per pixel of
  * sourcePixelFormat. The minimum required buffer size is calculated as follows:
  * area->offset + (area->region.height - 1) * area->stride +
@@ -848,23 +853,22 @@ Image_ErrorCode OH_PixelmapNative_WritePixelsToArea(OH_PixelmapNative *pixelmap,
  * it to become writable. Failed operations are not automatically retried.
  * A failed write does not guarantee that the pixel data in the specified region remains unchanged. Do not use the
  * pixel contents from a failed write; restore them from a known-good source or recreate the PixelMap after resolving
- * the failure. For parameter or conversion errors, correct the input or select a supported format. For allocation
- * or copy errors, check the available memory and buffer validity before performing another write.
+ * the failure. For parameter or conversion errors, correct the input or select a supported format. For copy
+ * errors, check the available memory and buffer validity before performing another write.
  *
  * @param pixelmap [in,out] Pointer to the PixelMap whose pixel data will be modified. This pointer must not be NULL.
  * @param area [in] Pointer to the area information. Both area and area->pixels must not be NULL.
  *     Pixel data is read from area->pixels and written to area->region. The source buffer size area->pixelsSize
  *     must be at least the minimum required buffer size described above.
  * @param sourcePixelFormat [in] Pixel format of the source data.
- *     RGBA_8888, RGB_888, RGB_565, and RGBA_F16 are supported.
+ *     BGRA_8888, RGBA_8888, RGB_888, RGB_565, and RGBA_F16 are supported.
  * @return <ul>
  *         <li>{@link IMAGE_SUCCESS} if the operation is successful.</li>
  *         <li>{@link IMAGE_UNSUPPORTED_OPERATION} if the PixelMap is not editable or is locked.</li>
- *         <li>{@link IMAGE_UNSUPPORTED_CONVERSION} if conversion between sourcePixelFormat and the PixelMap pixel
- *             format is not supported.</li>
+ *         <li>{@link IMAGE_UNSUPPORTED_CONVERSION} if the PixelMap is in a YUV or ASTC format, or conversion
+ *             between sourcePixelFormat and the PixelMap pixel format is not supported.</li>
  *         <li>{@link IMAGE_INVALID_PARAMETER} if pixelmap, area, or area->pixels is NULL; the buffer size, offset,
  *             stride, or region is invalid; or sourcePixelFormat is invalid or unsupported.</li>
- *         <li>{@link IMAGE_ALLOC_FAILED} if memory allocation fails.</li>
  *         <li>{@link IMAGE_COPY_FAILED} if the pixel data cannot be copied or converted.</li>
  *         </ul>
  * @since 26.2.0

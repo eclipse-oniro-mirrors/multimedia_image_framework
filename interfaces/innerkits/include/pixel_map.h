@@ -845,14 +845,6 @@ public:
         return isAstc_;
     }
 
-    NATIVEEXPORT bool IsYUVFormat() const
-    {
-        auto fmt = imageInfo_.pixelFormat;
-        return fmt == PixelFormat::NV12 || fmt == PixelFormat::NV21 ||
-               fmt == PixelFormat::YCBCR_P010 || fmt == PixelFormat::YCRCB_P010 ||
-               fmt == PixelFormat::Y8;
-    }
-
     NATIVEEXPORT void SetAstc(bool isAstc)
     {
         isAstc_ = isAstc;

@@ -1772,7 +1772,7 @@ static void WritePixelsFromAreaExec(napi_env env, void* data)
 
     PositionArea area = context->area;
     if (context->hasSourcePixelFormat) {
-        if (context->wPixelMap->IsAstc() || context->wPixelMap->IsYUVFormat()) {
+        if (context->wPixelMap->IsAstc() || context->wPixelMap->IsYuvFormat()) {
             context->errCode = ERR_IMAGE_UNSUPPORTED_CONVERSION;
             context->errMsg = "Unsupported conversion between the source pixel format and the PixelMap pixel format.";
             return;

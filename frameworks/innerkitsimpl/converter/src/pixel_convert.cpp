@@ -94,6 +94,11 @@ constexpr uint32_t EVEN_ALIGNMENT = 2;
 constexpr int32_t CONVERT_ERROR = -1;
 constexpr uint32_t UV_PLANES_COUNT = 2;
 constexpr uint8_t RGB565_EXTRA_BYTES = 2;
+constexpr uint8_t UINT8_CHANNEL_MAX = 0xFF;
+constexpr float F16_NORMALIZED_MAX = 1.0f;
+constexpr float F16_ROUND_OFFSET = 0.5f;
+constexpr uint16_t HALF_EXPONENT_MASK = 0x7C00;
+constexpr uint16_t HALF_MANTISSA_MASK = 0x03FF;
 
 static const std::map<YuvConversion, const int> SWS_CS_COEFFICIENT = {
     {YuvConversion::BT601, SWS_CS_DEFAULT},
@@ -966,11 +971,41 @@ static void RGBAF16ConvertARGB8888(void *destinationRow, const uint8_t *sourceRo
     RGBAF16Convert(newDestinationRow, sourceRow, sourceWidth, BRANCH_RGBAF16_TO_ARGB8888, extension);
 }
 
+// Maps a normalized half-float channel in [0, 1] to [0, 255]; out-of-range values are clamped and NaN maps to 0.
+static uint8_t NormalizedHalfToUint8(const uint8_t *half)
+{
+    uint16_t val = IS_LITTLE_ENDIAN ? U8ToU16(*(half + BYTE_POS_1), *half) : U8ToU16(*half, *(half + BYTE_POS_1));
+    // HalfToFloat does not decode Inf/NaN, so handle the all-ones exponent here.
+    if ((val & HALF_EXPONENT_MASK) == HALF_EXPONENT_MASK) {
+        bool isPositiveInf = (val & HALF_MANTISSA_MASK) == 0 && (val & SHIFT_16_MASK) == 0;
+        return isPositiveInf ? UINT8_CHANNEL_MAX : 0;
+    }
+    float value = HalfToFloat(val);
+    if (!(value > 0.0f)) {
+        return 0;
+    }
+    if (value >= F16_NORMALIZED_MAX) {
+        return UINT8_CHANNEL_MAX;
+    }
+    return static_cast<uint8_t>(value * UINT8_CHANNEL_MAX + F16_ROUND_OFFSET);
+}
+
 void PixelConvert::ConvertRGBAF16ToARGB8888(uint8_t *dstRow, const uint8_t *srcRow, uint32_t width)
 {
-    ProcFuncExtension extension;
-    extension.alphaConvertType = AlphaConvertType::NO_CONVERT;
-    RGBAF16ConvertARGB8888(dstRow, srcRow, width, extension);
+    if (dstRow == nullptr || srcRow == nullptr) {
+        return;
+    }
+    const uint8_t *src = srcRow;
+    uint8_t *dst = dstRow;
+    for (uint32_t i = 0; i < width; i++) {
+        // Source is R, G, B, A half-floats; destination bytes are A, R, G, B.
+        dst[BYTE_POS_0] = NormalizedHalfToUint8(src + BYTE_POS_6);
+        dst[BYTE_POS_1] = NormalizedHalfToUint8(src);
+        dst[BYTE_POS_2] = NormalizedHalfToUint8(src + BYTE_POS_2);
+        dst[BYTE_POS_3] = NormalizedHalfToUint8(src + BYTE_POS_4);
+        src += SIZE_8_BYTE;
+        dst += BYTES_PER_PIXEL;
+    }
 }
 
 static void RGBAF16ConvertRGBA8888(void *destinationRow, const uint8_t *sourceRow, uint32_t sourceWidth,
