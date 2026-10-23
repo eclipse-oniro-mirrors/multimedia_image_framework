@@ -1060,7 +1060,7 @@ MIDK_EXPORT
 Image_ErrorCode OH_PixelmapNative_ScaleWithAntiAliasing(OH_PixelmapNative *pixelmap, float scaleX, float scaleY,
     OH_PixelmapNative_AntiAliasingLevel level)
 {
-    if (pixelmap == nullptr) {
+    if (pixelmap == nullptr || !pixelmap->GetInnerPixelmap()) {
         return IMAGE_BAD_PARAMETER;
     }
     pixelmap->GetInnerPixelmap()->scale(
@@ -1374,7 +1374,7 @@ Image_ErrorCode OH_PixelmapNative_ConvertAlphaFormat(OH_PixelmapNative* srcpixel
 static uint32_t ImageConvert_YuvToRgb(OH_PixelmapNative *srcPixelMap, OH_PixelmapNative **destPixelMap,
                                       int32_t destPixelFormat)
 {
-    if (srcPixelMap == nullptr) {
+    if (srcPixelMap == nullptr || !srcPixelMap->GetInnerPixelmap() || destPixelMap == nullptr) {
         return IMAGE_BAD_PARAMETER;
     }
     PixelFormat srcPixelFormat = srcPixelMap->GetInnerPixelmap()->GetPixelFormat();
@@ -1395,7 +1395,7 @@ static uint32_t ImageConvert_YuvToRgb(OH_PixelmapNative *srcPixelMap, OH_Pixelma
 static uint32_t ImageConvert_RgbToYuv(OH_PixelmapNative *srcPixelMap, OH_PixelmapNative **destPixelMap,
                                       int32_t destPixelFormat)
 {
-    if (srcPixelMap == nullptr) {
+    if (srcPixelMap == nullptr || !srcPixelMap->GetInnerPixelmap() || destPixelMap == nullptr) {
         return IMAGE_BAD_PARAMETER;
     }
 
@@ -1417,7 +1417,7 @@ MIDK_EXPORT
 Image_ErrorCode OH_PixelMapNative_ConvertPixelFormat(OH_PixelmapNative *srcPixelMap, OH_PixelmapNative **destPixelMap,
                                                      int32_t destPixelFormat)
 {
-    if (srcPixelMap == nullptr) {
+    if (srcPixelMap == nullptr || !srcPixelMap->GetInnerPixelmap() || destPixelMap == nullptr) {
         return IMAGE_BAD_PARAMETER;
     }
 
