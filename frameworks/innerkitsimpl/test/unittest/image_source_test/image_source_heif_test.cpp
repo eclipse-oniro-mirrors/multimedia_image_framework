@@ -16,6 +16,8 @@
 #include <gtest/gtest.h>
 #include <fstream>
 #include <fcntl.h>
+#include <climits>
+#include <cstring>
 #include "directory_ex.h"
 #include "image_log.h"
 #include "image_packer.h"
@@ -1575,26 +1577,41 @@ HWTEST_F(ImageSourceHeifTest, HeifSampleSizeDecode006, TestSize.Level3)
     EXPECT_EQ(1000, pixelMap->GetHeight());
 }
 
+static constexpr char STSD_BOX_TYPE[] = "stsd";
+static constexpr char HVC1_SAMPLE_ENTRY_TYPE[] = "hvc1";
+static constexpr size_t BOX_TYPE_SIZE = sizeof(uint32_t);
+static constexpr size_t STSD_ENTRY_OFFSET = sizeof(uint32_t) + sizeof(uint32_t) + sizeof(uint32_t);
+static constexpr size_t SAMPLE_ENTRY_HEADER_SIZE = sizeof(uint32_t) + sizeof(uint32_t);
+static constexpr size_t SAMPLE_ENTRY_FIXED_FIELDS_SIZE = 24;
+static constexpr size_t SAMPLE_ENTRY_WIDTH_OFFSET =
+    SAMPLE_ENTRY_HEADER_SIZE + SAMPLE_ENTRY_FIXED_FIELDS_SIZE;
+static constexpr size_t SIZE_FIELD_SIZE = sizeof(uint16_t);
+static constexpr uint32_t BYTE_MASK = (1u << CHAR_BIT) - 1;
+static constexpr uint16_t CRAFTED_ENTRY_SIZE = 2;
+static constexpr int32_t HEIFS_BURST_WIDTH = 640;
+static constexpr int32_t HEIFS_BURST_HEIGHT = 360;
+
 // Rewrites the width/height of the first stsd hvc1 sample entry, to craft a file whose declared
 // size differs from the frame size carried by the SPS.
 static bool SetMovieSampleEntrySize(std::vector<uint8_t> &data, uint16_t width, uint16_t height)
 {
-    for (size_t i = 0; i + 4 <= data.size(); ++i) {
-        if (data[i] != 's' || data[i + 1] != 't' || data[i + 2] != 's' || data[i + 3] != 'd') {
+    for (size_t i = 0; i + BOX_TYPE_SIZE <= data.size(); ++i) {
+        if (memcmp(&data[i], STSD_BOX_TYPE, BOX_TYPE_SIZE) != 0) {
             continue;
         }
         // stsd full box: 8 byte header, 4 byte version/flags, 4 byte entry count, then the first sample entry.
-        size_t entry = i + 12;
+        size_t entry = i + STSD_ENTRY_OFFSET;
         // hvc1 sample entry: 24 byte fixed fields before the 16-bit width and height.
-        size_t fieldOffset = entry + 8 + 24;
-        if (fieldOffset + 4 > data.size() || data[entry + 4] != 'h' || data[entry + 5] != 'v' ||
-            data[entry + 6] != 'c' || data[entry + 7] != '1') {
+        size_t widthOffset = entry + SAMPLE_ENTRY_WIDTH_OFFSET;
+        size_t heightOffset = widthOffset + SIZE_FIELD_SIZE;
+        if (heightOffset + SIZE_FIELD_SIZE > data.size() ||
+            memcmp(&data[entry + sizeof(uint32_t)], HVC1_SAMPLE_ENTRY_TYPE, BOX_TYPE_SIZE) != 0) {
             return false;
         }
-        data[fieldOffset] = static_cast<uint8_t>(width >> 8);
-        data[fieldOffset + 1] = static_cast<uint8_t>(width & 0xFF);
-        data[fieldOffset + 2] = static_cast<uint8_t>(height >> 8);
-        data[fieldOffset + 3] = static_cast<uint8_t>(height & 0xFF);
+        data[widthOffset] = static_cast<uint8_t>(width >> CHAR_BIT);
+        data[widthOffset + 1] = static_cast<uint8_t>(width & BYTE_MASK);
+        data[heightOffset] = static_cast<uint8_t>(height >> CHAR_BIT);
+        data[heightOffset + 1] = static_cast<uint8_t>(height & BYTE_MASK);
         return true;
     }
     return false;
@@ -1624,11 +1641,11 @@ HWTEST_F(ImageSourceHeifTest, TC062, TestSize.Level3)
     decodeOptions.isAnimationDecode = true;
     std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(0, decodeOptions, errorCode);
     ASSERT_NE(pixelMap, nullptr);
-    ASSERT_EQ(pixelMap->GetWidth(), 640);
-    ASSERT_EQ(pixelMap->GetHeight(), 360);
+    ASSERT_EQ(pixelMap->GetWidth(), HEIFS_BURST_WIDTH);
+    ASSERT_EQ(pixelMap->GetHeight(), HEIFS_BURST_HEIGHT);
 
     // Craft a file whose stsd hvc1 entry declares 2x2 while the SPS of the frames is still 640x360.
-    ASSERT_TRUE(SetMovieSampleEntrySize(data, 2, 2));
+    ASSERT_TRUE(SetMovieSampleEntrySize(data, CRAFTED_ENTRY_SIZE, CRAFTED_ENTRY_SIZE));
     errorCode = 0;
     std::unique_ptr<ImageSource> craftedSource = ImageSource::CreateImageSource(
         data.data(), static_cast<uint32_t>(data.size()), SourceOptions(), errorCode);
@@ -1636,8 +1653,8 @@ HWTEST_F(ImageSourceHeifTest, TC062, TestSize.Level3)
     std::unique_ptr<PixelMap> craftedPixelMap = craftedSource->CreatePixelMap(0, decodeOptions, errorCode);
     // The declared 2x2 sample entry is corrected to the cropped SPS size, so the frame decodes at its real size.
     ASSERT_NE(craftedPixelMap, nullptr);
-    EXPECT_EQ(craftedPixelMap->GetWidth(), 640);
-    EXPECT_EQ(craftedPixelMap->GetHeight(), 360);
+    EXPECT_EQ(craftedPixelMap->GetWidth(), HEIFS_BURST_WIDTH);
+    EXPECT_EQ(craftedPixelMap->GetHeight(), HEIFS_BURST_HEIGHT);
     GTEST_LOG_(INFO) << "ImageSourceHeifTest: TC062 end";
 }
 } // namespace Multimedia

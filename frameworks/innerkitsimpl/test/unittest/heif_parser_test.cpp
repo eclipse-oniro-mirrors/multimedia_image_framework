@@ -2067,6 +2067,10 @@ HWTEST_F(HeifParserTest, GetHeifsDecoderImageSizeTest002, TestSize.Level3)
     GTEST_LOG_(INFO) << "HeifParserTest: GetHeifsDecoderImageSizeTest002 end";
 }
 
+static constexpr uint16_t SMALL_DECLARED_SIZE = 2;
+static constexpr uint32_t MOVIE_SPS_WIDTH = 1920;
+static constexpr uint32_t MOVIE_SPS_HEIGHT = 1080;
+
 static void CheckMovieImageSize(uint32_t declaredWidth, uint32_t declaredHeight,
     uint32_t expectWidth, uint32_t expectHeight)
 {
@@ -2099,9 +2103,9 @@ HWTEST_F(HeifParserTest, ExtractMovieImagePropertiesTest001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "HeifParserTest: ExtractMovieImagePropertiesTest001 start";
     //The declared size is smaller than the cropped SPS size, use the SPS size.
-    CheckMovieImageSize(2, 2, 1920, 1080);
+    CheckMovieImageSize(SMALL_DECLARED_SIZE, SMALL_DECLARED_SIZE, MOVIE_SPS_WIDTH, MOVIE_SPS_HEIGHT);
     //The declared size already matches the cropped SPS size, keep it.
-    CheckMovieImageSize(1920, 1080, 1920, 1080);
+    CheckMovieImageSize(MOVIE_SPS_WIDTH, MOVIE_SPS_HEIGHT, MOVIE_SPS_WIDTH, MOVIE_SPS_HEIGHT);
     GTEST_LOG_(INFO) << "HeifParserTest: ExtractMovieImagePropertiesTest001 end";
 }
 }
