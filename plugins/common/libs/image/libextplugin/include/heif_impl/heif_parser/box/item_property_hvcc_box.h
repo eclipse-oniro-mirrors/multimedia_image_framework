@@ -118,9 +118,6 @@ public:
 
     std::vector<HvccNalArray> GetNalArrays() const { return nalArrays_; };
 
-    // Returns the stored NAL arrays without copying them, for read only callers on hot paths.
-    const std::vector<HvccNalArray> &GetNalArraysRef() const { return nalArrays_; };
-
     std::vector<uint8_t> GetNaluData(const std::vector<HvccNalArray>& nalArrays, uint8_t naluId);
 
     void ProcessBoxData(std::vector<uint8_t>& nalu);

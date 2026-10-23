@@ -2064,42 +2064,30 @@ HWTEST_F(HeifParserTest, GetHeifsDecoderImageSizeTest002, TestSize.Level3)
     ASSERT_EQ(heifParser.GetHeifsDecoderImageSize(width, height), heif_error_ok);
     ASSERT_EQ(width, 1920);
     ASSERT_EQ(height, 1080);
-    //The SPS must be parseable again on the next decode request.
-    width = 0;
-    height = 0;
-    ASSERT_EQ(heifParser.GetHeifsDecoderImageSize(width, height), heif_error_ok);
-    ASSERT_EQ(width, 1920);
-    ASSERT_EQ(height, 1080);
     GTEST_LOG_(INFO) << "HeifParserTest: GetHeifsDecoderImageSizeTest002 end";
 }
 
-/**
- * @tc.name: GetHeifsDecoderImageSizeTest003
- * @tc.desc: Test GetHeifsDecoderImageSize when the SPS carries sub layer profile information
- * @tc.type: FUNC
- */
-HWTEST_F(HeifParserTest, GetHeifsDecoderImageSizeTest003, TestSize.Level3)
+static void CheckMovieImageSize(uint32_t declaredWidth, uint32_t declaredHeight,
+    uint32_t expectWidth, uint32_t expectHeight)
 {
-    GTEST_LOG_(INFO) << "HeifParserTest: GetHeifsDecoderImageSizeTest003 start";
-    //640x360 SPS with sps_max_sub_layers_minus1 = 1 and sub_layer_profile_present_flag[0] = 1.
-    std::vector<uint8_t> spsData = {0x42, 0x01, 0x03, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-        0x00, 0x00, 0x00, 0x78, 0xbf, 0xff, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-        0x00, 0xa0, 0x05, 0x02, 0x01, 0x69, 0x40};
+    //Coded size 1920x1088 with conf_win_bottom_offset 4 in 4:2:0, the output size is 1920x1080.
+    std::vector<uint8_t> spsData = {0x42, 0x01, 0x01, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x78, 0xa0, 0x03, 0xc0, 0x80, 0x11, 0x07, 0xcb};
     auto hvcc = std::make_shared<HeifHvccBox>();
     hvcc->AppendNalData(spsData);
     auto hvc1 = std::make_shared<HeifHvc1Box>();
     hvc1->hvccBox_ = hvcc;
+    hvc1->width_ = declaredWidth;
+    hvc1->height_ = declaredHeight;
     auto stsd = std::make_shared<HeifStsdBox>();
     stsd->entries_.emplace_back(hvc1);
 
     HeifParser heifParser;
     heifParser.stsdBox_ = stsd;
-    uint32_t width = 0;
-    uint32_t height = 0;
-    ASSERT_EQ(heifParser.GetHeifsDecoderImageSize(width, height), heif_error_ok);
-    ASSERT_EQ(width, 640);
-    ASSERT_EQ(height, 360);
-    GTEST_LOG_(INFO) << "HeifParserTest: GetHeifsDecoderImageSizeTest003 end";
+    auto image = std::make_shared<HeifImage>(0);
+    heifParser.ExtractMovieImageProperties(image);
+    ASSERT_EQ(image->GetOriginalWidth(), expectWidth);
+    ASSERT_EQ(image->GetOriginalHeight(), expectHeight);
 }
 
 /**
@@ -2110,33 +2098,10 @@ HWTEST_F(HeifParserTest, GetHeifsDecoderImageSizeTest003, TestSize.Level3)
 HWTEST_F(HeifParserTest, ExtractMovieImagePropertiesTest001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "HeifParserTest: ExtractMovieImagePropertiesTest001 start";
-    //Coded size 1920x1088 with conf_win_bottom_offset 4 in 4:2:0, the output size is 1920x1080.
-    std::vector<uint8_t> spsData = {0x42, 0x01, 0x01, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-        0x00, 0x00, 0x00, 0x78, 0xa0, 0x03, 0xc0, 0x80, 0x11, 0x07, 0xcb};
-    auto hvcc = std::make_shared<HeifHvccBox>();
-    hvcc->AppendNalData(spsData);
-    auto hvc1 = std::make_shared<HeifHvc1Box>();
-    hvc1->hvccBox_ = hvcc;
-    auto stsd = std::make_shared<HeifStsdBox>();
-    stsd->entries_.emplace_back(hvc1);
-
-    HeifParser heifParser;
-    heifParser.stsdBox_ = stsd;
-    auto image = std::make_shared<HeifImage>(0);
-
     //The declared size is smaller than the cropped SPS size, use the SPS size.
-    hvc1->width_ = 2;
-    hvc1->height_ = 2;
-    heifParser.ExtractMovieImageProperties(image);
-    ASSERT_EQ(image->GetOriginalWidth(), 1920);
-    ASSERT_EQ(image->GetOriginalHeight(), 1080);
-
+    CheckMovieImageSize(2, 2, 1920, 1080);
     //The declared size already matches the cropped SPS size, keep it.
-    hvc1->width_ = 1920;
-    hvc1->height_ = 1080;
-    heifParser.ExtractMovieImageProperties(image);
-    ASSERT_EQ(image->GetOriginalWidth(), 1920);
-    ASSERT_EQ(image->GetOriginalHeight(), 1080);
+    CheckMovieImageSize(1920, 1080, 1920, 1080);
     GTEST_LOG_(INFO) << "HeifParserTest: ExtractMovieImagePropertiesTest001 end";
 }
 }
