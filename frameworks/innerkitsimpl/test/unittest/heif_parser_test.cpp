@@ -2101,5 +2101,43 @@ HWTEST_F(HeifParserTest, GetHeifsDecoderImageSizeTest003, TestSize.Level3)
     ASSERT_EQ(height, 360);
     GTEST_LOG_(INFO) << "HeifParserTest: GetHeifsDecoderImageSizeTest003 end";
 }
+
+/**
+ * @tc.name: ExtractMovieImagePropertiesTest001
+ * @tc.desc: Test ExtractMovieImageProperties when the sample entry size is smaller than the SPS size
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserTest, ExtractMovieImagePropertiesTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserTest: ExtractMovieImagePropertiesTest001 start";
+    //Coded size 1920x1088 with conf_win_bottom_offset 4 in 4:2:0, the output size is 1920x1080.
+    std::vector<uint8_t> spsData = {0x42, 0x01, 0x01, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x78, 0xa0, 0x03, 0xc0, 0x80, 0x11, 0x07, 0xcb};
+    auto hvcc = std::make_shared<HeifHvccBox>();
+    hvcc->AppendNalData(spsData);
+    auto hvc1 = std::make_shared<HeifHvc1Box>();
+    hvc1->hvccBox_ = hvcc;
+    auto stsd = std::make_shared<HeifStsdBox>();
+    stsd->entries_.emplace_back(hvc1);
+
+    HeifParser heifParser;
+    heifParser.stsdBox_ = stsd;
+    auto image = std::make_shared<HeifImage>(0);
+
+    //The declared size is smaller than the cropped SPS size, use the SPS size.
+    hvc1->width_ = 2;
+    hvc1->height_ = 2;
+    heifParser.ExtractMovieImageProperties(image);
+    ASSERT_EQ(image->GetOriginalWidth(), 1920);
+    ASSERT_EQ(image->GetOriginalHeight(), 1080);
+
+    //The declared size already matches the cropped SPS size, keep it.
+    hvc1->width_ = 1920;
+    hvc1->height_ = 1080;
+    heifParser.ExtractMovieImageProperties(image);
+    ASSERT_EQ(image->GetOriginalWidth(), 1920);
+    ASSERT_EQ(image->GetOriginalHeight(), 1080);
+    GTEST_LOG_(INFO) << "HeifParserTest: ExtractMovieImagePropertiesTest001 end";
+}
 }
 }

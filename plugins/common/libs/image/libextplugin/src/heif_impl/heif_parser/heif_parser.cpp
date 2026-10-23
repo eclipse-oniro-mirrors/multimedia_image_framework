@@ -521,6 +521,17 @@ void HeifParser::ExtractMovieImageProperties(std::shared_ptr<HeifImage> &image)
         uint32_t width = 0;
         uint32_t height = 0;
         stsdBox_->GetSampleEntryWidthHeight(0, width, height);
+        //The software decoder writes the frame size carried by the SPS, so use the cropped SPS size
+        //when the sample entry declares a smaller size, otherwise the frame buffer would be too small.
+        uint32_t spsWidth = 0;
+        uint32_t spsHeight = 0;
+        if (GetHeifsDecoderImageSize(spsWidth, spsHeight) == heif_error_ok &&
+            (spsWidth > width || spsHeight > height)) {
+            IMAGE_LOGW("stsd size (%{public}u x %{public}u) < sps size (%{public}u x %{public}u), using sps size",
+                width, height, spsWidth, spsHeight);
+            width = spsWidth;
+            height = spsHeight;
+        }
         image->SetOriginalSize(width, height);
         auto av1c = std::dynamic_pointer_cast<HeifAv1CBox>(stsdBox_->GetAv1cBox());
         if (av1c) {
