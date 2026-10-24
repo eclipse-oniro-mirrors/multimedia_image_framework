@@ -127,6 +127,9 @@ public:
     heif_error GetAvisFrameCount(uint32_t &sampleCount) const;
 
     uint32_t GetHeifsCanvasPixelWidthHeight(uint32_t index, uint32_t &width, uint32_t &height);
+
+    // Returns the output size declared by the SPS of the HEIF sequence sample entry (hvcC).
+    heif_error GetHeifsDecoderImageSize(uint32_t &width, uint32_t &height);
 private:
     // stream
     std::shared_ptr<HeifInputStream> inputStream_;

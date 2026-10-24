@@ -521,6 +521,17 @@ void HeifParser::ExtractMovieImageProperties(std::shared_ptr<HeifImage> &image)
         uint32_t width = 0;
         uint32_t height = 0;
         stsdBox_->GetSampleEntryWidthHeight(0, width, height);
+        //The software decoder writes the frame size carried by the SPS, so use the cropped SPS size
+        //when the sample entry declares a smaller size, otherwise the frame buffer would be too small.
+        uint32_t spsWidth = 0;
+        uint32_t spsHeight = 0;
+        if (GetHeifsDecoderImageSize(spsWidth, spsHeight) == heif_error_ok &&
+            (spsWidth > width || spsHeight > height)) {
+            IMAGE_LOGW("stsd size (%{public}u x %{public}u) < sps size (%{public}u x %{public}u), using sps size",
+                width, height, spsWidth, spsHeight);
+            width = spsWidth;
+            height = spsHeight;
+        }
         image->SetOriginalSize(width, height);
         auto av1c = std::dynamic_pointer_cast<HeifAv1CBox>(stsdBox_->GetAv1cBox());
         if (av1c) {
@@ -1373,6 +1384,29 @@ uint32_t HeifParser::GetHeifsCanvasPixelWidthHeight(uint32_t index, uint32_t &wi
 {
     CHECK_ERROR_RETURN_RET(!stsdBox_, heif_error_no_stsd);
     return stsdBox_->GetSampleEntryWidthHeight(index, width, height);
+}
+
+heif_error HeifParser::GetHeifsDecoderImageSize(uint32_t &width, uint32_t &height)
+{
+    width = 0;
+    height = 0;
+    CHECK_ERROR_RETURN_RET(!stsdBox_, heif_error_no_stsd);
+    auto hvcc = std::dynamic_pointer_cast<HeifHvccBox>(stsdBox_->GetHvccBox(0));
+    CHECK_ERROR_RETURN_RET(!hvcc, heif_error_no_hvcc);
+    hvcc->ParserHvccColorRangeFlag(hvcc->GetNalArrays());
+    const HvccSpsConfig &spsConfig = hvcc->GetSpsConfig();
+    //The decoder outputs the cropped picture size, and the conformance window offsets are in chroma samples.
+    uint64_t subWidthC = (spsConfig.chromaFormatIdc == 1 || spsConfig.chromaFormatIdc == 2) ? 2 : 1;
+    uint64_t subHeightC = (spsConfig.chromaFormatIdc == 1) ? 2 : 1;
+    uint64_t cropWidth = (static_cast<uint64_t>(spsConfig.confWinLefOffset) + spsConfig.confWinRightOffset) *
+        subWidthC;
+    uint64_t cropHeight = (static_cast<uint64_t>(spsConfig.confWinTopOffset) + spsConfig.confWinBottomOffset) *
+        subHeightC;
+    bool cond = spsConfig.picWidthInLumaSamples <= cropWidth || spsConfig.picHeightInLumaSamples <= cropHeight;
+    CHECK_ERROR_RETURN_RET_LOG(cond, heif_error_invalid_data, "invalid heifs sps image size");
+    width = static_cast<uint32_t>(spsConfig.picWidthInLumaSamples - cropWidth);
+    height = static_cast<uint32_t>(spsConfig.picHeightInLumaSamples - cropHeight);
+    return heif_error_ok;
 }
 
 } // namespace ImagePlugin
