@@ -354,6 +354,20 @@ bool AllocBufferForPlatform(DecodeContext &context, uint64_t byteCount)
     return true;
 }
 
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(ANDROID_PLATFORM) && !defined(IOS_PLATFORM)
+static void ClearDmaBuffer(DecodeContext &context)
+{
+    if (context.pixelsBuffer.buffer == nullptr || context.pixelsBuffer.context == nullptr) {
+        return;
+    }
+    auto *sb = reinterpret_cast<SurfaceBuffer *>(context.pixelsBuffer.context);
+    size_t sbSize = static_cast<size_t>(sb->GetSize());
+    if (sbSize != 0 && memset_s(context.pixelsBuffer.buffer, sbSize, 0, sbSize) != EOK) {
+        IMAGE_LOGE("clear dma output buffer failed.");
+    }
+}
+#endif
+
 uint8_t *PngDecoder::AllocOutputBuffer(DecodeContext &context)
 {
     if (context.pixelsBuffer.buffer == nullptr) {
@@ -371,14 +385,8 @@ uint8_t *PngDecoder::AllocOutputBuffer(DecodeContext &context)
             }
             // A DMA buffer is recycled by the allocator, so a partial decode (allowPartialImage)
             // would expose the previous content of the undecoded rows. Clear it up front.
-            if (opts_.allowPartialImage && context.pixelsBuffer.buffer != nullptr &&
-                context.pixelsBuffer.context != nullptr) {
-                auto *sb = reinterpret_cast<SurfaceBuffer *>(context.pixelsBuffer.context);
-                size_t sbSize = static_cast<size_t>(sb->GetSize());
-                if (sbSize != 0 &&
-                    memset_s(context.pixelsBuffer.buffer, sbSize, 0, sbSize) != EOK) {
-                    IMAGE_LOGE("clear dma output buffer failed.");
-                }
+            if (opts_.allowPartialImage) {
+                ClearDmaBuffer(context);
             }
         } else {
             if (!AllocOutBuffer(context, byteCount)) {
@@ -594,15 +602,20 @@ bool PngDecoder::ChooseFormat(PixelFormat format, PixelFormat &outputFormat,
 }
 
 #ifdef PNG_READ_USER_TRANSFORM_SUPPORTED
-static uint16_t PngSampleToHalf(uint16_t sample)
+static uint16_t PngSampleToHalf(png_structp pngPtr, uint16_t sample)
 {
     // The three smallest nonzero UNORM16 samples round to half-float subnormals.
-    if (sample < 4) {
-        return static_cast<uint16_t>(sample << 8);
+    constexpr uint16_t FIRST_NORMAL_SAMPLE = 4;
+    constexpr uint32_t SUBNORMAL_SHIFT = 8;
+    if (sample < FIRST_NORMAL_SAMPLE) {
+        return static_cast<uint16_t>(sample << SUBNORMAL_SHIFT);
     }
     double normalized = static_cast<double>(sample) / UINT16_MAX;
     uint64_t bits = 0;
-    std::memcpy(&bits, &normalized, sizeof(bits));
+    if (memcpy_s(&bits, sizeof(bits), &normalized, sizeof(normalized)) != EOK) {
+        png_error(pngPtr, "Failed to read normalized PNG sample");
+        return 0;
+    }
     // Round the 52-bit double mantissa to 10 bits, with ties to even, and adjust the exponent bias.
     constexpr uint32_t MANTISSA_SHIFT = 42;
     constexpr uint64_t ROUNDING_BIAS = (1ULL << (MANTISSA_SHIFT - 1)) - 1;
@@ -613,16 +626,22 @@ static uint16_t PngSampleToHalf(uint16_t sample)
 
 void PngDecoder::ConvertToF16(png_structp pngPtr, png_row_infop rowInfo, png_bytep row)
 {
+    constexpr uint32_t RGBA_CHANNELS = 4;
+    constexpr uint32_t RGBA_F16_BYTES_PER_PIXEL = RGBA_CHANNELS * sizeof(uint16_t);
     if (rowInfo == nullptr || row == nullptr || rowInfo->bit_depth != BITDEPTH_VALUE_16 ||
-        rowInfo->channels != 4 || rowInfo->rowbytes != static_cast<uint64_t>(rowInfo->width) * 8) {
+        rowInfo->channels != RGBA_CHANNELS ||
+        rowInfo->rowbytes != static_cast<uint64_t>(rowInfo->width) * RGBA_F16_BYTES_PER_PIXEL) {
         png_error(pngPtr, "Invalid RGBA16 row for half-float conversion");
         return;
     }
     for (size_t offset = 0; offset < rowInfo->rowbytes; offset += sizeof(uint16_t)) {
         // libpng supplies big-endian integers; PixelMap half floats use native byte order.
-        uint16_t sample = static_cast<uint16_t>((row[offset] << 8) | row[offset + 1]);
-        uint16_t half = PngSampleToHalf(sample);
-        std::memcpy(row + offset, &half, sizeof(half));
+        uint16_t sample = static_cast<uint16_t>((row[offset] << BITDEPTH_VALUE_8) | row[offset + 1]);
+        uint16_t half = PngSampleToHalf(pngPtr, sample);
+        if (memcpy_s(row + offset, sizeof(half), &half, sizeof(half)) != EOK) {
+            png_error(pngPtr, "Failed to write half-float PNG sample");
+            return;
+        }
     }
 }
 #endif
@@ -749,11 +768,11 @@ void PngDecoder::UpdateColorSpaceInfo()
     }
     // The sRGB chunk states that the image samples are in the sRGB color space explicitly,
     // which lets the framework tag the PixelMap instead of leaving it UNKNOWN.
-    int32_t intent = 0;
-    if (png_get_sRGB(pngStructPtr_, pngInfoPtr_, &intent)) {
+    int32_t renderingMode = 0;
+    if (png_get_sRGB(pngStructPtr_, pngInfoPtr_, &renderingMode)) {
         grColorSpace_ = OHOS::ColorManager::ColorSpace(OHOS::ColorManager::ColorSpaceName::SRGB);
         isSupportICCProfile_ = true;
-        IMAGE_LOGD("png sRGB chunk found, rendering intent:%{public}d", intent);
+        IMAGE_LOGD("png sRGB chunk found, rendering mode:%{public}d", renderingMode);
         return;
     }
     // An iCCP chunk needs a full ICC parser (skcms) which this plugin does not link, so it is

@@ -286,7 +286,8 @@ uint32_t RawDecoder::DoDecodeHeaderByPiex()
         return Media::ERR_IMAGE_SOURCE_DATA;
     }
     uint32_t size = piexImage.length;
-    std::unique_ptr<uint8_t[]> data(new (std::nothrow) uint8_t[size]);
+    std::unique_ptr<uint8_t[]> data;
+    data.reset(new (std::nothrow) uint8_t[size]);
     if (data == nullptr) {
         IMAGE_LOGE("alloc preview buffer failed, size:%{public}u", size);
         return Media::ERR_IMAGE_MALLOC_ABNORMAL;

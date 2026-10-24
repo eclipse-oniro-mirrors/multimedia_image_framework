@@ -229,12 +229,12 @@ uint32_t GifEncoder::WriteFileInfo()
     ae.extensionLabel = APPLICATION_EXTENSION_LABEL;
     ae.blockSize = 0x0B;
     if (memcpy_s(&ae.applicationIdentifier, sizeof(ae.applicationIdentifier),
-             &APPLICATION_IDENTIFIER, sizeof(ae.applicationIdentifier)) != EOK) {
+        &APPLICATION_IDENTIFIER, sizeof(ae.applicationIdentifier)) != EOK) {
         IMAGE_LOGE("memcpy_s applicationIdentifier failed");
         return ERR_IMAGE_ENCODE_FAILED;
     }
     if (memcpy_s(&ae.applicationAuthenticationCode, sizeof(ae.applicationAuthenticationCode),
-             &APPLICATION_AUTENTICATION_CODE, sizeof(ae.applicationAuthenticationCode)) != EOK) {
+        &APPLICATION_AUTENTICATION_CODE, sizeof(ae.applicationAuthenticationCode)) != EOK) {
         IMAGE_LOGE("memcpy_s applicationAuthenticationCode failed");
         return ERR_IMAGE_ENCODE_FAILED;
     }
@@ -302,13 +302,15 @@ uint32_t GifEncoder::processFrame(int index)
     uint16_t width = static_cast<uint16_t>(originalWidth);
     uint16_t height = static_cast<uint16_t>(originalHeight);
 
-    auto colorMap = std::unique_ptr<ColorType[]>(new (std::nothrow) ColorType[COLOR_MAP_SIZE]());
+    std::unique_ptr<ColorType[]> colorMap;
+    colorMap.reset(new (std::nothrow) ColorType[COLOR_MAP_SIZE]());
     CHECK_ERROR_RETURN_RET_LOG(colorMap == nullptr, ERR_IMAGE_ENCODE_FAILED, "Alloc color map failed.");
 
     uint64_t frameSize = static_cast<uint64_t>(width) * height;
     CHECK_ERROR_RETURN_RET_LOG(frameSize > INT32_MAX,
         ERR_IMAGE_ENCODE_FAILED, "Image frame is too large.");
-    auto colorBuffer = std::unique_ptr<uint8_t[]>(new (std::nothrow) uint8_t[frameSize]);
+    std::unique_ptr<uint8_t[]> colorBuffer;
+    colorBuffer.reset(new (std::nothrow) uint8_t[frameSize]);
     if (colorBuffer == nullptr) {
         IMAGE_LOGE("alloc color buffer failed, size:%{public}llu", static_cast<unsigned long long>(frameSize));
         return ERR_IMAGE_ENCODE_FAILED;
@@ -333,10 +335,14 @@ uint32_t GifEncoder::colorQuantize(int index, uint16_t width, uint16_t height,
                                    uint8_t *outputBuffer, ColorType *outputColorMap)
 {
     uint64_t frameSize = static_cast<uint64_t>(width) * height;
-    auto redBuffer = std::unique_ptr<uint8_t[]>(new (std::nothrow) uint8_t[frameSize]);
-    auto greenBuffer = std::unique_ptr<uint8_t[]>(new (std::nothrow) uint8_t[frameSize]);
-    auto blueBuffer = std::unique_ptr<uint8_t[]>(new (std::nothrow) uint8_t[frameSize]);
-    auto alphaBuffer = std::unique_ptr<uint8_t[]>(new (std::nothrow) uint8_t[frameSize]);
+    std::unique_ptr<uint8_t[]> redBuffer;
+    redBuffer.reset(new (std::nothrow) uint8_t[frameSize]);
+    std::unique_ptr<uint8_t[]> greenBuffer;
+    greenBuffer.reset(new (std::nothrow) uint8_t[frameSize]);
+    std::unique_ptr<uint8_t[]> blueBuffer;
+    blueBuffer.reset(new (std::nothrow) uint8_t[frameSize]);
+    std::unique_ptr<uint8_t[]> alphaBuffer;
+    alphaBuffer.reset(new (std::nothrow) uint8_t[frameSize]);
     if (redBuffer == nullptr || greenBuffer == nullptr || blueBuffer == nullptr || alphaBuffer == nullptr) {
         IMAGE_LOGE("alloc quantize buffers failed, size:%{public}llu",
             static_cast<unsigned long long>(frameSize));

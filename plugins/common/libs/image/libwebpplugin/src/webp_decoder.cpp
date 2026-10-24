@@ -41,6 +41,7 @@ using namespace MultiMedia;
 namespace {
 constexpr int32_t WEBP_IMAGE_NUM = 1;
 constexpr int32_t EXTERNAL_MEMORY = 1;
+constexpr uint8_t RGBA_BYTES_PER_PIXEL = 4;
 constexpr size_t DECODE_VP8CHUNK_MIN_SIZE = 4096;
 
 bool GetWebpBufferInfo(const Size &webpSize, int32_t bytesPerPixel, uint32_t &stride, uint32_t &byteCount)
@@ -271,7 +272,7 @@ WEBP_CSP_MODE WebpDecoder::GetWebpDecodeMode(const PixelFormat &pixelFormat, boo
     outputFormat_ = pixelFormat;
     // always start from the 4-byte default, otherwise a decode that switched away from
     // RGB_565 keeps the stale 2-byte stride and writes past the allocated buffer
-    bytesPerPixel_ = 4;
+    bytesPerPixel_ = RGBA_BYTES_PER_PIXEL;
     switch (pixelFormat) {
         case PixelFormat::BGRA_8888:
             webpMode = premul ? MODE_bgrA : MODE_BGRA;
@@ -429,7 +430,7 @@ void WebpDecoder::Reset()
     webpSize_ = { 0, 0 };
     // the bytes-per-pixel is chosen by the last SetDecodeOptions; keeping a stale value
     // makes the next decode allocate with the previous format's stride (out-of-bounds write)
-    bytesPerPixel_ = 4;  // default four bytes for each pixel
+    bytesPerPixel_ = RGBA_BYTES_PER_PIXEL;  // default four bytes for each pixel
 }
 
 static bool SharedMemoryCreate(DecodeContext &context, const uint32_t &byteCount)
