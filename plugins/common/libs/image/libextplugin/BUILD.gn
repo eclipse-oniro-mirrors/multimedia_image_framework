@@ -509,6 +509,7 @@ ohos_shared_library("avifimpl") {
   ]
 
   external_deps = [
+    "c_utils:utils",
     "bounds_checking_function:libsec_shared",
     "ffmpeg:libohosffmpeg",
     "graphic_2d:color_manager",
