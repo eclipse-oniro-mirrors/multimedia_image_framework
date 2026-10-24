@@ -34,6 +34,12 @@ constexpr uint32_t SCALEMODE_MODULO = 2;
 constexpr uint32_t DMA_WIDTH = 1024;
 constexpr uint32_t DMA_HEIGHT = 512;
 constexpr uint32_t BOOLMODULE = 2;
+constexpr uint32_t RGB_565_BYTES = 2;
+constexpr uint32_t RGB_888_BYTES = 3;
+constexpr uint32_t RGBA_8888_BYTES = 4;
+constexpr uint32_t RGBA_F16_BYTES = 8;
+constexpr uint32_t STRIDE_PADDING_MODULO = 4;
+constexpr uint32_t MAX_BUFFER_SIZE_MULTIPLIER = 2;
 
 namespace OHOS {
 namespace Media {
@@ -399,6 +405,142 @@ void FuzzTestWritePixelsWith5Args(bool isEditable)
     pixelmap->WritePixels(regionBuffer_with_write.get(), dstSize, offset, regionStride, region);
 }
 
+void FuzzTestWritePixelsWithPixelFormat(bool isEditable)
+{
+    Media::InitializationOptions opts = GetInitialRandomOpts();
+    // Skip ALPHA_8 target: 1Bpp format, source conversion not supported by WritePixelsConvert
+    if (opts.pixelFormat == PixelFormat::ALPHA_8) {
+        return;
+    }
+    opts.editable = isEditable;
+    std::unique_ptr<Media::PixelMap> pixelmap = GetPixelMapFromOpts(opts);
+    if (!pixelmap) {
+        return;
+    }
+    // Random source format - may or may not be supported
+    PixelFormat srcFormat = static_cast<PixelFormat>(GetData<uint32_t>() % PIXELFORMAT_MODULO);
+    // Random buffer size - may be too small or larger than needed
+    int32_t targetSize = pixelmap->GetByteCount();
+    if (targetSize <= 0) {
+        return;
+    }
+    uint64_t bufferSize = GetData<uint32_t>() % (static_cast<uint32_t>(targetSize) * MAX_BUFFER_SIZE_MULTIPLIER + 1);
+    if (bufferSize == 0) {
+        bufferSize = 1;
+    }
+    std::unique_ptr<uint8_t[]> buffer = std::make_unique<uint8_t[]>(bufferSize);
+    pixelmap->WritePixels(buffer.get(), bufferSize, srcFormat);
+}
+
+void FuzzTestWritePixelsToARGBTarget(bool isEditable)
+{
+    Media::InitializationOptions opts = GetInitialRandomOpts();
+    opts.pixelFormat = PixelFormat::ARGB_8888;
+    opts.editable = isEditable;
+    std::unique_ptr<Media::PixelMap> pixelmap = GetPixelMapFromOpts(opts);
+    if (!pixelmap) {
+        return;
+    }
+    // Random source format - test non-4bpp sources that previously caused heap overflow
+    PixelFormat srcFormat = static_cast<PixelFormat>(GetData<uint32_t>() % PIXELFORMAT_MODULO);
+    uint32_t srcBpp = 0;
+    switch (srcFormat) {
+        case PixelFormat::BGRA_8888:
+        case PixelFormat::RGBA_8888:
+        case PixelFormat::ARGB_8888:
+        case PixelFormat::RGBA_1010102:
+            srcBpp = RGBA_8888_BYTES;
+            break;
+        case PixelFormat::RGB_888:
+            srcBpp = RGB_888_BYTES;
+            break;
+        case PixelFormat::RGB_565:
+            srcBpp = RGB_565_BYTES;
+            break;
+        case PixelFormat::RGBA_F16:
+            srcBpp = RGBA_F16_BYTES;
+            break;
+        default:
+            return;
+    }
+    if (srcBpp == 0) {
+        return;
+    }
+    int32_t width = pixelmap->GetWidth();
+    int32_t height = pixelmap->GetHeight();
+    uint64_t srcSize = static_cast<uint64_t>(srcBpp) * width * height;
+    if (srcSize == 0 || srcSize > static_cast<uint64_t>(INT32_MAX)) {
+        return;
+    }
+    std::unique_ptr<uint8_t[]> buffer = std::make_unique<uint8_t[]>(srcSize);
+    pixelmap->WritePixels(buffer.get(), srcSize, srcFormat);
+}
+
+void FuzzTestWritePixelsWithStride(bool isEditable)
+{
+    Media::InitializationOptions opts = GetInitialRandomOpts();
+    if (opts.pixelFormat == PixelFormat::ALPHA_8) {
+        return;
+    }
+    opts.editable = isEditable;
+    std::unique_ptr<Media::PixelMap> pixelmap = GetPixelMapFromOpts(opts);
+    if (!pixelmap) {
+        return;
+    }
+    // Test RGB_888 source with random stride (may include padding)
+    int32_t width = pixelmap->GetWidth();
+    int32_t height = pixelmap->GetHeight();
+    uint32_t rowBytes = static_cast<uint32_t>(width) * RGB_888_BYTES;
+    uint32_t stride = rowBytes + GetData<uint32_t>() % STRIDE_PADDING_MODULO; // stride with random padding
+    uint64_t bufferSize = static_cast<uint64_t>(stride) * height;
+    if (bufferSize == 0 || bufferSize > static_cast<uint64_t>(INT32_MAX)) {
+        return;
+    }
+    std::unique_ptr<uint8_t[]> buffer = std::make_unique<uint8_t[]>(bufferSize);
+    Media::Rect region = {0, 0, width, height};
+    Media::RWPixelsOptions optsRW{buffer.get(), bufferSize, 0, stride, region, PixelFormat::RGB_888};
+    pixelmap->WritePixels(optsRW);
+}
+
+void FuzzTestWritePixelsAreaToARGB(bool isEditable)
+{
+    Media::InitializationOptions opts = GetInitialRandomOpts();
+    opts.pixelFormat = PixelFormat::ARGB_8888;
+    opts.editable = isEditable;
+    std::unique_ptr<Media::PixelMap> pixelmap = GetPixelMapFromOpts(opts);
+    if (!pixelmap) {
+        return;
+    }
+    // Test non-4bpp source with offset/stride to ARGB target (ARGB two-step conversion path)
+    static const PixelFormat SRC_FORMATS[] = {
+        PixelFormat::RGB_565,
+        PixelFormat::RGB_888,
+        PixelFormat::RGBA_F16,
+    };
+    PixelFormat srcFormat = SRC_FORMATS[GetData<uint32_t>() % (sizeof(SRC_FORMATS) / sizeof(SRC_FORMATS[0]))];
+    uint32_t srcBpp = (srcFormat == PixelFormat::RGB_565) ? RGB_565_BYTES :
+                      (srcFormat == PixelFormat::RGB_888) ? RGB_888_BYTES : RGBA_F16_BYTES;
+    if (srcBpp == 0) {
+        return;
+    }
+    int32_t width = pixelmap->GetWidth();
+    int32_t height = pixelmap->GetHeight();
+    if (width <= 0 || height <= 0) {
+        return;
+    }
+    uint32_t rowBytes = static_cast<uint32_t>(width) * static_cast<uint32_t>(srcBpp);
+    uint32_t stride = rowBytes + GetData<uint32_t>() % STRIDE_PADDING_MODULO;
+    uint32_t offset = GetData<uint32_t>() % STRIDE_PADDING_MODULO;
+    uint64_t bufferSize = offset + static_cast<uint64_t>(stride) * (height - 1) + rowBytes;
+    if (bufferSize == 0 || bufferSize > static_cast<uint64_t>(INT32_MAX)) {
+        return;
+    }
+    std::unique_ptr<uint8_t[]> buffer = std::make_unique<uint8_t[]>(bufferSize);
+    Media::Rect region = {0, 0, width, height};
+    Media::RWPixelsOptions optsRW{buffer.get(), bufferSize, offset, stride, region, srcFormat};
+    pixelmap->WritePixels(optsRW);
+}
+
 void FuzzTestCrop()
 {
     Media::InitializationOptions opts = GetInitialRandomOpts();
@@ -495,6 +637,10 @@ void PixelMapInterfaceFuzzTest()
     FuzzTestRGBA_F16PixelMapSetAlpha();
     FuzzTestRGBA_1010102PixelMapSetAlpha();
     FuzzTestWritePixelsWith5Args(GetData<uint32_t>() % 2); // 2: true or false
+    FuzzTestWritePixelsWithPixelFormat(GetData<uint32_t>() % 2); // 2: true or false
+    FuzzTestWritePixelsToARGBTarget(GetData<uint32_t>() % 2); // 2: true or false
+    FuzzTestWritePixelsWithStride(GetData<uint32_t>() % 2); // 2: true or false
+    FuzzTestWritePixelsAreaToARGB(GetData<uint32_t>() % 2); // 2: true or false
     FuzzTestCrop();
     FuzzTestSetFunc();
     FuzzTestClone();

@@ -151,6 +151,8 @@ struct PixelMapAsyncContext {
     std::shared_ptr<OHOS::ColorManager::ColorSpace> colorSpace;
     std::string surfaceId;
     PixelFormat destFormat = PixelFormat::UNKNOWN;
+    PixelFormat sourcePixelFormat = PixelFormat::BGRA_8888;
+    bool hasSourcePixelFormat = false;
     FormatType srcFormatType = FormatType::UNKNOWN;
     FormatType dstFormatType = FormatType::UNKNOWN;
     AntiAliasingOption antiAliasing;
@@ -1582,6 +1584,38 @@ napi_value PixelMapNapi::ReadPixelsToAreaSync(napi_env env, napi_callback_info i
     return result;
 }
 
+static bool IsSupportedWritePixelFormat(PixelFormat format)
+{
+    return format == PixelFormat::BGRA_8888 ||
+           format == PixelFormat::RGBA_8888 ||
+           format == PixelFormat::RGB_888 ||
+           format == PixelFormat::RGB_565 ||
+           format == PixelFormat::RGBA_F16;
+}
+
+static void ParseSourcePixelFormat(napi_env env, napi_value arg, PixelMapAsyncContext &context)
+{
+    napi_valuetype type = ImageNapiUtils::getType(env, arg);
+    if (type == napi_undefined || type == napi_null) {
+        return;
+    }
+    int32_t value = 0;
+    napi_status status = napi_get_value_int32(env, arg, &value);
+    if (!IMG_IS_OK(status)) {
+        CreatePendingErrorIfAbsent(env, context.error, ERR_IMAGE_INVALID_PARAM,
+            "The 2nd argument must be a PixelMapFormat. (" + std::to_string(status) + ")");
+        return;
+    }
+    PixelFormat fmt = static_cast<PixelFormat>(value);
+    if (!IsSupportedWritePixelFormat(fmt)) {
+        CreatePendingErrorIfAbsent(env, context.error, ERR_IMAGE_INVALID_PARAM,
+            "The source pixel format is not supported.");
+        return;
+    }
+    context.sourcePixelFormat = fmt;
+    context.hasSourcePixelFormat = true;
+}
+
 static void WriteAllPixelsFromBufferExec(napi_env env, void* data)
 {
     if (data == nullptr) {
@@ -1596,8 +1630,10 @@ static void WriteAllPixelsFromBufferExec(napi_env env, void* data)
         return;
     }
 
-    context->status =
-        context->wPixelMap->WritePixels(static_cast<uint8_t*>(context->colorsBuffer), context->colorsBufferSize);
+    context->status = context->hasSourcePixelFormat
+        ? context->wPixelMap->WritePixels(static_cast<uint8_t*>(context->colorsBuffer), context->colorsBufferSize,
+            context->sourcePixelFormat)
+        : context->wPixelMap->WritePixels(static_cast<uint8_t*>(context->colorsBuffer), context->colorsBufferSize);
     
     if (context->status == ERR_IMAGE_PIXELMAP_NOT_ALLOW_MODIFY) {
         context->errCode = ERR_MEDIA_UNSUPPORT_OPERATION;
@@ -1605,9 +1641,12 @@ static void WriteAllPixelsFromBufferExec(napi_env env, void* data)
     } else if (context->status == ERR_IMAGE_INVALID_PARAMETER) {
         context->errCode = ERR_IMAGE_INVALID_PARAM;
         context->errMsg = "Invalid parameter: Buffer size is too small. It must match the PixelMap's total byte count.";
+    } else if (context->status == ERR_IMAGE_COLOR_CONVERT) {
+        context->errCode = ERR_IMAGE_UNSUPPORTED_CONVERSION;
+        context->errMsg = "Unsupported conversion between the source pixel format and the PixelMap pixel format.";
     } else if (context->status == ERR_IMAGE_WRITE_PIXELMAP_FAILED) {
         context->errCode = ERR_MEDIA_MEMORY_COPY_FAILED;
-        context->errMsg = "Failed to copy the pixel data.";
+        context->errMsg = "Failed to copy or convert the pixel data.";
     } else if (context->status != SUCCESS) {
         context->errCode = ERR_IMAGE_GET_IMAGE_DATA_FAILED;
         context->errMsg = "Failed to write the pixel data. (" + std::to_string(context->status) + ")";
@@ -1620,8 +1659,8 @@ napi_value PixelMapNapi::WriteAllPixelsFromBuffer(napi_env env, napi_callback_in
     napi_value result = nullptr;
     napi_value thisVar = nullptr;
     napi_status status;
-    napi_value argv[NUM_1] = {nullptr};
-    size_t argc = NUM_1;
+    napi_value argv[NUM_2] = {nullptr};
+    size_t argc = NUM_2;
     std::unique_ptr<PixelMapAsyncContext> context = std::make_unique<PixelMapAsyncContext>();
 
     IMG_JS_ARGS(env, info, status, argc, argv, thisVar);
@@ -1642,6 +1681,10 @@ napi_value PixelMapNapi::WriteAllPixelsFromBuffer(napi_env env, napi_callback_in
     } else if (!HoldArrayBufferReference(env, argv[NUM_0], *context)) {
         CreatePendingErrorIfAbsent(env, context->error, ERR_IMAGE_GET_IMAGE_DATA_FAILED,
             "Internal error: Failed to retain ArrayBuffer.");
+    }
+
+    if (argc >= NUM_2 && context->error == nullptr) {
+        ParseSourcePixelFormat(env, argv[NUM_1], *context);
     }
 
     napi_create_promise(env, &(context->deferred), &result);
@@ -1672,8 +1715,8 @@ napi_value PixelMapNapi::WriteAllPixelsFromBufferSync(napi_env env, napi_callbac
     napi_get_undefined(env, &result);
     napi_value thisVar = nullptr;
     napi_status status;
-    napi_value argv[NUM_1] = {nullptr};
-    size_t argc = NUM_1;
+    napi_value argv[NUM_2] = {nullptr};
+    size_t argc = NUM_2;
     std::unique_ptr<PixelMapAsyncContext> context = std::make_unique<PixelMapAsyncContext>();
 
     IMG_JS_ARGS(env, info, status, argc, argv, thisVar);
@@ -1695,6 +1738,14 @@ napi_value PixelMapNapi::WriteAllPixelsFromBufferSync(napi_env env, napi_callbac
         ImageNapiUtils::ThrowExceptionError(env, ERR_IMAGE_INVALID_PARAM,
             "The 1st argument must be an ArrayBuffer. (" + std::to_string(status) + ")", true);
         return result;
+    }
+
+    if (argc >= NUM_2) {
+        ParseSourcePixelFormat(env, argv[NUM_1], *context);
+        if (context->error != nullptr) {
+            ImageNapiUtils::Throw(env, context->error);
+            return result;
+        }
     }
     
     WriteAllPixelsFromBufferExec(env, static_cast<void*>(context.get()));
@@ -1720,8 +1771,21 @@ static void WritePixelsFromAreaExec(napi_env env, void* data)
     }
 
     PositionArea area = context->area;
-    context->status = context->wPixelMap->WritePixels(
-        static_cast<uint8_t*>(area.pixels), area.size, area.offset, area.stride, area.region);
+    if (context->hasSourcePixelFormat) {
+        if (context->wPixelMap->IsAstc() || context->wPixelMap->IsYuvFormat()) {
+            context->errCode = ERR_IMAGE_UNSUPPORTED_CONVERSION;
+            context->errMsg = "Unsupported conversion between the source pixel format and the PixelMap pixel format.";
+            return;
+        }
+        RWPixelsOptions opts{
+            static_cast<const uint8_t*>(area.pixels), static_cast<uint64_t>(area.size),
+            area.offset, area.stride, area.region, context->sourcePixelFormat
+        };
+        context->status = context->wPixelMap->WritePixels(opts);
+    } else {
+        context->status = context->wPixelMap->WritePixels(
+            static_cast<uint8_t*>(area.pixels), area.size, area.offset, area.stride, area.region);
+    }
 
     if (context->status == ERR_IMAGE_PIXELMAP_NOT_ALLOW_MODIFY) {
         context->errCode = ERR_MEDIA_UNSUPPORT_OPERATION;
@@ -1729,9 +1793,12 @@ static void WritePixelsFromAreaExec(napi_env env, void* data)
     } else if (context->status == ERR_IMAGE_INVALID_PARAMETER) {
         context->errCode = ERR_IMAGE_INVALID_PARAM;
         context->errMsg = "Invalid parameter. Ensure the offset, stride, and region are within range.";
+    } else if (context->status == ERR_IMAGE_COLOR_CONVERT) {
+        context->errCode = ERR_IMAGE_UNSUPPORTED_CONVERSION;
+        context->errMsg = "Unsupported conversion between the source pixel format and the PixelMap pixel format.";
     } else if (context->status == ERR_IMAGE_WRITE_PIXELMAP_FAILED) {
         context->errCode = ERR_MEDIA_MEMORY_COPY_FAILED;
-        context->errMsg = "Failed to copy the area pixel data.";
+        context->errMsg = "Failed to copy or convert the area pixel data.";
     } else if (context->status != SUCCESS) {
         context->errCode = ERR_IMAGE_GET_IMAGE_DATA_FAILED;
         context->errMsg = "Failed to write the area pixel data. (" + std::to_string(context->status) + ")";
@@ -1744,8 +1811,8 @@ napi_value PixelMapNapi::WritePixelsFromArea(napi_env env, napi_callback_info in
     napi_value result = nullptr;
     napi_value thisVar = nullptr;
     napi_status status;
-    napi_value argv[NUM_1] = {nullptr};
-    size_t argc = NUM_1;
+    napi_value argv[NUM_2] = {nullptr};
+    size_t argc = NUM_2;
     std::unique_ptr<PixelMapAsyncContext> context = std::make_unique<PixelMapAsyncContext>();
 
     IMG_JS_ARGS(env, info, status, argc, argv, thisVar);
@@ -1762,6 +1829,10 @@ napi_value PixelMapNapi::WritePixelsFromArea(napi_env env, napi_callback_info in
     if (!ParseAndRetainPositionArea(env, argv[NUM_0], *context)) {
         CreatePendingErrorIfAbsent(env, context->error, ERR_IMAGE_INVALID_PARAM,
             "Failed to parse PositionArea. Ensure the pixels buffer, offset, stride, and region are valid.");
+    }
+
+    if (argc >= NUM_2 && context->error == nullptr) {
+        ParseSourcePixelFormat(env, argv[NUM_1], *context);
     }
 
     napi_create_promise(env, &(context->deferred), &result);
@@ -1792,8 +1863,8 @@ napi_value PixelMapNapi::WritePixelsFromAreaSync(napi_env env, napi_callback_inf
     napi_get_undefined(env, &result);
     napi_value thisVar = nullptr;
     napi_status status;
-    napi_value argv[NUM_1] = {nullptr};
-    size_t argc = NUM_1;
+    napi_value argv[NUM_2] = {nullptr};
+    size_t argc = NUM_2;
     std::unique_ptr<PixelMapAsyncContext> context = std::make_unique<PixelMapAsyncContext>();
 
     IMG_JS_ARGS(env, info, status, argc, argv, thisVar);
@@ -1814,6 +1885,14 @@ napi_value PixelMapNapi::WritePixelsFromAreaSync(napi_env env, napi_callback_inf
         ImageNapiUtils::ThrowExceptionError(env, ERR_IMAGE_INVALID_PARAM,
             "Failed to parse PositionArea. Ensure the pixels buffer, offset, stride, and region are valid.", true);
         return result;
+    }
+
+    if (argc >= NUM_2) {
+        ParseSourcePixelFormat(env, argv[NUM_1], *context);
+        if (context->error != nullptr) {
+            ImageNapiUtils::Throw(env, context->error);
+            return result;
+        }
     }
     
     WritePixelsFromAreaExec(env, static_cast<void*>(context.get()));

@@ -805,10 +805,22 @@ interface PixelMap {
 
   WriteAllPixelsFromBufferSync(src: @arraybuffer Array<u8>): void;
 
+  @promise @rename("writeAllPixelsFromBuffer")
+  WriteAllPixelsFromBufferWithSourcePixelFormat(src: @arraybuffer Array<u8>, sourcePixelFormat: PixelMapFormat): void;
+
+  @rename("writeAllPixelsFromBufferSync")
+  WriteAllPixelsFromBufferSyncWithSourcePixelFormat(src: @arraybuffer Array<u8>, sourcePixelFormat: PixelMapFormat): void;
+
   @promise
   WritePixelsFromArea(area: PositionArea): void;
 
   WritePixelsFromAreaSync(area: PositionArea): void;
+
+  @promise @rename("writePixelsFromArea")
+  WritePixelsFromAreaWithSourcePixelFormat(area: PositionArea, sourcePixelFormat: PixelMapFormat): void;
+
+  @rename("writePixelsFromAreaSync")
+  WritePixelsFromAreaSyncWithSourcePixelFormat(area: PositionArea, sourcePixelFormat: PixelMapFormat): void;
 
   @async @rename("readPixelsToBuffer")
   ReadPixelsToBufferAsync(dst: @arraybuffer Array<u8>): void;

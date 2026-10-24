@@ -8097,6 +8097,351 @@ HWTEST_F(PixelMapTest, CheckPixelMapForWritePixelsUnMapped001, TestSize.Level3)
 }
 
 /**
+ * @tc.name: WritePixelsWithFormat_BGRA_To_BGRA_001
+ * @tc.desc: Test WritePixels with source format BGRA_8888 to BGRA_8888 (fast path)
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, WritePixelsWithFormat_BGRA_To_BGRA_001, TestSize.Level3)
+{
+    auto pixelMap = CreateBranchEditablePixelMap(PixelFormat::BGRA_8888, AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
+    ASSERT_NE(pixelMap, nullptr);
+    int32_t bufferSize = pixelMap->GetByteCount();
+    ASSERT_GT(bufferSize, 0);
+    auto src = std::make_unique<uint8_t[]>(bufferSize);
+    memset_s(src.get(), bufferSize, 0x5A, bufferSize);
+    EXPECT_EQ(pixelMap->WritePixels(src.get(), static_cast<uint64_t>(bufferSize), PixelFormat::BGRA_8888),
+        SUCCESS);
+    EXPECT_EQ(memcmp(pixelMap->GetPixels(), src.get(), bufferSize), 0);
+}
+
+/**
+ * @tc.name: WritePixelsWithFormat_RGBA_To_BGRA_001
+ * @tc.desc: Test WritePixels with source format RGBA_8888 to BGRA_8888 (channel swap)
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, WritePixelsWithFormat_RGBA_To_BGRA_001, TestSize.Level3)
+{
+    auto pixelMap = CreateBranchEditablePixelMap(PixelFormat::BGRA_8888, AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
+    ASSERT_NE(pixelMap, nullptr);
+    int32_t bufferSize = pixelMap->GetByteCount();
+    ASSERT_GT(bufferSize, 0);
+    auto src = std::make_unique<uint8_t[]>(bufferSize);
+    for (int i = 0; i < bufferSize; i += 4) {
+        src[i] = 0x11;     // R
+        src[i + 1] = 0x22; // G
+        src[i + 2] = 0x33; // B
+        src[i + 3] = 0x44; // A
+    }
+    EXPECT_EQ(pixelMap->WritePixels(src.get(), static_cast<uint64_t>(bufferSize), PixelFormat::RGBA_8888),
+        SUCCESS);
+    const uint8_t *dst = pixelMap->GetPixels();
+    for (int i = 0; i < bufferSize; i += 4) {
+        EXPECT_EQ(dst[i], 0x33);     // B
+        EXPECT_EQ(dst[i + 1], 0x22); // G
+        EXPECT_EQ(dst[i + 2], 0x11); // R
+        EXPECT_EQ(dst[i + 3], 0x44); // A
+    }
+}
+
+/**
+ * @tc.name: WritePixelsWithFormat_BGRA_To_RGBA_001
+ * @tc.desc: Test WritePixels with source format BGRA_8888 to RGBA_8888 (channel swap)
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, WritePixelsWithFormat_BGRA_To_RGBA_001, TestSize.Level3)
+{
+    auto pixelMap = CreateBranchEditablePixelMap(PixelFormat::RGBA_8888, AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
+    ASSERT_NE(pixelMap, nullptr);
+    int32_t bufferSize = pixelMap->GetByteCount();
+    ASSERT_GT(bufferSize, 0);
+    auto src = std::make_unique<uint8_t[]>(bufferSize);
+    for (int i = 0; i < bufferSize; i += 4) {
+        src[i] = 0x11;     // B
+        src[i + 1] = 0x22; // G
+        src[i + 2] = 0x33; // R
+        src[i + 3] = 0x44; // A
+    }
+    EXPECT_EQ(pixelMap->WritePixels(src.get(), static_cast<uint64_t>(bufferSize), PixelFormat::BGRA_8888),
+        SUCCESS);
+}
+
+/**
+ * @tc.name: WritePixelsWithFormat_RGB_888_To_BGRA_001
+ * @tc.desc: Test WritePixels with source format RGB_888 to BGRA_8888
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, WritePixelsWithFormat_RGB_888_To_BGRA_001, TestSize.Level3)
+{
+    auto pixelMap = CreateBranchEditablePixelMap(PixelFormat::BGRA_8888, AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
+    ASSERT_NE(pixelMap, nullptr);
+    int32_t srcBytesPerPixel = ImageUtils::GetPixelBytes(PixelFormat::RGB_888);
+    int32_t srcSize = srcBytesPerPixel * TEST_WIDTH * TEST_HEIGHT;
+    ASSERT_GT(srcSize, 0);
+    auto src = std::make_unique<uint8_t[]>(srcSize);
+    memset_s(src.get(), srcSize, 0x77, srcSize);
+    EXPECT_EQ(pixelMap->WritePixels(src.get(), static_cast<uint64_t>(srcSize), PixelFormat::RGB_888), SUCCESS);
+}
+
+/**
+ * @tc.name: WritePixelsWithFormat_RGB_565_To_BGRA_001
+ * @tc.desc: Test WritePixels with source format RGB_565 to BGRA_8888
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, WritePixelsWithFormat_RGB_565_To_BGRA_001, TestSize.Level3)
+{
+    auto pixelMap = CreateBranchEditablePixelMap(PixelFormat::BGRA_8888, AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
+    ASSERT_NE(pixelMap, nullptr);
+    int32_t srcBytesPerPixel = ImageUtils::GetPixelBytes(PixelFormat::RGB_565);
+    int32_t srcSize = srcBytesPerPixel * TEST_WIDTH * TEST_HEIGHT;
+    ASSERT_GT(srcSize, 0);
+    auto src = std::make_unique<uint8_t[]>(srcSize);
+    memset_s(src.get(), srcSize, 0x88, srcSize);
+    EXPECT_EQ(pixelMap->WritePixels(src.get(), static_cast<uint64_t>(srcSize), PixelFormat::RGB_565), SUCCESS);
+}
+
+/**
+ * @tc.name: WritePixelsWithFormat_UnsupportedSource_001
+ * @tc.desc: Test WritePixels with unsupported source format (UNKNOWN)
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, WritePixelsWithFormat_UnsupportedSource_001, TestSize.Level3)
+{
+    auto pixelMap = CreateBranchEditablePixelMap(PixelFormat::BGRA_8888, AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
+    ASSERT_NE(pixelMap, nullptr);
+    uint8_t src[48] = {0};
+    EXPECT_EQ(pixelMap->WritePixels(src, 48, PixelFormat::UNKNOWN), ERR_IMAGE_INVALID_PARAMETER);
+}
+
+/**
+ * @tc.name: WritePixelsWithFormat_YuvTarget_001
+ * @tc.desc: Test WritePixels with YUV target format (should return ERR_IMAGE_COLOR_CONVERT)
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, WritePixelsWithFormat_YuvTarget_001, TestSize.Level3)
+{
+    auto pixelMap = CreateBranchEditablePixelMap(PixelFormat::NV12, AlphaType::IMAGE_ALPHA_TYPE_OPAQUE);
+    ASSERT_NE(pixelMap, nullptr);
+    uint8_t src[48] = {0};
+    EXPECT_EQ(pixelMap->WritePixels(src, 48, PixelFormat::RGBA_8888), ERR_IMAGE_COLOR_CONVERT);
+}
+
+/**
+ * @tc.name: WritePixelsWithFormat_YuvTarget_002
+ * @tc.desc: Test WritePixels with a non-editable YUV target reports ERR_IMAGE_COLOR_CONVERT before the edit check
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, WritePixelsWithFormat_YuvTarget_002, TestSize.Level3)
+{
+    auto pixelMap = CreateBranchTestPixelMap(PixelFormat::NV12, AlphaType::IMAGE_ALPHA_TYPE_OPAQUE);
+    ASSERT_NE(pixelMap, nullptr);
+    pixelMap->SetEditable(false);
+    uint8_t src[48] = {0};
+    EXPECT_EQ(pixelMap->WritePixels(src, 48, PixelFormat::RGBA_8888), ERR_IMAGE_COLOR_CONVERT);
+}
+
+/**
+ * @tc.name: WritePixelsWithFormat_NotEditable_001
+ * @tc.desc: Test WritePixels with format on non-editable PixelMap
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, WritePixelsWithFormat_NotEditable_001, TestSize.Level3)
+{
+    auto pixelMap = CreateBranchTestPixelMap(PixelFormat::BGRA_8888, AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
+    ASSERT_NE(pixelMap, nullptr);
+    uint8_t src[48] = {0};
+    EXPECT_EQ(pixelMap->WritePixels(src, 48, PixelFormat::RGBA_8888), ERR_IMAGE_PIXELMAP_NOT_ALLOW_MODIFY);
+}
+
+/**
+ * @tc.name: WritePixelsWithFormat_BufferTooSmall_001
+ * @tc.desc: Test WritePixels with buffer too small for source format
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, WritePixelsWithFormat_BufferTooSmall_001, TestSize.Level3)
+{
+    auto pixelMap = CreateBranchEditablePixelMap(PixelFormat::BGRA_8888, AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
+    ASSERT_NE(pixelMap, nullptr);
+    uint8_t src[4] = {0};
+    EXPECT_EQ(pixelMap->WritePixels(src, 4, PixelFormat::RGBA_8888), ERR_IMAGE_INVALID_PARAMETER);
+}
+
+/**
+ * @tc.name: WritePixelsWithFormat_NullSource_001
+ * @tc.desc: Test WritePixels with null source
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, WritePixelsWithFormat_NullSource_001, TestSize.Level3)
+{
+    auto pixelMap = CreateBranchEditablePixelMap(PixelFormat::BGRA_8888, AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
+    ASSERT_NE(pixelMap, nullptr);
+    EXPECT_EQ(pixelMap->WritePixels(nullptr, 48, PixelFormat::RGBA_8888), ERR_IMAGE_INVALID_PARAMETER);
+}
+
+/**
+ * @tc.name: WritePixelsWithFormat_RGB_565_To_ARGB_001
+ * @tc.desc: Test WritePixels RGB_565 source to ARGB_8888 target (security: heap overflow fix)
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, WritePixelsWithFormat_RGB_565_To_ARGB_001, TestSize.Level3)
+{
+    auto pixelMap = CreateBranchEditablePixelMap(PixelFormat::ARGB_8888, AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
+    ASSERT_NE(pixelMap, nullptr);
+    int32_t srcBpp = ImageUtils::GetPixelBytes(PixelFormat::RGB_565);
+    int32_t srcSize = srcBpp * TEST_WIDTH * TEST_HEIGHT;
+    auto src = std::make_unique<uint8_t[]>(srcSize);
+    memset_s(src.get(), srcSize, 0x5A, srcSize);
+    EXPECT_EQ(pixelMap->WritePixels(src.get(), static_cast<uint64_t>(srcSize), PixelFormat::RGB_565), SUCCESS);
+}
+
+/**
+ * @tc.name: WritePixelsWithFormat_RGB_888_To_ARGB_001
+ * @tc.desc: Test WritePixels RGB_888 source to ARGB_8888 target (security: heap overflow fix)
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, WritePixelsWithFormat_RGB_888_To_ARGB_001, TestSize.Level3)
+{
+    auto pixelMap = CreateBranchEditablePixelMap(PixelFormat::ARGB_8888, AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
+    ASSERT_NE(pixelMap, nullptr);
+    int32_t srcBpp = ImageUtils::GetPixelBytes(PixelFormat::RGB_888);
+    int32_t srcSize = srcBpp * TEST_WIDTH * TEST_HEIGHT;
+    auto src = std::make_unique<uint8_t[]>(srcSize);
+    memset_s(src.get(), srcSize, 0x77, srcSize);
+    EXPECT_EQ(pixelMap->WritePixels(src.get(), static_cast<uint64_t>(srcSize), PixelFormat::RGB_888), SUCCESS);
+}
+
+/**
+ * @tc.name: WritePixelsWithFormat_RGB_888_StridePadding_001
+ * @tc.desc: Test WritePixels RGB_888 source with stride > width*3 (security: heap overflow fix)
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, WritePixelsWithFormat_RGB_888_StridePadding_001, TestSize.Level3)
+{
+    auto pixelMap = CreateBranchEditablePixelMap(PixelFormat::BGRA_8888, AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
+    ASSERT_NE(pixelMap, nullptr);
+    int32_t srcBpp = ImageUtils::GetPixelBytes(PixelFormat::RGB_888);
+    uint32_t rowBytes = static_cast<uint32_t>(TEST_WIDTH) * static_cast<uint32_t>(srcBpp);
+    uint32_t stride = rowBytes + 4; // stride with padding
+    uint64_t bufferSize = static_cast<uint64_t>(stride) * TEST_HEIGHT;
+    auto src = std::make_unique<uint8_t[]>(bufferSize);
+    memset_s(src.get(), bufferSize, 0, bufferSize);
+    // Fill valid pixel data per row, leave padding as 0
+    for (int32_t y = 0; y < TEST_HEIGHT; y++) {
+        memset_s(src.get() + static_cast<uint64_t>(y) * stride, rowBytes, 0x77, rowBytes);
+    }
+    Rect region = {0, 0, TEST_WIDTH, TEST_HEIGHT};
+    RWPixelsOptions opts{src.get(), bufferSize, 0, stride, region, PixelFormat::RGB_888};
+    EXPECT_EQ(pixelMap->WritePixels(opts), SUCCESS);
+}
+
+/**
+ * @tc.name: WritePixelsWithFormat_BGRA_To_ARGB_PixelVerify_001
+ * @tc.desc: Test WritePixels BGRA source to ARGB_8888 target with pixel value verification
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, WritePixelsWithFormat_BGRA_To_ARGB_PixelVerify_001, TestSize.Level3)
+{
+    auto pixelMap = CreateBranchEditablePixelMap(PixelFormat::ARGB_8888, AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
+    ASSERT_NE(pixelMap, nullptr);
+    int32_t bufferSize = pixelMap->GetByteCount();
+    ASSERT_GT(bufferSize, 0);
+    auto src = std::make_unique<uint8_t[]>(bufferSize);
+    for (int i = 0; i < bufferSize; i += 4) {
+        src[i] = 0x11;     // B
+        src[i + 1] = 0x22; // G
+        src[i + 2] = 0x33; // R
+        src[i + 3] = 0x44; // A
+    }
+    EXPECT_EQ(pixelMap->WritePixels(src.get(), static_cast<uint64_t>(bufferSize), PixelFormat::BGRA_8888),
+        SUCCESS);
+    const uint8_t *dst = pixelMap->GetPixels();
+    for (int i = 0; i < bufferSize; i += 4) {
+        EXPECT_EQ(dst[i], 0x44);     // A (was at src[3])
+        EXPECT_EQ(dst[i + 1], 0x33); // R (was at src[2])
+        EXPECT_EQ(dst[i + 2], 0x22); // G (was at src[1])
+        EXPECT_EQ(dst[i + 3], 0x11); // B (was at src[0])
+    }
+}
+
+/**
+ * @tc.name: WritePixelsWithFormat_RGBA_F16_To_ARGB_001
+ * @tc.desc: Test WritePixels RGBA_F16 source to ARGB_8888 target with non-zero output verification
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, WritePixelsWithFormat_RGBA_F16_To_ARGB_001, TestSize.Level3)
+{
+    auto pixelMap = CreateBranchEditablePixelMap(PixelFormat::ARGB_8888, AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
+    ASSERT_NE(pixelMap, nullptr);
+    int32_t srcBpp = ImageUtils::GetPixelBytes(PixelFormat::RGBA_F16);
+    int32_t srcSize = srcBpp * TEST_WIDTH * TEST_HEIGHT;
+    auto src = std::make_unique<uint8_t[]>(srcSize);
+    // Fill with half-float 1.0 (0x3C00) for each channel: R=1.0, G=1.0, B=1.0, A=1.0
+    for (int i = 0; i < srcSize; i += 2) {
+        src[i] = 0x00;
+        src[i + 1] = 0x3C;
+    }
+    EXPECT_EQ(pixelMap->WritePixels(src.get(), static_cast<uint64_t>(srcSize), PixelFormat::RGBA_F16), SUCCESS);
+    // half-float 1.0 should convert to 0xFF for each channel
+    const uint8_t *dst = pixelMap->GetPixels();
+    for (int i = 0; i < pixelMap->GetByteCount(); i += 4) {
+        EXPECT_EQ(dst[i], 0xFF);     // A
+        EXPECT_EQ(dst[i + 1], 0xFF); // R
+        EXPECT_EQ(dst[i + 2], 0xFF); // G
+        EXPECT_EQ(dst[i + 3], 0xFF); // B
+    }
+}
+
+/**
+ * @tc.name: WritePixelsWithFormat_RGBA_F16_To_ARGB_002
+ * @tc.desc: Test RGBA_F16 to ARGB_8888 scales normalized values, clamps out-of-range values and keeps channel order
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, WritePixelsWithFormat_RGBA_F16_To_ARGB_002, TestSize.Level3)
+{
+    auto pixelMap = CreateBranchEditablePixelMap(PixelFormat::ARGB_8888, AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
+    ASSERT_NE(pixelMap, nullptr);
+    int32_t srcSize = ImageUtils::GetPixelBytes(PixelFormat::RGBA_F16) * TEST_WIDTH * TEST_HEIGHT;
+    auto src = std::make_unique<uint8_t[]>(srcSize);
+    // Little-endian half-floats per pixel: R=0.5 (0x3800), G=2.0 (0x4000), B=-1.0 (0xBC00), A=1.0 (0x3C00)
+    const uint8_t pixel[] = {0x00, 0x38, 0x00, 0x40, 0x00, 0xBC, 0x00, 0x3C};
+    for (int32_t i = 0; i < srcSize; i += static_cast<int32_t>(sizeof(pixel))) {
+        ASSERT_EQ(memcpy_s(src.get() + i, srcSize - i, pixel, sizeof(pixel)), EOK);
+    }
+    EXPECT_EQ(pixelMap->WritePixels(src.get(), static_cast<uint64_t>(srcSize), PixelFormat::RGBA_F16), SUCCESS);
+    const uint8_t *dst = pixelMap->GetPixels();
+    ASSERT_NE(dst, nullptr);
+    for (int32_t i = 0; i < pixelMap->GetByteCount(); i += 4) {
+        EXPECT_EQ(dst[i], 0xFF);     // A: 1.0
+        EXPECT_EQ(dst[i + 1], 0x80); // R: 0.5 * 255, rounded
+        EXPECT_EQ(dst[i + 2], 0xFF); // G: 2.0 clamped to 1.0
+        EXPECT_EQ(dst[i + 3], 0x00); // B: -1.0 clamped to 0.0
+    }
+}
+
+/**
+ * @tc.name: WritePixelsWithFormat_RGB_565_To_ARGB_WithOffset_001
+ * @tc.desc: Test area write RGB_565 with offset to ARGB_8888 target (compact extraction path)
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, WritePixelsWithFormat_RGB_565_To_ARGB_WithOffset_001, TestSize.Level3)
+{
+    auto pixelMap = CreateBranchEditablePixelMap(PixelFormat::ARGB_8888, AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
+    ASSERT_NE(pixelMap, nullptr);
+    int32_t srcBpp = ImageUtils::GetPixelBytes(PixelFormat::RGB_565);
+    uint32_t rowBytes = static_cast<uint32_t>(TEST_WIDTH) * static_cast<uint32_t>(srcBpp);
+    uint32_t stride = rowBytes + 4; // stride with padding
+    uint32_t offset = 8;
+    uint64_t bufferSize = offset + static_cast<uint64_t>(stride) * (TEST_HEIGHT - 1) + rowBytes;
+    auto src = std::make_unique<uint8_t[]>(bufferSize);
+    memset_s(src.get(), bufferSize, 0, bufferSize);
+    for (int32_t y = 0; y < TEST_HEIGHT; y++) {
+        memset_s(src.get() + offset + static_cast<uint64_t>(y) * stride, rowBytes, 0x5A, rowBytes);
+    }
+    Rect region = {0, 0, TEST_WIDTH, TEST_HEIGHT};
+    RWPixelsOptions opts{src.get(), bufferSize, offset, stride, region, PixelFormat::RGB_565};
+    EXPECT_EQ(pixelMap->WritePixels(opts), SUCCESS);
+}
+
+/**
  * @tc.name: ScaleNotModifiable001
  * @tc.desc: Test ScaleNotModifiable001
  * @tc.type: FUNC

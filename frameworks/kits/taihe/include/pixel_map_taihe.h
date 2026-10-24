@@ -52,8 +52,12 @@ public:
     void ReadPixelsToAreaSyncWrapper(weak::PositionArea area, array_view<uint8_t> pixels);
     void WriteAllPixelsFromBuffer(array_view<uint8_t> src);
     void WriteAllPixelsFromBufferSync(array_view<uint8_t> src);
+    void WriteAllPixelsFromBufferWithSourcePixelFormat(array_view<uint8_t> src, PixelMapFormat sourcePixelFormat);
+    void WriteAllPixelsFromBufferSyncWithSourcePixelFormat(array_view<uint8_t> src, PixelMapFormat sourcePixelFormat);
     void WritePixelsFromArea(weak::PositionArea area);
     void WritePixelsFromAreaSync(weak::PositionArea area);
+    void WritePixelsFromAreaWithSourcePixelFormat(weak::PositionArea area, PixelMapFormat sourcePixelFormat);
+    void WritePixelsFromAreaSyncWithSourcePixelFormat(weak::PositionArea area, PixelMapFormat sourcePixelFormat);
     void ReadPixelsToBufferAsync(array_view<uint8_t> dst);
     void ReadPixelsToBufferPromise(array_view<uint8_t> dst);
     void ReadPixelsToBufferSync(array_view<uint8_t> dst);
@@ -148,7 +152,11 @@ private:
     void ReadAllPixelsToBufferImpl(array_view<uint8_t> const& dst);
     void ReadPixelsToAreaWrapperImpl(weak::PositionArea const& area, array_view<uint8_t> const& pixels);
     void WriteAllPixelsFromBufferImpl(array_view<uint8_t> const& src);
+    void WriteAllPixelsFromBufferWithSourcePixelFormatImpl(array_view<uint8_t> const& src,
+        PixelMapFormat const& sourcePixelFormat);
     void WritePixelsFromAreaImpl(weak::PositionArea const& area);
+    void WritePixelsFromAreaWithSourcePixelFormatImpl(weak::PositionArea const& area,
+        PixelMapFormat const& sourcePixelFormat);
     bool Is10BitYuvFormat(OHOS::Media::PixelFormat format);
     void Release();
     int64_t timestamp_ = 0;

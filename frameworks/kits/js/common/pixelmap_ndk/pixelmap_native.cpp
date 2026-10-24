@@ -857,6 +857,36 @@ Image_ErrorCode OH_PixelmapNative_WritePixels(OH_PixelmapNative *pixelmap, uint8
     return ToNewErrorCode(pixelmap->GetInnerPixelmap()->WritePixels(source, bufferSize));
 }
 
+static bool IsSupportedWritePixelFormat(PIXEL_FORMAT format)
+{
+    return format == PIXEL_FORMAT_BGRA_8888 ||
+           format == PIXEL_FORMAT_RGBA_8888 ||
+           format == PIXEL_FORMAT_RGB_888 ||
+           format == PIXEL_FORMAT_RGB_565 ||
+           format == PIXEL_FORMAT_RGBA_F16;
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_PixelmapNative_WritePixelsWithPixelFormat(OH_PixelmapNative *pixelmap,
+    const uint8_t *source, uint32_t bufferSize, PIXEL_FORMAT sourcePixelFormat)
+{
+    if (pixelmap == nullptr || source == nullptr || !pixelmap->GetInnerPixelmap()) {
+        return IMAGE_INVALID_PARAMETER;
+    }
+    if (!IsSupportedWritePixelFormat(sourcePixelFormat)) {
+        return IMAGE_INVALID_PARAMETER;
+    }
+    uint32_t innerRet = pixelmap->GetInnerPixelmap()->WritePixels(
+        source, static_cast<uint64_t>(bufferSize), static_cast<PixelFormat>(sourcePixelFormat));
+    Image_ErrorCode ret = ToNewErrorCode(innerRet);
+    if (ret == IMAGE_BAD_PARAMETER) {
+        ret = IMAGE_INVALID_PARAMETER;
+    } else if (innerRet == ERR_IMAGE_WRITE_PIXELMAP_FAILED) {
+        ret = IMAGE_COPY_FAILED;
+    }
+    return ret;
+}
+
 MIDK_EXPORT
 Image_ErrorCode OH_PixelmapNative_ReadPixelsFromArea(OH_PixelmapNative *pixelmap, Image_PositionArea *area)
 {
@@ -885,6 +915,36 @@ Image_ErrorCode OH_PixelmapNative_WritePixelsToArea(OH_PixelmapNative *pixelmap,
     }
     return ToNewErrorCode(pixelmap->GetInnerPixelmap()->WritePixels(
         area->pixels, area->pixelsSize, area->offset, area->stride, region));
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_PixelmapNative_WritePixelsToAreaWithPixelFormat(OH_PixelmapNative *pixelmap,
+    const Image_PositionArea *area, PIXEL_FORMAT sourcePixelFormat)
+{
+    if (pixelmap == nullptr || !pixelmap->GetInnerPixelmap() || area == nullptr || area->pixels == nullptr) {
+        return IMAGE_INVALID_PARAMETER;
+    }
+    if (!IsSupportedWritePixelFormat(sourcePixelFormat)) {
+        return IMAGE_INVALID_PARAMETER;
+    }
+    auto inner = pixelmap->GetInnerPixelmap();
+    if (inner->IsAstc() || inner->IsYuvFormat()) {
+        return IMAGE_UNSUPPORTED_CONVERSION;
+    }
+    OHOS::Media::Rect region;
+    if (!ConvertImageRegionToRect(area->region, region)) {
+        return IMAGE_INVALID_PARAMETER;
+    }
+    RWPixelsOptions opts{area->pixels, static_cast<uint64_t>(area->pixelsSize),
+        area->offset, area->stride, region, static_cast<PixelFormat>(sourcePixelFormat)};
+    uint32_t innerRet = inner->WritePixels(opts);
+    Image_ErrorCode ret = ToNewErrorCode(innerRet);
+    if (ret == IMAGE_BAD_PARAMETER) {
+        ret = IMAGE_INVALID_PARAMETER;
+    } else if (innerRet == ERR_IMAGE_WRITE_PIXELMAP_FAILED) {
+        ret = IMAGE_COPY_FAILED;
+    }
+    return ret;
 }
 
 MIDK_EXPORT

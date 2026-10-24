@@ -200,6 +200,7 @@ public:
 
     static int32_t PixelsConvert(const BufferInfo &src, BufferInfo &dst, int32_t srcLength, bool useDMA);
     static int32_t PixelsConvert(const BufferInfo &src, BufferInfo &dst, bool useDMA);
+    static void ConvertRGBAF16ToARGB8888(uint8_t *dstRow, const uint8_t *srcRow, uint32_t width);
     static std::unique_ptr<PixelMap> AstcToRgba(PixelMap *source, uint32_t &errorCode, PixelFormat destFormat);
 private:
     static AlphaConvertType GetAlphaConvertType(const AlphaType &srcType, const AlphaType &dstType);

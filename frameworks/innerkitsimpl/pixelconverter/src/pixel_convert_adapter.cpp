@@ -176,6 +176,32 @@ static int32_t GetRGBxSize(const ImageInfo &imgInfo)
     return imgInfo.size.height * rowBytes;
 }
 
+static bool ConvertRGB888ToRGBx(const void *&srcPixels, uint32_t &srcRowBytes,
+    const ImageInfo &srcInfo, std::unique_ptr<uint8_t[]> &outRGBx)
+{
+    int32_t srcRGBxSize = GetRGBxSize(srcInfo);
+    if (srcRGBxSize <= 0) {
+        IMAGE_LOGE("WritePixelsConvert get src rgbx size failed.");
+        return false;
+    }
+    outRGBx = std::make_unique<uint8_t[]>(srcRGBxSize);
+    uint32_t srcCompactRowBytes = static_cast<uint32_t>(srcInfo.size.width) * NUM_3;
+    uint32_t dstRowStep = static_cast<uint32_t>(GetRGBxRowBytes(srcInfo));
+    const uint8_t *src = static_cast<const uint8_t*>(srcPixels);
+    uint8_t *dst = &outRGBx[0];
+    for (int32_t y = 0; y < srcInfo.size.height; y++) {
+        if (!PixelConvertAdapter::RGBToRGBx(src, dst, srcCompactRowBytes)) {
+            IMAGE_LOGE("WritePixelsConvert RGBToRGBx failed at row %{public}d.", y);
+            return false;
+        }
+        src += srcRowBytes;
+        dst += dstRowStep;
+    }
+    srcPixels = outRGBx.get();
+    srcRowBytes = dstRowStep;
+    return true;
+}
+
 bool PixelConvertAdapter::WritePixelsConvert(const void *srcPixels, uint32_t srcRowBytes, const ImageInfo &srcInfo,
                                              void *dstPixels, const Position &dstPos, uint32_t dstRowBytes,
                                              const ImageInfo &dstInfo)
@@ -206,13 +232,11 @@ bool PixelConvertAdapter::WritePixelsConvert(const void *srcPixels, uint32_t src
             RGBToRGBx(reinterpret_cast<uint8_t*>(keepDstPixels), reinterpret_cast<uint8_t*>(dstPixels),
                 dstInfo.size.width * dstInfo.size.height * NUM_3);
     }
-    int32_t srcRGBxSize = (srcInfo.pixelFormat == PixelFormat::RGB_888) ? GetRGBxSize(srcInfo) : NUM_1;
-    CHECK_ERROR_RETURN_RET_LOG(srcRGBxSize <= 0, false, "WritePixelsConvert get src rgbx size failed.");
-    auto srcRGBxPixels = std::make_unique<uint8_t[]>(srcRGBxSize);
+    std::unique_ptr<uint8_t[]> srcRGBxPixels;
     if (srcInfo.pixelFormat == PixelFormat::RGB_888) {
-        RGBToRGBx(static_cast<const uint8_t*>(srcPixels), &srcRGBxPixels[0], srcRowBytes * srcInfo.size.height);
-        srcPixels = &srcRGBxPixels[0];
-        srcRowBytes = static_cast<uint32_t>(GetRGBxRowBytes(srcInfo));
+        if (!ConvertRGB888ToRGBx(srcPixels, srcRowBytes, srcInfo, srcRGBxPixels)) {
+            return false;
+        }
     }
     SkPixmap srcPixmap(srcImageInfo, srcPixels, srcRowBytes);
 

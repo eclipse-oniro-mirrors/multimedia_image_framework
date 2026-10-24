@@ -68,6 +68,15 @@ static Media::PixelFormat ParsePixelFormat(PixelMapFormat const& etsFormat)
     return format;
 }
 
+static bool IsSupportedWritePixelFormat(Media::PixelFormat format)
+{
+    return format == Media::PixelFormat::BGRA_8888 ||
+           format == Media::PixelFormat::RGBA_8888 ||
+           format == Media::PixelFormat::RGB_888 ||
+           format == Media::PixelFormat::RGB_565 ||
+           format == Media::PixelFormat::RGBA_F16;
+}
+
 static void ParseInitializationOptions(InitializationOptions const& etsOptions,
     Media::InitializationOptions &options)
 {
@@ -636,6 +645,51 @@ void PixelMapImpl::WriteAllPixelsFromBufferImpl(array_view<uint8_t> const& src)
     }
 }
 
+void PixelMapImpl::WriteAllPixelsFromBufferWithSourcePixelFormat(array_view<uint8_t> src,
+    PixelMapFormat sourcePixelFormat)
+{
+    WriteAllPixelsFromBufferWithSourcePixelFormatImpl(src, sourcePixelFormat);
+}
+
+void PixelMapImpl::WriteAllPixelsFromBufferSyncWithSourcePixelFormat(array_view<uint8_t> src,
+    PixelMapFormat sourcePixelFormat)
+{
+    WriteAllPixelsFromBufferWithSourcePixelFormatImpl(src, sourcePixelFormat);
+}
+
+void PixelMapImpl::WriteAllPixelsFromBufferWithSourcePixelFormatImpl(array_view<uint8_t> const& src,
+    PixelMapFormat const& sourcePixelFormat)
+{
+    if (nativePixelMap_ == nullptr) {
+        ImageTaiheUtils::ThrowExceptionError(Media::ERR_IMAGE_PIXELMAP_RELEASED, "The PixelMap has been released.");
+        return;
+    }
+
+    Media::PixelFormat srcFormat = ParsePixelFormat(sourcePixelFormat);
+    if (!IsSupportedWritePixelFormat(srcFormat)) {
+        ImageTaiheUtils::ThrowExceptionError(Media::ERR_IMAGE_INVALID_PARAM,
+            "The source pixel format is not supported.");
+        return;
+    }
+    uint32_t status = nativePixelMap_->WritePixels(src.data(), src.size(), srcFormat);
+    if (status == Media::ERR_IMAGE_PIXELMAP_NOT_ALLOW_MODIFY) {
+        ImageTaiheUtils::ThrowExceptionError(Media::ERR_MEDIA_UNSUPPORT_OPERATION,
+            "The PixelMap is not editable or is locked.");
+    } else if (status == Media::ERR_IMAGE_INVALID_PARAMETER) {
+        ImageTaiheUtils::ThrowExceptionError(Media::ERR_IMAGE_INVALID_PARAM,
+            "Invalid parameter: Buffer size is too small or sourcePixelFormat is not supported.");
+    } else if (status == Media::ERR_IMAGE_COLOR_CONVERT) {
+        ImageTaiheUtils::ThrowExceptionError(Media::ERR_IMAGE_UNSUPPORTED_CONVERSION,
+            "Unsupported conversion between the source pixel format and the PixelMap pixel format.");
+    } else if (status == Media::ERR_IMAGE_WRITE_PIXELMAP_FAILED) {
+        ImageTaiheUtils::ThrowExceptionError(Media::ERR_MEDIA_MEMORY_COPY_FAILED,
+            "Failed to copy or convert the pixel data.");
+    } else if (status != Media::SUCCESS) {
+        ImageTaiheUtils::ThrowExceptionError(Media::ERR_IMAGE_GET_IMAGE_DATA_FAILED,
+            "Failed to write the pixel data. (" + std::to_string(status) + ")");
+    }
+}
+
 void PixelMapImpl::WritePixelsFromArea(weak::PositionArea area)
 {
     WritePixelsFromAreaImpl(area);
@@ -672,6 +726,65 @@ void PixelMapImpl::WritePixelsFromAreaImpl(weak::PositionArea const& area)
     } else if (status == Media::ERR_IMAGE_WRITE_PIXELMAP_FAILED) {
         ImageTaiheUtils::ThrowExceptionError(Media::ERR_MEDIA_MEMORY_COPY_FAILED,
             "Failed to copy the area pixel data.");
+    } else if (status != Media::SUCCESS) {
+        ImageTaiheUtils::ThrowExceptionError(Media::ERR_IMAGE_GET_IMAGE_DATA_FAILED,
+            "Failed to write the area pixel data. (" + std::to_string(status) + ")");
+    }
+}
+
+void PixelMapImpl::WritePixelsFromAreaWithSourcePixelFormat(weak::PositionArea area,
+    PixelMapFormat sourcePixelFormat)
+{
+    WritePixelsFromAreaWithSourcePixelFormatImpl(area, sourcePixelFormat);
+}
+
+void PixelMapImpl::WritePixelsFromAreaSyncWithSourcePixelFormat(weak::PositionArea area,
+    PixelMapFormat sourcePixelFormat)
+{
+    WritePixelsFromAreaWithSourcePixelFormatImpl(area, sourcePixelFormat);
+}
+
+void PixelMapImpl::WritePixelsFromAreaWithSourcePixelFormatImpl(weak::PositionArea const& area,
+    PixelMapFormat const& sourcePixelFormat)
+{
+    if (nativePixelMap_ == nullptr) {
+        ImageTaiheUtils::ThrowExceptionError(Media::ERR_IMAGE_PIXELMAP_RELEASED, "The PixelMap has been released.");
+        return;
+    }
+    if (!ImageTaiheUtils::IsValidPtr(area)) {
+        ImageTaiheUtils::ThrowExceptionError(Media::ERR_IMAGE_INVALID_PARAM, "Invalid PositionArea.");
+        return;
+    }
+
+    ohos::multimedia::image::image::Region etsRegion = area->GetRegion();
+    Media::Rect region = {etsRegion.x, etsRegion.y, etsRegion.size.width, etsRegion.size.height};
+    array<uint8_t> etsPixels = area->GetPixels();
+    Media::PixelFormat srcFormat = ParsePixelFormat(sourcePixelFormat);
+    if (!IsSupportedWritePixelFormat(srcFormat)) {
+        ImageTaiheUtils::ThrowExceptionError(Media::ERR_IMAGE_INVALID_PARAM,
+            "The source pixel format is not supported.");
+        return;
+    }
+    if (nativePixelMap_->IsAstc() || nativePixelMap_->IsYuvFormat()) {
+        ImageTaiheUtils::ThrowExceptionError(Media::ERR_IMAGE_UNSUPPORTED_CONVERSION,
+            "Unsupported conversion between the source pixel format and the PixelMap pixel format.");
+        return;
+    }
+    Media::RWPixelsOptions opts{etsPixels.data(), static_cast<uint64_t>(etsPixels.size()),
+        area->GetOffset(), area->GetStride(), region, srcFormat};
+    uint32_t status = nativePixelMap_->WritePixels(opts);
+    if (status == Media::ERR_IMAGE_PIXELMAP_NOT_ALLOW_MODIFY) {
+        ImageTaiheUtils::ThrowExceptionError(Media::ERR_MEDIA_UNSUPPORT_OPERATION,
+            "The PixelMap is not editable or is locked.");
+    } else if (status == Media::ERR_IMAGE_INVALID_PARAMETER) {
+        ImageTaiheUtils::ThrowExceptionError(Media::ERR_IMAGE_INVALID_PARAM,
+            "Invalid parameter. Ensure the offset, stride, region, and sourcePixelFormat are valid.");
+    } else if (status == Media::ERR_IMAGE_COLOR_CONVERT) {
+        ImageTaiheUtils::ThrowExceptionError(Media::ERR_IMAGE_UNSUPPORTED_CONVERSION,
+            "Unsupported conversion between the source pixel format and the PixelMap pixel format.");
+    } else if (status == Media::ERR_IMAGE_WRITE_PIXELMAP_FAILED) {
+        ImageTaiheUtils::ThrowExceptionError(Media::ERR_MEDIA_MEMORY_COPY_FAILED,
+            "Failed to copy or convert the pixel data.");
     } else if (status != Media::SUCCESS) {
         ImageTaiheUtils::ThrowExceptionError(Media::ERR_IMAGE_GET_IMAGE_DATA_FAILED,
             "Failed to write the area pixel data. (" + std::to_string(status) + ")");

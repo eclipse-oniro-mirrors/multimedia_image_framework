@@ -681,6 +681,17 @@ public:
      * @return Return 0 if successful, otherwise return errorcode.
      */
     NATIVEEXPORT virtual uint32_t WritePixels(const uint8_t *source, const uint64_t &bufferSize);
+
+    /**
+     * Write pixels with source pixel format.
+     *
+     * @param source pixels addr.
+     * @param bufferSize buffer size.
+     * @param srcPixelFormat source pixel format.
+     * @return Return 0 if successful, otherwise return errorcode.
+     */
+    NATIVEEXPORT uint32_t WritePixels(const uint8_t *source, const uint64_t &bufferSize, PixelFormat srcPixelFormat);
+
     NATIVEEXPORT virtual bool WritePixels(const uint32_t &color);
     /**
      * Release the pixel buffer.
@@ -1043,6 +1054,7 @@ protected:
     std::unique_ptr<AbsMemory> CreateSdrMemory(ImageInfo &imageInfo, PixelFormat format,
                                                AllocatorType dstType, uint32_t &errorCode, bool toSRGB);
     uint32_t CheckPixelMapForWritePixels();
+    uint32_t WritePixelsToARGB(const RWPixelsOptions &opts, const ImageInfo &srcInfo, const Position &dstPosition);
 
     uint8_t *data_ = nullptr;
     // this info SHOULD be the final info for decoded pixelmap, not the original image info
