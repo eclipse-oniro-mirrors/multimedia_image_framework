@@ -1588,7 +1588,8 @@ uint32_t HdrJpegPackerHelper::SpliceHdrStream(sk_sp<SkData>& baseImage, sk_sp<Sk
         ERR_IMAGE_ENCODE_FAILED, "SpliceHdrStream write gainmapMetadata failed");
     CHECK_ERROR_RETURN_RET_LOG(!output.write(gainmapHdrMediaTypeInfo.data(), gainmapHdrMediaTypeInfo.size()),
         ERR_IMAGE_ENCODE_FAILED, "SpliceHdrStream write gainmapMediaType failed");
-    CHECK_ERROR_RETURN_RET_LOG(!output.write(gainmapBytes + JPEG_MARKER_TAG_SIZE, gainmapImage->size() - JPEG_MARKER_TAG_SIZE),
+    CHECK_ERROR_RETURN_RET_LOG(!output.write(gainmapBytes + JPEG_MARKER_TAG_SIZE,
+        gainmapImage->size() - JPEG_MARKER_TAG_SIZE),
         ERR_IMAGE_ENCODE_FAILED, "SpliceHdrStream write gainmap image failed");
     return SUCCESS;
 }

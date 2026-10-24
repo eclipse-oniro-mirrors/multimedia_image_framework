@@ -265,11 +265,10 @@ uint32_t RawDecoder::DoDecodeHeaderByPiex()
 
     piex::Image piexImage;
     bool hasImage = false;
-    if (error == piex::Error::kOk) {
-        if ((imageData.preview.format == piex::Image::kJpegCompressed) && (imageData.preview.length > 0)) {
-            piexImage = imageData.preview;
-            hasImage = true;
-        }
+    if (error == piex::Error::kOk && imageData.preview.format == piex::Image::kJpegCompressed &&
+        imageData.preview.length > 0) {
+        piexImage = imageData.preview;
+        hasImage = true;
     }
 
     if (!hasImage) {
