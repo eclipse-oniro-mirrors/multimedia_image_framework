@@ -81,7 +81,7 @@ private:
     void FormatTimeStamp(std::string &value, std::string &src);
 
     static MultimediaPlugin::PluginServer &pluginServer_;
-    jpeg_decompress_struct decodeInfo_;
+    jpeg_decompress_struct decodeInfo_ {};
     JpegSrcMgr srcMgr_;
     ErrorMgr jerr_;
     AbsImageDecompressComponent *hwJpegDecompress_ = nullptr;

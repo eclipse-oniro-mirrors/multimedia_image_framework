@@ -24,6 +24,7 @@
 #include "jerror.h"
 #include "media_errors.h"
 #include "pixel_convert.h"
+#include "securec.h"
 #ifdef USE_M133_SKIA
 #include "src/encode/SkImageEncoderFns.h"
 #else
@@ -69,19 +70,35 @@ JpegDstMgr::JpegDstMgr(OutputDataStream *stream) : outputStream(stream)
 
 JpegEncoder::JpegEncoder() : dstMgr_(nullptr)
 {
-    // create decompress struct
-    jpeg_create_compress(&encodeInfo_);
-
-    // set error output
-    encodeInfo_.err = jpeg_std_error(&jerr_);
+    // libjpeg requires the error manager to be installed before jpeg_create_compress();
+    // the create routine saves/restores cinfo->err, so a garbage pointer would be called
+    // through ERREXIT when the memory manager fails.
+    if (memset_s(&encodeInfo_, sizeof(encodeInfo_), 0, sizeof(encodeInfo_)) != EOK) {
+        IMAGE_LOGE("clear jpeg compress struct failed.");
+        return;
+    }
     jerr_.error_exit = ErrorExit;
-    CHECK_ERROR_RETURN_LOG(encodeInfo_.err == nullptr, "create jpeg encoder failed.");
+    encodeInfo_.err = jpeg_std_error(&jerr_);
+    if (encodeInfo_.err == nullptr) {
+        IMAGE_LOGE("create jpeg encoder failed.");
+        return;
+    }
+    encodeInfo_.err->error_exit = ErrorExit;
     encodeInfo_.err->output_message = &OutputErrorMessage;
+
+    if (setjmp(jerr_.setjmp_buffer)) {
+        IMAGE_LOGE("create jpeg encoder failed.");
+        jpeg_destroy_compress(&encodeInfo_);
+        return;
+    }
+    jpeg_create_compress(&encodeInfo_);
 }
 
 uint32_t JpegEncoder::StartEncode(OutputDataStream &outputStream, PlEncodeOptions &option)
 {
     ImageTrace imageTrace("JpegEncoder::StartEncode");
+    CHECK_ERROR_RETURN_RET_LOG(encodeInfo_.mem == nullptr, ERR_IMAGE_INIT_ABNORMAL,
+        "jpeg encoder is not initialized.");
     pixelMaps_.clear();
     dstMgr_.outputStream = &outputStream;
     encodeInfo_.dest = &dstMgr_;
@@ -159,6 +176,8 @@ uint32_t JpegEncoder::AddPicture(Media::Picture &picture)
 uint32_t JpegEncoder::FinalizeEncode()
 {
     ImageTrace imageTrace("JpegEncoder::FinalizeEncode");
+    CHECK_ERROR_RETURN_RET_LOG(encodeInfo_.mem == nullptr, ERR_IMAGE_INIT_ABNORMAL,
+        "jpeg encoder is not initialized.");
     uint32_t errorCode = SetCommonConfig();
     if (errorCode != SUCCESS) {
         IMAGE_LOGE("set jpeg compress struct failed:%{public}u.", errorCode);

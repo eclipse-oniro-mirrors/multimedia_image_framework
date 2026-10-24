@@ -65,13 +65,20 @@ public:
 #ifdef IMAGE_COLORSPACE_FLAG
     bool IsSupportICCProfile() override
     {
-        return false;
+        return isSupportICCProfile_;
+    }
+    OHOS::ColorManager::ColorSpace GetPixelMapColorSpace() override
+    {
+        return grColorSpace_;
     }
 #endif
 
 private:
     uint32_t GetDecodeFormat(PixelFormat format, PixelFormat &outputFormat, AlphaType &alphaType);
     bool ChooseFormat(PixelFormat format, PixelFormat &outputFormat, png_byte destType);
+#ifdef PNG_READ_USER_TRANSFORM_SUPPORTED
+    static void ConvertToF16(png_structp pngPtr, png_row_infop rowInfo, png_bytep row);
+#endif
     static void PngErrorExit(png_structp pngPtr, png_const_charp message);
     static void PngWarning(png_structp pngPtr, png_const_charp message);
     static void PngWarningMessage(png_structp pngPtr, png_const_charp message);
@@ -100,6 +107,9 @@ private:
     bool InitPnglib();
     uint32_t GetImageIdatSize(InputDataStream *stream);
     void DealNinePatch(const PixelDecodeOptions &opts);
+#ifdef IMAGE_COLORSPACE_FLAG
+    void UpdateColorSpaceInfo();
+#endif
     // local private parameter
     const std::string NINE_PATCH = "ninepatch";
     png_structp pngStructPtr_ = nullptr;
@@ -121,6 +131,13 @@ private:
     uint32_t lastRow_ = 0;
     bool interlacedComplete_ = false;
     NinePatchListener ninePatch_;
+#ifdef IMAGE_COLORSPACE_FLAG
+    // color space described by the sRGB / cICP chunk (iCCP parsing needs skcms, which this
+    // plugin does not link)
+    bool isSupportICCProfile_ = false;
+    OHOS::ColorManager::ColorSpace grColorSpace_ =
+        OHOS::ColorManager::ColorSpace(OHOS::ColorManager::ColorSpaceName::NONE);
+#endif
 };
 } // namespace ImagePlugin
 } // namespace OHOS

@@ -14,7 +14,9 @@
  */
 
 #include "nine_patch_listener.h"
+#include <algorithm>
 #include <cmath>
+#include <cstdint>
 #include "image_log.h"
 #ifndef _WIN32
 #include "securec.h"
@@ -36,26 +38,51 @@ const std::string CHUNK_NAME = "npTc";
 constexpr float FLOAT_NEAR_ZERO = (1.0f / (1 << 12));
 constexpr float FHALF = 0.5f;
 constexpr float NO_SCALE = 1.0f;
+
+// divs must be non-negative and strictly increasing, otherwise nine-patch consumers
+// (ArkUI drawing) index outside the image.
+bool ValidateDivs(const int32_t *divs, uint8_t count)
+{
+    if (count == 0) {
+        return true;
+    }
+    if (divs == nullptr) {
+        return false;
+    }
+    for (uint8_t i = 0; i < count; i++) {
+        if (divs[i] < 0) {
+            return false;
+        }
+        if (i > 0 && divs[i] <= divs[i - 1]) {
+            return false;
+        }
+    }
+    return true;
+}
 } // namespace
 
 static void ScaleDivRange(int32_t *divs, int32_t count, float scale, int32_t maxValue)
 {
+    if (divs == nullptr || count <= 0) {
+        return;
+    }
+    if (maxValue < 0) {
+        maxValue = 0;
+    }
     for (int i = 0; i < count; i++) {
-        divs[i] = static_cast<int32_t>(divs[i] * scale + FHALF);
-        if (i > 0 && divs[i] == divs[i - 1]) {
-            divs[i]++;
+        // Clamp before converting so even an oversized scaled value cannot overflow int32_t.
+        double scaled = static_cast<double>(divs[i]) * scale + FHALF;
+        scaled = std::max(0.0, std::min(scaled, static_cast<double>(maxValue)));
+        divs[i] = static_cast<int32_t>(scaled);
+        if (i > 0 && divs[i] <= divs[i - 1]) {
+            divs[i] = (divs[i - 1] < maxValue) ? (divs[i - 1] + 1) : divs[i - 1];
         }
     }
 
-    if (divs[count - 1] > maxValue) {
-        int highestAvailable = maxValue;
-        for (int i = count - 1; i >= 0; i--) {
-            divs[i] = highestAvailable;
-            if (i > 0 && divs[i] <= divs[i - 1]) {
-                highestAvailable = divs[i] - 1;
-            } else {
-                break;
-            }
+    // Forward adjustment can reach the upper bound; move preceding divs back to keep space.
+    for (int i = count - 2; i >= 0; i--) {
+        if (divs[i] >= divs[i + 1]) {
+            divs[i] = std::max(0, divs[i + 1] - 1);
         }
     }
 }
@@ -88,6 +115,17 @@ bool NinePatchListener::ReadChunk(const std::string &tag, void *data, size_t len
         }
         PngNinePatchRes::Deserialize(patchNew);
         patchNew->FileToDevice();
+        // reject semantically invalid chunks instead of forwarding them to nine-patch consumers
+        bool validPatch = (patchNew->paddingLeft >= 0) && (patchNew->paddingRight >= 0) &&
+            (patchNew->paddingTop >= 0) && (patchNew->paddingBottom >= 0) &&
+            ValidateDivs(patchNew->GetXDivs(), patchNew->numXDivs) &&
+            ValidateDivs(patchNew->GetYDivs(), patchNew->numYDivs);
+        if (!validPatch) {
+            IMAGE_LOGE("npTc chunk content is invalid, drop it.");
+            free(patchNew);
+            patchNew = nullptr;
+            return false;
+        }
         if (patch_ != nullptr) {
             free(patch_);
         }

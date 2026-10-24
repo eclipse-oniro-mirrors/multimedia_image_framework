@@ -59,7 +59,7 @@ const uint8_t APPLICATION_IDENTIFIER[] = {0x4E, 0x45, 0x54, 0x53, 0x43, 0x41, 0x
 const uint8_t APPLICATION_AUTENTICATION_CODE[] = {0x32, 0x2E, 0x30};
 const uint8_t GIF_TRAILER[] = {0x3B};
 
-static int g_sortRGBAxis = 0;
+static thread_local int g_sortRGBAxis = 0;
 
 #pragma pack(1)
 typedef struct LogicalScreenDescriptor {
@@ -180,13 +180,17 @@ uint32_t GifEncoder::FinalizeEncode()
 uint32_t GifEncoder::DoEncode()
 {
     IMAGE_LOGD("DoEncode IN");
-    WriteFileInfo();
+    uint32_t ret = WriteFileInfo();
+    CHECK_ERROR_RETURN_RET(ret != SUCCESS, ret);
     for (int index = 0; index < static_cast<int>(pixelMaps_.size()); index++) {
         InitDictionary();
-        WriteFrameInfo(index);
-        processFrame(index);
+        ret = WriteFrameInfo(index);
+        CHECK_ERROR_RETURN_RET(ret != SUCCESS, ret);
+        ret = processFrame(index);
+        CHECK_ERROR_RETURN_RET(ret != SUCCESS, ret);
     }
-    Write(GIF_TRAILER, sizeof(GIF_TRAILER));
+    CHECK_ERROR_RETURN_RET_LOG(!Write(GIF_TRAILER, sizeof(GIF_TRAILER)), ERR_IMAGE_ENCODE_FAILED,
+        "Write GIF trailer failed.");
     IMAGE_LOGD("DoEncode OUT");
     return SUCCESS;
 }
@@ -199,7 +203,10 @@ uint32_t GifEncoder::WriteFileInfo()
     }
 
     LogicalScreenDescriptor lsd;
-    memset_s(&lsd, sizeof(LogicalScreenDescriptor), 0, sizeof(LogicalScreenDescriptor));
+    if (memset_s(&lsd, sizeof(LogicalScreenDescriptor), 0, sizeof(LogicalScreenDescriptor)) != EOK) {
+        IMAGE_LOGE("memset_s failed for LogicalScreenDescriptor");
+        return ERR_IMAGE_ENCODE_FAILED;
+    }
     for (auto pixelMap : pixelMaps_) {
         if (lsd.logicalScreenWidth < static_cast<uint16_t>(pixelMap->GetWidth())) {
             lsd.logicalScreenWidth = static_cast<uint16_t>(pixelMap->GetWidth());
@@ -214,14 +221,23 @@ uint32_t GifEncoder::WriteFileInfo()
     }
 
     ApplicationExtension ae;
-    memset_s(&ae, sizeof(ApplicationExtension), 0, sizeof(ApplicationExtension));
+    if (memset_s(&ae, sizeof(ApplicationExtension), 0, sizeof(ApplicationExtension)) != EOK) {
+        IMAGE_LOGE("memset_s failed for ApplicationExtension");
+        return ERR_IMAGE_ENCODE_FAILED;
+    }
     ae.extensionIntroducer = EXTENSION_INTRODUCER;
     ae.extensionLabel = APPLICATION_EXTENSION_LABEL;
     ae.blockSize = 0x0B;
-    memcpy_s(&ae.applicationIdentifier, sizeof(ae.applicationIdentifier),
-             &APPLICATION_IDENTIFIER, sizeof(ae.applicationIdentifier));
-    memcpy_s(&ae.applicationAuthenticationCode, sizeof(ae.applicationIdentifier),
-             &APPLICATION_AUTENTICATION_CODE, sizeof(ae.applicationAuthenticationCode));
+    if (memcpy_s(&ae.applicationIdentifier, sizeof(ae.applicationIdentifier),
+             &APPLICATION_IDENTIFIER, sizeof(ae.applicationIdentifier)) != EOK) {
+        IMAGE_LOGE("memcpy_s applicationIdentifier failed");
+        return ERR_IMAGE_ENCODE_FAILED;
+    }
+    if (memcpy_s(&ae.applicationAuthenticationCode, sizeof(ae.applicationAuthenticationCode),
+             &APPLICATION_AUTENTICATION_CODE, sizeof(ae.applicationAuthenticationCode)) != EOK) {
+        IMAGE_LOGE("memcpy_s applicationAuthenticationCode failed");
+        return ERR_IMAGE_ENCODE_FAILED;
+    }
     ae.applicationDataSize = 0x03;
     ae.applicationDataIndex = 0x01;
     ae.loopTime = encodeOpts_.loop;
@@ -237,7 +253,10 @@ uint32_t GifEncoder::WriteFileInfo()
 uint32_t GifEncoder::WriteFrameInfo(int index)
 {
     GraphicControlExtension gce;
-    memset_s(&gce, sizeof(GraphicControlExtension), 0, sizeof(GraphicControlExtension));
+    if (memset_s(&gce, sizeof(GraphicControlExtension), 0, sizeof(GraphicControlExtension)) != EOK) {
+        IMAGE_LOGE("memset_s failed for GraphicControlExtension");
+        return ERR_IMAGE_ENCODE_FAILED;
+    }
     gce.extensionIntroducer = EXTENSION_INTRODUCER;
     gce.graphicControlLabel = GRAPHIC_CONTROL_LABEL;
     gce.blockSize = 0x04;
@@ -254,7 +273,10 @@ uint32_t GifEncoder::WriteFrameInfo(int index)
     }
 
     ImageDescriptor id;
-    memset_s(&id, sizeof(ImageDescriptor), 0, sizeof(ImageDescriptor));
+    if (memset_s(&id, sizeof(ImageDescriptor), 0, sizeof(ImageDescriptor)) != EOK) {
+        IMAGE_LOGE("memset_s failed for ImageDescriptor");
+        return ERR_IMAGE_ENCODE_FAILED;
+    }
     id.imageSeparator = IMAGE_SEPARATOR;
     id.imageLeftPosition = 0x0000;
     id.imageTopPosition = 0x0000;
@@ -280,19 +302,25 @@ uint32_t GifEncoder::processFrame(int index)
     uint16_t width = static_cast<uint16_t>(originalWidth);
     uint16_t height = static_cast<uint16_t>(originalHeight);
 
-    auto colorMap = std::make_unique<ColorType[]>(COLOR_MAP_SIZE);
+    auto colorMap = std::unique_ptr<ColorType[]>(new (std::nothrow) ColorType[COLOR_MAP_SIZE]());
+    CHECK_ERROR_RETURN_RET_LOG(colorMap == nullptr, ERR_IMAGE_ENCODE_FAILED, "Alloc color map failed.");
 
     uint64_t frameSize = static_cast<uint64_t>(width) * height;
-    CHECK_ERROR_RETURN_RET_LOG(frameSize > INT32_MAX, ERR_IMAGE_ENCODE_FAILED, "Image frame is too large.");
-    auto colorBuffer = std::make_unique<uint8_t[]>(frameSize);
+    CHECK_ERROR_RETURN_RET_LOG(frameSize > INT32_MAX,
+        ERR_IMAGE_ENCODE_FAILED, "Image frame is too large.");
+    auto colorBuffer = std::unique_ptr<uint8_t[]>(new (std::nothrow) uint8_t[frameSize]);
+    if (colorBuffer == nullptr) {
+        IMAGE_LOGE("alloc color buffer failed, size:%{public}llu", static_cast<unsigned long long>(frameSize));
+        return ERR_IMAGE_ENCODE_FAILED;
+    }
     if (colorQuantize(index, width, height, colorBuffer.get(), colorMap.get())) {
         IMAGE_LOGE("Failed to quantize color.");
         return ERR_IMAGE_ENCODE_FAILED;
     }
     for (int j = 0; j < COLOR_MAP_SIZE; j++) {
-        Write(&(colorMap[j].red), 1);
-        Write(&(colorMap[j].green), 1);
-        Write(&(colorMap[j].blue), 1);
+        bool written = Write(&(colorMap[j].red), 1) && Write(&(colorMap[j].green), 1) &&
+            Write(&(colorMap[j].blue), 1);
+        CHECK_ERROR_RETURN_RET_LOG(!written, ERR_IMAGE_ENCODE_FAILED, "Write color map failed.");
     }
     if (LZWEncodeFrame(colorBuffer.get(), width, height)) {
         IMAGE_LOGE("Failed to encode frame.");
@@ -305,10 +333,15 @@ uint32_t GifEncoder::colorQuantize(int index, uint16_t width, uint16_t height,
                                    uint8_t *outputBuffer, ColorType *outputColorMap)
 {
     uint64_t frameSize = static_cast<uint64_t>(width) * height;
-    auto redBuffer = std::make_unique<uint8_t[]>(frameSize);
-    auto greenBuffer = std::make_unique<uint8_t[]>(frameSize);
-    auto blueBuffer = std::make_unique<uint8_t[]>(frameSize);
-    auto alphaBuffer = std::make_unique<uint8_t[]>(frameSize);
+    auto redBuffer = std::unique_ptr<uint8_t[]>(new (std::nothrow) uint8_t[frameSize]);
+    auto greenBuffer = std::unique_ptr<uint8_t[]>(new (std::nothrow) uint8_t[frameSize]);
+    auto blueBuffer = std::unique_ptr<uint8_t[]>(new (std::nothrow) uint8_t[frameSize]);
+    auto alphaBuffer = std::unique_ptr<uint8_t[]>(new (std::nothrow) uint8_t[frameSize]);
+    if (redBuffer == nullptr || greenBuffer == nullptr || blueBuffer == nullptr || alphaBuffer == nullptr) {
+        IMAGE_LOGE("alloc quantize buffers failed, size:%{public}llu",
+            static_cast<unsigned long long>(frameSize));
+        return ERR_IMAGE_ENCODE_FAILED;
+    }
     if (separateRGBA(index, width, height, redBuffer.get(), greenBuffer.get(),
         blueBuffer.get(), alphaBuffer.get())) {
         IMAGE_LOGE("Failed to separate RGB, aborted.");
@@ -461,7 +494,12 @@ uint32_t GifEncoder::doColorQuantize(uint16_t width, uint16_t height,
         return ERR_IMAGE_ENCODE_FAILED;
     }
     if (colorSubdivMapSize < COLOR_MAP_SIZE) {
-        memset_s(outputColorMap, sizeof(ColorType) * COLOR_MAP_SIZE, 0, sizeof(ColorType) * COLOR_MAP_SIZE);
+        if (memset_s(outputColorMap, sizeof(ColorType) * COLOR_MAP_SIZE, 0, sizeof(ColorType) * COLOR_MAP_SIZE)
+            != EOK) {
+            IMAGE_LOGE("memset_s failed for outputColorMap");
+            free(colorCoordinate);
+            return ERR_IMAGE_ENCODE_FAILED;
+        }
     }
     buildOutputColorMap(colorSubdivMap, colorSubdivMapSize, outputColorMap);
     size_t pixelCount = static_cast<size_t>(width) * height;
@@ -599,7 +637,9 @@ void GifEncoder::InitDictionary()
     maxCode_ = 1 << runningBits_;
     crntShiftState_ = 0;
     crntShiftDWord_ = 0;
-    memset_s(dictionary_, sizeof(uint32_t) * DICTIONARY_SIZE, 0xFF, sizeof(uint32_t) * DICTIONARY_SIZE);
+    if (memset_s(dictionary_, sizeof(uint32_t) * DICTIONARY_SIZE, 0xFF, sizeof(uint32_t) * DICTIONARY_SIZE) != EOK) {
+        IMAGE_LOGE("InitDictionary memset_s failed");
+    }
 }
 
 int GifEncoder::IsInDictionary(uint32_t Key)
@@ -628,8 +668,10 @@ uint32_t GifEncoder::LZWEncodeFrame(uint8_t *outputBuffer, uint16_t width, uint1
 {
     uint8_t *pTmp = outputBuffer;
     uint8_t bitsPerPixel = BITS_IN_BYTE;
-    Write((const uint8_t*)&bitsPerPixel, 1);
-    LZWWriteOut(clearCode_);
+    CHECK_ERROR_RETURN_RET_LOG(!Write((const uint8_t*)&bitsPerPixel, 1), ERR_IMAGE_ENCODE_FAILED,
+        "Write bits per pixel failed.");
+    CHECK_ERROR_RETURN_RET_LOG(LZWWriteOut(clearCode_) != SUCCESS, ERR_IMAGE_ENCODE_FAILED,
+        "Write clear code failed.");
     for (int j = 0; j < height; j++) {
         if (LZWEncode(pTmp, width)) {
             IMAGE_LOGE("Failed to encode, aborted.");
@@ -676,7 +718,11 @@ uint32_t GifEncoder::LZWEncode(uint8_t *buffer, int length)
             runningCode_ = eofCode_ + 1;
             runningBits_ = BITS_IN_BYTE + 1;
             maxCode_ = 1 << runningBits_;
-            memset_s(dictionary_, sizeof(uint32_t) * DICTIONARY_SIZE, 0xFF, sizeof(uint32_t) * DICTIONARY_SIZE);
+            if (memset_s(dictionary_, sizeof(uint32_t) * DICTIONARY_SIZE, 0xFF,
+                sizeof(uint32_t) * DICTIONARY_SIZE) != EOK) {
+                IMAGE_LOGE("LZWEncode memset_s failed");
+                return ERR_IMAGE_ENCODE_FAILED;
+            }
         } else {
             AddToDictionary(newKey, runningCode_++);
         }

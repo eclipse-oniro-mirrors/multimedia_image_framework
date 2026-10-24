@@ -1487,7 +1487,10 @@ static bool WriteJpegPreApp(sk_sp<SkData>& imageData, SkWStream& outputStream,
     bool invalidSoi = std::memcmp(JPEG_SOI_HEADER, imageBytes, JPEG_MARKER_TAG_SIZE) != 0;
     CHECK_ERROR_RETURN_RET_LOG(invalidSoi, false, "HDR-IMAGE hdr encode, the spliced image is not a jpeg");
     uint32_t dataSize = imageData->size();
-    outputStream.write(imageBytes, JPEG_MARKER_TAG_SIZE);
+    if (!outputStream.write(imageBytes, JPEG_MARKER_TAG_SIZE)) {
+        IMAGE_LOGE("WriteJpegPreApp write SOI failed");
+        return false;
+    }
     index += JPEG_MARKER_TAG_SIZE;
 
     while (index + JPEG_HEADRE_OFFSET < dataSize) {
@@ -1504,8 +1507,11 @@ static bool WriteJpegPreApp(sk_sp<SkData>& imageData, SkWStream& outputStream,
         cond = index + markerSize + JPEG_MARKER_TAG_SIZE > dataSize;
         CHECK_ERROR_RETURN_RET(cond, false);
 
-        outputStream.write(
-            imageBytes + index, markerSize + JPEG_MARKER_TAG_SIZE);
+        if (!outputStream.write(
+            imageBytes + index, markerSize + JPEG_MARKER_TAG_SIZE)) {
+            IMAGE_LOGE("WriteJpegPreApp write APP marker failed");
+            return false;
+        }
         if (imageBytes[index + INDEX_ONE] == JPEG_MARKER_APP0) {
             jfifSize = markerSize + JPEG_MARKER_TAG_SIZE;
         }
@@ -1524,9 +1530,15 @@ uint32_t HdrJpegPackerHelper::SpliceLogHdrStream(sk_sp<SkData>& baseImage,
     uint32_t jfifSize = 0;
     CHECK_ERROR_RETURN_RET(!WriteJpegPreApp(baseImage, output, offset, jfifSize), ERR_IMAGE_ENCODE_FAILED);
     std::vector<uint8_t> HdrMediaTypeInfo = PackHdrMediaTypeMarker(metadata);
-    output.write(HdrMediaTypeInfo.data(), HdrMediaTypeInfo.size());
+    if (!output.write(HdrMediaTypeInfo.data(), HdrMediaTypeInfo.size())) {
+        IMAGE_LOGE("SpliceLogHdrStream write HdrMediaTypeInfo failed");
+        return ERR_IMAGE_ENCODE_FAILED;
+    }
     const uint8_t* baseBytes = reinterpret_cast<const uint8_t*>(baseImage->data());
-    output.write(baseBytes + offset, baseImage->size() - offset);
+    if (!output.write(baseBytes + offset, baseImage->size() - offset)) {
+        IMAGE_LOGE("SpliceLogHdrStream write base image failed");
+        return ERR_IMAGE_ENCODE_FAILED;
+    }
     return SUCCESS;
 }
 
@@ -1556,19 +1568,46 @@ uint32_t HdrJpegPackerHelper::SpliceHdrStream(sk_sp<SkData>& baseImage, sk_sp<Sk
     CHECK_ERROR_RETURN_RET(cond, ERR_IMAGE_ENCODE_FAILED);
     std::vector<uint8_t> baseVividInfo = PackBaseVividMarker(baseSize, offset, allAppSize);
     std::vector<uint8_t> mpfInfo = PackBaseMpfMarker(baseSize, gainmapSize, offset + baseVividApp8Size);
-    output.write(baseVividInfo.data(), baseVividInfo.size());
-    output.write(mpfInfo.data(), mpfInfo.size());
-    output.write(baseISOInfo.data(), baseISOInfo.size());
+    if (!output.write(baseVividInfo.data(), baseVividInfo.size())) {
+        IMAGE_LOGE("SpliceHdrStream write baseVividInfo failed");
+        return ERR_IMAGE_ENCODE_FAILED;
+    }
+    if (!output.write(mpfInfo.data(), mpfInfo.size())) {
+        IMAGE_LOGE("SpliceHdrStream write mpfInfo failed");
+        return ERR_IMAGE_ENCODE_FAILED;
+    }
+    if (!output.write(baseISOInfo.data(), baseISOInfo.size())) {
+        IMAGE_LOGE("SpliceHdrStream write baseISOInfo failed");
+        return ERR_IMAGE_ENCODE_FAILED;
+    }
     const uint8_t* baseBytes = reinterpret_cast<const uint8_t*>(baseImage->data());
-    output.write(baseBytes + offset, baseImage->size() - offset);
+    if (!output.write(baseBytes + offset, baseImage->size() - offset)) {
+        IMAGE_LOGE("SpliceHdrStream write base image failed");
+        return ERR_IMAGE_ENCODE_FAILED;
+    }
 
     // write gainmap
     const uint8_t* gainmapBytes = reinterpret_cast<const uint8_t*>(gainmapImage->data());
-    output.write(gainmapBytes, JPEG_MARKER_TAG_SIZE);
-    output.write(gainmapISOMetadataPack.data(), gainmapISOMetadataPack.size());
-    output.write(gainmapMetadataPack.data(), gainmapMetadataPack.size());
-    output.write(gainmapHdrMediaTypeInfo.data(), gainmapHdrMediaTypeInfo.size());
-    output.write(gainmapBytes + JPEG_MARKER_TAG_SIZE, gainmapImage->size() - JPEG_MARKER_TAG_SIZE);
+    if (!output.write(gainmapBytes, JPEG_MARKER_TAG_SIZE)) {
+        IMAGE_LOGE("SpliceHdrStream write gainmap SOI failed");
+        return ERR_IMAGE_ENCODE_FAILED;
+    }
+    if (!output.write(gainmapISOMetadataPack.data(), gainmapISOMetadataPack.size())) {
+        IMAGE_LOGE("SpliceHdrStream write gainmapISO failed");
+        return ERR_IMAGE_ENCODE_FAILED;
+    }
+    if (!output.write(gainmapMetadataPack.data(), gainmapMetadataPack.size())) {
+        IMAGE_LOGE("SpliceHdrStream write gainmapMetadata failed");
+        return ERR_IMAGE_ENCODE_FAILED;
+    }
+    if (!output.write(gainmapHdrMediaTypeInfo.data(), gainmapHdrMediaTypeInfo.size())) {
+        IMAGE_LOGE("SpliceHdrStream write gainmapMediaType failed");
+        return ERR_IMAGE_ENCODE_FAILED;
+    }
+    if (!output.write(gainmapBytes + JPEG_MARKER_TAG_SIZE, gainmapImage->size() - JPEG_MARKER_TAG_SIZE)) {
+        IMAGE_LOGE("SpliceHdrStream write gainmap image failed");
+        return ERR_IMAGE_ENCODE_FAILED;
+    }
     return SUCCESS;
 }
 

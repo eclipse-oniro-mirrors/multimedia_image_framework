@@ -91,17 +91,28 @@ JpegDecoder::JpegDecoder() : srcMgr_(nullptr)
 
 void JpegDecoder::CreateDecoder()
 {
-    // create decompress struct
-    jpeg_create_decompress(&decodeInfo_);
-
-    // set error output
-    decodeInfo_.err = jpeg_std_error(&jerr_);
+    // libjpeg requires a valid error manager before jpeg_create_decompress(): the create
+    // routine saves and restores cinfo->err, so an uninitialised struct would restore a
+    // garbage pointer and call it through ERREXIT when the memory manager fails to init.
+    if (memset_s(&decodeInfo_, sizeof(decodeInfo_), 0, sizeof(decodeInfo_)) != EOK) {
+        IMAGE_LOGE("clear jpeg decompress struct failed.");
+        return;
+    }
     jerr_.error_exit = ErrorExit;
+    decodeInfo_.err = jpeg_std_error(&jerr_);
     if (decodeInfo_.err == nullptr) {
         IMAGE_LOGE("create jpeg decoder failed.");
         return;
     }
+    decodeInfo_.err->error_exit = ErrorExit;
     decodeInfo_.err->output_message = &OutputErrorMessage;
+
+    if (setjmp(jerr_.setjmp_buffer)) {
+        IMAGE_LOGE("create jpeg decoder failed.");
+        jpeg_destroy_decompress(&decodeInfo_);
+        return;
+    }
+    jpeg_create_decompress(&decodeInfo_);
 }
 
 JpegDecoder::~JpegDecoder()
@@ -172,6 +183,7 @@ J_COLOR_SPACE JpegDecoder::GetDecodeFormat(PixelFormat format, PixelFormat &outp
             break;
         }
         case PixelFormat::RGB_565: {
+            // Preserve the existing RGB_888 fallback for RGB_565 requests.
             colorSpace = JCS_RGB;
             outputFormat = PixelFormat::RGB_888;
             break;
@@ -373,6 +385,14 @@ uint32_t JpegDecoder::DoSwDecode(DecodeContext &context) __attribute__((no_sanit
                     static_cast<unsigned long long>(byteCount));
                 return ERR_IMAGE_MALLOC_ABNORMAL;
             }
+            // a partial decode reports success with unwritten rows, so the heap content must
+            // not be exposed to the caller
+            if (opts_.allowPartialImage &&
+                memset_s(outputBuffer, static_cast<size_t>(byteCount), 0, static_cast<size_t>(byteCount)) != EOK) {
+                IMAGE_LOGE("clear output buffer failed.");
+                free(outputBuffer);
+                return ERR_IMAGE_MALLOC_ABNORMAL;
+            }
             context.pixelsBuffer.buffer = outputBuffer;
             context.pixelsBuffer.context = nullptr;
             context.pixelsBuffer.bufferSize = byteCount;
@@ -383,6 +403,12 @@ uint32_t JpegDecoder::DoSwDecode(DecodeContext &context) __attribute__((no_sanit
         void *outputBuffer = malloc(byteCount);
         if (outputBuffer == nullptr) {
             IMAGE_LOGE("alloc output buffer size:[%{public}llu] error.", static_cast<unsigned long long>(byteCount));
+            return ERR_IMAGE_MALLOC_ABNORMAL;
+        }
+        if (opts_.allowPartialImage &&
+            memset_s(outputBuffer, static_cast<size_t>(byteCount), 0, static_cast<size_t>(byteCount)) != EOK) {
+            IMAGE_LOGE("clear output buffer failed.");
+            free(outputBuffer);
             return ERR_IMAGE_MALLOC_ABNORMAL;
         }
         context.pixelsBuffer.buffer = outputBuffer;
@@ -396,6 +422,17 @@ uint32_t JpegDecoder::DoSwDecode(DecodeContext &context) __attribute__((no_sanit
     if (base == nullptr) {
         IMAGE_LOGE("decode image buffer is null.");
         return ERR_IMAGE_INVALID_PARAMETER;
+    }
+    // the caller may provide the output buffer without a size (incremental decoding does);
+    // only trust the buffer when a size is given and large enough for this decode.
+    if (context.pixelsBuffer.bufferSize != 0) {
+        uint64_t needByteCount = static_cast<uint64_t>(rowStride) *
+            static_cast<uint64_t>(decodeInfo_.output_height);
+        if (static_cast<uint64_t>(context.pixelsBuffer.bufferSize) < needByteCount) {
+            IMAGE_LOGE("output buffer is too small, bufferSize:%{public}u, need:%{public}llu.",
+                context.pixelsBuffer.bufferSize, static_cast<unsigned long long>(needByteCount));
+            return ERR_IMAGE_INVALID_PARAMETER;
+        }
     }
     if (decodeInfo_.src == nullptr) {
         IMAGE_LOGE("decodeInfo_.src is null.");
@@ -586,7 +623,7 @@ bool JpegDecoder::FindMarker(InputDataStream &stream, uint8_t marker)
 
         uint8_t markerPrefix = buffer[JPG_MARKER_PREFIX_OFFSET];
         uint8_t markerCode = buffer[JPG_MARKER_CODE_OFFSET];
-        if (IsMarker(markerPrefix, markerCode, JPG_MARKER_SOS)) {
+        if (IsMarker(markerPrefix, markerCode, marker)) {
             return true;
         }
 
@@ -606,7 +643,18 @@ bool JpegDecoder::FindMarker(InputDataStream &stream, uint8_t marker)
         }
         // skip data, length = sizeof(length) + sizeof(data)
         uint32_t length = (buffer[MARKER_LENGTH_0_OFFSET] << MARKER_LENGTH_SHIFT) + buffer[MARKER_LENGTH_1_OFFSET];
-        if (!stream.Seek(cur + length)) {
+        // a marker segment is at least 2 bytes long; a smaller value would leave the stream
+        // position unchanged (or move it backwards) and loop forever on crafted input
+        if (length < MARKER_LENGTH) {
+            IMAGE_LOGE("invalid marker length:%{public}u at pos:%{public}u.", length, cur);
+            return false;
+        }
+        uint32_t nextPos = cur + length;
+        if (nextPos <= cur) {
+            IMAGE_LOGE("marker position overflow, cur:%{public}u, length:%{public}u.", cur, length);
+            return false;
+        }
+        if (!stream.Seek(nextPos)) {
             return false;
         }
     }
@@ -614,6 +662,8 @@ bool JpegDecoder::FindMarker(InputDataStream &stream, uint8_t marker)
 
 uint32_t JpegDecoder::DecodeHeader()
 {
+    CHECK_ERROR_RETURN_RET_LOG(decodeInfo_.mem == nullptr, ERR_IMAGE_INIT_ABNORMAL,
+        "jpeg decoder is not initialized.");
     if (setjmp(jerr_.setjmp_buffer)) {
         IMAGE_LOGE("get image size failed.");
         return ERR_IMAGE_DECODE_ABNORMAL;

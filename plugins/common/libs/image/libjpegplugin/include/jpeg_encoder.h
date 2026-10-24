@@ -46,7 +46,7 @@ private:
     uint32_t Yuv420spEncoder(const uint8_t *data);
     uint32_t RGBAF16Encoder(const uint8_t *data);
     uint32_t RGB565Encoder(const uint8_t *data);
-    jpeg_compress_struct encodeInfo_;
+    jpeg_compress_struct encodeInfo_ {};
     JpegDstMgr dstMgr_;
     ErrorMgr jerr_;
     std::vector<Media::PixelMap *> pixelMaps_;

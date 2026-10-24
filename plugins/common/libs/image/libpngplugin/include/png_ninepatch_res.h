@@ -22,7 +22,9 @@
 namespace OHOS {
 namespace ImagePlugin {
 struct alignas(uintptr_t) PngNinePatchRes {
-    PngNinePatchRes() : wasDeserialized(false), xDivsOffset(0), yDivsOffset(0), colorsOffset(0)
+    PngNinePatchRes() : wasDeserialized(false), numXDivs(0), numYDivs(0), numColors(0),
+        xDivsOffset(0), yDivsOffset(0), paddingLeft(0), paddingRight(0),
+        paddingTop(0), paddingBottom(0), colorsOffset(0)
     {}
     ~PngNinePatchRes() = default;
     void DeviceToFile();

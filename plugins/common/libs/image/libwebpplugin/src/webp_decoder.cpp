@@ -269,6 +269,9 @@ WEBP_CSP_MODE WebpDecoder::GetWebpDecodeMode(const PixelFormat &pixelFormat, boo
 {
     WEBP_CSP_MODE webpMode = MODE_RGBA;
     outputFormat_ = pixelFormat;
+    // always start from the 4-byte default, otherwise a decode that switched away from
+    // RGB_565 keeps the stale 2-byte stride and writes past the allocated buffer
+    bytesPerPixel_ = 4;
     switch (pixelFormat) {
         case PixelFormat::BGRA_8888:
             webpMode = premul ? MODE_bgrA : MODE_BGRA;
@@ -419,9 +422,14 @@ bool WebpDecoder::PreDecodeProc(DecodeContext &context, WebPDecoderConfig &confi
 
 void WebpDecoder::Reset()
 {
-    stream_->Seek(0);
+    if (stream_ != nullptr) {
+        stream_->Seek(0);
+    }
     dataBuffer_ = { nullptr, 0, 0 };
     webpSize_ = { 0, 0 };
+    // the bytes-per-pixel is chosen by the last SetDecodeOptions; keeping a stale value
+    // makes the next decode allocate with the previous format's stride (out-of-bounds write)
+    bytesPerPixel_ = 4;  // default four bytes for each pixel
 }
 
 static bool SharedMemoryCreate(DecodeContext &context, const uint32_t &byteCount)

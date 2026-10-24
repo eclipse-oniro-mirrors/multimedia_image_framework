@@ -43,7 +43,13 @@ HeifBufferInputStream::HeifBufferInputStream(const uint8_t *data, size_t size, b
             length_ = 0;
             return;
         }
-        memcpy_s(copiedData, length_, data, length_);
+        errno_t memRet = memcpy_s(copiedData, length_, data, length_);
+        if (memRet != EOK) {
+            delete[] copiedData;
+            data_ = nullptr;
+            length_ = 0;
+            return;
+        }
         data_ = copiedData;
     } else {
         data_ = data;
