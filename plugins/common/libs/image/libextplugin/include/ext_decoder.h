@@ -258,7 +258,7 @@ private:
     uint32_t ApplyDesiredColorSpaceIfNeeded(DecodeContext &context);
     uint32_t ApplyFastGamutConversion(DecodeContext &context);
     bool IsSupportFastGamutConvert(bool isOutputYuv420Format);
-    bool PrepareFastGamutConvertParams(fast::image::RGBFormat format,
+    void PrepareFastGamutConvertParams(fast::image::RGBFormat format,
         SkAlphaType srcAlphaType, SkAlphaType dstAlphaType,
         fast::image::ColorInfo& srcColorInfo, fast::image::ColorInfo& dstColorInfo);
     struct FastGamutContext {
