@@ -29,8 +29,8 @@ FASTManager& FASTManager::GetInstance()
 
 FASTManager::FASTManager()
 {
-    FASTHandle_ = dlopen(FAST_LIB, RTLD_NOW);
-    CHECK_ERROR_RETURN_LOG(FASTHandle_ == nullptr, "FASTManager dlopen FASTlib is failed: %{public}s", dlerror());
+    FASTHandle_ = dlopen(FAST_LIB, RTLD_NOW | RTLD_NODELETE);
+    CHECK_ERROR_RETURN_LOG(FASTHandle_ == nullptr, "FASTManager dlopen FAST_LIB is failed: %{public}s", dlerror());
 
     DecodeImage = reinterpret_cast<fast::image::FastErrCode (*)(const uint8_t*, size_t, uint8_t*, uint32_t, uint32_t,
         size_t, fast::image::RGBFormat)>(dlsym(FASTHandle_, "_ZN4fast5image11DecodeImageEPKhmPhjjmNS0_9RGBFormatE"));

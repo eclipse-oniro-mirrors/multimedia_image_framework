@@ -36,11 +36,6 @@ namespace OHOS {
     struct BufferRequestConfig;
 }
 
-namespace fast::image {
-    enum class RGBFormat;
-    struct ColorInfo;
-}
-
 namespace OHOS {
 namespace ImagePlugin {
 class ExtDecoder : public AbsImageDecoder, public OHOS::MultimediaPlugin::PluginClassBase, NoCopyable {
@@ -275,7 +270,7 @@ private:
     FastGamutContext BuildFastGamutContext(Media::PixelFormat pixelFormat, bool isOutputYuv420Format);
     bool ApplyFastGamutPostDecode(const FastGamutContext& fastCtx,
         uint8_t* dstBuffer, uint64_t rowStride, DecodeContext& context);
-    OHOS::ColorManager::ColorSpaceName heifColorSpaceName_ = ColorManager::ColorSpaceName::NONE;
+    OHOS::ColorManager::ColorSpaceName heifColorSpaceName_;
     bool heifIsColorSpaceFromCicp_ = false;
 #endif
 

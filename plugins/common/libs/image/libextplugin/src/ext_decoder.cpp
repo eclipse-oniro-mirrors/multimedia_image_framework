@@ -1497,16 +1497,14 @@ SkCodec::Result ExtDecoder::DoSampleDecode(DecodeContext &context)
         rowStride = static_cast<uint64_t>(sbBuffer->GetStride());
     }
 
-    auto skCodec = SkOHOSCodec::MakeFromCodec(std::move(codec_));
-    CHECK_ERROR_RETURN_RET_LOG(skCodec == nullptr, SkCodec::kErrorInInput,
-        "%{public}s failed, SkOHOSCodec is nullptr", __func__);
+    auto SkOHOSCodec = SkOHOSCodec::MakeFromCodec(std::move(codec_));
     SkOHOSCodec::OHOSOptions options;
     options.fSampleSize = softSampleSize_;
+    CHECK_ERROR_RETURN_RET_LOG(SkOHOSCodec == nullptr, SkCodec::kErrorInInput,
+        "%{public}s failed, SkOHOSCodec is nullptr", __func__);
 
-    auto fastCtx = BuildFastGamutContext(context.info.pixelFormat,
-        IsYuv420Format(context.info.pixelFormat));
-
-    SkCodec::Result result = skCodec->getOHOSPixels(fastCtx.decodeInfo, dstBuffer, rowStride, &options);
+    auto fastCtx = BuildFastGamutContext(context.info.pixelFormat, IsYuv420Format(context.info.pixelFormat));
+    SkCodec::Result result = SkOHOSCodec->getOHOSPixels(fastCtx.decodeInfo, dstBuffer, rowStride, &options);
     switch (result) {
         case SkCodec::kSuccess:
         case SkCodec::kIncompleteInput:
@@ -1520,7 +1518,7 @@ SkCodec::Result ExtDecoder::DoSampleDecode(DecodeContext &context)
     }
     if (fastCtx.enabled) {
         if (!ApplyFastGamutPostDecode(fastCtx, dstBuffer, rowStride, context)) {
-            result = skCodec->getOHOSPixels(dstInfo_, dstBuffer, rowStride, &options);
+            result = SkOHOSCodec->getOHOSPixels(dstInfo_, dstBuffer, rowStride, &options);
             bool cond = result != SkCodec::kSuccess && result != SkCodec::kIncompleteInput &&
                 result != SkCodec::kErrorInInput;
             CHECK_ERROR_RETURN_RET(cond, result);
@@ -1763,16 +1761,17 @@ uint32_t ExtDecoder::DoHeifDecode(DecodeContext &context)
 static fast::image::ColorInfo BuildFastColorInfo(const sk_sp<SkColorSpace>& skColorSpace,
     fast::image::RGBFormat format, SkAlphaType alphaType)
 {
-    fast::image::ColorInfo colorInfo;
+    fast::image::ColorInfo colorInfo{};
     colorInfo.formatType = format;
     auto findItem = FAST_ALPHA_TYPE_MAP.find(alphaType);
     colorInfo.fAlphaType = (findItem != FAST_ALPHA_TYPE_MAP.end()) ?
         findItem->second : fast::image::AlphaType::UNKNOWN;
-    CHECK_ERROR_RETURN_RET(skColorSpace == nullptr, colorInfo);
+    SkColorSpace* rawCs = skColorSpace.get();
+    CHECK_ERROR_RETURN_RET(rawCs == nullptr, colorInfo);
     skcms_TransferFunction transferFn;
     skcms_Matrix3x3 toXyzD50;
-    skColorSpace->transferFn(&transferFn);
-    bool cond = !skColorSpace->toXYZD50(&toXyzD50);
+    rawCs->transferFn(&transferFn);
+    bool cond = !rawCs->toXYZD50(&toXyzD50);
     CHECK_ERROR_RETURN_RET(cond, colorInfo);
     colorInfo.colorSpace.fTransferFn = { transferFn.g, transferFn.a, transferFn.b,
         transferFn.c, transferFn.d, transferFn.e, transferFn.f };
@@ -1797,6 +1796,8 @@ bool ExtDecoder::IsSupportFastGamutConvert(bool isOutputYuv420Format)
         srcSk = srcColorSpace_ ? srcColorSpace_->ToSkColorSpace() : nullptr;
     }
     sk_sp<SkColorSpace> dstSk = dstColorSpace_ ? dstColorSpace_->ToSkColorSpace() : nullptr;
+
+    // Check (src=P3, dst=sRGB) or (src=sRGB, dst=P3)
     bool srcNameIsP3 = srcColorSpace_ != nullptr &&
         srcColorSpace_->GetColorSpaceName() == OHOS::ColorManager::ColorSpaceName::DISPLAY_P3;
     bool srcSkEqualsP3 = srcSk != nullptr &&
@@ -1817,40 +1818,34 @@ bool ExtDecoder::IsSupportFastGamutConvert(bool isOutputYuv420Format)
     bool dstSkEqualsP3 = dstSk != nullptr &&
         SkColorSpace::Equals(dstSk.get(), displayP3Ref.get());
     bool p3Dst = dstNameIsP3 || dstSkEqualsP3;
+
     bool srcGamutDiffers = srcSk != nullptr && dstSk != nullptr &&
         srcSk->toXYZD50Hash() != dstSk->toXYZD50Hash();
-    bool srcSrgbTf = srcSk != nullptr && srcSk->gammaCloseToSRGB();
     bool isRgbaOrBgra = dstInfo_.colorType() == SkColorType::kRGBA_8888_SkColorType ||
         dstInfo_.colorType() == SkColorType::kBGRA_8888_SkColorType;
     bool subsetIsNull = dstOptions_.fSubset == nullptr;
     bool sampleIsDefault = sampleSize_ == DEFAULT_SAMPLE_SIZE;
+
     bool isFast = !isOutputYuv420Format &&
-        dstInfo_.colorType() != SkColorType::kRGB_888x_SkColorType &&
         isRgbaOrBgra && srcGamutDiffers &&
         ((p3Src && srgbDst) || (srgbSrc && p3Dst)) &&
         subsetIsNull && sampleIsDefault;
     return isFast;
 }
 
-bool ExtDecoder::PrepareFastGamutConvertParams(fast::image::RGBFormat format,
+void ExtDecoder::PrepareFastGamutConvertParams(fast::image::RGBFormat format,
     SkAlphaType srcAlphaType, SkAlphaType dstAlphaType,
     fast::image::ColorInfo& srcColorInfo, fast::image::ColorInfo& dstColorInfo)
 {
-    if (srcColorSpace_ == nullptr) {
-        srcColorSpace_ = std::make_shared<OHOS::ColorManager::ColorSpace>(GetSrcColorSpace());
-    }
     sk_sp<SkColorSpace> srcSk = info_.refColorSpace();
     if (srcSk == nullptr) {
         srcSk = srcColorSpace_ ? srcColorSpace_->ToSkColorSpace() : nullptr;
     }
     sk_sp<SkColorSpace> dstSk = dstColorSpace_ ? dstColorSpace_->ToSkColorSpace() : nullptr;
-    CHECK_ERROR_RETURN_RET(srcSk == nullptr || dstSk == nullptr, false);
-
     srcColorInfo = BuildFastColorInfo(srcSk, format, srcAlphaType);
     dstColorInfo = BuildFastColorInfo(dstSk, format, dstAlphaType);
-    return true;
 }
-
+ 
 ExtDecoder::FastGamutContext ExtDecoder::BuildFastGamutContext(
     Media::PixelFormat pixelFormat, bool isOutputYuv420Format)
 {
@@ -1859,11 +1854,10 @@ ExtDecoder::FastGamutContext ExtDecoder::BuildFastGamutContext(
     FASTManager& fastManager = FASTManager::GetInstance();
     fast::image::RGBFormat rgbFormat = pixelFormat == Media::PixelFormat::BGRA_8888 ?
         fast::image::RGBFormat::BGRA8888 : fast::image::RGBFormat::RGBA8888;
-    ctx.enabled = fastManager.IsGamutAvailable() &&
-        IsSupportFastGamutConvert(isOutputYuv420Format) &&
+    ctx.enabled = fastManager.IsGamutAvailable() && IsSupportFastGamutConvert(isOutputYuv420Format);
+    if (ctx.enabled) {
         PrepareFastGamutConvertParams(rgbFormat, info_.alphaType(), dstInfo_.alphaType(),
             ctx.srcColorInfo, ctx.dstColorInfo);
-    if (ctx.enabled) {
         ctx.decodeInfo = dstInfo_.makeColorSpace(info_.refColorSpace());
         if (info_.alphaType() == kPremul_SkAlphaType ||
             info_.alphaType() == kUnpremul_SkAlphaType) {
@@ -1872,13 +1866,20 @@ ExtDecoder::FastGamutContext ExtDecoder::BuildFastGamutContext(
     }
     return ctx;
 }
-
+ 
 bool ExtDecoder::ApplyFastGamutPostDecode(const FastGamutContext& fastCtx,
     uint8_t* dstBuffer, uint64_t rowStride, DecodeContext& context)
 {
     if (!fastCtx.enabled) {
         return false;
     }
+    if (dstColorSpace_ == nullptr) {
+        return false;
+    }
+    bool invalidRowStride = !dstInfo_.validRowBytes(rowStride);
+    CHECK_ERROR_RETURN_RET_LOG(invalidRowStride, false,
+        "%{public}s invalid rowStride: %{public}llu", __func__,
+        static_cast<unsigned long long>(rowStride));
     FASTManager& fastManager = FASTManager::GetInstance();
     auto code = fastManager.ColorSpaceConvert(
         dstBuffer, static_cast<uint32_t>(rowStride), fastCtx.dstColorInfo,
@@ -1886,6 +1887,7 @@ bool ExtDecoder::ApplyFastGamutPostDecode(const FastGamutContext& fastCtx,
         static_cast<uint32_t>(dstInfo_.width()), static_cast<uint32_t>(dstInfo_.height()));
     if (IsFastGamutConvertSuccess(code)) {
         context.grColorSpaceName = dstColorSpace_->GetColorSpaceName();
+        IMAGE_LOGI("ExtDecoder::ApplyFastGamutPostDecode fastManager.ColorSpaceConvert Success");
         return true;
     }
     return false;
@@ -2038,7 +2040,7 @@ uint32_t ExtDecoder::Decode(uint32_t index, DecodeContext &context)
     }
     bool decodedOk = ret == SkCodec::kSuccess || ret == SkCodec::kIncompleteInput || ret == SkCodec::kErrorInInput;
     if (fastCtx.enabled && decodedOk) {
-        if (!ApplyFastGamutPostDecode(fastCtx, dstBuffer, rowStride, context)) {
+        if (!ApplyFastGamutPostDecode(fastCtx, dstBuffer, rowStride, context) && ResetCodec()) {
             ret = codec_->getPixels(dstInfo_, dstBuffer, rowStride, &dstOptions_);
             bool cond = ret != SkCodec::kSuccess && ret != SkCodec::kIncompleteInput && ret != SkCodec::kErrorInInput;
             CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_DECODE_ABNORMAL,
@@ -2364,6 +2366,10 @@ static bool GetColorSpaceDestinationLayout(const SkImageInfo& dstInfo, const Abs
 
 uint32_t ExtDecoder::ApplyDesiredColorSpace(DecodeContext &context)
 {
+    bool notDmaAlloc = context.allocatorType != AllocatorType::DMA_ALLOC;
+    CHECK_ERROR_RETURN_RET_LOG(notDmaAlloc, ERR_IMAGE_COLOR_CONVERT,
+        "%{public}s only DMA allocator supported, allocatorType=%{public}d",
+        __func__, static_cast<int32_t>(context.allocatorType));
     SurfaceBuffer* sbuffer = static_cast<SurfaceBuffer*>(context.pixelsBuffer.context);
     int32_t width = sbuffer->GetWidth();
     int32_t height = sbuffer->GetHeight();
@@ -2418,29 +2424,27 @@ uint32_t ExtDecoder::ApplyFastGamutConversion(DecodeContext &context)
     if (srcColorSpace_ == nullptr || dstColorSpace_ == nullptr) {
         return ERR_IMAGE_COLOR_CONVERT;
     }
-    Media::PixelFormat pixelFormat = context.info.pixelFormat;
-    bool notSupportedFormat = pixelFormat != Media::PixelFormat::RGBA_8888 &&
-        pixelFormat != Media::PixelFormat::BGRA_8888;
-    CHECK_DEBUG_RETURN_RET_LOG(notSupportedFormat, ERR_IMAGE_COLOR_CONVERT,
-        "%{public}s output is not RGBA_8888/BGRA_8888, fallback to generic colorspace convert", __func__);
-    fast::image::RGBFormat rgbFormat = pixelFormat == Media::PixelFormat::BGRA_8888 ?
+    bool notDmaAlloc = context.allocatorType != AllocatorType::DMA_ALLOC;
+    CHECK_DEBUG_RETURN_RET_LOG(notDmaAlloc, ERR_IMAGE_COLOR_CONVERT,
+        "%{public}s only DMA allocator supported, allocatorType=%{public}d",
+        __func__, static_cast<int32_t>(context.allocatorType));
+    bool fastApplicable = IsSupportFastGamutConvert(IsYuv420Format(context.info.pixelFormat));
+    CHECK_DEBUG_RETURN_RET_LOG(!fastApplicable, ERR_IMAGE_COLOR_CONVERT,
+        "%{public}s gamut fast-path not applicable, fallback to generic colorspace convert", __func__);
+    fast::image::RGBFormat rgbFormat = dstInfo_.colorType() == SkColorType::kBGRA_8888_SkColorType ?
         fast::image::RGBFormat::BGRA8888 : fast::image::RGBFormat::RGBA8888;
     fast::image::ColorInfo srcColorInfo;
     fast::image::ColorInfo dstColorInfo;
-
-    bool fastApplicable = IsSupportFastGamutConvert(false) &&
-        PrepareFastGamutConvertParams(rgbFormat, info_.alphaType(), dstInfo_.alphaType(),
-            srcColorInfo, dstColorInfo);
-    CHECK_DEBUG_RETURN_RET_LOG(!fastApplicable, ERR_IMAGE_COLOR_CONVERT,
-        "%{public}s gamut fast-path not applicable, fallback to generic colorspace convert", __func__);
-
+    PrepareFastGamutConvertParams(rgbFormat, info_.alphaType(), dstInfo_.alphaType(),
+        srcColorInfo, dstColorInfo);
+ 
     SurfaceBuffer* sbuffer = static_cast<SurfaceBuffer*>(context.pixelsBuffer.context);
     CHECK_DEBUG_RETURN_RET_LOG(sbuffer == nullptr, ERR_IMAGE_COLOR_CONVERT,
         "%{public}s sbuffer is nullptr", __func__);
     int32_t width = sbuffer->GetWidth();
     int32_t height = sbuffer->GetHeight();
     uint64_t rowStride = static_cast<uint64_t>(sbuffer->GetStride());
-    if (width <= 0 || height <= 0 || rowStride <= 0) {
+    if (width <= 0 || height <= 0 || !dstInfo_.validRowBytes(rowStride)) {
         IMAGE_LOGE("%{public}s invalid buffer size, wh [%{public}d x %{public}d], rowStride %{public}llu",
             __func__, width, height, static_cast<unsigned long long>(rowStride));
         return ERR_IMAGE_COLOR_CONVERT;
@@ -2448,12 +2452,12 @@ uint32_t ExtDecoder::ApplyFastGamutConversion(DecodeContext &context)
     uint8_t* srcData = static_cast<uint8_t*>(sbuffer->GetVirAddr());
     CHECK_DEBUG_RETURN_RET_LOG(srcData == nullptr, ERR_IMAGE_COLOR_CONVERT,
         "%{public}s srcData is nullptr", __func__);
-
+ 
     FASTManager& fastManager = FASTManager::GetInstance();
     bool fastUnavailable = !fastManager.IsGamutAvailable();
     CHECK_DEBUG_RETURN_RET_LOG(fastUnavailable, ERR_IMAGE_COLOR_CONVERT,
         "%{public}s FAST ColorSpaceConvert unavailable, fallback to generic colorspace convert", __func__);
-
+ 
     ImageTrace imageTrace("ExtDecoder::ApplyFastGamutConversion fastManager.ColorSpaceConvert");
     auto code = fastManager.ColorSpaceConvert(
         srcData, static_cast<uint32_t>(rowStride), dstColorInfo,
@@ -2464,6 +2468,7 @@ uint32_t ExtDecoder::ApplyFastGamutConversion(DecodeContext &context)
         "%{public}s gamut FAST convert failed, code:%{public}d, "
         "fallback to generic colorspace convert", __func__, static_cast<int>(code));
     context.grColorSpaceName = dstColorSpace_->GetColorSpaceName();
+    IMAGE_LOGI("ExtDecoder::ApplyFastGamutConversion fastManager.ColorSpaceConvert Success");
     return SUCCESS;
 }
 
