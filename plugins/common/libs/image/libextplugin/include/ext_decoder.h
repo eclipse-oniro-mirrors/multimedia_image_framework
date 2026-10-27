@@ -30,6 +30,7 @@
 #include "plugin_class_base.h"
 #include "jpeg_yuv_decoder/jpeg_decoder_yuv.h"
 #include "heif_type.h"
+#include "bandjpeg/fast_manager.h"
 
 namespace OHOS {
     struct BufferRequestConfig;
@@ -255,7 +256,21 @@ private:
     OHOS::ColorManager::ColorSpace GetSrcColorSpace();
     uint32_t ApplyDesiredColorSpace(DecodeContext &context);
     uint32_t ApplyDesiredColorSpaceIfNeeded(DecodeContext &context);
-    OHOS::ColorManager::ColorSpaceName heifColorSpaceName_ = ColorManager::ColorSpaceName::NONE;
+    uint32_t ApplyFastGamutConversion(DecodeContext &context);
+    bool IsSupportFastGamutConvert(bool isOutputYuv420Format);
+    void PrepareFastGamutConvertParams(fast::image::RGBFormat format,
+        SkAlphaType srcAlphaType, SkAlphaType dstAlphaType,
+        fast::image::ColorInfo& srcColorInfo, fast::image::ColorInfo& dstColorInfo);
+    struct FastGamutContext {
+        bool enabled = false;
+        SkImageInfo decodeInfo;
+        fast::image::ColorInfo srcColorInfo;
+        fast::image::ColorInfo dstColorInfo;
+    };
+    FastGamutContext BuildFastGamutContext(Media::PixelFormat pixelFormat, bool isOutputYuv420Format);
+    bool ApplyFastGamutPostDecode(const FastGamutContext& fastCtx,
+        uint8_t* dstBuffer, uint64_t rowStride, DecodeContext& context);
+    OHOS::ColorManager::ColorSpaceName heifColorSpaceName_;
     bool heifIsColorSpaceFromCicp_ = false;
 #endif
 
