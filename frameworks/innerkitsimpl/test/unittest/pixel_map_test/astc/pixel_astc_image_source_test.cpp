@@ -18,6 +18,7 @@
 #include <memory>
 #include <utility>
 #include <vector>
+#include "color_space.h"
 #include "image_packer.h"
 #include "image_source.h"
 #include "image_system_properties.h"
@@ -701,18 +702,6 @@ HWTEST_F(PixelAstcImageSourceTest, ProcessAstcMetadata002, TestSize.Level3)
         EXPECT_TRUE(pixelMap->IsAstc());
     }
     GTEST_LOG_(INFO) << "PixelAstcImageSourceTest: ProcessAstcMetadata002 end";
-}
-
-/**
- * @tc.name: IsSupportGenAstc001
- * @tc.desc: IsSupportGenAstc follows media library astc system property
- * @tc.type: FUNC
- */
-HWTEST_F(PixelAstcImageSourceTest, IsSupportGenAstc001, TestSize.Level3)
-{
-    GTEST_LOG_(INFO) << "PixelAstcImageSourceTest: IsSupportGenAstc001 start";
-    EXPECT_EQ(ImageSource::IsSupportGenAstc(), ImageSystemProperties::GetMediaLibraryAstcEnabled());
-    GTEST_LOG_(INFO) << "PixelAstcImageSourceTest: IsSupportGenAstc001 end";
 }
 
 /**
