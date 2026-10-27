@@ -110,6 +110,9 @@ static std::vector<uint8_t> BuildAstcHeader(uint8_t blockX, uint8_t blockY, uint
 static std::vector<uint8_t> BuildAstcData(uint8_t block, uint32_t width, uint32_t height)
 {
     std::vector<uint8_t> data = BuildAstcHeader(block, block, width, height);
+    if (block == 0) {
+        return data;
+    }
     size_t blockNum = static_cast<size_t>((width + block - 1) / block) * ((height + block - 1) / block);
     data.resize(ASTC_HEADER_BYTES + blockNum * ASTC_BLOCK_BYTES, ASTC_BODY_FILL);
     return data;
