@@ -161,10 +161,15 @@ bool JpegMpfParser::ParsingMpIndexIFD(uint8_t* data, uint32_t size, uint32_t dat
                 }
                 break;
             case MpfIFDTag::NUMBERS_OF_IMAGES_TAG:
+                if (value == 0 || value > MAX_IMAGE_NUM) {
+                    IMAGE_LOGE("invalid NumberOfImages: %{public}u", value);
+                    return false;
+                }
                 imageNums_ = value;
                 break;
             case MpfIFDTag::MP_ENTRY_TAG:
-                if (count != MP_ENTRY_BYTE_SIZE * imageNums_ || value < dataOffset || value > size) {
+                if (count != static_cast<uint32_t>(MP_ENTRY_BYTE_SIZE) * imageNums_ ||
+                    value < dataOffset || value > size) {
                     return false;
                 }
                 if (!ParsingMpEntry(data + value, size - value, isBigEndian, imageNums_)) {
@@ -186,7 +191,8 @@ bool JpegMpfParser::ParsingMpIndexIFD(uint8_t* data, uint32_t size, uint32_t dat
 bool JpegMpfParser::ParsingMpEntry(uint8_t* data, uint32_t size, bool isBigEndian, uint32_t imageNums)
 {
     uint32_t dataOffset = 0;
-    if (imageNums == 0 || imageNums * MP_ENTRY_BYTE_SIZE > size || imageNums > MAX_IMAGE_NUM) {
+    if (imageNums == 0 || imageNums > MAX_IMAGE_NUM ||
+        imageNums * static_cast<uint32_t>(MP_ENTRY_BYTE_SIZE) > size) {
         IMAGE_LOGE("Parsing imageNums error");
         return false;
     }

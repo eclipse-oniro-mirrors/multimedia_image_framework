@@ -120,7 +120,15 @@ uint32_t ICCProfileInfo::PackingICCProfile(j_compress_ptr cinfo, const SkImageIn
         // get a contiguous block of profile memory with the icc signature
         sk_sp<SkData> jpegMarkerData =
                 SkData::MakeUninitialized(ICC_MARKER_HEADER_SIZE + icc->size());
+        if (jpegMarkerData == nullptr) {
+            IMAGE_LOGE("%{public}s failed, alloc ICC marker data failed.", __func__);
+            return OHOS::Media::ERR_IMAGE_MALLOC_ABNORMAL;
+        }
         uint8_t* ptrMaker = static_cast<uint8_t*>(jpegMarkerData->writable_data());
+        if (ptrMaker == nullptr) {
+            IMAGE_LOGE("%{public}s failed, writable data is null.", __func__);
+            return OHOS::Media::ERR_IMAGE_MALLOC_ABNORMAL;
+        }
         errno_t ret = memcpy_s(ptrMaker, jpegMarkerData->size(), ICC_SIGNATURE, sizeof(ICC_SIGNATURE));
         if (EOK != ret) {
             IMAGE_LOGE("%{public}s failed, ICC_SIGNATURE memcpy error, ret = %{public}d", __func__, ret);

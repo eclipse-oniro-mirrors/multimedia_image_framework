@@ -15,6 +15,8 @@
 
 #include "png_decoder.h"
 
+#include <cstring>
+
 #include "image_log.h"
 #include "image_trace.h"
 #include "image_utils.h"
@@ -352,6 +354,20 @@ bool AllocBufferForPlatform(DecodeContext &context, uint64_t byteCount)
     return true;
 }
 
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(ANDROID_PLATFORM) && !defined(IOS_PLATFORM)
+static void ClearDmaBuffer(DecodeContext &context)
+{
+    if (context.pixelsBuffer.buffer == nullptr || context.pixelsBuffer.context == nullptr) {
+        return;
+    }
+    auto *sb = reinterpret_cast<SurfaceBuffer *>(context.pixelsBuffer.context);
+    size_t sbSize = static_cast<size_t>(sb->GetSize());
+    if (sbSize != 0 && memset_s(context.pixelsBuffer.buffer, sbSize, 0, sbSize) != EOK) {
+        IMAGE_LOGE("clear dma output buffer failed.");
+    }
+}
+#endif
+
 uint8_t *PngDecoder::AllocOutputBuffer(DecodeContext &context)
 {
     if (context.pixelsBuffer.buffer == nullptr) {
@@ -366,6 +382,11 @@ uint8_t *PngDecoder::AllocOutputBuffer(DecodeContext &context)
             if (!AllocBufferForDmaType(context, byteCount, pngImageInfo_)) {
                 IMAGE_LOGE("alloc output buffer for DMA_ALLOC error.");
                 return nullptr;
+            }
+            // A DMA buffer is recycled by the allocator, so a partial decode (allowPartialImage)
+            // would expose the previous content of the undecoded rows. Clear it up front.
+            if (opts_.allowPartialImage) {
+                ClearDmaBuffer(context);
             }
         } else {
             if (!AllocOutBuffer(context, byteCount)) {
@@ -440,6 +461,10 @@ void PngDecoder::Reset()
     firstRow_ = 0;
     lastRow_ = 0;
     interlacedComplete_ = false;
+#ifdef IMAGE_COLORSPACE_FLAG
+    isSupportICCProfile_ = false;
+    grColorSpace_ = OHOS::ColorManager::ColorSpace(OHOS::ColorManager::ColorSpaceName::NONE);
+#endif
 }
 
 // private interface
@@ -465,7 +490,9 @@ bool PngDecoder::ConvertOriginalFormat(png_byte source, png_byte &destination)
         }
         case PNG_COLOR_TYPE_GRAY_ALPHA: {  // value is 4
             png_set_gray_to_rgb(pngStructPtr_);
-            destination = PNG_COLOR_TYPE_RGB;
+            // gray+alpha becomes RGBA after gray_to_rgb, keep the alpha channel so that
+            // rowDataSize matches the real libpng output (4 bytes per pixel for RGB_888).
+            destination = PNG_COLOR_TYPE_RGBA;
             break;
         }
         case PNG_COLOR_TYPE_RGB:
@@ -479,11 +506,24 @@ bool PngDecoder::ConvertOriginalFormat(png_byte source, png_byte &destination)
         }
     }
 
+    // tRNS is expanded to an alpha channel above, so the destination really has 4 channels
+    // even when the source color type was RGB / GRAY / PALETTE. Without this the RGB_888
+    // path would allocate width*3 bytes while libpng produces width*4 (out-of-bounds write).
+    if ((destination == PNG_COLOR_TYPE_RGB) &&
+        png_get_valid(pngStructPtr_, pngInfoPtr_, PNG_INFO_tRNS)) {
+        destination = PNG_COLOR_TYPE_RGBA;
+    }
+
     return true;
 }
 
 uint32_t PngDecoder::GetDecodeFormat(PixelFormat format, PixelFormat &outputFormat, AlphaType &alphaType)
 {
+#ifndef PNG_READ_USER_TRANSFORM_SUPPORTED
+    if (format == PixelFormat::RGBA_F16) {
+        format = PixelFormat::RGBA_8888;
+    }
+#endif
     png_byte sourceType = png_get_color_type(pngStructPtr_, pngInfoPtr_);
     if ((sourceType & PNG_COLOR_MASK_ALPHA) || png_get_valid(pngStructPtr_, pngInfoPtr_, PNG_INFO_tRNS)) {
         alphaType = AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL;
@@ -495,7 +535,8 @@ uint32_t PngDecoder::GetDecodeFormat(PixelFormat format, PixelFormat &outputForm
         return ERR_IMAGE_DATA_UNSUPPORT;
     }
     if (format != PixelFormat::RGB_888 && destType == PNG_COLOR_TYPE_RGB) {
-        png_set_add_alpha(pngStructPtr_, 0xff, PNG_FILLER_AFTER);  // 0xffff add the A after RGB.
+        uint32_t opaqueAlpha = format == PixelFormat::RGBA_F16 ? UINT16_MAX : UINT8_MAX;
+        png_set_add_alpha(pngStructPtr_, opaqueAlpha, PNG_FILLER_AFTER);
     }
     // only support 8 bit depth for each pixel except for RGBA_F16
     if (format != PixelFormat::RGBA_F16 && pngImageInfo_.bitDepth == 16) {  // 16bit depth
@@ -532,9 +573,15 @@ bool PngDecoder::ChooseFormat(PixelFormat format, PixelFormat &outputFormat,
             break;
         }
         case PixelFormat::RGBA_F16: {
-            png_set_scale_16(pngStructPtr_);
-            pixelBytes = 7;  // 7 is RRGGBBA size
+#ifdef PNG_READ_USER_TRANSFORM_SUPPORTED
+            // Convert before libpng expands/combines Adam7 rows, so saved rows already contain half floats.
+            png_set_expand_16(pngStructPtr_);
+            png_set_read_user_transform_fn(pngStructPtr_, ConvertToF16);
+            pixelBytes = 8;  // 8 is RGBA_F16 size (4 x half float)
             break;
+#else
+            return false;
+#endif
         }
         case PixelFormat::UNKNOWN:
         case PixelFormat::RGBA_8888:
@@ -553,6 +600,51 @@ bool PngDecoder::ChooseFormat(PixelFormat format, PixelFormat &outputFormat,
         return true;
     }
 }
+
+#ifdef PNG_READ_USER_TRANSFORM_SUPPORTED
+static uint16_t PngSampleToHalf(png_structp pngPtr, uint16_t sample)
+{
+    // The three smallest nonzero UNORM16 samples round to half-float subnormals.
+    constexpr uint16_t FIRST_NORMAL_SAMPLE = 4;
+    constexpr uint32_t SUBNORMAL_SHIFT = 8;
+    if (sample < FIRST_NORMAL_SAMPLE) {
+        return static_cast<uint16_t>(sample << SUBNORMAL_SHIFT);
+    }
+    double normalized = static_cast<double>(sample) / UINT16_MAX;
+    uint64_t bits = 0;
+    if (memcpy_s(&bits, sizeof(bits), &normalized, sizeof(normalized)) != EOK) {
+        png_error(pngPtr, "Failed to read normalized PNG sample");
+        return 0;
+    }
+    // Round the 52-bit double mantissa to 10 bits, with ties to even, and adjust the exponent bias.
+    constexpr uint32_t MANTISSA_SHIFT = 42;
+    constexpr uint64_t ROUNDING_BIAS = (1ULL << (MANTISSA_SHIFT - 1)) - 1;
+    constexpr uint64_t EXPONENT_BIAS = (1023ULL - 15) << 10;
+    return static_cast<uint16_t>(((bits + ROUNDING_BIAS + ((bits >> MANTISSA_SHIFT) & 1)) >>
+        MANTISSA_SHIFT) - EXPONENT_BIAS);
+}
+
+void PngDecoder::ConvertToF16(png_structp pngPtr, png_row_infop rowInfo, png_bytep row)
+{
+    constexpr uint32_t RGBA_CHANNELS = 4;
+    constexpr uint32_t RGBA_F16_BYTES_PER_PIXEL = RGBA_CHANNELS * sizeof(uint16_t);
+    if (rowInfo == nullptr || row == nullptr || rowInfo->bit_depth != BITDEPTH_VALUE_16 ||
+        rowInfo->channels != RGBA_CHANNELS ||
+        rowInfo->rowbytes != static_cast<uint64_t>(rowInfo->width) * RGBA_F16_BYTES_PER_PIXEL) {
+        png_error(pngPtr, "Invalid RGBA16 row for half-float conversion");
+        return;
+    }
+    for (size_t offset = 0; offset < rowInfo->rowbytes; offset += sizeof(uint16_t)) {
+        // libpng supplies big-endian integers; PixelMap half floats use native byte order.
+        uint16_t sample = static_cast<uint16_t>((row[offset] << BITDEPTH_VALUE_8) | row[offset + 1]);
+        uint16_t half = PngSampleToHalf(pngPtr, sample);
+        if (memcpy_s(row + offset, sizeof(half), &half, sizeof(half)) != EOK) {
+            png_error(pngPtr, "Failed to write half-float PNG sample");
+            return;
+        }
+    }
+}
+#endif
 
 void PngDecoder::PngErrorExit(png_structp pngPtr, png_const_charp message)
 {
@@ -658,10 +750,35 @@ bool PngDecoder::GetImageInfo(PngImageInfo &info)
     info.height = origHeight;
     info.bitDepth = bitDepth;
     info.rowDataSize = rowDataSize;
+#ifdef IMAGE_COLORSPACE_FLAG
+    UpdateColorSpaceInfo();
+#endif
     IMAGE_LOGI("GetImageInfo:width:%{public}u,height:%{public}u,bitDepth:%{public}u,numberPasses:%{public}d.",
         origWidth, origHeight, info.bitDepth, info.numberPasses);
     return true;
 }
+
+#ifdef IMAGE_COLORSPACE_FLAG
+void PngDecoder::UpdateColorSpaceInfo()
+{
+    isSupportICCProfile_ = false;
+    grColorSpace_ = OHOS::ColorManager::ColorSpace(OHOS::ColorManager::ColorSpaceName::NONE);
+    if (pngStructPtr_ == nullptr || pngInfoPtr_ == nullptr) {
+        return;
+    }
+    // The sRGB chunk states that the image samples are in the sRGB color space explicitly,
+    // which lets the framework tag the PixelMap instead of leaving it UNKNOWN.
+    int32_t renderingMode = 0;
+    if (png_get_sRGB(pngStructPtr_, pngInfoPtr_, &renderingMode)) {
+        grColorSpace_ = OHOS::ColorManager::ColorSpace(OHOS::ColorManager::ColorSpaceName::SRGB);
+        isSupportICCProfile_ = true;
+        IMAGE_LOGD("png sRGB chunk found, rendering mode:%{public}d", renderingMode);
+        return;
+    }
+    // An iCCP chunk needs a full ICC parser (skcms) which this plugin does not link, so it is
+    // intentionally left unsupported rather than guessing a color space from the profile name.
+}
+#endif
 
 uint32_t PngDecoder::IncrementalRead(InputDataStream *stream, uint32_t desiredSize, DataStreamBuffer &outData)
 {
@@ -780,7 +897,7 @@ uint32_t PngDecoder::ReadIncrementalHead(InputDataStream *stream, PngImageInfo &
 
 void PngDecoder::SaveRows(png_bytep row, png_uint_32 rowNum)
 {
-    if (rowNum != outputRowsNum_ || pngImageInfo_.height < rowNum) {
+    if (rowNum != outputRowsNum_ || pngImageInfo_.height <= rowNum) {
         IMAGE_LOGE("AllRowsCallback exception, rowNum:%{public}u, outputRowsNum:%{public}u, height:%{public}u.",
             rowNum, outputRowsNum_, pngImageInfo_.height);
         return;
@@ -789,14 +906,15 @@ void PngDecoder::SaveRows(png_bytep row, png_uint_32 rowNum)
         IMAGE_LOGE("%{public}s fail, inputStreamPtr_ is nullptr", __func__);
         return;
     }
-    outputRowsNum_++;
-    uint8_t *offset = pixelsData_ + rowNum * pngImageInfo_.rowDataSize;
-    uint32_t offsetSize = (pngImageInfo_.height - rowNum) * pngImageInfo_.rowDataSize;
+    // validate the total size before doing any pointer arithmetic on pixelsData_
     if (pngImageInfo_.rowDataSize * pngImageInfo_.height > INT32_MAX) {
         IMAGE_LOGE("Invalid data size, height:%{public}u, rowDataSize:%{public}u",
                    pngImageInfo_.height, pngImageInfo_.rowDataSize);
         return;
     }
+    uint8_t *offset = pixelsData_ + rowNum * pngImageInfo_.rowDataSize;
+    uint32_t offsetSize = (pngImageInfo_.height - rowNum) * pngImageInfo_.rowDataSize;
+    outputRowsNum_++;
     errno_t ret = memcpy_s(offset, offsetSize, row, pngImageInfo_.rowDataSize);
     if (ret != 0) {
         IMAGE_LOGE("copy data fail, ret:%{public}d, rowDataSize:%{public}u, offsetSize:%{public}u.", ret,
@@ -818,7 +936,9 @@ void PngDecoder::SaveInterlacedRows(png_bytep row, png_uint_32 rowNum, int pass)
     }
     png_bytep oldRow = pixelsData_ + (rowNum - firstRow_) * pngImageInfo_.rowDataSize;
     uint64_t mollocByteCount = static_cast<uint64_t>(pngImageInfo_.rowDataSize) * pngImageInfo_.height;
-    uint64_t needByteCount = static_cast<uint64_t>(pngStructPtr_->width) * sizeof(*oldRow);
+    // the buffer must hold every row up to and including rowNum, not merely "width" bytes
+    uint64_t needByteCount =
+        static_cast<uint64_t>(pngImageInfo_.rowDataSize) * (rowNum - firstRow_ + 1);
     bool cond = mollocByteCount < needByteCount;
     CHECK_ERROR_PRINT_LOG(cond, "malloc byte size is(%{public}llu), but actual needs (%{public}llu)",
                           static_cast<unsigned long long>(mollocByteCount),
@@ -918,6 +1038,10 @@ uint32_t PngDecoder::PushAllToDecode(InputDataStream *stream, size_t bufferSize,
             iend = true;
         }
         size_t chunkLength = png_get_uint_32(chunk);
+        if (chunkLength > MAX_PNG_SIZE) {
+            IMAGE_LOGE("chunk length is too large, length:%{public}zu", chunkLength);
+            return ERR_IMAGE_DATA_ABNORMAL;
+        }
         // Process the full chunk + CRC
         ret = ProcessData(pngStructPtr_, pngInfoPtr_, stream, ReadData, bufferSize, chunkLength + CHUNK_DATA_LEN);
         if (ret != SUCCESS || iend) {
@@ -1161,13 +1285,18 @@ bool PngDecoder::FinishOldDecompress()
 
 bool PngDecoder::InitPnglib()
 {
-    // create the png decode struct
+    // create the png decode struct; the custom error handlers must stay installed, otherwise
+    // libpng reports errors through its internal png_longjmp()/PNG_ABORT() path and the
+    // process can abort when no setjmp frame is active.
     pngStructPtr_ = png_create_read_struct(PNG_LIBPNG_VER_STRING, nullptr, PngErrorExit, PngWarning);
+    if (pngStructPtr_ == nullptr) {
+        IMAGE_LOGE("Png lib init fail, create read struct failed.");
+        return false;
+    }
     pngInfoPtr_ = png_create_info_struct(pngStructPtr_);
-    // set the libpng exception message callback function
-    png_set_error_fn(pngStructPtr_, nullptr, PngErrorMessage, PngWarningMessage);
-    if (pngStructPtr_ == nullptr || pngInfoPtr_ == nullptr) {
-        IMAGE_LOGE("Png lib init fail.");
+    if (pngInfoPtr_ == nullptr) {
+        IMAGE_LOGE("Png lib init fail, create info struct failed.");
+        png_destroy_read_struct(&pngStructPtr_, nullptr, nullptr);
         return false;
     }
     return true;

@@ -253,6 +253,8 @@ uint32_t RawDecoder::DoDecodeHeader()
 uint32_t RawDecoder::DoDecodeHeaderByPiex()
 {
     IMAGE_LOGD("DoDecodeHeaderByPiex IN");
+    CHECK_ERROR_RETURN_RET_LOG(inputStream_ == nullptr || rawStream_ == nullptr,
+        Media::ERR_IMAGE_SOURCE_DATA, "RAW input stream is null");
 
     piex::PreviewImageData imageData;
     piex::Error error = piex::GetPreviewImageData(rawStream_.get(), &imageData);
@@ -263,11 +265,10 @@ uint32_t RawDecoder::DoDecodeHeaderByPiex()
 
     piex::Image piexImage;
     bool hasImage = false;
-    if (error == piex::Error::kOk) {
-        if ((imageData.preview.format == piex::Image::kJpegCompressed) && (imageData.preview.length > 0)) {
-            piexImage = imageData.preview;
-            hasImage = true;
-        }
+    if (error == piex::Error::kOk && imageData.preview.format == piex::Image::kJpegCompressed &&
+        imageData.preview.length > 0) {
+        piexImage = imageData.preview;
+        hasImage = true;
     }
 
     if (!hasImage) {
@@ -275,8 +276,21 @@ uint32_t RawDecoder::DoDecodeHeaderByPiex()
         return Media::SUCCESS;
     }
 
+    // the preview length comes from the file's IFD (up to 4 GB); never allocate it blindly,
+    // and never let an allocation failure escape as an uncaught std::bad_alloc
+    uint64_t streamSize = inputStream_->GetStreamSize();
+    if (piexImage.offset > streamSize || piexImage.length > streamSize - piexImage.offset) {
+        IMAGE_LOGE("preview range out of stream, offset:%{public}u, length:%{public}u, streamSize:%{public}llu",
+            piexImage.offset, piexImage.length, static_cast<unsigned long long>(streamSize));
+        return Media::ERR_IMAGE_SOURCE_DATA;
+    }
     uint32_t size = piexImage.length;
-    std::unique_ptr<uint8_t[]> data = std::make_unique<uint8_t[]>(size);
+    std::unique_ptr<uint8_t[]> data;
+    data.reset(new (std::nothrow) uint8_t[size]);
+    if (data == nullptr) {
+        IMAGE_LOGE("alloc preview buffer failed, size:%{public}u", size);
+        return Media::ERR_IMAGE_MALLOC_ABNORMAL;
+    }
     error = rawStream_->GetData(piexImage.offset, size, data.get());
     if (error != piex::Error::kOk) {
         IMAGE_LOGE("DoDecodeHeaderByPiex getdata fail");

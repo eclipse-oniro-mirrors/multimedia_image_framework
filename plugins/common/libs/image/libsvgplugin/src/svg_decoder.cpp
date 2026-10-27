@@ -17,6 +17,7 @@
 
 #include <sstream>
 #include <thread>
+#include <vector>
 #include "include/core/SkBitmap.h"
 #include "include/core/SkCanvas.h"
 #include "include/core/SkImageInfo.h"
@@ -421,6 +422,16 @@ bool SvgDecoder::AllocBuffer(DecodeContext &context)
         } else {
             ret = AllocHeapBuffer(context, byteCount);
         }
+    } else if (context.pixelsBuffer.bufferSize != 0) {
+        // a caller provided buffer may be smaller than the rendered SVG; check it before
+        // installPixels() renders a full frame into it
+        auto svgSize = svgDom_->containerSize();
+        uint64_t byteCount = static_cast<uint64_t>(Float2UInt32(svgSize.width())) *
+            Float2UInt32(svgSize.height()) * SVG_BYTES_PER_PIXEL;
+        bool overflow = (byteCount == 0) || (byteCount > static_cast<uint64_t>(context.pixelsBuffer.bufferSize));
+        CHECK_ERROR_RETURN_RET_LOG(overflow, false,
+            "[AllocBuffer] provided buffer is too small, bufferSize:%{public}u, need:%{public}llu.",
+            context.pixelsBuffer.bufferSize, static_cast<unsigned long long>(byteCount));
     }
 
     IMAGE_LOGD("[AllocBuffer] OUT ret=%{public}d", ret);
@@ -453,14 +464,22 @@ bool SvgDecoder::BuildStream()
     return true;
 }
 
-static void SetSVGColor(SkSVGNode* node, std::string color, std::string colorAttr)
+static void SetSVGColor(SkSVGNode* node, const std::string &color, const std::string &colorAttr)
 {
     CHECK_ERROR_RETURN(node == nullptr);
-    IMAGE_LOGD("[SetSVGColor] node tag %{public}d %{public}s %{public}s.",
-        node->tag(), color.c_str(), colorAttr.c_str());
-    node->setAttribute(colorAttr.c_str(), color.c_str());
-    for (auto childNode : node->getChild()) {
-        SetSVGColor(childNode.get(), color, colorAttr);
+    std::vector<SkSVGNode*> pendingNodes {node};
+    while (!pendingNodes.empty()) {
+        SkSVGNode* current = pendingNodes.back();
+        pendingNodes.pop_back();
+        if (current == nullptr) {
+            continue;
+        }
+        IMAGE_LOGD("[SetSVGColor] node tag %{public}d %{public}s %{public}s.",
+            current->tag(), color.c_str(), colorAttr.c_str());
+        current->setAttribute(colorAttr.c_str(), color.c_str());
+        for (const auto& childNode : current->getChild()) {
+            pendingNodes.push_back(childNode.get());
+        }
     }
 }
 

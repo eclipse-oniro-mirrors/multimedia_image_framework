@@ -237,7 +237,10 @@ void JpegDecoderYuv::InitYuvDataOutInfoTo420NV(uint32_t width, uint32_t height, 
 
 void JpegDecoderYuv::InitYuvDataOutInfo(uint32_t width, uint32_t height, YUVDataInfo &info)
 {
-    memset_s(&info, sizeof(info), 0, sizeof(info));
+    if (memset_s(&info, sizeof(info), 0, sizeof(info)) != EOK) {
+        IMAGE_LOGE("InitYuvDataOutInfo memset_s failed");
+        return;
+    }
     info.imageSize.width = static_cast<int32_t>(width);
     info.imageSize.height = static_cast<int32_t>(height);
 }

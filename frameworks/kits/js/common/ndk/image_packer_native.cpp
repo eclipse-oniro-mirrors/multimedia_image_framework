@@ -638,8 +638,13 @@ Image_ErrorCode OH_ImagePackerNative_PackToDataFromImageSource(OH_ImagePackerNat
     if (errorCode != IMAGE_SUCCESS) {
         return errorCode;
     }
-    return ToNewErrorCode(imagePacker->PackingFromImageSource(&packOption, imageSource,
-        outData, reinterpret_cast<int64_t*>(size)));
+    int64_t sizeValue = static_cast<int64_t>(*size);
+    Image_ErrorCode result = ToNewErrorCode(imagePacker->PackingFromImageSource(&packOption, imageSource,
+        outData, &sizeValue));
+    if (result == IMAGE_SUCCESS) {
+        *size = static_cast<size_t>(sizeValue);
+    }
+    return result;
 }
 
 MIDK_EXPORT
@@ -656,8 +661,13 @@ Image_ErrorCode OH_ImagePackerNative_PackToDataFromPixelmap(OH_ImagePackerNative
     if (errorCode != IMAGE_SUCCESS) {
         return errorCode;
     }
-    return ToNewErrorCode(imagePacker->PackingFromPixelmap(&packOption, pixelmap, outData,
-        reinterpret_cast<int64_t*>(size)));
+    int64_t sizeValue = static_cast<int64_t>(*size);
+    Image_ErrorCode result = ToNewErrorCode(imagePacker->PackingFromPixelmap(&packOption, pixelmap, outData,
+        &sizeValue));
+    if (result == IMAGE_SUCCESS) {
+        *size = static_cast<size_t>(sizeValue);
+    }
+    return result;
 }
 
 MIDK_EXPORT
@@ -674,8 +684,13 @@ Image_ErrorCode OH_ImagePackerNative_PackToDataFromPicture(OH_ImagePackerNative 
     if (errorCode != IMAGE_SUCCESS) {
         return errorCode;
     }
-    return ToNewErrorCode(imagePacker->PackToDataFromPicture(&packOption, picture, outData,
-        reinterpret_cast<int64_t*>(size)));
+    int64_t sizeValue = static_cast<int64_t>(*size);
+    Image_ErrorCode result = ToNewErrorCode(imagePacker->PackToDataFromPicture(&packOption, picture, outData,
+        &sizeValue));
+    if (result == IMAGE_SUCCESS) {
+        *size = static_cast<size_t>(sizeValue);
+    }
+    return result;
 }
 
 MIDK_EXPORT
@@ -764,8 +779,8 @@ Image_ErrorCode OH_ImagePackerNative_PackToDataFromPixelmapSequence(OH_ImagePack
     size_t sequenceLength, uint8_t *outData, size_t *outDataSize)
 {
     if (imagePacker == nullptr || options == nullptr || pixelmapSequence == nullptr || outData == nullptr ||
-        options->delayTimeListLength == 0 || sequenceLength == 0 || options->loopCount > MASK_16 ||
-        options->frameCount <= 0) {
+        outDataSize == nullptr || options->delayTimeListLength == 0 || sequenceLength == 0 ||
+        options->loopCount > MASK_16 || options->frameCount <= 0) {
         return IMAGE_BAD_PARAMETER;
     }
     std::vector<OH_PixelmapNative*> pixelmaps;
@@ -785,8 +800,13 @@ Image_ErrorCode OH_ImagePackerNative_PackToDataFromPixelmapSequence(OH_ImagePack
             pixelmaps.push_back(pixelmapSequence[sequenceLength - 1]);
         }
     }
-    return ToNewErrorCode(imagePacker->PackToDataMultiFrames(&packOption, pixelmaps, outData,
-        reinterpret_cast<int64_t*>(outDataSize)));
+    int64_t sizeValue = static_cast<int64_t>(*outDataSize);
+    Image_ErrorCode result = ToNewErrorCode(imagePacker->PackToDataMultiFrames(&packOption, pixelmaps, outData,
+        &sizeValue));
+    if (result == IMAGE_SUCCESS) {
+        *outDataSize = static_cast<size_t>(sizeValue);
+    }
+    return result;
 }
 
 MIDK_EXPORT
