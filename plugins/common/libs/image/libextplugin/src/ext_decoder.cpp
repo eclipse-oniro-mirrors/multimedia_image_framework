@@ -1851,10 +1851,13 @@ ExtDecoder::FastGamutContext ExtDecoder::BuildFastGamutContext(
 {
     FastGamutContext ctx;
     ctx.decodeInfo = dstInfo_;
-    FASTManager& fastManager = FASTManager::GetInstance();
     fast::image::RGBFormat rgbFormat = pixelFormat == Media::PixelFormat::BGRA_8888 ?
         fast::image::RGBFormat::BGRA8888 : fast::image::RGBFormat::RGBA8888;
-    ctx.enabled = fastManager.IsGamutAvailable() && IsSupportFastGamutConvert(isOutputYuv420Format);
+    ctx.enabled = IsSupportFastGamutConvert(isOutputYuv420Format);
+    if (ctx.enabled) {
+        FASTManager& fastManager = FASTManager::GetInstance();
+        ctx.enabled = fastManager.IsGamutAvailable();
+    }
     if (ctx.enabled) {
         PrepareFastGamutConvertParams(rgbFormat, info_.alphaType(), dstInfo_.alphaType(),
             ctx.srcColorInfo, ctx.dstColorInfo);
