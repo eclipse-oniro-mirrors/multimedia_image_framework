@@ -1933,6 +1933,10 @@ ohos_unittest("imageformatconverttest") {
     "-DIMAGE_DEBUG_FLAG",
     "-DIMAGE_COLORSPACE_FLAG",
   ]
+  if (defined(global_parts_info) &&
+      defined(global_parts_info.open_source_libyuv)) {
+    defines = [ "EXT_PIXEL" ]
+  }
   include_dirs = [
     "${image_subsystem}/frameworks/innerkitsimpl/common/include",
     "${image_subsystem}/frameworks/innerkitsimpl/converter/include",

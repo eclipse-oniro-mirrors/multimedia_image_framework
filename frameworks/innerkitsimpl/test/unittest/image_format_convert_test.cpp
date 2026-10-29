@@ -2868,6 +2868,18 @@ HWTEST_F(ImageFormatConvertTest, YUVIntermediateBufferOverflow, TestSize.Level3)
 HWTEST_F(ImageFormatConvertTest, P010PlaneOffsetOverflow, TestSize.Level3)
 {
     RGBDataInfo rgbInfo = {65536, 32769, 0};
+    uint8_t buffer[1] = {0};
+    DestConvertInfo destInfo;
+    destInfo.buffer = buffer;
+    destInfo.format = PixelFormat::YCBCR_P010;
+    destInfo.allocType = AllocatorType::HEAP_ALLOC;
+    EXPECT_FALSE(ImageFormatConvertUtils::RGBA1010102ToNV12P010(buffer, rgbInfo, destInfo, ColorSpace::UNKNOWN));
+}
+
+#ifdef EXT_PIXEL
+HWTEST_F(ImageFormatConvertTest, ExtP010PlaneOffsetOverflow, TestSize.Level3)
+{
+    RGBDataInfo rgbInfo = {65536, 32769, 0};
     YUVDataInfo yuvInfo;
     yuvInfo.yWidth = 65536;
     yuvInfo.yHeight = 32769;
@@ -2876,10 +2888,10 @@ HWTEST_F(ImageFormatConvertTest, P010PlaneOffsetOverflow, TestSize.Level3)
     destInfo.buffer = buffer;
     destInfo.format = PixelFormat::YCBCR_P010;
     destInfo.allocType = AllocatorType::HEAP_ALLOC;
-    EXPECT_FALSE(ImageFormatConvertUtils::RGBA1010102ToNV12P010(buffer, rgbInfo, destInfo, ColorSpace::UNKNOWN));
     EXPECT_FALSE(ImageFormatConvertExtUtils::RGBAToNV12P010(buffer, rgbInfo, destInfo, ColorSpace::UNKNOWN));
     EXPECT_FALSE(ImageFormatConvertExtUtils::NV12ToNV12P010(buffer, yuvInfo, destInfo, ColorSpace::UNKNOWN));
 }
+#endif
 
 } // namespace Media
 } // namespace OHOS
