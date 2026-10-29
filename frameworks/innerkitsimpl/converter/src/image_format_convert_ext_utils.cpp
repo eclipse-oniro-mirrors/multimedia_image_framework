@@ -380,9 +380,12 @@ static bool I010Param(I010Info &i010Info)
     return true;
 }
 
-static void RGBToYuvP010Param(const RGBDataInfo &rgbInfo, SrcConvertParam &srcParam, DestConvertParam &destParam,
+static bool RGBToYuvP010Param(const RGBDataInfo &rgbInfo, SrcConvertParam &srcParam, DestConvertParam &destParam,
                               DestConvertInfo &destInfo)
 {
+    bool overflow = destInfo.allocType != AllocatorType::DMA_ALLOC &&
+        ImageUtils::CheckMulOverflow<uint32_t>(destParam.width, destParam.height, TWO_SLICES);
+    CHECK_ERROR_RETURN_RET_LOG(overflow, false, "P010 plane offset overflow!");
     srcParam.slice[0] = srcParam.buffer;
     srcParam.stride[0] = static_cast<int>(rgbInfo.stride);
     if (destInfo.allocType == AllocatorType::DMA_ALLOC) {
@@ -396,14 +399,15 @@ static void RGBToYuvP010Param(const RGBDataInfo &rgbInfo, SrcConvertParam &srcPa
         destParam.stride[0] = static_cast<int>(destParam.width);
         destParam.stride[1] = static_cast<int>(uvStride);
         destParam.slice[0] = destInfo.buffer;
-        destParam.slice[1] = destInfo.buffer + destParam.width * destParam.height * TWO_SLICES;
+        destParam.slice[1] = destInfo.buffer + static_cast<size_t>(destParam.width) * destParam.height * TWO_SLICES;
     }
+    return true;
 }
 
 static bool RGBToI420ToYuvP010Param(const RGBDataInfo &rgbInfo, SrcConvertParam &srcParam, I420Info &i420Info,
                                     DestConvertParam &destParam, DestConvertInfo &destInfo)
 {
-    RGBToYuvP010Param(rgbInfo, srcParam, destParam, destInfo);
+    CHECK_ERROR_RETURN_RET(!RGBToYuvP010Param(rgbInfo, srcParam, destParam, destInfo), false);
     return I420Param(rgbInfo.width, rgbInfo.height, i420Info);
 }
 
@@ -599,6 +603,9 @@ static bool YuvToI420ToI010ToRGB10(const uint8_t *srcBuffer, const YUVDataInfo &
 static bool YuvToP010Param(const YUVDataInfo &yDInfo, SrcConvertParam &srcParam, DestConvertParam &destParam,
                            DestConvertInfo &destInfo)
 {
+    bool overflow = destInfo.allocType != AllocatorType::DMA_ALLOC &&
+        ImageUtils::CheckMulOverflow<uint32_t>(destParam.width, destParam.height, TWO_SLICES);
+    CHECK_ERROR_RETURN_RET_LOG(overflow, false, "P010 plane offset overflow!");
     srcParam.slice[0] = srcParam.buffer + yDInfo.yOffset;
     srcParam.slice[1] = srcParam.buffer + yDInfo.uvOffset;
 
@@ -617,7 +624,7 @@ static bool YuvToP010Param(const YUVDataInfo &yDInfo, SrcConvertParam &srcParam,
         dstuvStride = (destParam.width % EVEN_ODD_DIVISOR == 0) ?
             destParam.width : (destParam.width + 1);
         destParam.slice[0] = destInfo.buffer;
-        destParam.slice[1] = destInfo.buffer + dstyStride * destParam.height * TWO_SLICES;
+        destParam.slice[1] = destInfo.buffer + static_cast<size_t>(dstyStride) * destParam.height * TWO_SLICES;
     }
     destParam.stride[0] = static_cast<int>(dstyStride);
     destParam.stride[1] = static_cast<int>(dstuvStride);
@@ -627,7 +634,7 @@ static bool YuvToP010Param(const YUVDataInfo &yDInfo, SrcConvertParam &srcParam,
 static bool YuvToI420ToP010Param(const YUVDataInfo &yuvInfo, SrcConvertParam &srcParam, I420Info &i420Info,
                                  DestConvertParam &destParam, DestConvertInfo &destInfo)
 {
-    YuvToP010Param(yuvInfo, srcParam, destParam, destInfo);
+    CHECK_ERROR_RETURN_RET(!YuvToP010Param(yuvInfo, srcParam, destParam, destInfo), false);
     return I420Param(yuvInfo.yWidth, yuvInfo.yHeight, i420Info);
 }
 
@@ -643,7 +650,8 @@ static bool YuvToI420ToI010ToP010(const uint8_t *srcBuffer, const YUVDataInfo &y
 
     I420Info i420Info = {yuvInfo.yWidth, yuvInfo.yHeight};
 
-    YuvToI420ToP010Param(yuvInfo, srcParam, i420Info, destParam, destInfo);
+    CHECK_ERROR_RETURN_RET_LOG(!YuvToI420ToP010Param(yuvInfo, srcParam, i420Info, destParam, destInfo),
+        false, "YUV conversion to P010 param failed!");
 
     I010Info i010Info = {yuvInfo.yWidth, yuvInfo.yHeight};
 

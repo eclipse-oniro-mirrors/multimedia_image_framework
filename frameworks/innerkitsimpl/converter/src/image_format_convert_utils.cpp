@@ -232,7 +232,9 @@ static bool RGBAConvert(const RGBDataInfo &rgbInfo, const uint8_t *srcBuffer, ui
 static bool P010ToRGBA10101012SoftDecode(const YUVDataInfo &yDInfo, SrcConvertParam &srcParam,
                                          DestConvertParam &destParam)
 {
-    size_t midBufferSize = static_cast<size_t>(yDInfo.yWidth * yDInfo.yHeight * STRIDES_PER_PLANE);
+    CHECK_ERROR_RETURN_RET_LOG(ImageUtils::CheckMulOverflow<uint32_t>(yDInfo.yWidth, yDInfo.yHeight,
+        STRIDES_PER_PLANE), false, "Intermediate buffer size overflow!");
+    size_t midBufferSize = static_cast<size_t>(yDInfo.yWidth) * yDInfo.yHeight * STRIDES_PER_PLANE;
     if (midBufferSize == 0 || midBufferSize > PIXEL_MAP_MAX_RAM_SIZE) {
         IMAGE_LOGE("Invalid destination buffer size is 0!");
         return false;
@@ -350,6 +352,9 @@ static bool YuvP010ToRGB10(const uint8_t *srcBuffer, const YUVDataInfo &yDInfo, 
 static bool RGBToYuvP010Param(const RGBDataInfo &rgbInfo, SrcConvertParam &srcParam, DestConvertParam &destParam,
                               DestConvertInfo &destInfo)
 {
+    bool overflow = destInfo.allocType != AllocatorType::DMA_ALLOC &&
+        ImageUtils::CheckMulOverflow<uint32_t>(destParam.width, destParam.height, TWO_SLICES);
+    CHECK_ERROR_RETURN_RET_LOG(overflow, false, "P010 plane offset overflow!");
     srcParam.slice[0] = srcParam.buffer;
     srcParam.stride[0] = static_cast<int>(rgbInfo.stride);
 
@@ -364,7 +369,7 @@ static bool RGBToYuvP010Param(const RGBDataInfo &rgbInfo, SrcConvertParam &srcPa
         destParam.stride[0] = static_cast<int>(destParam.width) * TWO_SLICES;
         destParam.stride[1] = static_cast<int>(uvStride) * TWO_SLICES;
         destParam.slice[0] = destInfo.buffer;
-        destParam.slice[1] = destInfo.buffer + destParam.width * destParam.height * TWO_SLICES;
+        destParam.slice[1] = destInfo.buffer + static_cast<size_t>(destParam.width) * destParam.height * TWO_SLICES;
     }
     return true;
 }
@@ -467,6 +472,13 @@ static bool RGB10ToYuv(const uint8_t *srcBuffer, const RGBDataInfo &rgbInfo, Pix
     if (srcBuffer == nullptr || destInfo.buffer == nullptr || rgbInfo.width == 0 || rgbInfo.height == 0) {
         return false;
     }
+    CHECK_ERROR_RETURN_RET_LOG(ImageUtils::CheckMulOverflow(rgbInfo.width, rgbInfo.height,
+        static_cast<int32_t>(STRIDES_PER_PLANE)), false, "Intermediate buffer size overflow!");
+    size_t midBufferSize = static_cast<size_t>(rgbInfo.width) * rgbInfo.height * STRIDES_PER_PLANE;
+    if (midBufferSize == 0 || midBufferSize > PIXEL_MAP_MAX_RAM_SIZE) {
+        IMAGE_LOGE("Invalid destination buffer size is 0!");
+        return false;
+    }
     SrcConvertParam srcParam = {rgbInfo.width, rgbInfo.height};
     srcParam.format = srcFormat;
     srcParam.buffer = srcBuffer;
@@ -474,11 +486,6 @@ static bool RGB10ToYuv(const uint8_t *srcBuffer, const RGBDataInfo &rgbInfo, Pix
     destParam.format = dstFormat;
     if (!RGBToYuvParam(rgbInfo, srcParam, destParam, destInfo)) {
         IMAGE_LOGE("RGB conversion to YUV failed!");
-        return false;
-    }
-    size_t midBufferSize = static_cast<size_t>(rgbInfo.width * rgbInfo.height * STRIDES_PER_PLANE);
-    if (midBufferSize == 0 || midBufferSize > PIXEL_MAP_MAX_RAM_SIZE) {
-        IMAGE_LOGE("Invalid destination buffer size is 0!");
         return false;
     }
     uint8_t *midBuffer = nullptr;
@@ -514,7 +521,9 @@ static bool RGB10ToYuv(const uint8_t *srcBuffer, const RGBDataInfo &rgbInfo, Pix
 static bool RGBA1010102ToP010SoftDecode(const RGBDataInfo &rgbInfo, SrcConvertParam &srcParam,
                                         DestConvertParam &destParam, DestConvertInfo &destInfo)
 {
-    size_t midBufferSize = static_cast<size_t>(rgbInfo.width * rgbInfo.height * STRIDES_PER_PLANE);
+    CHECK_ERROR_RETURN_RET_LOG(ImageUtils::CheckMulOverflow(rgbInfo.width, rgbInfo.height,
+        static_cast<int32_t>(STRIDES_PER_PLANE)), false, "Intermediate buffer size overflow!");
+    size_t midBufferSize = static_cast<size_t>(rgbInfo.width) * rgbInfo.height * STRIDES_PER_PLANE;
     if (midBufferSize == 0 || midBufferSize > PIXEL_MAP_MAX_RAM_SIZE) {
         IMAGE_LOGE("Invalid destination buffer size is 0!");
         return false;
@@ -537,8 +546,7 @@ static bool RGBA1010102ToP010SoftDecode(const RGBDataInfo &rgbInfo, SrcConvertPa
         !ImageUtils::GetAlignedNumber(copyRgbInfo.height, EVEN_ODD_DIVISOR)) {
         return false;
     }
-    int32_t copySrcLen = static_cast<int32_t>(copyRgbInfo.width) *
-        static_cast<int32_t>(copyRgbInfo.height) * STRIDES_PER_PLANE;
+    size_t copySrcLen = static_cast<size_t>(copyRgbInfo.width) * copyRgbInfo.height * STRIDES_PER_PLANE;
     std::unique_ptr<uint8_t[]> copySrcBuffer = std::make_unique<uint8_t[]>(copySrcLen);
     CHECK_ERROR_RETURN_RET_LOG((copySrcBuffer == nullptr), false, "[RGBAToP010]Convert: alloc memory failed!");
     uint8_t* copySrcPixels = copySrcBuffer.get();
@@ -586,7 +594,9 @@ static bool RGB10ToYuvP010(const uint8_t *srcBuffer, const RGBDataInfo &rgbInfo,
 static bool YUVToRGBA1010102SoftDecode(const YUVDataInfo &yDInfo, SrcConvertParam &srcParam,
                                        DestConvertParam &destParam)
 {
-    size_t midBufferSize = static_cast<size_t>(yDInfo.yWidth * yDInfo.yHeight * BYTES_PER_PIXEL_RGB);
+    CHECK_ERROR_RETURN_RET_LOG(ImageUtils::CheckMulOverflow<uint32_t>(yDInfo.yWidth, yDInfo.yHeight,
+        BYTES_PER_PIXEL_RGB), false, "Intermediate buffer size overflow!");
+    size_t midBufferSize = static_cast<size_t>(yDInfo.yWidth) * yDInfo.yHeight * BYTES_PER_PIXEL_RGB;
     if (midBufferSize == 0 || midBufferSize > PIXEL_MAP_MAX_RAM_SIZE) {
         IMAGE_LOGE("Invalid destination buffer size is 0!");
         return false;
