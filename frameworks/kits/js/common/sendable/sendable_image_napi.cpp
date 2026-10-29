@@ -48,6 +48,7 @@ struct SendableImageAsyncContext {
     NativeImage* image = nullptr;
     NativeComponent* component = nullptr;
     bool isTestContext = false;
+    std::string errMsg;
 
     ~SendableImageAsyncContext()
     {
@@ -347,6 +348,8 @@ static void CommonCallbackRoutine(napi_env env, SendableImageAsyncContext* &cont
     } else {
         ImageNapiUtils::CreateErrorObj(env, result[0], context->status,
             "There is generic napi failure!");
+        std::string errMsg = context->errMsg.empty() ? "There is generic napi failure!" : context->errMsg;
+        ImageNapiUtils::CreateErrorObj(env, result[0], context->status, errMsg);
         napi_get_undefined(env, &result[1]);
     }
 
@@ -621,7 +624,9 @@ static void TestGetComponentCallBack(napi_env env, napi_status status, SendableI
     napi_value array;
     void *nativePtr = nullptr;
     if (napi_create_arraybuffer(env, NUM1, &nativePtr, &array) != napi_ok || nativePtr == nullptr) {
+        IMAGE_ERR("The operation failed, arraybuffer allocation failed.");
         context->status = ERROR;
+        context->errMsg = "The operation failed, arraybuffer allocation failed.";
         CommonCallbackRoutine(env, context, result);
         return;
     }
@@ -662,6 +667,8 @@ static void JsGetComponentCallBack(napi_env env, napi_status status, SendableIma
     context->status = ERROR;
     // Do not read or expose component buffers after release has completed.
     if (pendingRelease) {
+        IMAGE_ERR("The operation failed, image has been released");
+        context->errMsg = "The operation failed, image has been released.";
         CommonCallbackRoutine(env, context, result);
         return;
     }
@@ -671,7 +678,8 @@ static void JsGetComponentCallBack(napi_env env, napi_status status, SendableIma
     }
     NativeComponent* component = context->component;
     if (component == nullptr) {
-        IMAGE_ERR("Invalid component");
+        IMAGE_ERR("The operation failed, Invalid component.");
+        context->errMsg = "The operation failed, Invalid component.";
         CommonCallbackRoutine(env, context, result);
         return;
     }
@@ -684,7 +692,8 @@ static void JsGetComponentCallBack(napi_env env, napi_status status, SendableIma
     }
 
     if (buffer == nullptr || component->size == NUM0) {
-        IMAGE_ERR("Invalid buffer");
+        IMAGE_ERR("The operation failed, Invalid buffer.");
+        context->errMsg = "The operation failed, Invalid buffer.";
         CommonCallbackRoutine(env, context, result);
         return;
     }
@@ -692,7 +701,8 @@ static void JsGetComponentCallBack(napi_env env, napi_status status, SendableIma
     if (BuildJsComponentObject(env, context->componentType, buffer, component, &result)) {
         context->status = SUCCESS;
     } else {
-        IMAGE_ERR("napi_create_arraybuffer failed!");
+        IMAGE_ERR("The operation failed, napi_create_arraybuffer failed!");
+        context->errMsg = "The operation failed, napi_create_arraybuffer failed!";
     }
 
     IMAGE_FUNCTION_OUT();

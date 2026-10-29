@@ -394,7 +394,8 @@ STATIC_EXEC_FUNC(Packing)
             packRes, packedSize, context->resultBufferSize);
         const char *errorMsg = context->packType == TYPE_PICTURE &&
             !IsPictureEncodingFormatSupported(context->packOption.format) ?
-            "Picture encoding only supports image/jpeg, image/heic, or image/heif." : "Packing failed";
+            "Picture encoding only supports image/jpeg, image/heic, or image/heif." :
+            "Packing failed, please check input source data and packOption";
         BuildMsgOnError(context, false, errorMsg,
             packRes == ERR_IMAGE_INVALID_PARAMETER ? COMMON_ERR_INVALID_PARAMETER : innerEncodeErrorCode);
     }
