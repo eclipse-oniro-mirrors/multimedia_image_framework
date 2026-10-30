@@ -543,8 +543,8 @@ bool IsSrcRectContainsDistRect(const OHOS::Media::Rect &srcRect, const OHOS::Med
     cond = (distRect.left < 0 || distRect.top < 0 || distRect.width <= 0 || distRect.height <= 0);
     CHECK_ERROR_RETURN_RET(cond, false);
     return srcRect.left <= distRect.left && srcRect.top <= distRect.top &&
-        (srcRect.left + srcRect.width) >= (distRect.left + distRect.width) &&
-        (srcRect.top + srcRect.height) >= (distRect.top + distRect.height);
+        static_cast<int64_t>(srcRect.left) + srcRect.width >= static_cast<int64_t>(distRect.left) + distRect.width &&
+        static_cast<int64_t>(srcRect.top) + srcRect.height >= static_cast<int64_t>(distRect.top) + distRect.height;
 }
 
 bool CheckCropRectValid(const PixelDecodeOptions &opts, const SkSize &svgSize)

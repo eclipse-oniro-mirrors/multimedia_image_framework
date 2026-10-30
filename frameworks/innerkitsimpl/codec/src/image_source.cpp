@@ -968,8 +968,8 @@ bool IsSrcRectContainsDistRect(const Rect &srcRect, const Rect &dstRect)
         return false;
     }
     return srcRect.left <= dstRect.left && srcRect.top <= dstRect.top &&
-        (srcRect.left + srcRect.width) >= (dstRect.left + dstRect.width) &&
-        (srcRect.top + srcRect.height) >= (dstRect.top + dstRect.height);
+        static_cast<int64_t>(srcRect.left) + srcRect.width >= static_cast<int64_t>(dstRect.left) + dstRect.width &&
+        static_cast<int64_t>(srcRect.top) + srcRect.height >= static_cast<int64_t>(dstRect.top) + dstRect.height;
 }
 
 bool ImageSource::CheckCropRectValid(const DecodeOptions &opts)
@@ -1125,8 +1125,8 @@ static void GetValidCropRect(const Rect &src, const Size& size, Rect &dst)
     dst.left = src.left;
     dst.width = src.width;
     dst.height = src.height;
-    int32_t dstBottom = dst.top + dst.height;
-    int32_t dstRight = dst.left + dst.width;
+    int64_t dstBottom = static_cast<int64_t>(dst.top) + dst.height;
+    int64_t dstRight = static_cast<int64_t>(dst.left) + dst.width;
     if (dst.top >= 0 && dstBottom > 0 && dstBottom > size.height) {
         dst.height = size.height - dst.top;
     }

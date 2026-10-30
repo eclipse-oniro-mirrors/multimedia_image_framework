@@ -290,8 +290,14 @@ uint32_t WebpEncoder::DoEncode(Media::PixelMap &pixelMap, WebPConfig &webpConfig
 
     const int width = pixelMap.GetWidth();
     const int height = webpPicture.height;
-    const int rgbStride = width * componentsNum_;
-    const int rgbSize = rgbStride * height;
+    int rgbStride = 0;
+    int rgbSize = 0;
+    if (width <= 0 || height <= 0 || componentsNum_ <= 0 ||
+        __builtin_mul_overflow(width, componentsNum_, &rgbStride) ||
+        __builtin_mul_overflow(rgbStride, height, &rgbSize)) {
+        IMAGE_LOGE("DoEncode, invalid RGB buffer size.");
+        return ERROR;
+    }
     IMAGE_LOGD("DoEncode, width=%{public}d, height=%{public}d, componentsNum=%{public}d,"
         " rgbStride=%{public}d, rgbSize=%{public}d", width, height, componentsNum_, rgbStride, rgbSize);
 

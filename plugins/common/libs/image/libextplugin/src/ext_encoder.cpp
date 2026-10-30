@@ -2811,8 +2811,7 @@ static bool CheckFragmentMetadata(Picture* picture, Media::Rect& outData)
     CHECK_ERROR_RETURN_RET_LOG(cond, false, "%{public}s: GetMetadataValueInt32 failed!", __func__);
     if (!ImageUtils::IsInRange(outData.left, 0, mainW) || !ImageUtils::IsInRange(outData.top, 0, mainH) ||
         !ImageUtils::IsInRange(outData.width, 0, mainW) || !ImageUtils::IsInRange(outData.height, 0, mainH) ||
-        !ImageUtils::IsInRange(outData.left + outData.width, 0, mainW) ||
-        !ImageUtils::IsInRange(outData.top + outData.height, 0, mainH)) {
+        outData.width > mainW - outData.left || outData.height > mainH - outData.top) {
         IMAGE_LOGW("%{public}s: Fragment Rect is not in main Rect!", __func__);
         return false;
     }
