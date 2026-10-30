@@ -346,8 +346,6 @@ static void CommonCallbackRoutine(napi_env env, SendableImageAsyncContext* &cont
         napi_create_uint32(env, context->status, &result[0]);
         result[1] = valueParam;
     } else {
-        ImageNapiUtils::CreateErrorObj(env, result[0], context->status,
-            "There is generic napi failure!");
         std::string errMsg = context->errMsg.empty() ? "There is generic napi failure!" : context->errMsg;
         ImageNapiUtils::CreateErrorObj(env, result[0], context->status, errMsg);
         napi_get_undefined(env, &result[1]);
