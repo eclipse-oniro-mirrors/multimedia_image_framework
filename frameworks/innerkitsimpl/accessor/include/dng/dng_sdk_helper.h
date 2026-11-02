@@ -27,6 +27,9 @@ public:
     static std::unique_ptr<DngSdkInfo> ParseInfoFromStream(std::shared_ptr<MetadataStream>& stream);
 
     static uint32_t GetExifProperty(const std::unique_ptr<DngSdkInfo>& info, MetadataValue& value);
+    // Reads Orientation only from DNG preview IFDs, including preview IFDs in the chained
+    // IFD list; never falls back to the main image, EXIF, shared metadata or non-preview IFDs.
+    static uint32_t GetPreviewOrientation(const std::unique_ptr<DngSdkInfo>& info, MetadataValue& value);
     static uint32_t SetExifProperty(const std::unique_ptr<DngSdkInfo>& info, const MetadataValue& value);
     static uint32_t GetImageRawData(ImagePlugin::InputDataStream* stream,
         std::vector<uint8_t> &data, uint32_t &bitsPerSample);
