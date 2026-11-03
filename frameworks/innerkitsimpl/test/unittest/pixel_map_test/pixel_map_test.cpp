@@ -14,7 +14,9 @@
  */
 
 #include <atomic>
+#include <cerrno>
 #include <chrono>
+#include <cstdio>
 #include <future>
 #include <limits>
 
@@ -25,9 +27,12 @@
 #include "image_type.h"
 #include "image_utils.h"
 #include "image_system_properties.h"
+#include "log_tags.h"
 #include "media_errors.h"
+#include "message_parcel.h"
 #include "pixel_convert.h"
 #include "pixel_map.h"
+#include "pixel_map_gl_scope.h"
 #include "pixel_convert_adapter.h"
 #include "securec.h"
 
@@ -6157,6 +6162,28 @@ HWTEST_F(PixelMapTest, CreatePixelMapYUVTest001, TestSize.Level3)
 }
 #endif
 
+static int ClosePixelMapFdForRecoveryTest(int fd)
+{
+#if !defined(CROSS_PLATFORM) && !defined(_WIN32) && !defined(_APPLE) && \
+    !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+    const uint64_t tag = fdsan_create_owner_tag(FDSAN_OWNER_TYPE_DEFAULT, LOG_TAG_DOMAIN_ID_IMAGE);
+    return fdsan_close_with_tag(fd, tag);
+#else
+    return ::close(fd);
+#endif
+}
+
+static void TransferPixelMapFdForRecoveryTest(int fd)
+{
+#if !defined(CROSS_PLATFORM) && !defined(_WIN32) && !defined(_APPLE) && \
+    !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+    const uint64_t tag = fdsan_create_owner_tag(FDSAN_OWNER_TYPE_DEFAULT, LOG_TAG_DOMAIN_ID_IMAGE);
+    fdsan_exchange_owner_tag(fd, tag, 0);
+#else
+    (void)fd;
+#endif
+}
+
 /**
  * @tc.name: RecoverAshMemFdClosedTest001
  * @tc.desc: Test Marshalling when fd is closed unexpectedly, trigger WriteRecoveredAshMemToParcel success path
@@ -6189,18 +6216,32 @@ HWTEST_F(PixelMapTest, RecoverAshMemFdClosedTest001, TestSize.Level3)
     // to detect the invalid fd and trigger WriteRecoveredAshMemToParcel.
     int* fd = static_cast<int*>(pixelMap->context_);
     ASSERT_NE(fd, nullptr);
-    ::close(*fd);
+    ASSERT_GE(*fd, 0);
+    bool fdClosed = false;
+    auto invalidateClosedFd = Media::PixelMapGlScope::MakeScopeExit([&] {
+        if (fdClosed) {
+            *fd = -1;
+        }
+    });
+    const int closeResult = ClosePixelMapFdForRecoveryTest(*fd);
+    fdClosed = closeResult == 0;
+    ASSERT_EQ(closeResult, 0);
+    errno = 0;
+    ASSERT_EQ(fcntl(*fd, F_GETFD), -1);
+    ASSERT_EQ(errno, EBADF);
 
     // Marshalling should trigger WriteRecoveredAshMemToParcel and succeed
-    Parcel parcel;
+    MessageParcel parcel;
     bool ret = pixelMap->Marshalling(parcel);
+    // Recovery may reuse the old fd number for a Parcel-owned descriptor.
+    *fd = -1;
     EXPECT_TRUE(ret);
 
     // Verify data_ is not modified by recovery (new impl doesn't update data_)
     EXPECT_EQ(memcmp(pixelMap->data_, originalData.get(), bufferSize), 0);
 
     // Verify unmarshalling works correctly
-    PixelMap* newPixelMap = PixelMap::Unmarshalling(parcel);
+    std::unique_ptr<PixelMap> newPixelMap(PixelMap::Unmarshalling(parcel));
     ASSERT_NE(newPixelMap, nullptr);
     EXPECT_EQ(newPixelMap->GetWidth(), SIZE_WIDTH);
     EXPECT_EQ(newPixelMap->GetHeight(), SIZE_HEIGHT);
@@ -6226,24 +6267,32 @@ HWTEST_F(PixelMapTest, RecoverAshMemNullDataTest001, TestSize.Level3)
     std::unique_ptr<PixelMap> pixelMap = PixelMap::Create(opts);
     ASSERT_NE(pixelMap, nullptr);
 
-    // Save original data pointer
-    uint8_t* originalData = pixelMap->data_;
-    pixelMap->data_ = nullptr;
-
-    // Close fd to trigger recovery attempt
+    // Keep the stale fd nonnegative so the null-data recovery check is reached.
     int* fd = static_cast<int*>(pixelMap->context_);
-    if (fd != nullptr && *fd >= 0) {
-        ::close(*fd);
-        *fd = -1;
-    }
+    ASSERT_NE(fd, nullptr);
+    ASSERT_GE(*fd, 0);
+    uint8_t* originalData = pixelMap->data_;
+    ASSERT_NE(originalData, nullptr);
+    bool fdClosed = false;
+    auto restorePixelMap = Media::PixelMapGlScope::MakeScopeExit([&] {
+        pixelMap->data_ = originalData;
+        if (fdClosed) {
+            *fd = -1;
+        }
+    });
+    const int closeResult = ClosePixelMapFdForRecoveryTest(*fd);
+    fdClosed = closeResult == 0;
+    ASSERT_EQ(closeResult, 0);
+    pixelMap->data_ = nullptr;
+    ASSERT_GE(*fd, 0);
+    errno = 0;
+    ASSERT_EQ(fcntl(*fd, F_GETFD), -1);
+    ASSERT_EQ(errno, EBADF);
 
     // Marshalling should fail because data_ is null
-    Parcel parcel;
+    MessageParcel parcel;
     bool ret = pixelMap->Marshalling(parcel);
     EXPECT_FALSE(ret);
-
-    // Restore for cleanup
-    pixelMap->data_ = originalData;
 
     GTEST_LOG_(INFO) << "PixelMapTest: RecoverAshMemNullDataTest001 end";
 }
@@ -6302,12 +6351,12 @@ HWTEST_F(PixelMapTest, RecoverAshMemNormalTest001, TestSize.Level3)
     ASSERT_NE(pixelMap->context_, nullptr);
 
     // Normal Marshalling without closing fd
-    Parcel parcel;
+    MessageParcel parcel;
     bool ret = pixelMap->Marshalling(parcel);
     EXPECT_TRUE(ret);
 
     // Unmarshalling and verify
-    PixelMap* newPixelMap = PixelMap::Unmarshalling(parcel);
+    std::unique_ptr<PixelMap> newPixelMap(PixelMap::Unmarshalling(parcel));
     ASSERT_NE(newPixelMap, nullptr);
     EXPECT_EQ(newPixelMap->GetWidth(), SIZE_WIDTH);
     EXPECT_EQ(newPixelMap->GetHeight(), SIZE_HEIGHT);
@@ -6317,7 +6366,7 @@ HWTEST_F(PixelMapTest, RecoverAshMemNormalTest001, TestSize.Level3)
 
 /**
  * @tc.name: RecoverAshMemFdReusedTest001
- * @tc.desc: Test Marshalling when fd is closed and potentially reused, trigger recovery
+ * @tc.desc: Test Marshalling when fd is atomically replaced by a non-ashmem fd, trigger recovery
  * @tc.type: FUNC
  */
 HWTEST_F(PixelMapTest, RecoverAshMemFdReusedTest001, TestSize.Level3)
@@ -6337,32 +6386,40 @@ HWTEST_F(PixelMapTest, RecoverAshMemFdReusedTest001, TestSize.Level3)
     auto originalData = std::make_unique<uint8_t[]>(bufferSize);
     ASSERT_EQ(memcpy_s(originalData.get(), bufferSize, pixelMap->data_, bufferSize), EOK);
 
-    // Close fd and open another file to potentially reuse the fd number
+    // Atomically replace the owned fd with /dev/null instead of racing to reopen its number.
     int* fd = static_cast<int*>(pixelMap->context_);
     ASSERT_NE(fd, nullptr);
-    int oldFd = *fd;
-    ::close(*fd);
-
-    // Try to force fd reuse by opening another file
+    ASSERT_GE(*fd, 0);
+    const int oldFd = *fd;
     int tmpFd = open("/dev/null", O_RDONLY);
-    if (tmpFd >= 0) {
-        // If fd was reused, tmpFd might equal oldFd
+    ASSERT_GE(tmpFd, 0);
+    auto closeTemporaryFd = Media::PixelMapGlScope::MakeScopeExit([tmpFd] {
         ::close(tmpFd);
-    }
-
-    // Set fd to old value (which is now invalid or points to different file)
-    *fd = oldFd;
+    });
+    bool fdTransferred = false;
+    auto closeReusedFd = Media::PixelMapGlScope::MakeScopeExit([&] {
+        if (fdTransferred) {
+            *fd = -1;
+            ::close(oldFd);
+        }
+    });
+    TransferPixelMapFdForRecoveryTest(oldFd);
+    fdTransferred = true;
+    ASSERT_EQ(dup2(tmpFd, oldFd), oldFd);
+    ASSERT_NE(fcntl(oldFd, F_GETFD), -1);
 
     // Marshalling should detect invalid ashmem and trigger WriteRecoveredAshMemToParcel
-    Parcel parcel;
+    MessageParcel parcel;
     bool ret = pixelMap->Marshalling(parcel);
+    *fd = -1;
     EXPECT_TRUE(ret);
+    EXPECT_NE(fcntl(oldFd, F_GETFD), -1);
 
     // Verify data_ is not modified by recovery
     EXPECT_EQ(memcmp(pixelMap->data_, originalData.get(), bufferSize), 0);
 
     // Verify unmarshalling works correctly
-    PixelMap* newPixelMap = PixelMap::Unmarshalling(parcel);
+    std::unique_ptr<PixelMap> newPixelMap(PixelMap::Unmarshalling(parcel));
     ASSERT_NE(newPixelMap, nullptr);
     EXPECT_EQ(newPixelMap->GetWidth(), SIZE_WIDTH);
     EXPECT_EQ(newPixelMap->GetHeight(), SIZE_HEIGHT);
