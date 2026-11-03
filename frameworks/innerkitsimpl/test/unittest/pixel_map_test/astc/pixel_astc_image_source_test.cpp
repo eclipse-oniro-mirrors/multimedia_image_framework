@@ -407,6 +407,9 @@ HWTEST_F(PixelAstcImageSourceTest, CreatePixelMapForASTC003, TestSize.Level3)
 HWTEST_F(PixelAstcImageSourceTest, CalculateAllocatorType001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "PixelAstcImageSourceTest: CalculateAllocatorType001 start";
+#ifdef IS_EMULATOR
+    GTEST_SKIP() << "ASTC DMA (BLOB SurfaceBuffer) alloc unsupported on emulator";
+#endif
     std::vector<uint8_t> data = BuildAstcData(ASTC_BLOCK_4, ASTC_DMA_THRESHOLD_SIZE, ASTC_DMA_THRESHOLD_SIZE);
     std::unique_ptr<ImageSource> imageSource = CreateSource(data);
     ASSERT_NE(imageSource.get(), nullptr);
