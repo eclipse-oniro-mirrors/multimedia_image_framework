@@ -249,6 +249,8 @@ const static std::set<std::string> SYSTEM_ONLY_KEYS = {
     "HwMnoteFaceBeautyExposureTime",
     "HwMnoteFaceBeautyISO",
     "HwMnoteWatermarkInfo",
+    "HwMnotePortraitLightTemplateType",
+    "HwMnotePortraitLightValue",
 };
 
 // Orientation, tag 0x0112
@@ -865,6 +867,8 @@ void ExifMetadatFormatter::InitValueFormatConvertConfig()
         {"HwMnoteFaceBeautyLux", singleInt_},
         {"HwMnoteFaceBeautyExposureTime", singleInt_},
         {"HwMnoteFaceBeautyISO", singleInt_},
+        {"HwMnotePortraitLightTemplateType", singleInt_},
+        {"HwMnotePortraitLightValue", singleInt_},
     };
 }
 

@@ -374,6 +374,8 @@ static std::vector<struct ImageEnum> sPropertyKeyMap = {
     {"XTSTYLE_EXPOSUREPARAM_NAME", 0, "HwMnoteXtStyleExposureParam"},
     {"XTSTYLE_VIGNETTING", 0, "HwMnoteXtStyleVignetting"},
     {"XTSTYLE_NOISE", 0, "HwMnoteXtStyleNoise"},
+    {"PORTRAIT_LIGHT_TEMPLATE_TYPE", 0, "HwMnotePortraitLightTemplateType"},
+    {"PORTRAIT_LIGHT_VALUE", 0, "HwMnotePortraitLightValue"},
 };
 
 static std::vector<struct ImageEnum> sDngKeyMap = {
