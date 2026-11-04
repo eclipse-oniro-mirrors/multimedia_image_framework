@@ -14,6 +14,11 @@
  */
 
 #include <fcntl.h>
+#include <sys/stat.h>
+#include <unistd.h>
+
+#include <fstream>
+#include <iterator>
 
 #include <gtest/gtest.h>
 
@@ -21,6 +26,7 @@
 #include "source_stream.h"
 
 #include "exif_metadata.h"
+#include "media_errors.h"
 
 using namespace testing::ext;
 using namespace OHOS::Media;
@@ -30,6 +36,8 @@ namespace Media {
 
 static const std::string IMAGE_INPUT_EXIF_JPEG_PATH = "/data/local/tmp/image/test_exif.jpg";
 static const std::string IMAGE_INPUT_NO_EXIF_JPEG_PATH = "/data/local/tmp/image/hasNoExif.jpg";
+static const std::string IMAGE_INPUT_EXIF_HEIC_PATH = "/data/local/tmp/image/test_exif.heic";
+static const std::string IMAGE_INPUT_EXIF_PNG_PATH = "/data/local/tmp/image/test_remove_exif.png";
 static const std::string IMAGE_REMOVE_EXIF_JPEG_PATH = "/data/local/tmp/image/test_remove_exif.jpg";
 static const std::string IMAGE_REMOVE_EXIF_PNG_PATH = "/data/local/tmp/image/test_remove_exif.png";
 static const std::string IMAGE_REMOVE_EXIF_WEBP_PATH = "/data/local/tmp/image/test_remove_exif.webp";
@@ -38,6 +46,37 @@ static const std::string IMAGE_REMOVE_EXIF_DNG_PATH = "/data/local/tmp/image/tes
 static const std::string IMAGE_REMOVE_HW_EXIF_PATH = "/data/local/tmp/image/test_remove_hw_exif.jpg";
 static const std::string IMAGE_REMOVE_NO_EXIF_JPEG_PATH = "/data/local/tmp/image/test_remove_no_exif.jpg";
 static const  std::string DEFAULT_EXIF_VALUE = "default_exif_value";
+static const std::string IMAGE_CONTENT_ID_OUT_JPG_PATH = "/data/local/tmp/image/test_content_id_out1.jpg";
+static const std::string IMAGE_CONTENT_ID_OUT_JPG2_PATH = "/data/local/tmp/image/test_content_id_out2.jpg";
+static const std::string IMAGE_CONTENT_ID_OUT_HEIC_PATH = "/data/local/tmp/image/test_content_id_out.heic";
+static const std::string IMAGE_CONTENT_ID_OUT_HEIC2_PATH = "/data/local/tmp/image/test_content_id_out2.heic";
+static const std::string CONTENT_ID_UUID_FIRST = "8f1d2b3c-4a5e-4f70-8a9b-0c1d2e3f4a5b";
+static const std::string CONTENT_ID_UUID_SECOND = "123e4567-e89b-42d3-a456-426614174000";
+// content identifier already stored in test_exif.heic by the capture device
+static const std::string CONTENT_ID_UUID_HEIC_EXISTING = "A2A13869-D8CF-4AA0-BC3A-FFE367F45B3E";
+// test_heif_hdr.heic carries exif but no content identifier
+static const std::string IMAGE_INPUT_NO_CONTENT_ID_HEIC_PATH = "/data/local/tmp/image/test_heif_hdr.heic";
+
+// RAII fd owner: a failed ASSERT_* returns from the test before the trailing close(),
+// which would leak the fd; the guard closes it on every exit path.
+class FdGuard {
+public:
+    explicit FdGuard(int fd) : fd_(fd) {}
+    ~FdGuard()
+    {
+        if (fd_ >= 0) {
+            close(fd_);
+        }
+    }
+    FdGuard(const FdGuard&) = delete;
+    FdGuard& operator=(const FdGuard&) = delete;
+    int Get() const
+    {
+        return fd_;
+    }
+private:
+    int fd_;
+};
 
 static const std::vector<std::string> hwExifReadKey = {
     "HwMnoteIsXmageSupported",
@@ -808,6 +847,216 @@ HWTEST_F(ImageSourceExifTest, ExtractXMageCoordinatesTest007, TestSize.Level3)
     ASSERT_FALSE(result);
 
     GTEST_LOG_(INFO) << "ImageSourceExifTest: ExtractXMageCoordinatesTest007 end";
+}
+
+/**
+ * @tc.name: ModifyContentIdentifier001
+ * @tc.desc: test ModifyContentIdentifier with jpeg path source, output carries the uuid
+ *           and an existing identifier wins on the next call
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceExifTest, ModifyContentIdentifier001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageSourceExifTest: ModifyContentIdentifier001 start";
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    opts.formatHint = "image/jpeg";
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_INPUT_EXIF_JPEG_PATH, opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource, nullptr);
+    std::ifstream sourceIn(IMAGE_INPUT_EXIF_JPEG_PATH, std::ios::binary);
+    std::string sourceBefore((std::istreambuf_iterator<char>(sourceIn)), std::istreambuf_iterator<char>());
+
+    std::string effectiveUuid;
+    FdGuard dstFd(open(IMAGE_CONTENT_ID_OUT_JPG_PATH.c_str(), O_RDWR | O_CREAT | O_TRUNC,
+        S_IRUSR | S_IWUSR));
+    ASSERT_NE(dstFd.Get(), -1);
+    uint32_t ret = imageSource->ModifyContentIdentifier(CONTENT_ID_UUID_FIRST, effectiveUuid, dstFd.Get());
+    ASSERT_EQ(ret, SUCCESS);
+    ASSERT_EQ(effectiveUuid, CONTENT_ID_UUID_FIRST);
+
+    // the source file must stay untouched: the identifier is only written to the dst copy
+    std::ifstream sourceInAfter(IMAGE_INPUT_EXIF_JPEG_PATH, std::ios::binary);
+    std::string sourceAfter((std::istreambuf_iterator<char>(sourceInAfter)), std::istreambuf_iterator<char>());
+    ASSERT_EQ(sourceAfter, sourceBefore);
+
+    std::unique_ptr<ImageSource> outSource =
+        ImageSource::CreateImageSource(IMAGE_CONTENT_ID_OUT_JPG_PATH, opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(outSource, nullptr);
+    std::string effectiveUuidSecond;
+    FdGuard dstFdSecond(open(IMAGE_CONTENT_ID_OUT_JPG2_PATH.c_str(), O_RDWR | O_CREAT | O_TRUNC,
+        S_IRUSR | S_IWUSR));
+    ASSERT_NE(dstFdSecond.Get(), -1);
+    ret = outSource->ModifyContentIdentifier(CONTENT_ID_UUID_SECOND, effectiveUuidSecond, dstFdSecond.Get());
+    ASSERT_EQ(ret, SUCCESS);
+    // the identifier written by the first call persists and wins over the new uuid
+    ASSERT_EQ(effectiveUuidSecond, CONTENT_ID_UUID_FIRST);
+    GTEST_LOG_(INFO) << "ImageSourceExifTest: ModifyContentIdentifier001 end";
+}
+
+/**
+ * @tc.name: ModifyContentIdentifier002
+ * @tc.desc: test ModifyContentIdentifier rejects uuid values that are not 8-4-4-4-12 hex
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceExifTest, ModifyContentIdentifier002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageSourceExifTest: ModifyContentIdentifier002 start";
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    opts.formatHint = "image/jpeg";
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_INPUT_EXIF_JPEG_PATH, opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource, nullptr);
+
+    const std::vector<std::string> invalidUuids = {
+        "",                                     // empty
+        "123e4567-e89b-42d3-a456-42661417400",  // last group has 11 digits
+        "123e4567-e89b-42d3-a456-4266141740000", // last group has 13 digits
+        "123e4567e89b42d3a456426614174000",     // dashes missing
+        "123e4567-g89b-42d3-a456-426614174000", // 'g' is not a hex digit
+        "123e4567e-89b-42d3-a456-42661417400",  // dash at wrong position
+    };
+    FdGuard dstFd(open(IMAGE_CONTENT_ID_OUT_JPG_PATH.c_str(), O_RDWR | O_CREAT | O_TRUNC,
+        S_IRUSR | S_IWUSR));
+    ASSERT_NE(dstFd.Get(), -1);
+    for (const auto &uuid : invalidUuids) {
+        std::string effectiveUuid = "stale";
+        ASSERT_EQ(imageSource->ModifyContentIdentifier(uuid, effectiveUuid, dstFd.Get()),
+            ERR_IMAGE_INVALID_PARAMETER);
+        ASSERT_TRUE(effectiveUuid.empty());
+    }
+    GTEST_LOG_(INFO) << "ImageSourceExifTest: ModifyContentIdentifier002 end";
+}
+
+/**
+ * @tc.name: ModifyContentIdentifier003
+ * @tc.desc: test ModifyContentIdentifier rejects an invalid dst fd
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceExifTest, ModifyContentIdentifier003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageSourceExifTest: ModifyContentIdentifier003 start";
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    opts.formatHint = "image/jpeg";
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_INPUT_EXIF_JPEG_PATH, opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource, nullptr);
+    std::string effectiveUuid = "stale";
+    ASSERT_EQ(imageSource->ModifyContentIdentifier(CONTENT_ID_UUID_FIRST, effectiveUuid, -1),
+        ERR_IMAGE_INVALID_PARAMETER);
+    ASSERT_TRUE(effectiveUuid.empty());
+    GTEST_LOG_(INFO) << "ImageSourceExifTest: ModifyContentIdentifier003 end";
+}
+
+/**
+ * @tc.name: ModifyContentIdentifier004
+ * @tc.desc: test ModifyContentIdentifier rejects formats other than jpeg/heif/heic
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceExifTest, ModifyContentIdentifier004, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageSourceExifTest: ModifyContentIdentifier004 start";
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_INPUT_EXIF_PNG_PATH, opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource, nullptr);
+    FdGuard dstFd(open(IMAGE_CONTENT_ID_OUT_JPG_PATH.c_str(), O_RDWR | O_CREAT | O_TRUNC,
+        S_IRUSR | S_IWUSR));
+    ASSERT_NE(dstFd.Get(), -1);
+    std::string effectiveUuid = "stale";
+    ASSERT_EQ(imageSource->ModifyContentIdentifier(CONTENT_ID_UUID_FIRST, effectiveUuid, dstFd.Get()),
+        ERR_IMAGE_MISMATCHED_FORMAT);
+    ASSERT_TRUE(effectiveUuid.empty());
+    GTEST_LOG_(INFO) << "ImageSourceExifTest: ModifyContentIdentifier004 end";
+}
+
+/**
+ * @tc.name: ModifyContentIdentifier005
+ * @tc.desc: test ModifyContentIdentifier with jpeg fd source
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceExifTest, ModifyContentIdentifier005, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageSourceExifTest: ModifyContentIdentifier005 start";
+    // the source fd is dup'ed by CreateImageSource, so this test still owns and closes it
+    FdGuard srcFd(open(IMAGE_INPUT_EXIF_JPEG_PATH.c_str(), O_RDONLY));
+    ASSERT_NE(srcFd.Get(), -1);
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    opts.formatHint = "image/jpeg";
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(srcFd.Get(), opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource, nullptr);
+
+    std::string effectiveUuid;
+    FdGuard dstFd(open(IMAGE_CONTENT_ID_OUT_JPG_PATH.c_str(), O_RDWR | O_CREAT | O_TRUNC,
+        S_IRUSR | S_IWUSR));
+    ASSERT_NE(dstFd.Get(), -1);
+    uint32_t ret = imageSource->ModifyContentIdentifier(CONTENT_ID_UUID_FIRST, effectiveUuid, dstFd.Get());
+    ASSERT_EQ(ret, SUCCESS);
+    ASSERT_EQ(effectiveUuid, CONTENT_ID_UUID_FIRST);
+    GTEST_LOG_(INFO) << "ImageSourceExifTest: ModifyContentIdentifier005 end";
+}
+
+/**
+ * @tc.name: ModifyContentIdentifier006
+ * @tc.desc: test ModifyContentIdentifier with heic source carrying no content
+ *           identifier, the requested uuid is written and returned
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceExifTest, ModifyContentIdentifier006, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageSourceExifTest: ModifyContentIdentifier006 start";
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_INPUT_NO_CONTENT_ID_HEIC_PATH, opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource, nullptr);
+
+    std::string effectiveUuid;
+    FdGuard dstFd(open(IMAGE_CONTENT_ID_OUT_HEIC_PATH.c_str(), O_RDWR | O_CREAT | O_TRUNC,
+        S_IRUSR | S_IWUSR));
+    ASSERT_NE(dstFd.Get(), -1);
+    uint32_t ret = imageSource->ModifyContentIdentifier(CONTENT_ID_UUID_FIRST, effectiveUuid, dstFd.Get());
+    ASSERT_EQ(ret, SUCCESS);
+    ASSERT_EQ(effectiveUuid, CONTENT_ID_UUID_FIRST);
+    GTEST_LOG_(INFO) << "ImageSourceExifTest: ModifyContentIdentifier006 end";
+}
+
+/**
+ * @tc.name: ModifyContentIdentifier007
+ * @tc.desc: test ModifyContentIdentifier with heic source that already carries a
+ *           content identifier: the existing identifier is kept and returned
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceExifTest, ModifyContentIdentifier007, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageSourceExifTest: ModifyContentIdentifier007 start";
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_INPUT_EXIF_HEIC_PATH, opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource, nullptr);
+
+    std::string effectiveUuid;
+    FdGuard dstFd(open(IMAGE_CONTENT_ID_OUT_HEIC2_PATH.c_str(), O_RDWR | O_CREAT | O_TRUNC,
+        S_IRUSR | S_IWUSR));
+    ASSERT_NE(dstFd.Get(), -1);
+    uint32_t ret = imageSource->ModifyContentIdentifier(CONTENT_ID_UUID_FIRST, effectiveUuid, dstFd.Get());
+    ASSERT_EQ(ret, SUCCESS);
+    // the identifier captured in the source wins over the uuid requested by the caller
+    ASSERT_EQ(effectiveUuid, CONTENT_ID_UUID_HEIC_EXISTING);
+    GTEST_LOG_(INFO) << "ImageSourceExifTest: ModifyContentIdentifier007 end";
 }
 } // namespace Multimedia
 } // namespace OHOS

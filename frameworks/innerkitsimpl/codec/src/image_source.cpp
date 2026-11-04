@@ -22,12 +22,16 @@
 #include <cerrno>
 #include <charconv>
 #include <chrono>
+#include <cctype>
 #include <cstring>
 #include <filesystem>
 #include <mutex>
 #include <set>
 #include <vector>
 #include <functional>
+
+#include <fcntl.h>
+#include <unistd.h>
 
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 #include "auxiliary_generator.h"
@@ -179,6 +183,13 @@ constexpr uint8_t PIXEL_BYTES = 4;
 constexpr int32_t WEBP_MIN_FRAME_DURATION = 100;
 constexpr int32_t WEBP_DELAY_TIME_UINT16_MAX = 65535;
 const static uint64_t IMAGESOURCE_FDSAN_TAG = LOG_TAG_DOMAIN_ID_IMAGE;
+constexpr size_t CONTENT_IDENTIFIER_UUID_LEN = 36;
+// uuid pattern 8-4-4-4-12 hex, dashes fixed at these indexes
+constexpr size_t UUID_DASH_INDEX_1 = 8;
+constexpr size_t UUID_DASH_INDEX_2 = 13;
+constexpr size_t UUID_DASH_INDEX_3 = 18;
+constexpr size_t UUID_DASH_INDEX_4 = 23;
+constexpr size_t COPY_SOURCE_CHUNK_SIZE = 64 * 1024;
 
 struct StreamInfo {
     uint8_t* buffer = nullptr;
@@ -1908,6 +1919,189 @@ uint32_t ImageSource::WriteImageMetadataBlob(const vector<MetadataValue> &proper
         return ModifyImagePropertyBlob(properties, srcBuffer_, srcBufferSize_);
     }
     return ERROR;
+}
+
+static bool IsValidContentIdentifier(const std::string &uuid)
+{
+    if (uuid.length() != CONTENT_IDENTIFIER_UUID_LEN) {
+        return false;
+    }
+    if (uuid[UUID_DASH_INDEX_1] != '-' || uuid[UUID_DASH_INDEX_2] != '-' ||
+        uuid[UUID_DASH_INDEX_3] != '-' || uuid[UUID_DASH_INDEX_4] != '-') {
+        return false;
+    }
+    for (size_t i = 0; i < uuid.length(); i++) {
+        if (i == UUID_DASH_INDEX_1 || i == UUID_DASH_INDEX_2 ||
+            i == UUID_DASH_INDEX_3 || i == UUID_DASH_INDEX_4) {
+            continue;
+        }
+        if (!isxdigit(static_cast<unsigned char>(uuid[i]))) {
+            return false;
+        }
+    }
+    return true;
+}
+
+static bool WriteAllToFd(int32_t dstFd, const uint8_t *data, size_t size)
+{
+    size_t done = 0;
+    while (done < size) {
+        size_t chunk = std::min(size - done, COPY_SOURCE_CHUNK_SIZE);
+        ssize_t written = write(dstFd, data + done, chunk);
+        if (written <= 0) {
+            IMAGE_LOGE("write dst fd failed, errno: %{public}d", errno);
+            return false;
+        }
+        done += static_cast<size_t>(written);
+    }
+    return true;
+}
+
+static uint32_t CopyFdContentToFd(int srcFd, int32_t dstFd)
+{
+    size_t size = 0;
+    bool cond = !ImageUtils::GetFileSize(srcFd, size);
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_SOURCE_DATA, "failed to get source fd size.");
+
+    std::vector<uint8_t> buffer(COPY_SOURCE_CHUNK_SIZE);
+    cond = buffer.empty();
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_SOURCE_DATA, "failed to alloc copy buffer.");
+
+    size_t done = 0;
+    while (done < size) {
+        size_t chunk = std::min(size - done, COPY_SOURCE_CHUNK_SIZE);
+        // pread leaves srcFd offset untouched, so the source stream state stays intact
+        ssize_t rd = pread(srcFd, buffer.data(), chunk, static_cast<off_t>(done));
+        if (rd == 0) {
+            // size came from fstat; 0 here means the file shrank concurrently (or was truncated)
+            IMAGE_LOGE("source file truncated or shrunk during copy, expect size: %{public}zu, offset: %{public}zu",
+                size, done);
+            return ERR_IMAGE_SOURCE_DATA;
+        }
+        if (rd < 0) {
+            IMAGE_LOGE("read source fd failed, errno: %{public}d", errno);
+            return ERR_IMAGE_SOURCE_DATA;
+        }
+        if (!WriteAllToFd(dstFd, buffer.data(), static_cast<size_t>(rd))) {
+            return ERR_IMAGE_SOURCE_DATA;
+        }
+        done += static_cast<size_t>(rd);
+    }
+    // drop stale bytes a pre-existing destination file may hold beyond the copy so output is byte-exact
+    if (ftruncate(dstFd, static_cast<off_t>(size)) != 0) {
+        IMAGE_LOGE("truncate dst fd after copy failed, errno: %{public}d", errno);
+        return ERR_IMAGE_SOURCE_DATA;
+    }
+    return SUCCESS;
+}
+
+uint32_t ImageSource::ModifyContentIdentifier(const std::string &uuid, std::string &effectiveUuid,
+    int32_t dstFd)
+{
+    ImageDataStatistics imageDataStatistics("[ImageSource]ModifyContentIdentifier.");
+    effectiveUuid.clear();
+    bool cond = (!IsValidContentIdentifier(uuid));
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER, "content identifier is not a valid uuid.");
+    cond = (dstFd < 0);
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER, "dst fd invalid: %{public}d", dstFd);
+
+    std::unique_lock<std::recursive_mutex> guard(decodingMutex_);
+    ImageInfo info;
+    uint32_t ret = GetImageInfo(info);
+    cond = (ret != SUCCESS);
+    CHECK_ERROR_RETURN_RET_LOG(cond, ret, "get image info failed when modifying content identifier.");
+    cond = !(info.encodedFormat == IMAGE_JPEG_FORMAT || info.encodedFormat == IMAGE_HEIF_FORMAT ||
+        info.encodedFormat == IMAGE_HEIC_FORMAT);
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_MISMATCHED_FORMAT,
+        "Only heif/heic and jpeg images support content identifier, format: %{public}s.", info.encodedFormat.c_str());
+
+    ret = CreatExifMetadataByImageSource(true);
+    cond = (ret != SUCCESS);
+    CHECK_ERROR_RETURN_RET_LOG(cond, ret, "Failed to create ExifMetadata for content identifier.");
+
+    cond = (exifMetadata_ == nullptr);
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_SOURCE_DATA, "exifMetadata_ is null.");
+
+    // the source is never modified: the complete image is copied to dst first and, when needed,
+    // the identifier is written into that copy only
+    ret = CopySourceToFd(dstFd);
+    cond = (ret != SUCCESS);
+    CHECK_ERROR_RETURN_RET_LOG(cond, ret, "failed to copy source to dst fd.");
+
+    std::string existingId;
+    if (exifMetadata_->GetContentIdentifier(existingId) && !existingId.empty()) {
+        IMAGE_LOGI("ContentIdentifier already exists, keep and return it.");
+        effectiveUuid = existingId;
+        return SUCCESS;
+    }
+
+    if (!exifMetadata_->SetContentIdentifier(uuid)) {
+        IMAGE_LOGE("Failed to set content identifier.");
+        return ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
+    }
+
+    ret = WriteExifMetadataToFd(dstFd);
+    cond = (ret != SUCCESS);
+    CHECK_ERROR_RETURN_RET_LOG(cond, ret, "write content identifier to dst fd failed.");
+    effectiveUuid = uuid;
+    return SUCCESS;
+}
+
+uint32_t ImageSource::CopySourceToFd(int32_t dstFd)
+{
+    // the caller may hand us an fd at any offset; the output always starts from head
+    bool cond = (lseek(dstFd, 0, SEEK_SET) == static_cast<off_t>(-1));
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_SOURCE_DATA, "failed to seek dst fd to head.");
+
+    if (srcFd_ != -1) {
+        return CopyFdContentToFd(srcFd_, dstFd);
+    }
+
+    if (srcBuffer_ != nullptr && srcBufferSize_ != 0) {
+        cond = !WriteAllToFd(dstFd, srcBuffer_, srcBufferSize_);
+        CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_SOURCE_DATA, "failed to copy buffer source to dst fd.");
+        // drop stale bytes a pre-existing destination file may hold beyond the copy so output is byte-exact
+        cond = (ftruncate(dstFd, static_cast<off_t>(srcBufferSize_)) != 0);
+        CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_SOURCE_DATA, "failed to truncate dst fd after copy.");
+        return SUCCESS;
+    }
+
+    if (!srcFilePath_.empty()) {
+        int srcFd = open(srcFilePath_.c_str(), O_RDONLY | O_CLOEXEC);
+        cond = (srcFd < 0);
+        CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_SOURCE_DATA, "failed to open source path: %{public}s.",
+            srcFilePath_.c_str());
+#if !defined(CROSS_PLATFORM)
+        fdsan_exchange_owner_tag(srcFd, 0, IMAGESOURCE_FDSAN_TAG);
+#endif
+        uint32_t ret = CopyFdContentToFd(srcFd, dstFd);
+#if !defined(CROSS_PLATFORM)
+        fdsan_close_with_tag(srcFd, IMAGESOURCE_FDSAN_TAG);
+#else
+        close(srcFd);
+#endif
+        return ret;
+    }
+    return ERROR;
+}
+
+uint32_t ImageSource::WriteExifMetadataToFd(int32_t dstFd)
+{
+    auto metadataAccessor = MetadataAccessorFactory::Create(dstFd);
+    bool cond = (metadataAccessor == nullptr);
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_SOURCE_DATA,
+        "Failed to create image accessor on dst fd when writing exif metadata.");
+
+    metadataAccessor->Set(exifMetadata_);
+    uint32_t ret = metadataAccessor->Write();
+    if (ret != SUCCESS) {
+        IMAGE_LOGE("write exif metadata to dst fd failed, ret: %{public}u", ret);
+        // best-effort cleanup: leave the partial output empty rather than a corrupted image
+        if (ftruncate(dstFd, 0) != 0) {
+            IMAGE_LOGE("truncate dst fd after write failure failed, errno: %{public}d", errno);
+        }
+    }
+    return ret;
 }
 
 uint32_t ImageSource::ModifyImagePropertyEx(uint32_t index, const std::string &key, const std::string &value)
