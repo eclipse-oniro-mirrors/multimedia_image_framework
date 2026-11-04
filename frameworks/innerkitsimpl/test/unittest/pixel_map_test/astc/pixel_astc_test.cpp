@@ -881,6 +881,9 @@ HWTEST_F(PixelAstcTest, PixelAstcTest030, TestSize.Level3)
 HWTEST_F(PixelAstcTest, PixelAstcTest031, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "PixelAstcTest: PixelAstcTest031 start";
+#ifdef IS_EMULATOR
+    GTEST_SKIP() << "ASTC DMA (BLOB SurfaceBuffer) alloc unsupported on emulator";
+#endif
     uint32_t errorCode = 0;
     SourceOptions opts;
     size_t width = 4096;
@@ -923,6 +926,9 @@ HWTEST_F(PixelAstcTest, PixelAstcTest031, TestSize.Level3)
 HWTEST_F(PixelAstcTest, PixelAstcTest032, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "PixelAstcTest: PixelAstcTest032 start";
+#ifdef IS_EMULATOR
+    GTEST_SKIP() << "ASTC DMA (BLOB SurfaceBuffer) alloc unsupported on emulator";
+#endif
     uint32_t errorCode = 0;
     SourceOptions opts;
     size_t width = 8192;
@@ -960,6 +966,9 @@ HWTEST_F(PixelAstcTest, PixelAstcTest032, TestSize.Level3)
 HWTEST_F(PixelAstcTest, ReadFileAndResoveAstc001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "PixelAstcTest: ReadFileAndResoveAstc001 start";
+#ifdef IS_EMULATOR
+    GTEST_SKIP() << "ASTC DMA (BLOB SurfaceBuffer) alloc unsupported on emulator";
+#endif
     std::unique_ptr<PixelMap> pixelAstc = std::unique_ptr<PixelMap>();
     uint8_t* data = nullptr;
     ConstructPixelAstc(pixelAstc, &data, AllocatorType::DMA_ALLOC);

@@ -1364,6 +1364,9 @@ ohos_unittest("pixelastctest") {
     "-Dprivate=public",
     "-Dprotected=public",
   ]
+  if (is_emulator) {
+    cflags += [ "-DIS_EMULATOR" ]
+  }
 
   include_dirs = [
     "${image_subsystem}/frameworks/innerkitsimpl/common/include",
