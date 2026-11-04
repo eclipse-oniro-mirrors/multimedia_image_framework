@@ -1311,7 +1311,8 @@ napi_value SendablePixelMapNapi::ThrowExceptionError(napi_env env,
         errNode->second.find(code) != errNode->second.end()) {
         return ImageNapiUtils::ThrowExceptionError(env, code, info);
     }
-    return ImageNapiUtils::ThrowExceptionError(env, ERROR, "Operation failed");
+    return ImageNapiUtils::ThrowExceptionError(env, ERROR,
+        "Operation failed: " + info + " (unmapped error code " + std::to_string(code) + ").");
 }
 
 napi_value SendablePixelMapNapi::CreateSendablPixelMapFromParcel(napi_env env, napi_callback_info info)
