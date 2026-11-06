@@ -71,6 +71,8 @@ bool MetadataWStream::write(const void *buffer, size_t size)
     if (stream_->Write(bytePtr, size) !=0) {
         return true;
     }
+    // DFX: 元数据写入失败时记录大小，便于定位编码输出不完整问题。
+    IMAGE_LOGE("MetadataWStream::write failed, size:%{public}zu", size);
     return false;
 }
 

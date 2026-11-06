@@ -175,6 +175,17 @@ uint32_t BufferSourceStream::GetStreamType()
     return ImagePlugin::BUFFER_SOURCE_TYPE;
 }
 
+SourceStream::ReadState BufferSourceStream::GetReadState()
+{
+    // 内存缓冲在创建时已持有完整数据：非空即视为输入已全部提供，空缓冲视为无可用输入。
+    return dataSize_ == 0 ? ReadState::INCOMPLETE : ReadState::COMPLETE;
+}
+
+std::string BufferSourceStream::GetReadMode()
+{
+    return "buffer";
+}
+
 OutputDataStream* BufferSourceStream::ToOutputDataStream()
 {
     return new (std::nothrow) BufferPackerStream(inputBuffer_, dataSize_);

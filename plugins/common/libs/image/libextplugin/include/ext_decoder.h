@@ -125,6 +125,7 @@ private:
     bool CheckCodec();
     bool CheckIndexValied(uint32_t index);
     bool DecodeHeader();
+    std::string GetSourceYuvSampling(uint32_t index);
     bool IsSupportScaleOnDecode();
     bool GetScaledSize(int &dWidth, int &dHeight, float &scale);
     bool GetHardwareScaledSize(int &dWidth, int &dHeight, float &scale);
@@ -253,7 +254,9 @@ private:
 #ifdef IMAGE_COLORSPACE_FLAG
     std::shared_ptr<OHOS::ColorManager::ColorSpace> dstColorSpace_ = nullptr;
     std::shared_ptr<OHOS::ColorManager::ColorSpace> srcColorSpace_ = nullptr;
-    OHOS::ColorManager::ColorSpace GetSrcColorSpace();
+    OHOS::ColorManager::ColorSpace GetSrcColorSpace(bool updateHeifColorSpace = true);
+    ColorManager::ColorSpaceName GetCicpColorSpaceName(const skcms_ICCProfile *profile);
+    void UpdateHeifColorSpace(ColorManager::ColorSpaceName cName, bool updateHeifColorSpace, bool fromCicp);
     uint32_t ApplyDesiredColorSpace(DecodeContext &context);
     uint32_t ApplyDesiredColorSpaceIfNeeded(DecodeContext &context);
     uint32_t ApplyFastGamutConversion(DecodeContext &context);

@@ -49,7 +49,8 @@ unique_ptr<IncrementalSourceStream> IncrementalSourceStream::CreateSourceStream(
 bool IncrementalSourceStream::Read(uint32_t desiredSize, DataStreamBuffer &outData)
 {
     if (!Peek(desiredSize, outData)) {
-        IMAGE_LOGE("[IncrementalSourceStream]read fail.");
+        IMAGE_LOGE("[IncrementalSourceStream]read fail, desiredSize:%{public}u, dataSize_:%{public}zu,"
+            "dataOffset_:%{public}zu.", desiredSize, dataSize_, dataOffset_);
         return false;
     }
     dataOffset_ += outData.dataSize;
@@ -171,6 +172,18 @@ size_t IncrementalSourceStream::GetStreamSize()
 uint8_t *IncrementalSourceStream::GetDataPtr()
 {
     return sourceData_.data();
+}
+
+SourceStream::ReadState IncrementalSourceStream::GetReadState()
+{
+    // COMPLETE 仅表示增量数据已全部喂入（收到完成标记），不等价于顺序读场景的"文件已读完"，
+    // 与 FileSourceStream 基于游标的完整性语义不同，两者不可混用。
+    return IsStreamCompleted() ? ReadState::COMPLETE : ReadState::INCOMPLETE;
+}
+
+std::string IncrementalSourceStream::GetReadMode()
+{
+    return "incremental";
 }
 
 } // namespace Media

@@ -89,6 +89,7 @@ public:
     bool IsHeifAlphaYuv400();
     void SetSampleFormat(uint32_t sampleSize, ColorManager::ColorSpaceName colorSpaceName, bool isColorSpaceFromCicp);
     int32_t GetPrimaryLumaBitNum();
+    HeifPixelFormat GetSourcePixelFormat() const;
     bool IsGainmapDivisibleBySampleSize(uint32_t sampleSize);
     void setGainmapDstBuffer(uint8_t* dstBuffer, size_t rowStride, void *context);
     void SetColorSpaceSupportFlag(bool supported);

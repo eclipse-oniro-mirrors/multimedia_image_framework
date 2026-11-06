@@ -66,7 +66,8 @@ bool IstreamSourceStream::Read(uint32_t desiredSize, DataStreamBuffer &outData)
         return false;
     }
     if (!GetData(desiredSize, outData)) {
-        IMAGE_LOGE("[IstreamSourceStream]read fail.");
+        IMAGE_LOGE("[IstreamSourceStream]read fail, desiredSize:%{public}u, streamOffset_:%{public}zu.",
+            desiredSize, streamOffset_);
         return false;
     }
     streamOffset_ += outData.dataSize;

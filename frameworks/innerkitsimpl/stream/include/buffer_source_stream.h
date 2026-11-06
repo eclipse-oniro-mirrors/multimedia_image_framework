@@ -39,6 +39,8 @@ public:
     size_t GetStreamSize() override;
     uint8_t *GetDataPtr() override;
     uint32_t GetStreamType() override;
+    ReadState GetReadState() override;
+    std::string GetReadMode() override;
     ImagePlugin::OutputDataStream* ToOutputDataStream() override;
 
 private:

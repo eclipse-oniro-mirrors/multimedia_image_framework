@@ -647,5 +647,131 @@ HWTEST_F(FileSourceStreamTest, FileSourceStreamTest0031, TestSize.Level3)
     unlink(testFile);
     GTEST_LOG_(INFO) << "FileSourceStreamTest: FileSourceStreamTest0031 end";
 }
+
+/**
+ * @tc.name: ReadStateComplete001
+ * @tc.desc: Sequential read reaching stream end reports COMPLETE, even after the end-probe read fails
+ * @tc.type: FUNC
+ */
+HWTEST_F(FileSourceStreamTest, ReadStateComplete001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "FileSourceStreamTest: ReadStateComplete001 start";
+
+    const char* testFile = "/data/local/tmp/image/test_read_state_complete.dat";
+    constexpr size_t fileSize = 16;
+    std::ofstream ofs(testFile, std::ios::binary);
+    std::vector<char> data(fileSize, 'D');
+    ofs.write(data.data(), fileSize);
+    ofs.close();
+
+    std::unique_ptr<FileSourceStream> fileSourceStream = FileSourceStream::CreateSourceStream(testFile);
+    ASSERT_NE(fileSourceStream, nullptr);
+
+    // 尚未发生读取时完整性不可判定。
+    ASSERT_EQ(fileSourceStream->GetReadState(), SourceStream::ReadState::UNKNOWN);
+    ASSERT_EQ(fileSourceStream->GetReadMode(), "sequential");
+
+    // 顺序读全后游标到达流尾，读取完整。
+    DataStreamBuffer outData;
+    ASSERT_EQ(fileSourceStream->Read(fileSize, outData), true);
+    ASSERT_EQ(outData.dataSize, fileSize);
+    ASSERT_EQ(fileSourceStream->Tell(), fileSize);
+    ASSERT_EQ(fileSourceStream->GetReadState(), SourceStream::ReadState::COMPLETE);
+
+    // 读全后的流尾探测读失败并置位 readExhausted_，不得把已读完的流误判为不完整。
+    ASSERT_EQ(fileSourceStream->Read(1, outData), false);
+    ASSERT_EQ(fileSourceStream->GetReadState(), SourceStream::ReadState::COMPLETE);
+
+    unlink(testFile);
+    GTEST_LOG_(INFO) << "FileSourceStreamTest: ReadStateComplete001 end";
+}
+
+/**
+ * @tc.name: ReadStateIncomplete001
+ * @tc.desc: Peek or partial read that stops before stream end reports INCOMPLETE
+ * @tc.type: FUNC
+ */
+HWTEST_F(FileSourceStreamTest, ReadStateIncomplete001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "FileSourceStreamTest: ReadStateIncomplete001 start";
+
+    const char* testFile = "/data/local/tmp/image/test_read_state_incomplete.dat";
+    constexpr size_t fileSize = TEST_FILE_SIZE_PARTIAL_1;
+    std::ofstream ofs(testFile, std::ios::binary);
+    std::vector<char> data(fileSize, 'E');
+    ofs.write(data.data(), fileSize);
+    ofs.close();
+
+    std::unique_ptr<FileSourceStream> fileSourceStream = FileSourceStream::CreateSourceStream(testFile);
+    ASSERT_NE(fileSourceStream, nullptr);
+
+    // Peek 只触发读取不推进游标：header 失败等提前停止场景游标为 0，读取不完整。
+    DataStreamBuffer outData;
+    ASSERT_EQ(fileSourceStream->Peek(fileSize, outData), true);
+    ASSERT_EQ(outData.dataSize, fileSize);
+    ASSERT_EQ(fileSourceStream->Tell(), static_cast<uint32_t>(0));
+    ASSERT_EQ(fileSourceStream->GetReadState(), SourceStream::ReadState::INCOMPLETE);
+
+    // 部分读取同样未到达流尾，读取不完整。
+    ASSERT_EQ(fileSourceStream->Read(10, outData), true);
+    ASSERT_EQ(fileSourceStream->Tell(), static_cast<uint32_t>(10));
+    ASSERT_EQ(fileSourceStream->GetReadState(), SourceStream::ReadState::INCOMPLETE);
+
+    unlink(testFile);
+    GTEST_LOG_(INFO) << "FileSourceStreamTest: ReadStateIncomplete001 end";
+}
+
+/**
+ * @tc.name: ReadStateDirectAccess001
+ * @tc.desc: Direct access via GetDataPtr hands the whole stream to the decoder, so the read state is complete
+ * @tc.type: FUNC
+ */
+HWTEST_F(FileSourceStreamTest, ReadStateDirectAccess001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "FileSourceStreamTest: ReadStateDirectAccess001 start";
+
+    const char* testFile = "/data/local/tmp/image/test_read_state_direct.dat";
+    constexpr size_t fileSize = 16;
+    std::ofstream ofs(testFile, std::ios::binary);
+    std::vector<char> data(fileSize, 'F');
+    ofs.write(data.data(), fileSize);
+    ofs.close();
+
+    std::unique_ptr<FileSourceStream> fileSourceStream = FileSourceStream::CreateSourceStream(testFile);
+    ASSERT_NE(fileSourceStream, nullptr);
+
+    // 建立直接访问后整段源流已交给解码器，不再依赖游标判定完整性。
+    DataStreamBuffer outData;
+    ASSERT_EQ(fileSourceStream->Read(1, outData), true);
+    ASSERT_NE(fileSourceStream->GetDataPtr(), nullptr);
+    ASSERT_EQ(fileSourceStream->directAccess_, true);
+    ASSERT_EQ(fileSourceStream->GetReadState(), SourceStream::ReadState::COMPLETE);
+    ASSERT_EQ(fileSourceStream->GetReadMode(), fileSourceStream->useMmap_ ? "mmap" : "sequential");
+
+    unlink(testFile);
+    GTEST_LOG_(INFO) << "FileSourceStreamTest: ReadStateDirectAccess001 end";
+}
+
+/**
+ * @tc.name: ReadStateEmptySource001
+ * @tc.desc: Empty source has no readable data and must not be reported as complete
+ * @tc.type: FUNC
+ */
+HWTEST_F(FileSourceStreamTest, ReadStateEmptySource001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "FileSourceStreamTest: ReadStateEmptySource001 start";
+
+    const char* testFile = "/data/local/tmp/image/test_read_state_empty.dat";
+    std::ofstream ofs(testFile, std::ios::binary);
+    ofs.close();
+
+    std::unique_ptr<FileSourceStream> fileSourceStream = FileSourceStream::CreateSourceStream(testFile);
+    ASSERT_NE(fileSourceStream, nullptr);
+    ASSERT_EQ(fileSourceStream->GetStreamSize(), static_cast<size_t>(0));
+    ASSERT_EQ(fileSourceStream->GetReadState(), SourceStream::ReadState::INCOMPLETE);
+
+    unlink(testFile);
+    GTEST_LOG_(INFO) << "FileSourceStreamTest: ReadStateEmptySource001 end";
+}
 }
 }

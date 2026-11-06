@@ -14,6 +14,7 @@
  */
 
 #include "ext_stream.h"
+#include <cstdint>
 #include "image_log.h"
 
 #undef LOG_DOMAIN
@@ -77,12 +78,23 @@ size_t ExtStream::read(void *buffer, size_t size)
     if (stream_->GetStreamSize() != SIZE_ZERO && stream_->GetStreamSize() < desiredSize) {
         desiredSize = stream_->GetStreamSize();
     }
+    // DFX: 仅缓存只读状态用于日志，不参与读取决策。
+    const size_t streamSize = stream_->GetStreamSize();
+    const uint32_t position = stream_->Tell();
     if (!stream_->Read(desiredSize, buf.buf, buf.size, buf.resSize)) {
         effectiveEof_ = true;
-        IMAGE_LOGD("read failed, desire read size=%{public}u", buf.resSize);
+        IMAGE_LOGD("read failed, requested:%{public}zu, streamSize:%{public}zu, position:%{public}u",
+            size, streamSize, position);
         return 0;
     }
     size_t result = static_cast<size_t>(buf.resSize);
+    // 请求可能正常越过文件末尾，仅在声明大小范围内缺失字节时记录；
+    // 底层流已对同一短读告警，此处保持在 DEBUG 避免重复日志。
+    if (streamSize != SIZE_MAX && position < streamSize && result < desiredSize &&
+        result < streamSize - position) {
+        IMAGE_LOGD("short read, requested:%{public}zu, actual:%{public}zu, streamSize:%{public}zu, "
+            "position:%{public}u", size, result, streamSize, position);
+    }
     if (result == 0 && size > 0) {
         effectiveEof_ = true;
     }

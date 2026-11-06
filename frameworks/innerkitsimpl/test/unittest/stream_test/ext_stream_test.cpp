@@ -41,6 +41,54 @@ protected:
     void TearDown() override {}
 };
 
+class DiagnosticInputDataStream : public MockInputDataStream {
+public:
+    uint32_t position = 0;
+    uint32_t actualSize = BUFFER_SIZE;
+    bool Read(uint32_t, uint8_t*, uint32_t, uint32_t &readSize) override
+    {
+        readSize = actualSize;
+        position += readSize;
+        return true;
+    }
+    uint32_t Tell() override { return position; }
+    size_t GetStreamSize() override { return BUFFER_SIZE; }
+};
+
+/**
+ * @tc.name: DiagnosticRead001
+ * @tc.desc: A normal read extending past EOF preserves the remaining bytes and EOF state.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExtStreamTest, DiagnosticRead001, TestSize.Level3)
+{
+    DiagnosticInputDataStream input;
+    input.position = BUFFER_SIZE - 4;
+    input.actualSize = 4;
+    ExtStream stream(&input);
+    uint8_t buffer[BUFFER_SIZE] = {};
+    EXPECT_EQ(stream.read(buffer, sizeof(buffer)), 4);
+    EXPECT_TRUE(stream.isAtEnd());
+}
+
+/**
+ * @tc.name: DiagnosticRead002
+ * @tc.desc: Short-read diagnostics do not discard partial bytes or force EOF before the next read.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExtStreamTest, DiagnosticRead002, TestSize.Level3)
+{
+    DiagnosticInputDataStream input;
+    input.actualSize = 3;
+    ExtStream stream(&input);
+    uint8_t buffer[BUFFER_SIZE] = {};
+    EXPECT_EQ(stream.read(buffer, sizeof(buffer)), 3);
+    EXPECT_FALSE(stream.isAtEnd());
+    input.actualSize = 0;
+    EXPECT_EQ(stream.read(buffer, sizeof(buffer)), 0);
+    EXPECT_TRUE(stream.isAtEnd());
+}
+
 /**
  * @tc.name: Read001
  * @tc.desc: Test ExtStream::read - when internal stream_ is nullptr, expect return SIZE_ZERO.

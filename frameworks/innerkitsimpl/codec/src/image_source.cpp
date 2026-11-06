@@ -164,6 +164,8 @@ static const uint8_t NUM_16 = 16;
 static const uint8_t NUM_24 = 24;
 static const int IMAGE_HEADER_SIZE = 12;
 static const uint32_t MAX_SOURCE_SIZE = 300 * 1024 * 1024;
+// 32 位 size_t 下 4ULL 计算结果会触发常量截断告警，用 uint64_t 承载上界后再比较。
+static constexpr uint64_t MAX_YUV_BUFFER_SIZE = 4ULL * 1024 * 1024 * 1024;
 static const uint32_t MAX_FRAME_COUNT = 1000;
 static constexpr uint32_t SINGLE_FRAME_SIZE = 1;
 static constexpr uint8_t ISO_USE_BASE_COLOR = 0x01;
@@ -373,7 +375,8 @@ uint32_t ImageSource::GetSupportedFormats(set<string> &formats)
 }
 
 unique_ptr<ImageSource> ImageSource::DoImageSourceCreate(std::function<unique_ptr<SourceStream>(void)> stream,
-    const SourceOptions &opts, uint32_t &errorCode, const string traceName)
+    const SourceOptions &opts, uint32_t &errorCode, const string traceName, const std::string &sourcePath,
+    int sourceFd)
 {
     ImageTrace imageTrace(traceName);
     IMAGE_LOGD("[ImageSource]DoImageSourceCreate IN.");
@@ -381,7 +384,9 @@ unique_ptr<ImageSource> ImageSource::DoImageSourceCreate(std::function<unique_pt
     auto streamPtr = stream();
     if (streamPtr == nullptr) {
         IMAGE_LOGD("[ImageSource]failed to create source stream.");
-        ReportCreateImageSourceFault(opts.size.width, opts.size.height, traceName, "stream failed");
+        // 后缀只在失败打点时解析，避免正常路径为 fd 源额外做一次 readlink。
+        ReportCreateImageSourceFault(opts.size.width, opts.size.height, traceName, "stream failed",
+            GetImageFileExtension(sourcePath, sourceFd));
         return nullptr;
     }
 
@@ -394,7 +399,8 @@ unique_ptr<ImageSource> ImageSource::DoImageSourceCreate(std::function<unique_pt
         bool sizeTooLarge = streamSize > MAX_INPUT_STREAM_SIZE && streamSize != static_cast<size_t>(-1);
         if (sizeTooLarge) {
             IMAGE_LOGI("%{public}s input stream size %{public}zu is too large", __func__, streamPtr->GetStreamSize());
-            ReportCreateImageSourceFault(0, 0, traceName, "input stream size is too large");
+            ReportCreateImageSourceFault(0, 0, traceName, "input stream size is too large",
+                GetImageFileExtension(sourcePath, sourceFd));
             errorCode = ERR_IMAGE_TOO_LARGE;
             return nullptr;
         }
@@ -403,7 +409,8 @@ unique_ptr<ImageSource> ImageSource::DoImageSourceCreate(std::function<unique_pt
     auto sourcePtr = new (std::nothrow) ImageSource(std::move(streamPtr), opts);
     if (sourcePtr == nullptr) {
         IMAGE_LOGE("[ImageSource]failed to create ImageSource.");
-        ReportCreateImageSourceFault(opts.size.width, opts.size.height, traceName, "failed to create ImageSource");
+        ReportCreateImageSourceFault(opts.size.width, opts.size.height, traceName,
+            "failed to create ImageSource", GetImageFileExtension(sourcePath, sourceFd));
         return nullptr;
     }
     sourcePtr->SetSource(traceName);
@@ -476,7 +483,7 @@ unique_ptr<ImageSource> ImageSource::CreateImageSource(const std::string &pathNa
             CHECK_DEBUG_PRINT_LOG(cond, "[ImageSource]failed to create file path source stream");
             return streamPtr;
         },
-        opts, errorCode, "CreateImageSource by path");
+        opts, errorCode, "CreateImageSource by path", pathName);
     if (imageSource != nullptr) {
         imageSource->SetSrcFilePath(pathName);
     }
@@ -495,7 +502,7 @@ unique_ptr<ImageSource> ImageSource::CreateImageSource(const int fd, const Sourc
             }
             return streamPtr;
         },
-        opts, errorCode, "CreateImageSource by fd");
+        opts, errorCode, "CreateImageSource by fd", std::string(), fd);
     if (imageSource != nullptr) {
         imageSource->SetSrcFd(fd);
     }
@@ -520,7 +527,7 @@ unique_ptr<ImageSource> ImageSource::CreateImageSource(const int fd, int32_t off
             }
             return streamPtr;
         },
-        opts, errorCode, "CreateImageSource by fd offset and length");
+        opts, errorCode, "CreateImageSource by fd offset and length", std::string(), fd);
     if (imageSource != nullptr) {
         imageSource->SetSrcFd(fd);
     }
@@ -540,7 +547,7 @@ unique_ptr<ImageSource> ImageSource::CreateIncrementalImageSource(const Incremen
             CHECK_ERROR_PRINT_LOG(cond, "[ImageSource]failed to create incremental source stream.");
             return streamPtr;
         },
-        opts.sourceOptions, errorCode, "CreateImageSource by fd");
+        opts.sourceOptions, errorCode, "CreateIncrementalImageSource");
     if (sourcePtr != nullptr) {
         sourcePtr->SetIncrementalSource(true);
     }
@@ -644,6 +651,75 @@ static bool IsExtendedCodec(AbsImageDecoder *decoder)
     CHECK_ERROR_RETURN_RET(cond, true);
     return false;
 }
+
+static bool IsRgbOnlyFormat(const std::string &mimeType)
+{
+    // 非扩展解码的纯 RGB 格式源码流不携带 YUV 色度采样信息；未识别格式（如 raw 透传）保持 unknown。
+    return mimeType == "image/png" || mimeType == "image/gif" || mimeType == "image/bmp" ||
+        mimeType == "image/x-icon" || mimeType == "image/vnd.wap.wbmp" || mimeType == "image/svg+xml" ||
+        mimeType == "image/tiff" || mimeType == DNG_FORMAT;
+}
+
+// 源流大小不可用（SIZE_MAX）按 0 上报，避免打点与日志出现 UINT64_MAX。
+static size_t GetDfxStreamSize(SourceStream *stream)
+{
+    if (stream == nullptr) {
+        return 0;
+    }
+    const size_t size = stream->GetStreamSize();
+    return size == static_cast<size_t>(-1) ? 0 : size;
+}
+
+#ifdef IMAGE_COLORSPACE_FLAG
+// 覆盖聚合打点使用的 16 个公开色域取值，负值表示不可用，其余归入 OTHER。
+static const char *ColorSpaceNameStr(int32_t name)
+{
+    if (name < 0) {
+        return "UNAVAILABLE";
+    }
+    switch (static_cast<ColorManager::ColorSpaceName>(name)) {
+        case ColorManager::NONE:
+            return "NONE";
+        case ColorManager::ADOBE_RGB:
+            return "ADOBE_RGB";
+        case ColorManager::DCI_P3:
+            return "DCI_P3";
+        case ColorManager::DISPLAY_P3:
+            return "DISPLAY_P3";
+        case ColorManager::SRGB:
+            return "SRGB";
+        case ColorManager::CUSTOM:
+            return "CUSTOM";
+        case ColorManager::BT2020_HLG:
+            return "BT2020_HLG";
+        case ColorManager::BT2020_PQ:
+            return "BT2020_PQ";
+        case ColorManager::DISPLAY_P3_LIMIT:
+            return "DISPLAY_P3_LIMIT";
+        case ColorManager::SRGB_LIMIT:
+            return "SRGB_LIMIT";
+        case ColorManager::BT2020_HLG_LIMIT:
+            return "BT2020_HLG_LIMIT";
+        case ColorManager::BT2020_PQ_LIMIT:
+            return "BT2020_PQ_LIMIT";
+        case ColorManager::LINEAR_SRGB:
+            return "LINEAR_SRGB";
+        case ColorManager::LINEAR_BT2020:
+            return "LINEAR_BT2020";
+        case ColorManager::DISPLAY_BT2020_SRGB:
+            return "DISPLAY_BT2020_SRGB";
+        case ColorManager::BT2020:
+            return "BT2020";
+        default:
+            return "OTHER";
+    }
+}
+#else
+static const char *ColorSpaceNameStr(int32_t name)
+{
+    return name < 0 ? "UNAVAILABLE" : "OTHER";
+}
+#endif
 
 static inline bool IsSizeVailed(const Size &size)
 {
@@ -1023,23 +1099,26 @@ void ImageSource::SetAnimationSize(uint32_t index, const DecodeOptions &opts, Im
 unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index, const DecodeOptions &opts, uint32_t &errorCode)
 {
     ImageEvent imageEvent;
+    imageEvent.SetDecodePoint(DecodePoint::EXTENDED);
     ImageDataStatistics imageDataStatistics("[ImageSource] CreatePixelMapExtended.");
     uint64_t decodeStartTime = GetNowTimeMicroSeconds();
     opts_ = opts;
     ImageInfo info;
     errorCode = GetImageInfo(FIRST_FRAME, info);
     SetAnimationSize(index, opts, info);
+    SetDecodeInfoOptions(index, opts, info, imageEvent);
 #if !defined(CROSS_PLATFORM)
     ImageHandle::GetInstance().LowRamDeviceOptsOptimize(opts_, info);
 #endif
     ParseHdrType();
     if (!CheckDecodeOptions(opts)) {
         IMAGE_LOGI("CheckDecodeOptions failed.");
+        imageEvent.SetDecodeResult(DecodeResult::FAILURE, DecodeError::OPTIONS);
         errorCode = ERR_MEDIA_INVALID_OPERATION;
+        PrintDecodeSourceState("check_options", errorCode, imageEvent);
         return nullptr;
     }
     UpdateHdrCanvasFlagFromExif();
-    SetDecodeInfoOptions(index, opts, info, imageEvent);
     std::string pluginType = mainDecoder_->GetPluginType();
     imageEvent.SetPluginType(pluginType);
     Size heifGridTileSize = mainDecoder_->GetHeifGridTileSize();
@@ -1048,7 +1127,9 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index, const D
     if (errorCode != SUCCESS || !IsSizeVailed(info.size)) {
         IMAGE_LOGE("[ImageSource]get image info failed, ret:%{public}u.", errorCode);
         imageEvent.SetDecodeErrorMsg("get image info failed, ret:" + std::to_string(errorCode));
+        imageEvent.SetDecodeResult(DecodeResult::FAILURE, DecodeError::IDENTIFY);
         errorCode = ERR_IMAGE_DATA_ABNORMAL;
+        PrintDecodeSourceState("get_image_info", errorCode, imageEvent);
         return nullptr;
     }
     //Extract Exif Metadata，hasValidXmageCoords_ is used for judgeing
@@ -1070,6 +1151,7 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index, const D
     if (errorCode != SUCCESS) {
         IMAGE_LOGE("[ImageSource]decode source fail, ret:%{public}u.", errorCode);
         imageEvent.SetDecodeErrorMsg("decode source fail, ret:" + std::to_string(errorCode));
+        PrintDecodeSourceState("decode", errorCode, imageEvent);
         return nullptr;
     }
     bool isHdr = context.hdrType > Media::ImageHdrType::SDR;
@@ -1087,6 +1169,8 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index, const D
 
     auto pixelMap = CreatePixelMapByInfos(plInfo, context, errorCode);
     if (pixelMap == nullptr) {
+        imageEvent.SetDecodeResult(DecodeResult::FAILURE, DecodeError::POST_PROCESS);
+        PrintDecodeSourceState("create_pixelmap", errorCode, imageEvent);
         return nullptr;
     }
     if (!context.ifPartialOutput) {
@@ -1100,6 +1184,8 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index, const D
             pixelMap->GetAllocatorType(), static_cast<unsigned long>(GetNowTimeMicroSeconds() - decodeStartTime));
         ImageUtils::SampleAndPrintPixelMap(pixelMap);
     }
+    // DFX: 解码完成时统一输出源流状态、解码上下文色域与 PixelMap 实际携带色域。
+    PrintDecodeSourceState("decode_done", SUCCESS, imageEvent, context.grColorSpaceName, pixelMap.get());
 
     {
         std::unique_lock<std::recursive_mutex> guard(decodingMutex_);
@@ -1116,6 +1202,7 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index, const D
     ImageUtils::FlushSurfaceBuffer(pixelMap.get());
     pixelMap->SetMemoryName(GetPixelMapName(pixelMap.get()));
     ImageTrace pixelMapId("CreatePixelMapExtended, pixelMapId:%u", pixelMap->GetUniqueId());
+    imageEvent.SetDecodeResult(DecodeResult::SUCCESS);
     return pixelMap;
 }
 
@@ -1310,9 +1397,9 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapByInfos(ImagePlugin::PlImageInfo
 }
 
 void ImageSource::SetDecodeInfoOptions(uint32_t index, const DecodeOptions &opts, const ImageInfo &info,
-    ImageEvent &imageEvent)
+    ImageEvent &imageEvent, AbsImageDecoder *decoder)
 {
-    DecodeInfoOptions options;
+    DecodeInfoOptions options = {};
     options.sampleSize = opts.sampleSize;
     options.rotate = opts.rotateDegrees;
     options.editable = opts.editable;
@@ -1332,13 +1419,19 @@ void ImageSource::SetDecodeInfoOptions(uint32_t index, const DecodeOptions &opts
     options.mimeType = sourceInfo_.encodedFormat;
     options.invokeType = opts.invokeType;
     options.imageSource = source_;
+    // decoder 为空时默认查主解码器；增量解码等场景传入实际解码器，避免对被借用的主解码器重复查询。
+    SetDecodeInfoSourceInfo(options, decoder != nullptr ? decoder : mainDecoder_.get(), index);
+    // 上报时从活源流补取大小，避免填充早于流就绪导致 SOURCE_SIZE 误报 0。
+    imageEvent.SetSourceSizeProvider([this]() -> uint64_t {
+        return static_cast<uint64_t>(GetDfxStreamSize(sourceStreamPtr_.get()));
+    });
     imageEvent.SetDecodeInfoOptions(options);
 }
 
 void ImageSource::SetDecodeInfoOptions(uint32_t index, const DecodeOptions &opts,
     const ImagePlugin::PlImageInfo &plInfo, ImageEvent &imageEvent)
 {
-    DecodeInfoOptions options;
+    DecodeInfoOptions options = {};
     options.sampleSize = opts.sampleSize;
     options.rotate = opts.rotateDegrees;
     options.editable = opts.editable;
@@ -1357,16 +1450,92 @@ void ImageSource::SetDecodeInfoOptions(uint32_t index, const DecodeOptions &opts
     options.mimeType = sourceInfo_.encodedFormat;
     options.invokeType = opts.invokeType;
     options.imageSource = source_;
+    SetDecodeInfoSourceInfo(options, mainDecoder_.get(), index);
+    // 上报时从活源流补取大小，避免填充早于流就绪导致 SOURCE_SIZE 误报 0。
+    imageEvent.SetSourceSizeProvider([this]() -> uint64_t {
+        return static_cast<uint64_t>(GetDfxStreamSize(sourceStreamPtr_.get()));
+    });
     imageEvent.SetDecodeInfoOptions(options);
 }
 
 void ImageSource::UpdateDecodeInfoOptions(const ImagePlugin::DecodeContext &context, ImageEvent &imageEvent)
 {
     DecodeInfoOptions &options = imageEvent.GetDecodeInfoOptions();
+    imageEvent.SetDecodeContextValid();
     options.memorySize = context.pixelsBuffer.bufferSize;
     options.memoryType = static_cast<int32_t>(context.allocatorType);
     options.isHardDecode = context.isHardDecode;
     options.hardDecodeError = context.hardDecodeError;
+}
+
+void ImageSource::SetDecodeInfoSourceInfo(DecodeInfoOptions &options, AbsImageDecoder *decoder, uint32_t index)
+{
+    if (sourceStreamPtr_ != nullptr) {
+        options.sourceSize = static_cast<uint64_t>(GetDfxStreamSize(sourceStreamPtr_.get()));
+        // 兜底识别（如 raw 透传）与未识别格式同属 mimetype 不可信场景，仅此时采集文件后缀。
+        const bool unknownMimeType = options.mimeType.empty() || options.mimeType == "unknown" ||
+            options.mimeType == "image/unknown" || options.mimeType == InnerFormat::RAW_FORMAT;
+        if (sourceInfo_.state == SourceInfoState::UNKNOWN_FORMAT || unknownMimeType) {
+            options.sourceFileExtension = GetImageFileExtension(sourceStreamPtr_->GetOriginalPath(),
+                sourceStreamPtr_->GetOriginalFd());
+        }
+    }
+    const bool extendedCodec = IsExtendedCodec(decoder);
+    if (sourceInfo_.state != SourceInfoState::UNKNOWN_FORMAT && extendedCodec) {
+        int32_t colorSpace = -1;
+        if (decoder->GetImagePropertyInt(index, DFX_SOURCE_COLOR_SPACE, colorSpace) == SUCCESS) {
+            options.sourceColorSpace = colorSpace;
+        }
+        std::string yuvSampling;
+        if (decoder->GetImagePropertyString(index, DFX_SOURCE_YUV_SAMPLING, yuvSampling) == SUCCESS &&
+            !yuvSampling.empty()) {
+            options.sourceYuvSampling = yuvSampling;
+        }
+    }
+    if (!extendedCodec && IsRgbOnlyFormat(options.mimeType)) {
+        // 非扩展解码的纯 RGB 格式源码流不携带 YUV 采样信息。
+        options.sourceYuvSampling = "not_yuv";
+    }
+    // 非扩展解码器没有源码流色域属性，sourceColorSpace 保持 -1（不可用），不用输出侧色域顶替。
+}
+
+void ImageSource::PrintDecodeSourceState(const char *stage, uint32_t errorCode, ImageEvent &imageEvent,
+    int32_t grColorSpace, PixelMap *pixelMap)
+{
+    const DecodeInfoOptions &options = imageEvent.GetDecodeInfoOptions();
+    // 失败分支的 ret 已由调用点 ERROR 日志输出，nil 流场景降为 DEBUG 补充阶段信息。
+    if (sourceStreamPtr_ == nullptr) {
+        IMAGE_LOGD("[ImageSource]decode source state, stage:%{public}s, ret:%{public}u, stream:nil, "
+            "srcColorSpace:%{public}d, srcYuvSampling:%{public}s", stage, errorCode,
+            options.sourceColorSpace, options.sourceYuvSampling.c_str());
+        return;
+    }
+    const size_t streamSize = GetDfxStreamSize(sourceStreamPtr_.get());
+    const uint32_t tell = sourceStreamPtr_->Tell();
+    // 读取完整性由流自报：1 输入已全部提供（顺序读到达流尾、直接访问整段源流或内存缓冲），
+    // 0 顺序读提前停止或空源，-1 大小未知（增量流 1 仅表示数据已全部喂入）。
+    const int complete = static_cast<int>(sourceStreamPtr_->GetReadState());
+    const std::string readMode = sourceStreamPtr_->GetReadMode();
+    // 源形态：data 为内存缓冲，fd/path 为文件源，其余为输入流源。
+    const char *src = "stream";
+    if (sourceStreamPtr_->GetStreamType() == ImagePlugin::BUFFER_SOURCE_TYPE) {
+        src = "data";
+    } else if (sourceStreamPtr_->GetOriginalFd() >= 0) {
+        src = "fd";
+    } else if (!sourceStreamPtr_->GetOriginalPath().empty()) {
+        src = "path";
+    }
+    const int32_t pixelMapColorSpace = pixelMap == nullptr ? -1 :
+        static_cast<int32_t>(pixelMap->InnerGetGrColorSpace().GetColorSpaceName());
+    // 成功与失败统一输出一条 INFO：源流状态、源码流色域与 YUV 采样，成功时附带解码输出色域。
+    IMAGE_LOGI("[ImageSource]decode source state, stage:%{public}s, ret:%{public}u, size:%{public}zu, "
+        "tell:%{public}u, complete:%{public}d, readMode:%{public}s, src:%{public}s, "
+        "srcColorSpace:%{public}d(%{public}s), srcYuvSampling:%{public}s, "
+        "grColorSpace:%{public}d(%{public}s), pixelMapColorSpace:%{public}d(%{public}s)",
+        stage, errorCode, streamSize, tell, complete, readMode.c_str(), src, options.sourceColorSpace,
+        ColorSpaceNameStr(options.sourceColorSpace), options.sourceYuvSampling.c_str(),
+        grColorSpace, ColorSpaceNameStr(grColorSpace), pixelMapColorSpace,
+        ColorSpaceNameStr(pixelMapColorSpace));
 }
 
 void ImageSource::SetImageEventHeifParseErr(ImageEvent &event)
@@ -1391,9 +1560,13 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMap(uint32_t index, const DecodeOpt
     if (iter == imageStatusMap_.end()) {
         IMAGE_LOGE("[ImageSource]get valid image status fail on create pixel map, ret:%{public}u.", errorCode);
         ImageEvent imageEvent;
+        imageEvent.SetDecodePoint(DecodePoint::HEADER);
+        SetDecodeInfoOptions(index, opts, ImageInfo(), imageEvent);
         imageEvent.SetDecodeErrorMsg("[ImageSource]get valid image status fail on create pixel map, ret: "
                                      + std::to_string(errorCode));
+        imageEvent.SetDecodeResult(DecodeResult::FAILURE, DecodeError::IDENTIFY);
         SetImageEventHeifParseErr(imageEvent);
+        PrintDecodeSourceState("header", errorCode, imageEvent);
         return nullptr;
     }
     QosGuard qosGuard(iter->second.imageInfo.size);
@@ -1407,9 +1580,12 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMap(uint32_t index, const DecodeOpt
     ImageTrace imageTrace("CreatePixelMapExtended svg, dstSize:(%d, %d)", opts.desiredSize.width,
         opts.desiredSize.height);
     ImageEvent imageEvent;
+    SetDecodeInfoOptions(index, opts, iter->second.imageInfo, imageEvent);
     if (opts.desiredPixelFormat == PixelFormat::NV12 || opts.desiredPixelFormat == PixelFormat::NV21) {
         IMAGE_LOGE("[ImageSource] get YUV420 not support without going through CreatePixelMapExtended");
         imageEvent.SetDecodeErrorMsg("get YUV420 not support without going through CreatePixelMapExtended");
+        imageEvent.SetDecodeResult(DecodeResult::FAILURE, DecodeError::OPTIONS);
+        PrintDecodeSourceState("check_options", errorCode, imageEvent);
         return nullptr;
     }
     if (sourceInfo_.encodedFormat == "image/tiff" &&
@@ -1417,20 +1593,26 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMap(uint32_t index, const DecodeOpt
         opts.desiredPixelFormat == PixelFormat::RGBA_F16)) {
         IMAGE_LOGE("ARGB_8888 and RGBA_F16 pixel formats are not supported for tiff.");
         errorCode = ERR_IMAGE_PIXELMAP_CREATE_FAILED;
+        imageEvent.SetDecodeResult(DecodeResult::FAILURE, DecodeError::OPTIONS);
+        PrintDecodeSourceState("check_options", errorCode, imageEvent);
         return nullptr;
     }
     // the mainDecoder_ may be borrowed by Incremental decoding, so needs to be checked.
     if (InitMainDecoder() != SUCCESS) {
         IMAGE_LOGE("[ImageSource]image decode plugin is null.");
         imageEvent.SetDecodeErrorMsg("image decode plugin is null.");
+        imageEvent.SetDecodeResult(DecodeResult::FAILURE, DecodeError::PLUGIN);
         errorCode = ERR_IMAGE_PLUGIN_CREATE_FAILED;
+        PrintDecodeSourceState("init_decoder", errorCode, imageEvent);
         return nullptr;
     }
     unique_ptr<PixelMap> pixelMap = make_unique<PixelMap>();
     if (pixelMap == nullptr || pixelMap.get() == nullptr) {
         IMAGE_LOGE("[ImageSource]create the pixel map unique_ptr fail.");
         imageEvent.SetDecodeErrorMsg("create the pixel map unique_ptr fail.");
+        imageEvent.SetDecodeResult(DecodeResult::FAILURE, DecodeError::MEMORY);
         errorCode = ERR_IMAGE_MALLOC_ABNORMAL;
+        PrintDecodeSourceState("create_pixelmap", errorCode, imageEvent);
         return nullptr;
     }
 
@@ -1442,6 +1624,8 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMap(uint32_t index, const DecodeOpt
     if (errorCode != SUCCESS) {
         IMAGE_LOGE("[ImageSource]set decode options error (index:%{public}u), ret:%{public}u.", index, errorCode);
         imageEvent.SetDecodeErrorMsg("set decode options error, ret:." + std::to_string(errorCode));
+        imageEvent.SetDecodeResult(DecodeResult::FAILURE, DecodeError::OPTIONS);
+        PrintDecodeSourceState("set_decode_options", errorCode, imageEvent);
         return nullptr;
     }
 
@@ -1460,6 +1644,8 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMap(uint32_t index, const DecodeOpt
     if (errorCode != SUCCESS) {
         IMAGE_LOGE("[ImageSource]update pixelmap info error ret:%{public}u.", errorCode);
         imageEvent.SetDecodeErrorMsg("update pixelmap info error, ret:." + std::to_string(errorCode));
+        imageEvent.SetDecodeResult(DecodeResult::FAILURE, DecodeError::POST_PROCESS);
+        PrintDecodeSourceState("update_pixelmap_info", errorCode, imageEvent);
         return nullptr;
     }
 
@@ -1498,6 +1684,8 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMap(uint32_t index, const DecodeOpt
         guard.unlock();
         IMAGE_LOGE("[ImageSource]decode source fail, ret:%{public}u.", errorCode);
         imageEvent.SetDecodeErrorMsg("decode source fail, ret:." + std::to_string(errorCode));
+        imageEvent.SetDecodeResult(DecodeResult::FAILURE, DecodeError::DECODE);
+        PrintDecodeSourceState("decode", errorCode, imageEvent);
         if (context.pixelsBuffer.buffer != nullptr && context.freeFunc != nullptr) {
             context.freeFunc(context.pixelsBuffer.buffer, context.pixelsBuffer.context,
                 context.pixelsBuffer.bufferSize);
@@ -1537,14 +1725,20 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMap(uint32_t index, const DecodeOpt
     }
     PostProc postProc;
     errorCode = postProc.DecodePostProc(procOpts, *(pixelMap.get()), finalOutputStep);
-    bool cond = (errorCode != SUCCESS);
-    CHECK_ERROR_RETURN_RET(cond, nullptr);
+    if (errorCode != SUCCESS) {
+        imageEvent.SetDecodeResult(DecodeResult::FAILURE, DecodeError::POST_PROCESS);
+        PrintDecodeSourceState("post_process", errorCode, imageEvent);
+        return nullptr;
+    }
 
     if (!context.ifPartialOutput) {
         for (auto listener : decodeListeners_) {
             listener->OnEvent((int)DecodeEvent::EVENT_COMPLETE_DECODE);
         }
     }
+    // DFX: 解码完成时统一输出源流状态、解码器输出色域与 PixelMap 实际携带色域。
+    PrintDecodeSourceState("decode_done", SUCCESS, imageEvent,
+        mainDecoder_->GetPixelMapColorSpace().GetColorSpaceName(), pixelMap.get());
 
     if (CreatExifMetadataByImageSource() == SUCCESS) {
         auto metadataPtr = exifMetadata_->Clone();
@@ -1555,6 +1749,7 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMap(uint32_t index, const DecodeOpt
     ImageUtils::DumpPixelMapIfDumpEnabled(pixelMap, imageId_);
     pixelMap->SetMemoryName(GetPixelMapName(pixelMap.get()));
     ImageTrace pixelMapId("CreatePixelMapExtended svg, pixelMapId:%u", pixelMap->GetUniqueId());
+    imageEvent.SetDecodeResult(DecodeResult::SUCCESS);
     return pixelMap;
 }
 
@@ -1679,7 +1874,12 @@ uint32_t ImageSource::UpdateData(const uint8_t *data, uint32_t size, bool isComp
     if (isCompleted) {
         isIncrementalCompleted_ = isCompleted;
     }
-    return sourceStreamPtr_->UpdateData(data, size, isCompleted);
+    auto ret = sourceStreamPtr_->UpdateData(data, size, isCompleted);
+    // DFX: 打印每次增量写入的字节数、完成标记与源流累计大小。
+    CHECK_DEBUG_PRINT_LOG(ret == SUCCESS,
+        "[ImageSource]UpdateData size:%{public}u completed:%{public}d total:%{public}zu",
+        size, isCompleted, sourceStreamPtr_->GetStreamSize());
+    return ret;
 }
 
 DecodeEvent ImageSource::GetDecodeEvent()
@@ -3586,6 +3786,12 @@ uint32_t ImageSource::DoIncrementalDecoding(uint32_t index, const DecodeOptions 
 {
     IMAGE_LOGD("[ImageSource]do incremental decoding: begin.");
     ImageEvent imageEvent;
+    ImageInfo info;
+    auto status = imageStatusMap_.find(index);
+    if (status != imageStatusMap_.end()) {
+        info = status->second.imageInfo;
+    }
+    SetDecodeInfoOptions(index, opts, info, imageEvent, recordContext.decoder.get());
     imageEvent.SetIncrementalDecode();
     std::string pluginType = recordContext.decoder->GetPluginType();
     imageEvent.SetPluginType(pluginType);
@@ -3593,6 +3799,7 @@ uint32_t ImageSource::DoIncrementalDecoding(uint32_t index, const DecodeOptions 
     ProgDecodeContext context;
     context.decodeContext.pixelsBuffer.buffer = pixelAddr;
     uint32_t ret = recordContext.decoder->PromoteIncrementalDecode(index, context);
+    UpdateDecodeInfoOptions(context.decodeContext, imageEvent);
     if (context.decodeContext.pixelsBuffer.buffer != nullptr && pixelAddr == nullptr) {
         pixelMap.SetPixelsAddr(context.decodeContext.pixelsBuffer.buffer, context.decodeContext.pixelsBuffer.context,
             context.decodeContext.pixelsBuffer.bufferSize, context.decodeContext.allocatorType,
@@ -3604,13 +3811,38 @@ uint32_t ImageSource::DoIncrementalDecoding(uint32_t index, const DecodeOptions 
         recordContext.IncrementalState = ImageDecodingState::IMAGE_ERROR;
         IMAGE_LOGE("[ImageSource]do incremental decoding source fail, ret:%{public}u.", ret);
         imageEvent.SetDecodeErrorMsg("do incremental decoding source fail, ret:" + std::to_string(ret));
+        PrintDecodeSourceState("incremental", ret, imageEvent);
+        imageEvent.SetDecodeResult(DecodeResult::FAILURE, DecodeError::DECODE);
         return ret;
     }
     if (ret == SUCCESS) {
         recordContext.IncrementalState = ImageDecodingState::IMAGE_DECODED;
         IMAGE_LOGD("[ImageSource]do incremental decoding success.");
+        LogIncrementalDecodeDone(context.totalProcessProgress,
+            recordContext.decoder->GetPixelMapColorSpace().GetColorSpaceName());
+    } else {
+        LogIncrementalDecodeIncomplete(context.totalProcessProgress);
     }
+    imageEvent.SetDecodeResult(ret == SUCCESS ? DecodeResult::SUCCESS : DecodeResult::INCOMPLETE);
     return ret;
+}
+
+void ImageSource::LogIncrementalDecodeDone(uint32_t progress, int32_t srcColorSpace)
+{
+    // DFX: 增量解码完成时统一打印到货量、进度与源色域，用于核对源数据是否读完整。
+    CHECK_INFO_PRINT_LOG(sourceStreamPtr_ != nullptr,
+        "[ImageSource]IncrementalDecode done, progress:%{public}u, size:%{public}zu, tell:%{public}u, "
+        "completed:%{public}d, srcColorSpace:%{public}d(%{public}s)",
+        progress, GetDfxStreamSize(sourceStreamPtr_.get()), sourceStreamPtr_->Tell(),
+        isIncrementalCompleted_ ? 1 : 0, srcColorSpace, ColorSpaceNameStr(srcColorSpace));
+}
+
+void ImageSource::LogIncrementalDecodeIncomplete(uint32_t progress)
+{
+    // DFX: 数据未到齐属于正常中间态，用 DEBUG 级别避免高频日志。
+    CHECK_DEBUG_PRINT_LOG(sourceStreamPtr_ != nullptr,
+        "[ImageSource]IncrementalDecode incomplete, progress:%{public}u, size:%{public}zu, tell:%{public}u",
+        progress, sourceStreamPtr_->GetStreamSize(), sourceStreamPtr_->Tell());
 }
 
 const NinePatchInfo &ImageSource::GetNinePatchInfo() const
@@ -3932,6 +4164,71 @@ bool ImageSource::ConvertYUV420ToRGBA(uint8_t *data, uint32_t size, bool isSuppo
     return true;
 }
 
+namespace {
+// 解码失败时统一写入错误信息与失败结果，保持各失败分支打点行为一致。
+void SetDecodeFailure(ImageEvent &imageEvent, const char *msg, DecodeError error)
+{
+    imageEvent.SetDecodeErrorMsg(msg);
+    imageEvent.SetDecodeResult(DecodeResult::FAILURE, error);
+}
+} // namespace
+
+ImageInfo ImageSource::BuildYuvOutputImageInfo() const
+{
+    ImageInfo info;
+    info.baseDensity = sourceOptions_.baseDensity;
+    info.size.width = sourceOptions_.size.width;
+    info.size.height = sourceOptions_.size.height;
+    info.pixelFormat = PixelFormat::RGBA_8888;
+    info.alphaType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
+    return info;
+}
+
+void *ImageSource::AllocateYuvBuffer(PixelMap &pixelMap, size_t &bufferSize, ImageEvent &imageEvent,
+    uint32_t &errorCode)
+{
+    if (ImageUtils::CheckMulOverflow(pixelMap.GetWidth(), pixelMap.GetHeight(), pixelMap.GetPixelBytes())) {
+        IMAGE_LOGE("Invalid pixelmap params width:%{public}d, height:%{public}d",
+                   pixelMap.GetWidth(), pixelMap.GetHeight());
+        errorCode = ERR_IMAGE_MALLOC_ABNORMAL;
+        SetDecodeFailure(imageEvent, "invalid yuv buffer params", DecodeError::MEMORY);
+        return nullptr;
+    }
+    bufferSize = static_cast<size_t>(pixelMap.GetWidth()) * pixelMap.GetHeight() * pixelMap.GetPixelBytes();
+    if (bufferSize == 0 || bufferSize > MAX_YUV_BUFFER_SIZE) {
+        IMAGE_LOGE("Invalid bufferSize:%{public}zu", bufferSize);
+        errorCode = ERR_IMAGE_MALLOC_ABNORMAL;
+        SetDecodeFailure(imageEvent, "invalid yuv buffer size", DecodeError::MEMORY);
+        return nullptr;
+    }
+    auto *buffer = malloc(bufferSize);
+    if (buffer == nullptr) {
+        IMAGE_LOGE("Failed to allocate memory of size %{public}zu", bufferSize);
+        errorCode = ERR_IMAGE_MALLOC_ABNORMAL;
+        SetDecodeFailure(imageEvent, "allocate yuv buffer failed", DecodeError::MEMORY);
+        return nullptr;
+    }
+    pixelMap.SetEditable(false);
+    pixelMap.SetPixelsAddr(buffer, nullptr, bufferSize, AllocatorType::HEAP_ALLOC, nullptr);
+    return buffer;
+}
+
+void ImageSource::LogYuvDecodeSuccess(const ImageInfo &info, size_t bufferSize) const
+{
+    IMAGE_LOGI("[ImageSource]YUV decode success, sourceFormat:%{public}d, size:(%{public}d,%{public}d), "
+        "bufferSize:%{public}zu, srcSize:%{public}zu", sourceOptions_.pixelFormat, info.size.width,
+        info.size.height, bufferSize, GetDfxStreamSize(sourceStreamPtr_.get()));
+}
+
+void ImageSource::AttachExifMetadataToPixelMap(PixelMap &pixelMap)
+{
+    std::unique_lock<std::recursive_mutex> guard(decodingMutex_);
+    if (CreatExifMetadataByImageSource() == SUCCESS) {
+        auto metadataPtr = exifMetadata_->Clone();
+        pixelMap.SetExifMetadata(metadataPtr);
+    }
+}
+
 unique_ptr<PixelMap> ImageSource::CreatePixelMapForYUV(uint32_t &errorCode)
 {
     IMAGE_LOGD("Starting the creation of PixelMap for YUV. Source pixel format: %{public}d, "
@@ -3939,52 +4236,40 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapForYUV(uint32_t &errorCode)
         sourceOptions_.pixelFormat, sourceOptions_.size.width, sourceOptions_.size.height);
     DumpInputData("yuv");
 
+    ImageEvent imageEvent;
     unique_ptr<PixelMap> pixelMap = make_unique<PixelMap>();
     if (pixelMap == nullptr) {
         IMAGE_LOGE("Failed to create the pixel map unique_ptr.");
         errorCode = ERR_IMAGE_MALLOC_ABNORMAL;
+        SetDecodeInfoOptions(0, opts_, ImageInfo(), imageEvent);
+        SetDecodeFailure(imageEvent, "create the pixel map unique_ptr fail", DecodeError::MEMORY);
         return nullptr;
     }
 
-    ImageInfo info;
-    info.baseDensity = sourceOptions_.baseDensity;
-    info.size.width = sourceOptions_.size.width;
-    info.size.height = sourceOptions_.size.height;
-    info.pixelFormat = PixelFormat::RGBA_8888;
-    info.alphaType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
+    ImageInfo info = BuildYuvOutputImageInfo();
+    SetDecodeInfoOptions(0, opts_, info, imageEvent);
     errorCode = pixelMap->SetImageInfo(info);
     bool cond = (errorCode != SUCCESS);
-    CHECK_ERROR_RETURN_RET_LOG(cond, nullptr,
-        "Error updating pixelmap info. Return code: %{public}u.", errorCode);
-    cond = ImageUtils::CheckMulOverflow(pixelMap->GetWidth(), pixelMap->GetHeight(), pixelMap->GetPixelBytes());
-    CHECK_ERROR_RETURN_RET_LOG(cond, nullptr, "Invalid pixelmap params width:%{public}d, height:%{public}d",
-                               pixelMap->GetWidth(), pixelMap->GetHeight());
-    size_t bufferSize = static_cast<size_t>(pixelMap->GetWidth() * pixelMap->GetHeight() * pixelMap->GetPixelBytes());
-    auto buffer = malloc(bufferSize);
-    if (buffer == nullptr) {
-        IMAGE_LOGE("Failed to allocate memory of size %{public}zu", bufferSize);
-        errorCode = ERR_IMAGE_MALLOC_ABNORMAL;
+    if (cond) {
+        IMAGE_LOGE("Error updating pixelmap info. Return code: %{public}u.", errorCode);
+        SetDecodeFailure(imageEvent, "update pixelmap info error", DecodeError::DECODE);
         return nullptr;
     }
-
-    pixelMap->SetEditable(false);
-    pixelMap->SetPixelsAddr(buffer, nullptr, bufferSize, AllocatorType::HEAP_ALLOC, nullptr);
+    size_t bufferSize = 0;
+    auto *buffer = AllocateYuvBuffer(*pixelMap, bufferSize, imageEvent, errorCode);
+    if (buffer == nullptr) {
+        return nullptr;
+    }
 
     if (!ConvertYUV420ToRGBA(static_cast<uint8_t *>(buffer), bufferSize, false, false, errorCode)) {
         IMAGE_LOGE("Issue converting yuv420 to rgba, errorCode=%{public}u", errorCode);
+        SetDecodeFailure(imageEvent, "convert yuv420 to rgba failed", DecodeError::DECODE);
         errorCode = ERROR;
         return nullptr;
     }
 
-    IMAGE_LOGD("CreatePixelMapForYUV operation completed.");
-
-    {
-        std::unique_lock<std::recursive_mutex> guard(decodingMutex_);
-        if (CreatExifMetadataByImageSource() == SUCCESS) {
-            auto metadataPtr = exifMetadata_->Clone();
-            pixelMap->SetExifMetadata(metadataPtr);
-        }
-    }
+    LogYuvDecodeSuccess(info, bufferSize);
+    AttachExifMetadataToPixelMap(*pixelMap);
 
     if (!ImageUtils::FloatCompareZero(opts_.rotateDegrees)) {
         pixelMap->rotate(opts_.rotateDegrees);
@@ -3992,6 +4277,7 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapForYUV(uint32_t &errorCode)
         pixelMap->rotate(opts_.rotateNewDegrees);
     }
 
+    imageEvent.SetDecodeResult(DecodeResult::SUCCESS);
     return pixelMap;
 }
 
@@ -5821,11 +6107,55 @@ std::unique_ptr<PixelMap> ImageSource::DecodeExifThumbnail(const DecodingOptions
     return pixelMap;
 }
 
+void ImageSource::LogThumbnailDecode(const char *path, const std::string &format, uint32_t errorCode,
+    PixelMap *pixelMap) const
+{
+    // 三条缩略图解码路径共用一条结果日志，避免各路径维护格式不同的重复日志。
+    IMAGE_LOGI("[ImageSource]thumbnail decode, path:%{public}s, format:%{public}s, ret:%{public}u, "
+        "size:(%{public}d,%{public}d)", path, format.c_str(), errorCode,
+        pixelMap == nullptr ? 0 : pixelMap->GetWidth(), pixelMap == nullptr ? 0 : pixelMap->GetHeight());
+}
+
+std::unique_ptr<PixelMap> ImageSource::DecodeThumbnailByHeif(const DecodingOptionsForThumbnail &opts,
+    ImagePlugin::DecodeContext &context, const std::string &format, uint32_t &errorCode, ImageEvent &imageEvent)
+{
+    std::unique_ptr<PixelMap> pixelMap = DecodeHeifParserThumbnail(opts, context, format, errorCode);
+    if (errorCode == SUCCESS && pixelMap != nullptr) {
+        LogThumbnailDecode("heif", format, errorCode, pixelMap.get());
+        imageEvent.SetDecodeResult(DecodeResult::SUCCESS);
+        return pixelMap;
+    }
+    if (errorCode == ERR_IMAGE_INVALID_PARAMETER) {
+        IMAGE_LOGE("%{public}s: DecodeHeifParserThumbnail failed with parameter invaild", __func__);
+        SetDecodeFailure(imageEvent, "heif thumbnail decode invalid parameter", DecodeError::OPTIONS);
+    }
+    return pixelMap;
+}
+
+std::unique_ptr<PixelMap> ImageSource::DecodeThumbnailByGenerate(const DecodingOptionsForThumbnail &opts,
+    const std::string &format, uint32_t &errorCode, ImageEvent &imageEvent)
+{
+    IMAGE_LOGW("%{public}s: DecodeExifThumbnail failed, generate thumbnail by primary image", __func__);
+    std::unique_ptr<PixelMap> pixelMap = GenerateThumbnail(opts, errorCode);
+    LogThumbnailDecode("generate", format, errorCode, pixelMap.get());
+    if (pixelMap == nullptr) {
+        SetDecodeFailure(imageEvent, "generate thumbnail failed", DecodeError::DECODE);
+    } else {
+        imageEvent.SetDecodeResult(DecodeResult::SUCCESS);
+    }
+    return pixelMap;
+}
+
 std::unique_ptr<PixelMap> ImageSource::CreateThumbnail(const DecodingOptionsForThumbnail &opts, uint32_t &errorCode)
 {
+    ImageEvent imageEvent;
+    // 缩略图解码会解出完整小图，与仅解析头的 HEADER 点区分统计。
+    imageEvent.SetDecodePoint(DecodePoint::THUMBNAIL);
     if (!ParseHdrType()) {
         IMAGE_LOGE("%{public}s: Init mainDecoder_ failed!", __func__);
         errorCode = ERR_IMAGE_PLUGIN_CREATE_FAILED;
+        SetDecodeInfoOptions(0, DecodeOptions(), ImageInfo(), imageEvent);
+        SetDecodeFailure(imageEvent, "thumbnail decode init mainDecoder failed", DecodeError::PLUGIN);
         return nullptr;
     }
 
@@ -5833,27 +6163,35 @@ std::unique_ptr<PixelMap> ImageSource::CreateThumbnail(const DecodingOptionsForT
     if (!(format == IMAGE_JPEG_FORMAT || format == IMAGE_HEIF_FORMAT || format == IMAGE_HEIC_FORMAT)) {
         IMAGE_LOGE("%{public}s: unsupported format: %{public}s", __func__, format.c_str());
         errorCode = ERR_IMAGE_MISMATCHED_FORMAT;
+        SetDecodeInfoOptions(0, DecodeOptions(), ImageInfo(), imageEvent);
+        SetDecodeFailure(imageEvent, "thumbnail unsupported format", DecodeError::OPTIONS);
         return nullptr;
     }
 
     DecodeContext context;
     context.allocatorType = opts.allocatorType;
+    SetDecodeInfoOptions(0, DecodeOptions(), ImageInfo(), imageEvent);
     std::unique_ptr<PixelMap> pixelMap = nullptr;
     if (format == IMAGE_HEIF_FORMAT || format == IMAGE_HEIC_FORMAT) {
-        pixelMap = DecodeHeifParserThumbnail(opts, context, format, errorCode);
+        pixelMap = DecodeThumbnailByHeif(opts, context, format, errorCode, imageEvent);
         if (errorCode == SUCCESS && pixelMap != nullptr) {
-            IMAGE_LOGD("%{public}s: DecodeHeifParserThumbnail success", __func__);
             return pixelMap;
         }
-        CHECK_ERROR_RETURN_RET_LOG(errorCode == ERR_IMAGE_INVALID_PARAMETER, nullptr,
-            "%{public}s: DecodeHeifParserThumbnail failed with parameter invaild", __func__);
+        if (errorCode == ERR_IMAGE_INVALID_PARAMETER) {
+            return nullptr;
+        }
         IMAGE_LOGI("%{public}s: DecodeHeifParserThumbnail failed, get thumbnail with other method", __func__);
     }
 
     pixelMap = DecodeExifThumbnail(opts, context, format, errorCode);
     if (opts.generateThumbnailIfAbsent && (errorCode != SUCCESS || pixelMap == nullptr)) {
-        IMAGE_LOGW("%{public}s: DecodeExifThumbnail failed, generate thumbnail by primary image", __func__);
-        return GenerateThumbnail(opts, errorCode);
+        return DecodeThumbnailByGenerate(opts, format, errorCode, imageEvent);
+    }
+    LogThumbnailDecode("exif", format, errorCode, pixelMap.get());
+    if (pixelMap == nullptr) {
+        SetDecodeFailure(imageEvent, "exif thumbnail decode failed", DecodeError::DECODE);
+    } else {
+        imageEvent.SetDecodeResult(DecodeResult::SUCCESS);
     }
     return pixelMap;
 }
