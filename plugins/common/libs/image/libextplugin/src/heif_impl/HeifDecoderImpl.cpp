@@ -1288,6 +1288,11 @@ int32_t HeifDecoderImpl::GetPrimaryLumaBitNum()
     return primaryImage_->GetLumaBitNum();
 }
 
+HeifPixelFormat HeifDecoderImpl::GetSourcePixelFormat() const
+{
+    return primaryImage_ ? primaryImage_->GetDefaultPixelFormat() : HeifPixelFormat::UNDEFINED;
+}
+
 bool HeifDecoderImpl::IsDirectYUVDecode()
 {
     CHECK_ERROR_RETURN_RET(!dstHwBuffer_ || isGainmapDecode_, false);

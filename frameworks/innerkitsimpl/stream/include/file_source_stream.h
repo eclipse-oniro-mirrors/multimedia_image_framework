@@ -35,6 +35,8 @@ public:
                      bool useMmap = false, int originalFd = SOURCE_STREAM_INVALID_FD);
     FileSourceStream(std::FILE *file, size_t size, size_t offset, size_t original,
                      bool useMmap = false, const std::string &originalPath = SOURCE_STREAM_INVALID_PATH);
+    FileSourceStream(std::FILE *file, size_t size, size_t offset, size_t original,
+                     bool useMmap, int originalFd, const std::string &originalPath);
     ~FileSourceStream() override;
 
     bool Read(uint32_t desiredSize, ImagePlugin::DataStreamBuffer &outData) override;
@@ -47,12 +49,16 @@ public:
     uint8_t *GetDataPtr() override;
     uint8_t *GetDataPtr(bool populate) override;
     uint32_t GetStreamType() override;
+    ReadState GetReadState() override;
+    std::string GetReadMode() override;
     int GetMMapFd();
 
 private:
     DISALLOW_COPY_AND_MOVE(FileSourceStream);
     bool GetData(uint32_t desiredSize, uint8_t *outBuffer, uint32_t bufferSize, uint32_t &readSize);
     bool GetData(uint32_t desiredSize, ImagePlugin::DataStreamBuffer &outData);
+    // 不支持 mmap 或 mmap 失败时，把整段源流读入内存供直接访问。
+    uint8_t *ReadWholeStreamToBuffer();
     void ResetReadBuffer();
     std::FILE *filePtr_ = nullptr;
     size_t fileSize_ = 0;
@@ -63,6 +69,12 @@ private:
     int mmapFd_ = -1;
     bool mmapFdPassedOn_ = false;
     bool useMmap_ = true;
+    // 数据已经由 GetDataPtr 直接访问，游标不再反映读取进度。
+    bool directAccess_ = false;
+    // 是否发生过读取尝试，未读取时读取完整性无法判定。
+    bool readStarted_ = false;
+    // 读取到达流尾（含读全后的流尾探测读），仅作诊断，不参与完整性判定。
+    bool readExhausted_ = false;
 };
 } // namespace Media
 } // namespace OHOS

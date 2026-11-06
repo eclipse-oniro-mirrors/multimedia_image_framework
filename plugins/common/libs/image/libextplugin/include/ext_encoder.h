@@ -74,6 +74,10 @@ private:
 #ifdef USE_M133_SKIA
     bool SkEncodeImage(SkWStream* dst, const SkBitmap& src, SkEncodedImageFormat format, int quality);
 #endif
+#if !defined(CROSS_PLATFORM)
+    uint32_t EncodeByAstc();
+    uint32_t EncodePictureChecked();
+#endif
     uint32_t DoEncode(SkWStream* skStream, const SkBitmap& src, const SkEncodedImageFormat& skFormat);
     uint32_t DoHdrEncode(ExtWStream& wStream);
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
@@ -174,6 +178,8 @@ private:
     uint32_t PixelmapEncode(ExtWStream& wStream);
     uint32_t EncodeHeifByPixelmap(Media::PixelMap* pixelmap, const PlEncodeOptions& opts);
     void RecycleResources();
+    void ReportEncodeSuccess(uint64_t outputSize, uint64_t startTime);
+    uint64_t GetOutputBytesWritten() const;
 
     uint32_t ProcessEncodeControlParams();
     bool NeedDeepCopy();
@@ -195,6 +201,8 @@ private:
     std::vector<std::shared_ptr<Media::AbsMemory>> tmpMemoryList_;
     Media::Picture* picture_ = nullptr;
     std::unique_ptr<Picture> dstPicture_;
+    uint64_t encodeStartTime_ = 0;
+    bool hardwareEncoded_ = false;
 };
 } // namespace ImagePlugin
 } // namespace OHOS

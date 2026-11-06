@@ -41,6 +41,8 @@ public:
     bool IsStreamCompleted() override;
     size_t GetStreamSize() override;
     uint8_t *GetDataPtr() override;
+    ReadState GetReadState() override;
+    std::string GetReadMode() override;
 private:
     IncrementalMode incrementalMode_;
     bool isFinalize_;

@@ -36,6 +36,11 @@ bool OstreamPackerStream::Write(const uint8_t *buffer, uint32_t size)
         return false;
     }
     outputStream_->write(reinterpret_cast<const char *>(buffer), size);
+    // DFX: 流写入失败通常为磁盘满或流状态异常；这里只补日志，返回值保持既有语义不变。
+    if (outputStream_->fail()) {
+        IMAGE_LOGE("write data failed, size:%{public}u, tellp:%{public}lld.",
+            size, static_cast<long long>(outputStream_->tellp()));
+    }
     return true;
 }
 
@@ -43,6 +48,11 @@ void OstreamPackerStream::Flush()
 {
     if (outputStream_ != nullptr) {
         outputStream_->flush();
+        // DFX: 刷新失败通常为磁盘满等底层写错误，此处仅记录日志。
+        if (outputStream_->fail()) {
+            IMAGE_LOGW("flush stream failed, tellp:%{public}lld.",
+                static_cast<long long>(outputStream_->tellp()));
+        }
     }
 }
 

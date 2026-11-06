@@ -18,6 +18,7 @@
 #include "buffer_packer_stream.h"
 #include "file_packer_stream.h"
 #include "image/abs_image_encoder.h"
+#include "image_dfx.h"
 #include "image_log.h"
 #include "image_mime_type.h"
 #include "image_trace.h"
@@ -129,10 +130,12 @@ uint32_t ImagePacker::StartPackingImpl(const PackOption &option)
 {
     if (packerStream_ == nullptr || packerStream_.get() == nullptr) {
         IMAGE_LOGE("make buffer packer stream failed.");
+        ReportEncodeFault(0, 0, option.format, "packer stream is nullptr");
         return ERR_IMAGE_DATA_ABNORMAL;
     }
     if (!GetEncoderPlugin(option)) {
         IMAGE_LOGE("StartPackingImpl get encoder plugin failed.");
+        ReportEncodeFault(0, 0, option.format, "get encoder plugin failed");
         return ERR_IMAGE_MISMATCHED_FORMAT;
     }
     encodeToSdr_ = ((option.desiredDynamicRange == EncodeDynamicRange::SDR) ||
@@ -141,9 +144,12 @@ uint32_t ImagePacker::StartPackingImpl(const PackOption &option)
     format_ = option.format;
     PlEncodeOptions plOpts;
     CopyOptionsToPlugin(option, plOpts);
-    return DoEncodingFunc([this, &plOpts](ImagePlugin::AbsImageEncoder* encoder) {
+    uint32_t ret = DoEncodingFunc([this, &plOpts](ImagePlugin::AbsImageEncoder* encoder) {
         return encoder->StartEncode(*packerStream_.get(), plOpts);
     });
+    IMAGE_LOGI("[ImagePacker]StartPacking format:%{public}s, quality:%{public}u, sdr:%{public}d, ret:%{public}u",
+        option.format.c_str(), option.quality, encodeToSdr_ ? 1 : 0, ret);
+    return ret;
 }
 
 uint32_t ImagePacker::StartPacking(uint8_t *outputData, uint32_t maxSize, const PackOption &option)
@@ -313,6 +319,8 @@ uint32_t ImagePacker::FinalizePacking(int64_t &packedSize)
         packerStream_->Flush();
     }
     packedSize = (packerStream_ != nullptr) ? packerStream_->BytesWritten() : 0;
+    IMAGE_LOGI("[ImagePacker]FinalizePacking format:%{public}s, packedSize:%{public}lld, ret:%{public}u",
+        format_.c_str(), static_cast<long long>(packedSize), ret);
     return ret;
 }
 

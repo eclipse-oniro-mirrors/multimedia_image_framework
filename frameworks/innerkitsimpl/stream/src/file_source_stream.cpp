@@ -19,6 +19,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/ioctl.h>
+#include <sys/stat.h>
 
 #include "directory_ex.h"
 #include "file_packer_stream.h"
@@ -66,6 +67,15 @@ FileSourceStream::FileSourceStream(std::FILE *file, size_t size, size_t offset, 
     originalPath_ = originalPath;
 }
 
+FileSourceStream::FileSourceStream(std::FILE *file, size_t size, size_t offset, size_t original,
+                                   bool useMmap, int originalFd, const std::string &originalPath)
+    : filePtr_(file), fileSize_(size), fileOffset_(offset), fileOriginalOffset_(original),
+    useMmap_(useMmap)
+{
+    originalFd_ = originalFd;
+    originalPath_ = originalPath;
+}
+
 FileSourceStream::~FileSourceStream()
 {
     IMAGE_LOGD("[FileSourceStream]destructor enter.");
@@ -75,6 +85,30 @@ FileSourceStream::~FileSourceStream()
     }
     ResetReadBuffer();
 }
+
+#if !defined(_WIN32)
+// 读取 fd 对应的原始文件路径，供维测提取文件后缀；链接目标带 " (deleted)" 后缀时剥离。
+static std::string GetFdOriginalPath(int fd)
+{
+    if (fd < 0) {
+        return std::string();
+    }
+    constexpr size_t maxFilePathSize = 4096;
+    char target[maxFilePathSize];
+    const std::string link = "/proc/self/fd/" + std::to_string(fd);
+    const ssize_t length = readlink(link.c_str(), target, sizeof(target));
+    if (length <= 0 || static_cast<size_t>(length) >= sizeof(target)) {
+        return std::string();
+    }
+    std::string originalPath(target, static_cast<size_t>(length));
+    const std::string deletedSuffix = " (deleted)";
+    if (originalPath.size() > deletedSuffix.size() && originalPath.compare(originalPath.size() -
+        deletedSuffix.size(), deletedSuffix.size(), deletedSuffix) == 0) {
+        originalPath.erase(originalPath.size() - deletedSuffix.size());
+    }
+    return originalPath;
+}
+#endif
 
 unique_ptr<FileSourceStream> FileSourceStream::CreateSourceStream(const string &pathName)
 {
@@ -112,6 +146,11 @@ unique_ptr<FileSourceStream> FileSourceStream::CreateSourceStream(const int fd)
         IMAGE_LOGE("[FileSourceStream]Fail to dup fd, dupFd:[%{public}d].", dupFd);
         return nullptr;
     }
+#if !defined(_WIN32)
+    const std::string originalPath = GetFdOriginalPath(dupFd);
+#else
+    const std::string originalPath;
+#endif
 
     FILE *filePtr = fdopen(dupFd, "rb");
     if (filePtr == nullptr) {
@@ -122,9 +161,22 @@ unique_ptr<FileSourceStream> FileSourceStream::CreateSourceStream(const int fd)
     bool useMmap = ShouldUseMmap(fd);
     size_t size = 0;
     if (!ImageUtils::GetFileSize(dupFd, size)) {
+#if !defined(_WIN32)
+        // 直接 fstat 复核 fd 元数据，区分 fd 异常与合法 0 字节文件。
+        struct stat st = {};
+        const int statRet = fstat(dupFd, &st);
+        IMAGE_LOGE("[FileSourceStream]get the file size fail. dupFd:%{public}d, fstat ret:%{public}d, "
+            "size:%{public}lld, errno:%{public}d", dupFd, statRet,
+            statRet == 0 ? static_cast<long long>(st.st_size) : -1LL, errno);
+#else
         IMAGE_LOGE("[FileSourceStream]get the file size fail. dupFd=%{public}d", dupFd);
+#endif
         fclose(filePtr);
         return nullptr;
+    }
+    if (size == 0) {
+        // 0 字节文件的后续读取必然失败，显式记录便于与流创建失败区分。
+        IMAGE_LOGW("[FileSourceStream]source file is empty. dupFd=%{public}d", dupFd);
     }
 
     int ret = fseek(filePtr, 0, SEEK_SET);
@@ -138,7 +190,7 @@ unique_ptr<FileSourceStream> FileSourceStream::CreateSourceStream(const int fd)
         fclose(filePtr);
         return nullptr;
     }
-    return make_unique<FileSourceStream>(filePtr, size, offset, offset, useMmap, dupFd);
+    return make_unique<FileSourceStream>(filePtr, size, offset, offset, useMmap, dupFd, originalPath);
 }
 
 unique_ptr<FileSourceStream> FileSourceStream::CreateSourceStream(
@@ -153,6 +205,11 @@ unique_ptr<FileSourceStream> FileSourceStream::CreateSourceStream(
         IMAGE_LOGE("[FileSourceStream]dup fd failed, dupFd:[%{public}d].", dupFd);
         return nullptr;
     }
+#if !defined(_WIN32)
+    const std::string originalPath = GetFdOriginalPath(dupFd);
+#else
+    const std::string originalPath;
+#endif
 
     FILE *filePtr = fdopen(dupFd, "rb");
     if (filePtr == nullptr) {
@@ -167,7 +224,7 @@ unique_ptr<FileSourceStream> FileSourceStream::CreateSourceStream(
         fclose(filePtr);
         return nullptr;
     }
-    return make_unique<FileSourceStream>(filePtr, length, offset, offset, useMmap, dupFd);
+    return make_unique<FileSourceStream>(filePtr, length, offset, offset, useMmap, dupFd, originalPath);
 }
 
 bool FileSourceStream::Read(uint32_t desiredSize, DataStreamBuffer &outData)
@@ -263,9 +320,20 @@ uint32_t FileSourceStream::Tell()
     return fileOffset_ - fileOriginalOffset_;
 }
 
+// 两处 fread 短读共用一条告警，避免维护两份字段与格式相同的日志。
+static void LogShortRead(const char *api, size_t bytesRead, uint32_t desiredSize, size_t fileSize,
+    size_t fileOffset)
+{
+    IMAGE_LOGW("[FileSourceStream]short read, api:%{public}s, bytesRead:%{public}zu, "
+        "desiredSize:%{public}u, fileSize:%{public}zu, fileOffset:%{public}zu",
+        api, bytesRead, desiredSize, fileSize, fileOffset);
+}
+
 bool FileSourceStream::GetData(uint32_t desiredSize, uint8_t *outBuffer, uint32_t bufferSize, uint32_t &readSize)
 {
+    readStarted_ = true;
     if (fileSize_ == fileOffset_) {
+        readExhausted_ = true;
         IMAGE_LOGE("[FileSourceStream]read data finish, offset:%{public}zu ,dataSize%{public}zu.",
             fileOffset_, fileSize_);
         return false;
@@ -276,8 +344,7 @@ bool FileSourceStream::GetData(uint32_t desiredSize, uint8_t *outBuffer, uint32_
     }
     size_t bytesRead = fread(outBuffer, sizeof(outBuffer[0]), desiredSize, filePtr_);
     if (bytesRead < desiredSize) {
-        IMAGE_LOGD("read outBuffer end, bytesRead:%{public}zu, desiredSize:%{public}u, fileSize_:%{public}zu,"
-            "fileOffset_:%{public}zu", bytesRead, desiredSize, fileSize_, fileOffset_);
+        LogShortRead("outBuffer", bytesRead, desiredSize, fileSize_, fileOffset_);
         int fRes = ferror(filePtr_);
         CHECK_DEBUG_RETURN_RET_LOG(fRes, false, "fread failed, ferror:%{public}d", fRes);
     }
@@ -287,7 +354,9 @@ bool FileSourceStream::GetData(uint32_t desiredSize, uint8_t *outBuffer, uint32_
 
 bool FileSourceStream::GetData(uint32_t desiredSize, DataStreamBuffer &outData)
 {
+    readStarted_ = true;
     if (fileSize_ == fileOffset_) {
+        readExhausted_ = true;
         IMAGE_LOGE("[FileSourceStream]read finish, offset:%{public}zu ,dataSize%{public}zu.",
             fileOffset_, fileSize_);
         return false;
@@ -311,8 +380,7 @@ bool FileSourceStream::GetData(uint32_t desiredSize, DataStreamBuffer &outData)
     }
     size_t bytesRead = fread(readBuffer_, sizeof(uint8_t), desiredSize, filePtr_);
     if (bytesRead < desiredSize) {
-        IMAGE_LOGD("read outData end, bytesRead:%{public}zu, desiredSize:%{public}u, fileSize_:%{public}zu,"
-            "fileOffset_:%{public}zu", bytesRead, desiredSize, fileSize_, fileOffset_);
+        LogShortRead("outData", bytesRead, desiredSize, fileSize_, fileOffset_);
         int fRes = ferror(filePtr_);
         if (fRes) {
             IMAGE_LOGD("fread failed, ferror:%{public}d", fRes);
@@ -366,6 +434,7 @@ uint8_t *FileSourceStream::GetDataPtr(bool populate)
             populate ? MAP_SHARED | MAP_POPULATE : MAP_SHARED, mmapFd_, fileOriginalOffset_);
         if (mmptr != MAP_FAILED) {
             fileData_ = static_cast<uint8_t*>(mmptr);
+            directAccess_ = true;
             return fileData_;
         }
         IMAGE_LOGE("[FileSourceStream] mmap failed, errno:%{public}d", errno);
@@ -374,6 +443,16 @@ uint8_t *FileSourceStream::GetDataPtr(bool populate)
     }
 #endif
     useMmap_ = false;
+    fileData_ = ReadWholeStreamToBuffer();
+    if (fileData_ == nullptr) {
+        return nullptr;
+    }
+    directAccess_ = true;
+    return fileData_;
+}
+
+uint8_t *FileSourceStream::ReadWholeStreamToBuffer()
+{
     size_t streamSize = GetStreamSize();
     CHECK_ERROR_RETURN_RET_LOG(streamSize > UINT32_MAX, nullptr, "[FileSourceStream] GetStreamSize overflow");
     uint32_t size = static_cast<uint32_t>(streamSize);
@@ -396,13 +475,46 @@ uint8_t *FileSourceStream::GetDataPtr(bool populate)
         return nullptr;
     }
     IMAGE_LOGD("[FileSourceStream] UseMmap is false, read buffer success.");
-    fileData_ = buffer;
-    return fileData_;
+    return buffer;
 }
 
 uint32_t FileSourceStream::GetStreamType()
 {
     return ImagePlugin::FILE_STREAM_TYPE;
+}
+
+SourceStream::ReadState FileSourceStream::GetReadState()
+{
+    const size_t streamSize = GetStreamSize();
+    // 流大小未知时无法判定完整性。
+    if (streamSize == static_cast<size_t>(-1)) {
+        return ReadState::UNKNOWN;
+    }
+    // 空源没有任何可读数据，不能按"已读完"计。
+    if (streamSize == 0) {
+        return ReadState::INCOMPLETE;
+    }
+    // 直接访问已把整段源流一次性交给解码器，是否解析完由解码器决定，此处按输入已全部提供计。
+    if (directAccess_) {
+        return ReadState::COMPLETE;
+    }
+    // 尚未发生顺序读取时游标不反映进度。
+    if (!readStarted_) {
+        return ReadState::UNKNOWN;
+    }
+    // 读完后的流尾探测读也会置位 readExhausted_，该标志仅作诊断，不参与完整性判定。
+    if (readExhausted_ && static_cast<size_t>(Tell()) < streamSize) {
+        IMAGE_LOGD("[FileSourceStream]read reached stream end before cursor, tell:%{public}u, size:%{public}zu.",
+            Tell(), streamSize);
+    }
+    // 顺序读以游标是否到达流尾判定：读完（含流尾探测读）为完整，提前停止为不完整。
+    return (static_cast<size_t>(Tell()) >= streamSize) ? ReadState::COMPLETE : ReadState::INCOMPLETE;
+}
+
+std::string FileSourceStream::GetReadMode()
+{
+    // 仅在实际通过 mmap 建立直接访问后报告 mmap，其余读取均按顺序读统计。
+    return (directAccess_ && useMmap_) ? "mmap" : "sequential";
 }
 
 void FileSourceStream::ResetReadBuffer()

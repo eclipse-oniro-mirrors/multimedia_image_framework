@@ -28,9 +28,27 @@ const std::string SOURCE_STREAM_INVALID_PATH = "";
 
 class SourceStream : public ImagePlugin::InputDataStream {
 public:
+    // 维测读取完整性：UNKNOWN 表示直接访问或尚未读取而无法判定，INCOMPLETE 表示存在未满足的读取请求，
+    // COMPLETE 表示读取请求全部满足。
+    enum class ReadState : int32_t { UNKNOWN = -1, INCOMPLETE = 0, COMPLETE = 1 };
+
     virtual uint32_t UpdateData(const uint8_t *data, uint32_t size, bool isCompleted)
     {
         return ERR_IMAGE_DATA_UNSUPPORT;
+    }
+
+    // 读取方式标签：sequential 顺序读、mmap 直接映射、buffer 内存缓冲、incremental 增量。
+    virtual std::string GetReadMode()
+    {
+        return "sequential";
+    }
+
+    // 顺序读流以游标到达流尾判定读取完整性，直接访问与增量流由子类自报。
+    virtual ReadState GetReadState()
+    {
+        const size_t streamSize = GetStreamSize();
+        return (streamSize != static_cast<size_t>(-1) && Tell() >= streamSize) ?
+            ReadState::COMPLETE : ReadState::INCOMPLETE;
     }
 
     virtual int GetOriginalFd()

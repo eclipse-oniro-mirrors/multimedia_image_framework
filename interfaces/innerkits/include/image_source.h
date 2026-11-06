@@ -70,6 +70,7 @@ namespace Media {
 using namespace HDI::Display::Graphic::Common::V1_0;
 #endif
 class ImageEvent;
+struct DecodeInfoOptions;
 struct SourceOptions {
     std::string formatHint;
     int32_t baseDensity = 0;
@@ -401,7 +402,8 @@ private:
     uint32_t GetFormatExtended(std::string &format);
     static std::unique_ptr<ImageSource> DoImageSourceCreate(
         std::function<std::unique_ptr<SourceStream>(void)> stream,
-        const SourceOptions &opts, uint32_t &errorCode, const std::string traceName = "");
+        const SourceOptions &opts, uint32_t &errorCode, const std::string traceName = "",
+        const std::string &sourcePath = "", int sourceFd = -1);
     std::unique_ptr<PixelMap> CreatePixelMapExtended(uint32_t index, const DecodeOptions &opts,
                                                      uint32_t &errorCode);
     std::unique_ptr<PixelMap> CreatePixelMapByInfos(ImagePlugin::PlImageInfo &plInfo,
@@ -442,10 +444,23 @@ private:
     std::shared_ptr<MetadataAccessor> CreateMetadataAccessorForWrite(uint32_t &error);
     uint32_t WriteExifMetadataToFile(std::shared_ptr<MetadataAccessor> metadataAccessor);
     uint32_t CreateXMPMetadataByImageSource(const std::string &mimeType);
-    void SetDecodeInfoOptions(uint32_t index, const DecodeOptions &opts, const ImageInfo &info, ImageEvent &imageEvent);
+    void SetDecodeInfoOptions(uint32_t index, const DecodeOptions &opts, const ImageInfo &info, ImageEvent &imageEvent,
+        ImagePlugin::AbsImageDecoder *decoder = nullptr);
     void SetDecodeInfoOptions(uint32_t index, const DecodeOptions &opts, const ImagePlugin::PlImageInfo &plInfo,
         ImageEvent &imageEvent);
     void UpdateDecodeInfoOptions(const ImagePlugin::DecodeContext &context, ImageEvent &imageEvent);
+    void SetDecodeInfoSourceInfo(DecodeInfoOptions &options, ImagePlugin::AbsImageDecoder *decoder,
+        uint32_t index);
+    void PrintDecodeSourceState(const char *stage, uint32_t errorCode, ImageEvent &imageEvent,
+        int32_t grColorSpace = -1, PixelMap *pixelMap = nullptr);
+    void LogThumbnailDecode(const char *path, const std::string &format, uint32_t errorCode,
+        PixelMap *pixelMap) const;
+    void LogIncrementalDecodeDone(uint32_t progress, int32_t srcColorSpace);
+    void LogIncrementalDecodeIncomplete(uint32_t progress);
+    ImageInfo BuildYuvOutputImageInfo() const;
+    void LogYuvDecodeSuccess(const ImageInfo &info, size_t bufferSize) const;
+    void *AllocateYuvBuffer(PixelMap &pixelMap, size_t &bufferSize, ImageEvent &imageEvent, uint32_t &errorCode);
+    void AttachExifMetadataToPixelMap(PixelMap &pixelMap);
     void SetImageEventHeifParseErr(ImageEvent &event);
     bool CheckDecodeOptions(Size imageSize, bool &needAisr, bool &needHdr);
     uint32_t DecodeImageDataToContext(uint32_t index, ImageInfo &info, ImagePlugin::PlImageInfo &plInfo,
@@ -518,6 +533,11 @@ private:
         ImagePlugin::DecodeContext &context, const std::string &format, uint32_t &errorCode);
     std::unique_ptr<PixelMap> DecodeHeifParserThumbnail(const DecodingOptionsForThumbnail &opts,
         ImagePlugin::DecodeContext &context, const std::string &format, uint32_t &errorCode);
+    std::unique_ptr<PixelMap> DecodeThumbnailByHeif(const DecodingOptionsForThumbnail &opts,
+        ImagePlugin::DecodeContext &context, const std::string &format, uint32_t &errorCode,
+        ImageEvent &imageEvent);
+    std::unique_ptr<PixelMap> DecodeThumbnailByGenerate(const DecodingOptionsForThumbnail &opts,
+        const std::string &format, uint32_t &errorCode, ImageEvent &imageEvent);
 #endif
 
     const std::string NINE_PATCH = "ninepatch";

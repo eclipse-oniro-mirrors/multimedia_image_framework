@@ -36,6 +36,7 @@
 #include "post_proc.h"
 #include "source_stream.h"
 #include "image_source.h"
+#include "image_dfx.h"
 #include "buffer_source_stream.h"
 #include "file_source_stream.h"
 #include "memory_manager.h"
@@ -5868,6 +5869,95 @@ HWTEST_F(ImageSourceTest, GetPngMetadata001, TestSize.Level3)
         IMAGE_GET_PROPERTY_BY_TYPE_JPEG_JFIF_PATH, SourceOptions(), errorCode);
     ASSERT_NE(imageSource, nullptr);
     ASSERT_EQ(imageSource->IsEncodedFormat("image/png"), false);
+}
+
+/**
+ * @tc.name: DecodeSourceDiagnostics001
+ * @tc.desc: Source byte size is independent of dimensions and decoded memory size in both option paths.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, DecodeSourceDiagnostics001, TestSize.Level3)
+{
+    const uint8_t data[16] = {};
+    auto stream = BufferSourceStream::CreateSourceStream(data, sizeof(data));
+    ASSERT_NE(stream, nullptr);
+    ImageSource source(std::move(stream), SourceOptions {});
+    source.sourceInfo_.encodedFormat = "image/jpeg";
+    ImageInfo info;
+    info.size = {64, 32};
+    ImageEvent event;
+    source.SetDecodeInfoOptions(0, DecodeOptions {}, info, event);
+    EXPECT_EQ(event.GetDecodeInfoOptions().sourceSize, sizeof(data));
+    EXPECT_EQ(event.GetDecodeInfoOptions().sourceWidth, 64);
+    EXPECT_EQ(event.GetDecodeInfoOptions().memorySize, 0);
+    EXPECT_EQ(event.GetDecodeInfoOptions().sourceColorSpace, -1);
+    EXPECT_EQ(event.GetDecodeInfoOptions().sourceYuvSampling, "unknown");
+    EXPECT_TRUE(event.GetDecodeInfoOptions().sourceFileExtension.empty());
+
+    ImagePlugin::PlImageInfo plInfo;
+    plInfo.size = info.size;
+    source.sourceInfo_.state = SourceInfoState::UNKNOWN_FORMAT;
+    source.SetDecodeInfoOptions(0, DecodeOptions {}, plInfo, event);
+    EXPECT_EQ(event.GetDecodeInfoOptions().sourceSize, sizeof(data));
+    EXPECT_EQ(event.GetDecodeInfoOptions().sourceFileExtension, "unknown");
+    EXPECT_EQ(event.GetDecodeInfoOptions().mimeType, "image/jpeg");
+
+    source.sourceInfo_.state = SourceInfoState::FILE_INFO_PARSED;
+    source.sourceInfo_.encodedFormat = "image/png";
+    source.SetDecodeInfoOptions(0, DecodeOptions {}, info, event);
+    EXPECT_EQ(event.GetDecodeInfoOptions().sourceYuvSampling, "not_yuv");
+    EXPECT_TRUE(event.GetDecodeInfoOptions().sourceFileExtension.empty());
+}
+
+/**
+ * @tc.name: DecodeFaultFdHeaderFailure001
+ * @tc.desc: fd header failure keeps a non-zero SOURCE_SIZE in the fault event, with extension collected.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, DecodeFaultFdHeaderFailure001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageSourceTest: DecodeFaultFdHeaderFailure001 start";
+    // 512 字节垃圾数据构造 header 解析必失败的 fd 源。
+    const std::string testPath = "/data/local/tmp/image/test_dfx_header_fail.jpg";
+    constexpr size_t garbageSize = 512;
+    std::vector<uint8_t> garbage(garbageSize, 0x5A);
+    std::ofstream file(testPath, std::ios::binary | std::ios::trunc);
+    ASSERT_TRUE(file.is_open());
+    file.write(reinterpret_cast<const char *>(garbage.data()), static_cast<std::streamsize>(garbage.size()));
+    file.close();
+    ASSERT_EQ(std::filesystem::file_size(testPath), garbageSize);
+
+    int fd = open(testPath.c_str(), O_RDONLY);
+    ASSERT_GE(fd, 0);
+    uint32_t errorCode = 0;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(fd, SourceOptions(), errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+
+    // DECODE_FAULT.SOURCE_SIZE 与选项填充同源：fd 源即使 header 失败也必须拿到真实文件大小。
+    ImageEvent event;
+    ImageInfo info;
+    imageSource->SetDecodeInfoOptions(0, DecodeOptions {}, info, event);
+    EXPECT_EQ(event.GetDecodeInfoOptions().sourceSize, static_cast<uint64_t>(garbageSize));
+    EXPECT_EQ(event.GetDecodeInfoOptions().sourceFileExtension, "jpg");
+    EXPECT_TRUE(event.GetDecodeInfoOptions().mimeType.empty());
+    EXPECT_EQ(event.GetDecodeInfoOptions().sourceColorSpace, -1);
+    EXPECT_EQ(event.GetDecodeInfoOptions().sourceYuvSampling, "unknown");
+
+    // 填充时大小不可得的场景：上报前从活源流补取一次，仍能得到真实大小。
+    event.GetDecodeInfoOptions().sourceSize = 0;
+    event.Report();
+    EXPECT_EQ(event.GetDecodeInfoOptions().sourceSize, static_cast<uint64_t>(garbageSize));
+
+    // 垃圾数据真实触发 header 失败的 DECODE_FAULT 上报。
+    DecodeOptions decodeOpts;
+    std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
+    ASSERT_EQ(pixelMap, nullptr);
+    ASSERT_NE(errorCode, SUCCESS);
+
+    close(fd);
+    unlink(testPath.c_str());
+    GTEST_LOG_(INFO) << "ImageSourceTest: DecodeFaultFdHeaderFailure001 end";
 }
 
 } // namespace Multimedia

@@ -35,7 +35,7 @@
 #ifdef IMAGE_COLORSPACE_FLAG
 #include "color_space.h"
 #endif
-#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+#if !defined(CROSS_PLATFORM)
 #include "astc_codec.h"
 #endif
 
@@ -294,19 +294,62 @@ uint32_t ExtEncoder::StartEncode(OutputDataStream &outputStream, PlEncodeOptions
 {
     output_ = &outputStream;
     opts_ = option;
+    encodeStartTime_ = ImageUtils::GetNowTimeMilliSeconds();
+    hardwareEncoded_ = false;
+    // 编码入口信息已由 ImagePacker::StartPacking 输出，此处仅在 DEBUG 中保留插件侧参数。
+    IMAGE_LOGD("[ExtEncoder]StartEncode format:%{public}s, quality:%{public}u",
+        option.format.c_str(), option.quality);
     return SUCCESS;
+}
+
+// AddImage 与 AddPicture 共用一条输入信息日志，避免维护两份字段相同的格式。
+static void LogEncodeInput(const char *type, PixelMap &pixelMap)
+{
+    IMAGE_LOGD("[ExtEncoder]AddSource type:%{public}s, width:%{public}d, height:%{public}d, "
+        "pixelFormat:%{public}d, allocatorType:%{public}d", type, pixelMap.GetWidth(), pixelMap.GetHeight(),
+        static_cast<int32_t>(pixelMap.GetPixelFormat()), static_cast<int32_t>(pixelMap.GetAllocatorType()));
 }
 
 uint32_t ExtEncoder::AddImage(PixelMap &pixelMap)
 {
     pixelmap_ = &pixelMap;
+    LogEncodeInput("pixelmap", pixelMap);
     return SUCCESS;
 }
 
 uint32_t ExtEncoder::AddPicture(Media::Picture &picture)
 {
     picture_ = &picture;
+    std::shared_ptr<PixelMap> mainPixel = picture.GetMainPixel();
+    if (mainPixel != nullptr) {
+        LogEncodeInput("picture", *mainPixel);
+    }
     return SUCCESS;
+}
+
+void ExtEncoder::ReportEncodeSuccess(uint64_t outputSize, uint64_t startTime)
+{
+    ImageInfo imageInfo;
+    if (pixelmap_ != nullptr) {
+        pixelmap_->GetImageInfo(imageInfo);
+    } else if (picture_ != nullptr && picture_->GetMainPixel() != nullptr) {
+        picture_->GetMainPixel()->GetImageInfo(imageInfo);
+    }
+    uint64_t cost = startTime == 0 ? 0 : ImageUtils::GetNowTimeMilliSeconds() - startTime;
+    // 编码结果已由 ImagePacker::FinalizePacking 输出，此处仅保留插件侧明细并使用 DEBUG。
+    IMAGE_LOGD("[ExtEncoder]FinalizeEncode success, format:%{public}s, width:%{public}d, height:%{public}d, "
+        "pixelFormat:%{public}d, quality:%{public}u, outputSize:%{public}llu, hardware:%{public}d, "
+        "cost:%{public}llu", opts_.format.c_str(), imageInfo.size.width, imageInfo.size.height,
+        static_cast<int32_t>(imageInfo.pixelFormat), opts_.quality, static_cast<unsigned long long>(outputSize),
+        hardwareEncoded_ ? 1 : 0, static_cast<unsigned long long>(cost));
+    EncodeInfoOptions options;
+    options.mimeType = opts_.format;
+    options.pixelFormat = static_cast<int32_t>(imageInfo.pixelFormat);
+    options.quality = opts_.quality;
+    options.outputSize = outputSize;
+    options.costTime = cost;
+    options.isHardware = hardwareEncoded_;
+    ReportEncodeInfo(options);
 }
 
 struct TmpBufferHolder {
@@ -589,7 +632,7 @@ uint32_t ExtEncoder::PixelmapEncode(ExtWStream& wStream)
     RecycleResources();
     return error;
 }
-#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+#if !defined(CROSS_PLATFORM)
 bool IsSuperFastEncode(const std::string &format)
 {
     return SUT_FORMAT_MAP.find(format) != SUT_FORMAT_MAP.end() ||
@@ -597,17 +640,60 @@ bool IsSuperFastEncode(const std::string &format)
 }
 #endif
 
+#if !defined(CROSS_PLATFORM)
+uint32_t ExtEncoder::EncodeByAstc()
+{
+    AstcCodec astcEncoder;
+    astcEncoder.SetAstcEncode(output_, opts_, pixelmap_);
+    uint32_t astcRet = astcEncoder.ASTCEncode();
+    if (astcRet != SUCCESS) {
+        IMAGE_LOGE("[ExtEncoder]ASTC encode failed, ret:%{public}u, format:%{public}s",
+            astcRet, opts_.format.c_str());
+        ReportEncodeFault(0, 0, opts_.format, "astc encode failed");
+    } else {
+        ReportEncodeSuccess(GetOutputBytesWritten(), encodeStartTime_);
+    }
+    return astcRet;
+}
+#endif
+
+#if !defined(CROSS_PLATFORM)
+uint32_t ExtEncoder::EncodePictureChecked()
+{
+    uint32_t pictureRet = EncodePicture();
+    if (pictureRet != SUCCESS) {
+        ReportEncodeFault(0, 0, opts_.format, "encode picture failed");
+    } else {
+        ReportEncodeSuccess(GetOutputBytesWritten(), encodeStartTime_);
+    }
+    return pictureRet;
+}
+#endif
+
+uint64_t ExtEncoder::GetOutputBytesWritten() const
+{
+    if (output_ == nullptr) {
+        return 0;
+    }
+    size_t written = 0;
+    // 非 PackerStream 的输出流不支持查询时保持 0，表示输出大小不可用。
+    output_->GetCurrentSize(written);
+    return static_cast<uint64_t>(written);
+}
+
 uint32_t ExtEncoder::FinalizeEncode()
 {
     bool isParameterInvalid = (picture_ == nullptr && pixelmap_ == nullptr) || output_ == nullptr;
-    CHECK_ERROR_RETURN_RET(isParameterInvalid, ERR_IMAGE_INVALID_PARAMETER);
+    if (isParameterInvalid) {
+        IMAGE_LOGE("[ExtEncoder]FinalizeEncode invalid parameter");
+        ReportEncodeFault(0, 0, opts_.format, "invalid encode parameter");
+        return ERR_IMAGE_INVALID_PARAMETER;
+    }
     ImageDataStatistics imageDataStatistics("[ExtEncoder]FinalizeEncode imageFormat = %s, quality = %d",
         opts_.format.c_str(), opts_.quality);
-#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+#if !defined(CROSS_PLATFORM)
     if (IsAstc(opts_.format) || IsSuperFastEncode(opts_.format)) {
-        AstcCodec astcEncoder;
-        astcEncoder.SetAstcEncode(output_, opts_, pixelmap_);
-        return astcEncoder.ASTCEncode();
+        return EncodeByAstc();
     }
 #endif
     auto iter = FORMAT_NAME.find(LowerStr(opts_.format));
@@ -620,17 +706,29 @@ uint32_t ExtEncoder::FinalizeEncode()
 
 #if !defined(CROSS_PLATFORM)
     uint32_t processRet = ProcessEncodeControlParams();
-    CHECK_ERROR_RETURN_RET_LOG(processRet != SUCCESS, processRet,
-        "ExtEncoder::FinalizeEncode ProcessEncodeControlParams failed %{public}u", processRet);
+    if (processRet != SUCCESS) {
+        IMAGE_LOGE("ExtEncoder::FinalizeEncode ProcessEncodeControlParams failed %{public}u", processRet);
+        ReportEncodeFault(0, 0, opts_.format, "process encode control params failed");
+        return processRet;
+    }
 
     bool hasPictureMainPixel = picture_ != nullptr && picture_->GetMainPixel() != nullptr;
-    CHECK_ERROR_RETURN_RET(hasPictureMainPixel, EncodePicture());
+    if (hasPictureMainPixel) {
+        return EncodePictureChecked();
+    }
 #endif
     ImageInfo imageInfo;
     pixelmap_->GetImageInfo(imageInfo);
     imageDataStatistics.AddTitle("width = %d, height =%d", imageInfo.size.width, imageInfo.size.height);
     ExtWStream wStream(output_);
-    return PixelmapEncode(wStream);
+    uint32_t ret = PixelmapEncode(wStream);
+    if (ret == SUCCESS) {
+        ReportEncodeSuccess(static_cast<uint64_t>(wStream.bytesWritten()), encodeStartTime_);
+    } else {
+        // 与 ASTC/Picture 分支保持一致，主路径失败统一补报 ENCODE_FAULT。
+        ReportEncodeFault(imageInfo.size.width, imageInfo.size.height, opts_.format, "pixelmap encode failed");
+    }
+    return ret;
 }
 
 bool ExtEncoder::IsHardwareEncodeSupported(const PlEncodeOptions &opts, Media::PixelMap* pixelMap)
@@ -758,6 +856,9 @@ bool ExtEncoder::HardwareEncode(SkWStream &skStream, bool needExif)
         if (!hasExifData) {
             retCode = DoHardWareEncode(&skStream);
             IMAGE_LOGD("HardwareEncode retCode:%{public}d", retCode);
+            if (retCode == SUCCESS) {
+                hardwareEncoded_ = true;
+            }
             return (retCode == SUCCESS);
         }
         MetadataWStream tStream;
@@ -770,6 +871,9 @@ bool ExtEncoder::HardwareEncode(SkWStream &skStream, bool needExif)
         metadataOpts.c2paDataSize = 0;
         retCode = CreateAndWriteBlob(tStream, pixelmap_, skStream, imageInfo, metadataOpts);
         IMAGE_LOGD("HardwareEncode retCode :%{public}d", retCode);
+        if (retCode == SUCCESS) {
+            hardwareEncoded_ = true;
+        }
         return (retCode == SUCCESS);
     }
     return (retCode == SUCCESS);

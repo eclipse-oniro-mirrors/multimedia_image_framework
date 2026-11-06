@@ -31,6 +31,7 @@
 #include "sk_ohoscodec.h"
 #endif
 #include "image_log.h"
+#include "image_dfx.h"
 #include "image_format_convert.h"
 #include "image_mime_type.h"
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
@@ -1035,6 +1036,15 @@ static void DebugInfo(SkImageInfo &info, SkImageInfo &dstInfo, SkCodec::Options 
     }
 }
 
+static void LogIncompleteDecodeInput(SkCodec::Result result, InputDataStream *stream)
+{
+    if (result == SkCodec::kIncompleteInput || result == SkCodec::kErrorInInput) {
+        IMAGE_LOGW("Decode input incomplete or invalid, result:%{public}d, sourceSize:%{public}zu, "
+            "position:%{public}u", result, stream ? stream->GetStreamSize() : 0,
+            stream ? stream->Tell() : 0);
+    }
+}
+
 static uint64_t GetByteSize(int32_t width, int32_t height)
 {
     return static_cast<uint64_t>(width * height + ((width + 1) / NUM_2) * ((height + 1) / NUM_2) * NUM_2);
@@ -1464,6 +1474,7 @@ uint32_t ExtDecoder::DoRegionDecode(DecodeContext &context)
     options.fSampleSize = sampleSize;
     options.fSubset = &decodeSubset;
     SkCodec::Result result = skOHOSCodec->getOHOSPixels(decodeInfo, dstBuffer, rowStride, &options);
+    LogIncompleteDecodeInput(result, stream_);
     switch (result) {
         case SkCodec::kSuccess:
         case SkCodec::kIncompleteInput:
@@ -1505,6 +1516,7 @@ SkCodec::Result ExtDecoder::DoSampleDecode(DecodeContext &context)
 
     auto fastCtx = BuildFastGamutContext(context.info.pixelFormat, IsYuv420Format(context.info.pixelFormat));
     SkCodec::Result result = SkOHOSCodec->getOHOSPixels(fastCtx.decodeInfo, dstBuffer, rowStride, &options);
+    LogIncompleteDecodeInput(result, stream_);
     switch (result) {
         case SkCodec::kSuccess:
         case SkCodec::kIncompleteInput:
@@ -2030,11 +2042,11 @@ uint32_t ExtDecoder::Decode(uint32_t index, DecodeContext &context)
     ImageTrace imageTrace("ExtDecoder::Decode start SW");
     auto fastCtx = BuildFastGamutContext(context.info.pixelFormat, isOutputYuv420Format);
     SkCodec::Result ret = codec_->getPixels(fastCtx.decodeInfo, dstBuffer, rowStride, &dstOptions_);
-    if (ret == SkCodec::kIncompleteInput || ret == SkCodec::kErrorInInput) {
-        IMAGE_LOGI("Decode broken data success. Triggered kIncompleteInput feature of skia!");
-    } else if (ret != SkCodec::kSuccess && ResetCodec()) {
+    if (ret != SkCodec::kSuccess && ret != SkCodec::kIncompleteInput &&
+        ret != SkCodec::kErrorInInput && ResetCodec()) {
         ret = codec_->getPixels(fastCtx.decodeInfo, dstBuffer, rowStride, &dstOptions_);
     }
+    LogIncompleteDecodeInput(ret, stream_);
     if (ret != SkCodec::kSuccess && ret != SkCodec::kIncompleteInput && ret != SkCodec::kErrorInInput) {
         IMAGE_LOGE("Decode failed, get pixels failed, ret=%{public}d", ret);
         SetHeifDecodeError(context);
@@ -2275,12 +2287,16 @@ void ExtDecoder::ReportImageType(SkEncodedImageFormat skEncodeFormat)
 {
     IMAGE_LOGD("ExtDecoder::ReportImageType format %{public}d start", skEncodeFormat);
     static constexpr char IMAGE_FWK_UE[] = "IMAGE_FWK_UE";
-#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+#if !defined(CROSS_PLATFORM)
+    std::string packageName = ImageUtils::GetCurrentProcessName();
+    if (packageName.empty()) {
+        packageName = DEFAULT_PACKAGE_NAME;
+    }
     int32_t ret = HiSysEventWrite(
             IMAGE_FWK_UE,
             "DECODED_IMAGE_TYPE_STATISTICS",
             HiviewDFX::HiSysEvent::EventType::STATISTIC,
-            "PNAMEID", DEFAULT_PACKAGE_NAME,
+            "PNAMEID", packageName,
             "PVERSIONID", DEFAULT_VERSION_ID,
             "IMAGE_TYPE", GetFormatStr(skEncodeFormat)
     );
@@ -2616,7 +2632,7 @@ uint32_t ExtDecoder::GetFramePixels(SkImageInfo& info, uint8_t* buffer, uint64_t
     CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_DECODE_ABNORMAL, "get pixels failed, buffer is nullptr");
     SkCodec::Result ret = codec_->getPixels(info, buffer, rowStride, &options);
     if (ret == SkCodec::kIncompleteInput || ret == SkCodec::kErrorInInput) {
-        IMAGE_LOGI("Decode broken data success. Triggered kIncompleteInput feature of skia!");
+        LogIncompleteDecodeInput(ret, stream_);
         return SUCCESS;
     } else if (ret == SkCodec::kSuccess) {
         return SUCCESS;
@@ -2625,6 +2641,7 @@ uint32_t ExtDecoder::GetFramePixels(SkImageInfo& info, uint8_t* buffer, uint64_t
     ResetCodec();
     CHECK_ERROR_RETURN_RET_LOG(codec_ == nullptr, ERR_IMAGE_DECODE_FAILED, "codec_ is nullptr");
     ret = codec_->getPixels(info, buffer, rowStride, &options);
+    LogIncompleteDecodeInput(ret, stream_);
     cond = (ret != SkCodec::kSuccess && ret != SkCodec::kIncompleteInput && ret != SkCodec::kErrorInInput);
     CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_DECODE_ABNORMAL,
                                "Gif decode failed, get pixels failed, ret=%{public}d", ret);
@@ -2997,7 +3014,30 @@ static OHOS::ColorManager::ColorSpaceName GetHeifNclxColor(SkCodec* codec)
     return ColorManager::NONE;
 }
 
-OHOS::ColorManager::ColorSpace ExtDecoder::GetSrcColorSpace()
+ColorManager::ColorSpaceName ExtDecoder::GetCicpColorSpaceName(const skcms_ICCProfile *profile)
+{
+#ifdef USE_M133_SKIA
+    return Media::ColorUtils::CicpToColorSpace(profile->CICP.color_primaries,
+        profile->CICP.transfer_characteristics, profile->CICP.matrix_coefficients,
+        profile->CICP.video_full_range_flag);
+#else
+    return Media::ColorUtils::CicpToColorSpace(profile->cicp.colour_primaries,
+        profile->cicp.transfer_characteristics, profile->cicp.matrix_coefficients,
+        profile->cicp.full_range_flag);
+#endif
+}
+
+void ExtDecoder::UpdateHeifColorSpace(ColorManager::ColorSpaceName cName, bool updateHeifColorSpace, bool fromCicp)
+{
+    if (updateHeifColorSpace) {
+        heifColorSpaceName_ = cName;
+        if (fromCicp) {
+            heifIsColorSpaceFromCicp_ = true;
+        }
+    }
+}
+
+OHOS::ColorManager::ColorSpace ExtDecoder::GetSrcColorSpace(bool updateHeifColorSpace)
 {
     auto skColorSpace = info_.refColorSpace();
     OHOS::ColorManager::ColorSpaceName name = OHOS::ColorManager::ColorSpaceName::CUSTOM;
@@ -3008,18 +3048,9 @@ OHOS::ColorManager::ColorSpace ExtDecoder::GetSrcColorSpace()
             GetColorSpaceName(profile, name);
         }
         if (profile != nullptr && profile->has_CICP) {
-#ifdef USE_M133_SKIA
-            ColorManager::ColorSpaceName cName = Media::ColorUtils::CicpToColorSpace(profile->CICP.color_primaries,
-                profile->CICP.transfer_characteristics, profile->CICP.matrix_coefficients,
-                profile->CICP.video_full_range_flag);
-#else
-            ColorManager::ColorSpaceName cName = Media::ColorUtils::CicpToColorSpace(profile->cicp.colour_primaries,
-                profile->cicp.transfer_characteristics, profile->cicp.matrix_coefficients,
-                profile->cicp.full_range_flag);
-#endif
+            ColorManager::ColorSpaceName cName = GetCicpColorSpaceName(profile);
             if (cName != ColorManager::NONE) {
-                heifColorSpaceName_ = cName;
-                heifIsColorSpaceFromCicp_ = true;
+                UpdateHeifColorSpace(cName, updateHeifColorSpace, true);
                 IMAGE_LOGD("%{public}s profile has CICP, cName: %{public}u", __func__, static_cast<uint32_t>(cName));
                 return ColorManager::ColorSpace(cName);
             }
@@ -3028,7 +3059,7 @@ OHOS::ColorManager::ColorSpace ExtDecoder::GetSrcColorSpace()
         if (format == SkEncodedImageFormat::kHEIF || format == SkEncodedImageFormat::kAVIF) {
             ColorManager::ColorSpaceName cName = GetHeifNclxColor(codec_.get());
             if (cName != ColorManager::NONE) {
-                heifColorSpaceName_ = cName;
+                UpdateHeifColorSpace(cName, updateHeifColorSpace, false);
                 IMAGE_LOGD("%{public}s profile has HEIF NCLX color, cName: %{public}u",
                     __func__, static_cast<uint32_t>(cName));
                 return ColorManager::ColorSpace(cName);
@@ -3044,7 +3075,7 @@ OHOS::ColorManager::ColorSpace ExtDecoder::GetSrcColorSpace()
     }
     IMAGE_LOGD("%{public}s Use name to make a custom graphic colorspace. name: %{public}u",
         __func__, static_cast<uint32_t>(name));
-    heifColorSpaceName_ = name;
+    UpdateHeifColorSpace(name, updateHeifColorSpace, false);
     return OHOS::ColorManager::ColorSpace(name);
 }
 
@@ -3322,6 +3353,14 @@ uint32_t ExtDecoder::GetGifHasGlobalColorMapInt(int32_t &value)
 uint32_t ExtDecoder::GetImagePropertyInt(uint32_t index, const std::string &key, int32_t &value)
 {
     IMAGE_LOGD("[GetImagePropertyInt] enter ExtDecoder plugin, key:%{public}s", key.c_str());
+#ifdef IMAGE_COLORSPACE_FLAG
+    if (key == Media::DFX_SOURCE_COLOR_SPACE) {
+        CHECK_ERROR_RETURN_RET(codec_ == nullptr || info_.isEmpty(), Media::ERR_IMAGE_DECODE_HEAD_ABNORMAL);
+        // 读取源码流色域，不受本次解码已选择的目标色域影响。
+        value = static_cast<int32_t>(GetSrcColorSpace(false).GetColorSpaceName());
+        return SUCCESS;
+    }
+#endif
     uint32_t res = Media::ERR_IMAGE_DATA_ABNORMAL;
     CHECK_ERROR_RETURN_RET(!GetPropertyCheck(index, key, res), res);
     if (IMAGE_DELAY_TIME.compare(key) == ZERO) {
@@ -3442,9 +3481,94 @@ OHOS::Media::Size ExtDecoder::GetHeifGridTileSize()
 #endif
 }
 
+#if defined(HEIF_HW_DECODE_ENABLE) || !defined(CROSS_PLATFORM)
+static std::string GetHeifYuvSampling(HeifPixelFormat format)
+{
+    switch (format) {
+        case HeifPixelFormat::MONOCHROME:
+            return "4:0:0";
+        case HeifPixelFormat::YUV420:
+            return "4:2:0";
+        case HeifPixelFormat::YUV422:
+            return "4:2:2";
+        case HeifPixelFormat::YUV444:
+            return "4:4:4";
+        default:
+            return "unknown";
+    }
+}
+#endif
+
+static std::string GetJpegYuvSampling(SkJpegCodec *codec)
+{
+    CHECK_ERROR_RETURN_RET(codec == nullptr || codec->decoderMgr() == nullptr, "unknown");
+    auto dinfo = codec->decoderMgr()->dinfo();
+    CHECK_ERROR_RETURN_RET(dinfo == nullptr, "unknown");
+    CHECK_ERROR_RETURN_RET(dinfo->jpeg_color_space == JCS_GRAYSCALE, "4:0:0");
+    CHECK_ERROR_RETURN_RET(dinfo->jpeg_color_space != JCS_YCbCr, "not_yuv");
+    CHECK_ERROR_RETURN_RET(dinfo->num_components != NUM_3 || dinfo->comp_info == nullptr, "unknown");
+    const auto &y = dinfo->comp_info[0];
+    const auto &u = dinfo->comp_info[1];
+    const auto &v = dinfo->comp_info[2];
+    bool invalidSampling = u.h_samp_factor <= 0 || u.v_samp_factor <= 0 ||
+        u.h_samp_factor != v.h_samp_factor || u.v_samp_factor != v.v_samp_factor ||
+        y.h_samp_factor % u.h_samp_factor != 0 || y.v_samp_factor % u.v_samp_factor != 0;
+    CHECK_ERROR_RETURN_RET(invalidSampling, "unknown");
+    const int hRatio = y.h_samp_factor / u.h_samp_factor;
+    const int vRatio = y.v_samp_factor / u.v_samp_factor;
+    if (hRatio == NUM_1 && vRatio == NUM_1) {
+        return "4:4:4";
+    }
+    if (hRatio == NUM_2 && vRatio == NUM_1) {
+        return "4:2:2";
+    }
+    if (hRatio == NUM_2 && vRatio == NUM_2) {
+        return "4:2:0";
+    }
+    if (hRatio == NUM_1 && vRatio == NUM_2) {
+        return "4:4:0";
+    }
+    if (hRatio == NUM_4 && vRatio == NUM_1) {
+        return "4:1:1";
+    }
+    if (hRatio == NUM_4 && vRatio == NUM_2) {
+        return "4:1:0";
+    }
+    return "unknown";
+}
+
+std::string ExtDecoder::GetSourceYuvSampling(uint32_t index)
+{
+    CHECK_ERROR_RETURN_RET(codec_ == nullptr, "unknown");
+    const auto format = codec_->getEncodedFormat();
+    if (format == SkEncodedImageFormat::kJPEG) {
+        return GetJpegYuvSampling(static_cast<SkJpegCodec *>(codec_.get()));
+    }
+#ifdef HEIF_HW_DECODE_ENABLE
+    if (format == SkEncodedImageFormat::kHEIF) {
+        auto decoder = reinterpret_cast<HeifDecoderImpl *>(codec_->getHeifContext());
+        return decoder == nullptr ? "unknown" : GetHeifYuvSampling(decoder->GetSourcePixelFormat());
+    }
+#endif
+#ifndef CROSS_PLATFORM
+    if (format == SkEncodedImageFormat::kAVIF) {
+        auto decoder = reinterpret_cast<AvifDecoderImpl *>(codec_->getHeifContext());
+        CHECK_ERROR_RETURN_RET(decoder == nullptr, "unknown");
+        return GetHeifYuvSampling(decoder->GetAvifPixelFormat(index > 0 || decoder->IsAvisImage()));
+    }
+#endif
+    // PNG/GIF/BMP/WEBP 等非 YUV 格式同样走扩展解码器，返回 not_yuv，避免灌满 unknown 桶。
+    return "not_yuv";
+}
+
 uint32_t ExtDecoder::GetImagePropertyString(uint32_t index, const std::string &key, std::string &value)
 {
     IMAGE_LOGD("[GetImagePropertyString] enter ext plugin, key:%{public}s", key.c_str());
+    if (key == Media::DFX_SOURCE_YUV_SAMPLING) {
+        CHECK_ERROR_RETURN_RET(codec_ == nullptr, Media::ERR_IMAGE_DECODE_HEAD_ABNORMAL);
+        value = GetSourceYuvSampling(index);
+        return SUCCESS;
+    }
     uint32_t res = Media::ERR_IMAGE_DATA_ABNORMAL;
     if (!GetPropertyCheck(index, key, res)) {
         return res;
