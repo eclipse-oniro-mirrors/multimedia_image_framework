@@ -320,21 +320,25 @@ uint32_t ExtEncoder::AddImage(PixelMap &pixelMap)
 uint32_t ExtEncoder::AddPicture(Media::Picture &picture)
 {
     picture_ = &picture;
+#if !defined(CROSS_PLATFORM)
     std::shared_ptr<PixelMap> mainPixel = picture.GetMainPixel();
     if (mainPixel != nullptr) {
         LogEncodeInput("picture", *mainPixel);
     }
+#endif
     return SUCCESS;
 }
 
 void ExtEncoder::ReportEncodeSuccess(uint64_t outputSize, uint64_t startTime)
 {
     ImageInfo imageInfo;
+#if !defined(CROSS_PLATFORM)
     if (pixelmap_ != nullptr) {
         pixelmap_->GetImageInfo(imageInfo);
     } else if (picture_ != nullptr && picture_->GetMainPixel() != nullptr) {
         picture_->GetMainPixel()->GetImageInfo(imageInfo);
     }
+#endif
     uint64_t cost = startTime == 0 ? 0 : ImageUtils::GetNowTimeMilliSeconds() - startTime;
     // 编码结果已由 ImagePacker::FinalizePacking 输出，此处仅保留插件侧明细并使用 DEBUG。
     IMAGE_LOGD("[ExtEncoder]FinalizeEncode success, format:%{public}s, width:%{public}d, height:%{public}d, "
