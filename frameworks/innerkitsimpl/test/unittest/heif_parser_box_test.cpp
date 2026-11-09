@@ -22,6 +22,7 @@
 #include "item_property_basic_box.h"
 #include "item_property_box.h"
 #include "item_property_color_box.h"
+#include "item_property_display_box.h"
 #include "item_property_hvcc_box.h"
 #include "item_property_aux_box.h"
 #include "item_property_transform_box.h"
@@ -1423,6 +1424,165 @@ HWTEST_F(HeifParserBoxTest, ParseContentHeaderErrorTest001, TestSize.Level3)
 
     ASSERT_NE(error, heif_error_ok);
     GTEST_LOG_(INFO) << "HeifParserBoxTest: ParseContentHeaderErrorTest001 end";
+}
+
+static const uint16_t MDCV_RED_X = 35400;
+static const uint16_t MDCV_RED_Y = 14600;
+static const uint16_t MDCV_GREEN_X = 8500;
+static const uint16_t MDCV_GREEN_Y = 39850;
+static const uint16_t MDCV_BLUE_X = 6550;
+static const uint16_t MDCV_BLUE_Y = 2300;
+static const uint16_t MDCV_WHITE_X = 15635;
+static const uint16_t MDCV_WHITE_Y = 16450;
+static const uint32_t MDCV_LUMA_MAX = 1000;
+static const uint32_t MDCV_LUMA_MIN = 50;
+static const uint32_t MDCV_BOX_SIZE = 32;
+
+static void AppendUint16(std::vector<uint8_t> &data, uint16_t value)
+{
+    data.push_back(static_cast<uint8_t>((value >> ONE_BYTE_SHIFT) & 0xFF));
+    data.push_back(static_cast<uint8_t>(value & 0xFF));
+}
+
+static void AppendUint32(std::vector<uint8_t> &data, uint32_t value)
+{
+    data.push_back(static_cast<uint8_t>((value >> THREE_BYTES_SHIFT) & 0xFF));
+    data.push_back(static_cast<uint8_t>((value >> TWO_BYTES_SHIFT) & 0xFF));
+    data.push_back(static_cast<uint8_t>((value >> ONE_BYTE_SHIFT) & 0xFF));
+    data.push_back(static_cast<uint8_t>(value & 0xFF));
+}
+
+static std::vector<uint8_t> MakeMdcvBoxData()
+{
+    std::vector<uint8_t> data;
+    AppendUint32(data, MDCV_BOX_SIZE);
+    AppendUint32(data, BOX_TYPE_MDCV);
+    AppendUint16(data, MDCV_RED_X);
+    AppendUint16(data, MDCV_RED_Y);
+    AppendUint16(data, MDCV_GREEN_X);
+    AppendUint16(data, MDCV_GREEN_Y);
+    AppendUint16(data, MDCV_BLUE_X);
+    AppendUint16(data, MDCV_BLUE_Y);
+    AppendUint16(data, MDCV_WHITE_X);
+    AppendUint16(data, MDCV_WHITE_Y);
+    AppendUint32(data, MDCV_LUMA_MAX);
+    AppendUint32(data, MDCV_LUMA_MIN);
+    return data;
+}
+
+static std::shared_ptr<HeifBox> MakeBoxFromData(const std::vector<uint8_t> &data, heif_error &error)
+{
+    auto stream = std::make_shared<HeifBufferInputStream>(data.data(), data.size(), true);
+    HeifStreamReader reader(stream, 0, data.size());
+    std::shared_ptr<HeifBox> box;
+    uint32_t recursionCount = 0;
+    error = HeifBox::MakeFromReader(reader, &box, recursionCount);
+    return box;
+}
+
+/**
+ * @tc.name: MakeBoxMdcvTest001
+ * @tc.desc: test MakeBox when boxType is mdcv, the box must not fall back to the generic HeifBox
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserBoxTest, MakeBoxMdcvTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: MakeBoxMdcvTest001 start";
+    std::shared_ptr<HeifBox> test = HeifBox::MakeBox(BOX_TYPE_MDCV);
+    ASSERT_NE(test, nullptr);
+    ASSERT_NE(std::dynamic_pointer_cast<HeifMdcvBox>(test), nullptr);
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: MakeBoxMdcvTest001 end";
+}
+
+/**
+ * @tc.name: ParseAndWriteMdcvBoxTest001
+ * @tc.desc: parse a conformant mdcv box and verify Write reproduces the original bytes
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserBoxTest, ParseAndWriteMdcvBoxTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: ParseAndWriteMdcvBoxTest001 start";
+    std::vector<uint8_t> data = MakeMdcvBoxData();
+    heif_error error = heif_error_ok;
+    auto box = MakeBoxFromData(data, error);
+    ASSERT_EQ(error, heif_error_ok);
+    ASSERT_NE(box, nullptr);
+    ASSERT_EQ(box->GetBoxType(), BOX_TYPE_MDCV);
+    ASSERT_EQ(box->GetBoxSize(), data.size());
+
+    auto mdcvBox = std::dynamic_pointer_cast<HeifMdcvBox>(box);
+    ASSERT_NE(mdcvBox, nullptr);
+    DisplayColourVolume volume = mdcvBox->GetColourVolume();
+    ASSERT_EQ(volume.red.x, MDCV_RED_X);
+    ASSERT_EQ(volume.red.y, MDCV_RED_Y);
+    ASSERT_EQ(volume.green.x, MDCV_GREEN_X);
+    ASSERT_EQ(volume.green.y, MDCV_GREEN_Y);
+    ASSERT_EQ(volume.blue.x, MDCV_BLUE_X);
+    ASSERT_EQ(volume.blue.y, MDCV_BLUE_Y);
+    ASSERT_EQ(volume.whitePoint.x, MDCV_WHITE_X);
+    ASSERT_EQ(volume.whitePoint.y, MDCV_WHITE_Y);
+    ASSERT_EQ(volume.luminanceMax, MDCV_LUMA_MAX);
+    ASSERT_EQ(volume.luminanceMin, MDCV_LUMA_MIN);
+
+    HeifStreamWriter writer;
+    ASSERT_EQ(box->Write(writer), heif_error_ok);
+    ASSERT_EQ(writer.GetDataSize(), data.size());
+    ASSERT_EQ(writer.GetData(), data);
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: ParseAndWriteMdcvBoxTest001 end";
+}
+
+/**
+ * @tc.name: ParseTruncatedMdcvBoxTest001
+ * @tc.desc: a truncated mdcv box must keep the parse alive and expose zero-valued fields
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserBoxTest, ParseTruncatedMdcvBoxTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: ParseTruncatedMdcvBoxTest001 start";
+    std::vector<uint8_t> data = {0x00, 0x00, 0x00, 0x10, 'm', 'd', 'c', 'v',
+        0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88};
+    heif_error error = heif_error_ok;
+    auto box = MakeBoxFromData(data, error);
+    ASSERT_EQ(error, heif_error_ok);
+    auto mdcvBox = std::dynamic_pointer_cast<HeifMdcvBox>(box);
+    ASSERT_NE(mdcvBox, nullptr);
+    ASSERT_EQ(mdcvBox->GetColourVolume().red.x, 0);
+    ASSERT_EQ(mdcvBox->GetColourVolume().luminanceMax, 0);
+
+    // the truncated box is normalized to the fixed payload size when it is written back
+    HeifStreamWriter writer;
+    ASSERT_EQ(box->Write(writer), heif_error_ok);
+    ASSERT_EQ(writer.GetDataSize(), MDCV_BOX_SIZE);
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: ParseTruncatedMdcvBoxTest001 end";
+}
+
+/**
+ * @tc.name: ParseMdcvPropertyFromIpcoTest001
+ * @tc.desc: mdcv is parsed as a HeifMdcvBox property inside ipco instead of a generic HeifBox
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserBoxTest, ParseMdcvPropertyFromIpcoTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: ParseMdcvPropertyFromIpcoTest001 start";
+    std::vector<uint8_t> mdcvData = MakeMdcvBoxData();
+    std::vector<uint8_t> data;
+    AppendUint32(data, static_cast<uint32_t>(UINT64_BYTES_NUM + mdcvData.size()));
+    AppendUint32(data, BOX_TYPE_IPCO);
+    data.insert(data.end(), mdcvData.begin(), mdcvData.end());
+
+    heif_error error = heif_error_ok;
+    auto box = MakeBoxFromData(data, error);
+    ASSERT_EQ(error, heif_error_ok);
+    auto ipcoBox = std::dynamic_pointer_cast<HeifIpcoBox>(box);
+    ASSERT_NE(ipcoBox, nullptr);
+
+    const auto &children = ipcoBox->GetChildren();
+    ASSERT_EQ(children.size(), static_cast<size_t>(1));
+    auto mdcvBox = std::dynamic_pointer_cast<HeifMdcvBox>(children[0]);
+    ASSERT_NE(mdcvBox, nullptr);
+    ASSERT_EQ(mdcvBox->GetColourVolume().luminanceMax, MDCV_LUMA_MAX);
+    ASSERT_EQ(mdcvBox->GetColourVolume().whitePoint.x, MDCV_WHITE_X);
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: ParseMdcvPropertyFromIpcoTest001 end";
 }
 
 }
