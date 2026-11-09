@@ -1250,6 +1250,10 @@ static void SetPropertiesComplete(napi_env env, napi_status status, MetadataNapi
         napi_resolve_deferred(env, context->deferred, result[NUM_1]);
     } else {
         result[NUM_0] = CreateErrorArray(env, context);
+        if (result[NUM_0] == nullptr) {
+            IMAGE_LOGE("CreateErrorArray failed, reject with undefined");
+            napi_get_undefined(env, &result[NUM_0]);
+        }
         napi_reject_deferred(env, context->deferred, result[NUM_0]);
     }
     
