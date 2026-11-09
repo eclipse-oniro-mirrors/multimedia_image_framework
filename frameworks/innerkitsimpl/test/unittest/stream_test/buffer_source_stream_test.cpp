@@ -579,5 +579,40 @@ HWTEST_F(BufferSourceStreamTest, BufferSourceStreamTest0018, TestSize.Level3)
     ASSERT_EQ(ret, BUFFER_SOURCE_TYPE);
     GTEST_LOG_(INFO) << "BufferSourceStreamTest: BufferSourceStreamTest0018 end";
 }
+
+/**
+ * @tc.name: BufferSourceStreamReadStateTest001
+ * @tc.desc: Verify buffer source reports complete read state and buffer read mode.
+ * @tc.type: FUNC
+ */
+HWTEST_F(BufferSourceStreamTest, BufferSourceStreamReadStateTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "BufferSourceStreamTest: BufferSourceStreamReadStateTest001 start";
+    const uint8_t data[16] = {0};
+    std::unique_ptr<BufferSourceStream> bufferSourceStream =
+        BufferSourceStream::CreateSourceStream(data, static_cast<uint32_t>(sizeof(data)));
+    ASSERT_NE(bufferSourceStream, nullptr);
+    EXPECT_EQ(bufferSourceStream->GetReadMode(), "buffer");
+    // 内存缓冲在创建时已持有完整数据，非空即视为输入已全部提供。
+    EXPECT_EQ(bufferSourceStream->GetReadState(), SourceStream::ReadState::COMPLETE);
+    GTEST_LOG_(INFO) << "BufferSourceStreamTest: BufferSourceStreamReadStateTest001 end";
+}
+
+/**
+ * @tc.name: BufferSourceStreamEmptyReadStateTest001
+ * @tc.desc: Verify an empty buffer reports incomplete read state.
+ * @tc.type: FUNC
+ */
+HWTEST_F(BufferSourceStreamTest, BufferSourceStreamEmptyReadStateTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "BufferSourceStreamTest: BufferSourceStreamEmptyReadStateTest001 start";
+    uint8_t data[1] = {0};
+    // isUserBuffer 为 true，避免析构时释放调用方内存。
+    BufferSourceStream bufferSourceStream(data, 0, 0, true);
+    EXPECT_EQ(bufferSourceStream.GetReadMode(), "buffer");
+    // 空缓冲没有任何可用输入，不能按已读完计。
+    EXPECT_EQ(bufferSourceStream.GetReadState(), SourceStream::ReadState::INCOMPLETE);
+    GTEST_LOG_(INFO) << "BufferSourceStreamTest: BufferSourceStreamEmptyReadStateTest001 end";
+}
 }
 }

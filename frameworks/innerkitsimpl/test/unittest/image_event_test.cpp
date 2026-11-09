@@ -460,5 +460,87 @@ HWTEST_F(ImageEventTest, DecodeDfxReadClockTest001, TestSize.Level3)
     }
     GTEST_LOG_(INFO) << "ImageEventTest: DecodeDfxReadClockTest001 end";
 }
+
+/**
+ * @tc.name: ClassifyNullOptionsTest001
+ * @tc.desc: Verify a null options pointer produces an unclassified failure sample.
+ * @tc.type: FUNC
+ */
+HWTEST_F(DecodeAggregateTest, ClassifyNullOptionsTest001, TestSize.Level3)
+{
+    DecodeDfx::ClassifyRequest request;
+    request.options = nullptr;
+    request.result = DecodeResult::SUCCESS;
+    const auto sample = DecodeDfx::Classify(request);
+    EXPECT_EQ(sample.result, DecodeResult::FAILURE);
+    for (size_t i = 0; i < DecodeDfx::METRIC_COUNT; ++i) {
+        EXPECT_EQ(sample.buckets[i], DecodeDfx::NO_BUCKET);
+    }
+}
+
+/**
+ * @tc.name: ClassifyHeicAliasAndDefaultErrorClassTest001
+ * @tc.desc: Verify HEIC aliases share one MIME bucket and failure without error uses the default class.
+ * @tc.type: FUNC
+ */
+HWTEST_F(DecodeAggregateTest, ClassifyHeicAliasAndDefaultErrorClassTest001, TestSize.Level3)
+{
+    uint16_t aliasBucket = DecodeDfx::NO_BUCKET;
+    for (const char *mime : { "image/heic", "image/heifs", "image/heics" }) {
+        DecodeInfoOptions options {};
+        options.mimeType = mime;
+        DecodeDfx::ClassifyRequest request;
+        request.options = &options;
+        request.result = DecodeResult::SUCCESS;
+        request.optionsValid = true;
+        const auto sample = DecodeDfx::Classify(request);
+        const uint16_t bucket = sample.buckets[DecodeDfx::MIME_RESULT];
+        if (aliasBucket == DecodeDfx::NO_BUCKET) {
+            aliasBucket = bucket;
+        }
+        EXPECT_EQ(bucket, aliasBucket);
+    }
+    EXPECT_NE(aliasBucket, DecodeDfx::NO_BUCKET);
+
+    DecodeInfoOptions options {};
+    options.mimeType = "image/jpeg";
+    DecodeDfx::ClassifyRequest request;
+    request.options = &options;
+    request.result = DecodeResult::FAILURE;
+    request.error = DecodeError::NONE;
+    request.optionsValid = true;
+    const auto sample = DecodeDfx::Classify(request);
+    // 失败但未给出错误分类时落在默认错误桶 1。
+    EXPECT_EQ(sample.buckets[DecodeDfx::ERROR_CLASS], 1U);
+
+    options.memoryType = 99;
+    request.contextValid = true;
+    const auto outOfRange = DecodeDfx::Classify(request);
+    // 越界内存类型归入「其他」桶，公开取值为 0..4。
+    EXPECT_GT(outOfRange.buckets[DecodeDfx::MEMORY_TYPE], 4U);
+}
+
+/**
+ * @tc.name: ClassifyPointTypesTest001
+ * @tc.desc: Verify every decode point maps to its own point-result bucket.
+ * @tc.type: FUNC
+ */
+HWTEST_F(DecodeAggregateTest, ClassifyPointTypesTest001, TestSize.Level3)
+{
+    DecodeInfoOptions options {};
+    options.mimeType = "image/jpeg";
+    for (auto point : { DecodePoint::NORMAL, DecodePoint::EXTENDED, DecodePoint::HEADER,
+        DecodePoint::INCREMENTAL, DecodePoint::THUMBNAIL }) {
+        DecodeDfx::ClassifyRequest request;
+        request.options = &options;
+        request.point = point;
+        request.result = DecodeResult::SUCCESS;
+        request.optionsValid = true;
+        const auto sample = DecodeDfx::Classify(request);
+        EXPECT_EQ(sample.buckets[DecodeDfx::POINT_RESULT],
+            static_cast<uint16_t>(static_cast<uint16_t>(point) * DecodeDfx::RESULT_KIND_COUNT +
+            static_cast<uint16_t>(DecodeResult::SUCCESS)));
+    }
+}
 } // namespace Multimedia
 } // namespace OHOS
