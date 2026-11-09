@@ -15,6 +15,7 @@
 
 #include "pixel_convert_adapter.h"
 #include "pixel_yuv_utils.h"
+#include <algorithm>
 #include <map>
 
 #include "image_log.h"
@@ -255,6 +256,66 @@ bool PixelConvertAdapter::WritePixelsConvert(const void *srcPixels, uint32_t src
     }
 
     return true;
+}
+
+static bool WriteRGB888Region(const SkPixmap &srcPixmap, const ImageInfo &srcInfo, uint8_t *dstPixels,
+    const Position &dstPos, uint32_t dstRowBytes, const ImageInfo &dstInfo)
+{
+    // Clip to the destination in the same way as SkBitmap::writePixels.
+    int64_t left = std::max<int64_t>(dstPos.x, 0);
+    int64_t top = std::max<int64_t>(dstPos.y, 0);
+    int64_t right = std::min<int64_t>(static_cast<int64_t>(dstPos.x) + srcInfo.size.width, dstInfo.size.width);
+    int64_t bottom = std::min<int64_t>(static_cast<int64_t>(dstPos.y) + srcInfo.size.height, dstInfo.size.height);
+    CHECK_ERROR_RETURN_RET_LOG(right <= left || bottom <= top, false,
+        "WriteRegionPixelsConvert region does not intersect the destination.");
+    CHECK_ERROR_RETURN_RET_LOG(static_cast<uint64_t>(dstRowBytes) < static_cast<uint64_t>(dstInfo.size.width) * NUM_3,
+        false, "WriteRegionPixelsConvert dst row bytes %{public}u is invalid.", dstRowBytes);
+
+    ImageInfo regionInfo = dstInfo;
+    regionInfo.size = { static_cast<int32_t>(right - left), static_cast<int32_t>(bottom - top) };
+    int32_t regionRowBytes = GetRGBxRowBytes(regionInfo);
+    int32_t regionSize = GetRGBxSize(regionInfo);
+    CHECK_ERROR_RETURN_RET_LOG(regionRowBytes <= 0 || regionSize <= 0, false,
+        "WriteRegionPixelsConvert get region rgbx size failed.");
+    auto regionPixels = std::make_unique<uint8_t[]>(regionSize);
+    SkImageInfo regionSkInfo = SkImageInfo::Make(regionInfo.size.width, regionInfo.size.height,
+        SkColorType::kRGB_888x_SkColorType, static_cast<SkAlphaType>(dstInfo.alphaType));
+    if (!srcPixmap.readPixels(regionSkInfo, regionPixels.get(), static_cast<size_t>(regionRowBytes),
+        static_cast<int>(left - dstPos.x), static_cast<int>(top - dstPos.y))) {
+        IMAGE_LOGE("WriteRegionPixelsConvert convert source pixels failed.");
+        return false;
+    }
+    // Copy back only the written rectangle, row by row with the real destination stride.
+    for (int32_t y = 0; y < regionInfo.size.height; y++) {
+        uint8_t *dstRow = dstPixels + static_cast<uint64_t>(top + y) * dstRowBytes +
+            static_cast<uint64_t>(left) * NUM_3;
+        if (!PixelConvertAdapter::RGBxToRGB(regionPixels.get() + static_cast<uint64_t>(y) * regionRowBytes, dstRow,
+            static_cast<uint32_t>(regionRowBytes))) {
+            IMAGE_LOGE("WriteRegionPixelsConvert RGBxToRGB failed at row %{public}d.", y);
+            return false;
+        }
+    }
+    return true;
+}
+
+bool PixelConvertAdapter::WriteRegionPixelsConvert(const void *srcPixels, uint32_t srcRowBytes,
+    const ImageInfo &srcInfo, void *dstPixels, const Position &dstPos, uint32_t dstRowBytes, const ImageInfo &dstInfo)
+{
+    if (dstInfo.pixelFormat != PixelFormat::RGB_888) {
+        // Skia writes these destinations in place with dstRowBytes and keeps pixels outside the rectangle.
+        return WritePixelsConvert(srcPixels, srcRowBytes, srcInfo, dstPixels, dstPos, dstRowBytes, dstInfo);
+    }
+    CHECK_ERROR_RETURN_RET_LOG(srcPixels == nullptr || dstPixels == nullptr, false,
+        "WriteRegionPixelsConvert src or dst pixels invalid.");
+    std::unique_ptr<uint8_t[]> srcRGBxPixels;
+    if (srcInfo.pixelFormat == PixelFormat::RGB_888 && !ConvertRGB888ToRGBx(srcPixels, srcRowBytes, srcInfo,
+        srcRGBxPixels)) {
+        return false;
+    }
+    SkImageInfo srcImageInfo = SkImageInfo::Make(srcInfo.size.width, srcInfo.size.height,
+        PixelFormatConvert(srcInfo.pixelFormat), static_cast<SkAlphaType>(srcInfo.alphaType));
+    SkPixmap srcPixmap(srcImageInfo, srcPixels, srcRowBytes);
+    return WriteRGB888Region(srcPixmap, srcInfo, static_cast<uint8_t *>(dstPixels), dstPos, dstRowBytes, dstInfo);
 }
 
 bool PixelConvertAdapter::ReadPixelsConvert(const void *srcPixels, const Position &srcPos, uint32_t srcRowBytes,

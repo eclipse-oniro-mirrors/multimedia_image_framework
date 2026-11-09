@@ -39,6 +39,12 @@ public:
     static bool WritePixelsConvert(const void *srcPixels, uint32_t srcRowBytes, const ImageInfo &srcInfo,
                                    void *dstPixels, const Position &dstPos, uint32_t dstRowBytes,
                                    const ImageInfo &dstInfo);
+    // Same as WritePixelsConvert, except that for an RGB_888 destination only the written rectangle is converted
+    // and copied back with dstRowBytes, so destination pixels outside the rectangle are kept. Existing callers of
+    // WritePixelsConvert are not switched to this function to keep their output unchanged.
+    static bool WriteRegionPixelsConvert(const void *srcPixels, uint32_t srcRowBytes, const ImageInfo &srcInfo,
+                                         void *dstPixels, const Position &dstPos, uint32_t dstRowBytes,
+                                         const ImageInfo &dstInfo);
     static bool ReadPixelsConvert(const void *srcPixels, const Position &srcPos, uint32_t srcRowBytes,
                                   const ImageInfo &srcInfo, void *dstPixels, uint32_t dstRowBytes,
                                   const ImageInfo &dstInfo);
