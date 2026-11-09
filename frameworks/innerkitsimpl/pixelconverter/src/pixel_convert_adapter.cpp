@@ -298,9 +298,22 @@ static bool WriteRGB888Region(const SkPixmap &srcPixmap, const ImageInfo &srcInf
     return true;
 }
 
+static bool IsRegionWriteTargetFormat(PixelFormat format)
+{
+    // ARGB_8888 is excluded: it maps to kRGBA_8888 in Skia and needs the two-step PixelMap::WritePixelsToARGB.
+    return format == PixelFormat::BGRA_8888 ||
+           format == PixelFormat::RGBA_8888 ||
+           format == PixelFormat::RGB_888 ||
+           format == PixelFormat::RGB_565 ||
+           format == PixelFormat::RGBA_F16 ||
+           format == PixelFormat::RGBA_1010102;
+}
+
 bool PixelConvertAdapter::WriteRegionPixelsConvert(const void *srcPixels, uint32_t srcRowBytes,
     const ImageInfo &srcInfo, void *dstPixels, const Position &dstPos, uint32_t dstRowBytes, const ImageInfo &dstInfo)
 {
+    CHECK_ERROR_RETURN_RET_LOG(!IsRegionWriteTargetFormat(dstInfo.pixelFormat), false,
+        "WriteRegionPixelsConvert unsupported dst format: %{public}d", dstInfo.pixelFormat);
     if (dstInfo.pixelFormat != PixelFormat::RGB_888) {
         // Skia writes these destinations in place with dstRowBytes and keeps pixels outside the rectangle.
         return WritePixelsConvert(srcPixels, srcRowBytes, srcInfo, dstPixels, dstPos, dstRowBytes, dstInfo);

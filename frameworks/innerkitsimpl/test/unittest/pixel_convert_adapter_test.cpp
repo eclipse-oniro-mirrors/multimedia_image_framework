@@ -650,6 +650,29 @@ HWTEST_F(PixelConvertAdapterTest, WriteRegionPixelsConvertInvalid001, TestSize.L
         outside, rowBytes, dstInfo));
     EXPECT_EQ(dst, before);
 }
+
+/**
+ * @tc.name: WriteRegionPixelsConvertUnsupportedDst001
+ * @tc.desc: WriteRegionPixelsConvert rejects ARGB_8888, ALPHA_8 and NV21 destinations without touching dst
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelConvertAdapterTest, WriteRegionPixelsConvertUnsupportedDst001, TestSize.Level3)
+{
+    uint32_t dstRowBytes = static_cast<uint32_t>(REGION_DST_WIDTH) * BYTES_PER_PIXEL_4;
+    std::vector<uint8_t> dst(static_cast<size_t>(dstRowBytes) * REGION_DST_HEIGHT, REGION_DST_FILL);
+    std::vector<uint8_t> before = dst;
+    std::vector<uint8_t> src(BYTES_PER_PIXEL_4, 0x40);
+    ImageInfo srcInfo = MakeRegionImageInfo(1, 1, PixelFormat::BGRA_8888, AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
+    Position pos = {1, 1};
+    const PixelFormat unsupported[] = {PixelFormat::ARGB_8888, PixelFormat::ALPHA_8, PixelFormat::NV21};
+    for (PixelFormat format : unsupported) {
+        ImageInfo dstInfo = MakeRegionImageInfo(REGION_DST_WIDTH, REGION_DST_HEIGHT, format,
+            AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
+        EXPECT_FALSE(PixelConvertAdapter::WriteRegionPixelsConvert(src.data(), BYTES_PER_PIXEL_4, srcInfo,
+            dst.data(), pos, dstRowBytes, dstInfo)) << "format " << static_cast<int32_t>(format);
+        EXPECT_EQ(dst, before) << "format " << static_cast<int32_t>(format);
+    }
+}
 }
 }
 
