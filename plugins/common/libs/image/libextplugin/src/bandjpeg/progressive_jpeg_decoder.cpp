@@ -44,12 +44,20 @@ constexpr static uint32_t DEFAULT_SAMPLE_SIZE = 1;
 constexpr static int32_t BANDJPEG_V1_MIN_LONG_SIDE = 1080;
 constexpr static int32_t BANDJPEG_V1_MAX_LONG_SIDE = 32768;  // 最大边长限制
 constexpr static uint32_t MAX_JPEG_BUFFER_SIZE = 100 * 1024 * 1024;  // 最大 JPEG 缓冲区 100MB
+constexpr static uint32_t REGION_SCALE_FULL = 1;
+constexpr static uint32_t REGION_SCALE_HALF = 2;
+constexpr static uint32_t REGION_SCALE_QUARTER = 4;
+constexpr static uint32_t REGION_SCALE_EIGHTH = 8;
+constexpr static uint32_t POINTER_SIZE_64BIT = 8;
+constexpr static uint32_t REGION_PARAMS_ABI_SIZE_64BIT = 80;
+constexpr static uint32_t REGION_PARAMS_ABI_SIZE_32BIT = 52;
 }
 
 // ABI guard: RegionDecodeParams is passed by const-ref to the dlsym'ed
 // fast::image::bandjpeg::DecodeImageRegion, so its layout must match the fast-side struct.
-static_assert((sizeof(void*) == 8) ? (sizeof(fast::image::bandjpeg::RegionDecodeParams) == 80) :
-    (sizeof(fast::image::bandjpeg::RegionDecodeParams) == 52),
+static_assert((sizeof(void*) == POINTER_SIZE_64BIT) ?
+    (sizeof(fast::image::bandjpeg::RegionDecodeParams) == REGION_PARAMS_ABI_SIZE_64BIT) :
+    (sizeof(fast::image::bandjpeg::RegionDecodeParams) == REGION_PARAMS_ABI_SIZE_32BIT),
     "RegionDecodeParams layout must match fast::image::bandjpeg::RegionDecodeParams in libfast_image.so");
 
 namespace OHOS {
@@ -86,27 +94,28 @@ static bool IsValidRegionGeometry(const ProgressiveJpegDecoder::RgbRegionOptions
 static uint32_t SelectRegionSampleSize(const ProgressiveJpegDecoder::RgbRegionOptions &geometry)
 {
     if (geometry.desiredWidth == 0) {
-        return 1;
+        return REGION_SCALE_FULL;
     }
     // Pick native scale by comparing max(desiredW/regionW, desiredH/regionH) against
     // thresholds with integer math (no float rounding at the boundary).
-    for (uint32_t denominator = 2; denominator <= 8; denominator *= 2) {
+    for (uint32_t denominator = REGION_SCALE_HALF; denominator <= REGION_SCALE_EIGHTH;
+        denominator *= REGION_SCALE_HALF) {
         if (static_cast<int64_t>(geometry.desiredWidth) * denominator > geometry.regionWidth ||
             static_cast<int64_t>(geometry.desiredHeight) * denominator > geometry.regionHeight) {
-            return denominator / 2;
+            return denominator / REGION_SCALE_HALF;
         }
     }
-    return 8;
+    return REGION_SCALE_EIGHTH;
 }
 
 static fast::image::bandjpeg::DecodeScale RegionSampleSizeToDecodeScale(uint32_t sampleSize)
 {
     switch (sampleSize) {
-        case 1:
+        case REGION_SCALE_FULL:
             return fast::image::bandjpeg::DecodeScale::FULL;
-        case 2:
+        case REGION_SCALE_HALF:
             return fast::image::bandjpeg::DecodeScale::HALF;
-        case 4:
+        case REGION_SCALE_QUARTER:
             return fast::image::bandjpeg::DecodeScale::QUARTER;
         default:
             return fast::image::bandjpeg::DecodeScale::EIGHTH;
@@ -115,6 +124,9 @@ static fast::image::bandjpeg::DecodeScale RegionSampleSizeToDecodeScale(uint32_t
 
 static uint32_t RegionOutputDimension(uint32_t dimension, uint32_t sampleSize, bool fullImage)
 {
+    if (sampleSize == 0) {
+        return dimension;
+    }
     const uint32_t quotient = dimension / sampleSize;
     if (fullImage) {
         return quotient + (dimension % sampleSize != 0 ? 1U : 0U);

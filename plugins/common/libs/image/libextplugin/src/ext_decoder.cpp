@@ -1543,86 +1543,68 @@ static bool GetProgressiveRegionFormat(const DecodeContext &context, const SkIma
     }
 }
 
-uint32_t ExtDecoder::ProgressiveDecodeRegion(DecodeContext &context)
+uint32_t ExtDecoder::PrepareProgressiveRegionParams(DecodeContext &context, SkImageInfo &decodeInfo,
+    fast::image::bandjpeg::RegionDecodeParams &params)
 {
-    IMAGE_LOGI("[REGION] ProgressiveDecodeRegion IN, src %{public}d x %{public}d, dstSubset "
-        "xy[%{public}d x %{public}d] wh[%{public}d x %{public}d], regionDesired [%{public}d x %{public}d], "
-        "alloc %{public}d, pixFmt %{public}d",
-        info_.width(), info_.height(), dstSubset_.left(), dstSubset_.top(),
-        dstSubset_.width(), dstSubset_.height(), regionDesiredSize_.width, regionDesiredSize_.height,
-        static_cast<int32_t>(context.allocatorType), static_cast<int32_t>(context.info.pixelFormat));
-    CHECK_ERROR_RETURN_RET_LOG(codec_ == nullptr || stream_ == nullptr, ERR_IMAGE_SOURCE_DATA,
-        "[REGION] ProgressiveDecodeRegion codec/stream null");
-    // Only complete input is accepted; never report success from partial data.
-    CHECK_ERROR_RETURN_RET_LOG(!context.ifSourceCompleted, ERR_IMAGE_DATA_UNSUPPORT,
-        "[REGION] ProgressiveDecodeRegion source not completed");
-    // Pixelmap reuse needs a separately verified layout/ownership contract and stays
-    // unsupported. Caller-provided/borrowed pixelsBuffer (framework-preallocated) is
-    // writable output exactly like the standard path and is decoded into directly.
-    CHECK_ERROR_RETURN_RET_LOG(reusePixelmap_ != nullptr, ERR_IMAGE_DATA_UNSUPPORT,
-        "[REGION] ProgressiveDecodeRegion pixelmap reuse unsupported");
-    // The backend preserves source colour values; the P3->sRGB step for a mismatched
-    // desired colour space runs after decode in the SUCCESS branch (standard-path parity).
     fast::image::RGBFormat format;
     CHECK_ERROR_RETURN_RET_LOG(!GetProgressiveRegionFormat(context, dstInfo_, format), ERR_IMAGE_DATA_UNSUPPORT,
         "[REGION] ProgressiveDecodeRegion format unsupported (pixFmt %{public}d, colorType %{public}d)",
         static_cast<int32_t>(context.info.pixelFormat), static_cast<int32_t>(dstInfo_.colorType()));
-
     const ProgressiveJpegDecoder::RgbRegionOptions geometry = {
         info_.width(), info_.height(), dstSubset_.left(), dstSubset_.top(),
         dstSubset_.width(), dstSubset_.height(), regionDesiredSize_.width, regionDesiredSize_.height
     };
-    fast::image::bandjpeg::RegionDecodeParams params;
     CHECK_ERROR_RETURN_RET_LOG(!ProgressiveJpegDecoder::BuildRgbRegionParams(geometry, params),
         ERR_IMAGE_INVALID_PARAMETER,
-        "[REGION] ProgressiveDecodeRegion BuildRgbRegionParams failed, region wh [%{public}d x %{public}d]",
+        "[REGION] BuildRgbRegionParams failed, region wh [%{public}d x %{public}d]",
         dstSubset_.width(), dstSubset_.height());
     // Scale (FULL/HALF/QUARTER/EIGHTH) is chosen by BuildRgbRegionParams from the region
     // vs desired size; the fast backend serves reduced-IDCT scales natively and requires
     // dstWidth/dstHeight to exactly equal the derived values below.
-
-    SkImageInfo decodeInfo = dstInfo_.makeWH(static_cast<int32_t>(params.dstWidth),
+    decodeInfo = dstInfo_.makeWH(static_cast<int32_t>(params.dstWidth),
         static_cast<int32_t>(params.dstHeight));
     const uint64_t byteCount = decodeInfo.computeMinByteSize();
     CHECK_ERROR_RETURN_RET(byteCount == 0 || SkImageInfo::ByteSizeOverflowed(byteCount) ||
         byteCount > std::numeric_limits<uint32_t>::max(), ERR_IMAGE_TOO_LARGE);
+    params.rgbFormat = format;
+    return SUCCESS;
+}
 
-    ProgressiveJpegDecoder::JpegInputData jpegData;
-    uint32_t res = ProgressiveJpegDecoder::GetJpegInputData(stream_,
-        [this](uint8_t *buffer, uint32_t size) { return ReadJpegData(buffer, size); }, jpegData);
-    CHECK_ERROR_RETURN_RET(res != SUCCESS, res);
-    params.jpegData = jpegData.buffer;
-    params.jpegSize = jpegData.bufferSize;
-
-    // Allocate only when the framework did not pre-provide the pixel buffer; a provided
-    // buffer is caller-owned storage that is written directly (same as the standard path).
-    const bool allocatedBuffer = context.pixelsBuffer.buffer == nullptr;
-    if (allocatedBuffer) {
-        switch (context.allocatorType) {
-            case Media::AllocatorType::SHARE_MEM_ALLOC:
-                res = ShareMemAlloc(context, byteCount);
-                break;
-            case Media::AllocatorType::HEAP_ALLOC:
-            case Media::AllocatorType::DEFAULT:
-                res = HeapMemAlloc(context, byteCount);
-                break;
-            case Media::AllocatorType::DMA_ALLOC:
-                // Region-sized SurfaceBuffer (not dstInfo_, which is the full-image geometry
-                // when the desired size is not a low-down-scale). Same pattern as the
-                // non-progressive DoRegionDecode path; stride/size come from the buffer itself.
-                res = DmaMemAlloc(context, byteCount, decodeInfo);
-                break;
-            default:
-                // MALLOC(4) and any other plain writable buffer: heap, matching the standard
-                // SetContextPixelsBuffer default so behavior agrees with the non-region path.
-                res = HeapMemAlloc(context, byteCount);
-                break;
-        }
-        CHECK_ERROR_RETURN_RET_LOG(res != SUCCESS, res,
-            "[REGION] ProgressiveDecodeRegion alloc %{public}d failed, byteCount %{public}llu",
-            static_cast<int32_t>(context.allocatorType), static_cast<unsigned long long>(byteCount));
+uint32_t ExtDecoder::AllocProgressiveRegionBuffer(DecodeContext &context, SkImageInfo &decodeInfo, bool &allocated)
+{
+    allocated = context.pixelsBuffer.buffer == nullptr;
+    if (!allocated) {
+        return SUCCESS;
     }
+    const uint64_t byteCount = decodeInfo.computeMinByteSize();
+    uint32_t res = SUCCESS;
+    switch (context.allocatorType) {
+        case Media::AllocatorType::SHARE_MEM_ALLOC:
+            res = ShareMemAlloc(context, byteCount);
+            break;
+        case Media::AllocatorType::HEAP_ALLOC:
+        case Media::AllocatorType::DEFAULT:
+            res = HeapMemAlloc(context, byteCount);
+            break;
+        case Media::AllocatorType::DMA_ALLOC:
+            // Region-sized SurfaceBuffer (not dstInfo_, which is the full-image geometry
+            // when the desired size is not a low-down-scale). Same pattern as the
+            // non-progressive DoRegionDecode path; stride/size come from the buffer itself.
+            res = DmaMemAlloc(context, byteCount, decodeInfo);
+            break;
+        default:
+            // MALLOC(4) and any other plain writable buffer: heap, matching the standard
+            // SetContextPixelsBuffer default so behavior agrees with the non-region path.
+            res = HeapMemAlloc(context, byteCount);
+            break;
+    }
+    CHECK_ERROR_PRINT_LOG(res != SUCCESS, "[REGION] ProgressiveDecodeRegion alloc failed, res %{public}u", res);
+    return res;
+}
 
+bool ExtDecoder::SetupProgressiveRegionBuffer(DecodeContext &context, bool allocated, const SkImageInfo &decodeInfo,
+    fast::image::bandjpeg::RegionDecodeParams &params)
+{
     params.dst = static_cast<uint8_t *>(context.pixelsBuffer.buffer);
     params.stride = decodeInfo.minRowBytes();
     params.capacityBytes = context.pixelsBuffer.bufferSize;
@@ -1635,14 +1617,13 @@ uint32_t ExtDecoder::ProgressiveDecodeRegion(DecodeContext &context)
         params.capacityBytes = static_cast<size_t>(sbBuffer->GetSize());
     }
 #endif
-    params.rgbFormat = format;
     if (params.dst == nullptr || params.stride == 0) {
         IMAGE_LOGE("[REGION] ProgressiveDecodeRegion dst %{public}p stride %{public}llu invalid",
             params.dst, static_cast<unsigned long long>(params.stride));
-        if (allocatedBuffer) {
+        if (allocated) {
             ResetProgressiveBuffer(context);
         }
-        return ERR_IMAGE_INVALID_PARAMETER;
+        return false;
     }
     IMAGE_LOGI("[REGION] ProgressiveDecodeRegion params: region xy[%{public}u x %{public}u] "
         "wh[%{public}u x %{public}u] scale %{public}d dstWh[%{public}u x %{public}u] stride %{public}llu "
@@ -1651,47 +1632,84 @@ uint32_t ExtDecoder::ProgressiveDecodeRegion(DecodeContext &context)
         static_cast<int32_t>(params.scale), params.dstWidth, params.dstHeight,
         static_cast<unsigned long long>(params.stride),
         static_cast<unsigned long long>(params.capacityBytes), static_cast<int32_t>(params.rgbFormat));
+    return true;
+}
 
+void ExtDecoder::ApplyProgressiveRegionColorSpace(DecodeContext &context,
+    const fast::image::bandjpeg::RegionDecodeParams &params)
+{
+    // Same colour handling as the standard path: region decode preserves source colour
+    // values; when the caller's desired gamut differs (fast-convertible pair such as
+    // Display-P3 <-> sRGB), convert in place with the fast kernel. Region geometry
+    // only: the standard ApplyFastGamutPostDecode validates row stride against the
+    // full-image dstInfo_, which a region-sized buffer legitimately fails, so the
+    // ColorInfo pair is prepared here and the region stride/extent are passed directly.
+    bool convertible = dstInfo_.colorSpace() != info_.colorSpace() &&
+        FASTManager::GetInstance().IsGamutAvailable() && IsSupportFastGamutConvert(false) &&
+        (params.rgbFormat == fast::image::RGBFormat::RGBA8888 ||
+         params.rgbFormat == fast::image::RGBFormat::BGRA8888);
+    if (!convertible) {
+        return;
+    }
+    ImageTrace imageTrace("ExtDecoder::ProgressiveDecodeRegion ColorSpaceConvert");
+    fast::image::ColorInfo srcColorInfo;
+    fast::image::ColorInfo dstColorInfo;
+    PrepareFastGamutConvertParams(params.rgbFormat, info_.alphaType(), dstInfo_.alphaType(),
+        srcColorInfo, dstColorInfo);
+    auto code = FASTManager::GetInstance().ColorSpaceConvert(
+        params.dst, static_cast<uint32_t>(params.stride), dstColorInfo,
+        params.dst, static_cast<uint32_t>(params.stride), srcColorInfo,
+        params.dstWidth, params.dstHeight);
+    if (IsFastGamutConvertSuccess(code) && dstColorSpace_ != nullptr) {
+        context.grColorSpaceName = dstColorSpace_->GetColorSpaceName();
+    }
+}
+
+uint32_t ExtDecoder::ProgressiveDecodeRegion(DecodeContext &context)
+{
+    IMAGE_LOGI("[REGION] ProgressiveDecodeRegion IN, src %{public}d x %{public}d, dstSubset "
+        "xy[%{public}d x %{public}d] wh[%{public}d x %{public}d], regionDesired [%{public}d x %{public}d], "
+        "alloc %{public}d, pixFmt %{public}d",
+        info_.width(), info_.height(), dstSubset_.left(), dstSubset_.top(),
+        dstSubset_.width(), dstSubset_.height(), regionDesiredSize_.width, regionDesiredSize_.height,
+        static_cast<int32_t>(context.allocatorType), static_cast<int32_t>(context.info.pixelFormat));
+    CHECK_ERROR_RETURN_RET_LOG(codec_ == nullptr || stream_ == nullptr, ERR_IMAGE_SOURCE_DATA,
+        "[REGION] ProgressiveDecodeRegion codec/stream null");
+    CHECK_ERROR_RETURN_RET_LOG(!context.ifSourceCompleted, ERR_IMAGE_DATA_UNSUPPORT,
+        "[REGION] ProgressiveDecodeRegion source not completed");
+    CHECK_ERROR_RETURN_RET_LOG(reusePixelmap_ != nullptr, ERR_IMAGE_DATA_UNSUPPORT,
+        "[REGION] ProgressiveDecodeRegion pixelmap reuse unsupported");
+    SkImageInfo decodeInfo;
+    fast::image::bandjpeg::RegionDecodeParams params;
+    uint32_t res = PrepareProgressiveRegionParams(context, decodeInfo, params);
+    CHECK_ERROR_RETURN_RET(res != SUCCESS, res);
+    ProgressiveJpegDecoder::JpegInputData jpegData;
+    res = ProgressiveJpegDecoder::GetJpegInputData(stream_,
+        [this](uint8_t *buffer, uint32_t size) { return ReadJpegData(buffer, size); }, jpegData);
+    CHECK_ERROR_RETURN_RET(res != SUCCESS, res);
+    params.jpegData = jpegData.buffer;
+    params.jpegSize = jpegData.bufferSize;
+    bool allocated = false;
+    res = AllocProgressiveRegionBuffer(context, decodeInfo, allocated);
+    CHECK_ERROR_RETURN_RET(res != SUCCESS, res);
+    bool ready = SetupProgressiveRegionBuffer(context, allocated, decodeInfo, params);
+    CHECK_ERROR_RETURN_RET(!ready, ERR_IMAGE_INVALID_PARAMETER);
     res = ProgressiveJpegDecoder::DecodeRegion(params);
-    if (res == SUCCESS) {
-        FlushProgressiveBuffer(context);  // DMA-only flush; no-op for HEAP/SHARE.
-        // Same colour handling as the standard path: region decode preserves source colour
-        // values; when the caller's desired gamut differs (fast-convertible pair such as
-        // Display-P3 <-> sRGB), convert in place with the fast kernel. Region geometry
-        // only: the standard ApplyFastGamutPostDecode validates row stride against the
-        // full-image dstInfo_, which a region-sized buffer legitimately fails, so the
-        // ColorInfo pair is prepared here and the region stride/extent are passed directly.
-        if (dstInfo_.colorSpace() != info_.colorSpace() &&
-            FASTManager::GetInstance().IsGamutAvailable() && IsSupportFastGamutConvert(false) &&
-            (params.rgbFormat == fast::image::RGBFormat::RGBA8888 ||
-             params.rgbFormat == fast::image::RGBFormat::BGRA8888)) {
-            ImageTrace imageTrace("ExtDecoder::ProgressiveDecodeRegion ColorSpaceConvert");
-            fast::image::ColorInfo srcColorInfo;
-            fast::image::ColorInfo dstColorInfo;
-            PrepareFastGamutConvertParams(params.rgbFormat, info_.alphaType(), dstInfo_.alphaType(),
-                srcColorInfo, dstColorInfo);
-            auto code = FASTManager::GetInstance().ColorSpaceConvert(
-                params.dst, static_cast<uint32_t>(params.stride), dstColorInfo,
-                params.dst, static_cast<uint32_t>(params.stride), srcColorInfo,
-                params.dstWidth, params.dstHeight);
-            if (code == static_cast<fast::image::IMAGE_ErrorCode>(0) && dstColorSpace_ != nullptr) {
-                context.grColorSpaceName = dstColorSpace_->GetColorSpaceName();
-            }
+    if (res != SUCCESS) {
+        IMAGE_LOGE("[REGION] ProgressiveDecodeRegion DecodeRegion failed, res=%{public}u, "
+            "region wh[%{public}u x %{public}u]", res, params.regionWidth, params.regionHeight);
+        if (allocated) {
+            ResetProgressiveBuffer(context);
         }
-        context.outInfo.size = { decodeInfo.width(), decodeInfo.height() };
-        context.pixelFormat = context.info.pixelFormat;
-        context.ifPartialOutput = false;
-        context.isHardDecode = false;
-        IMAGE_LOGI("[REGION] ProgressiveDecodeRegion SUCCESS, out wh[%{public}u x %{public}u]",
-            decodeInfo.width(), decodeInfo.height());
-        return SUCCESS;
+        return res;
     }
-    IMAGE_LOGE("[REGION] ProgressiveDecodeRegion DecodeRegion failed, res=%{public}u, "
-        "region wh[%{public}u x %{public}u]", res, params.regionWidth, params.regionHeight);
-    if (allocatedBuffer) {
-        ResetProgressiveBuffer(context);
-    }
-    return res;
+    FlushProgressiveBuffer(context);
+    ApplyProgressiveRegionColorSpace(context, params);
+    context.outInfo.size = { decodeInfo.width(), decodeInfo.height() };
+    context.pixelFormat = context.info.pixelFormat;
+    context.ifPartialOutput = false;
+    context.isHardDecode = false;
+    return SUCCESS;
 }
 
 SkCodec::Result ExtDecoder::DoSampleDecode(DecodeContext &context)
