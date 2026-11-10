@@ -18,6 +18,10 @@
 #include <algorithm>
 
 const uint16_t MAX_REFS_PER_ITEM = 1024;
+// Total number of item references kept for one iref box. A reference costs only about 14 bytes in
+// the file, but each one is expanded into a HeifBox plus a heap allocated id vector in memory, so
+// an unbounded count lets a small file consume gigabytes before any item list is queried.
+const size_t MAX_TOTAL_REFS = 8192;
 
 namespace OHOS {
 namespace ImagePlugin {
@@ -73,6 +77,9 @@ heif_error HeifIrefBox::ParseContent(HeifStreamReader &reader)
         contentReader.SkipEnd();
         if (contentReader.HasError()) {
             return contentReader.GetError();
+        }
+        if (references_.size() >= MAX_TOTAL_REFS) {
+            return heif_error_too_many_boxes;
         }
         references_.push_back(ref);
     }
@@ -138,12 +145,12 @@ bool HeifIrefBox::HasReferences(heif_item_id itemId) const
 }
 
 
-std::vector<HeifIrefBox::Reference> HeifIrefBox::GetReferencesFrom(heif_item_id itemId) const
+std::vector<const HeifIrefBox::Reference *> HeifIrefBox::GetReferencesFrom(heif_item_id itemId) const
 {
-    std::vector<Reference> references;
-    for (const Reference &ref: references_) {
+    std::vector<const Reference *> references;
+    for (const Reference &ref : references_) {
         if (ref.fromItemId == itemId) {
-            references.push_back(ref);
+            references.push_back(&ref);
         }
     }
     return references;

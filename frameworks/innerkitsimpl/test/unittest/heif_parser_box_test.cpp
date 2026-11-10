@@ -647,6 +647,51 @@ HWTEST_F(HeifParserBoxTest, ParseItemRefTest001, TestSize.Level3)
 }
 
 /**
+ * @tc.name: ParseContentTooManyReferencesTest001
+ * @tc.desc: An iref box carrying more references than the total limit must be rejected instead of
+ *           being expanded into memory (each 14 byte child box becomes a Reference with heap data).
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserBoxTest, ParseContentTooManyReferencesTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: ParseContentTooManyReferencesTest001 start";
+    // Keep in sync with MAX_TOTAL_REFS in item_ref_box.cpp.
+    constexpr uint32_t maxTotalRefs = 8192;
+    constexpr uint32_t childBoxSize = 14;  // header + fromItemId + referenceCount + one item id
+    constexpr uint32_t childCount = maxTotalRefs + 1;
+    std::vector<uint8_t> data;
+    auto appendU16 = [&data](uint16_t value) {
+        data.push_back(static_cast<uint8_t>(value >> ONE_BYTE_SHIFT));
+        data.push_back(static_cast<uint8_t>(value & 0xFF));
+    };
+    auto appendU32 = [&appendU16](uint32_t value) {
+        appendU16(static_cast<uint16_t>(value >> TWO_BYTES_SHIFT));
+        appendU16(static_cast<uint16_t>(value & 0xFFFF));
+    };
+    appendU32(UINT32_BYTES_NUM + UINT32_BYTES_NUM + childCount * childBoxSize);
+    const std::vector<uint8_t> irefType = {'i', 'r', 'e', 'f'};
+    const std::vector<uint8_t> childType = {'d', 'i', 'm', 'g'};
+    data.insert(data.end(), irefType.begin(), irefType.end());
+    appendU32(0);  // version 0, flags 0
+    for (uint32_t i = 0; i < childCount; i++) {
+        appendU32(childBoxSize);
+        data.insert(data.end(), childType.begin(), childType.end());
+        appendU16(TEST_FROM_ITEM_ID);
+        appendU16(1);  // one target item id
+        appendU16(TEST_TO_ITEM_ID_1);
+    }
+
+    auto inputStream = std::make_shared<HeifBufferInputStream>(data.data(), data.size(), true);
+    HeifStreamReader reader(inputStream, 0, data.size());
+    std::shared_ptr<HeifBox> box;
+    uint32_t recursionCount = 0;
+    heif_error err = HeifBox::MakeFromReader(reader, &box, recursionCount);
+    EXPECT_EQ(err, heif_error_too_many_boxes);
+    EXPECT_EQ(box, nullptr);
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: ParseContentTooManyReferencesTest001 end";
+}
+
+/**
  * @tc.name: InferFullBoxVersionTest002
  * @tc.desc: HeifIrefBox
  * @tc.type: FUNC
