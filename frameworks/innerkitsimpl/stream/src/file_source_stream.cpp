@@ -67,15 +67,6 @@ FileSourceStream::FileSourceStream(std::FILE *file, size_t size, size_t offset, 
     originalPath_ = originalPath;
 }
 
-FileSourceStream::FileSourceStream(std::FILE *file, size_t size, size_t offset, size_t original,
-                                   bool useMmap, int originalFd, const std::string &originalPath)
-    : filePtr_(file), fileSize_(size), fileOffset_(offset), fileOriginalOffset_(original),
-    useMmap_(useMmap)
-{
-    originalFd_ = originalFd;
-    originalPath_ = originalPath;
-}
-
 FileSourceStream::~FileSourceStream()
 {
     IMAGE_LOGD("[FileSourceStream]destructor enter.");
@@ -85,30 +76,6 @@ FileSourceStream::~FileSourceStream()
     }
     ResetReadBuffer();
 }
-
-#if !defined(_WIN32)
-// 读取 fd 对应的原始文件路径，供维测提取文件后缀；链接目标带 " (deleted)" 后缀时剥离。
-static std::string GetFdOriginalPath(int fd)
-{
-    if (fd < 0) {
-        return std::string();
-    }
-    constexpr size_t maxFilePathSize = 4096;
-    char target[maxFilePathSize];
-    const std::string link = "/proc/self/fd/" + std::to_string(fd);
-    const ssize_t length = readlink(link.c_str(), target, sizeof(target));
-    if (length <= 0 || static_cast<size_t>(length) >= sizeof(target)) {
-        return std::string();
-    }
-    std::string originalPath(target, static_cast<size_t>(length));
-    const std::string deletedSuffix = " (deleted)";
-    if (originalPath.size() > deletedSuffix.size() && originalPath.compare(originalPath.size() -
-        deletedSuffix.size(), deletedSuffix.size(), deletedSuffix) == 0) {
-        originalPath.erase(originalPath.size() - deletedSuffix.size());
-    }
-    return originalPath;
-}
-#endif
 
 unique_ptr<FileSourceStream> FileSourceStream::CreateSourceStream(const string &pathName)
 {
@@ -146,12 +113,6 @@ unique_ptr<FileSourceStream> FileSourceStream::CreateSourceStream(const int fd)
         IMAGE_LOGE("[FileSourceStream]Fail to dup fd, dupFd:[%{public}d].", dupFd);
         return nullptr;
     }
-#if !defined(_WIN32)
-    const std::string originalPath = GetFdOriginalPath(dupFd);
-#else
-    const std::string originalPath;
-#endif
-
     FILE *filePtr = fdopen(dupFd, "rb");
     if (filePtr == nullptr) {
         IMAGE_LOGE("[FileSourceStream]open file fail.");
@@ -190,7 +151,7 @@ unique_ptr<FileSourceStream> FileSourceStream::CreateSourceStream(const int fd)
         fclose(filePtr);
         return nullptr;
     }
-    return make_unique<FileSourceStream>(filePtr, size, offset, offset, useMmap, dupFd, originalPath);
+    return make_unique<FileSourceStream>(filePtr, size, offset, offset, useMmap, dupFd);
 }
 
 unique_ptr<FileSourceStream> FileSourceStream::CreateSourceStream(
@@ -205,12 +166,6 @@ unique_ptr<FileSourceStream> FileSourceStream::CreateSourceStream(
         IMAGE_LOGE("[FileSourceStream]dup fd failed, dupFd:[%{public}d].", dupFd);
         return nullptr;
     }
-#if !defined(_WIN32)
-    const std::string originalPath = GetFdOriginalPath(dupFd);
-#else
-    const std::string originalPath;
-#endif
-
     FILE *filePtr = fdopen(dupFd, "rb");
     if (filePtr == nullptr) {
         IMAGE_LOGE("[FileSourceStream]open file fail.");
@@ -224,7 +179,7 @@ unique_ptr<FileSourceStream> FileSourceStream::CreateSourceStream(
         fclose(filePtr);
         return nullptr;
     }
-    return make_unique<FileSourceStream>(filePtr, length, offset, offset, useMmap, dupFd, originalPath);
+    return make_unique<FileSourceStream>(filePtr, length, offset, offset, useMmap, dupFd);
 }
 
 bool FileSourceStream::Read(uint32_t desiredSize, DataStreamBuffer &outData)

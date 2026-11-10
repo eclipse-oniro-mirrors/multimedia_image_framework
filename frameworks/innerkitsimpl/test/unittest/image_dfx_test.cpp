@@ -18,6 +18,7 @@
 #include <unistd.h>
 #include <memory>
 #include <string>
+#include <utility>
 #include "image_dfx.h"
 
 extern "C++" {
@@ -237,6 +238,132 @@ HWTEST_F(ImageDfxTest, EncodeInfoOptionsTest001, TestSize.Level3)
     options.isHardware = true;
     Media::ReportEncodeInfo(options);
     GTEST_LOG_(INFO) << "ImageDfxTest: EncodeInfoOptionsTest001 end";
+}
+
+/**
+ * @tc.name: GetImageFileExtensionDeletedFileTest001
+ * @tc.desc: Verify extension of an unlinked file is resolved from fd without the deleted suffix.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageDfxTest, GetImageFileExtensionDeletedFileTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageDfxTest: GetImageFileExtensionDeletedFileTest001 start";
+    std::string path = "/data/local/tmp/dfx_ext_deleted.JPEG";
+    int fd = open(path.c_str(), O_CREAT | O_RDWR, 0600);
+    if (fd < 0) {
+        path = "./dfx_ext_deleted.JPEG";
+        fd = open(path.c_str(), O_CREAT | O_RDWR, 0600);
+    }
+    // 用 ASSERT_NE 断言 fd 有效性，使后续断言在 fd 失败时明确失败而非静默跳过。
+    ASSERT_GE(fd, 0);
+    ASSERT_EQ(unlink(path.c_str()), 0);
+    // 文件已删除但 fd 仍有效，readlink 目标带 " (deleted)"，后缀仍应解析为 jpeg。
+    EXPECT_EQ(Media::GetImageFileExtension("", fd), "jpeg");
+    close(fd);
+    GTEST_LOG_(INFO) << "ImageDfxTest: GetImageFileExtensionDeletedFileTest001 end";
+}
+
+/**
+ * @tc.name: SourceSizeProviderTest001
+ * @tc.desc: Verify provider fills source size only on first report and reporting is idempotent.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageDfxTest, SourceSizeProviderTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageDfxTest: SourceSizeProviderTest001 start";
+    int32_t providerCalls = 0;
+    Media::ImageEvent imageEvent;
+    imageEvent.SetSourceSizeProvider([&providerCalls]() -> uint64_t {
+        ++providerCalls;
+        return 4096;
+    });
+    imageEvent.ReportDecodeInfo();
+    EXPECT_EQ(providerCalls, 1);
+    // 上报后选项已移交异步任务，重复上报不应再次调用 provider，也不应重复上报。
+    imageEvent.ReportDecodeInfo();
+    EXPECT_EQ(providerCalls, 1);
+    GTEST_LOG_(INFO) << "ImageDfxTest: SourceSizeProviderTest001 end";
+}
+
+/**
+ * @tc.name: DecodeInfoOptionsMoveTest001
+ * @tc.desc: Verify moved options keep all newly added source fields in the event.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageDfxTest, DecodeInfoOptionsMoveTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageDfxTest: DecodeInfoOptionsMoveTest001 start";
+    Media::ImageEvent imageEvent;
+    Media::DecodeInfoOptions options = {};
+    options.sourceSize = 4096;
+    options.sourceColorSpace = 5;
+    options.sourceYuvSampling = "4:2:2";
+    options.sourceFileExtension = "jpg";
+    imageEvent.SetDecodeInfoOptions(std::move(options));
+
+    Media::DecodeInfoOptions &reportOptions = imageEvent.GetDecodeInfoOptions();
+    EXPECT_EQ(reportOptions.sourceSize, static_cast<uint64_t>(4096));
+    EXPECT_EQ(reportOptions.sourceColorSpace, 5);
+    EXPECT_EQ(reportOptions.sourceYuvSampling, "4:2:2");
+    EXPECT_EQ(reportOptions.sourceFileExtension, "jpg");
+    GTEST_LOG_(INFO) << "ImageDfxTest: DecodeInfoOptionsMoveTest001 end";
+}
+
+/**
+ * @tc.name: GetInvokeTypeStrInnerTest001
+ * @tc.desc: Verify unknown invoke types fall back to inner_interface.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageDfxTest, GetInvokeTypeStrInnerTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageDfxTest: GetInvokeTypeStrInnerTest001 start";
+    Media::ImageEvent imageEvent;
+    // 默认 invokeType 为 INNER_INTERFACE。
+    EXPECT_EQ(imageEvent.getInvokeType(), "inner_interface");
+    EXPECT_EQ(OHOS::Media::GetInvokeTypeStr(Media::INNER_INTERFACE), "inner_interface");
+    GTEST_LOG_(INFO) << "ImageDfxTest: GetInvokeTypeStrInnerTest001 end";
+}
+
+/**
+ * @tc.name: GetImageFileExtensionEdgeTest001
+ * @tc.desc: Verify invalid fd, exact max length suffix and illegal characters.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageDfxTest, GetImageFileExtensionEdgeTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageDfxTest: GetImageFileExtensionEdgeTest001 start";
+    // 无效 fd 走 readlink 失败分支。
+    EXPECT_EQ(Media::GetImageFileExtension("", 999999), "unknown");
+    // 后缀长度上限为 16，恰好 16 且全为合法字符时保留。
+    EXPECT_EQ(Media::GetImageFileExtension("/data/photo.abcdefghijklmnop"), "abcdefghijklmnop");
+    // 17 字符超限。
+    EXPECT_EQ(Media::GetImageFileExtension("/data/photo.abcdefghijklmnopq"), "unknown");
+    // 含非法字符。
+    EXPECT_EQ(Media::GetImageFileExtension("/data/photo.jp g"), "unknown");
+    GTEST_LOG_(INFO) << "ImageDfxTest: GetImageFileExtensionEdgeTest001 end";
+}
+
+/**
+ * @tc.name: SourceSizeProviderSkipTest001
+ * @tc.desc: Verify a valid source size is not overwritten by the provider.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageDfxTest, SourceSizeProviderSkipTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageDfxTest: SourceSizeProviderSkipTest001 start";
+    int32_t providerCalls = 0;
+    Media::ImageEvent imageEvent;
+    Media::DecodeInfoOptions options = {};
+    options.sourceSize = 2048;
+    imageEvent.SetDecodeInfoOptions(std::move(options));
+    imageEvent.SetSourceSizeProvider([&providerCalls]() -> uint64_t {
+        ++providerCalls;
+        return 4096;
+    });
+    imageEvent.ReportDecodeInfo();
+    // sourceSize 已有效时不再调用 provider。
+    EXPECT_EQ(providerCalls, 0);
+    GTEST_LOG_(INFO) << "ImageDfxTest: SourceSizeProviderSkipTest001 end";
 }
 } // namespace ImagePlugin
 } // namespace OHOS

@@ -35,8 +35,6 @@ public:
                      bool useMmap = false, int originalFd = SOURCE_STREAM_INVALID_FD);
     FileSourceStream(std::FILE *file, size_t size, size_t offset, size_t original,
                      bool useMmap = false, const std::string &originalPath = SOURCE_STREAM_INVALID_PATH);
-    FileSourceStream(std::FILE *file, size_t size, size_t offset, size_t original,
-                     bool useMmap, int originalFd, const std::string &originalPath);
     ~FileSourceStream() override;
 
     bool Read(uint32_t desiredSize, ImagePlugin::DataStreamBuffer &outData) override;

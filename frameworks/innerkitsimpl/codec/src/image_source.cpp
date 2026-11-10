@@ -1425,7 +1425,7 @@ void ImageSource::SetDecodeInfoOptions(uint32_t index, const DecodeOptions &opts
     imageEvent.SetSourceSizeProvider([this]() -> uint64_t {
         return static_cast<uint64_t>(GetDfxStreamSize(sourceStreamPtr_.get()));
     });
-    imageEvent.SetDecodeInfoOptions(options);
+    imageEvent.SetDecodeInfoOptions(std::move(options));
 }
 
 void ImageSource::SetDecodeInfoOptions(uint32_t index, const DecodeOptions &opts,
@@ -1455,7 +1455,7 @@ void ImageSource::SetDecodeInfoOptions(uint32_t index, const DecodeOptions &opts
     imageEvent.SetSourceSizeProvider([this]() -> uint64_t {
         return static_cast<uint64_t>(GetDfxStreamSize(sourceStreamPtr_.get()));
     });
-    imageEvent.SetDecodeInfoOptions(options);
+    imageEvent.SetDecodeInfoOptions(std::move(options));
 }
 
 void ImageSource::UpdateDecodeInfoOptions(const ImagePlugin::DecodeContext &context, ImageEvent &imageEvent)
@@ -1502,6 +1502,9 @@ void ImageSource::SetDecodeInfoSourceInfo(DecodeInfoOptions &options, AbsImageDe
 void ImageSource::PrintDecodeSourceState(const char *stage, uint32_t errorCode, ImageEvent &imageEvent,
     int32_t grColorSpace, PixelMap *pixelMap)
 {
+    if (!HiLogIsLoggable(LOG_DOMAIN, LOG_TAG, LOG_INFO)) {
+        return;
+    }
     const DecodeInfoOptions &options = imageEvent.GetDecodeInfoOptions();
     // 失败分支的 ret 已由调用点 ERROR 日志输出，nil 流场景降为 DEBUG 补充阶段信息。
     if (sourceStreamPtr_ == nullptr) {
@@ -1527,7 +1530,6 @@ void ImageSource::PrintDecodeSourceState(const char *stage, uint32_t errorCode, 
     }
     const int32_t pixelMapColorSpace = pixelMap == nullptr ? -1 :
         static_cast<int32_t>(pixelMap->InnerGetGrColorSpace().GetColorSpaceName());
-    // 成功与失败统一输出一条 INFO：源流状态、源码流色域与 YUV 采样，成功时附带解码输出色域。
     IMAGE_LOGI("[ImageSource]decode source state, stage:%{public}s, ret:%{public}u, size:%{public}zu, "
         "tell:%{public}u, complete:%{public}d, readMode:%{public}s, src:%{public}s, "
         "srcColorSpace:%{public}d(%{public}s), srcYuvSampling:%{public}s, "

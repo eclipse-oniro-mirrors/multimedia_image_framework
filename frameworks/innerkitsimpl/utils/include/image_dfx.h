@@ -81,8 +81,8 @@ public:
     ImageEvent();
     ~ImageEvent();
     std::string getInvokeType();
-    void SetDecodeInfoOptions(const DecodeInfoOptions &options);
-    void SetDecodeErrorMsg(std::string msg);
+    void SetDecodeInfoOptions(DecodeInfoOptions options);
+    void SetDecodeErrorMsg(const std::string &msg);
     void ReportDecodeFault();
     void ReportDecodeInfo();
     void SetDecodeResult(DecodeResult result, DecodeError error = DecodeError::NONE)
@@ -103,7 +103,7 @@ public:
         options_.isIncrementalDecode = true;
         point_ = DecodePoint::INCREMENTAL;
     }
-    void SetPluginType(std::string pluginType)
+    void SetPluginType(const std::string &pluginType)
     {
         options_.pluginType = pluginType;
     }

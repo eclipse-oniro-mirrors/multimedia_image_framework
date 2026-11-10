@@ -773,5 +773,90 @@ HWTEST_F(FileSourceStreamTest, ReadStateEmptySource001, TestSize.Level3)
     unlink(testFile);
     GTEST_LOG_(INFO) << "FileSourceStreamTest: ReadStateEmptySource001 end";
 }
+
+/**
+ * @tc.name: OriginalSourceInfoTest001
+ * @tc.desc: Verify fd source keeps originalFd and does not resolve path while creating the stream.
+ * @tc.type: FUNC
+ */
+HWTEST_F(FileSourceStreamTest, OriginalSourceInfoTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "FileSourceStreamTest: OriginalSourceInfoTest001 start";
+    const char *testFile = "/data/local/tmp/original_source_fd.jpg";
+    const int fd = open(testFile, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
+    ASSERT_GE(fd, 0);
+    std::unique_ptr<FileSourceStream> fileSourceStream = FileSourceStream::CreateSourceStream(fd);
+    close(fd);
+    unlink(testFile);
+    ASSERT_NE(fileSourceStream, nullptr);
+    // fd 源在创建路径上不解析路径：只保留 originalFd，originalPath 为空，避免热路径 readlink。
+    EXPECT_GE(fileSourceStream->GetOriginalFd(), 0);
+    EXPECT_TRUE(fileSourceStream->GetOriginalPath().empty());
+    GTEST_LOG_(INFO) << "FileSourceStreamTest: OriginalSourceInfoTest001 end";
+}
+
+/**
+ * @tc.name: OriginalSourceInfoTest002
+ * @tc.desc: Verify path source keeps original path and reports no valid originalFd.
+ * @tc.type: FUNC
+ */
+HWTEST_F(FileSourceStreamTest, OriginalSourceInfoTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "FileSourceStreamTest: OriginalSourceInfoTest002 start";
+    const char *testFile = "/data/local/tmp/original_source_path.jpg";
+    std::ofstream ofs(testFile, std::ios::binary);
+    ofs.close();
+
+    std::unique_ptr<FileSourceStream> fileSourceStream = FileSourceStream::CreateSourceStream(testFile);
+    ASSERT_NE(fileSourceStream, nullptr);
+    EXPECT_FALSE(fileSourceStream->GetOriginalPath().empty());
+    EXPECT_EQ(fileSourceStream->GetOriginalFd(), SOURCE_STREAM_INVALID_FD);
+
+    unlink(testFile);
+    GTEST_LOG_(INFO) << "FileSourceStreamTest: OriginalSourceInfoTest002 end";
+}
+
+/**
+ * @tc.name: OriginalSourceInfoTest003
+ * @tc.desc: Verify fd with offset and length keeps originalFd and empty originalPath as well.
+ * @tc.type: FUNC
+ */
+HWTEST_F(FileSourceStreamTest, OriginalSourceInfoTest003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "FileSourceStreamTest: OriginalSourceInfoTest003 start";
+    const char *testFile = "/data/local/tmp/original_source_range.jpg";
+    const int fd = open(testFile, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
+    ASSERT_GE(fd, 0);
+    std::unique_ptr<FileSourceStream> fileSourceStream =
+        FileSourceStream::CreateSourceStream(fd, SIZE_T, FILE_SIZE);
+    close(fd);
+    unlink(testFile);
+    ASSERT_NE(fileSourceStream, nullptr);
+    EXPECT_GE(fileSourceStream->GetOriginalFd(), 0);
+    EXPECT_TRUE(fileSourceStream->GetOriginalPath().empty());
+    GTEST_LOG_(INFO) << "FileSourceStreamTest: OriginalSourceInfoTest003 end";
+}
+
+/**
+ * @tc.name: ReadStateUnknownSizeTest001
+ * @tc.desc: Verify an unknown stream size reports UNKNOWN read state.
+ * @tc.type: FUNC
+ */
+HWTEST_F(FileSourceStreamTest, ReadStateUnknownSizeTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "FileSourceStreamTest: ReadStateUnknownSizeTest001 start";
+    const char *testFile = "/data/local/tmp/read_state_unknown.jpg";
+    std::ofstream ofs(testFile, std::ios::binary);
+    ofs.close();
+
+    std::unique_ptr<FileSourceStream> fileSourceStream = FileSourceStream::CreateSourceStream(testFile);
+    ASSERT_NE(fileSourceStream, nullptr);
+    // 流大小未知（SIZE_MAX）时无法判定完整性，按 UNKNOWN 上报。
+    fileSourceStream->fileSize_ = static_cast<size_t>(-1);
+    EXPECT_EQ(fileSourceStream->GetReadState(), SourceStream::ReadState::UNKNOWN);
+
+    unlink(testFile);
+    GTEST_LOG_(INFO) << "FileSourceStreamTest: ReadStateUnknownSizeTest001 end";
+}
 }
 }
