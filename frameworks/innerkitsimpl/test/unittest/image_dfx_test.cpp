@@ -279,7 +279,7 @@ HWTEST_F(ImageDfxTest, SourceSizeProviderTest001, TestSize.Level3)
     });
     imageEvent.ReportDecodeInfo();
     EXPECT_EQ(providerCalls, 1);
-    // 上报后选项已移交异步任务，重复上报不应再次调用 provider，也不应重复上报。
+    // 聚合记录只做一次，重复上报不应再次调用 provider，也不应重复记录。
     imageEvent.ReportDecodeInfo();
     EXPECT_EQ(providerCalls, 1);
     GTEST_LOG_(INFO) << "ImageDfxTest: SourceSizeProviderTest001 end";

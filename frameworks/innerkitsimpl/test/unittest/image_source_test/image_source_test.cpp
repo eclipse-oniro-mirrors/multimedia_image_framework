@@ -5934,7 +5934,7 @@ HWTEST_F(ImageSourceTest, DecodeFaultFdHeaderFailure001, TestSize.Level3)
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
 
-    // DECODE_FAULT.SOURCE_SIZE 与选项填充同源：fd 源即使 header 失败也必须拿到真实文件大小。
+    // 小时聚合的源大小统计与选项填充同源：fd 源即使 header 失败也必须拿到真实文件大小。
     ImageEvent event;
     ImageInfo info;
     imageSource->SetDecodeInfoOptions(0, DecodeOptions {}, info, event);
@@ -5949,7 +5949,7 @@ HWTEST_F(ImageSourceTest, DecodeFaultFdHeaderFailure001, TestSize.Level3)
     event.Report();
     EXPECT_EQ(event.GetDecodeInfoOptions().sourceSize, static_cast<uint64_t>(garbageSize));
 
-    // 垃圾数据真实触发 header 失败的 DECODE_FAULT 上报。
+    // 垃圾数据真实触发 header 失败，失败样本计入小时聚合。
     DecodeOptions decodeOpts;
     std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
     ASSERT_EQ(pixelMap, nullptr);
