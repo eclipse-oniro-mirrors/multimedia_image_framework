@@ -1585,5 +1585,57 @@ HWTEST_F(HeifParserBoxTest, ParseMdcvPropertyFromIpcoTest001, TestSize.Level3)
     GTEST_LOG_(INFO) << "HeifParserBoxTest: ParseMdcvPropertyFromIpcoTest001 end";
 }
 
+static const uint32_t HVCC_BOX_SIZE = 31;
+static const uint64_t HVCC_CONSTRAINT_FLAGS_B0 = 0xB00000000000ULL;
+static const uint64_t HVCC_CONSTRAINT_FLAGS_BFC8 = 0xBFC800000000ULL;
+
+static std::vector<uint8_t> MakeHvccBoxData(uint64_t constraintFlags)
+{
+    std::vector<uint8_t> data;
+    AppendUint32(data, HVCC_BOX_SIZE);
+    AppendUint32(data, BOX_TYPE_HVCC);
+    data.push_back(1);              // configurationVersion
+    data.push_back(0x01);           // general_profile_space/tier_flag/profile_idc
+    AppendUint32(data, 0x60000000); // general_profile_compatibility_flags
+    AppendUint32(data, static_cast<uint32_t>((constraintFlags >> TWO_BYTES_SHIFT) & 0xFFFFFFFF));
+    AppendUint16(data, static_cast<uint16_t>(constraintFlags & 0xFFFF));
+    data.push_back(0x5A);           // general_level_idc
+    AppendUint16(data, 0xF000);     // min_spatial_segmentation_idc
+    data.push_back(0xFC);           // parallelismType
+    data.push_back(0xFD);           // chromaFormat
+    data.push_back(0xF8);           // bitDepthLumaMinus8
+    data.push_back(0xF8);           // bitDepthChromaMinus8
+    AppendUint16(data, 0);          // avgFrameRate
+    data.push_back(0x0F);           // const_frame_rate/num_temporal_layers/lengthSizeMinusOne
+    data.push_back(0);              // numOfArrays
+    return data;
+}
+
+/**
+ * @tc.name: HvccConstraintFlagsRoundTripTest001
+ * @tc.desc: general_constraint_indicator_flags is 48 bits and must survive parse + write unchanged
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserBoxTest, HvccConstraintFlagsRoundTripTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: HvccConstraintFlagsRoundTripTest001 start";
+    for (uint64_t flags : {HVCC_CONSTRAINT_FLAGS_B0, HVCC_CONSTRAINT_FLAGS_BFC8}) {
+        std::vector<uint8_t> data = MakeHvccBoxData(flags);
+        heif_error error = heif_error_ok;
+        auto box = MakeBoxFromData(data, error);
+        ASSERT_EQ(error, heif_error_ok);
+        ASSERT_NE(box, nullptr);
+        auto hvccBox = std::dynamic_pointer_cast<HeifHvccBox>(box);
+        ASSERT_NE(hvccBox, nullptr);
+        ASSERT_EQ(hvccBox->GetConfig().generalConstraintIndicatorFlags, flags);
+
+        HeifStreamWriter writer;
+        ASSERT_EQ(box->Write(writer), heif_error_ok);
+        ASSERT_EQ(writer.GetDataSize(), data.size());
+        ASSERT_EQ(writer.GetData(), data);
+    }
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: HvccConstraintFlagsRoundTripTest001 end";
+}
+
 }
 }
