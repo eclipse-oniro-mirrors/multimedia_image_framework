@@ -16,6 +16,7 @@
 #include <gtest/gtest.h>
 #include <fstream>
 #include <fcntl.h>
+#include <vector>
 #include "image_source.h"
 #include "image_source_util.h"
 #include "image_type.h"
@@ -547,6 +548,130 @@ HWTEST_F(PixelConvertAdapterTest, YUV420ToRGB888SuccessTest001, TestSize.Level3)
     free(yuvData);
     free(rgbData);
     GTEST_LOG_(INFO) << "PixelConvertAdapterTest: YUV420ToRGB888SuccessTest001 end";
+}
+
+static constexpr int32_t REGION_DST_WIDTH = 4;
+static constexpr int32_t REGION_DST_HEIGHT = 3;
+static constexpr uint32_t REGION_RGB_BYTES = 3;
+static constexpr uint32_t REGION_DST_PADDING = 4;
+static constexpr uint8_t REGION_DST_FILL = 0x5A;
+static constexpr uint8_t REGION_PADDING_FILL = 0xEE;
+
+static ImageInfo MakeRegionImageInfo(int32_t width, int32_t height, PixelFormat format, AlphaType alphaType)
+{
+    ImageInfo info;
+    info.size.width = width;
+    info.size.height = height;
+    info.pixelFormat = format;
+    info.colorSpace = ColorSpace::SRGB;
+    info.alphaType = alphaType;
+    return info;
+}
+
+/**
+ * @tc.name: WriteRegionPixelsConvertRGB888KeepOutside001
+ * @tc.desc: WriteRegionPixelsConvert writes only the rectangle of a padded RGB_888 destination
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelConvertAdapterTest, WriteRegionPixelsConvertRGB888KeepOutside001, TestSize.Level3)
+{
+    uint32_t rowBytes = static_cast<uint32_t>(REGION_DST_WIDTH) * REGION_RGB_BYTES;
+    uint32_t dstRowBytes = rowBytes + REGION_DST_PADDING;
+    std::vector<uint8_t> dst(static_cast<size_t>(dstRowBytes) * REGION_DST_HEIGHT, REGION_PADDING_FILL);
+    for (int32_t y = 0; y < REGION_DST_HEIGHT; y++) {
+        std::fill_n(dst.begin() + static_cast<size_t>(y) * dstRowBytes, rowBytes, REGION_DST_FILL);
+    }
+    std::vector<uint8_t> before = dst;
+    // 2x2 BGRA source: B=0x10, G=0x20, R=0x30, A=0xFF.
+    std::vector<uint8_t> src = {0x10, 0x20, 0x30, 0xFF, 0x10, 0x20, 0x30, 0xFF,
+        0x10, 0x20, 0x30, 0xFF, 0x10, 0x20, 0x30, 0xFF};
+    ImageInfo srcInfo = MakeRegionImageInfo(2, 2, PixelFormat::BGRA_8888, AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
+    ImageInfo dstInfo = MakeRegionImageInfo(REGION_DST_WIDTH, REGION_DST_HEIGHT, PixelFormat::RGB_888,
+        AlphaType::IMAGE_ALPHA_TYPE_OPAQUE);
+    Position pos = {1, 1};
+    ASSERT_TRUE(PixelConvertAdapter::WriteRegionPixelsConvert(src.data(), 2 * BYTES_PER_PIXEL_4, srcInfo,
+        dst.data(), pos, dstRowBytes, dstInfo));
+    const uint8_t rgb[REGION_RGB_BYTES] = {0x30, 0x20, 0x10};
+    for (int32_t y = 0; y < REGION_DST_HEIGHT; y++) {
+        for (uint32_t i = 0; i < dstRowBytes; i++) {
+            size_t index = static_cast<size_t>(y) * dstRowBytes + i;
+            int32_t x = static_cast<int32_t>(i / REGION_RGB_BYTES);
+            bool inside = i < rowBytes && x >= pos.x && x < pos.x + 2 && y >= pos.y && y < pos.y + 2;
+            EXPECT_EQ(dst[index], inside ? rgb[i % REGION_RGB_BYTES] : before[index]) << "byte " << index;
+        }
+    }
+}
+
+/**
+ * @tc.name: WriteRegionPixelsConvertNonRGB888Delegate001
+ * @tc.desc: WriteRegionPixelsConvert gives the same result as WritePixelsConvert for an RGBA_8888 destination
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelConvertAdapterTest, WriteRegionPixelsConvertNonRGB888Delegate001, TestSize.Level3)
+{
+    uint32_t dstRowBytes = static_cast<uint32_t>(REGION_DST_WIDTH) * BYTES_PER_PIXEL_4;
+    std::vector<uint8_t> expected(static_cast<size_t>(dstRowBytes) * REGION_DST_HEIGHT, REGION_DST_FILL);
+    std::vector<uint8_t> actual = expected;
+    std::vector<uint8_t> src(2 * BYTES_PER_PIXEL_4, 0x40);
+    ImageInfo srcInfo = MakeRegionImageInfo(2, 1, PixelFormat::BGRA_8888, AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
+    ImageInfo dstInfo = MakeRegionImageInfo(REGION_DST_WIDTH, REGION_DST_HEIGHT, PixelFormat::RGBA_8888,
+        AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
+    Position pos = {1, 2};
+    ASSERT_TRUE(PixelConvertAdapter::WritePixelsConvert(src.data(), 2 * BYTES_PER_PIXEL_4, srcInfo,
+        expected.data(), pos, dstRowBytes, dstInfo));
+    ASSERT_TRUE(PixelConvertAdapter::WriteRegionPixelsConvert(src.data(), 2 * BYTES_PER_PIXEL_4, srcInfo,
+        actual.data(), pos, dstRowBytes, dstInfo));
+    EXPECT_EQ(actual, expected);
+}
+
+/**
+ * @tc.name: WriteRegionPixelsConvertInvalid001
+ * @tc.desc: WriteRegionPixelsConvert rejects null buffers, a too small dst stride, and a rectangle outside dst
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelConvertAdapterTest, WriteRegionPixelsConvertInvalid001, TestSize.Level3)
+{
+    uint32_t rowBytes = static_cast<uint32_t>(REGION_DST_WIDTH) * REGION_RGB_BYTES;
+    std::vector<uint8_t> dst(static_cast<size_t>(rowBytes) * REGION_DST_HEIGHT, REGION_DST_FILL);
+    std::vector<uint8_t> before = dst;
+    std::vector<uint8_t> src(BYTES_PER_PIXEL_4, 0x40);
+    ImageInfo srcInfo = MakeRegionImageInfo(1, 1, PixelFormat::BGRA_8888, AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
+    ImageInfo dstInfo = MakeRegionImageInfo(REGION_DST_WIDTH, REGION_DST_HEIGHT, PixelFormat::RGB_888,
+        AlphaType::IMAGE_ALPHA_TYPE_OPAQUE);
+    Position pos = {0, 0};
+    EXPECT_FALSE(PixelConvertAdapter::WriteRegionPixelsConvert(nullptr, BYTES_PER_PIXEL_4, srcInfo, dst.data(), pos,
+        rowBytes, dstInfo));
+    EXPECT_FALSE(PixelConvertAdapter::WriteRegionPixelsConvert(src.data(), BYTES_PER_PIXEL_4, srcInfo, nullptr, pos,
+        rowBytes, dstInfo));
+    EXPECT_FALSE(PixelConvertAdapter::WriteRegionPixelsConvert(src.data(), BYTES_PER_PIXEL_4, srcInfo, dst.data(),
+        pos, rowBytes - 1, dstInfo));
+    Position outside = {REGION_DST_WIDTH, 0};
+    EXPECT_FALSE(PixelConvertAdapter::WriteRegionPixelsConvert(src.data(), BYTES_PER_PIXEL_4, srcInfo, dst.data(),
+        outside, rowBytes, dstInfo));
+    EXPECT_EQ(dst, before);
+}
+
+/**
+ * @tc.name: WriteRegionPixelsConvertUnsupportedDst001
+ * @tc.desc: WriteRegionPixelsConvert rejects ARGB_8888, ALPHA_8 and NV21 destinations without touching dst
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelConvertAdapterTest, WriteRegionPixelsConvertUnsupportedDst001, TestSize.Level3)
+{
+    uint32_t dstRowBytes = static_cast<uint32_t>(REGION_DST_WIDTH) * BYTES_PER_PIXEL_4;
+    std::vector<uint8_t> dst(static_cast<size_t>(dstRowBytes) * REGION_DST_HEIGHT, REGION_DST_FILL);
+    std::vector<uint8_t> before = dst;
+    std::vector<uint8_t> src(BYTES_PER_PIXEL_4, 0x40);
+    ImageInfo srcInfo = MakeRegionImageInfo(1, 1, PixelFormat::BGRA_8888, AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
+    Position pos = {1, 1};
+    const PixelFormat unsupported[] = {PixelFormat::ARGB_8888, PixelFormat::ALPHA_8, PixelFormat::NV21};
+    for (PixelFormat format : unsupported) {
+        ImageInfo dstInfo = MakeRegionImageInfo(REGION_DST_WIDTH, REGION_DST_HEIGHT, format,
+            AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
+        EXPECT_FALSE(PixelConvertAdapter::WriteRegionPixelsConvert(src.data(), BYTES_PER_PIXEL_4, srcInfo,
+            dst.data(), pos, dstRowBytes, dstInfo)) << "format " << static_cast<int32_t>(format);
+        EXPECT_EQ(dst, before) << "format " << static_cast<int32_t>(format);
+    }
 }
 }
 }

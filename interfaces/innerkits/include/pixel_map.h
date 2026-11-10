@@ -692,6 +692,18 @@ public:
      */
     NATIVEEXPORT uint32_t WritePixels(const uint8_t *source, const uint64_t &bufferSize, PixelFormat srcPixelFormat);
 
+    /**
+     * Write pixels in opts.pixelFormat to opts.region, for the public interfaces that take a source pixel format.
+     * Unlike WritePixels(const RWPixelsOptions &opts), the source format must be BGRA_8888, RGBA_8888, RGB_888,
+     * RGB_565 or RGBA_F16, the PixelMap format must be BGRA_8888, RGBA_8888, ARGB_8888, RGB_888, RGB_565,
+     * RGBA_F16 or RGBA_1010102 (checked before the editable state), and pixels outside opts.region are kept.
+     *
+     * @param opts RWPixelsOptions.
+     * @return Return 0 if successful; ERR_IMAGE_COLOR_CONVERT if the PixelMap format is not supported;
+     *     otherwise return errorcode.
+     */
+    NATIVEEXPORT uint32_t WritePixelsWithSourceFormat(const RWPixelsOptions &opts);
+
     NATIVEEXPORT virtual bool WritePixels(const uint32_t &color);
     /**
      * Release the pixel buffer.
