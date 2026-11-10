@@ -67,20 +67,30 @@ const std::string &GetProcessName()
     return processName;
 }
 
-// FFRT 能力探测：可用后进程内保持可用，避免每次打点都创建并关闭探测 fd。
+// FFRT 能力探测：可用后进程内保持可用；不可用时按固定间隔重试，避免受限进程
+// 每次打点都创建并关闭探测 fd，同时保留 fd 临时耗尽后的恢复能力。
 bool IsFfrtAvailable()
 {
-    static std::atomic<bool> available {false};
-    if (available.load(std::memory_order_relaxed)) {
+    constexpr uint64_t retryIntervalMs = 60000;
+    static std::atomic<int32_t> state {-1}; // -1 未探测，0 不可用，1 可用
+    static std::atomic<uint64_t> retryAtMs {0};
+    const int32_t cached = state.load(std::memory_order_relaxed);
+    if (cached == 1) {
         return true;
     }
-    int timerFd = timerfd_create(CLOCK_MONOTONIC, TFD_NONBLOCK | TFD_CLOEXEC);
-    if (timerFd < 0) {
+    uint64_t nowMs = 0;
+    if (cached == 0 && DecodeDfx::ReadClock(nowMs) && nowMs < retryAtMs.load(std::memory_order_relaxed)) {
         return false;
     }
-    close(timerFd);
-    available.store(true, std::memory_order_relaxed);
-    return true;
+    int timerFd = timerfd_create(CLOCK_MONOTONIC, TFD_NONBLOCK | TFD_CLOEXEC);
+    const bool available = timerFd >= 0;
+    if (available) {
+        close(timerFd);
+    } else if (DecodeDfx::ReadClock(nowMs)) {
+        retryAtMs.store(nowMs + retryIntervalMs, std::memory_order_relaxed);
+    }
+    state.store(available ? 1 : 0, std::memory_order_relaxed);
+    return available;
 }
 
 // 填充单次解码明细事件的公共参数，返回已写入的条目数。
@@ -195,8 +205,7 @@ void ImageEvent::SubmitDecodeEvent(bool isFault, uint64_t costTime)
     if (!IsFfrtAvailable()) {
         return;
     }
-    // 异步任务持有选项副本，捕获时移动避免二次拷贝其中的字符串。
-    DecodeInfoOptions options = options_;
+    DecodeInfoOptions options = std::move(options_);
     const char *invokeType = InvokeTypeName(options.invokeType);
     auto decodeTask = [options = std::move(options), invokeType, isFault, costTime] {
         HiSysEventParam params[DECODE_EVENT_PARAM_CAPACITY] = {};
@@ -215,9 +224,9 @@ void ImageEvent::SubmitDecodeEvent(bool isFault, uint64_t costTime)
 #endif
 }
 
-void ImageEvent::SetDecodeInfoOptions(const DecodeInfoOptions &options)
+void ImageEvent::SetDecodeInfoOptions(DecodeInfoOptions options)
 {
-    options_ = options;
+    options_ = std::move(options);
     optionsValid_ = true;
 }
 
@@ -226,7 +235,7 @@ DecodeInfoOptions& ImageEvent::GetDecodeInfoOptions()
     return options_;
 }
 
-void ImageEvent::SetDecodeErrorMsg(std::string msg)
+void ImageEvent::SetDecodeErrorMsg(const std::string &msg)
 {
     options_.errorMsg = msg;
     result_ = DecodeResult::FAILURE;
@@ -246,6 +255,12 @@ std::string GetImageFileExtension(const std::string &path, int fd)
             return "unknown";
         }
         filePath.assign(target, static_cast<size_t>(length));
+
+        const std::string deletedSuffix = " (deleted)";
+        if (filePath.size() > deletedSuffix.size() && filePath.compare(filePath.size() -
+            deletedSuffix.size(), deletedSuffix.size(), deletedSuffix) == 0) {
+            filePath.erase(filePath.size() - deletedSuffix.size());
+        }
     }
 #endif
     const auto separator = filePath.find_last_of("/\\");

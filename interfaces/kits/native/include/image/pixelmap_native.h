@@ -763,8 +763,10 @@ Image_ErrorCode OH_PixelmapNative_WritePixels(OH_PixelmapNative *pixelmap, uint8
  * Supported source pixel formats are {@link PIXEL_FORMAT_BGRA_8888}, {@link PIXEL_FORMAT_RGBA_8888},
  * {@link PIXEL_FORMAT_RGB_888}, {@link PIXEL_FORMAT_RGB_565}, and {@link PIXEL_FORMAT_RGBA_F16}.
  * RGBA_F16 source values are treated as normalized values in the range [0, 1]; values outside the range are clamped.
- * Writing to a PixelMap in a YUV or ASTC format is not supported; this is checked before whether the PixelMap is
- * editable.
+ * Supported PixelMap pixel formats are {@link PIXEL_FORMAT_BGRA_8888}, {@link PIXEL_FORMAT_RGBA_8888},
+ * {@link PIXEL_FORMAT_RGB_888}, {@link PIXEL_FORMAT_RGB_565}, {@link PIXEL_FORMAT_RGBA_F16},
+ * {@link PIXEL_FORMAT_RGBA_1010102}, and ARGB_8888. Writing to a PixelMap in any other format, including YUV, ASTC,
+ * and alpha-only formats, is not supported; this is checked before whether the PixelMap is editable.
  * Source rows must be tightly packed without row padding. The minimum required buffer size is the PixelMap width
  * multiplied by the PixelMap height and the number of bytes per pixel of sourcePixelFormat. To write source data with
  * a customized row stride or offset, use {@link OH_PixelmapNative_WritePixelsToAreaWithPixelFormat}.
@@ -790,8 +792,8 @@ Image_ErrorCode OH_PixelmapNative_WritePixels(OH_PixelmapNative *pixelmap, uint8
  * @return <ul>
  *         <li>{@link IMAGE_SUCCESS} if the operation is successful.</li>
  *         <li>{@link IMAGE_UNSUPPORTED_OPERATION} if the PixelMap is not editable or is locked.</li>
- *         <li>{@link IMAGE_UNSUPPORTED_CONVERSION} if the PixelMap is in a YUV or ASTC format, or conversion
- *             between sourcePixelFormat and the PixelMap pixel format is not supported.</li>
+ *         <li>{@link IMAGE_UNSUPPORTED_CONVERSION} if the PixelMap pixel format is not one of the supported
+ *             PixelMap pixel formats listed above.</li>
  *         <li>{@link IMAGE_INVALID_PARAMETER} if pixelmap or source is NULL, bufferSize is insufficient, or
  *             sourcePixelFormat is invalid or unsupported.</li>
  *         <li>{@link IMAGE_COPY_FAILED} if the pixel data cannot be copied or converted.</li>
@@ -836,8 +838,11 @@ Image_ErrorCode OH_PixelmapNative_WritePixelsToArea(OH_PixelmapNative *pixelmap,
  * Supported source pixel formats are {@link PIXEL_FORMAT_BGRA_8888}, {@link PIXEL_FORMAT_RGBA_8888},
  * {@link PIXEL_FORMAT_RGB_888}, {@link PIXEL_FORMAT_RGB_565}, and {@link PIXEL_FORMAT_RGBA_F16}.
  * RGBA_F16 source values are treated as normalized values in the range [0, 1]; values outside the range are clamped.
- * Writing to a PixelMap in a YUV or ASTC format is not supported; this is checked before whether the PixelMap is
- * editable.
+ * Supported PixelMap pixel formats are {@link PIXEL_FORMAT_BGRA_8888}, {@link PIXEL_FORMAT_RGBA_8888},
+ * {@link PIXEL_FORMAT_RGB_888}, {@link PIXEL_FORMAT_RGB_565}, {@link PIXEL_FORMAT_RGBA_F16},
+ * {@link PIXEL_FORMAT_RGBA_1010102}, and ARGB_8888. Writing to a PixelMap in any other format, including YUV, ASTC,
+ * and alpha-only formats, is not supported; this is checked before whether the PixelMap is editable.
+ * Pixels outside area->region are not modified.
  * area->stride must be greater than or equal to area->region.width multiplied by the number of bytes per pixel of
  * sourcePixelFormat. The minimum required buffer size is calculated as follows:
  * area->offset + (area->region.height - 1) * area->stride +
@@ -865,8 +870,8 @@ Image_ErrorCode OH_PixelmapNative_WritePixelsToArea(OH_PixelmapNative *pixelmap,
  * @return <ul>
  *         <li>{@link IMAGE_SUCCESS} if the operation is successful.</li>
  *         <li>{@link IMAGE_UNSUPPORTED_OPERATION} if the PixelMap is not editable or is locked.</li>
- *         <li>{@link IMAGE_UNSUPPORTED_CONVERSION} if the PixelMap is in a YUV or ASTC format, or conversion
- *             between sourcePixelFormat and the PixelMap pixel format is not supported.</li>
+ *         <li>{@link IMAGE_UNSUPPORTED_CONVERSION} if the PixelMap pixel format is not one of the supported
+ *             PixelMap pixel formats listed above.</li>
  *         <li>{@link IMAGE_INVALID_PARAMETER} if pixelmap, area, or area->pixels is NULL; the buffer size, offset,
  *             stride, or region is invalid; or sourcePixelFormat is invalid or unsupported.</li>
  *         <li>{@link IMAGE_COPY_FAILED} if the pixel data cannot be copied or converted.</li>

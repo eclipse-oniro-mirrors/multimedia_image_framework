@@ -857,7 +857,7 @@ Image_ErrorCode OH_PixelmapNative_WritePixels(OH_PixelmapNative *pixelmap, uint8
     return ToNewErrorCode(pixelmap->GetInnerPixelmap()->WritePixels(source, bufferSize));
 }
 
-static bool IsSupportedWritePixelFormat(PIXEL_FORMAT format)
+static bool IsSupportedWriteSourceFormat(PIXEL_FORMAT format)
 {
     return format == PIXEL_FORMAT_BGRA_8888 ||
            format == PIXEL_FORMAT_RGBA_8888 ||
@@ -873,7 +873,7 @@ Image_ErrorCode OH_PixelmapNative_WritePixelsWithPixelFormat(OH_PixelmapNative *
     if (pixelmap == nullptr || source == nullptr || !pixelmap->GetInnerPixelmap()) {
         return IMAGE_INVALID_PARAMETER;
     }
-    if (!IsSupportedWritePixelFormat(sourcePixelFormat)) {
+    if (!IsSupportedWriteSourceFormat(sourcePixelFormat)) {
         return IMAGE_INVALID_PARAMETER;
     }
     uint32_t innerRet = pixelmap->GetInnerPixelmap()->WritePixels(
@@ -924,12 +924,8 @@ Image_ErrorCode OH_PixelmapNative_WritePixelsToAreaWithPixelFormat(OH_PixelmapNa
     if (pixelmap == nullptr || !pixelmap->GetInnerPixelmap() || area == nullptr || area->pixels == nullptr) {
         return IMAGE_INVALID_PARAMETER;
     }
-    if (!IsSupportedWritePixelFormat(sourcePixelFormat)) {
+    if (!IsSupportedWriteSourceFormat(sourcePixelFormat)) {
         return IMAGE_INVALID_PARAMETER;
-    }
-    auto inner = pixelmap->GetInnerPixelmap();
-    if (inner->IsAstc() || inner->IsYuvFormat()) {
-        return IMAGE_UNSUPPORTED_CONVERSION;
     }
     OHOS::Media::Rect region;
     if (!ConvertImageRegionToRect(area->region, region)) {
@@ -937,7 +933,7 @@ Image_ErrorCode OH_PixelmapNative_WritePixelsToAreaWithPixelFormat(OH_PixelmapNa
     }
     RWPixelsOptions opts{area->pixels, static_cast<uint64_t>(area->pixelsSize),
         area->offset, area->stride, region, static_cast<PixelFormat>(sourcePixelFormat)};
-    uint32_t innerRet = inner->WritePixels(opts);
+    uint32_t innerRet = pixelmap->GetInnerPixelmap()->WritePixelsWithSourceFormat(opts);
     Image_ErrorCode ret = ToNewErrorCode(innerRet);
     if (ret == IMAGE_BAD_PARAMETER) {
         ret = IMAGE_INVALID_PARAMETER;

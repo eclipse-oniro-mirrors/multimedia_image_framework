@@ -75,11 +75,10 @@ size_t ExtStream::read(void *buffer, size_t size)
     InputStreamInit(buf, static_cast<uint8_t *>(buffer), size);
 
     uint32_t desiredSize = buf.size;
-    if (stream_->GetStreamSize() != SIZE_ZERO && stream_->GetStreamSize() < desiredSize) {
-        desiredSize = stream_->GetStreamSize();
-    }
-    // DFX: 仅缓存只读状态用于日志，不参与读取决策。
     const size_t streamSize = stream_->GetStreamSize();
+    if (streamSize != SIZE_ZERO && streamSize < desiredSize) {
+        desiredSize = static_cast<uint32_t>(streamSize);
+    }
     const uint32_t position = stream_->Tell();
     if (!stream_->Read(desiredSize, buf.buf, buf.size, buf.resSize)) {
         effectiveEof_ = true;
