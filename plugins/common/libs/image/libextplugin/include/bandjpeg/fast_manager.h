@@ -36,6 +36,8 @@ enum class IMAGE_ErrorCode {
     ILLEGAL_INPUT,
     INVALID_PTR,
     UNSUPPORTED,
+    DECODE_ERROR,
+    OOM,
 };
 
 enum class YUVFormat {
@@ -81,6 +83,43 @@ struct ColorInfo {
     RGBFormat formatType;
     AlphaType fAlphaType = AlphaType::UNKNOWN;
 };
+
+// Region-decode mirror of fast::image::bandjpeg in libfast_image.so:
+// DecodeImageRegion and its types live in the nested `bandjpeg` namespace on the
+// fast side (namespace refactor), so the mirror must follow the same nesting.
+namespace bandjpeg {
+
+// Native reduced-IDCT scale used by region decode. Enum values are IDCT output
+// block sizes, NOT sampling denominators: FULL/HALF/QUARTER/EIGHTH map to the
+// denominators 1/2/4/8 when deriving region output geometry. Must match the
+// fast::image::bandjpeg::DecodeScale in libfast_image.so (ABI).
+enum class DecodeScale : uint8_t {
+    EIGHTH = 1,
+    QUARTER = 2,
+    HALF = 4,
+    FULL = 8,
+};
+
+// Mirror of fast::image::bandjpeg::RegionDecodeParams in libfast_image.so.
+// Layout and field order are ABI-critical for the dlsym'ed DecodeImageRegion
+// call; do not reorder, and keep the exact underlying types (DecodeScale:
+// uint8_t, RGBFormat: default int from the outer fast::image namespace).
+struct RegionDecodeParams {
+    const uint8_t* jpegData = nullptr;   ///< Complete JPEG data, read-only.
+    size_t jpegSize = 0;                 ///< Declared readable bytes; non-zero.
+    uint32_t regionX = 0;                ///< Region left edge in the original image.
+    uint32_t regionY = 0;                ///< Region top edge in the original image.
+    uint32_t regionWidth = 0;            ///< Region width in pixels.
+    uint32_t regionHeight = 0;           ///< Region height in pixels.
+    DecodeScale scale = DecodeScale::FULL;  ///< Native decode scale.
+    uint8_t* dst = nullptr;              ///< Writable storage base address.
+    uint32_t dstWidth = 0;               ///< Exact output width; must equal W.
+    uint32_t dstHeight = 0;              ///< Exact output height; must equal H.
+    size_t stride = 0;                   ///< Byte span between adjacent output rows.
+    RGBFormat rgbFormat = RGBFormat::RGBA8888;  ///< Packed output format.
+    size_t capacityBytes = 0;            ///< Declared writable bytes from dst.
+};
+}  // namespace bandjpeg
 }
 
 namespace OHOS {
@@ -100,6 +139,7 @@ public:
         uint32_t, size_t, size_t, fast::image::YUVFormat) = nullptr;
     fast::image::IMAGE_ErrorCode (*ColorSpaceConvert)(uint8_t*, uint32_t, fast::image::ColorInfo,
         uint8_t*, uint32_t, fast::image::ColorInfo, uint32_t, uint32_t) = nullptr;
+    fast::image::IMAGE_ErrorCode (*DecodeImageRegion)(const fast::image::bandjpeg::RegionDecodeParams&) = nullptr;
 
 private:
     FASTManager();

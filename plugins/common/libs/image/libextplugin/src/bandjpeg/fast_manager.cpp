@@ -60,6 +60,12 @@ FASTManager::FASTManager()
     if (ColorSpaceConvert == nullptr) {
         IMAGE_LOGW("FAST ColorSpaceConvert not found: %{public}s", dlerror());
     }
+    DecodeImageRegion = reinterpret_cast<fast::image::IMAGE_ErrorCode (*)(
+        const fast::image::bandjpeg::RegionDecodeParams&)>(
+        dlsym(FASTHandle_, "_ZN4fast5image8bandjpeg17DecodeImageRegionERKNS1_18RegionDecodeParamsE"));
+    if (DecodeImageRegion == nullptr) {
+        IMAGE_LOGW("FAST DecodeImageRegion not found: %{public}s", dlerror());
+    }
     
     isInitialized_ = true;
     IMAGE_LOGI("FASTManager initialized successfully");
@@ -73,6 +79,7 @@ FASTManager::~FASTManager()
         DecodeImage = nullptr;
         DecodeImageYUV = nullptr;
         ColorSpaceConvert = nullptr;
+        DecodeImageRegion = nullptr;
         isInitialized_ = false;
     }
 }

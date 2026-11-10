@@ -206,6 +206,7 @@ private:
     uint32_t AllocGainmapBuffer(DecodeContext &context, SkImageInfo &dstInfo, uint64_t byteCount);
     bool IsRegionDecodeSupported(uint32_t index, const PixelDecodeOptions &opts, PlImageInfo &info);
     uint32_t DoRegionDecode(DecodeContext &context);
+    uint32_t ProgressiveDecodeRegion(DecodeContext &context);
     SkCodec::Result DoSampleDecode(DecodeContext &context);
     bool IsRawFormat(std::string &name);
     std::string GetPluginType() override

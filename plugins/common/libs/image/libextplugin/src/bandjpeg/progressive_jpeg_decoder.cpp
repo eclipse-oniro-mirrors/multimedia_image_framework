@@ -46,6 +46,12 @@ constexpr static int32_t BANDJPEG_V1_MAX_LONG_SIDE = 32768;  // 最大边长限�
 constexpr static uint32_t MAX_JPEG_BUFFER_SIZE = 100 * 1024 * 1024;  // 最大 JPEG 缓冲区 100MB
 }
 
+// ABI guard: RegionDecodeParams is passed by const-ref to the dlsym'ed
+// fast::image::bandjpeg::DecodeImageRegion, so its layout must match the fast-side struct.
+static_assert((sizeof(void*) == 8) ? (sizeof(fast::image::bandjpeg::RegionDecodeParams) == 80) :
+    (sizeof(fast::image::bandjpeg::RegionDecodeParams) == 52),
+    "RegionDecodeParams layout must match fast::image::bandjpeg::RegionDecodeParams in libfast_image.so");
+
 namespace OHOS {
 namespace ImagePlugin {
 using namespace Media;
@@ -58,6 +64,62 @@ static bool IsProgressiveJpegCodec(SkCodec *codec)
     cond = (jpegCodec->decoderMgr() == nullptr) || (jpegCodec->decoderMgr()->dinfo() == nullptr);
     CHECK_ERROR_RETURN_RET(cond, false);
     return jpegCodec->decoderMgr()->dinfo()->progressive_mode;
+}
+
+static bool IsValidRegionGeometry(const ProgressiveJpegDecoder::RgbRegionOptions &geometry)
+{
+    bool invalid = geometry.sourceWidth <= 0 || geometry.sourceHeight <= 0 ||
+        geometry.regionX < 0 || geometry.regionY < 0 ||
+        geometry.regionWidth <= 0 || geometry.regionHeight <= 0 ||
+        geometry.desiredWidth < 0 || geometry.desiredHeight < 0;
+    if (invalid) {
+        return false;
+    }
+    if ((geometry.desiredWidth == 0) != (geometry.desiredHeight == 0)) {
+        return false;
+    }
+    const int64_t right = static_cast<int64_t>(geometry.regionX) + geometry.regionWidth;
+    const int64_t bottom = static_cast<int64_t>(geometry.regionY) + geometry.regionHeight;
+    return right <= geometry.sourceWidth && bottom <= geometry.sourceHeight;
+}
+
+static uint32_t SelectRegionSampleSize(const ProgressiveJpegDecoder::RgbRegionOptions &geometry)
+{
+    if (geometry.desiredWidth == 0) {
+        return 1;
+    }
+    // Pick native scale by comparing max(desiredW/regionW, desiredH/regionH) against
+    // thresholds with integer math (no float rounding at the boundary).
+    for (uint32_t denominator = 2; denominator <= 8; denominator *= 2) {
+        if (static_cast<int64_t>(geometry.desiredWidth) * denominator > geometry.regionWidth ||
+            static_cast<int64_t>(geometry.desiredHeight) * denominator > geometry.regionHeight) {
+            return denominator / 2;
+        }
+    }
+    return 8;
+}
+
+static fast::image::bandjpeg::DecodeScale RegionSampleSizeToDecodeScale(uint32_t sampleSize)
+{
+    switch (sampleSize) {
+        case 1:
+            return fast::image::bandjpeg::DecodeScale::FULL;
+        case 2:
+            return fast::image::bandjpeg::DecodeScale::HALF;
+        case 4:
+            return fast::image::bandjpeg::DecodeScale::QUARTER;
+        default:
+            return fast::image::bandjpeg::DecodeScale::EIGHTH;
+    }
+}
+
+static uint32_t RegionOutputDimension(uint32_t dimension, uint32_t sampleSize, bool fullImage)
+{
+    const uint32_t quotient = dimension / sampleSize;
+    if (fullImage) {
+        return quotient + (dimension % sampleSize != 0 ? 1U : 0U);
+    }
+    return quotient == 0 ? 1 : quotient;
 }
 
 static bool IsLargeImage(const SkImageInfo &srcInfo)
@@ -203,12 +265,63 @@ uint32_t ProgressiveJpegDecoder::GetJpegInputData(InputDataStream *stream, const
     CHECK_ERROR_RETURN_RET(jpegData.buffer != nullptr, SUCCESS);
 
     jpegData.ownedBuffer.reset(new (std::nothrow) uint8_t[jpegData.bufferSize]);
-    CHECK_ERROR_RETURN_RET_LOG(jpegData.ownedBuffer == nullptr, ERR_IMAGE_DECODE_ABNORMAL,
+    CHECK_ERROR_RETURN_RET_LOG(jpegData.ownedBuffer == nullptr, ERR_IMAGE_MALLOC_ABNORMAL,
         "GetJpegInputData alloc input failed");
     jpegData.buffer = jpegData.ownedBuffer.get();
     CHECK_ERROR_RETURN_RET_LOG(!readJpegData, ERR_IMAGE_GET_DATA_ABNORMAL,
         "GetJpegInputData read callback is null");
     return readJpegData(jpegData.buffer, jpegData.bufferSize);
+}
+
+bool ProgressiveJpegDecoder::IsProgressiveJpeg(SkCodec *codec)
+{
+    return IsProgressiveJpegCodec(codec);
+}
+
+bool ProgressiveJpegDecoder::BuildRgbRegionParams(const RgbRegionOptions &options,
+    fast::image::bandjpeg::RegionDecodeParams &params)
+{
+    if (!IsValidRegionGeometry(options)) {
+        return false;
+    }
+    const uint32_t sampleSize = SelectRegionSampleSize(options);
+    const bool fullImage = options.regionX == 0 && options.regionY == 0 &&
+        options.regionWidth == options.sourceWidth && options.regionHeight == options.sourceHeight;
+    fast::image::bandjpeg::RegionDecodeParams result;
+    result.regionX = static_cast<uint32_t>(options.regionX);
+    result.regionY = static_cast<uint32_t>(options.regionY);
+    result.regionWidth = static_cast<uint32_t>(options.regionWidth);
+    result.regionHeight = static_cast<uint32_t>(options.regionHeight);
+    result.scale = RegionSampleSizeToDecodeScale(sampleSize);
+    result.dstWidth = RegionOutputDimension(result.regionWidth, sampleSize, fullImage);
+    result.dstHeight = RegionOutputDimension(result.regionHeight, sampleSize, fullImage);
+    params = result;
+    return true;
+}
+
+uint32_t ProgressiveJpegDecoder::DecodeRegion(const fast::image::bandjpeg::RegionDecodeParams &params)
+{
+    FASTManager &fastManager = FASTManager::GetInstance();
+    bool unavailable = !fastManager.IsInitialized() || fastManager.DecodeImageRegion == nullptr;
+    CHECK_ERROR_RETURN_RET_LOG(unavailable, ERR_IMAGE_DATA_UNSUPPORT, "FAST DecodeImageRegion unavailable");
+    const fast::image::IMAGE_ErrorCode ret = fastManager.DecodeImageRegion(params);
+    IMAGE_LOGI("bandjpeg region decode result=%{public}d, output=%{public}ux%{public}u",
+        static_cast<int32_t>(ret), params.dstWidth, params.dstHeight);
+    switch (ret) {
+        case fast::image::IMAGE_ErrorCode::SUCCESS:
+            return SUCCESS;
+        case fast::image::IMAGE_ErrorCode::INVALID_PTR:
+        case fast::image::IMAGE_ErrorCode::ILLEGAL_INPUT:
+            return ERR_IMAGE_INVALID_PARAMETER;
+        case fast::image::IMAGE_ErrorCode::UNSUPPORTED:
+        case fast::image::IMAGE_ErrorCode::SUCCESS_PARTIAL:
+            return ERR_IMAGE_DATA_UNSUPPORT;
+        case fast::image::IMAGE_ErrorCode::OOM:
+            return ERR_IMAGE_MALLOC_ABNORMAL;
+        case fast::image::IMAGE_ErrorCode::DECODE_ERROR:
+        default:
+            return ERR_IMAGE_DECODE_FAILED;
+    }
 }
 
 bool ProgressiveJpegDecoder::BuildRgbDecodePlan(const RgbDecodeOptions &options, RgbDecodePlan &plan)
