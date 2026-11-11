@@ -97,11 +97,17 @@ static uint32_t SelectRegionSampleSize(const ProgressiveJpegDecoder::RgbRegionOp
         return REGION_SCALE_FULL;
     }
     // Pick native scale by comparing max(desiredW/regionW, desiredH/regionH) against
-    // thresholds with integer math (no float rounding at the boundary).
+    // thresholds with integer math (no float rounding at the boundary). Every operand is
+    // widened to int64_t first so the product cannot overflow and the comparison does not
+    // mix signed and unsigned types.
+    const int64_t desiredWidth = geometry.desiredWidth;
+    const int64_t desiredHeight = geometry.desiredHeight;
+    const int64_t regionWidth = geometry.regionWidth;
+    const int64_t regionHeight = geometry.regionHeight;
     for (uint32_t denominator = REGION_SCALE_HALF; denominator <= REGION_SCALE_EIGHTH;
         denominator *= REGION_SCALE_HALF) {
-        if (static_cast<int64_t>(geometry.desiredWidth) * denominator > geometry.regionWidth ||
-            static_cast<int64_t>(geometry.desiredHeight) * denominator > geometry.regionHeight) {
+        const int64_t scale = static_cast<int64_t>(denominator);
+        if (desiredWidth * scale > regionWidth || desiredHeight * scale > regionHeight) {
             return denominator / REGION_SCALE_HALF;
         }
     }
