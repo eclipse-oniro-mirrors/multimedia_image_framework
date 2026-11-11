@@ -50,6 +50,38 @@ private:
 
     std::vector<Reference> references_;
 };
+
+// Entity group list (ISO/IEC 14496-12 'grpl'), holding EntityToGroupBox children such as 'altr'
+// and 'ster'. HEIF uses it to describe alternative representations (for example SDR/HDR versions
+// of the same image), so it has to be written back unchanged.
+class HeifGrplBox : public HeifBox {
+public:
+    struct EntityGroup {
+        uint32_t groupType = 0;
+        uint8_t version = 0;
+        uint32_t flags = 0;
+        uint32_t groupId = 0;
+        std::vector<uint32_t> entityIds;
+        std::vector<uint8_t> extra;
+    };
+
+    HeifGrplBox() : HeifBox(BOX_TYPE_GRPL) {}
+
+    const std::vector<EntityGroup> &GetGroups() const { return groups_; }
+
+    heif_error Write(HeifStreamWriter &writer) const override;
+
+protected:
+    heif_error ParseContent(HeifStreamReader &reader) override;
+
+private:
+    heif_error ParseEntityGroup(HeifStreamReader &reader, EntityGroup &group);
+
+    void ReadTrailingBytes(HeifStreamReader &reader, size_t size);
+
+    std::vector<EntityGroup> groups_;
+    std::vector<uint8_t> trailingBytes_;
+};
 } // namespace ImagePlugin
 } // namespace OHOS
 

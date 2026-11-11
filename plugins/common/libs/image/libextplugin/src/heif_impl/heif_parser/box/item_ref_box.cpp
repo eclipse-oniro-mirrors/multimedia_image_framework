@@ -18,6 +18,7 @@
 #include <algorithm>
 
 const uint16_t MAX_REFS_PER_ITEM = 1024;
+const uint32_t MAX_GRPL_ENTITY_COUNT = 4096;
 
 namespace OHOS {
 namespace ImagePlugin {
@@ -167,6 +168,114 @@ void HeifIrefBox::AddReferences(heif_item_id from_id, uint32_t type, const std::
     ref.fromItemId = from_id;
     ref.toItemIds = to_ids;
     references_.push_back(ref);
+}
+
+heif_error HeifGrplBox::ParseContent(HeifStreamReader &reader)
+{
+    while (!reader.IsAtEnd() && !reader.HasError()) {
+        int64_t groupStart = reader.GetStream()->Tell();
+        size_t remainSize = reader.GetRemainSize();
+        if (remainSize < UINT64_BYTES_NUM) {
+            ReadTrailingBytes(reader, remainSize);
+            break;
+        }
+
+        HeifBox headerBox;
+        heif_error err = headerBox.ParseHeader(reader);
+        uint64_t groupSize = headerBox.GetBoxSize();
+        uint64_t headerSize = headerBox.GetHeaderSize();
+        if (err != heif_error_ok || groupSize < headerSize ||
+            groupSize - headerSize > reader.GetRemainSize()) {
+            // Keep whatever cannot be parsed as an entity group verbatim instead of rejecting the file,
+            // so unknown or vendor specific group payloads still survive a rewrite.
+            reader.GetStream()->Seek(groupStart);
+            reader.SetError(false);
+            ReadTrailingBytes(reader, remainSize);
+            break;
+        }
+
+        EntityGroup group;
+        group.groupType = headerBox.GetBoxType();
+        HeifStreamReader contentReader(reader.GetStream(), reader.GetStream()->Tell(),
+            static_cast<size_t>(groupSize - headerSize));
+        err = ParseEntityGroup(contentReader, group);
+        contentReader.SkipEnd();
+        if (err != heif_error_ok) {
+            reader.GetStream()->Seek(groupStart);
+            reader.SetError(false);
+            ReadTrailingBytes(reader, remainSize);
+            break;
+        }
+        groups_.push_back(group);
+    }
+    return reader.GetError();
+}
+
+heif_error HeifGrplBox::ParseEntityGroup(HeifStreamReader &reader, EntityGroup &group)
+{
+    uint32_t versionAndFlags = reader.Read32();
+    group.version = static_cast<uint8_t>(versionAndFlags >> THREE_BYTES_SHIFT);
+    group.flags = versionAndFlags & 0x00FFFFFF;
+    group.groupId = reader.Read32();
+    uint32_t entityCount = reader.Read32();
+    if (entityCount > MAX_GRPL_ENTITY_COUNT ||
+        static_cast<uint64_t>(entityCount) * UINT32_BYTES_NUM > reader.GetRemainSize()) {
+        return heif_error_invalid_data;
+    }
+    group.entityIds.reserve(entityCount);
+    for (uint32_t index = 0; index < entityCount; ++index) {
+        group.entityIds.push_back(reader.Read32());
+    }
+    size_t extraSize = reader.GetRemainSize();
+    if (extraSize > 0) {
+        group.extra.resize(extraSize);
+        if (!reader.ReadData(group.extra.data(), extraSize)) {
+            return reader.GetError();
+        }
+    }
+    return reader.GetError();
+}
+
+void HeifGrplBox::ReadTrailingBytes(HeifStreamReader &reader, size_t size)
+{
+    if (size == 0) {
+        return;
+    }
+    trailingBytes_.resize(size);
+    if (!reader.ReadData(trailingBytes_.data(), size)) {
+        trailingBytes_.clear();
+    }
+}
+
+heif_error HeifGrplBox::Write(HeifStreamWriter &writer) const
+{
+    size_t boxStart = ReserveHeader(writer);
+
+    for (const auto &group: groups_) {
+        size_t groupStart = writer.GetPos();
+        writer.Write32(0); // placeholder, overwritten with the calculated size below
+        writer.Write32(group.groupType);
+        writer.Write32((static_cast<uint32_t>(group.version) << THREE_BYTES_SHIFT) |
+            (group.flags & 0x00FFFFFF));
+        writer.Write32(group.groupId);
+        writer.Write32(static_cast<uint32_t>(group.entityIds.size()));
+        for (uint32_t entityId: group.entityIds) {
+            writer.Write32(entityId);
+        }
+        if (!group.extra.empty()) {
+            writer.Write(group.extra);
+        }
+        size_t groupEnd = writer.GetPos();
+        writer.SetPos(groupStart);
+        writer.Write32(static_cast<uint32_t>(groupEnd - groupStart));
+        writer.SetPos(groupEnd);
+    }
+    if (!trailingBytes_.empty()) {
+        writer.Write(trailingBytes_);
+    }
+
+    WriteCalculatedHeader(writer, boxStart);
+    return heif_error_ok;
 }
 } // namespace ImagePlugin
 } // namespace OHOS
