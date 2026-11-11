@@ -659,6 +659,9 @@ HWTEST_F(HeifParserBoxTest, ParseContentTooManyReferencesTest001, TestSize.Level
     constexpr uint32_t maxTotalRefs = 8192;
     constexpr uint32_t childBoxSize = 14;  // header + fromItemId + referenceCount + one item id
     constexpr uint32_t childCount = maxTotalRefs + 1;
+    // The box size covers the size field, the type field, the FullBox version/flags and all children.
+    // Leaving out the version/flags truncates the last child, so parsing stops at eof before the cap.
+    constexpr uint32_t irefHeaderSize = UINT32_BYTES_NUM + UINT32_BYTES_NUM + UINT32_BYTES_NUM;
     std::vector<uint8_t> data;
     auto appendU16 = [&data](uint16_t value) {
         data.push_back(static_cast<uint8_t>(value >> ONE_BYTE_SHIFT));
@@ -668,7 +671,7 @@ HWTEST_F(HeifParserBoxTest, ParseContentTooManyReferencesTest001, TestSize.Level
         appendU16(static_cast<uint16_t>(value >> TWO_BYTES_SHIFT));
         appendU16(static_cast<uint16_t>(value & 0xFFFF));
     };
-    appendU32(UINT32_BYTES_NUM + UINT32_BYTES_NUM + childCount * childBoxSize);
+    appendU32(irefHeaderSize + childCount * childBoxSize);
     const std::vector<uint8_t> irefType = {'i', 'r', 'e', 'f'};
     const std::vector<uint8_t> childType = {'d', 'i', 'm', 'g'};
     data.insert(data.end(), irefType.begin(), irefType.end());
@@ -680,6 +683,9 @@ HWTEST_F(HeifParserBoxTest, ParseContentTooManyReferencesTest001, TestSize.Level
         appendU16(1);  // one target item id
         appendU16(TEST_TO_ITEM_ID_1);
     }
+
+    // Keep the buffer and the declared box size in sync: a mismatch makes the parser stop at eof.
+    ASSERT_EQ(data.size(), static_cast<size_t>(irefHeaderSize + childCount * childBoxSize));
 
     auto inputStream = std::make_shared<HeifBufferInputStream>(data.data(), data.size(), true);
     HeifStreamReader reader(inputStream, 0, data.size());
