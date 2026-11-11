@@ -170,6 +170,24 @@ void HeifIrefBox::AddReferences(heif_item_id from_id, uint32_t type, const std::
     references_.push_back(ref);
 }
 
+bool HeifGrplBox::HasGroup(uint32_t groupType) const
+{
+    return std::any_of(groups_.begin(), groups_.end(), [groupType](const EntityGroup &group) {
+        return group.groupType == groupType;
+    });
+}
+
+std::vector<uint32_t> HeifGrplBox::GetEntityIds(uint32_t groupType) const
+{
+    auto iter = std::find_if(groups_.begin(), groups_.end(), [groupType](const EntityGroup &group) {
+        return group.groupType == groupType;
+    });
+    if (iter == groups_.end()) {
+        return {};
+    }
+    return iter->entityIds;
+}
+
 heif_error HeifGrplBox::ParseContent(HeifStreamReader &reader)
 {
     while (!reader.IsAtEnd() && !reader.HasError()) {

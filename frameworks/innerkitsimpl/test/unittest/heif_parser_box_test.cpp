@@ -1689,7 +1689,7 @@ HWTEST_F(HeifParserBoxTest, MakeBoxGrplTest001, TestSize.Level3)
 HWTEST_F(HeifParserBoxTest, GrplBoxRoundTripTest001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "HeifParserBoxTest: GrplBoxRoundTripTest001 start";
-    std::vector<uint8_t> altrGroup = MakeEntityGroupData(fourcc_to_code("altr"), 29, {27, 21});
+    std::vector<uint8_t> altrGroup = MakeEntityGroupData(BOX_TYPE_ALTR, 29, {27, 21});
     std::vector<uint8_t> vendorGroup = MakeEntityGroupData(fourcc_to_code("zzzz"), 30, {1, 2, 3});
     std::vector<uint8_t> data = MakeGrplBoxData({altrGroup, vendorGroup});
 
@@ -1699,7 +1699,7 @@ HWTEST_F(HeifParserBoxTest, GrplBoxRoundTripTest001, TestSize.Level3)
     auto grplBox = std::dynamic_pointer_cast<HeifGrplBox>(box);
     ASSERT_NE(grplBox, nullptr);
     ASSERT_EQ(grplBox->GetGroups().size(), static_cast<size_t>(2));
-    ASSERT_EQ(grplBox->GetGroups()[0].groupType, fourcc_to_code("altr"));
+    ASSERT_EQ(grplBox->GetGroups()[0].groupType, BOX_TYPE_ALTR);
     ASSERT_EQ(grplBox->GetGroups()[0].groupId, 29);
     ASSERT_EQ(grplBox->GetGroups()[0].entityIds, std::vector<uint32_t>({27, 21}));
     ASSERT_EQ(grplBox->GetGroups()[1].groupType, fourcc_to_code("zzzz"));
@@ -1710,6 +1710,36 @@ HWTEST_F(HeifParserBoxTest, GrplBoxRoundTripTest001, TestSize.Level3)
     ASSERT_EQ(writer.GetDataSize(), data.size());
     ASSERT_EQ(writer.GetData(), data);
     GTEST_LOG_(INFO) << "HeifParserBoxTest: GrplBoxRoundTripTest001 end";
+}
+
+/**
+ * @tc.name: GrplAltrQueryTest001
+ * @tc.desc: altr is an entity group inside grpl; it must be queryable and preserved
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserBoxTest, GrplAltrQueryTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: GrplAltrQueryTest001 start";
+    std::vector<uint8_t> data = MakeGrplBoxData({
+        MakeEntityGroupData(BOX_TYPE_ALTR, 29, {27, 21}),
+        MakeEntityGroupData(fourcc_to_code("ster"), 31, {3}),
+    });
+
+    heif_error error = heif_error_ok;
+    auto box = MakeBoxFromData(data, error);
+    ASSERT_EQ(error, heif_error_ok);
+    auto grplBox = std::dynamic_pointer_cast<HeifGrplBox>(box);
+    ASSERT_NE(grplBox, nullptr);
+    ASSERT_TRUE(grplBox->HasGroup(BOX_TYPE_ALTR));
+    ASSERT_TRUE(grplBox->HasGroup(fourcc_to_code("ster")));
+    ASSERT_FALSE(grplBox->HasGroup(fourcc_to_code("zzzz")));
+    ASSERT_EQ(grplBox->GetEntityIds(BOX_TYPE_ALTR), std::vector<uint32_t>({27, 21}));
+    ASSERT_TRUE(grplBox->GetEntityIds(fourcc_to_code("zzzz")).empty());
+
+    HeifStreamWriter writer;
+    ASSERT_EQ(box->Write(writer), heif_error_ok);
+    ASSERT_EQ(writer.GetData(), data);
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: GrplAltrQueryTest001 end";
 }
 
 /**
@@ -1745,7 +1775,7 @@ HWTEST_F(HeifParserBoxTest, MetaWriteGrplTest001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "HeifParserBoxTest: MetaWriteGrplTest001 start";
     std::vector<uint8_t> grplData = MakeGrplBoxData(
-        {MakeEntityGroupData(fourcc_to_code("altr"), 29, {27, 21})});
+        {MakeEntityGroupData(BOX_TYPE_ALTR, 29, {27, 21})});
     std::vector<uint8_t> data;
     AppendUint32(data, static_cast<uint32_t>(UINT64_BYTES_NUM + UINT32_BYTES_NUM + grplData.size()));
     AppendUint32(data, BOX_TYPE_META);

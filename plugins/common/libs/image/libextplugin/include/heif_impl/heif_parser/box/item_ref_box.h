@@ -69,6 +69,11 @@ public:
 
     const std::vector<EntityGroup> &GetGroups() const { return groups_; }
 
+    // Convenience accessors for one grouping type, for example BOX_TYPE_ALTR.
+    bool HasGroup(uint32_t groupType) const;
+
+    std::vector<uint32_t> GetEntityIds(uint32_t groupType) const;
+
     heif_error Write(HeifStreamWriter &writer) const override;
 
 protected:
