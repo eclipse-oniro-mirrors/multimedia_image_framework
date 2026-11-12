@@ -2422,8 +2422,11 @@ void ImageSource::AppendTiffPropertiesForGetAll(std::vector<MetadataValue> &resu
 {
 #if defined(SUPPORT_LIBTIFF)
     CHECK_ERROR_RETURN(!IsEncodedFormat(IMAGE_TIFF_FORMAT));
+    bool isTiffMetadata = exifMetadata_ != nullptr &&
+        exifMetadata_->GetExifMetadataType() == MetadataType::TIFF;
+    CHECK_ERROR_RETURN_LOG(!isTiffMetadata,
+        "exifMetadata_ is not TiffExifMetadata, skip tiff properties");
     std::shared_ptr<TiffExifMetadata> tiffMetadata = std::static_pointer_cast<TiffExifMetadata>(exifMetadata_);
-    CHECK_ERROR_RETURN(tiffMetadata == nullptr);
     tiffMetadata->GetAllTiffProperties(result);
     IMAGE_LOGD("Retrieved %{public}lu TIFF metadata properties", static_cast<unsigned long>(result.size()));
 #endif
@@ -2468,7 +2471,9 @@ void ImageSource::GetPngPropertiesWithType(std::vector<MetadataValue> &result)
 bool ImageSource::TryGetAllDngPropertiesWithType(std::vector<MetadataValue> &result)
 {
 #if !defined(CROSS_PLATFORM)
-    if (IsDngImage()) {
+    bool isDngMetadata = exifMetadata_ != nullptr &&
+        exifMetadata_->GetExifMetadataType() == MetadataType::DNG;
+    if (IsDngImage() && isDngMetadata) {
         std::shared_ptr<DngExifMetadata> dngMetadata = std::static_pointer_cast<DngExifMetadata>(exifMetadata_);
         if (dngMetadata != nullptr) {
             result = dngMetadata->GetAllDngProperties();
@@ -6824,9 +6829,10 @@ uint32_t ImageSource::GetDngImagePropertyByDngSdk(const std::string &key, Metada
     std::shared_ptr<ExifMetadata> exifMetadata = GetExifMetadata();
     CHECK_ERROR_RETURN_RET_LOG(exifMetadata == nullptr, ERR_IMAGE_DATA_ABNORMAL, "exifMetadata is nullptr");
 
-    std::shared_ptr<DngExifMetadata> dngMetadata = std::static_pointer_cast<DngExifMetadata>(exifMetadata);
-    CHECK_ERROR_RETURN_RET_LOG(dngMetadata == nullptr, ERR_IMAGE_DATA_ABNORMAL,
+    bool isDngMetadata = exifMetadata_->GetExifMetadataType() == MetadataType::DNG;
+    CHECK_ERROR_RETURN_RET_LOG(!isDngMetadata, ERR_IMAGE_DATA_ABNORMAL,
         "[%{public}s] Failed to cast to DngExifMetadata", __func__);
+    std::shared_ptr<DngExifMetadata> dngMetadata = std::static_pointer_cast<DngExifMetadata>(exifMetadata);
 
     value.key = key;
     return dngMetadata->GetExifProperty(value);
@@ -6881,9 +6887,10 @@ uint32_t ImageSource::GetTiffImagePropertyByType(const std::string &key, Metadat
     std::shared_ptr<ExifMetadata> exifMetadata = GetExifMetadata();
     CHECK_ERROR_RETURN_RET_LOG(exifMetadata == nullptr, ERR_IMAGE_DATA_ABNORMAL, "exifMetadata is nullptr");
 
-    std::shared_ptr<TiffExifMetadata> tiffMetadata = std::static_pointer_cast<TiffExifMetadata>(exifMetadata);
-    CHECK_ERROR_RETURN_RET_LOG(tiffMetadata == nullptr, ERR_IMAGE_DATA_ABNORMAL,
+    bool isTiffMetadata = exifMetadata_->GetExifMetadataType() == MetadataType::TIFF;
+    CHECK_ERROR_RETURN_RET_LOG(!isTiffMetadata, ERR_IMAGE_DATA_ABNORMAL,
         "[%{public}s] Failed to cast to TiffExifMetadata", __func__);
+    std::shared_ptr<TiffExifMetadata> tiffMetadata = std::static_pointer_cast<TiffExifMetadata>(exifMetadata);
 
     value.key = key;
     return tiffMetadata->GetExifProperty(value);
