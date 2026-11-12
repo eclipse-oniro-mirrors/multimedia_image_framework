@@ -62,6 +62,10 @@ public:
     {
         return MetadataType::EXIF;
     }
+    virtual MetadataType GetExifMetadataType() const
+    {
+        return MetadataType::EXIF;
+    }
     bool GetDataSize(uint32_t &size, bool withThumbnail = true, bool isJpeg = false);
     bool HasThumbnail();
     bool GetThumbnail(uint8_t *&data, uint32_t &size);

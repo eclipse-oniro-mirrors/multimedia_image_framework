@@ -31,6 +31,10 @@ public:
     DngExifMetadata();
     DngExifMetadata(ExifData* exifData, std::unique_ptr<DngSdkInfo>& dngSdkInfo);
     virtual ~DngExifMetadata();
+    MetadataType GetExifMetadataType() const override
+    {
+        return MetadataType::DNG;
+    }
     virtual int GetValue(const std::string& key, std::string& value) const override;
     virtual bool SetValue(const std::string& key, const std::string& value) override;
     virtual bool RemoveEntry(const std::string& key) override;
