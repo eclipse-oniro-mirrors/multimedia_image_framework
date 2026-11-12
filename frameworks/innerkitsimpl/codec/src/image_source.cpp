@@ -2328,6 +2328,57 @@ uint32_t ImageSource::CreateExifMetadata(uint8_t *buffer, const uint32_t size, b
     return SUCCESS;
 }
 
+uint32_t ImageSource::GetRawPreviewOrientation(std::string &value)
+{
+    value.clear();
+#if defined(CROSS_PLATFORM) || defined(_WIN32) || defined(_APPLE)
+    IMAGE_LOGE("%{public}s is not supported on the current platform.", __func__);
+    return ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
+#else
+    // decodingMutex_ covers sourceStreamPtr_ because the preview parse below reads the stream
+    // buffer (mmap buffer included) in place, so the stream must not be replaced concurrently.
+    std::unique_lock<std::recursive_mutex> guard(decodingMutex_);
+    bool cond = sourceStreamPtr_ == nullptr || sourceInfo_.state == SourceInfoState::SOURCE_INCOMPLETE ||
+        (IsIncrementalSource() && !isIncrementalCompleted_);
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_DECODE_EXIF_UNSUPPORT,
+        "Fail to read raw preview orientation, source is not readable.");
+
+    uint8_t *bufferPtr = nullptr;
+    size_t streamSize = 0;
+    int originalFd = SOURCE_STREAM_INVALID_FD;
+    std::string originalPath = SOURCE_STREAM_INVALID_PATH;
+    std::unique_ptr<uint8_t[]> tmpGuard;
+    {
+        // fileMutex_ is shared with the plugin stream readers, so it only covers the blocking
+        // Seek/Read phase. The metadata parse runs after it is released.
+        std::unique_lock<std::mutex> guardFile(fileMutex_);
+        cond = !PrereadSourceStream();
+        CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_SOURCE_DATA, "Preread raw source stream failed.");
+        streamSize = sourceStreamPtr_->GetStreamSize();
+        cond = streamSize == 0 || streamSize > MAX_SOURCE_SIZE;
+        CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_SOURCE_DATA,
+            "Invalid raw source size:%{public}zu.", streamSize);
+        bufferPtr = sourceStreamPtr_->GetDataPtr();
+        if (bufferPtr == nullptr) {
+            uint32_t errorCode = SUCCESS;
+            uint8_t *tmpBuffer = ReadSourceBuffer(static_cast<uint32_t>(streamSize), errorCode);
+            CHECK_ERROR_RETURN_RET_LOG(tmpBuffer == nullptr, errorCode, "Read raw source buffer failed.");
+            tmpGuard.reset(tmpBuffer);
+            bufferPtr = tmpBuffer;
+        }
+        originalFd = sourceStreamPtr_->GetOriginalFd();
+        originalPath = sourceStreamPtr_->GetOriginalPath();
+    }
+
+    DataInfo dataInfo { bufferPtr, static_cast<uint32_t>(streamSize) };
+    uint32_t ret = MetadataAccessorFactory::GetRawPreviewOrientation(dataInfo, value, originalFd, originalPath);
+    if (ret != SUCCESS) {
+        IMAGE_LOGE("Get raw preview orientation failed, ret:%{public}u.", ret);
+    }
+    return ret;
+#endif
+}
+
 uint32_t ImageSource::GetImagePropertyCommon(uint32_t index, const std::string &key, std::string &value,
     std::string *errMsg)
 {

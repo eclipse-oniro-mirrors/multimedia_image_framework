@@ -70,6 +70,9 @@ thread_local std::shared_ptr<ImageSource> ImageSourceNapi::sImgSrc_ = nullptr;
 thread_local std::shared_ptr<IncrementalPixelMap> ImageSourceNapi::sIncPixelMap_ = nullptr;
 static const std::string CLASS_NAME = "ImageSource";
 static const std::string FILE_URL_PREFIX = "file://";
+// Internal key: only the NAPI getImageProperty request accepts it and it only returns the
+// Orientation of the RAW preview image. It is intentionally absent from PropertyKey.
+static const std::string RAW_PREVIEW_ORIENTATION_KEY = "PreviewOrientation";
 thread_local std::string ImageSourceNapi::filePath_ = "";
 thread_local int ImageSourceNapi::fileDescriptor_ = -1;
 thread_local void* ImageSourceNapi::fileBuffer_ = nullptr;
@@ -4408,6 +4411,44 @@ napi_value ImageSourceNapi::ReadImageMetadataByType(napi_env env, napi_callback_
     return result;
 }
 
+static void GetRawPreviewOrientationProperty(ImageSourceAsyncContext *context)
+{
+    if (context->index != 0) {
+        context->status = ERR_IMAGE_INVALID_PARAMETER;
+        context->errMsg = "The RAW preview orientation only supports index 0.";
+        return;
+    }
+    context->status = context->rImageSource->GetRawPreviewOrientation(context->valueStr);
+    if (context->status != SUCCESS) {
+        context->errMsg = context->status == ERR_IMAGE_UNKNOWN_FORMAT ?
+            "The preview orientation property is only supported for RAW images "
+            "with a readable preview." :
+            "Failed to read the Orientation field from the RAW preview image.";
+        IMAGE_LOGE("GetRawPreviewOrientation failed: ret=%{public}u, key=%{public}s.",
+            context->status, context->keyStr.c_str());
+    }
+}
+
+static void GetImagePropertyExecute(napi_env env, void *data)
+{
+    (void)env;
+    auto context = static_cast<ImageSourceAsyncContext*>(data);
+    if (context->keyStr == RAW_PREVIEW_ORIENTATION_KEY) {
+        // Only this NAPI entry is allowed to return the RAW preview Orientation.
+        GetRawPreviewOrientationProperty(context);
+        return;
+    }
+    std::string errMsg;
+    context->status = context->rImageSource->GetImagePropertyString(context->index,
+                                                                    context->keyStr,
+                                                                    context->valueStr, &errMsg);
+    if (context->status != SUCCESS) {
+        context->errMsg = errMsg;
+        IMAGE_LOGE("GetImageProperty failed: ret=%{public}u, index=%{public}u, key=%{public}s.",
+            context->status, context->index, context->keyStr.c_str());
+    }
+}
+
 napi_value ImageSourceNapi::GetImageProperty(napi_env env, napi_callback_info info)
 {
     ImageTrace imageTrace("ImageSourceNapi::GetImageProperty");
@@ -4434,18 +4475,7 @@ napi_value ImageSourceNapi::GetImageProperty(napi_env env, napi_callback_info in
             asyncContext->work);
     } else {
         IMG_CREATE_CREATE_ASYNC_WORK(env, status, "GetImageProperty",
-            [](napi_env env, void *data) {
-                auto context = static_cast<ImageSourceAsyncContext*>(data);
-                std::string errMsg;
-                context->status = context->rImageSource->GetImagePropertyString(context->index,
-                                                                                context->keyStr,
-                                                                                context->valueStr, &errMsg);
-                if (context->status != SUCCESS) {
-                    context->errMsg = errMsg;
-                    IMAGE_LOGE("GetImageProperty failed: ret=%{public}u, index=%{public}u, key=%{public}s.",
-                        context->status, context->index, context->keyStr.c_str());
-                }
-            },
+            GetImagePropertyExecute,
             reinterpret_cast<napi_async_complete_callback>(GetImagePropertyComplete),
             asyncContext,
             asyncContext->work);

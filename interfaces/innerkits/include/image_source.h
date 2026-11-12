@@ -240,6 +240,10 @@ public:
     NATIVEEXPORT uint32_t RemoveAllProperties();
     NATIVEEXPORT std::vector<MetadataValue> GetAllPropertiesWithType(uint32_t index = 0);
     NATIVEEXPORT uint32_t GetImagePropertyStringBySync(uint32_t index, const std::string &key, std::string &value);
+    // Reads only the preview image Orientation of RAW files. Reserved for the NAPI
+    // getImageProperty("PreviewOrientation") request; other image formats are unsupported.
+    // The returned value is the Orientation name, for example "Top-left" or "Left-bottom".
+    NATIVEEXPORT uint32_t GetRawPreviewOrientation(std::string &value);
     NATIVEEXPORT uint32_t WriteImageMetadataBlob(const std::vector<MetadataValue> &properties);
     NATIVEEXPORT uint32_t ModifyImagePropertyBlob(const std::vector<MetadataValue> &properties);
     NATIVEEXPORT uint32_t ModifyImagePropertyBlob(const std::vector<MetadataValue> &properties,
