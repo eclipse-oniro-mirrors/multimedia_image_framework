@@ -133,9 +133,16 @@ public:
 
     bool IsGamutAvailable() const { return isInitialized_ && ColorSpaceConvert != nullptr; }
 
-    fast::image::FastErrCode (*DecodeImage)(const uint8_t*, size_t, uint8_t*, uint32_t,
+    // New ABI: these live in fast::image::bandjpeg and return IMAGE_ErrorCode;
+    // the legacy FastErrCode exports are no longer provided.
+    fast::image::IMAGE_ErrorCode (*DecodeImage)(const uint8_t*, size_t, uint8_t*, uint32_t,
         uint32_t, size_t, fast::image::RGBFormat) = nullptr;
-    fast::image::FastErrCode (*DecodeImageYUV)(const uint8_t*, size_t, uint8_t*, uint8_t*, uint32_t,
+    fast::image::IMAGE_ErrorCode (*DecodeImageYUV)(const uint8_t*, size_t, uint8_t*, uint8_t*, uint32_t,
+        uint32_t, size_t, size_t, fast::image::YUVFormat) = nullptr;
+    // Legacy ABI, kept so an older libfast_image.so still works.
+    fast::image::FastErrCode (*DecodeImageLegacy)(const uint8_t*, size_t, uint8_t*, uint32_t,
+        uint32_t, size_t, fast::image::RGBFormat) = nullptr;
+    fast::image::FastErrCode (*DecodeImageYUVLegacy)(const uint8_t*, size_t, uint8_t*, uint8_t*, uint32_t,
         uint32_t, size_t, size_t, fast::image::YUVFormat) = nullptr;
     fast::image::IMAGE_ErrorCode (*ColorSpaceConvert)(uint8_t*, uint32_t, fast::image::ColorInfo,
         uint8_t*, uint32_t, fast::image::ColorInfo, uint32_t, uint32_t) = nullptr;
@@ -144,6 +151,8 @@ public:
 private:
     FASTManager();
     ~FASTManager();
+    bool ResolveDecodeEntries();
+    void ResolveOptionalEntries();
     FASTManager(const FASTManager&) = delete;
     FASTManager(const FASTManager&&) = delete;
     FASTManager& operator=(const FASTManager&) = delete;

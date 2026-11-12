@@ -74,6 +74,18 @@ static bool IsProgressiveJpegCodec(SkCodec *codec)
     return jpegCodec->decoderMgr()->dinfo()->progressive_mode;
 }
 
+static uint32_t MapFastDecodeResult(fast::image::IMAGE_ErrorCode ret)
+{
+    bool success = ret == fast::image::IMAGE_ErrorCode::SUCCESS ||
+        ret == fast::image::IMAGE_ErrorCode::SUCCESS_PARTIAL;
+    return success ? SUCCESS : ERR_IMAGE_DATA_UNSUPPORT;
+}
+
+static uint32_t MapFastDecodeResult(fast::image::FastErrCode ret)
+{
+    return ret == fast::image::FastErrCode::OK ? SUCCESS : ERR_IMAGE_DATA_UNSUPPORT;
+}
+
 static bool IsValidRegionGeometry(const ProgressiveJpegDecoder::RgbRegionOptions &geometry)
 {
     bool invalid = geometry.sourceWidth <= 0 || geometry.sourceHeight <= 0 ||
@@ -391,14 +403,21 @@ uint32_t ProgressiveJpegDecoder::DecodeRgb(const JpegInputData &jpegData, const 
     bool cond = !fastManager.IsInitialized();
     CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_DATA_UNSUPPORT,
         "FASTManager not initialized, fallback to software decode");
-    const fast::image::FastErrCode ret = fastManager.DecodeImage(jpegData.buffer, jpegData.bufferSize, dstPixels,
-        static_cast<uint32_t>(plan.dstInfo.width()), static_cast<uint32_t>(plan.dstInfo.height()), dstStride,
-        colorFormat);
-    if (ret == fast::image::FastErrCode::OK) {
+    uint32_t ret = ERR_IMAGE_DATA_UNSUPPORT;
+    if (fastManager.DecodeImage != nullptr) {
+        ret = MapFastDecodeResult(fastManager.DecodeImage(jpegData.buffer, jpegData.bufferSize, dstPixels,
+            static_cast<uint32_t>(plan.dstInfo.width()), static_cast<uint32_t>(plan.dstInfo.height()), dstStride,
+            colorFormat));
+    } else if (fastManager.DecodeImageLegacy != nullptr) {
+        ret = MapFastDecodeResult(fastManager.DecodeImageLegacy(jpegData.buffer, jpegData.bufferSize, dstPixels,
+            static_cast<uint32_t>(plan.dstInfo.width()), static_cast<uint32_t>(plan.dstInfo.height()), dstStride,
+            colorFormat));
+    }
+    if (ret == SUCCESS) {
         IMAGE_LOGI("progressive jpeg decode success");
         return SUCCESS;
     }
-    IMAGE_LOGE("progressive jpeg decode fallback, ret=%{public}d", static_cast<int32_t>(ret));
+    IMAGE_LOGE("progressive jpeg decode fallback, ret=%{public}u", ret);
     return ERR_IMAGE_DATA_UNSUPPORT;
 }
 
@@ -433,15 +452,22 @@ uint32_t ProgressiveJpegDecoder::DecodeYuv(const JpegInputData &jpegData, const 
     cond = !fastManager.IsInitialized();
     CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_DATA_UNSUPPORT,
         "FASTManager not initialized, fallback to software decode");
-    const fast::image::FastErrCode ret = fastManager.DecodeImageYUV(jpegData.buffer, jpegData.bufferSize,
-        dstImage.dstY, dstImage.dstUV, dstImage.width, dstImage.height, dstImage.yStride, dstImage.uvStride,
-        dstImage.format);
-    if (ret == fast::image::FastErrCode::OK) {
+    uint32_t ret = ERR_IMAGE_DATA_UNSUPPORT;
+    if (fastManager.DecodeImageYUV != nullptr) {
+        ret = MapFastDecodeResult(fastManager.DecodeImageYUV(jpegData.buffer, jpegData.bufferSize,
+            dstImage.dstY, dstImage.dstUV, dstImage.width, dstImage.height, dstImage.yStride, dstImage.uvStride,
+            dstImage.format));
+    } else if (fastManager.DecodeImageYUVLegacy != nullptr) {
+        ret = MapFastDecodeResult(fastManager.DecodeImageYUVLegacy(jpegData.buffer, jpegData.bufferSize,
+            dstImage.dstY, dstImage.dstUV, dstImage.width, dstImage.height, dstImage.yStride, dstImage.uvStride,
+            dstImage.format));
+    }
+    if (ret == SUCCESS) {
         context.outInfo.size = plan.size;
         IMAGE_LOGI("progressive jpeg yuv decode success");
         return SUCCESS;
     }
-    IMAGE_LOGE("progressive jpeg yuv decode fallback, ret=%{public}d", static_cast<int32_t>(ret));
+    IMAGE_LOGE("progressive jpeg yuv decode fallback, ret=%{public}u", ret);
     return ERR_IMAGE_DATA_UNSUPPORT;
 }
 
