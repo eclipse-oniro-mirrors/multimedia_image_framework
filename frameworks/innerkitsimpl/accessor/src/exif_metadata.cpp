@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 
+#include <algorithm>
 #include <iostream>
 #include <map>
 #include <numeric>
@@ -108,6 +109,183 @@ static const std::vector<std::string> GPS_EXIF_KEYS = {
 
 static const int GET_SUPPORT_MAKERNOTE_COUNT = 1;
 static const int INIT_HW_DATA_HEAD_LENGTH = 8;
+
+// Apple maker note layout (same as exiftool Apple.pm and real iOS files): the 12-byte
+// "Apple iOS\0\x00\x01" header, then II/MM byte order, a 2-byte entry count, 12-byte IFD
+// entries and a 4-byte next-IFD field, then the value area. There is no TIFF magic and no
+// IFD-offset field; all value offsets are relative to the maker note start.
+const uint8_t APPLE_MNOTE_HEADER[] = { 'A', 'p', 'p', 'l', 'e', ' ', 'i', 'O', 'S', '\0', 0x00, 0x01 };
+const size_t APPLE_MNOTE_HEADER_SIZE = sizeof(APPLE_MNOTE_HEADER);
+const size_t MNOTE_BYTE_ORDER_SIZE = 2;
+const size_t MNOTE_ENTRY_COUNT_SIZE = 2;
+const size_t MNOTE_NEXT_IFD_SIZE = 4;
+const size_t TIFF_IFD_ENTRY_SIZE = 12;
+// TIFF IFD entry field offsets: tag at +0, format at +2, count at +4, value at +8
+const size_t MNOTE_ENTRY_FORMAT_OFFSET = 2;
+const size_t MNOTE_ENTRY_COUNT_OFFSET = 4;
+const size_t MNOTE_ENTRY_VALUE_OFFSET = 8;
+const size_t BITS_PER_BYTE = 8;
+const uint16_t APPLE_TAG_CONTENT_IDENTIFIER = 0x0011;
+const uint16_t MAX_APPLE_MNOTE_ENTRY_COUNT = 256;
+const size_t MAX_APPLE_MNOTE_ENTRY_VALUE_SIZE = 64 * 1024;
+// format id -> byte size, index 0 unused; 14/15 are reserved, 16-18 are the 8-byte BigTIFF types
+const size_t TIFF_FORMAT_SIZES[] = { 0, 1, 1, 2, 4, 8, 1, 1, 2, 4, 8, 4, 8, 4, 0, 0, 8, 8, 8 };
+
+struct AppleMnoteEntry {
+    uint16_t tag = 0;
+    uint16_t format = 0;
+    uint32_t count = 0;
+    std::vector<uint8_t> value;
+};
+
+static bool ReadMnoteU16(const uint8_t *tiff, size_t tiffSize, size_t offset, bool littleEndian, uint16_t &out)
+{
+    // subtraction form avoids offset + sizeof(...) wrapping on 32-bit size_t
+    bool cond = (tiffSize < sizeof(uint16_t) || offset > tiffSize - sizeof(uint16_t));
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "mnote u16 offset out of range, offset: %{public}zu", offset);
+    if (littleEndian) {
+        out = static_cast<uint16_t>(tiff[offset]) | (static_cast<uint16_t>(tiff[offset + 1]) << BITS_PER_BYTE);
+    } else {
+        out = (static_cast<uint16_t>(tiff[offset]) << BITS_PER_BYTE) | static_cast<uint16_t>(tiff[offset + 1]);
+    }
+    return true;
+}
+
+static bool ReadMnoteU32(const uint8_t *tiff, size_t tiffSize, size_t offset, bool littleEndian, uint32_t &out)
+{
+    bool cond = (tiffSize < sizeof(uint32_t) || offset > tiffSize - sizeof(uint32_t));
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "mnote u32 offset out of range, offset: %{public}zu", offset);
+    uint32_t value = 0;
+    for (size_t i = 0; i < sizeof(uint32_t); i++) {
+        size_t shift = littleEndian ? i * BITS_PER_BYTE : (sizeof(uint32_t) - 1 - i) * BITS_PER_BYTE;
+        value |= static_cast<uint32_t>(tiff[offset + i]) << shift;
+    }
+    out = value;
+    return true;
+}
+
+static void WriteMnoteU16(std::vector<uint8_t> &out, uint16_t value, bool littleEndian)
+{
+    for (size_t i = 0; i < sizeof(uint16_t); i++) {
+        size_t shift = littleEndian ? i * BITS_PER_BYTE : (sizeof(uint16_t) - 1 - i) * BITS_PER_BYTE;
+        out.push_back(static_cast<uint8_t>((value >> shift) & 0xFF));
+    }
+}
+
+static void WriteMnoteU32(std::vector<uint8_t> &out, uint32_t value, bool littleEndian)
+{
+    for (size_t i = 0; i < sizeof(uint32_t); i++) {
+        size_t shift = littleEndian ? i * BITS_PER_BYTE : (sizeof(uint32_t) - 1 - i) * BITS_PER_BYTE;
+        out.push_back(static_cast<uint8_t>((value >> shift) & 0xFF));
+    }
+}
+
+static bool ParseAppleMnoteEntry(const uint8_t *data, size_t size, size_t entryOffset, bool littleEndian,
+    AppleMnoteEntry &entry)
+{
+    uint32_t valueField = 0;
+    bool cond = !ReadMnoteU16(data, size, entryOffset, littleEndian, entry.tag) ||
+        !ReadMnoteU16(data, size, entryOffset + MNOTE_ENTRY_FORMAT_OFFSET, littleEndian, entry.format) ||
+        !ReadMnoteU32(data, size, entryOffset + MNOTE_ENTRY_COUNT_OFFSET, littleEndian, entry.count) ||
+        !ReadMnoteU32(data, size, entryOffset + MNOTE_ENTRY_VALUE_OFFSET, littleEndian, valueField);
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "mnote entry field read failed, offset: %{public}zu", entryOffset);
+    cond = (entry.format == 0 || entry.format >= sizeof(TIFF_FORMAT_SIZES) / sizeof(TIFF_FORMAT_SIZES[0]) ||
+        TIFF_FORMAT_SIZES[entry.format] == 0);
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "mnote entry format invalid: %{public}u",
+        static_cast<uint32_t>(entry.format));
+
+    const uint64_t valueSize = static_cast<uint64_t>(TIFF_FORMAT_SIZES[entry.format]) *
+        static_cast<uint64_t>(entry.count);
+    cond = (valueSize > MAX_APPLE_MNOTE_ENTRY_VALUE_SIZE);
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "mnote entry value too large: %{public}llu",
+        static_cast<unsigned long long>(valueSize));
+    if (valueSize <= sizeof(uint32_t)) {
+        entry.value.assign(data + entryOffset + MNOTE_ENTRY_VALUE_OFFSET,
+            data + entryOffset + MNOTE_ENTRY_VALUE_OFFSET + valueSize);
+        return true;
+    }
+    cond = (static_cast<uint64_t>(valueField) + valueSize > static_cast<uint64_t>(size));
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "mnote entry value offset invalid: %{public}u", valueField);
+    entry.value.assign(data + valueField, data + valueField + valueSize);
+    return true;
+}
+
+static bool ParseAppleMnote(const uint8_t *data, size_t size, bool &littleEndian,
+    std::vector<AppleMnoteEntry> &entries)
+{
+    entries.clear();
+    bool cond = (data == nullptr || size < APPLE_MNOTE_HEADER_SIZE + MNOTE_BYTE_ORDER_SIZE + MNOTE_ENTRY_COUNT_SIZE);
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "mnote data too small, size: %{public}zu", size);
+    cond = (memcmp(data, APPLE_MNOTE_HEADER, APPLE_MNOTE_HEADER_SIZE) != 0);
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "makernote header is not apple");
+
+    const size_t byteOrderOffset = APPLE_MNOTE_HEADER_SIZE;
+    littleEndian = (data[byteOrderOffset] == 'I' && data[byteOrderOffset + 1] == 'I');
+    bool bigEndian = (data[byteOrderOffset] == 'M' && data[byteOrderOffset + 1] == 'M');
+    cond = (!littleEndian && !bigEndian);
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "mnote byte order invalid");
+
+    uint16_t entryCount = 0;
+    cond = !ReadMnoteU16(data, size, byteOrderOffset + MNOTE_BYTE_ORDER_SIZE, littleEndian, entryCount) ||
+        entryCount > MAX_APPLE_MNOTE_ENTRY_COUNT;
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "mnote entry count invalid: %{public}u", static_cast<uint32_t>(entryCount));
+
+    const size_t entriesStart = byteOrderOffset + MNOTE_BYTE_ORDER_SIZE + MNOTE_ENTRY_COUNT_SIZE;
+    cond = (entryCount > 0 &&
+        entriesStart + static_cast<size_t>(entryCount) * TIFF_IFD_ENTRY_SIZE + MNOTE_NEXT_IFD_SIZE > size);
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "mnote entries out of range, count: %{public}u",
+        static_cast<uint32_t>(entryCount));
+
+    for (uint16_t i = 0; i < entryCount; i++) {
+        const size_t entryOffset = entriesStart + static_cast<size_t>(i) * TIFF_IFD_ENTRY_SIZE;
+        AppleMnoteEntry entry;
+        cond = !ParseAppleMnoteEntry(data, size, entryOffset, littleEndian, entry);
+        CHECK_ERROR_RETURN_RET_LOG(cond, false, "mnote entry parse failed, index: %{public}u",
+            static_cast<uint32_t>(i));
+        entries.push_back(std::move(entry));
+    }
+    return true;
+}
+
+static void BuildAppleMnote(const std::vector<AppleMnoteEntry> &entries, bool littleEndian,
+    std::vector<uint8_t> &out)
+{
+    out.clear();
+    out.reserve(APPLE_MNOTE_HEADER_SIZE + MNOTE_BYTE_ORDER_SIZE + MNOTE_ENTRY_COUNT_SIZE +
+        entries.size() * TIFF_IFD_ENTRY_SIZE + MNOTE_NEXT_IFD_SIZE);
+    out.insert(out.end(), APPLE_MNOTE_HEADER, APPLE_MNOTE_HEADER + APPLE_MNOTE_HEADER_SIZE);
+    WriteMnoteU16(out, littleEndian ? 0x4949 : 0x4D4D, littleEndian);
+    WriteMnoteU16(out, static_cast<uint16_t>(entries.size()), littleEndian);
+
+    // value offsets are relative to the maker note start, so the value area begins right
+    // after the next-IFD field
+    const uint32_t valueAreaOffset = static_cast<uint32_t>(APPLE_MNOTE_HEADER_SIZE + MNOTE_BYTE_ORDER_SIZE +
+        MNOTE_ENTRY_COUNT_SIZE + entries.size() * TIFF_IFD_ENTRY_SIZE + MNOTE_NEXT_IFD_SIZE);
+    std::vector<uint8_t> valueArea;
+    for (const auto &entry : entries) {
+        WriteMnoteU16(out, entry.tag, littleEndian);
+        WriteMnoteU16(out, entry.format, littleEndian);
+        WriteMnoteU32(out, entry.count, littleEndian);
+        if (entry.value.size() <= sizeof(uint32_t)) {
+            // value fits the 4-byte field itself; serialize byte by byte to keep endianness explicit
+            uint8_t inlineBytes[sizeof(uint32_t)] = { 0, 0, 0, 0 };
+            for (size_t i = 0; i < entry.value.size(); i++) {
+                inlineBytes[i] = entry.value[i];
+            }
+            uint32_t inlineOut = 0;
+            for (size_t i = 0; i < sizeof(uint32_t); i++) {
+                size_t shift = littleEndian ? i * BITS_PER_BYTE : (sizeof(uint32_t) - 1 - i) * BITS_PER_BYTE;
+                inlineOut |= static_cast<uint32_t>(inlineBytes[i]) << shift;
+            }
+            WriteMnoteU32(out, inlineOut, littleEndian);
+        } else {
+            WriteMnoteU32(out, valueAreaOffset + valueArea.size(), littleEndian);
+            valueArea.insert(valueArea.end(), entry.value.begin(), entry.value.end());
+        }
+    }
+    WriteMnoteU32(out, 0, littleEndian); // next IFD offset
+    out.insert(out.end(), valueArea.begin(), valueArea.end());
+}
 
 const std::map<std::string, PropertyValueType>& ExifMetadata::GetExifMetadataMap()
 {
@@ -1852,6 +2030,99 @@ bool ExifMetadata::SetMakerNoteValue(const std::string &value)
         }
     }
     return true;
+}
+
+bool ExifMetadata::GetContentIdentifier(std::string &uuid)
+{
+    uuid.clear();
+    bool cond = (exifData_ == nullptr);
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "exifData_ is null");
+    ExifEntry *entry = exif_data_get_entry(exifData_, EXIF_TAG_MAKER_NOTE);
+    cond = (entry == nullptr || entry->data == nullptr || entry->size == 0);
+    CHECK_DEBUG_RETURN_RET_LOG(cond, false, "no makernote entry");
+
+    bool littleEndian = true;
+    std::vector<AppleMnoteEntry> entries;
+    if (!ParseAppleMnote(entry->data, entry->size, littleEndian, entries)) {
+        IMAGE_LOGD("makernote is not a valid apple mnote");
+        return false;
+    }
+    for (const auto &item : entries) {
+        if (item.tag != APPLE_TAG_CONTENT_IDENTIFIER) {
+            continue;
+        }
+        // Apple writes the content identifier as an ASCII string. A malformed or tampered
+        // makernote may store tag 0x0011 in a numeric format (LONG/BYTE/...); its raw bytes
+        // must not be returned to callers as the identifier, so skip such entries and keep
+        // looking, treating the image as having no content identifier.
+        if (item.format != EXIF_FORMAT_ASCII) {
+            IMAGE_LOGD("content identifier tag is not ascii format: %{public}u",
+                static_cast<uint32_t>(item.format));
+            continue;
+        }
+        size_t length = item.value.size();
+        while (length > 0 && item.value[length - 1] == '\0') {
+            length--;
+        }
+        uuid.assign(reinterpret_cast<const char *>(item.value.data()), length);
+        return true;
+    }
+    return false;
+}
+
+bool ExifMetadata::SetContentIdentifier(const std::string &uuid)
+{
+    bool cond = (exifData_ == nullptr);
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "exifData_ is null");
+    cond = (uuid.empty() || uuid.length() + TERMINATOR_SIZE >= MAX_TAG_VALUE_SIZE_FOR_STR);
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "content identifier invalid, length: %{public}zu", uuid.length());
+
+    std::vector<AppleMnoteEntry> entries;
+    // Apple devices write their maker note in big-endian (MM); when rebuilding an existing
+    // mnote the parsed byte order takes precedence below.
+    bool littleEndian = false;
+    ExifEntry *entry = exif_data_get_entry(exifData_, EXIF_TAG_MAKER_NOTE);
+    if (entry != nullptr && entry->data != nullptr && entry->size > 0) {
+        bool isAppleMnote = entry->size >= APPLE_MNOTE_HEADER_SIZE &&
+            memcmp(entry->data, APPLE_MNOTE_HEADER, APPLE_MNOTE_HEADER_SIZE) == 0;
+        if (!isAppleMnote) {
+            // The vendor identifier is not Apple iOS: none of the vendor layout can be reused, so
+            // keep the note empty here; SetMakerNoteValue below clears the old entry and the note
+            // is rebuilt from scratch in the Apple layout with only the content identifier.
+            // Side effect (by design): the whole vendor maker note is dropped, not merged. For
+            // Huawei captures this discards the HUAWEI mnote (Xmage and other capability flags
+            // written by SetHwMoteValue); vendor fields are NOT preserved. If a caller ever needs
+            // both, store the identifier somewhere else (e.g. XMP) instead of extending this path.
+            IMAGE_LOGI("existing makernote is not apple, drop it and rebuild, size: %{public}u",
+                static_cast<uint32_t>(entry->size));
+        } else if (!ParseAppleMnote(entry->data, entry->size, littleEndian, entries)) {
+            IMAGE_LOGE("existing apple makernote is invalid, cannot merge content identifier");
+            return false;
+        } else {
+            entries.erase(std::remove_if(entries.begin(), entries.end(),
+                [](const AppleMnoteEntry &item) { return item.tag == APPLE_TAG_CONTENT_IDENTIFIER; }),
+                entries.end());
+        }
+    }
+
+    AppleMnoteEntry contentId;
+    contentId.tag = APPLE_TAG_CONTENT_IDENTIFIER;
+    contentId.format = EXIF_FORMAT_ASCII;
+    contentId.count = uuid.length() + TERMINATOR_SIZE;
+    contentId.value.reserve(contentId.count);
+    contentId.value.insert(contentId.value.end(), uuid.begin(), uuid.end());
+    contentId.value.push_back('\0');
+    entries.push_back(std::move(contentId));
+    // TIFF requires IFD entries sorted by tag ascending
+    std::stable_sort(entries.begin(), entries.end(),
+        [](const AppleMnoteEntry &left, const AppleMnoteEntry &right) { return left.tag < right.tag; });
+
+    std::vector<uint8_t> mnote;
+    BuildAppleMnote(entries, littleEndian, mnote);
+    cond = (mnote.size() >= MAX_TAG_VALUE_SIZE_FOR_STR);
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "mnote too large: %{public}zu", mnote.size());
+    std::string mnoteBlob(reinterpret_cast<const char *>(mnote.data()), mnote.size());
+    return SetMakerNoteValue(mnoteBlob);
 }
 
 bool ExifMetadata::SetHwMoteValue(const std::string &key, const std::string &value)
