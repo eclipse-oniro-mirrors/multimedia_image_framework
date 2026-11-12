@@ -472,7 +472,8 @@ PixelMapImpl::PixelMapImpl(std::shared_ptr<Media::PixelMap> pixelMap)
 
 PixelMapImpl::PixelMapImpl(int64_t aniPtr)
 {
-    std::unique_ptr<Media::PixelMapTaiheAni> pixelMapAni(reinterpret_cast<Media::PixelMapTaiheAni*>(aniPtr));
+    // The wrapper is owned by PixelMapTaiheAni::CreateEtsPixelMap; only copy the PixelMap reference here.
+    Media::PixelMapTaiheAni* pixelMapAni = reinterpret_cast<Media::PixelMapTaiheAni*>(aniPtr);
     if (pixelMapAni == nullptr) {
         ImageTaiheUtils::ThrowExceptionError(Media::COMMON_ERR_INVALID_PARAMETER,
             "Failed to construct PixelMapImpl: The argument is null.");
