@@ -22,7 +22,7 @@
 #include "heif_utils.h"
 #include "item_property_transform_box.h"
 
-#include <cstring>
+#include <securec.h>
 
 using namespace testing::ext;
 namespace OHOS {
@@ -1329,7 +1329,7 @@ HWTEST_F(HeifParserTest, ExtractDisplayDataTest001, TestSize.Level3)
     std::vector<uint8_t> displayInfo = primaryImage->GetDisplayInfo();
     ASSERT_EQ(displayInfo.size(), sizeof(DisplayColourVolume));
     DisplayColourVolume parsedVolume{};
-    std::memcpy(&parsedVolume, displayInfo.data(), displayInfo.size());
+    ASSERT_EQ(memcpy_s(&parsedVolume, sizeof(parsedVolume), displayInfo.data(), displayInfo.size()), EOK);
     ASSERT_EQ(parsedVolume.red.x, colourVolume.red.x);
     ASSERT_EQ(parsedVolume.whitePoint.y, colourVolume.whitePoint.y);
     ASSERT_EQ(parsedVolume.luminanceMax, colourVolume.luminanceMax);
@@ -1338,7 +1338,7 @@ HWTEST_F(HeifParserTest, ExtractDisplayDataTest001, TestSize.Level3)
     std::vector<uint8_t> lightInfo = primaryImage->GetLightInfo();
     ASSERT_EQ(lightInfo.size(), sizeof(ContentLightLevelInfo));
     ContentLightLevelInfo parsedLight{};
-    std::memcpy(&parsedLight, lightInfo.data(), lightInfo.size());
+    ASSERT_EQ(memcpy_s(&parsedLight, sizeof(parsedLight), lightInfo.data(), lightInfo.size()), EOK);
     ASSERT_EQ(parsedLight.maxContentLightLevel, lightLevel.maxContentLightLevel);
     ASSERT_EQ(parsedLight.maxPicAverageLightLevel, lightLevel.maxPicAverageLightLevel);
     GTEST_LOG_(INFO) << "HeifParserTest: ExtractDisplayDataTest001 end";
