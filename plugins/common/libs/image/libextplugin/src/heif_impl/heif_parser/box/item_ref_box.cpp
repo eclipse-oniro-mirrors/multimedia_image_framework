@@ -16,6 +16,7 @@
 #include "box/item_ref_box.h"
 
 #include <algorithm>
+#include <limits>
 
 const uint16_t MAX_REFS_PER_ITEM = 1024;
 const uint32_t MAX_GRPL_ENTITY_COUNT = 4096;
@@ -193,7 +194,8 @@ heif_error HeifGrplBox::ParseContent(HeifStreamReader &reader)
     while (!reader.IsAtEnd() && !reader.HasError()) {
         int64_t groupStart = reader.GetStream()->Tell();
         size_t remainSize = reader.GetRemainSize();
-        if (remainSize < UINT64_BYTES_NUM) {
+        if (groups_.size() >= MAX_GROUP_COUNT || remainSize < UINT64_BYTES_NUM) {
+            // Preserve the rest verbatim: the write path still reproduces these bytes.
             ReadTrailingBytes(reader, remainSize);
             break;
         }
@@ -259,6 +261,9 @@ void HeifGrplBox::ReadTrailingBytes(HeifStreamReader &reader, size_t size)
     if (size == 0) {
         return;
     }
+    if (!reader.CheckSize(size)) {
+        return;
+    }
     trailingBytes_.resize(size);
     if (!reader.ReadData(trailingBytes_.data(), size)) {
         trailingBytes_.clear();
@@ -284,6 +289,9 @@ heif_error HeifGrplBox::Write(HeifStreamWriter &writer) const
             writer.Write(group.extra);
         }
         size_t groupEnd = writer.GetPos();
+        if (groupEnd - groupStart > std::numeric_limits<uint32_t>::max()) {
+            return heif_error_invalid_data;
+        }
         writer.SetPos(groupStart);
         writer.Write32(static_cast<uint32_t>(groupEnd - groupStart));
         writer.SetPos(groupEnd);

@@ -53,9 +53,13 @@ private:
 
 // Entity group list (ISO/IEC 14496-12 'grpl'), holding EntityToGroupBox children such as 'altr'
 // and 'ster'. HEIF uses it to describe alternative representations (for example SDR/HDR versions
-// of the same image), so it has to be written back unchanged.
+// of the same image), so it has to survive a rewrite.
 class HeifGrplBox : public HeifBox {
 public:
+    // Upper bound of structurally parsed entity groups. Bytes beyond the bound are kept verbatim,
+    // so a crafted grpl with a huge number of groups cannot grow the parsed object list without bound.
+    static constexpr uint32_t MAX_GROUP_COUNT = 1024;
+
     struct EntityGroup {
         uint32_t groupType = 0;
         uint8_t version = 0;

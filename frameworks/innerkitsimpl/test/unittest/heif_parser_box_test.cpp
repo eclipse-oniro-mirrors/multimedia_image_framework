@@ -1743,6 +1743,33 @@ HWTEST_F(HeifParserBoxTest, GrplAltrQueryTest001, TestSize.Level3)
 }
 
 /**
+ * @tc.name: GrplGroupCountLimitTest001
+ * @tc.desc: groups beyond the structural parse bound are kept verbatim and survive a rewrite
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserBoxTest, GrplGroupCountLimitTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: GrplGroupCountLimitTest001 start";
+    std::vector<std::vector<uint8_t>> groups;
+    for (uint32_t index = 0; index <= HeifGrplBox::MAX_GROUP_COUNT; ++index) {
+        groups.push_back(MakeEntityGroupData(BOX_TYPE_ALTR, index, {index}));
+    }
+    std::vector<uint8_t> data = MakeGrplBoxData(groups);
+
+    heif_error error = heif_error_ok;
+    auto box = MakeBoxFromData(data, error);
+    ASSERT_EQ(error, heif_error_ok);
+    auto grplBox = std::dynamic_pointer_cast<HeifGrplBox>(box);
+    ASSERT_NE(grplBox, nullptr);
+    ASSERT_EQ(grplBox->GetGroups().size(), static_cast<size_t>(HeifGrplBox::MAX_GROUP_COUNT));
+
+    HeifStreamWriter writer;
+    ASSERT_EQ(box->Write(writer), heif_error_ok);
+    ASSERT_EQ(writer.GetData(), data);
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: GrplGroupCountLimitTest001 end";
+}
+
+/**
  * @tc.name: GrplEmptyBoxTest001
  * @tc.desc: an empty grpl box is valid and must be written back as is
  * @tc.type: FUNC
