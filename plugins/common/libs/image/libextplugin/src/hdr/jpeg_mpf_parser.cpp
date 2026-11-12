@@ -510,7 +510,9 @@ std::vector<uint8_t> JpegMpfPacker::PackDataSize(uint32_t size, bool isBigEndian
 std::vector<uint8_t> JpegMpfPacker::PackAuxiliaryTagName(std::string& tagName)
 {
     std::vector<uint8_t> bytes(AUXILIARY_TAG_NAME_LENGTH, 0x00);
-    std::copy(tagName.begin(), tagName.end(), bytes.begin());
+    if (tagName.size() <= AUXILIARY_TAG_NAME_LENGTH) {
+        std::copy(tagName.begin(), tagName.end(), bytes.begin());
+    }
     return bytes;
 }
 }
