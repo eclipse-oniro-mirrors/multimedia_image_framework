@@ -72,13 +72,13 @@ ani_object PixelMapTaiheAni::CreateEtsPixelMap(ani_env* env, std::shared_ptr<Pix
         return nullptr;
     }
 
+    // The wrapper is owned here for the whole synchronous call; PixelMapImpl copies nativePixelMap_ and must not
+    // delete it, so the wrapper and its PixelMap reference are released on both success and failure paths.
     std::unique_ptr<PixelMapTaiheAni> pixelMapAni = std::make_unique<PixelMapTaiheAni>();
     pixelMapAni->nativePixelMap_ = pixelMap;
     ani_ref pixelMapObj;
     if (env->Function_Call_Ref(
-        gCreatePixelMapByPtr, &pixelMapObj, reinterpret_cast<ani_long>(pixelMapAni.get())) == ANI_OK) {
-        pixelMapAni.release();
-    } else {
+        gCreatePixelMapByPtr, &pixelMapObj, reinterpret_cast<ani_long>(pixelMapAni.get())) != ANI_OK) {
         IMAGE_LOGE("[%{public}s] Call function createPixelMapByPtr failed", __func__);
         return nullptr;
     }
