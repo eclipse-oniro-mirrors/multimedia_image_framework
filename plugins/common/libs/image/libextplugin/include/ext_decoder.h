@@ -206,6 +206,14 @@ private:
     uint32_t AllocGainmapBuffer(DecodeContext &context, SkImageInfo &dstInfo, uint64_t byteCount);
     bool IsRegionDecodeSupported(uint32_t index, const PixelDecodeOptions &opts, PlImageInfo &info);
     uint32_t DoRegionDecode(DecodeContext &context);
+    uint32_t ProgressiveDecodeRegion(DecodeContext &context);
+    uint32_t PrepareProgressiveRegionParams(DecodeContext &context, SkImageInfo &decodeInfo,
+        fast::image::bandjpeg::RegionDecodeParams &params);
+    uint32_t AllocProgressiveRegionBuffer(DecodeContext &context, SkImageInfo &decodeInfo, bool &allocated);
+    bool SetupProgressiveRegionBuffer(DecodeContext &context, bool allocated, const SkImageInfo &decodeInfo,
+        fast::image::bandjpeg::RegionDecodeParams &params);
+    void ApplyProgressiveRegionColorSpace(DecodeContext &context,
+        const fast::image::bandjpeg::RegionDecodeParams &params);
     SkCodec::Result DoSampleDecode(DecodeContext &context);
     bool IsRawFormat(std::string &name);
     std::string GetPluginType() override
