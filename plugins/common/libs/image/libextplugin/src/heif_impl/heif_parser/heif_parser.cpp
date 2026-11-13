@@ -691,13 +691,13 @@ void HeifParser::ExtractAuxImage(std::shared_ptr<HeifImage> &auxImage, const Hei
 void HeifParser::ExtractGainmapImage(const heif_item_id& tmapId)
 {
     CHECK_ERROR_RETURN(!irefBox_);
-    std::vector<HeifIrefBox::Reference> references = irefBox_->GetReferencesFrom(tmapId);
-    for (const HeifIrefBox::Reference &ref : references) {
-        uint32_t type = ref.box.GetBoxType();
+    std::vector<const HeifIrefBox::Reference *> references = irefBox_->GetReferencesFrom(tmapId);
+    for (const HeifIrefBox::Reference *ref : references) {
+        uint32_t type = ref->box.GetBoxType();
         if (type != BOX_TYPE_DIMG) {
             continue;
         }
-        heif_item_id fromItemId = ref.fromItemId;
+        heif_item_id fromItemId = ref->fromItemId;
         auto fromItemInfeBox = GetInfeBox(fromItemId);
         if (fromItemInfeBox == nullptr) {
             continue;
@@ -705,7 +705,7 @@ void HeifParser::ExtractGainmapImage(const heif_item_id& tmapId)
         if (fromItemInfeBox->GetItemType() != "tmap") {
             return;
         }
-        std::vector<heif_item_id> toItemIds = ref.toItemIds;
+        std::vector<heif_item_id> toItemIds = ref->toItemIds;
         const size_t tmapToItemSize = 2;
         if (toItemIds.size() != tmapToItemSize) {
             return;
@@ -734,13 +734,14 @@ void HeifParser::ExtractNonMasterImages()
     CHECK_ERROR_RETURN(!irefBox_);
     for (auto &pair: images_) {
         auto &image = pair.second;
-        std::vector<HeifIrefBox::Reference> references = irefBox_->GetReferencesFrom(image->GetItemId());
-        for (const HeifIrefBox::Reference &ref: references) {
-            uint32_t type = ref.box.GetBoxType();
+        std::vector<const HeifIrefBox::Reference *> references =
+            irefBox_->GetReferencesFrom(image->GetItemId());
+        for (const HeifIrefBox::Reference *ref : references) {
+            uint32_t type = ref->box.GetBoxType();
             if (type == BOX_TYPE_THMB) {
-                ExtractThumbnailImage(image, ref);
+                ExtractThumbnailImage(image, *ref);
             } else if (type == BOX_TYPE_AUXL) {
-                ExtractAuxImage(image, ref);
+                ExtractAuxImage(image, *ref);
             }
         }
     }

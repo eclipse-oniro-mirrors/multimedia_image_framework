@@ -29,11 +29,13 @@
 #include "dng_read_image.h"
 #include "dng_stream.h"
 #include "dng_tag_types.h"
+#include "dng_tag_values.h"
 
 namespace OHOS {
 namespace Media {
 
 constexpr uint32_t BYTES_SIZE = 8;
+constexpr int64_t ORIENTATION_MAX = 8;
 class DngSdkInputDataStream : public dng_stream {
 public:
     explicit DngSdkInputDataStream(ImagePlugin::InputDataStream* stream)
@@ -206,6 +208,60 @@ uint32_t DngSdkHelper::GetExifProperty(const std::unique_ptr<DngSdkInfo>& info, 
         IMAGE_LOGE("Failed to get value %{public}s", value.key.c_str());
         return ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
     }
+}
+
+static bool IsPreviewIfd(const dng_ifd& ifd)
+{
+    return ifd.fNewSubFileType == sfPreviewImage || ifd.fNewSubFileType == sfAltPreviewImage;
+}
+
+static bool TryGetPreviewIfdOrientation(const std::unique_ptr<DngSdkInfo>& info, MetadataValue& value,
+    const dng_ifd& ifd, DngMetaSourceType type, uint32_t index)
+{
+    if (!IsPreviewIfd(ifd)) {
+        return false;
+    }
+    MetadataValue candidate;
+    candidate.key = value.key;
+    DngPropertyOption option { type, index };
+    if (info->GetProperty(candidate, option) != SUCCESS) {
+        return false;
+    }
+    if (candidate.type != PropertyValueType::INT || candidate.intArrayValue.empty()) {
+        return false;
+    }
+    int64_t orientation = candidate.intArrayValue[0];
+    if (orientation < 1 || orientation > ORIENTATION_MAX) {
+        return false;
+    }
+    value = candidate;
+    return true;
+}
+
+uint32_t DngSdkHelper::GetPreviewOrientation(const std::unique_ptr<DngSdkInfo>& info, MetadataValue& value)
+{
+    // NOPROTECT: DNG SDK property getters are exception-based; keep this as the exception
+    // boundary so a malformed DNG cannot unwind into ImageSource.
+    try {
+        CHECK_ERROR_RETURN_RET(info == nullptr, ERR_IMAGE_DECODE_EXIF_UNSUPPORT);
+        for (uint32_t i = 0; i < info->fIFDCount; ++i) {
+            if (info->fIFD[i].Get() != nullptr &&
+                TryGetPreviewIfdOrientation(info, value, *(info->fIFD[i].Get()),
+                    DngMetaSourceType::SUB_PREVIEW_IFD, i)) {
+                return SUCCESS;
+            }
+        }
+        for (uint32_t i = 0; i < info->fChainedIFDCount; ++i) {
+            if (info->fChainedIFD[i].Get() != nullptr &&
+                TryGetPreviewIfdOrientation(info, value, *(info->fChainedIFD[i].Get()),
+                    DngMetaSourceType::CHAINED_IFD, i)) {
+                return SUCCESS;
+            }
+        }
+    } catch (...) {
+        IMAGE_LOGE("Failed to get preview orientation.");
+    }
+    return ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
 }
 
 uint32_t DngSdkHelper::SetExifProperty(const std::unique_ptr<DngSdkInfo>& info, const MetadataValue& value)

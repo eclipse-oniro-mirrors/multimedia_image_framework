@@ -14,174 +14,176 @@
 domain: IMAGE_FWK_UE
 
 DECODED_IMAGE_TYPE_STATISTICS:
-  __BASE: {type: STATISTIC, level: MINOR, desc: Collect statistics on the decoded image type such as PNG JPEG GIF BMP and HEIF, preserve: true}
-  PNAMEID: {type: STRING, desc: package name}
-  PVERSIONID: {type: STRING, desc: application version}
-  IMAGE_TYPE: {type: STRING, desc: Type of the decoded image for example png jpeg bmp gif ico and wbmp}
+  __BASE: {type: STATISTIC, level: MINOR, desc: Collect statistics on decoded image type such as jpeg png gif bmp webp heif or avif, preserve: true}
+  PNAMEID: {type: STRING, desc: Process name; application processes usually report the package name}
+  PVERSIONID: {type: STRING, desc: Constant version string 1; not the real application version}
+  IMAGE_TYPE: {type: STRING, desc: Decoded image type bmp gif ico jpeg png wbmp webp pkm ktx astc dng heif avif or unknown}
 
 CREATE_IMAGESOURCE_FAULT:
-  __BASE: {type: BEHAVIOR, level: MINOR, desc: Image encoding and decoding cause of the create image source failure, preserve: true}
-  PNAMEID: {type: STRING, desc: package name}
-  PVERSIONID: {type: STRING, desc: application version}
-  WIDTH: {type: UINT32, desc: image width}
-  HEIGHT: {type: UINT32, desc: image height}
-  TYPE: {type: STRING, desc: image formats jpeg png etc}
-  ERROR_MSG: {type: STRING, desc: error message}
-  SOURCE_FILE_EXTENSION: {type: STRING, desc: Source file extension or unknown when unavailable}
+  __BASE: {type: BEHAVIOR, level: MINOR, desc: ImageSource creation failure, preserve: true}
+  PNAMEID: {type: STRING, desc: Process name; application processes usually report the package name}
+  PVERSIONID: {type: STRING, desc: Constant version string 1; not the real application version}
+  WIDTH: {type: UINT32, desc: Image width when known; 0 when unavailable}
+  HEIGHT: {type: UINT32, desc: Image height when known; 0 when unavailable}
+  TYPE: {type: STRING, desc: ImageSource creation trace name such as CreateImageSource by path fd data istream or CreateIncrementalImageSource}
+  ERROR_MSG: {type: STRING, desc: Failure description}
+  SOURCE_FILE_EXTENSION: {type: STRING, desc: Lowercase file extension or unknown when unavailable}
 
 
 ENCODE_FAULT:
-  __BASE: {type: BEHAVIOR, level: MINOR, desc: Image encoding and decoding cause of the encode failure, preserve: true}
-  PNAMEID: {type: STRING, desc: package name}
-  PVERSIONID: {type: STRING, desc: application version}
-  WIDTH: {type: UINT32, desc: image width}
-  HEIGHT: {type: UINT32, desc: image height}
-  MIME_TYPE: {type: STRING, desc: Image formats jpeg png etc}
-  ERROR_MSG: {type: STRING, desc: error message}
+  __BASE: {type: BEHAVIOR, level: MINOR, desc: Image encoding failure, preserve: true}
+  PNAMEID: {type: STRING, desc: Process name; application processes usually report the package name}
+  PVERSIONID: {type: STRING, desc: Constant version string 1; not the real application version}
+  WIDTH: {type: UINT32, desc: Input image width when known; 0 when unavailable}
+  HEIGHT: {type: UINT32, desc: Input image height when known; 0 when unavailable}
+  MIME_TYPE: {type: STRING, desc: Target encoding MIME type such as image/jpeg}
+  ERROR_MSG: {type: STRING, desc: Failure description}
 
 ENCODE_INFORMATION:
-  __BASE: {type: BEHAVIOR, level: MINOR, desc: Image encoding information statistics, preserve: true}
-  PNAMEID: {type: STRING, desc: package name}
-  PVERSIONID: {type: STRING, desc: application version}
-  APPLICATION_NAME: {type: STRING, desc: application name}
-  MIMETYPE: {type: STRING, desc: Output image format such as image/jpeg}
-  PIXEL_FORMAT: {type: INT32, desc: Input image pixel format}
+  __BASE: {type: BEHAVIOR, level: MINOR, desc: One event per successful ExtEncoder encode, preserve: true}
+  PNAMEID: {type: STRING, desc: Process name; application processes usually report the package name}
+  PVERSIONID: {type: STRING, desc: Constant version string 1; not the real application version}
+  APPLICATION_NAME: {type: STRING, desc: Same value as PNAMEID}
+  MIMETYPE: {type: STRING, desc: Target encoding MIME type from PackOption.format such as image/jpeg}
+  PIXEL_FORMAT: {type: INT32, desc: Input PixelMap PixelFormat value}
   QUALITY: {type: UINT32, desc: Encode quality}
   OUTPUT_SIZE: {type: UINT64, desc: Encoded output size in bytes or 0 when unavailable}
-  COST_TIME: {type: UINT64, desc: encode cost time in milliseconds}
+  COST_TIME: {type: UINT64, desc: Encode duration in milliseconds}
   HARDWARE_ENCODE: {type: BOOL, desc: Whether hardware encoding was used}
 
+# 已停用：解码明细不再逐次上报，成功与失败统一写入 DECODE_HOURLY_STATISTICS。
 DECODE_FAULT:
-  __BASE: {type: BEHAVIOR, level: MINOR, desc: Image encoding and decoding cause of the decode failure, preserve: true}
-  PNAMEID: {type: STRING, desc: package name}
-  PVERSIONID: {type: STRING, desc: application version}
-  APPLICATION_NAME: {type: STRING, desc: application name}
-  ROTATE: {type: FLOAT, desc: image rorate}
-  EDITABLE: {type: BOOL, desc: IsEditable 0 is No 1 is Yes}
-  SAMPLE_SIZE: {type: UINT32, desc: sample}
-  SOURCE_WIDTH: {type: INT32, desc: source image width}
-  SOURCE_HEIGHT: {type: INT32, desc: source image height}
-  DESIRE_SIZE_WIDTH: {type: INT32, desc: desire image width}
-  DESIRE_SIZE_HEIGHT: {type: INT32, desc: desire image height}
-  DESIRE_REGION_WIDTH: {type: INT32, desc: desire region width}
-  DESIRE_REGION_HEIGHT: {type: INT32, desc: desire region height}
-  DESIRE_REGION_X: {type: INT32, desc: desire region x}
-  DESIRE_REGION_Y: {type: INT32, desc: desire region y}
-  DESIRE_DESIRE_PIXEL_FORMAT: {type: INT32, desc: Expected image pixel format The options are as fol1ows 1 is ARGB_888 3 is RGBA_8888 4 is BGRA_8888 8 is NV21 9 is NV12}
-  INDEX: {type: UINT32, desc: image index}
-  FIT_DENSITY: {type: INT32, desc: fit density}
-  DESIRE_COLOR_SPACE: {type: INT32, desc: Indicates the expected image color space 1 is DISLAY_P3 2 is SRGB 3 is LINEAR SRGB}
-  MIMETYPE: {type: STRING, desc: Image formats jpeg png etc}
-  MEMORY_SIZE: {type: UINT32, desc: memory size}
-  MEMORY_TYPE: {type: INT32, desc: Memory type The options are as follows 1 is heap 2 is sharedMem 4 is Dma}
-  IMAGE_SOURCE: {type: STRING, desc: Image source FD buffer etc}
-  INVOKE_TYPE: {type: STRING, desc: Invocation type JS_inerface c_interface and inner}
-  INCREMENTAL_DECODE: {type: BOOL, desc: Indicates whether to perform incremental decoding The options are as follows 0 is no 1 is yes}
-  HARD_DECODE: {type: BOOL, desc: Whether to perform hard decoding 0 is no 1 is yes}
-  HARD_DECODE_ERROR: {type: STRING, desc: hard decode error message}
-  ERROR_MSG: {type: STRING, desc: error message}
-  PLUGIN_TYPE: {type: STRING, desc: The type of the plugin to decode the image}
-  HEIF_GRID_WIDTH: {type: INT32, desc: The width of each tile in a grid image}
-  HEIF_GRID_HEIGHT: {type: INT32, desc: The height of each tile in a grid image}
-  SOURCE_SIZE: {type: UINT64, desc: Encoded source stream size in bytes or 0 when unavailable}
-  SOURCE_COLOR_SPACE: {type: INT32, desc: Source stream color space name or -1 when unavailable}
-  SOURCE_YUV_SAMPLING: {type: STRING, desc: Source stream yuv sampling format}
-  SOURCE_FILE_EXTENSION: {type: STRING, desc: File extension when the mimetype is unknown}
+  __BASE: {type: BEHAVIOR, level: MINOR, desc: Deprecated; decode failures are aggregated in DECODE_HOURLY_STATISTICS, preserve: true}
+  PNAMEID: {type: STRING, desc: Process name; application processes usually report the package name}
+  PVERSIONID: {type: STRING, desc: Constant version string 1; not the real application version}
+  APPLICATION_NAME: {type: STRING, desc: Same value as PNAMEID}
+  ROTATE: {type: FLOAT, desc: Expected rotation angle in degrees}
+  EDITABLE: {type: BOOL, desc: Whether the output PixelMap is editable}
+  SAMPLE_SIZE: {type: UINT32, desc: Decode sample size}
+  SOURCE_WIDTH: {type: INT32, desc: Source image width in pixels}
+  SOURCE_HEIGHT: {type: INT32, desc: Source image height in pixels}
+  DESIRE_SIZE_WIDTH: {type: INT32, desc: Desired output width in pixels; 0 means unspecified}
+  DESIRE_SIZE_HEIGHT: {type: INT32, desc: Desired output height in pixels; 0 means unspecified}
+  DESIRE_REGION_WIDTH: {type: INT32, desc: Desired region width in pixels; 0 means full image}
+  DESIRE_REGION_HEIGHT: {type: INT32, desc: Desired region height in pixels; 0 means full image}
+  DESIRE_REGION_X: {type: INT32, desc: Desired region left offset in pixels; 0 means unspecified}
+  DESIRE_REGION_Y: {type: INT32, desc: Desired region top offset in pixels; 0 means unspecified}
+  DESIRE_DESIRE_PIXEL_FORMAT: {type: INT32, desc: Expected PixelFormat value 0..17 public or 101..104 internal}
+  INDEX: {type: UINT32, desc: Frame index}
+  FIT_DENSITY: {type: INT32, desc: Target screen density; 0 means no density scaling}
+  DESIRE_COLOR_SPACE: {type: INT32, desc: Expected ColorSpace enum value such as 1 DISPLAY_P3 2 SRGB or 3 LINEAR_SRGB; 0 UNKNOWN when unspecified}
+  MIMETYPE: {type: STRING, desc: Source image MIME type such as image/jpeg or image/heif}
+  MEMORY_SIZE: {type: UINT32, desc: Decoded output buffer size in bytes}
+  MEMORY_TYPE: {type: INT32, desc: AllocatorType value 0 DEFAULT 1 HEAP_ALLOC 2 SHARE_MEM_ALLOC 3 CUSTOM_ALLOC or 4 DMA_ALLOC}
+  IMAGE_SOURCE: {type: STRING, desc: ImageSource creation trace name such as CreateImageSource by path fd data istream or CreateIncrementalImageSource}
+  INVOKE_TYPE: {type: STRING, desc: Invocation type inner_interface js_interface or c_interface}
+  INCREMENTAL_DECODE: {type: BOOL, desc: Whether incremental decoding was used}
+  HARD_DECODE: {type: BOOL, desc: Whether hardware decoding was used}
+  HARD_DECODE_ERROR: {type: STRING, desc: Hardware decode error message; empty when unavailable}
+  ERROR_MSG: {type: STRING, desc: Decode error message; may be empty for some failures}
+  PLUGIN_TYPE: {type: STRING, desc: Decoder plugin type such as ext jpeg png webp svg raw or tiff}
+  HEIF_GRID_WIDTH: {type: INT32, desc: HEIF grid tile width in pixels; 0 when not a grid image}
+  HEIF_GRID_HEIGHT: {type: INT32, desc: HEIF grid tile height in pixels; 0 when not a grid image}
+  SOURCE_SIZE: {type: UINT64, desc: Encoded source stream size in bytes; 0 when unavailable or empty source}
+  SOURCE_COLOR_SPACE: {type: INT32, desc: Source stream ColorSpaceName value; -1 when unavailable}
+  SOURCE_YUV_SAMPLING: {type: STRING, desc: "Source stream YUV sampling such as 4:2:0 not_yuv or unknown"}
+  SOURCE_FILE_EXTENSION: {type: STRING, desc: Lowercase file extension collected only when MIME type is unknown; unknown when unavailable}
 
+# 已停用：解码明细不再逐次上报，成功与失败统一写入 DECODE_HOURLY_STATISTICS。
 DECODE_INFORMATION:
-  __BASE: {type: BEHAVIOR, level: MINOR, desc: Image encoding and decoding information statistics. Each application reports data once a day in different formats, preserve: true}
-  PNAMEID: {type: STRING, desc: package name}
-  PVERSIONID: {type: STRING, desc: application version}
-  APPLICATION_NAME: {type: STRING, desc: application name}
-  ROTATE: {type: FLOAT, desc: image rorate}
-  EDITABLE: {type: BOOL, desc: IsEditable 0 is No 1 is Yes}
-  SAMPLE_SIZE: {type: UINT32, desc: sample}
-  SOURCE_WIDTH: {type: INT32, desc: source image width}
-  SOURCE_HEIGHT: {type: INT32, desc: source image height}
-  DESIRE_SIZE_WIDTH: {type: INT32, desc: desire image width}
-  DESIRE_SIZE_HEIGHT: {type: INT32, desc: desire image height}
-  DESIRE_REGION_WIDTH: {type: INT32, desc: desire region width}
-  DESIRE_REGION_HEIGHT: {type: INT32, desc: desire region height}
-  DESIRE_REGION_X: {type: INT32, desc: desire region x}
-  DESIRE_REGION_Y: {type: INT32, desc: desire region y}
-  DESIRE_DESIRE_PIXEL_FORMAT: {type: INT32, desc: Expected image pixel format The options are as fol1ows 1 is ARGB_888 3 is RGBA_8888 4 is BGRA_8888 8 is NV21 9 is NV12}
-  INDEX: {type: UINT32, desc: image index}
-  FIT_DENSITY: {type: INT32, desc: fit density}
-  DESIRE_COLOR_SPACE: {type: INT32, desc: Indicates the expected image color space 1 is DISLAY_P3 2 is SRGB 3 is LINEAR SRGB}
-  MIMETYPE: {type: STRING, desc: Image formats jpeg png etc}
-  MEMORY_SIZE: {type: UINT32, desc: memory size}
-  MEMORY_TYPE: {type: INT32, desc: Memory type The options are as follows 1 is heap 2 is sharedMem 4 is Dma}
-  IMAGE_SOURCE: {type: STRING, desc: Image source FD buffer etc}
-  INVOKE_TYPE: {type: STRING, desc: Invocation type JS_inerface c_interface and inner}
-  INCREMENTAL_DECODE: {type: BOOL, desc: Indicates whether to perform incremental decoding The options are as follows 0 is no 1 is yes}
-  HARD_DECODE: {type: BOOL, desc: Whether to perform hard decoding 0 is no 1 is yes}
-  HARD_DECODE_ERROR: {type: STRING, desc: hard decode error message}
-  COST_TIME: {type: UINT64, desc: decode cost time}
-  PLUGIN_TYPE: {type: STRING, desc: The type of the plugin to decode the image}
-  HEIF_GRID_WIDTH: {type: INT32, desc: The width of each tile in a grid image}
-  HEIF_GRID_HEIGHT: {type: INT32, desc: The height of each tile in a grid image}
-  SOURCE_SIZE: {type: UINT64, desc: Encoded source stream size in bytes or 0 when unavailable}
-  SOURCE_COLOR_SPACE: {type: INT32, desc: Source stream color space name or -1 when unavailable}
-  SOURCE_YUV_SAMPLING: {type: STRING, desc: Source stream yuv sampling format}
-  SOURCE_FILE_EXTENSION: {type: STRING, desc: File extension when the mimetype is unknown}
+  __BASE: {type: BEHAVIOR, level: MINOR, desc: Deprecated; decode success samples are aggregated in DECODE_HOURLY_STATISTICS, preserve: true}
+  PNAMEID: {type: STRING, desc: Process name; application processes usually report the package name}
+  PVERSIONID: {type: STRING, desc: Constant version string 1; not the real application version}
+  APPLICATION_NAME: {type: STRING, desc: Same value as PNAMEID}
+  ROTATE: {type: FLOAT, desc: Expected rotation angle in degrees}
+  EDITABLE: {type: BOOL, desc: Whether the output PixelMap is editable}
+  SAMPLE_SIZE: {type: UINT32, desc: Decode sample size}
+  SOURCE_WIDTH: {type: INT32, desc: Source image width in pixels}
+  SOURCE_HEIGHT: {type: INT32, desc: Source image height in pixels}
+  DESIRE_SIZE_WIDTH: {type: INT32, desc: Desired output width in pixels; 0 means unspecified}
+  DESIRE_SIZE_HEIGHT: {type: INT32, desc: Desired output height in pixels; 0 means unspecified}
+  DESIRE_REGION_WIDTH: {type: INT32, desc: Desired region width in pixels; 0 means full image}
+  DESIRE_REGION_HEIGHT: {type: INT32, desc: Desired region height in pixels; 0 means full image}
+  DESIRE_REGION_X: {type: INT32, desc: Desired region left offset in pixels; 0 means unspecified}
+  DESIRE_REGION_Y: {type: INT32, desc: Desired region top offset in pixels; 0 means unspecified}
+  DESIRE_DESIRE_PIXEL_FORMAT: {type: INT32, desc: Expected PixelFormat value 0..17 public or 101..104 internal}
+  INDEX: {type: UINT32, desc: Frame index}
+  FIT_DENSITY: {type: INT32, desc: Target screen density; 0 means no density scaling}
+  DESIRE_COLOR_SPACE: {type: INT32, desc: Expected ColorSpace enum value such as 1 DISPLAY_P3 2 SRGB or 3 LINEAR_SRGB; 0 UNKNOWN when unspecified}
+  MIMETYPE: {type: STRING, desc: Source image MIME type such as image/jpeg or image/heif}
+  MEMORY_SIZE: {type: UINT32, desc: Decoded output buffer size in bytes}
+  MEMORY_TYPE: {type: INT32, desc: AllocatorType value 0 DEFAULT 1 HEAP_ALLOC 2 SHARE_MEM_ALLOC 3 CUSTOM_ALLOC or 4 DMA_ALLOC}
+  IMAGE_SOURCE: {type: STRING, desc: ImageSource creation trace name such as CreateImageSource by path fd data istream or CreateIncrementalImageSource}
+  INVOKE_TYPE: {type: STRING, desc: Invocation type inner_interface js_interface or c_interface}
+  INCREMENTAL_DECODE: {type: BOOL, desc: Whether incremental decoding was used}
+  HARD_DECODE: {type: BOOL, desc: Whether hardware decoding was used}
+  HARD_DECODE_ERROR: {type: STRING, desc: Hardware decode error message; empty when unavailable}
+  COST_TIME: {type: UINT64, desc: Decode point duration in milliseconds; 0 when clock unavailable}
+  PLUGIN_TYPE: {type: STRING, desc: Decoder plugin type such as ext jpeg png webp svg raw or tiff}
+  HEIF_GRID_WIDTH: {type: INT32, desc: HEIF grid tile width in pixels; 0 when not a grid image}
+  HEIF_GRID_HEIGHT: {type: INT32, desc: HEIF grid tile height in pixels; 0 when not a grid image}
+  SOURCE_SIZE: {type: UINT64, desc: Encoded source stream size in bytes; 0 when unavailable or empty source}
+  SOURCE_COLOR_SPACE: {type: INT32, desc: Source stream ColorSpaceName value; -1 when unavailable}
+  SOURCE_YUV_SAMPLING: {type: STRING, desc: "Source stream YUV sampling such as 4:2:0 not_yuv or unknown"}
+  SOURCE_FILE_EXTENSION: {type: STRING, desc: Lowercase file extension collected only when MIME type is unknown; unknown when unavailable}
 
 # 由调用方触发的聚合事件，图片框架不创建定时器或延时任务。
 DECODE_HOURLY_STATISTICS:
-  __BASE: {type: STATISTIC, level: MINOR, desc: Process local full count decode statistics written on the next decode after one hour, preserve: true}
-  SCHEMA_VERSION: {type: UINT64, desc: Bucket dictionary and wire schema version}
+  __BASE: {type: STATISTIC, level: MINOR, desc: Process local full count decode statistics written when a later decode detects the one hour window expired, preserve: true}
+  SCHEMA_VERSION: {type: UINT64, desc: Bucket dictionary and wire schema version; current value is 2}
   PROCESS_NAME: {type: STRING, desc: Process name truncated to 127 bytes}
-  PROCESS_INSTANCE_ID: {type: STRING, desc: Random 128 bit process instance identifier}
+  PROCESS_INSTANCE_ID: {type: STRING, desc: Random 128 bit process instance identifier as 32 lowercase hex characters}
   UID: {type: UINT64, desc: User identifier}
   PID: {type: UINT64, desc: Process identifier}
-  WINDOW_ID: {type: UINT64, desc: Process instance local window identifier}
+  WINDOW_ID: {type: UINT64, desc: Process instance local window sequence number starting from 1}
   WINDOW_START_MS: {type: UINT64, desc: Window start in CLOCK_BOOTTIME milliseconds}
   WINDOW_END_MS: {type: UINT64, desc: Window end in CLOCK_BOOTTIME milliseconds}
-  DURATION_MS: {type: UINT64, desc: Actual window duration including backlog extension}
-  REPORT_LAG_MS: {type: UINT64, desc: Delay after window end at this local write attempt}
+  DURATION_MS: {type: UINT64, desc: Actual window duration in milliseconds including backlog extension}
+  REPORT_LAG_MS: {type: UINT64, desc: Delay from window end to this part write attempt in milliseconds}
   CLOCK_UNCERTAIN: {type: BOOL, desc: Window includes records with an unavailable or invalid elapsed clock}
   WINDOW_EXTENDED: {type: BOOL, desc: Window extended because the bounded pending slot was occupied}
   COUNTER_SATURATED: {type: BOOL, desc: At least one counter or sum saturated instead of wrapping}
-  PART_INDEX: {type: UINT64, desc: Zero based part index}
-  PART_COUNT: {type: UINT64, desc: Number of fixed parts in this window}
-  TOTAL_POINT_COUNT: {type: UINT64, desc: Total decode point completions}
-  SUCCESS_COUNT: {type: UINT64, desc: Successful point completions}
-  FAILURE_COUNT: {type: UINT64, desc: Failed point completions}
-  INCOMPLETE_COUNT: {type: UINT64, desc: Incremental advances awaiting more data}
-  COST_SUM_MS: {type: UINT64, desc: Sum of valid point durations}
-  COST_MAX_MS: {type: UINT64, desc: Maximum valid point duration}
-  COST_VALID_COUNT: {type: UINT64, desc: Number of valid point durations}
-  SOURCE_SIZE_SUM: {type: UINT64, desc: Sum of nonzero encoded source sizes}
-  SOURCE_SIZE_MAX: {type: UINT64, desc: Maximum encoded source size}
-  SOURCE_SIZE_VALID_COUNT: {type: UINT64, desc: Number of nonzero encoded source sizes}
-  MIME_RESULT_COUNTS: {type: UINT64, arrsize: 48, desc: Schema v1 fixed bucket counts in part 1}
-  SOURCE_COLOR_COUNTS: {type: UINT64, arrsize: 18, desc: Schema v1 fixed bucket counts in part 1}
-  SOURCE_YUV_COUNTS: {type: UINT64, arrsize: 10, desc: Schema v1 fixed bucket counts in part 1}
-  SOURCE_EXTENSION_COUNTS: {type: UINT64, arrsize: 10, desc: Schema v1 fixed bucket counts in part 1}
-  SOURCE_SIZE_COUNTS: {type: UINT64, arrsize: 10, desc: Schema v1 fixed bucket counts in part 2}
-  SOURCE_WIDTH_COUNTS: {type: UINT64, arrsize: 10, desc: Schema v1 fixed bucket counts in part 2}
-  SOURCE_HEIGHT_COUNTS: {type: UINT64, arrsize: 10, desc: Schema v1 fixed bucket counts in part 2}
-  COST_TIME_COUNTS: {type: UINT64, arrsize: 10, desc: Schema v1 fixed bucket counts in part 2}
-  MEMORY_SIZE_COUNTS: {type: UINT64, arrsize: 10, desc: Schema v1 fixed bucket counts in part 2}
-  MEMORY_TYPE_COUNTS: {type: UINT64, arrsize: 8, desc: Schema v1 fixed bucket counts in part 2}
-  IMAGE_SOURCE_COUNTS: {type: UINT64, arrsize: 8, desc: Schema v1 fixed bucket counts in part 2}
-  INVOKE_TYPE_COUNTS: {type: UINT64, arrsize: 4, desc: Schema v1 fixed bucket counts in part 3}
-  HARD_DECODE_COUNTS: {type: UINT64, arrsize: 3, desc: Schema v1 fixed bucket counts in part 2}
-  DESIRED_PIXEL_FORMAT_COUNTS: {type: UINT64, arrsize: 24, desc: Schema v1 fixed bucket counts in part 3}
-  DESIRED_COLOR_SPACE_COUNTS: {type: UINT64, arrsize: 16, desc: Schema v1 fixed bucket counts in part 3}
-  PLUGIN_TYPE_COUNTS: {type: UINT64, arrsize: 8, desc: Schema v1 fixed bucket counts in part 1}
-  SAMPLE_SIZE_COUNTS: {type: UINT64, arrsize: 6, desc: Schema v1 fixed bucket counts in part 3}
-  ROTATE_COUNTS: {type: UINT64, arrsize: 6, desc: Schema v1 fixed bucket counts in part 3}
-  EDITABLE_COUNTS: {type: UINT64, arrsize: 3, desc: Schema v1 fixed bucket counts in part 3}
-  INDEX_COUNTS: {type: UINT64, arrsize: 6, desc: Schema v1 fixed bucket counts in part 3}
-  FIT_DENSITY_COUNTS: {type: UINT64, arrsize: 6, desc: Schema v1 fixed bucket counts in part 3}
-  DESIRED_WIDTH_COUNTS: {type: UINT64, arrsize: 8, desc: Schema v1 fixed bucket counts in part 3}
-  DESIRED_HEIGHT_COUNTS: {type: UINT64, arrsize: 8, desc: Schema v1 fixed bucket counts in part 3}
-  REGION_WIDTH_COUNTS: {type: UINT64, arrsize: 8, desc: Schema v1 fixed bucket counts in part 3}
-  REGION_HEIGHT_COUNTS: {type: UINT64, arrsize: 8, desc: Schema v1 fixed bucket counts in part 3}
-  REGION_X_COUNTS: {type: UINT64, arrsize: 6, desc: Schema v1 fixed bucket counts in part 3}
-  REGION_Y_COUNTS: {type: UINT64, arrsize: 6, desc: Schema v1 fixed bucket counts in part 3}
-  GRID_WIDTH_COUNTS: {type: UINT64, arrsize: 6, desc: Schema v1 fixed bucket counts in part 1}
-  GRID_HEIGHT_COUNTS: {type: UINT64, arrsize: 6, desc: Schema v1 fixed bucket counts in part 1}
-  ERROR_CLASS_COUNTS: {type: UINT64, arrsize: 16, desc: Schema v1 fixed bucket counts in part 4}
-  HARD_ERROR_CLASS_COUNTS: {type: UINT64, arrsize: 8, desc: Schema v1 fixed bucket counts in part 4}
-  POINT_RESULT_COUNTS: {type: UINT64, arrsize: 15, desc: Schema v2 fixed bucket counts in part 0}
+  PART_INDEX: {type: UINT64, desc: Zero based part index from 0 to 4}
+  PART_COUNT: {type: UINT64, desc: Fixed number of parts per window; always 5}
+  TOTAL_POINT_COUNT: {type: UINT64, desc: Total decode point samples including success failure and incomplete}
+  SUCCESS_COUNT: {type: UINT64, desc: Successful decode point samples}
+  FAILURE_COUNT: {type: UINT64, desc: Failed decode point samples}
+  INCOMPLETE_COUNT: {type: UINT64, desc: Incremental decode points waiting for more data}
+  COST_SUM_MS: {type: UINT64, desc: Sum of valid decode point durations in milliseconds including failed points}
+  COST_MAX_MS: {type: UINT64, desc: Maximum valid decode point duration in milliseconds including failed points}
+  COST_VALID_COUNT: {type: UINT64, desc: Number of valid decode point durations}
+  SOURCE_SIZE_SUM: {type: UINT64, desc: Sum of nonzero encoded source sizes; incremental incomplete samples excluded}
+  SOURCE_SIZE_MAX: {type: UINT64, desc: Maximum nonzero encoded source size; incremental incomplete samples excluded}
+  SOURCE_SIZE_VALID_COUNT: {type: UINT64, desc: Number of nonzero encoded source sizes; incremental incomplete samples excluded}
+  MIME_RESULT_COUNTS: {type: UINT64, arrsize: 48, desc: Fixed bucket counts in part 1; mime index times 3 plus result}
+  SOURCE_COLOR_COUNTS: {type: UINT64, arrsize: 18, desc: Fixed bucket counts in part 1}
+  SOURCE_YUV_COUNTS: {type: UINT64, arrsize: 10, desc: Fixed bucket counts in part 1}
+  SOURCE_EXTENSION_COUNTS: {type: UINT64, arrsize: 10, desc: Fixed bucket counts in part 1}
+  SOURCE_SIZE_COUNTS: {type: UINT64, arrsize: 10, desc: Fixed bucket counts in part 2}
+  SOURCE_WIDTH_COUNTS: {type: UINT64, arrsize: 10, desc: Fixed bucket counts in part 2}
+  SOURCE_HEIGHT_COUNTS: {type: UINT64, arrsize: 10, desc: Fixed bucket counts in part 2}
+  COST_TIME_COUNTS: {type: UINT64, arrsize: 10, desc: Fixed bucket counts in part 2}
+  MEMORY_SIZE_COUNTS: {type: UINT64, arrsize: 10, desc: Fixed bucket counts in part 2}
+  MEMORY_TYPE_COUNTS: {type: UINT64, arrsize: 8, desc: Fixed bucket counts in part 2}
+  IMAGE_SOURCE_COUNTS: {type: UINT64, arrsize: 8, desc: Fixed bucket counts in part 2}
+  INVOKE_TYPE_COUNTS: {type: UINT64, arrsize: 4, desc: Fixed bucket counts in part 3}
+  HARD_DECODE_COUNTS: {type: UINT64, arrsize: 3, desc: Fixed bucket counts in part 2; 0 software 1 hardware 2 unknown}
+  DESIRED_PIXEL_FORMAT_COUNTS: {type: UINT64, arrsize: 24, desc: Fixed bucket counts in part 3}
+  DESIRED_COLOR_SPACE_COUNTS: {type: UINT64, arrsize: 16, desc: Fixed bucket counts in part 3}
+  PLUGIN_TYPE_COUNTS: {type: UINT64, arrsize: 8, desc: Fixed bucket counts in part 1}
+  SAMPLE_SIZE_COUNTS: {type: UINT64, arrsize: 6, desc: Fixed bucket counts in part 3}
+  ROTATE_COUNTS: {type: UINT64, arrsize: 6, desc: Fixed bucket counts in part 3}
+  EDITABLE_COUNTS: {type: UINT64, arrsize: 3, desc: Fixed bucket counts in part 3}
+  INDEX_COUNTS: {type: UINT64, arrsize: 6, desc: Fixed bucket counts in part 3}
+  FIT_DENSITY_COUNTS: {type: UINT64, arrsize: 6, desc: Fixed bucket counts in part 3}
+  DESIRED_WIDTH_COUNTS: {type: UINT64, arrsize: 8, desc: Fixed bucket counts in part 3}
+  DESIRED_HEIGHT_COUNTS: {type: UINT64, arrsize: 8, desc: Fixed bucket counts in part 3}
+  REGION_WIDTH_COUNTS: {type: UINT64, arrsize: 8, desc: Fixed bucket counts in part 3}
+  REGION_HEIGHT_COUNTS: {type: UINT64, arrsize: 8, desc: Fixed bucket counts in part 3}
+  REGION_X_COUNTS: {type: UINT64, arrsize: 6, desc: Fixed bucket counts in part 3}
+  REGION_Y_COUNTS: {type: UINT64, arrsize: 6, desc: Fixed bucket counts in part 3}
+  GRID_WIDTH_COUNTS: {type: UINT64, arrsize: 6, desc: Fixed bucket counts in part 1}
+  GRID_HEIGHT_COUNTS: {type: UINT64, arrsize: 6, desc: Fixed bucket counts in part 1}
+  ERROR_CLASS_COUNTS: {type: UINT64, arrsize: 16, desc: Fixed bucket counts in part 4; 1 UNKNOWN 2 IDENTIFY 3 OPTIONS 4 PLUGIN 5 MEMORY 6 DECODE 7 POST_PROCESS}
+  HARD_ERROR_CLASS_COUNTS: {type: UINT64, arrsize: 8, desc: Fixed bucket counts in part 4; 7 means HARD_DECODE_ERROR is nonempty}
+  POINT_RESULT_COUNTS: {type: UINT64, arrsize: 15, desc: Fixed bucket counts in part 0; point index times 3 plus result}

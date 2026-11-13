@@ -1186,6 +1186,8 @@ napi_value CreateErrorArray(napi_env env, const MetadataNapiAsyncContext *contex
     napi_value result = nullptr;
     std::string errkey = "";
     if (context->errMsgArray.empty()) {
+        ImageNapiUtils::CreateErrorObj(env, result, IMAGE_UNSUPPORTED_METADATA,
+            "The input data is incorrect!");
         return result;
     }
     for (const auto &errMsg : context->errMsgArray) {
@@ -1213,11 +1215,13 @@ static void GetPropertiesComplete(napi_env env, napi_status status, MetadataNapi
     napi_get_undefined(env, &result[NUM_1]);
 
     if (context->status == SUCCESS) {
-        if (!context->KVSArray.empty()) {
-            result[NUM_1] = SetArrayInfo(env, context->KVSArray);
-        }
+        result[NUM_1] = SetArrayInfo(env, context->KVSArray);
     } else {
         result[NUM_0] = CreateErrorArray(env, context);
+        if (result[NUM_0] == nullptr) {
+            IMAGE_LOGE("CreateErrorArray failed, reject with undefined");
+            napi_get_undefined(env, &result[NUM_0]);
+        }
     }
 
     if (context->status == SUCCESS) {
@@ -1242,10 +1246,14 @@ static void SetPropertiesComplete(napi_env env, napi_status status, MetadataNapi
     napi_get_undefined(env, &result[NUM_0]);
     napi_get_undefined(env, &result[NUM_1]);
 
-    result[NUM_0] = CreateErrorArray(env, context);
     if (context->status == SUCCESS) {
         napi_resolve_deferred(env, context->deferred, result[NUM_1]);
     } else {
+        result[NUM_0] = CreateErrorArray(env, context);
+        if (result[NUM_0] == nullptr) {
+            IMAGE_LOGE("CreateErrorArray failed, reject with undefined");
+            napi_get_undefined(env, &result[NUM_0]);
+        }
         napi_reject_deferred(env, context->deferred, result[NUM_0]);
     }
     
@@ -1327,6 +1335,10 @@ static void GetPropertiesExecute(napi_env env, void *data)
         return;
     }
     uint32_t status = SUCCESS;
+    if (context->keyStrArray.empty()) {
+        context->status = SUCCESS;
+        return;
+    }
     for (auto keyStrIt = context->keyStrArray.begin(); keyStrIt != context->keyStrArray.end(); ++keyStrIt) {
         std::string valueStr = "";
         status = static_cast<uint32_t>(context->rMetadata->GetValue(*keyStrIt, valueStr));

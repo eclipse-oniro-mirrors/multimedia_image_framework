@@ -1584,7 +1584,7 @@ napi_value PixelMapNapi::ReadPixelsToAreaSync(napi_env env, napi_callback_info i
     return result;
 }
 
-static bool IsSupportedWritePixelFormat(PixelFormat format)
+static bool IsSupportedWriteSourceFormat(PixelFormat format)
 {
     return format == PixelFormat::BGRA_8888 ||
            format == PixelFormat::RGBA_8888 ||
@@ -1607,7 +1607,7 @@ static void ParseSourcePixelFormat(napi_env env, napi_value arg, PixelMapAsyncCo
         return;
     }
     PixelFormat fmt = static_cast<PixelFormat>(value);
-    if (!IsSupportedWritePixelFormat(fmt)) {
+    if (!IsSupportedWriteSourceFormat(fmt)) {
         CreatePendingErrorIfAbsent(env, context.error, ERR_IMAGE_INVALID_PARAM,
             "The source pixel format is not supported.");
         return;
@@ -1772,16 +1772,11 @@ static void WritePixelsFromAreaExec(napi_env env, void* data)
 
     PositionArea area = context->area;
     if (context->hasSourcePixelFormat) {
-        if (context->wPixelMap->IsAstc() || context->wPixelMap->IsYuvFormat()) {
-            context->errCode = ERR_IMAGE_UNSUPPORTED_CONVERSION;
-            context->errMsg = "Unsupported conversion between the source pixel format and the PixelMap pixel format.";
-            return;
-        }
         RWPixelsOptions opts{
             static_cast<const uint8_t*>(area.pixels), static_cast<uint64_t>(area.size),
             area.offset, area.stride, area.region, context->sourcePixelFormat
         };
-        context->status = context->wPixelMap->WritePixels(opts);
+        context->status = context->wPixelMap->WritePixelsWithSourceFormat(opts);
     } else {
         context->status = context->wPixelMap->WritePixels(
             static_cast<uint8_t*>(area.pixels), area.size, area.offset, area.stride, area.region);

@@ -22,12 +22,16 @@
 #include <cerrno>
 #include <charconv>
 #include <chrono>
+#include <cctype>
 #include <cstring>
 #include <filesystem>
 #include <mutex>
 #include <set>
 #include <vector>
 #include <functional>
+
+#include <fcntl.h>
+#include <unistd.h>
 
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 #include "auxiliary_generator.h"
@@ -181,6 +185,13 @@ constexpr uint8_t PIXEL_BYTES = 4;
 constexpr int32_t WEBP_MIN_FRAME_DURATION = 100;
 constexpr int32_t WEBP_DELAY_TIME_UINT16_MAX = 65535;
 const static uint64_t IMAGESOURCE_FDSAN_TAG = LOG_TAG_DOMAIN_ID_IMAGE;
+constexpr size_t CONTENT_IDENTIFIER_UUID_LEN = 36;
+// uuid pattern 8-4-4-4-12 hex, dashes fixed at these indexes
+constexpr size_t UUID_DASH_INDEX_1 = 8;
+constexpr size_t UUID_DASH_INDEX_2 = 13;
+constexpr size_t UUID_DASH_INDEX_3 = 18;
+constexpr size_t UUID_DASH_INDEX_4 = 23;
+constexpr size_t COPY_SOURCE_CHUNK_SIZE = 64 * 1024;
 
 struct StreamInfo {
     uint8_t* buffer = nullptr;
@@ -1425,7 +1436,7 @@ void ImageSource::SetDecodeInfoOptions(uint32_t index, const DecodeOptions &opts
     imageEvent.SetSourceSizeProvider([this]() -> uint64_t {
         return static_cast<uint64_t>(GetDfxStreamSize(sourceStreamPtr_.get()));
     });
-    imageEvent.SetDecodeInfoOptions(options);
+    imageEvent.SetDecodeInfoOptions(std::move(options));
 }
 
 void ImageSource::SetDecodeInfoOptions(uint32_t index, const DecodeOptions &opts,
@@ -1455,7 +1466,7 @@ void ImageSource::SetDecodeInfoOptions(uint32_t index, const DecodeOptions &opts
     imageEvent.SetSourceSizeProvider([this]() -> uint64_t {
         return static_cast<uint64_t>(GetDfxStreamSize(sourceStreamPtr_.get()));
     });
-    imageEvent.SetDecodeInfoOptions(options);
+    imageEvent.SetDecodeInfoOptions(std::move(options));
 }
 
 void ImageSource::UpdateDecodeInfoOptions(const ImagePlugin::DecodeContext &context, ImageEvent &imageEvent)
@@ -1502,6 +1513,9 @@ void ImageSource::SetDecodeInfoSourceInfo(DecodeInfoOptions &options, AbsImageDe
 void ImageSource::PrintDecodeSourceState(const char *stage, uint32_t errorCode, ImageEvent &imageEvent,
     int32_t grColorSpace, PixelMap *pixelMap)
 {
+    if (!HiLogIsLoggable(LOG_DOMAIN, LOG_TAG, LOG_INFO)) {
+        return;
+    }
     const DecodeInfoOptions &options = imageEvent.GetDecodeInfoOptions();
     // 失败分支的 ret 已由调用点 ERROR 日志输出，nil 流场景降为 DEBUG 补充阶段信息。
     if (sourceStreamPtr_ == nullptr) {
@@ -1527,7 +1541,6 @@ void ImageSource::PrintDecodeSourceState(const char *stage, uint32_t errorCode, 
     }
     const int32_t pixelMapColorSpace = pixelMap == nullptr ? -1 :
         static_cast<int32_t>(pixelMap->InnerGetGrColorSpace().GetColorSpaceName());
-    // 成功与失败统一输出一条 INFO：源流状态、源码流色域与 YUV 采样，成功时附带解码输出色域。
     IMAGE_LOGI("[ImageSource]decode source state, stage:%{public}s, ret:%{public}u, size:%{public}zu, "
         "tell:%{public}u, complete:%{public}d, readMode:%{public}s, src:%{public}s, "
         "srcColorSpace:%{public}d(%{public}s), srcYuvSampling:%{public}s, "
@@ -2110,6 +2123,189 @@ uint32_t ImageSource::WriteImageMetadataBlob(const vector<MetadataValue> &proper
     return ERROR;
 }
 
+static bool IsValidContentIdentifier(const std::string &uuid)
+{
+    if (uuid.length() != CONTENT_IDENTIFIER_UUID_LEN) {
+        return false;
+    }
+    if (uuid[UUID_DASH_INDEX_1] != '-' || uuid[UUID_DASH_INDEX_2] != '-' ||
+        uuid[UUID_DASH_INDEX_3] != '-' || uuid[UUID_DASH_INDEX_4] != '-') {
+        return false;
+    }
+    for (size_t i = 0; i < uuid.length(); i++) {
+        if (i == UUID_DASH_INDEX_1 || i == UUID_DASH_INDEX_2 ||
+            i == UUID_DASH_INDEX_3 || i == UUID_DASH_INDEX_4) {
+            continue;
+        }
+        if (!isxdigit(static_cast<unsigned char>(uuid[i]))) {
+            return false;
+        }
+    }
+    return true;
+}
+
+static bool WriteAllToFd(int32_t dstFd, const uint8_t *data, size_t size)
+{
+    size_t done = 0;
+    while (done < size) {
+        size_t chunk = std::min(size - done, COPY_SOURCE_CHUNK_SIZE);
+        ssize_t written = write(dstFd, data + done, chunk);
+        if (written <= 0) {
+            IMAGE_LOGE("write dst fd failed, errno: %{public}d", errno);
+            return false;
+        }
+        done += static_cast<size_t>(written);
+    }
+    return true;
+}
+
+static uint32_t CopyFdContentToFd(int srcFd, int32_t dstFd)
+{
+    size_t size = 0;
+    bool cond = !ImageUtils::GetFileSize(srcFd, size);
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_SOURCE_DATA, "failed to get source fd size.");
+
+    std::vector<uint8_t> buffer(COPY_SOURCE_CHUNK_SIZE);
+    cond = buffer.empty();
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_SOURCE_DATA, "failed to alloc copy buffer.");
+
+    size_t done = 0;
+    while (done < size) {
+        size_t chunk = std::min(size - done, COPY_SOURCE_CHUNK_SIZE);
+        // pread leaves srcFd offset untouched, so the source stream state stays intact
+        ssize_t rd = pread(srcFd, buffer.data(), chunk, static_cast<off_t>(done));
+        if (rd == 0) {
+            // size came from fstat; 0 here means the file shrank concurrently (or was truncated)
+            IMAGE_LOGE("source file truncated or shrunk during copy, expect size: %{public}zu, offset: %{public}zu",
+                size, done);
+            return ERR_IMAGE_SOURCE_DATA;
+        }
+        if (rd < 0) {
+            IMAGE_LOGE("read source fd failed, errno: %{public}d", errno);
+            return ERR_IMAGE_SOURCE_DATA;
+        }
+        if (!WriteAllToFd(dstFd, buffer.data(), static_cast<size_t>(rd))) {
+            return ERR_IMAGE_SOURCE_DATA;
+        }
+        done += static_cast<size_t>(rd);
+    }
+    // drop stale bytes a pre-existing destination file may hold beyond the copy so output is byte-exact
+    if (ftruncate(dstFd, static_cast<off_t>(size)) != 0) {
+        IMAGE_LOGE("truncate dst fd after copy failed, errno: %{public}d", errno);
+        return ERR_IMAGE_SOURCE_DATA;
+    }
+    return SUCCESS;
+}
+
+uint32_t ImageSource::ModifyContentIdentifier(const std::string &uuid, std::string &effectiveUuid,
+    int32_t dstFd)
+{
+    ImageDataStatistics imageDataStatistics("[ImageSource]ModifyContentIdentifier.");
+    effectiveUuid.clear();
+    bool cond = (!IsValidContentIdentifier(uuid));
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER, "content identifier is not a valid uuid.");
+    cond = (dstFd < 0);
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER, "dst fd invalid: %{public}d", dstFd);
+
+    std::unique_lock<std::recursive_mutex> guard(decodingMutex_);
+    ImageInfo info;
+    uint32_t ret = GetImageInfo(info);
+    cond = (ret != SUCCESS);
+    CHECK_ERROR_RETURN_RET_LOG(cond, ret, "get image info failed when modifying content identifier.");
+    cond = !(info.encodedFormat == IMAGE_JPEG_FORMAT || info.encodedFormat == IMAGE_HEIF_FORMAT ||
+        info.encodedFormat == IMAGE_HEIC_FORMAT);
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_MISMATCHED_FORMAT,
+        "Only heif/heic and jpeg images support content identifier, format: %{public}s.", info.encodedFormat.c_str());
+
+    ret = CreatExifMetadataByImageSource(true);
+    cond = (ret != SUCCESS);
+    CHECK_ERROR_RETURN_RET_LOG(cond, ret, "Failed to create ExifMetadata for content identifier.");
+
+    cond = (exifMetadata_ == nullptr);
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_SOURCE_DATA, "exifMetadata_ is null.");
+
+    // the source is never modified: the complete image is copied to dst first and, when needed,
+    // the identifier is written into that copy only
+    ret = CopySourceToFd(dstFd);
+    cond = (ret != SUCCESS);
+    CHECK_ERROR_RETURN_RET_LOG(cond, ret, "failed to copy source to dst fd.");
+
+    std::string existingId;
+    if (exifMetadata_->GetContentIdentifier(existingId) && !existingId.empty()) {
+        IMAGE_LOGI("ContentIdentifier already exists, keep and return it.");
+        effectiveUuid = existingId;
+        return SUCCESS;
+    }
+
+    if (!exifMetadata_->SetContentIdentifier(uuid)) {
+        IMAGE_LOGE("Failed to set content identifier.");
+        return ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
+    }
+
+    ret = WriteExifMetadataToFd(dstFd);
+    cond = (ret != SUCCESS);
+    CHECK_ERROR_RETURN_RET_LOG(cond, ret, "write content identifier to dst fd failed.");
+    effectiveUuid = uuid;
+    return SUCCESS;
+}
+
+uint32_t ImageSource::CopySourceToFd(int32_t dstFd)
+{
+    // the caller may hand us an fd at any offset; the output always starts from head
+    bool cond = (lseek(dstFd, 0, SEEK_SET) == static_cast<off_t>(-1));
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_SOURCE_DATA, "failed to seek dst fd to head.");
+
+    if (srcFd_ != -1) {
+        return CopyFdContentToFd(srcFd_, dstFd);
+    }
+
+    if (srcBuffer_ != nullptr && srcBufferSize_ != 0) {
+        cond = !WriteAllToFd(dstFd, srcBuffer_, srcBufferSize_);
+        CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_SOURCE_DATA, "failed to copy buffer source to dst fd.");
+        // drop stale bytes a pre-existing destination file may hold beyond the copy so output is byte-exact
+        cond = (ftruncate(dstFd, static_cast<off_t>(srcBufferSize_)) != 0);
+        CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_SOURCE_DATA, "failed to truncate dst fd after copy.");
+        return SUCCESS;
+    }
+
+    if (!srcFilePath_.empty()) {
+        int srcFd = open(srcFilePath_.c_str(), O_RDONLY | O_CLOEXEC);
+        cond = (srcFd < 0);
+        CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_SOURCE_DATA, "failed to open source path: %{public}s.",
+            srcFilePath_.c_str());
+#if !defined(CROSS_PLATFORM)
+        fdsan_exchange_owner_tag(srcFd, 0, IMAGESOURCE_FDSAN_TAG);
+#endif
+        uint32_t ret = CopyFdContentToFd(srcFd, dstFd);
+#if !defined(CROSS_PLATFORM)
+        fdsan_close_with_tag(srcFd, IMAGESOURCE_FDSAN_TAG);
+#else
+        close(srcFd);
+#endif
+        return ret;
+    }
+    return ERROR;
+}
+
+uint32_t ImageSource::WriteExifMetadataToFd(int32_t dstFd)
+{
+    auto metadataAccessor = MetadataAccessorFactory::Create(dstFd);
+    bool cond = (metadataAccessor == nullptr);
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_SOURCE_DATA,
+        "Failed to create image accessor on dst fd when writing exif metadata.");
+
+    metadataAccessor->Set(exifMetadata_);
+    uint32_t ret = metadataAccessor->Write();
+    if (ret != SUCCESS) {
+        IMAGE_LOGE("write exif metadata to dst fd failed, ret: %{public}u", ret);
+        // best-effort cleanup: leave the partial output empty rather than a corrupted image
+        if (ftruncate(dstFd, 0) != 0) {
+            IMAGE_LOGE("truncate dst fd after write failure failed, errno: %{public}d", errno);
+        }
+    }
+    return ret;
+}
+
 uint32_t ImageSource::ModifyImagePropertyEx(uint32_t index, const std::string &key, const std::string &value)
 {
     return ModifyImageProperties(index, {{key, value}}, false);
@@ -2326,6 +2522,57 @@ uint32_t ImageSource::CreateExifMetadata(uint8_t *buffer, const uint32_t size, b
     return SUCCESS;
 }
 
+uint32_t ImageSource::GetRawPreviewOrientation(std::string &value)
+{
+    value.clear();
+#if defined(CROSS_PLATFORM) || defined(_WIN32) || defined(_APPLE)
+    IMAGE_LOGE("%{public}s is not supported on the current platform.", __func__);
+    return ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
+#else
+    // decodingMutex_ covers sourceStreamPtr_ because the preview parse below reads the stream
+    // buffer (mmap buffer included) in place, so the stream must not be replaced concurrently.
+    std::unique_lock<std::recursive_mutex> guard(decodingMutex_);
+    bool cond = sourceStreamPtr_ == nullptr || sourceInfo_.state == SourceInfoState::SOURCE_INCOMPLETE ||
+        (IsIncrementalSource() && !isIncrementalCompleted_);
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_DECODE_EXIF_UNSUPPORT,
+        "Fail to read raw preview orientation, source is not readable.");
+
+    uint8_t *bufferPtr = nullptr;
+    size_t streamSize = 0;
+    int originalFd = SOURCE_STREAM_INVALID_FD;
+    std::string originalPath = SOURCE_STREAM_INVALID_PATH;
+    std::unique_ptr<uint8_t[]> tmpGuard;
+    {
+        // fileMutex_ is shared with the plugin stream readers, so it only covers the blocking
+        // Seek/Read phase. The metadata parse runs after it is released.
+        std::unique_lock<std::mutex> guardFile(fileMutex_);
+        cond = !PrereadSourceStream();
+        CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_SOURCE_DATA, "Preread raw source stream failed.");
+        streamSize = sourceStreamPtr_->GetStreamSize();
+        cond = streamSize == 0 || streamSize > MAX_SOURCE_SIZE;
+        CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_SOURCE_DATA,
+            "Invalid raw source size:%{public}zu.", streamSize);
+        bufferPtr = sourceStreamPtr_->GetDataPtr();
+        if (bufferPtr == nullptr) {
+            uint32_t errorCode = SUCCESS;
+            uint8_t *tmpBuffer = ReadSourceBuffer(static_cast<uint32_t>(streamSize), errorCode);
+            CHECK_ERROR_RETURN_RET_LOG(tmpBuffer == nullptr, errorCode, "Read raw source buffer failed.");
+            tmpGuard.reset(tmpBuffer);
+            bufferPtr = tmpBuffer;
+        }
+        originalFd = sourceStreamPtr_->GetOriginalFd();
+        originalPath = sourceStreamPtr_->GetOriginalPath();
+    }
+
+    DataInfo dataInfo { bufferPtr, static_cast<uint32_t>(streamSize) };
+    uint32_t ret = MetadataAccessorFactory::GetRawPreviewOrientation(dataInfo, value, originalFd, originalPath);
+    if (ret != SUCCESS) {
+        IMAGE_LOGE("Get raw preview orientation failed, ret:%{public}u.", ret);
+    }
+    return ret;
+#endif
+}
+
 uint32_t ImageSource::GetImagePropertyCommon(uint32_t index, const std::string &key, std::string &value,
     std::string *errMsg)
 {
@@ -2420,8 +2667,11 @@ void ImageSource::AppendTiffPropertiesForGetAll(std::vector<MetadataValue> &resu
 {
 #if defined(SUPPORT_LIBTIFF)
     CHECK_ERROR_RETURN(!IsEncodedFormat(IMAGE_TIFF_FORMAT));
+    bool isTiffMetadata = exifMetadata_ != nullptr &&
+        exifMetadata_->GetExifMetadataType() == MetadataType::TIFF;
+    CHECK_ERROR_RETURN_LOG(!isTiffMetadata,
+        "exifMetadata_ is not TiffExifMetadata, skip tiff properties");
     std::shared_ptr<TiffExifMetadata> tiffMetadata = std::static_pointer_cast<TiffExifMetadata>(exifMetadata_);
-    CHECK_ERROR_RETURN(tiffMetadata == nullptr);
     tiffMetadata->GetAllTiffProperties(result);
     IMAGE_LOGD("Retrieved %{public}lu TIFF metadata properties", static_cast<unsigned long>(result.size()));
 #endif
@@ -2466,7 +2716,9 @@ void ImageSource::GetPngPropertiesWithType(std::vector<MetadataValue> &result)
 bool ImageSource::TryGetAllDngPropertiesWithType(std::vector<MetadataValue> &result)
 {
 #if !defined(CROSS_PLATFORM)
-    if (IsDngImage()) {
+    bool isDngMetadata = exifMetadata_ != nullptr &&
+        exifMetadata_->GetExifMetadataType() == MetadataType::DNG;
+    if (IsDngImage() && isDngMetadata) {
         std::shared_ptr<DngExifMetadata> dngMetadata = std::static_pointer_cast<DngExifMetadata>(exifMetadata_);
         if (dngMetadata != nullptr) {
             result = dngMetadata->GetAllDngProperties();
@@ -6822,9 +7074,10 @@ uint32_t ImageSource::GetDngImagePropertyByDngSdk(const std::string &key, Metada
     std::shared_ptr<ExifMetadata> exifMetadata = GetExifMetadata();
     CHECK_ERROR_RETURN_RET_LOG(exifMetadata == nullptr, ERR_IMAGE_DATA_ABNORMAL, "exifMetadata is nullptr");
 
-    std::shared_ptr<DngExifMetadata> dngMetadata = std::static_pointer_cast<DngExifMetadata>(exifMetadata);
-    CHECK_ERROR_RETURN_RET_LOG(dngMetadata == nullptr, ERR_IMAGE_DATA_ABNORMAL,
+    bool isDngMetadata = exifMetadata_->GetExifMetadataType() == MetadataType::DNG;
+    CHECK_ERROR_RETURN_RET_LOG(!isDngMetadata, ERR_IMAGE_DATA_ABNORMAL,
         "[%{public}s] Failed to cast to DngExifMetadata", __func__);
+    std::shared_ptr<DngExifMetadata> dngMetadata = std::static_pointer_cast<DngExifMetadata>(exifMetadata);
 
     value.key = key;
     return dngMetadata->GetExifProperty(value);
@@ -6879,9 +7132,10 @@ uint32_t ImageSource::GetTiffImagePropertyByType(const std::string &key, Metadat
     std::shared_ptr<ExifMetadata> exifMetadata = GetExifMetadata();
     CHECK_ERROR_RETURN_RET_LOG(exifMetadata == nullptr, ERR_IMAGE_DATA_ABNORMAL, "exifMetadata is nullptr");
 
-    std::shared_ptr<TiffExifMetadata> tiffMetadata = std::static_pointer_cast<TiffExifMetadata>(exifMetadata);
-    CHECK_ERROR_RETURN_RET_LOG(tiffMetadata == nullptr, ERR_IMAGE_DATA_ABNORMAL,
+    bool isTiffMetadata = exifMetadata_->GetExifMetadataType() == MetadataType::TIFF;
+    CHECK_ERROR_RETURN_RET_LOG(!isTiffMetadata, ERR_IMAGE_DATA_ABNORMAL,
         "[%{public}s] Failed to cast to TiffExifMetadata", __func__);
+    std::shared_ptr<TiffExifMetadata> tiffMetadata = std::static_pointer_cast<TiffExifMetadata>(exifMetadata);
 
     value.key = key;
     return tiffMetadata->GetExifProperty(value);

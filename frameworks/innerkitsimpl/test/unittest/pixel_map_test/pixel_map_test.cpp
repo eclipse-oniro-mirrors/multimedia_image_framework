@@ -19,6 +19,7 @@
 #include <cstdio>
 #include <future>
 #include <limits>
+#include <vector>
 
 #define protected public
 #define private public
@@ -8496,6 +8497,246 @@ HWTEST_F(PixelMapTest, WritePixelsWithFormat_RGB_565_To_ARGB_WithOffset_001, Tes
     Rect region = {0, 0, TEST_WIDTH, TEST_HEIGHT};
     RWPixelsOptions opts{src.get(), bufferSize, offset, stride, region, PixelFormat::RGB_565};
     EXPECT_EQ(pixelMap->WritePixels(opts), SUCCESS);
+}
+
+static constexpr uint32_t RGB888_BYTES = 3;
+static constexpr uint32_t RGBA8888_BYTES = 4;
+static constexpr uint8_t WRITE_RED = 0xFF;
+
+static std::unique_ptr<uint8_t[]> MakeRgbaRedRegion(const Rect &region, uint32_t &stride, uint64_t &bufferSize)
+{
+    stride = static_cast<uint32_t>(region.width) * RGBA8888_BYTES;
+    bufferSize = static_cast<uint64_t>(stride) * static_cast<uint64_t>(region.height);
+    auto src = std::make_unique<uint8_t[]>(bufferSize);
+    for (uint64_t i = 0; i < bufferSize; i += RGBA8888_BYTES) {
+        src[i] = WRITE_RED; // R
+        src[i + 1] = 0;     // G
+        src[i + 2] = 0;     // B
+        src[i + 3] = 0xFF;  // A
+    }
+    return src;
+}
+
+static bool InRegion(const Rect &region, int32_t x, int32_t y)
+{
+    return x >= region.left && x < region.left + region.width && y >= region.top && y < region.top + region.height;
+}
+
+// Checks an RGB_888 PixelMap: pixels in region are (r, g, b), others equal to before, row padding untouched.
+static void ExpectRgb888RegionWritten(PixelMap &pixelMap, const std::vector<uint8_t> &before, const Rect &region,
+    const uint8_t (&rgb)[RGB888_BYTES])
+{
+    const uint8_t *dst = pixelMap.GetPixels();
+    ASSERT_NE(dst, nullptr);
+    uint32_t stride = static_cast<uint32_t>(pixelMap.GetRowStride());
+    uint32_t rowBytes = static_cast<uint32_t>(pixelMap.GetWidth()) * RGB888_BYTES;
+    for (int32_t y = 0; y < pixelMap.GetHeight(); y++) {
+        for (uint32_t i = 0; i < stride; i++) {
+            uint64_t pos = static_cast<uint64_t>(y) * stride + i;
+            int32_t x = static_cast<int32_t>(i / RGB888_BYTES);
+            if (i < rowBytes && InRegion(region, x, y)) {
+                EXPECT_EQ(dst[pos], rgb[i % RGB888_BYTES]) << "x=" << x << " y=" << y;
+            } else {
+                EXPECT_EQ(dst[pos], before[pos]) << "outside region changed at byte " << pos;
+            }
+        }
+    }
+}
+
+static std::vector<uint8_t> CopyPixelMapBytes(PixelMap &pixelMap)
+{
+    const uint8_t *data = pixelMap.GetPixels();
+    uint64_t size = static_cast<uint64_t>(pixelMap.GetRowStride()) * static_cast<uint64_t>(pixelMap.GetHeight());
+    return std::vector<uint8_t>(data, data + size);
+}
+
+/**
+ * @tc.name: WritePixelsWithSourceFormat_RGB888Region_KeepOutside_001
+ * @tc.desc: Area write with an RGBA_8888 source to an RGB_888 PixelMap keeps the pixels outside the region
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, WritePixelsWithSourceFormat_RGB888Region_KeepOutside_001, TestSize.Level3)
+{
+    auto pixelMap = CreateBranchEditablePixelMap(PixelFormat::RGB_888, AlphaType::IMAGE_ALPHA_TYPE_OPAQUE);
+    ASSERT_NE(pixelMap, nullptr);
+    std::vector<uint8_t> before = CopyPixelMapBytes(*pixelMap);
+    Rect region = {1, 1, 2, 1};
+    uint32_t stride = 0;
+    uint64_t bufferSize = 0;
+    auto src = MakeRgbaRedRegion(region, stride, bufferSize);
+    RWPixelsOptions opts{src.get(), bufferSize, 0, stride, region, PixelFormat::RGBA_8888};
+    EXPECT_EQ(pixelMap->WritePixelsWithSourceFormat(opts), SUCCESS);
+    const uint8_t red[RGB888_BYTES] = {WRITE_RED, 0, 0};
+    ExpectRgb888RegionWritten(*pixelMap, before, region, red);
+}
+
+/**
+ * @tc.name: WritePixelsWithSourceFormat_RGB888Region_RGB888Source_001
+ * @tc.desc: Area write with a padded RGB_888 source to an RGB_888 PixelMap keeps the pixels outside the region
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, WritePixelsWithSourceFormat_RGB888Region_RGB888Source_001, TestSize.Level3)
+{
+    auto pixelMap = CreateBranchEditablePixelMap(PixelFormat::RGB_888, AlphaType::IMAGE_ALPHA_TYPE_OPAQUE);
+    ASSERT_NE(pixelMap, nullptr);
+    std::vector<uint8_t> before = CopyPixelMapBytes(*pixelMap);
+    Rect region = {0, 1, 3, 2};
+    uint32_t rowBytes = static_cast<uint32_t>(region.width) * RGB888_BYTES;
+    uint32_t stride = rowBytes + 4; // source row padding
+    uint64_t bufferSize = static_cast<uint64_t>(stride) * static_cast<uint64_t>(region.height);
+    auto src = std::make_unique<uint8_t[]>(bufferSize);
+    memset_s(src.get(), bufferSize, 0xEE, bufferSize);
+    for (int32_t y = 0; y < region.height; y++) {
+        for (uint32_t i = 0; i < rowBytes; i += RGB888_BYTES) {
+            uint8_t *pixel = src.get() + static_cast<uint64_t>(y) * stride + i;
+            pixel[0] = 0x10;
+            pixel[1] = 0x20;
+            pixel[2] = 0x30;
+        }
+    }
+    RWPixelsOptions opts{src.get(), bufferSize, 0, stride, region, PixelFormat::RGB_888};
+    EXPECT_EQ(pixelMap->WritePixelsWithSourceFormat(opts), SUCCESS);
+    const uint8_t expected[RGB888_BYTES] = {0x10, 0x20, 0x30};
+    ExpectRgb888RegionWritten(*pixelMap, before, region, expected);
+}
+
+/**
+ * @tc.name: WritePixelsWithSourceFormat_RGB888Region_DstStride_001
+ * @tc.desc: Area write to an RGB_888 PixelMap whose row stride has padding uses the real stride
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, WritePixelsWithSourceFormat_RGB888Region_DstStride_001, TestSize.Level3)
+{
+    auto pixelMap = std::make_unique<PixelMap>();
+    ImageInfo info;
+    info.size = {TEST_WIDTH, TEST_HEIGHT};
+    info.pixelFormat = PixelFormat::RGB_888;
+    info.colorSpace = ColorSpace::SRGB;
+    info.alphaType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
+    ASSERT_EQ(pixelMap->SetImageInfo(info), SUCCESS);
+    uint32_t paddedStride = static_cast<uint32_t>(TEST_WIDTH) * RGB888_BYTES + 5;
+    uint32_t size = paddedStride * static_cast<uint32_t>(TEST_HEIGHT);
+    void *buffer = malloc(size);
+    ASSERT_NE(buffer, nullptr);
+    uint8_t *bytes = static_cast<uint8_t *>(buffer);
+    for (uint32_t i = 0; i < size; i++) {
+        bytes[i] = static_cast<uint8_t>(i);
+    }
+    pixelMap->SetPixelsAddr(buffer, nullptr, size, AllocatorType::HEAP_ALLOC, nullptr);
+    pixelMap->rowStride_ = static_cast<int32_t>(paddedStride);
+    pixelMap->SetEditable(true);
+    std::vector<uint8_t> before = CopyPixelMapBytes(*pixelMap);
+    Rect region = {2, 1, 2, 2};
+    uint32_t stride = 0;
+    uint64_t bufferSize = 0;
+    auto src = MakeRgbaRedRegion(region, stride, bufferSize);
+    RWPixelsOptions opts{src.get(), bufferSize, 0, stride, region, PixelFormat::RGBA_8888};
+    EXPECT_EQ(pixelMap->WritePixelsWithSourceFormat(opts), SUCCESS);
+    const uint8_t red[RGB888_BYTES] = {WRITE_RED, 0, 0};
+    ExpectRgb888RegionWritten(*pixelMap, before, region, red);
+}
+
+/**
+ * @tc.name: WritePixelsWithSourceFormat_UnsupportedTarget_001
+ * @tc.desc: Writing to an ALPHA_8 PixelMap is rejected with ERR_IMAGE_COLOR_CONVERT, also when not editable
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, WritePixelsWithSourceFormat_UnsupportedTarget_001, TestSize.Level3)
+{
+    auto pixelMap = CreateBranchEditablePixelMap(PixelFormat::ALPHA_8, AlphaType::IMAGE_ALPHA_TYPE_PREMUL);
+    ASSERT_NE(pixelMap, nullptr);
+    Rect region = {0, 0, TEST_WIDTH, TEST_HEIGHT};
+    uint32_t stride = 0;
+    uint64_t bufferSize = 0;
+    auto src = MakeRgbaRedRegion(region, stride, bufferSize);
+    RWPixelsOptions opts{src.get(), bufferSize, 0, stride, region, PixelFormat::RGBA_8888};
+    std::vector<uint8_t> before = CopyPixelMapBytes(*pixelMap);
+    EXPECT_EQ(pixelMap->WritePixelsWithSourceFormat(opts), ERR_IMAGE_COLOR_CONVERT);
+    EXPECT_EQ(pixelMap->WritePixels(src.get(), bufferSize, PixelFormat::RGBA_8888), ERR_IMAGE_COLOR_CONVERT);
+    EXPECT_EQ(CopyPixelMapBytes(*pixelMap), before);
+    pixelMap->SetEditable(false);
+    EXPECT_EQ(pixelMap->WritePixelsWithSourceFormat(opts), ERR_IMAGE_COLOR_CONVERT);
+}
+
+/**
+ * @tc.name: WritePixelsWithSourceFormat_AstcFlag_001
+ * @tc.desc: A PixelMap marked as ASTC is rejected even if its pixel format is in the target list
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, WritePixelsWithSourceFormat_AstcFlag_001, TestSize.Level3)
+{
+    auto pixelMap = CreateBranchEditablePixelMap(PixelFormat::RGBA_8888, AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
+    ASSERT_NE(pixelMap, nullptr);
+    pixelMap->SetAstc(true);
+    Rect region = {0, 0, TEST_WIDTH, TEST_HEIGHT};
+    uint32_t stride = 0;
+    uint64_t bufferSize = 0;
+    auto src = MakeRgbaRedRegion(region, stride, bufferSize);
+    RWPixelsOptions opts{src.get(), bufferSize, 0, stride, region, PixelFormat::RGBA_8888};
+    std::vector<uint8_t> before = CopyPixelMapBytes(*pixelMap);
+    EXPECT_EQ(pixelMap->WritePixelsWithSourceFormat(opts), ERR_IMAGE_COLOR_CONVERT);
+    EXPECT_EQ(CopyPixelMapBytes(*pixelMap), before);
+    pixelMap->SetAstc(false);
+}
+
+/**
+ * @tc.name: WritePixelsWithSourceFormat_UnsupportedSource_001
+ * @tc.desc: An ALPHA_8 source is rejected with ERR_IMAGE_INVALID_PARAMETER
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, WritePixelsWithSourceFormat_UnsupportedSource_001, TestSize.Level3)
+{
+    auto pixelMap = CreateBranchEditablePixelMap(PixelFormat::RGBA_8888, AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
+    ASSERT_NE(pixelMap, nullptr);
+    uint8_t src[TEST_WIDTH * TEST_HEIGHT] = {0};
+    Rect region = {0, 0, TEST_WIDTH, TEST_HEIGHT};
+    RWPixelsOptions opts{src, sizeof(src), 0, TEST_WIDTH, region, PixelFormat::ALPHA_8};
+    EXPECT_EQ(pixelMap->WritePixelsWithSourceFormat(opts), ERR_IMAGE_INVALID_PARAMETER);
+}
+
+/**
+ * @tc.name: WritePixelsWithSourceFormat_RGBA1010102Target_001
+ * @tc.desc: Area write to an RGBA_1010102 PixelMap succeeds
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, WritePixelsWithSourceFormat_RGBA1010102Target_001, TestSize.Level3)
+{
+    auto pixelMap = CreateBranchEditablePixelMap(PixelFormat::RGBA_1010102, AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
+    ASSERT_NE(pixelMap, nullptr);
+    Rect region = {1, 1, 2, 2};
+    uint32_t stride = 0;
+    uint64_t bufferSize = 0;
+    auto src = MakeRgbaRedRegion(region, stride, bufferSize);
+    RWPixelsOptions opts{src.get(), bufferSize, 0, stride, region, PixelFormat::RGBA_8888};
+    EXPECT_EQ(pixelMap->WritePixelsWithSourceFormat(opts), SUCCESS);
+}
+
+/**
+ * @tc.name: WritePixelsLegacy_RGB888Region_Unchanged_001
+ * @tc.desc: The legacy area write to an RGB_888 PixelMap still produces the same output as WritePixelsConvert
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, WritePixelsLegacy_RGB888Region_Unchanged_001, TestSize.Level3)
+{
+    auto pixelMap = CreateBranchEditablePixelMap(PixelFormat::RGB_888, AlphaType::IMAGE_ALPHA_TYPE_OPAQUE);
+    ASSERT_NE(pixelMap, nullptr);
+    std::vector<uint8_t> expected = CopyPixelMapBytes(*pixelMap);
+    Rect region = {1, 1, 2, 1};
+    uint32_t stride = static_cast<uint32_t>(region.width) * RGBA8888_BYTES;
+    uint64_t bufferSize = static_cast<uint64_t>(stride) * static_cast<uint64_t>(region.height);
+    auto src = std::make_unique<uint8_t[]>(bufferSize);
+    memset_s(src.get(), bufferSize, 0x40, bufferSize);
+    ImageInfo dstInfo;
+    pixelMap->GetImageInfo(dstInfo);
+    ImageInfo srcInfo = dstInfo;
+    srcInfo.size = {region.width, region.height};
+    srcInfo.pixelFormat = PixelFormat::BGRA_8888;
+    srcInfo.alphaType = AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL;
+    Position pos = {region.left, region.top};
+    ASSERT_TRUE(PixelConvertAdapter::WritePixelsConvert(src.get(), stride, srcInfo, expected.data(), pos,
+        static_cast<uint32_t>(pixelMap->GetRowStride()), dstInfo));
+    EXPECT_EQ(pixelMap->WritePixels(src.get(), bufferSize, 0, stride, region), SUCCESS);
+    EXPECT_EQ(CopyPixelMapBytes(*pixelMap), expected);
 }
 
 /**

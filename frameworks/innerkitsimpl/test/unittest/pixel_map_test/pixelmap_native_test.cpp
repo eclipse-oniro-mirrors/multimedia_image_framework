@@ -2567,6 +2567,96 @@ HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_WritePixelsToAreaWithPixelFormat_Nu
     GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_WritePixelsToAreaWithPixelFormat_NullParam end";
 }
 
+static OH_PixelmapNative* CreateEditablePixelmap2x2(PIXEL_FORMAT format)
+{
+    // 2x2 BGRA_8888 source, every pixel B=0x10, G=0x20, R=0x30, A=0xFF.
+    uint8_t initData[] = {0x10, 0x20, 0x30, 0xFF, 0x10, 0x20, 0x30, 0xFF,
+        0x10, 0x20, 0x30, 0xFF, 0x10, 0x20, 0x30, 0xFF};
+    OH_Pixelmap_InitializationOptions* opts = nullptr;
+    if (OH_PixelmapInitializationOptions_Create(&opts) != IMAGE_SUCCESS) {
+        return nullptr;
+    }
+    OH_PixelmapInitializationOptions_SetWidth(opts, 2);
+    OH_PixelmapInitializationOptions_SetHeight(opts, 2);
+    OH_PixelmapInitializationOptions_SetPixelFormat(opts, format);
+    OH_PixelmapInitializationOptions_SetEditable(opts, true);
+    OH_PixelmapNative* pixelMap = nullptr;
+    if (OH_PixelmapNative_CreatePixelmap(initData, sizeof(initData), opts, &pixelMap) != IMAGE_SUCCESS) {
+        pixelMap = nullptr;
+    }
+    OH_PixelmapInitializationOptions_Release(opts);
+    return pixelMap;
+}
+
+/**
+ * @tc.name: OH_PixelmapNative_WritePixelsWithPixelFormat_UnsupportedTarget
+ * @tc.desc: Writing with a source pixel format to an ALPHA_8 PixelMap returns IMAGE_UNSUPPORTED_CONVERSION
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_WritePixelsWithPixelFormat_UnsupportedTarget, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_WritePixelsWithPixelFormat_UnsupportedTarget start";
+    OH_PixelmapNative* pixelMap = CreateEditablePixelmap2x2(PIXEL_FORMAT_ALPHA_8);
+    ASSERT_NE(pixelMap, nullptr);
+    uint8_t source[16] = {0};
+    EXPECT_EQ(OH_PixelmapNative_WritePixelsWithPixelFormat(pixelMap, source, sizeof(source),
+        PIXEL_FORMAT_RGBA_8888), IMAGE_UNSUPPORTED_CONVERSION);
+    Image_PositionArea area = {
+        .pixels = source,
+        .pixelsSize = sizeof(source),
+        .offset = 0,
+        .stride = 8,
+        .region = {0, 0, 2, 2}
+    };
+    EXPECT_EQ(OH_PixelmapNative_WritePixelsToAreaWithPixelFormat(pixelMap, &area,
+        PIXEL_FORMAT_RGBA_8888), IMAGE_UNSUPPORTED_CONVERSION);
+    OH_PixelmapNative_Destroy(&pixelMap);
+    GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_WritePixelsWithPixelFormat_UnsupportedTarget end";
+}
+
+/**
+ * @tc.name: OH_PixelmapNative_WritePixelsToAreaWithPixelFormat_RGB888KeepOutside
+ * @tc.desc: Area write to an RGB_888 PixelMap keeps the pixels outside the region
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_WritePixelsToAreaWithPixelFormat_RGB888KeepOutside, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_WritePixelsToAreaWithPixelFormat_RGB888KeepOutside start";
+    OH_PixelmapNative* pixelMap = CreateEditablePixelmap2x2(PIXEL_FORMAT_RGB_888);
+    ASSERT_NE(pixelMap, nullptr);
+    constexpr size_t rgbBytes = 2 * 2 * 3;
+    uint8_t before[rgbBytes] = {0};
+    size_t size = sizeof(before);
+    ASSERT_EQ(OH_PixelmapNative_ReadPixels(pixelMap, before, &size), IMAGE_SUCCESS);
+
+    uint8_t red[] = {0xFF, 0x00, 0x00, 0xFF}; // RGBA_8888
+    Image_PositionArea area = {
+        .pixels = red,
+        .pixelsSize = sizeof(red),
+        .offset = 0,
+        .stride = sizeof(red),
+        .region = {1, 1, 1, 1}
+    };
+    ASSERT_EQ(OH_PixelmapNative_WritePixelsToAreaWithPixelFormat(pixelMap, &area,
+        PIXEL_FORMAT_RGBA_8888), IMAGE_SUCCESS);
+
+    uint8_t after[rgbBytes] = {0};
+    size = sizeof(after);
+    ASSERT_EQ(OH_PixelmapNative_ReadPixels(pixelMap, after, &size), IMAGE_SUCCESS);
+    constexpr size_t writtenPixel = (1 * 2 + 1) * 3;
+    for (size_t i = 0; i < rgbBytes; i++) {
+        if (i >= writtenPixel && i < writtenPixel + 3) {
+            continue;
+        }
+        EXPECT_EQ(after[i], before[i]) << "outside region changed at byte " << i;
+    }
+    EXPECT_EQ(after[writtenPixel], 0xFF);
+    EXPECT_EQ(after[writtenPixel + 1], 0x00);
+    EXPECT_EQ(after[writtenPixel + 2], 0x00);
+    OH_PixelmapNative_Destroy(&pixelMap);
+    GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_WritePixelsToAreaWithPixelFormat_RGB888KeepOutside end";
+}
+
 /**
  * @tc.name: OH_PixelmapNative_GetImageInfo_Success
  * @tc.desc: Test OH_PixelmapNative_GetImageInfo with valid inputs

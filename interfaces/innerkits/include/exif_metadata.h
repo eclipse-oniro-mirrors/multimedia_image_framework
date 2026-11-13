@@ -62,6 +62,10 @@ public:
     {
         return MetadataType::EXIF;
     }
+    virtual MetadataType GetExifMetadataType() const
+    {
+        return MetadataType::EXIF;
+    }
     bool GetDataSize(uint32_t &size, bool withThumbnail = true, bool isJpeg = false);
     bool HasThumbnail();
     bool GetThumbnail(uint8_t *&data, uint32_t &size);
@@ -75,6 +79,8 @@ public:
     uint32_t GetBlob(uint32_t bufferSize, uint8_t *dst) override;
     uint32_t SetBlob(const uint8_t *source, const uint32_t bufferSize) override;
     bool IsSpecialHwKey(const std::string &key) const;
+    bool GetContentIdentifier(std::string &uuid);
+    bool SetContentIdentifier(const std::string &uuid);
     static PropertyValueType GetPropertyValueType(const std::string& key);
     static std::shared_ptr<ExifMetadata> InitExifMetadata();
     static const std::map<std::string, PropertyValueType>& GetExifMetadataMap();

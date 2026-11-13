@@ -46,6 +46,13 @@ public:
                                                     const int originalFd = METADATA_STREAM_INVALID_FD);
     static std::shared_ptr<MetadataAccessor> Create(const std::string &path, uint32_t &error,
                                                     const std::string &originalPath = METADATA_STREAM_INVALID_PATH);
+#if !defined(CROSS_PLATFORM) && !defined(_WIN32) && !defined(_APPLE)
+    // Reads only the preview image Orientation of a RAW file. It is reserved for the NAPI
+    // getImageProperty("PreviewOrientation") request and is not part of the public property keys.
+    static uint32_t GetRawPreviewOrientation(const DataInfo &dataInfo, std::string &orientation,
+                                             int originalFd = METADATA_STREAM_INVALID_FD,
+                                             const std::string &originalPath = METADATA_STREAM_INVALID_PATH);
+#endif
 
 private:
     static std::shared_ptr<MetadataAccessor> Create(std::shared_ptr<MetadataStream> &stream, uint32_t &error);

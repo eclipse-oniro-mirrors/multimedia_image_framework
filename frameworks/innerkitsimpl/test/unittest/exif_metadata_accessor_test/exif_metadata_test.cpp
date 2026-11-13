@@ -50,6 +50,58 @@ static const std::string MAKER_NOTE_TAG = "MakerNote";
 static const uint32_t TAG_VALUE_SIZE = 1024;
 static const uint32_t MAX_TAG_VALUE_SIZE_FOR_STR = 64 * 1024;
 static const uint32_t TERMINATOR_SIZE = 1;
+static const char APPLE_MNOTE_HEADER[] = { 'A', 'p', 'p', 'l', 'e', ' ', 'i', 'O', 'S', '\0', '\x00', '\x01' };
+static const size_t APPLE_MNOTE_HEADER_LEN = 12;
+static const uint16_t APPLE_TAG_CONTENT_IDENTIFIER = 0x0011;
+static const uint16_t APPLE_TAG_VENDOR_FAKE = 0x0002;
+static const std::string CONTENT_IDENTIFIER_UUID = "8f1d2b3c-4a5e-4f70-8a9b-0c1d2e3f4a5b";
+static const std::string CONTENT_IDENTIFIER_UUID_NEW = "123e4567-e89b-42d3-a456-426614174000";
+
+static void AppendMnoteU16(std::string &out, uint16_t value, bool littleEndian)
+{
+    for (size_t i = 0; i < sizeof(uint16_t); i++) {
+        size_t shift = littleEndian ? i * 8 : (sizeof(uint16_t) - 1 - i) * 8;
+        out.push_back(static_cast<char>((value >> shift) & 0xFF));
+    }
+}
+
+static void AppendMnoteU32(std::string &out, uint32_t value, bool littleEndian)
+{
+    for (size_t i = 0; i < sizeof(uint32_t); i++) {
+        size_t shift = littleEndian ? i * 8 : (sizeof(uint32_t) - 1 - i) * 8;
+        out.push_back(static_cast<char>((value >> shift) & 0xFF));
+    }
+}
+
+// Build an apple maker note with the same layout as exiftool Apple.pm: 12-byte header,
+// byte order, entry count, 12-byte ASCII entries, next-IFD field and out-of-line value area.
+// All value offsets are relative to the maker note start.
+static std::string BuildAppleMnote(const std::vector<std::pair<uint16_t, std::string>> &entries,
+    bool littleEndian)
+{
+    std::string out(APPLE_MNOTE_HEADER, APPLE_MNOTE_HEADER_LEN);
+    out += littleEndian ? "II" : "MM";
+    AppendMnoteU16(out, static_cast<uint16_t>(entries.size()), littleEndian);
+    const uint32_t valueAreaOffset = static_cast<uint32_t>(APPLE_MNOTE_HEADER_LEN + 2 * sizeof(uint16_t) +
+        entries.size() * 12 + 4);
+    std::string valueArea;
+    for (const auto &item : entries) {
+        AppendMnoteU16(out, item.first, littleEndian);
+        AppendMnoteU16(out, EXIF_FORMAT_ASCII, littleEndian);
+        AppendMnoteU32(out, static_cast<uint32_t>(item.second.size()), littleEndian);
+        if (item.second.size() <= sizeof(uint32_t)) {
+            std::string field = item.second;
+            field.resize(sizeof(uint32_t), '\0');
+            out += field;
+        } else {
+            AppendMnoteU32(out, valueAreaOffset + static_cast<uint32_t>(valueArea.size()), littleEndian);
+            valueArea += item.second;
+        }
+    }
+    AppendMnoteU32(out, 0, littleEndian);
+    out += valueArea;
+    return out;
+}
 
 class ExifMetadataTest : public testing::Test {
 public:
@@ -2481,6 +2533,283 @@ HWTEST_F(ExifMetadataTest, GetValueByTypeTest008, TestSize.Level3)
     ExifMetadata meta(exifData);
     MetadataValue result;
     EXPECT_EQ(ERR_IMAGE_DECODE_EXIF_UNSUPPORT, meta.GetValueByType("HwMnoteIsXmageSupported", result));
+}
+
+/**
+ * @tc.name: GetContentIdentifierTest001
+ * @tc.desc: Verify GetContentIdentifier fails when there is no maker note entry.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExifMetadataTest, GetContentIdentifierTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ExifMetadataTest: GetContentIdentifierTest001 start";
+    auto exifData = exif_data_new();
+    ASSERT_NE(exifData, nullptr);
+    ExifMetadata metadata(exifData);
+    std::string uuid;
+    ASSERT_FALSE(metadata.GetContentIdentifier(uuid));
+    ASSERT_TRUE(uuid.empty());
+    GTEST_LOG_(INFO) << "ExifMetadataTest: GetContentIdentifierTest001 end";
+}
+
+/**
+ * @tc.name: GetContentIdentifierTest002
+ * @tc.desc: Verify GetContentIdentifier fails when maker note is not an apple mnote.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExifMetadataTest, GetContentIdentifierTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ExifMetadataTest: GetContentIdentifierTest002 start";
+    auto exifData = exif_data_new();
+    ASSERT_NE(exifData, nullptr);
+    ExifMetadata metadata(exifData);
+    std::string hwValue = std::string{HUAWEI_HEADER} + "MOCKVALUE";
+    ASSERT_TRUE(metadata.SetMakerNoteValue(hwValue));
+    std::string uuid;
+    ASSERT_FALSE(metadata.GetContentIdentifier(uuid));
+    ASSERT_TRUE(uuid.empty());
+    GTEST_LOG_(INFO) << "ExifMetadataTest: GetContentIdentifierTest002 end";
+}
+
+/**
+ * @tc.name: GetContentIdentifierTest003
+ * @tc.desc: Verify GetContentIdentifier fails when apple mnote has no content identifier tag.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExifMetadataTest, GetContentIdentifierTest003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ExifMetadataTest: GetContentIdentifierTest003 start";
+    auto exifData = exif_data_new();
+    ASSERT_NE(exifData, nullptr);
+    ExifMetadata metadata(exifData);
+    std::string mnote = BuildAppleMnote({{APPLE_TAG_VENDOR_FAKE, "VEND"}}, false);
+    ASSERT_TRUE(metadata.SetMakerNoteValue(mnote));
+    std::string uuid;
+    ASSERT_FALSE(metadata.GetContentIdentifier(uuid));
+    ASSERT_TRUE(uuid.empty());
+    GTEST_LOG_(INFO) << "ExifMetadataTest: GetContentIdentifierTest003 end";
+}
+
+/**
+ * @tc.name: GetContentIdentifierTest004
+ * @tc.desc: Verify GetContentIdentifier is robust against corrupt apple mnote inputs.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExifMetadataTest, GetContentIdentifierTest004, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ExifMetadataTest: GetContentIdentifierTest004 start";
+    auto exifData = exif_data_new();
+    ASSERT_NE(exifData, nullptr);
+    ExifMetadata metadata(exifData);
+    std::string validMnote = BuildAppleMnote({{APPLE_TAG_CONTENT_IDENTIFIER,
+        CONTENT_IDENTIFIER_UUID + '\0'}}, true);
+
+    // wrong vendor header
+    std::string notApple = validMnote;
+    notApple.replace(0, 5, "Samsu");
+    ASSERT_TRUE(metadata.SetMakerNoteValue(notApple));
+    std::string uuid;
+    ASSERT_FALSE(metadata.GetContentIdentifier(uuid));
+
+    // invalid byte order
+    std::string badOrder = validMnote;
+    badOrder[APPLE_MNOTE_HEADER_LEN] = 'X';
+    badOrder[APPLE_MNOTE_HEADER_LEN + 1] = 'X';
+    ASSERT_TRUE(metadata.SetMakerNoteValue(badOrder));
+    ASSERT_FALSE(metadata.GetContentIdentifier(uuid));
+
+    // entry area truncated
+    std::string truncated = validMnote.substr(0, validMnote.size() - 20);
+    ASSERT_TRUE(metadata.SetMakerNoteValue(truncated));
+    ASSERT_FALSE(metadata.GetContentIdentifier(uuid));
+
+    // data smaller than the fixed mnote header
+    std::string tooSmall = validMnote.substr(0, 10);
+    ASSERT_TRUE(metadata.SetMakerNoteValue(tooSmall));
+    ASSERT_FALSE(metadata.GetContentIdentifier(uuid));
+
+    // header only, entry count claims entries beyond the buffer
+    std::string countLiars(std::string(APPLE_MNOTE_HEADER, APPLE_MNOTE_HEADER_LEN) + "II");
+    AppendMnoteU16(countLiars, 0x00FF, true);
+    ASSERT_TRUE(metadata.SetMakerNoteValue(countLiars));
+    ASSERT_FALSE(metadata.GetContentIdentifier(uuid));
+    GTEST_LOG_(INFO) << "ExifMetadataTest: GetContentIdentifierTest004 end";
+}
+
+/**
+ * @tc.name: GetContentIdentifierTest005
+ * @tc.desc: Verify GetContentIdentifier fails when exifData is null.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExifMetadataTest, GetContentIdentifierTest005, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ExifMetadataTest: GetContentIdentifierTest005 start";
+    ExifMetadata metadataNull;
+    std::string uuid;
+    ASSERT_FALSE(metadataNull.GetContentIdentifier(uuid));
+    ASSERT_FALSE(metadataNull.SetContentIdentifier(CONTENT_IDENTIFIER_UUID));
+    GTEST_LOG_(INFO) << "ExifMetadataTest: GetContentIdentifierTest005 end";
+}
+
+/**
+ * @tc.name: GetContentIdentifierTest006
+ * @tc.desc: Verify GetContentIdentifier ignores a content identifier tag stored in a
+ *           non-ASCII format (LONG/BYTE) and a follow-up Set replaces it.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExifMetadataTest, GetContentIdentifierTest006, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ExifMetadataTest: GetContentIdentifierTest006 start";
+    auto exifData = exif_data_new();
+    ASSERT_NE(exifData, nullptr);
+    ExifMetadata metadata(exifData);
+
+    // tag 0x0011 stored as LONG with a 4-byte binary inline payload
+    std::string longMnote(std::string(APPLE_MNOTE_HEADER, APPLE_MNOTE_HEADER_LEN) + "MM");
+    AppendMnoteU16(longMnote, 1, false);
+    AppendMnoteU16(longMnote, APPLE_TAG_CONTENT_IDENTIFIER, false);
+    AppendMnoteU16(longMnote, EXIF_FORMAT_LONG, false);
+    AppendMnoteU32(longMnote, 1, false);
+    longMnote += std::string("\x12\x34\x56\x78", 4);
+    AppendMnoteU32(longMnote, 0, false);
+    ASSERT_TRUE(metadata.SetMakerNoteValue(longMnote));
+    std::string uuid = "stale";
+    ASSERT_FALSE(metadata.GetContentIdentifier(uuid));
+    ASSERT_TRUE(uuid.empty());
+
+    // tag 0x0011 stored as BYTE with the same payload length as a real uuid
+    std::string byteMnote = BuildAppleMnote({{APPLE_TAG_CONTENT_IDENTIFIER,
+        CONTENT_IDENTIFIER_UUID + '\0'}}, true);
+    // entries start after header + byte order + entry count; the format field is at entry + 2
+    const size_t entryFormatOffset = APPLE_MNOTE_HEADER_LEN + 2 * sizeof(uint16_t) + 2;
+    ASSERT_EQ(static_cast<uint8_t>(byteMnote[entryFormatOffset]), EXIF_FORMAT_ASCII);
+    byteMnote[entryFormatOffset] = static_cast<char>(EXIF_FORMAT_BYTE);
+    ASSERT_TRUE(metadata.SetMakerNoteValue(byteMnote));
+    ASSERT_FALSE(metadata.GetContentIdentifier(uuid));
+    ASSERT_TRUE(uuid.empty());
+
+    // the malformed entry is treated as absent, so a follow-up Set writes a valid identifier
+    ASSERT_TRUE(metadata.SetContentIdentifier(CONTENT_IDENTIFIER_UUID));
+    ASSERT_TRUE(metadata.GetContentIdentifier(uuid));
+    ASSERT_EQ(uuid, CONTENT_IDENTIFIER_UUID);
+    GTEST_LOG_(INFO) << "ExifMetadataTest: GetContentIdentifierTest006 end";
+}
+
+/**
+ * @tc.name: SetAndGetContentIdentifierTest001
+ * @tc.desc: Verify SetContentIdentifier builds a readable apple mnote when no mnote exists.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExifMetadataTest, SetAndGetContentIdentifierTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ExifMetadataTest: SetAndGetContentIdentifierTest001 start";
+    auto exifData = exif_data_new();
+    ASSERT_NE(exifData, nullptr);
+    ExifMetadata metadata(exifData);
+    ASSERT_TRUE(metadata.SetContentIdentifier(CONTENT_IDENTIFIER_UUID));
+    std::string uuid;
+    ASSERT_TRUE(metadata.GetContentIdentifier(uuid));
+    ASSERT_EQ(uuid, CONTENT_IDENTIFIER_UUID);
+    GTEST_LOG_(INFO) << "ExifMetadataTest: SetAndGetContentIdentifierTest001 end";
+}
+
+/**
+ * @tc.name: SetContentIdentifierTest001
+ * @tc.desc: Verify SetContentIdentifier rejects empty and overlong uuid.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExifMetadataTest, SetContentIdentifierTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ExifMetadataTest: SetContentIdentifierTest001 start";
+    auto exifData = exif_data_new();
+    ASSERT_NE(exifData, nullptr);
+    ExifMetadata metadata(exifData);
+    ASSERT_FALSE(metadata.SetContentIdentifier(""));
+    std::string overlong(MAX_TAG_VALUE_SIZE_FOR_STR - TERMINATOR_SIZE, 'a');
+    ASSERT_FALSE(metadata.SetContentIdentifier(overlong));
+    std::string uuid;
+    ASSERT_FALSE(metadata.GetContentIdentifier(uuid));
+    GTEST_LOG_(INFO) << "ExifMetadataTest: SetContentIdentifierTest001 end";
+}
+
+/**
+ * @tc.name: SetContentIdentifierTest002
+ * @tc.desc: Verify SetContentIdentifier merges into a valid apple mnote and keeps other entries.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExifMetadataTest, SetContentIdentifierTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ExifMetadataTest: SetContentIdentifierTest002 start";
+    auto exifData = exif_data_new();
+    ASSERT_NE(exifData, nullptr);
+    ExifMetadata metadata(exifData);
+    std::string mnote = BuildAppleMnote({{APPLE_TAG_VENDOR_FAKE, "VEND"},
+        {APPLE_TAG_CONTENT_IDENTIFIER, CONTENT_IDENTIFIER_UUID + '\0'}}, true);
+    ASSERT_TRUE(metadata.SetMakerNoteValue(mnote));
+
+    ASSERT_TRUE(metadata.SetContentIdentifier(CONTENT_IDENTIFIER_UUID_NEW));
+    std::string uuid;
+    ASSERT_TRUE(metadata.GetContentIdentifier(uuid));
+    ASSERT_EQ(uuid, CONTENT_IDENTIFIER_UUID_NEW);
+
+    // the vendor entry and the little-endian byte order of the original mnote survive the rebuild
+    std::string rebuilt;
+    ASSERT_EQ(metadata.GetValue(MAKER_NOTE_TAG, rebuilt), SUCCESS);
+    ASSERT_GT(rebuilt.size(), APPLE_MNOTE_HEADER_LEN + sizeof(uint16_t));
+    ASSERT_EQ(rebuilt.compare(0, APPLE_MNOTE_HEADER_LEN, APPLE_MNOTE_HEADER, APPLE_MNOTE_HEADER_LEN), 0);
+    ASSERT_EQ(rebuilt[APPLE_MNOTE_HEADER_LEN], 'I');
+    ASSERT_EQ(rebuilt[APPLE_MNOTE_HEADER_LEN + 1], 'I');
+    ASSERT_NE(rebuilt.find("VEND"), std::string::npos);
+    ASSERT_EQ(rebuilt.find(CONTENT_IDENTIFIER_UUID + '\0'), std::string::npos);
+    GTEST_LOG_(INFO) << "ExifMetadataTest: SetContentIdentifierTest002 end";
+}
+
+/**
+ * @tc.name: SetContentIdentifierTest003
+ * @tc.desc: Verify SetContentIdentifier fails when the existing apple mnote is invalid.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExifMetadataTest, SetContentIdentifierTest003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ExifMetadataTest: SetContentIdentifierTest003 start";
+    auto exifData = exif_data_new();
+    ASSERT_NE(exifData, nullptr);
+    ExifMetadata metadata(exifData);
+    // apple header and byte order claim one entry, but the entry area is missing
+    std::string broken(std::string(APPLE_MNOTE_HEADER, APPLE_MNOTE_HEADER_LEN) + "II");
+    AppendMnoteU16(broken, 1, true);
+    ASSERT_TRUE(metadata.SetMakerNoteValue(broken));
+    ASSERT_FALSE(metadata.SetContentIdentifier(CONTENT_IDENTIFIER_UUID));
+    GTEST_LOG_(INFO) << "ExifMetadataTest: SetContentIdentifierTest003 end";
+}
+
+/**
+ * @tc.name: SetContentIdentifierTest004
+ * @tc.desc: Verify SetContentIdentifier rebuilds a non-apple mnote from scratch.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExifMetadataTest, SetContentIdentifierTest004, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ExifMetadataTest: SetContentIdentifierTest004 start";
+    auto exifData = exif_data_new();
+    ASSERT_NE(exifData, nullptr);
+    ExifMetadata metadata(exifData);
+    std::string hwValue = std::string{HUAWEI_HEADER} + "MOCKVALUE";
+    ASSERT_TRUE(metadata.SetMakerNoteValue(hwValue));
+
+    ASSERT_TRUE(metadata.SetContentIdentifier(CONTENT_IDENTIFIER_UUID));
+    std::string uuid;
+    ASSERT_TRUE(metadata.GetContentIdentifier(uuid));
+    ASSERT_EQ(uuid, CONTENT_IDENTIFIER_UUID);
+
+    std::string rebuilt;
+    ASSERT_EQ(metadata.GetValue(MAKER_NOTE_TAG, rebuilt), SUCCESS);
+
+    ASSERT_EQ(rebuilt.compare(0, APPLE_MNOTE_HEADER_LEN, APPLE_MNOTE_HEADER, APPLE_MNOTE_HEADER_LEN), 0);
+    ASSERT_EQ(rebuilt[APPLE_MNOTE_HEADER_LEN], 'M');
+    ASSERT_EQ(rebuilt[APPLE_MNOTE_HEADER_LEN + 1], 'M');
+    ASSERT_EQ(rebuilt.find("MOCKVALUE"), std::string::npos);
+    GTEST_LOG_(INFO) << "ExifMetadataTest: SetContentIdentifierTest004 end";
 }
 } // namespace Multimedia
 } // namespace OHOS

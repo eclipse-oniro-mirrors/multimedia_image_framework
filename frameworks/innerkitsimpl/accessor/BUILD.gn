@@ -65,6 +65,7 @@ ohos_shared_library("image_accessor") {
       "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/tiff_exif_metadata_accessor.cpp",
       "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/webp_exif_metadata_accessor.cpp",
       "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/png_metadata_parser.cpp",
+      "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/raw_preview_orientation.cpp",
       "${image_subsystem}/frameworks/innerkitsimpl/stream/src/buffer_packer_stream.cpp",
       "${image_subsystem}/frameworks/innerkitsimpl/stream/src/buffer_source_stream.cpp",
       "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/xmp/xmp_buffer_io.cpp",
@@ -108,6 +109,7 @@ ohos_shared_library("image_accessor") {
     "graphic_surface:surface",
     "libpng:libpng",
     "xmp_toolkit_sdk:xmpsdk",
+    "skia:piexm133"
   ]
 
   if (has_libtiff) {

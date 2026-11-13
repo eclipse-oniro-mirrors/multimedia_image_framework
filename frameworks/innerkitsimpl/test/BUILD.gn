@@ -49,6 +49,7 @@ ohos_unittest("pixelmaptest") {
     "$image_subsystem/frameworks/kits/js/common/ndk:image_ndk",
     "$image_subsystem/frameworks/kits/js/common/ndk:image_source",
     "$image_subsystem/frameworks/kits/js/common/pixelmap_ndk:pixelmap",
+    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/pixelconverter:pixelconvertadapter",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils:image_utils",
     "//foundation/multimedia/image_framework/interfaces/innerkits:image_native",
   ]
@@ -379,6 +380,7 @@ ohos_unittest("imagesourcetest") {
   if (DUAL_ADAPTER) {
     sources += [
       "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_source_raw_test.cpp",
+      "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_source_raw_preview_orientation_test.cpp",
       "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_source_wbmp_test.cpp",
     ]
   }

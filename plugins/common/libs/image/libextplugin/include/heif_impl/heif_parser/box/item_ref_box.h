@@ -34,7 +34,9 @@ public:
 
     std::vector<heif_item_id> GetReferences(heif_item_id itemId, uint32_t ref_type) const;
 
-    std::vector<Reference> GetReferencesFrom(heif_item_id itemId) const;
+    // Returns the matching references without copying them. The pointers stay valid as long as the
+    // parsed box is alive, which is the case for every parser side query.
+    std::vector<const Reference *> GetReferencesFrom(heif_item_id itemId) const;
 
     void AddReferences(heif_item_id from_id, uint32_t type, const std::vector<heif_item_id> &to_ids);
 

@@ -68,7 +68,7 @@ static Media::PixelFormat ParsePixelFormat(PixelMapFormat const& etsFormat)
     return format;
 }
 
-static bool IsSupportedWritePixelFormat(Media::PixelFormat format)
+static bool IsSupportedWriteSourceFormat(Media::PixelFormat format)
 {
     return format == Media::PixelFormat::BGRA_8888 ||
            format == Media::PixelFormat::RGBA_8888 ||
@@ -472,7 +472,8 @@ PixelMapImpl::PixelMapImpl(std::shared_ptr<Media::PixelMap> pixelMap)
 
 PixelMapImpl::PixelMapImpl(int64_t aniPtr)
 {
-    std::unique_ptr<Media::PixelMapTaiheAni> pixelMapAni(reinterpret_cast<Media::PixelMapTaiheAni*>(aniPtr));
+    // The wrapper is owned by PixelMapTaiheAni::CreateEtsPixelMap; only copy the PixelMap reference here.
+    Media::PixelMapTaiheAni* pixelMapAni = reinterpret_cast<Media::PixelMapTaiheAni*>(aniPtr);
     if (pixelMapAni == nullptr) {
         ImageTaiheUtils::ThrowExceptionError(Media::COMMON_ERR_INVALID_PARAMETER,
             "Failed to construct PixelMapImpl: The argument is null.");
@@ -666,7 +667,7 @@ void PixelMapImpl::WriteAllPixelsFromBufferWithSourcePixelFormatImpl(array_view<
     }
 
     Media::PixelFormat srcFormat = ParsePixelFormat(sourcePixelFormat);
-    if (!IsSupportedWritePixelFormat(srcFormat)) {
+    if (!IsSupportedWriteSourceFormat(srcFormat)) {
         ImageTaiheUtils::ThrowExceptionError(Media::ERR_IMAGE_INVALID_PARAM,
             "The source pixel format is not supported.");
         return;
@@ -760,19 +761,14 @@ void PixelMapImpl::WritePixelsFromAreaWithSourcePixelFormatImpl(weak::PositionAr
     Media::Rect region = {etsRegion.x, etsRegion.y, etsRegion.size.width, etsRegion.size.height};
     array<uint8_t> etsPixels = area->GetPixels();
     Media::PixelFormat srcFormat = ParsePixelFormat(sourcePixelFormat);
-    if (!IsSupportedWritePixelFormat(srcFormat)) {
+    if (!IsSupportedWriteSourceFormat(srcFormat)) {
         ImageTaiheUtils::ThrowExceptionError(Media::ERR_IMAGE_INVALID_PARAM,
             "The source pixel format is not supported.");
         return;
     }
-    if (nativePixelMap_->IsAstc() || nativePixelMap_->IsYuvFormat()) {
-        ImageTaiheUtils::ThrowExceptionError(Media::ERR_IMAGE_UNSUPPORTED_CONVERSION,
-            "Unsupported conversion between the source pixel format and the PixelMap pixel format.");
-        return;
-    }
     Media::RWPixelsOptions opts{etsPixels.data(), static_cast<uint64_t>(etsPixels.size()),
         area->GetOffset(), area->GetStride(), region, srcFormat};
-    uint32_t status = nativePixelMap_->WritePixels(opts);
+    uint32_t status = nativePixelMap_->WritePixelsWithSourceFormat(opts);
     if (status == Media::ERR_IMAGE_PIXELMAP_NOT_ALLOW_MODIFY) {
         ImageTaiheUtils::ThrowExceptionError(Media::ERR_MEDIA_UNSUPPORT_OPERATION,
             "The PixelMap is not editable or is locked.");

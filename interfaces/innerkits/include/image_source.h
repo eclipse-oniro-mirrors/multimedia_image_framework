@@ -240,6 +240,10 @@ public:
     NATIVEEXPORT uint32_t RemoveAllProperties();
     NATIVEEXPORT std::vector<MetadataValue> GetAllPropertiesWithType(uint32_t index = 0);
     NATIVEEXPORT uint32_t GetImagePropertyStringBySync(uint32_t index, const std::string &key, std::string &value);
+    // Reads only the preview image Orientation of RAW files. Reserved for the NAPI
+    // getImageProperty("PreviewOrientation") request; other image formats are unsupported.
+    // The returned value is the Orientation name, for example "Top-left" or "Left-bottom".
+    NATIVEEXPORT uint32_t GetRawPreviewOrientation(std::string &value);
     NATIVEEXPORT uint32_t WriteImageMetadataBlob(const std::vector<MetadataValue> &properties);
     NATIVEEXPORT uint32_t ModifyImagePropertyBlob(const std::vector<MetadataValue> &properties);
     NATIVEEXPORT uint32_t ModifyImagePropertyBlob(const std::vector<MetadataValue> &properties,
@@ -259,6 +263,15 @@ public:
     NATIVEEXPORT uint32_t ModifyImagePropertyEx(uint32_t index, const std::string &key, const std::string &value);
     NATIVEEXPORT uint32_t ModifyImagePropertiesEx(uint32_t index,
         const std::vector<std::pair<std::string, std::string>> &properties);
+    // Ensures the image carries an Apple content identifier and returns the effective one.
+    // The source is never modified: the complete image is written to the caller-owned writable
+    // fd dstFd, and uuid is written into that copy only when the maker note has none; an
+    // existing apple identifier wins over uuid and is returned in effectiveUuid.
+    // Side effect: when the source maker note is not in the Apple layout, it is dropped and
+    // rebuilt in the Apple layout in the copy; vendor maker notes (e.g. Huawei HwMnote with
+    // Xmage flags) are not preserved.
+    NATIVEEXPORT uint32_t ModifyContentIdentifier(const std::string &uuid, std::string &effectiveUuid,
+        int32_t dstFd);
     NATIVEEXPORT std::set<std::string> GetModifyExifUnsupportedKeys();
     NATIVEEXPORT uint32_t RemoveImageProperties(uint32_t index, const std::set<std::string> &keys);
     NATIVEEXPORT uint32_t RemoveImageProperties(uint32_t index, const std::set<std::string> &keys,
@@ -422,6 +435,8 @@ private:
     static uint64_t GetNowTimeMicroSeconds();
     uint32_t ModifyImageProperty(std::shared_ptr<MetadataAccessor> metadataAccessor,
                                  const std::string &key, const std::string &value);
+    uint32_t CopySourceToFd(int32_t dstFd);
+    uint32_t WriteExifMetadataToFd(int32_t dstFd);
     uint32_t ModifyImageProperties(std::shared_ptr<MetadataAccessor> metadataAccessor,
                                  const std::vector<std::pair<std::string, std::string>> &properties, bool isEnhanced);
     uint32_t RemoveImageProperties(std::shared_ptr<MetadataAccessor> metadataAccessor,

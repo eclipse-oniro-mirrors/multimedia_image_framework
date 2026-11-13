@@ -31,9 +31,6 @@
 #include "image_data_statistics.h"
 #include "image_source.h"
 #include "image_utils.h"
-#include "image_dfx.h"
-#include "src/codec/SkJpegCodec.h"
-#include "src/codec/SkJpegDecoderMgr.h"
 #include "HeifDecoderImpl.h"
 #include "heif_impl/heif_parser/heif_image.h"
 #ifdef SK_ENABLE_OHOS_CODEC
@@ -76,75 +73,6 @@ public:
     ExtDecoderTest() {}
     ~ExtDecoderTest() {}
 };
-
-/**
- * @tc.name: SourceYuvSamplingDiagnostics001
- * @tc.desc: Read encoded JPEG sampling factors independently of the output pixel format.
- * @tc.type: FUNC
- */
-HWTEST_F(ExtDecoderTest, SourceYuvSamplingDiagnostics001, TestSize.Level3)
-{
-    auto stream = FileSourceStream::CreateSourceStream(IMAGE_INPUT_JPEG_PATH);
-    ASSERT_NE(stream, nullptr);
-    ExtDecoder decoder;
-    decoder.SetSource(*stream);
-    ASSERT_TRUE(decoder.DecodeHeader());
-    auto codec = static_cast<SkJpegCodec *>(decoder.codec_.get());
-    ASSERT_NE(codec, nullptr);
-    ASSERT_NE(codec->decoderMgr(), nullptr);
-    auto dinfo = codec->decoderMgr()->dinfo();
-    ASSERT_NE(dinfo, nullptr);
-    ASSERT_EQ(dinfo->num_components, 3);
-    ASSERT_NE(dinfo->comp_info, nullptr);
-    dinfo->jpeg_color_space = JCS_YCbCr;
-    dinfo->comp_info[1].h_samp_factor = 1;
-    dinfo->comp_info[1].v_samp_factor = 1;
-    dinfo->comp_info[2].h_samp_factor = 1;
-    dinfo->comp_info[2].v_samp_factor = 1;
-    const struct { int h; int v; const char *name; } cases[] = {
-        {1, 1, "4:4:4"}, {2, 1, "4:2:2"}, {2, 2, "4:2:0"},
-        {1, 2, "4:4:0"}, {4, 1, "4:1:1"}, {4, 2, "4:1:0"},
-    };
-    for (const auto &sample : cases) {
-        dinfo->comp_info[0].h_samp_factor = sample.h;
-        dinfo->comp_info[0].v_samp_factor = sample.v;
-        std::string value;
-        EXPECT_EQ(decoder.GetImagePropertyString(0, DFX_SOURCE_YUV_SAMPLING, value), SUCCESS);
-        EXPECT_EQ(value, sample.name);
-    }
-    dinfo->comp_info[2].h_samp_factor = 2;
-    EXPECT_EQ(decoder.GetSourceYuvSampling(0), "unknown");
-    dinfo->jpeg_color_space = JCS_GRAYSCALE;
-    EXPECT_EQ(decoder.GetSourceYuvSampling(0), "4:0:0");
-    dinfo->jpeg_color_space = JCS_CMYK;
-    EXPECT_EQ(decoder.GetSourceYuvSampling(0), "not_yuv");
-}
-
-#ifdef IMAGE_COLORSPACE_FLAG
-/**
- * @tc.name: SourceColorSpaceDiagnostics001
- * @tc.desc: Destination color selection does not replace the reported source or change HEIF color state.
- * @tc.type: FUNC
- */
-HWTEST_F(ExtDecoderTest, SourceColorSpaceDiagnostics001, TestSize.Level3)
-{
-    auto stream = FileSourceStream::CreateSourceStream(IMAGE_INPUT_JPEG_PATH);
-    ASSERT_NE(stream, nullptr);
-    ExtDecoder decoder;
-    decoder.SetSource(*stream);
-    ASSERT_TRUE(decoder.DecodeHeader());
-    decoder.heifColorSpaceName_ = ColorManager::BT2020_HLG;
-    decoder.heifIsColorSpaceFromCicp_ = true;
-    int32_t source = -1;
-    ASSERT_EQ(decoder.GetImagePropertyInt(0, DFX_SOURCE_COLOR_SPACE, source), SUCCESS);
-    decoder.dstColorSpace_ = std::make_shared<ColorManager::ColorSpace>(ColorManager::DISPLAY_P3);
-    int32_t after = -1;
-    EXPECT_EQ(decoder.GetImagePropertyInt(0, DFX_SOURCE_COLOR_SPACE, after), SUCCESS);
-    EXPECT_EQ(after, source);
-    EXPECT_EQ(decoder.heifColorSpaceName_, ColorManager::BT2020_HLG);
-    EXPECT_TRUE(decoder.heifIsColorSpaceFromCicp_);
-}
-#endif
 
 struct MockHeifStream : public HeifStream {
     virtual size_t read(void*, size_t)

@@ -468,5 +468,48 @@ HWTEST_F(IncrementalSourceStreamTest, IncrementalSourceStreamTest0021, TestSize.
     ASSERT_EQ(ret, SUCCESS);
     GTEST_LOG_(INFO) << "IncrementalSourceStreamTest: IncrementalSourceStreamTest0021 end";
 }
+
+/**
+ * @tc.name: IncrementalSourceStreamReadStateTest001
+ * @tc.desc: Verify read state follows the completion flag and read mode is incremental.
+ * @tc.type: FUNC
+ */
+HWTEST_F(IncrementalSourceStreamTest, IncrementalSourceStreamReadStateTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "IncrementalSourceStreamTest: IncrementalSourceStreamReadStateTest001 start";
+    std::unique_ptr<IncrementalSourceStream> ins =
+        IncrementalSourceStream::CreateSourceStream(IncrementalMode::INCREMENTAL_DATA);
+    ASSERT_NE(ins, nullptr);
+    EXPECT_EQ(ins->GetReadMode(), "incremental");
+    EXPECT_EQ(ins->GetReadState(), SourceStream::ReadState::INCOMPLETE);
+
+    const uint8_t data[8] = {0};
+    const uint32_t size = static_cast<uint32_t>(sizeof(data));
+    ASSERT_EQ(ins->UpdateData(data, size, false), SUCCESS);
+    EXPECT_EQ(ins->GetReadState(), SourceStream::ReadState::INCOMPLETE);
+
+    ASSERT_EQ(ins->UpdateData(data, size, true), SUCCESS);
+    EXPECT_EQ(ins->GetReadState(), SourceStream::ReadState::COMPLETE);
+    GTEST_LOG_(INFO) << "IncrementalSourceStreamTest: IncrementalSourceStreamReadStateTest001 end";
+}
+
+/**
+ * @tc.name: IncrementalSourceStreamUpdateEmptyTest001
+ * @tc.desc: Verify an empty update is ignored and keeps the stream incomplete.
+ * @tc.type: FUNC
+ */
+HWTEST_F(IncrementalSourceStreamTest, IncrementalSourceStreamUpdateEmptyTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "IncrementalSourceStreamTest: IncrementalSourceStreamUpdateEmptyTest001 start";
+    std::unique_ptr<IncrementalSourceStream> ins =
+        IncrementalSourceStream::CreateSourceStream(IncrementalMode::INCREMENTAL_DATA);
+    ASSERT_NE(ins, nullptr);
+    const uint8_t data[4] = {0};
+    ASSERT_EQ(ins->UpdateData(data, 0, true), SUCCESS);
+    // 空数据直接返回，不设置完成标记。
+    EXPECT_EQ(ins->GetReadState(), SourceStream::ReadState::INCOMPLETE);
+    EXPECT_FALSE(ins->IsStreamCompleted());
+    GTEST_LOG_(INFO) << "IncrementalSourceStreamTest: IncrementalSourceStreamUpdateEmptyTest001 end";
+}
 }
 }

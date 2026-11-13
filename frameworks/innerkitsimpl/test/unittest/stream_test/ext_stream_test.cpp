@@ -14,6 +14,7 @@
  */
 
 #include <gtest/gtest.h>
+#include <cstdint>
 #include <memory>
 #include "ext_stream.h"
 #include "image_log.h"
@@ -151,6 +152,44 @@ HWTEST_F(ExtStreamTest, isAtEnd001, TestSize.Level3)
     auto ret = extStream.isAtEnd();
     EXPECT_EQ(ret, true);
     GTEST_LOG_(INFO) << "ExtStreamTest: isAtEnd001 end";
+}
+
+class EdgeSizeInputDataStream : public MockInputDataStream {
+public:
+    size_t streamSize = SIZE_MAX;
+    uint32_t position = 0;
+    uint32_t actualSize = BUFFER_SIZE;
+    bool Read(uint32_t, uint8_t*, uint32_t, uint32_t &readSize) override
+    {
+        readSize = actualSize;
+        position += readSize;
+        return true;
+    }
+    uint32_t Tell() override { return position; }
+    size_t GetStreamSize() override { return streamSize; }
+};
+
+/**
+ * @tc.name: DiagnosticRead003
+ * @tc.desc: Unknown and zero stream size skip the size limitation and short-read diagnostics.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExtStreamTest, DiagnosticRead003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ExtStreamTest: DiagnosticRead003 start";
+    EdgeSizeInputDataStream input;
+    input.streamSize = SIZE_MAX;
+    ExtStream unknownSizeStream(&input);
+    uint8_t buffer[BUFFER_SIZE] = {};
+    EXPECT_EQ(unknownSizeStream.read(buffer, sizeof(buffer)), BUFFER_SIZE);
+    EXPECT_FALSE(unknownSizeStream.isAtEnd());
+
+    input.streamSize = 0;
+    input.position = 0;
+    ExtStream zeroSizeStream(&input);
+    EXPECT_EQ(zeroSizeStream.read(buffer, sizeof(buffer)), BUFFER_SIZE);
+    EXPECT_FALSE(zeroSizeStream.isAtEnd());
+    GTEST_LOG_(INFO) << "ExtStreamTest: DiagnosticRead003 end";
 }
 } // namespace ImagePlugin
 } // namespace OHOS

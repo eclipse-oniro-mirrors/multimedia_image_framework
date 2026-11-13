@@ -53,6 +53,7 @@ group("fuzztest") {
     "imageplugin2_fuzzer:ImagePlugin2FuzzTest",
     "imageplugin3_fuzzer:ImagePlugin3FuzzTest",
     "imagerawplugin_fuzzer:ImageRawPluginFuzzTest",
+    "imagerawpreviewexif_fuzzer:ImageRawPreviewExifFuzzTest",
     "imagetextureencode_fuzzer:ImageTextureEncodeFuzzTest",
     "imagecr3parser_fuzzer:ImageCr3ParserFuzzTest",
     "imagecr3box_fuzzer:ImageCr3BoxFuzzTest",

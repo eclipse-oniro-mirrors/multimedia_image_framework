@@ -81,8 +81,8 @@ public:
     ImageEvent();
     ~ImageEvent();
     std::string getInvokeType();
-    void SetDecodeInfoOptions(const DecodeInfoOptions &options);
-    void SetDecodeErrorMsg(std::string msg);
+    void SetDecodeInfoOptions(DecodeInfoOptions options);
+    void SetDecodeErrorMsg(const std::string &msg);
     void ReportDecodeFault();
     void ReportDecodeInfo();
     void SetDecodeResult(DecodeResult result, DecodeError error = DecodeError::NONE)
@@ -103,7 +103,7 @@ public:
         options_.isIncrementalDecode = true;
         point_ = DecodePoint::INCREMENTAL;
     }
-    void SetPluginType(std::string pluginType)
+    void SetPluginType(const std::string &pluginType)
     {
         options_.pluginType = pluginType;
     }
@@ -130,8 +130,6 @@ private:
     bool reported_ = false;
     std::function<uint64_t()> sourceSizeProvider_;
     void Report();
-    // 明细事件与小时聚合并存：失败写 DECODE_FAULT，成功与增量未完成写 DECODE_INFORMATION。
-    void SubmitDecodeEvent(bool isFault, uint64_t costTime);
 };
 
 void ReportCreateImageSourceFault(uint32_t width, uint32_t height, std::string type, std::string message,
