@@ -1677,6 +1677,8 @@ ohos_unittest("bandjpeg_progressive_jpeg_decoder_test") {
     "skia:libjpegm133",
     "skia:skia_canvaskit",
   ]
+
+  cflags = [ "-fno-access-control" ]
 }
 
 ohos_unittest("imagestreamtest") {

@@ -37,15 +37,12 @@
  * asserted either: FASTManager resolves them from the real libfast_image.so on device.
  */
 
+#include <algorithm>
 #include <cstdint>
-#include <cstring>
-#include <functional>
 #include <limits>
 #include <memory>
 #include <string>
 #include <vector>
-
-#include <dlfcn.h>
 
 #include <gtest/gtest.h>
 
@@ -54,12 +51,9 @@
 #include "include/core/SkData.h"
 #include "include/core/SkImageInfo.h"
 
-// FASTManager keeps the resolved entry points and the initialized flag private;
-// the tests inject stubs into the singleton, so they need access to those fields.
-#define private public
+// FASTManager keeps the resolved entry points and the initialized flag private; the build
+// target compiles this file with -fno-access-control so the stubs can be injected here.
 #include "bandjpeg/fast_manager.h"
-#undef private
-
 #include "bandjpeg/progressive_jpeg_decoder.h"
 #include "jpeg_yuv_decoder/jpeg_decoder_yuv.h"
 #include "media_errors.h"
@@ -1862,7 +1856,7 @@ HWTEST_F(ProgressiveJpegDecoderTest, GetJpegInputDataCopyStreamTest, TestSize.Le
     auto readJpegData = [](uint8_t *buffer, uint32_t size) {
         EXPECT_NE(buffer, nullptr);
         EXPECT_EQ(size, static_cast<uint32_t>(COPY_STREAM_BYTES));
-        std::memset(buffer, COPY_FILL_BYTE, size);
+        std::fill_n(buffer, size, COPY_FILL_BYTE);
         return static_cast<uint32_t>(SUCCESS);
     };
 
