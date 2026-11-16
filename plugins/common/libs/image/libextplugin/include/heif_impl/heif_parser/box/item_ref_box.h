@@ -52,6 +52,47 @@ private:
 
     std::vector<Reference> references_;
 };
+
+// Entity group list (ISO/IEC 14496-12 'grpl'), holding EntityToGroupBox children such as 'altr'
+// and 'ster'. HEIF uses it to describe alternative representations (for example SDR/HDR versions
+// of the same image), so it has to survive a rewrite.
+class HeifGrplBox : public HeifBox {
+public:
+    // Upper bound of structurally parsed entity groups. Bytes beyond the bound are kept verbatim,
+    // so a crafted grpl with a huge number of groups cannot grow the parsed object list without bound.
+    static constexpr uint32_t MAX_GROUP_COUNT = 1024;
+
+    struct EntityGroup {
+        uint32_t groupType = 0;
+        uint8_t version = 0;
+        uint32_t flags = 0;
+        uint32_t groupId = 0;
+        std::vector<uint32_t> entityIds;
+        std::vector<uint8_t> extra;
+    };
+
+    HeifGrplBox() : HeifBox(BOX_TYPE_GRPL) {}
+
+    const std::vector<EntityGroup> &GetGroups() const { return groups_; }
+
+    // Convenience accessors for one grouping type, for example BOX_TYPE_ALTR.
+    bool HasGroup(uint32_t groupType) const;
+
+    std::vector<uint32_t> GetEntityIds(uint32_t groupType) const;
+
+    heif_error Write(HeifStreamWriter &writer) const override;
+
+protected:
+    heif_error ParseContent(HeifStreamReader &reader) override;
+
+private:
+    heif_error ParseEntityGroup(HeifStreamReader &reader, EntityGroup &group);
+
+    void ReadTrailingBytes(HeifStreamReader &reader, size_t size);
+
+    std::vector<EntityGroup> groups_;
+    std::vector<uint8_t> trailingBytes_;
+};
 } // namespace ImagePlugin
 } // namespace OHOS
 

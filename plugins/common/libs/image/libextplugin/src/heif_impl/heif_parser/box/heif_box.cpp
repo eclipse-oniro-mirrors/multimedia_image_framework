@@ -199,6 +199,8 @@ std::shared_ptr<HeifBox> HeifBox::MakeBox(uint32_t boxType)
         MAKE_BOX_CASE("iloc", HeifIlocBox);
         MAKE_BOX_CASE("rloc", HeifRlocBox);
         MAKE_BOX_CASE("clli", HeifClliBox);
+        MAKE_BOX_CASE("mdcv", HeifMdcvBox);
+        MAKE_BOX_CASE("grpl", HeifGrplBox);
         MAKE_BOX_CASE("moov", HeifMoovBox);
         MAKE_BOX_CASE("mvhd", HeifMvhdBox);
         MAKE_BOX_CASE("trak", HeifTrakBox);
@@ -305,9 +307,6 @@ heif_error HeifBox::WriteChildren(HeifStreamWriter &writer) const
 {
     for (const auto &child: children_) {
         if (child == nullptr) {
-            continue;
-        }
-        if (child->GetBoxType() == BOX_TYPE_GRPL) {
             continue;
         }
         heif_error err = child->Write(writer);

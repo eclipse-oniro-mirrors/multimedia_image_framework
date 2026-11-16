@@ -16,12 +16,14 @@
 #define private public
 #define protected public
 #include <gtest/gtest.h>
+#include "basic_box.h"
 #include "heif_box.h"
 #include "item_data_box.h"
 #include "item_info_box.h"
 #include "item_property_basic_box.h"
 #include "item_property_box.h"
 #include "item_property_color_box.h"
+#include "item_property_display_box.h"
 #include "item_property_hvcc_box.h"
 #include "item_property_aux_box.h"
 #include "item_property_transform_box.h"
@@ -1474,6 +1476,419 @@ HWTEST_F(HeifParserBoxTest, ParseContentHeaderErrorTest001, TestSize.Level3)
 
     ASSERT_NE(error, heif_error_ok);
     GTEST_LOG_(INFO) << "HeifParserBoxTest: ParseContentHeaderErrorTest001 end";
+}
+
+static const uint16_t MDCV_RED_X = 35400;
+static const uint16_t MDCV_RED_Y = 14600;
+static const uint16_t MDCV_GREEN_X = 8500;
+static const uint16_t MDCV_GREEN_Y = 39850;
+static const uint16_t MDCV_BLUE_X = 6550;
+static const uint16_t MDCV_BLUE_Y = 2300;
+static const uint16_t MDCV_WHITE_X = 15635;
+static const uint16_t MDCV_WHITE_Y = 16450;
+static const uint32_t MDCV_LUMA_MAX = 1000;
+static const uint32_t MDCV_LUMA_MIN = 50;
+static const uint32_t MDCV_BOX_SIZE = 32;
+
+static void AppendUint16(std::vector<uint8_t> &data, uint16_t value)
+{
+    data.push_back(static_cast<uint8_t>((value >> ONE_BYTE_SHIFT) & 0xFF));
+    data.push_back(static_cast<uint8_t>(value & 0xFF));
+}
+
+static void AppendUint32(std::vector<uint8_t> &data, uint32_t value)
+{
+    data.push_back(static_cast<uint8_t>((value >> THREE_BYTES_SHIFT) & 0xFF));
+    data.push_back(static_cast<uint8_t>((value >> TWO_BYTES_SHIFT) & 0xFF));
+    data.push_back(static_cast<uint8_t>((value >> ONE_BYTE_SHIFT) & 0xFF));
+    data.push_back(static_cast<uint8_t>(value & 0xFF));
+}
+
+static std::vector<uint8_t> MakeMdcvBoxData()
+{
+    std::vector<uint8_t> data;
+    AppendUint32(data, MDCV_BOX_SIZE);
+    AppendUint32(data, BOX_TYPE_MDCV);
+    AppendUint16(data, MDCV_RED_X);
+    AppendUint16(data, MDCV_RED_Y);
+    AppendUint16(data, MDCV_GREEN_X);
+    AppendUint16(data, MDCV_GREEN_Y);
+    AppendUint16(data, MDCV_BLUE_X);
+    AppendUint16(data, MDCV_BLUE_Y);
+    AppendUint16(data, MDCV_WHITE_X);
+    AppendUint16(data, MDCV_WHITE_Y);
+    AppendUint32(data, MDCV_LUMA_MAX);
+    AppendUint32(data, MDCV_LUMA_MIN);
+    return data;
+}
+
+static std::shared_ptr<HeifBox> MakeBoxFromData(const std::vector<uint8_t> &data, heif_error &error)
+{
+    auto stream = std::make_shared<HeifBufferInputStream>(data.data(), data.size(), true);
+    HeifStreamReader reader(stream, 0, data.size());
+    std::shared_ptr<HeifBox> box;
+    uint32_t recursionCount = 0;
+    error = HeifBox::MakeFromReader(reader, &box, recursionCount);
+    return box;
+}
+
+/**
+ * @tc.name: MakeBoxMdcvTest001
+ * @tc.desc: test MakeBox when boxType is mdcv, the box must not fall back to the generic HeifBox
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserBoxTest, MakeBoxMdcvTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: MakeBoxMdcvTest001 start";
+    std::shared_ptr<HeifBox> test = HeifBox::MakeBox(BOX_TYPE_MDCV);
+    ASSERT_NE(test, nullptr);
+    // A generic HeifBox keeps boxType_ == 0, so this also proves the factory mapping.
+    ASSERT_EQ(test->GetBoxType(), BOX_TYPE_MDCV);
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: MakeBoxMdcvTest001 end";
+}
+
+/**
+ * @tc.name: ParseAndWriteMdcvBoxTest001
+ * @tc.desc: parse a conformant mdcv box and verify Write reproduces the original bytes
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserBoxTest, ParseAndWriteMdcvBoxTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: ParseAndWriteMdcvBoxTest001 start";
+    std::vector<uint8_t> data = MakeMdcvBoxData();
+    heif_error error = heif_error_ok;
+    auto box = MakeBoxFromData(data, error);
+    ASSERT_EQ(error, heif_error_ok);
+    ASSERT_NE(box, nullptr);
+    ASSERT_EQ(box->GetBoxType(), BOX_TYPE_MDCV);
+    ASSERT_EQ(box->GetBoxSize(), data.size());
+
+    // The round trip below only passes when MakeBox created HeifMdcvBox; the test target is
+    // built with -fno-rtti, so downcast with static_pointer_cast after that check.
+    HeifStreamWriter writer;
+    ASSERT_EQ(box->Write(writer), heif_error_ok);
+    ASSERT_EQ(writer.GetDataSize(), data.size());
+    ASSERT_EQ(writer.GetData(), data);
+
+    auto mdcvBox = std::static_pointer_cast<HeifMdcvBox>(box);
+    DisplayColourVolume volume = mdcvBox->GetColourVolume();
+    ASSERT_EQ(volume.red.x, MDCV_RED_X);
+    ASSERT_EQ(volume.red.y, MDCV_RED_Y);
+    ASSERT_EQ(volume.green.x, MDCV_GREEN_X);
+    ASSERT_EQ(volume.green.y, MDCV_GREEN_Y);
+    ASSERT_EQ(volume.blue.x, MDCV_BLUE_X);
+    ASSERT_EQ(volume.blue.y, MDCV_BLUE_Y);
+    ASSERT_EQ(volume.whitePoint.x, MDCV_WHITE_X);
+    ASSERT_EQ(volume.whitePoint.y, MDCV_WHITE_Y);
+    ASSERT_EQ(volume.luminanceMax, MDCV_LUMA_MAX);
+    ASSERT_EQ(volume.luminanceMin, MDCV_LUMA_MIN);
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: ParseAndWriteMdcvBoxTest001 end";
+}
+
+/**
+ * @tc.name: ParseTruncatedMdcvBoxTest001
+ * @tc.desc: a truncated mdcv box must keep the parse alive and expose zero-valued fields
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserBoxTest, ParseTruncatedMdcvBoxTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: ParseTruncatedMdcvBoxTest001 start";
+    std::vector<uint8_t> data = {0x00, 0x00, 0x00, 0x10, 'm', 'd', 'c', 'v',
+        0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88};
+    heif_error error = heif_error_ok;
+    auto box = MakeBoxFromData(data, error);
+    ASSERT_EQ(error, heif_error_ok);
+    ASSERT_NE(box, nullptr);
+
+    // the truncated box is normalized to the fixed payload size when it is written back
+    HeifStreamWriter writer;
+    ASSERT_EQ(box->Write(writer), heif_error_ok);
+    ASSERT_EQ(writer.GetDataSize(), MDCV_BOX_SIZE);
+
+    auto mdcvBox = std::static_pointer_cast<HeifMdcvBox>(box);
+    ASSERT_EQ(mdcvBox->GetColourVolume().red.x, 0);
+    ASSERT_EQ(mdcvBox->GetColourVolume().luminanceMax, 0);
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: ParseTruncatedMdcvBoxTest001 end";
+}
+
+/**
+ * @tc.name: ParseMdcvPropertyFromIpcoTest001
+ * @tc.desc: mdcv is parsed as a HeifMdcvBox property inside ipco instead of a generic HeifBox
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserBoxTest, ParseMdcvPropertyFromIpcoTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: ParseMdcvPropertyFromIpcoTest001 start";
+    std::vector<uint8_t> mdcvData = MakeMdcvBoxData();
+    std::vector<uint8_t> data;
+    AppendUint32(data, static_cast<uint32_t>(UINT64_BYTES_NUM + mdcvData.size()));
+    AppendUint32(data, BOX_TYPE_IPCO);
+    data.insert(data.end(), mdcvData.begin(), mdcvData.end());
+
+    heif_error error = heif_error_ok;
+    auto box = MakeBoxFromData(data, error);
+    ASSERT_EQ(error, heif_error_ok);
+    ASSERT_NE(box, nullptr);
+
+    HeifStreamWriter writer;
+    ASSERT_EQ(box->Write(writer), heif_error_ok);
+    ASSERT_EQ(writer.GetData(), data);
+
+    const auto &children = box->GetChildren();
+    ASSERT_EQ(children.size(), static_cast<size_t>(1));
+    ASSERT_EQ(children[0]->GetBoxType(), BOX_TYPE_MDCV);
+    ASSERT_EQ(children[0]->GetBoxSize(), mdcvData.size());
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: ParseMdcvPropertyFromIpcoTest001 end";
+}
+
+static const uint32_t HVCC_BOX_SIZE = 31;
+static const uint64_t HVCC_CONSTRAINT_FLAGS_B0 = 0xB00000000000ULL;
+static const uint64_t HVCC_CONSTRAINT_FLAGS_BFC8 = 0xBFC800000000ULL;
+
+static std::vector<uint8_t> MakeHvccBoxData(uint64_t constraintFlags)
+{
+    std::vector<uint8_t> data;
+    AppendUint32(data, HVCC_BOX_SIZE);
+    AppendUint32(data, BOX_TYPE_HVCC);
+    data.push_back(1);              // configurationVersion
+    data.push_back(0x01);           // general_profile_space/tier_flag/profile_idc
+    AppendUint32(data, 0x60000000); // general_profile_compatibility_flags
+    AppendUint32(data, static_cast<uint32_t>((constraintFlags >> TWO_BYTES_SHIFT) & 0xFFFFFFFF));
+    AppendUint16(data, static_cast<uint16_t>(constraintFlags & 0xFFFF));
+    data.push_back(0x5A);           // general_level_idc
+    AppendUint16(data, 0xF000);     // min_spatial_segmentation_idc
+    data.push_back(0xFC);           // parallelismType
+    data.push_back(0xFD);           // chromaFormat
+    data.push_back(0xF8);           // bitDepthLumaMinus8
+    data.push_back(0xF8);           // bitDepthChromaMinus8
+    AppendUint16(data, 0);          // avgFrameRate
+    data.push_back(0x0F);           // const_frame_rate/num_temporal_layers/lengthSizeMinusOne
+    data.push_back(0);              // numOfArrays
+    return data;
+}
+
+/**
+ * @tc.name: HvccConstraintFlagsRoundTripTest001
+ * @tc.desc: general_constraint_indicator_flags is 48 bits and must survive parse + write unchanged
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserBoxTest, HvccConstraintFlagsRoundTripTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: HvccConstraintFlagsRoundTripTest001 start";
+    for (uint64_t flags : {HVCC_CONSTRAINT_FLAGS_B0, HVCC_CONSTRAINT_FLAGS_BFC8}) {
+        std::vector<uint8_t> data = MakeHvccBoxData(flags);
+        heif_error error = heif_error_ok;
+        auto box = MakeBoxFromData(data, error);
+        ASSERT_EQ(error, heif_error_ok);
+        ASSERT_NE(box, nullptr);
+
+        HeifStreamWriter writer;
+        ASSERT_EQ(box->Write(writer), heif_error_ok);
+        ASSERT_EQ(writer.GetDataSize(), data.size());
+        ASSERT_EQ(writer.GetData(), data);
+
+        auto hvccBox = std::static_pointer_cast<HeifHvccBox>(box);
+        ASSERT_EQ(hvccBox->GetConfig().generalConstraintIndicatorFlags, flags);
+    }
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: HvccConstraintFlagsRoundTripTest001 end";
+}
+
+static std::vector<uint8_t> MakeEntityGroupData(uint32_t groupType, uint32_t groupId,
+    const std::vector<uint32_t> &entityIds)
+{
+    std::vector<uint8_t> data;
+    size_t groupSize = UINT64_BYTES_NUM + UINT32_BYTES_NUM * 3 + UINT32_BYTES_NUM * entityIds.size();
+    AppendUint32(data, static_cast<uint32_t>(groupSize));
+    AppendUint32(data, groupType);
+    AppendUint32(data, 0); // version/flags
+    AppendUint32(data, groupId);
+    AppendUint32(data, static_cast<uint32_t>(entityIds.size()));
+    for (uint32_t entityId : entityIds) {
+        AppendUint32(data, entityId);
+    }
+    return data;
+}
+
+static std::vector<uint8_t> MakeGrplBoxData(const std::vector<std::vector<uint8_t>> &groups)
+{
+    std::vector<uint8_t> content;
+    for (const auto &group : groups) {
+        content.insert(content.end(), group.begin(), group.end());
+    }
+    std::vector<uint8_t> data;
+    AppendUint32(data, static_cast<uint32_t>(UINT64_BYTES_NUM + content.size()));
+    AppendUint32(data, BOX_TYPE_GRPL);
+    data.insert(data.end(), content.begin(), content.end());
+    return data;
+}
+
+/**
+ * @tc.name: MakeBoxGrplTest001
+ * @tc.desc: test MakeBox when boxType is grpl, the box must not fall back to the generic HeifBox
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserBoxTest, MakeBoxGrplTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: MakeBoxGrplTest001 start";
+    std::shared_ptr<HeifBox> test = HeifBox::MakeBox(BOX_TYPE_GRPL);
+    ASSERT_NE(test, nullptr);
+    // A generic HeifBox keeps boxType_ == 0, so this also proves the factory mapping.
+    ASSERT_EQ(test->GetBoxType(), BOX_TYPE_GRPL);
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: MakeBoxGrplTest001 end";
+}
+
+/**
+ * @tc.name: GrplBoxRoundTripTest001
+ * @tc.desc: entity groups (altr and an unknown grouping type) must survive parse + write unchanged
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserBoxTest, GrplBoxRoundTripTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: GrplBoxRoundTripTest001 start";
+    std::vector<uint8_t> altrGroup = MakeEntityGroupData(BOX_TYPE_ALTR, 29, {27, 21});
+    std::vector<uint8_t> vendorGroup = MakeEntityGroupData(fourcc_to_code("zzzz"), 30, {1, 2, 3});
+    std::vector<uint8_t> data = MakeGrplBoxData({altrGroup, vendorGroup});
+
+    heif_error error = heif_error_ok;
+    auto box = MakeBoxFromData(data, error);
+    ASSERT_EQ(error, heif_error_ok);
+    ASSERT_NE(box, nullptr);
+
+    HeifStreamWriter writer;
+    ASSERT_EQ(box->Write(writer), heif_error_ok);
+    ASSERT_EQ(writer.GetDataSize(), data.size());
+    ASSERT_EQ(writer.GetData(), data);
+
+    auto grplBox = std::static_pointer_cast<HeifGrplBox>(box);
+    ASSERT_EQ(grplBox->GetGroups().size(), static_cast<size_t>(2));
+    ASSERT_EQ(grplBox->GetGroups()[0].groupType, BOX_TYPE_ALTR);
+    ASSERT_EQ(grplBox->GetGroups()[0].groupId, 29);
+    ASSERT_EQ(grplBox->GetGroups()[0].entityIds, std::vector<uint32_t>({27, 21}));
+    ASSERT_EQ(grplBox->GetGroups()[1].groupType, fourcc_to_code("zzzz"));
+    ASSERT_EQ(grplBox->GetGroups()[1].entityIds.size(), static_cast<size_t>(3));
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: GrplBoxRoundTripTest001 end";
+}
+
+/**
+ * @tc.name: GrplAltrQueryTest001
+ * @tc.desc: altr is an entity group inside grpl; it must be queryable and preserved
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserBoxTest, GrplAltrQueryTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: GrplAltrQueryTest001 start";
+    std::vector<uint8_t> data = MakeGrplBoxData({
+        MakeEntityGroupData(BOX_TYPE_ALTR, 29, {27, 21}),
+        MakeEntityGroupData(fourcc_to_code("ster"), 31, {3}),
+    });
+
+    heif_error error = heif_error_ok;
+    auto box = MakeBoxFromData(data, error);
+    ASSERT_EQ(error, heif_error_ok);
+    ASSERT_NE(box, nullptr);
+
+    HeifStreamWriter writer;
+    ASSERT_EQ(box->Write(writer), heif_error_ok);
+    ASSERT_EQ(writer.GetData(), data);
+
+    auto grplBox = std::static_pointer_cast<HeifGrplBox>(box);
+    ASSERT_TRUE(grplBox->HasGroup(BOX_TYPE_ALTR));
+    ASSERT_TRUE(grplBox->HasGroup(fourcc_to_code("ster")));
+    ASSERT_FALSE(grplBox->HasGroup(fourcc_to_code("zzzz")));
+    ASSERT_EQ(grplBox->GetEntityIds(BOX_TYPE_ALTR), std::vector<uint32_t>({27, 21}));
+    ASSERT_TRUE(grplBox->GetEntityIds(fourcc_to_code("zzzz")).empty());
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: GrplAltrQueryTest001 end";
+}
+
+/**
+ * @tc.name: GrplGroupCountLimitTest001
+ * @tc.desc: groups beyond the structural parse bound are kept verbatim and survive a rewrite
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserBoxTest, GrplGroupCountLimitTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: GrplGroupCountLimitTest001 start";
+    std::vector<std::vector<uint8_t>> groups;
+    for (uint32_t index = 0; index <= HeifGrplBox::MAX_GROUP_COUNT; ++index) {
+        groups.push_back(MakeEntityGroupData(BOX_TYPE_ALTR, index, {index}));
+    }
+    std::vector<uint8_t> data = MakeGrplBoxData(groups);
+
+    heif_error error = heif_error_ok;
+    auto box = MakeBoxFromData(data, error);
+    ASSERT_EQ(error, heif_error_ok);
+    ASSERT_NE(box, nullptr);
+
+    HeifStreamWriter writer;
+    ASSERT_EQ(box->Write(writer), heif_error_ok);
+    ASSERT_EQ(writer.GetData(), data);
+
+    auto grplBox = std::static_pointer_cast<HeifGrplBox>(box);
+    ASSERT_EQ(grplBox->GetGroups().size(), static_cast<size_t>(HeifGrplBox::MAX_GROUP_COUNT));
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: GrplGroupCountLimitTest001 end";
+}
+
+/**
+ * @tc.name: GrplEmptyBoxTest001
+ * @tc.desc: an empty grpl box is valid and must be written back as is
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserBoxTest, GrplEmptyBoxTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: GrplEmptyBoxTest001 start";
+    std::vector<uint8_t> data;
+    AppendUint32(data, UINT64_BYTES_NUM);
+    AppendUint32(data, BOX_TYPE_GRPL);
+    heif_error error = heif_error_ok;
+    auto box = MakeBoxFromData(data, error);
+    ASSERT_EQ(error, heif_error_ok);
+    ASSERT_NE(box, nullptr);
+
+    HeifStreamWriter writer;
+    ASSERT_EQ(box->Write(writer), heif_error_ok);
+    ASSERT_EQ(writer.GetData(), data);
+
+    // A generic HeifBox also emits an 8-byte box here, so check the empty group list through a
+    // directly constructed HeifGrplBox instead of downcasting the parsed object.
+    HeifGrplBox emptyGrpl;
+    auto emptyStream = std::make_shared<HeifBufferInputStream>(nullptr, 0, false);
+    HeifStreamReader emptyReader(emptyStream, 0, 0);
+    ASSERT_EQ(emptyGrpl.ParseContent(emptyReader), heif_error_ok);
+    ASSERT_TRUE(emptyGrpl.GetGroups().empty());
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: GrplEmptyBoxTest001 end";
+}
+
+/**
+ * @tc.name: MetaWriteGrplTest001
+ * @tc.desc: grpl is a child of meta and must be written by the container write path
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserBoxTest, MetaWriteGrplTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: MetaWriteGrplTest001 start";
+    std::vector<uint8_t> grplData = MakeGrplBoxData(
+        {MakeEntityGroupData(BOX_TYPE_ALTR, 29, {27, 21})});
+    std::vector<uint8_t> data;
+    AppendUint32(data, static_cast<uint32_t>(UINT64_BYTES_NUM + UINT32_BYTES_NUM + grplData.size()));
+    AppendUint32(data, BOX_TYPE_META);
+    AppendUint32(data, 0); // meta is a full box
+    data.insert(data.end(), grplData.begin(), grplData.end());
+
+    heif_error error = heif_error_ok;
+    auto box = MakeBoxFromData(data, error);
+    ASSERT_EQ(error, heif_error_ok);
+    ASSERT_NE(box, nullptr);
+
+    HeifStreamWriter writer;
+    ASSERT_EQ(box->Write(writer), heif_error_ok);
+    ASSERT_EQ(writer.GetDataSize(), data.size());
+    ASSERT_EQ(writer.GetData(), data);
+
+    const auto &children = box->GetChildren();
+    ASSERT_EQ(children.size(), static_cast<size_t>(1));
+    ASSERT_EQ(children[0]->GetBoxType(), BOX_TYPE_GRPL);
+    ASSERT_EQ(children[0]->GetBoxSize(), grplData.size());
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: MetaWriteGrplTest001 end";
 }
 
 }

@@ -89,7 +89,9 @@ heif_error HeifHvccBox::ParseContent(HeifStreamReader& reader)
     config_.generalProfileCompatibilityFlags = reader.Read32();
     uint32_t indicatorFlagsPre = reader.Read32();
     uint16_t indicatorFlagsLast = reader.Read16();
-    config_.generalConstraintIndicatorFlags = uint64_t((indicatorFlagsPre << TWO_BYTES_SHIFT) | indicatorFlagsLast);
+    // general_constraint_indicator_flags is 48 bits: widen before shifting, otherwise the top 16 bits are lost.
+    config_.generalConstraintIndicatorFlags =
+        (static_cast<uint64_t>(indicatorFlagsPre) << TWO_BYTES_SHIFT) | indicatorFlagsLast;
     config_.generalLevelIdc = reader.Read8();
     config_.minSpatialSegmentationIdc = reader.Read16() & 0x0FFF;
     config_.parallelismType = reader.Read8() & 0x03;

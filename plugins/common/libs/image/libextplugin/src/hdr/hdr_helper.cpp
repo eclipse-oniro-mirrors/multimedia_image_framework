@@ -1031,7 +1031,8 @@ static vector<uint8_t> ParseHeifStaticMetadata(const vector<uint8_t>& displayInf
     staticMetadata.smpte2086.displayPrimaryBlue.y = colorScale * (float)displayColourVolume.blue.y;
     staticMetadata.smpte2086.whitePoint.x = colorScale * (float)displayColourVolume.whitePoint.x;
     staticMetadata.smpte2086.whitePoint.y = colorScale * (float)displayColourVolume.whitePoint.y;
-    staticMetadata.smpte2086.maxLuminance = (float)displayColourVolume.luminanceMax;
+    // mdcv stores both luminance values in units of 0.0001 cd/m2 (same as the HEVC SEI it mirrors).
+    staticMetadata.smpte2086.maxLuminance = lumScale * (float)displayColourVolume.luminanceMax;
     staticMetadata.smpte2086.minLuminance = lumScale * (float)displayColourVolume.luminanceMin;
     staticMetadata.cta861.maxContentLightLevel = (float)lightLevelInfo.maxContentLightLevel;
     staticMetadata.cta861.maxFrameAverageLightLevel = (float)lightLevelInfo.maxPicAverageLightLevel;

@@ -22,6 +22,8 @@
 #include "heif_utils.h"
 #include "item_property_transform_box.h"
 
+#include <securec.h>
+
 using namespace testing::ext;
 namespace OHOS {
 namespace ImagePlugin {
@@ -32,6 +34,7 @@ static const heif_item_id TMAP_TRUE_ID = 3;
 static const heif_item_id TMAP_MOCK_ID = 4;
 static const heif_item_id IDEN_TRUE_ID = 5;
 static const heif_item_id MIME_TRUE_ID = 6;
+static const heif_item_id DISPLAY_TRUE_ID = 7;
 static const uint16_t INDEX_1 = 1;
 static const uint16_t INDEX_2 = 2;
 static const uint16_t INDEX_3 = 3;
@@ -1278,6 +1281,67 @@ HWTEST_F(HeifParserTest, AssembleImagesTest003, TestSize.Level3)
     auto ret = heifParser.AssembleImages();
     ASSERT_EQ(ret, heif_error_primary_item_not_found);
     GTEST_LOG_(INFO) << "HeifParserTest: AssembleImagesTest003 end";
+}
+
+/**
+ * @tc.name: ExtractDisplayDataTest001
+ * @tc.desc: Verify that HeifParser extracts mdcv and clli properties into the static metadata.
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserTest, ExtractDisplayDataTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserTest: ExtractDisplayDataTest001 start";
+    HeifParser heifParser;
+    decltype(heifParser.infeBoxes_) mockMap;
+    mockMap[DISPLAY_TRUE_ID] = std::make_shared<HeifInfeBox>(DISPLAY_TRUE_ID, "hvc1", false);
+    heifParser.infeBoxes_.swap(mockMap);
+    heifParser.ilocBox_ = std::make_shared<HeifIlocBox>();
+    heifParser.pitmBox_ = std::make_shared<HeifPtimBox>();
+    heifParser.pitmBox_->itemId_ = DISPLAY_TRUE_ID;
+
+    DisplayColourVolume colourVolume{};
+    colourVolume.red = {35400, 14600};
+    colourVolume.green = {8500, 39850};
+    colourVolume.blue = {6550, 2300};
+    colourVolume.whitePoint = {15635, 16450};
+    colourVolume.luminanceMax = 1000;
+    colourVolume.luminanceMin = 50;
+    auto mdcvBox = std::make_shared<HeifMdcvBox>();
+    mdcvBox->SetColourVolume(colourVolume);
+    ContentLightLevelInfo lightLevel{1000, 400};
+    auto clliBox = std::make_shared<HeifClliBox>();
+    clliBox->SetLightLevel(lightLevel);
+
+    heifParser.ipmaBox_ = std::make_shared<HeifIpmaBox>();
+    heifParser.ipmaBox_->AddProperty(DISPLAY_TRUE_ID,
+        PropertyAssociation{.essential = false, .propertyIndex = INDEX_1});
+    heifParser.ipmaBox_->AddProperty(DISPLAY_TRUE_ID,
+        PropertyAssociation{.essential = false, .propertyIndex = INDEX_2});
+    heifParser.ipcoBox_ = std::make_shared<HeifIpcoBox>();
+    heifParser.ipcoBox_->AddChild(mdcvBox);
+    heifParser.ipcoBox_->AddChild(clliBox);
+
+    auto ret = heifParser.AssembleImages();
+    ASSERT_EQ(ret, heif_error_ok);
+    auto primaryImage = heifParser.GetPrimaryImage();
+    ASSERT_NE(primaryImage, nullptr);
+
+    std::vector<uint8_t> displayInfo = primaryImage->GetDisplayInfo();
+    ASSERT_EQ(displayInfo.size(), sizeof(DisplayColourVolume));
+    DisplayColourVolume parsedVolume{};
+    ASSERT_EQ(memcpy_s(&parsedVolume, sizeof(parsedVolume), displayInfo.data(), displayInfo.size()), EOK);
+    ASSERT_EQ(parsedVolume.red.x, colourVolume.red.x);
+    ASSERT_EQ(parsedVolume.whitePoint.y, colourVolume.whitePoint.y);
+    ASSERT_EQ(parsedVolume.luminanceMax, colourVolume.luminanceMax);
+    ASSERT_EQ(parsedVolume.luminanceMin, colourVolume.luminanceMin);
+
+    std::vector<uint8_t> lightInfo = primaryImage->GetLightInfo();
+    ASSERT_EQ(lightInfo.size(), sizeof(ContentLightLevelInfo));
+    ContentLightLevelInfo parsedLight{};
+    ASSERT_EQ(memcpy_s(&parsedLight, sizeof(parsedLight), lightInfo.data(), lightInfo.size()), EOK);
+    ASSERT_EQ(parsedLight.maxContentLightLevel, lightLevel.maxContentLightLevel);
+    ASSERT_EQ(parsedLight.maxPicAverageLightLevel, lightLevel.maxPicAverageLightLevel);
+    GTEST_LOG_(INFO) << "HeifParserTest: ExtractDisplayDataTest001 end";
 }
 
 /**

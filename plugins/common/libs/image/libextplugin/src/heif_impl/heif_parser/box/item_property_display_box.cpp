@@ -20,12 +20,25 @@
 #include "heif_constant.h"
 #include "heif_error.h"
 #include "heif_stream.h"
+#include "image_log.h"
 
 namespace OHOS {
 namespace ImagePlugin {
+namespace {
+    // 3 x display primaries (x, y) + white point (x, y) as uint16, max and min luminance as uint32.
+    const size_t MDCV_CONTENT_SIZE = 8 * UINT16_BYTES_NUM + 2 * UINT32_BYTES_NUM;
+}
 
 heif_error HeifMdcvBox::ParseContent(HeifStreamReader &reader)
 {
+    // A truncated mdcv box is non-conformant. Keep the box so that the ipma property indices stay
+    // aligned with the ipco children, and fall back to zero-valued fields instead of rejecting
+    // the whole file.
+    if (reader.GetRemainSize() < MDCV_CONTENT_SIZE) {
+        IMAGE_LOGW("Truncated mdcv box, remain size: %{public}zu, expected: %{public}zu",
+            reader.GetRemainSize(), MDCV_CONTENT_SIZE);
+        return heif_error_ok;
+    }
     colourVolume_.red.x = reader.Read16();
     colourVolume_.red.y = reader.Read16();
     colourVolume_.green.x = reader.Read16();
