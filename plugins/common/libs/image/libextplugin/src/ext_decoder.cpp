@@ -1011,7 +1011,7 @@ uint32_t ExtDecoder::SetDecodeOptions(uint32_t index, const PixelDecodeOptions &
     uint32_t resCode = CheckCropRect(opts);
     CHECK_ERROR_RETURN_RET(resCode != SUCCESS, resCode);
     supportRegionFlag_ = IsRegionDecodeSupported(index, opts, info);
-    IMAGE_LOGI("[REGION] IsRegionDecodeSupported -> supportRegionFlag_=%{public}d (progressive=%{public}d)",
+    IMAGE_LOGD("[REGION] IsRegionDecodeSupported -> supportRegionFlag_=%{public}d (progressive=%{public}d)",
         supportRegionFlag_, IsProgressiveJpeg() ? 1 : 0);
 #ifdef SK_ENABLE_OHOS_CODEC
     if (IsSupportSampleDecode(opts.desiredPixelFormat) &&
@@ -1625,7 +1625,7 @@ bool ExtDecoder::SetupProgressiveRegionBuffer(DecodeContext &context, bool alloc
         }
         return false;
     }
-    IMAGE_LOGI("[REGION] ProgressiveDecodeRegion params: region xy[%{public}u x %{public}u] "
+    IMAGE_LOGD("[REGION] ProgressiveDecodeRegion params: region xy[%{public}u x %{public}u] "
         "wh[%{public}u x %{public}u] scale %{public}d dstWh[%{public}u x %{public}u] stride %{public}llu "
         "cap %{public}llu fmt %{public}d",
         params.regionX, params.regionY, params.regionWidth, params.regionHeight,
@@ -1667,7 +1667,7 @@ void ExtDecoder::ApplyProgressiveRegionColorSpace(DecodeContext &context,
 
 uint32_t ExtDecoder::ProgressiveDecodeRegion(DecodeContext &context)
 {
-    IMAGE_LOGI("[REGION] ProgressiveDecodeRegion IN, src %{public}d x %{public}d, dstSubset "
+    IMAGE_LOGD("[REGION] ProgressiveDecodeRegion IN, src %{public}d x %{public}d, dstSubset "
         "xy[%{public}d x %{public}d] wh[%{public}d x %{public}d], regionDesired [%{public}d x %{public}d], "
         "alloc %{public}d, pixFmt %{public}d",
         info_.width(), info_.height(), dstSubset_.left(), dstSubset_.top(),
@@ -2133,7 +2133,7 @@ uint32_t ExtDecoder::Decode(uint32_t index, DecodeContext &context)
 {
 #ifdef SK_ENABLE_OHOS_CODEC
     if (supportRegionFlag_) {
-        IMAGE_LOGI("[REGION] decode dispatch -> DoRegionDecode (progressive=%{public}d)",
+        IMAGE_LOGD("[REGION] decode dispatch -> DoRegionDecode (progressive=%{public}d)",
             IsProgressiveJpeg() ? 1 : 0);
         DebugInfo(info_, dstInfo_, dstOptions_);
         uint32_t regionDecodeRes = DoRegionDecode(context);
