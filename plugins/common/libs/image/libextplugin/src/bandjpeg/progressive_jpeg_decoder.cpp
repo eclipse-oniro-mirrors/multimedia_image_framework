@@ -335,7 +335,7 @@ uint32_t ProgressiveJpegDecoder::DecodeRegion(const fast::image::bandjpeg::Regio
     bool unavailable = !fastManager.IsInitialized() || fastManager.DecodeImageRegion == nullptr;
     CHECK_ERROR_RETURN_RET_LOG(unavailable, ERR_IMAGE_DATA_UNSUPPORT, "FAST DecodeImageRegion unavailable");
     const fast::image::IMAGE_ErrorCode ret = fastManager.DecodeImageRegion(params);
-    IMAGE_LOGI("bandjpeg region decode result=%{public}d, output=%{public}ux%{public}u",
+    IMAGE_LOGD("bandjpeg region decode result=%{public}d, output=%{public}ux%{public}u",
         static_cast<int32_t>(ret), params.dstWidth, params.dstHeight);
     switch (ret) {
         case fast::image::IMAGE_ErrorCode::SUCCESS:
