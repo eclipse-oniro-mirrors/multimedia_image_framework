@@ -35,6 +35,8 @@ ohos_shared_library("pixelmap_ndk") {
     "image_pixel_map_ndk.cpp",
   ]
 
+  version_script = "libpixelmap_ndk.versionscript"
+
   public_configs =
       [ "$SUBSYSTEM_DIR/interfaces/innerkits:image_external_config" ]
 

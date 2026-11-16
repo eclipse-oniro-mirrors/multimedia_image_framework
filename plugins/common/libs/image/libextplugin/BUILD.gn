@@ -94,6 +94,7 @@ ohos_shared_library("textureEncoderCL") {
   }
   cflags = [ "-O3" ]
   cflags_cc = [ "-O3" ]
+  version_script = "libtextureEncoderCL.versionscript"
   innerapi_tags = [ "platformsdk" ]
   subsystem_name = "multimedia"
   part_name = "image_framework"
