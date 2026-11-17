@@ -82,9 +82,7 @@ const char *GetOrientationName(int64_t orientation)
         "Right-bottom",
         "Left-bottom",
     };
-    if (orientation < ORIENTATION_MIN || orientation > ORIENTATION_MAX) {
-        return nullptr;
-    }
+    CHECK_ERROR_RETURN_RET(orientation < ORIENTATION_MIN || orientation > ORIENTATION_MAX, nullptr);
     return orientationNames[orientation - 1];
 }
 

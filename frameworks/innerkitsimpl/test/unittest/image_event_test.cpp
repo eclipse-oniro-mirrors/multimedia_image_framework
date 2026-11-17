@@ -14,13 +14,17 @@
  */
 
 #include <gtest/gtest.h>
+#include <algorithm>
+#include <array>
 #include <atomic>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
+#include <limits>
 #include <string>
 #include <thread>
 #include <unistd.h>
+#include <utility>
 #include <vector>
 #include "image_dfx.h"
 #include "image_decode_aggregate.h"
@@ -176,6 +180,7 @@ struct AggregateWrites {
     std::vector<DecodeDfx::Window> windows;
     int failPart = -1;
     DecodeDfx::Aggregate *reentrant = nullptr;
+    DecodeDfx::Aggregate *reentrantFlush = nullptr;
 };
 
 bool AggregateWriter(const DecodeDfx::Window &window, size_t part, void *context)
@@ -185,6 +190,11 @@ bool AggregateWriter(const DecodeDfx::Window &window, size_t part, void *context
     writes.windows.push_back(window);
     if (writes.reentrant != nullptr) {
         EXPECT_FALSE(writes.reentrant->Record(SuccessfulSample()));
+    }
+    if (writes.reentrantFlush != nullptr) {
+        // 上报期间的重入 Flush 与提交失败恢复都必须直接返回，不能影响外层分片写入。
+        writes.reentrantFlush->Flush(AggregateWriter, &writes);
+        writes.reentrantFlush->SubmissionFailed();
     }
     return static_cast<int>(part) != writes.failPart;
 }
@@ -542,5 +552,477 @@ HWTEST_F(DecodeAggregateTest, ClassifyPointTypesTest001, TestSize.Level3)
             static_cast<uint16_t>(DecodeResult::SUCCESS)));
     }
 }
+namespace {
+template<size_t N>
+uint16_t ExpectedRange(uint64_t value, const std::array<uint64_t, N> &limits)
+{
+    for (size_t i = 0; i < N; ++i) {
+        if (value < limits[i]) {
+            return static_cast<uint16_t>(i);
+        }
+    }
+    return static_cast<uint16_t>(N);
+}
+
+uint16_t ExpectedSizeBucket(uint64_t value)
+{
+    constexpr std::array<uint64_t, 8> limits = {
+        64ULL << 10, 256ULL << 10, 1ULL << 20, 4ULL << 20,
+        16ULL << 20, 64ULL << 20, 256ULL << 20, 1ULL << 30};
+    if (value == 0) {
+        return 0;
+    }
+    return static_cast<uint16_t>(1 + ExpectedRange(value, limits));
+}
+
+uint16_t ExpectedDimension(int64_t value, size_t slots)
+{
+    constexpr std::array<uint64_t, 8> limits = {256, 512, 1024, 2048, 4096, 8192, 16384, 32768};
+    if (value <= 0) {
+        return 0;
+    }
+    const auto bucket = static_cast<uint16_t>(1 + ExpectedRange(static_cast<uint64_t>(value), limits));
+    return std::min<uint16_t>(bucket, static_cast<uint16_t>(slots - 1));
+}
+
+DecodeDfx::Sample ClassifyWithOptions(const DecodeInfoOptions &options, bool optionsValid, bool contextValid)
+{
+    DecodeDfx::ClassifyRequest request;
+    request.options = &options;
+    request.point = DecodePoint::NORMAL;
+    request.result = DecodeResult::SUCCESS;
+    request.error = DecodeError::NONE;
+    request.optionsValid = optionsValid;
+    request.contextValid = contextValid;
+    return DecodeDfx::Classify(request);
+}
+} // namespace
+
+/**
+ * @tc.name: ClassifyMimeDictionaryTest001
+ * @tc.desc: Every documented MIME type maps to its own MIME bucket.
+ * @tc.type: FUNC
+ */
+HWTEST_F(DecodeAggregateTest, ClassifyMimeDictionaryTest001, TestSize.Level3)
+{
+    const std::vector<std::string> mimes = {
+        "image/jpeg", "image/png", "image/webp", "image/gif", "image/bmp", "image/heif", "image/avif",
+        "image/tiff", "image/svg+xml", "image/x-icon", "image/vnd.wap.wbmp", "image/astc",
+        "image/x-adobe-dng", "image/x-raw", "", "image/other-format"};
+    for (size_t i = 0; i < mimes.size(); ++i) {
+        DecodeInfoOptions options {};
+        options.mimeType = mimes[i];
+        const auto sample = ClassifyWithOptions(options, true, true);
+        EXPECT_EQ(sample.buckets[DecodeDfx::MIME_RESULT],
+            static_cast<uint16_t>(i) * DecodeDfx::RESULT_KIND_COUNT) << mimes[i];
+    }
+}
+
+/**
+ * @tc.name: ClassifyTextDictionariesTest001
+ * @tc.desc: YUV sampling, plugin type and image source names map to their dictionaries.
+ * @tc.type: FUNC
+ */
+HWTEST_F(DecodeAggregateTest, ClassifyTextDictionariesTest001, TestSize.Level3)
+{
+    struct TextCase {
+        std::string value;
+        uint16_t expected;
+    };
+    const std::vector<TextCase> yuvCases = {
+        {"4:4:4", 0}, {"4:2:2", 1}, {"4:2:0", 2}, {"4:4:0", 3}, {"4:1:1", 4}, {"4:1:0", 5},
+        {"4:0:0", 6}, {"not_yuv", 7}, {"", 8}, {"4:2:2:0", 9}};
+    for (const auto &item : yuvCases) {
+        DecodeInfoOptions options {};
+        options.sourceYuvSampling = item.value;
+        EXPECT_EQ(ClassifyWithOptions(options, true, true).buckets[DecodeDfx::SOURCE_YUV], item.expected)
+            << item.value;
+    }
+
+    const std::vector<TextCase> pluginCases = {
+        {"ext", 0}, {"jpeg", 1}, {"png", 2}, {"webp", 3}, {"svg", 4}, {"raw", 5}, {"", 6}, {"custom", 7}};
+    for (const auto &item : pluginCases) {
+        DecodeInfoOptions options {};
+        options.pluginType = item.value;
+        EXPECT_EQ(ClassifyWithOptions(options, true, true).buckets[DecodeDfx::PLUGIN_TYPE], item.expected)
+            << item.value;
+    }
+
+    const std::vector<TextCase> sourceCases = {
+        {"CreateImageSource by istream", 0}, {"CreateImageSource by data", 1},
+        {"CreateImageSource by pathName", 2}, {"CreateImageSource by fd", 3},
+        {"CreateImageSource by fd offset and length", 4}, {"incremental", 5}, {"", 6}, {"custom", 7}};
+    for (const auto &item : sourceCases) {
+        DecodeInfoOptions options {};
+        options.imageSource = item.value;
+        EXPECT_EQ(ClassifyWithOptions(options, true, true).buckets[DecodeDfx::IMAGE_SOURCE], item.expected)
+            << item.value;
+    }
+
+    DecodeInfoOptions incremental {};
+    incremental.imageSource = "CreateImageSource by pathName";
+    incremental.isIncrementalDecode = true;
+    EXPECT_EQ(ClassifyWithOptions(incremental, true, true).buckets[DecodeDfx::IMAGE_SOURCE], 5U);
+}
+
+/**
+ * @tc.name: ClassifySourceExtensionTest001
+ * @tc.desc: Only a cleaned extension or an unknown MIME keeps the extension bucket.
+ * @tc.type: FUNC
+ */
+HWTEST_F(DecodeAggregateTest, ClassifySourceExtensionTest001, TestSize.Level3)
+{
+    DecodeInfoOptions known {};
+    known.mimeType = "image/jpeg";
+    known.sourceFileExtension = "jpeg";
+    EXPECT_EQ(ClassifyWithOptions(known, true, true).buckets[DecodeDfx::SOURCE_EXTENSION], 1U);
+
+    DecodeInfoOptions unknownSuffix {};
+    unknownSuffix.mimeType = "image/jpeg";
+    unknownSuffix.sourceFileExtension = "JPG";
+    EXPECT_EQ(ClassifyWithOptions(unknownSuffix, true, true).buckets[DecodeDfx::SOURCE_EXTENSION], 9U);
+
+    DecodeInfoOptions unknownMime {};
+    unknownMime.sourceFileExtension.clear();
+    EXPECT_EQ(ClassifyWithOptions(unknownMime, true, true).buckets[DecodeDfx::SOURCE_EXTENSION], 8U);
+
+    DecodeInfoOptions knownWithoutSuffix {};
+    knownWithoutSuffix.mimeType = "image/png";
+    EXPECT_EQ(ClassifyWithOptions(knownWithoutSuffix, true, true).buckets[DecodeDfx::SOURCE_EXTENSION],
+        DecodeDfx::NO_BUCKET);
+}
+
+/**
+ * @tc.name: ClassifyPixelAndMemoryBucketsTest001
+ * @tc.desc: Public, SUT and invalid pixel formats and memory types map to their buckets.
+ * @tc.type: FUNC
+ */
+HWTEST_F(DecodeAggregateTest, ClassifyPixelAndMemoryBucketsTest001, TestSize.Level3)
+{
+    struct BucketCase {
+        int32_t value;
+        uint16_t expected;
+    };
+    const std::vector<BucketCase> pixelCases = {
+        {-1, 23}, {0, 0}, {17, 17}, {18, 23}, {100, 23}, {101, 18}, {104, 21}, {105, 23}};
+    for (const auto &item : pixelCases) {
+        DecodeInfoOptions options {};
+        options.desirePixelFormat = item.value;
+        EXPECT_EQ(ClassifyWithOptions(options, true, true).buckets[DecodeDfx::DESIRED_PIXEL_FORMAT], item.expected)
+            << item.value;
+    }
+
+    const std::vector<BucketCase> memoryCases = {{-1, 7}, {0, 0}, {4, 4}, {5, 7}};
+    for (const auto &item : memoryCases) {
+        DecodeInfoOptions options {};
+        options.memoryType = item.value;
+        EXPECT_EQ(ClassifyWithOptions(options, true, true).buckets[DecodeDfx::MEMORY_TYPE], item.expected)
+            << item.value;
+    }
+
+    DecodeInfoOptions noContext {};
+    noContext.memorySize = 4096;
+    noContext.memoryType = 1;
+    noContext.isHardDecode = true;
+    const auto noContextSample = ClassifyWithOptions(noContext, false, false);
+    EXPECT_EQ(noContextSample.buckets[DecodeDfx::MEMORY_TYPE], 6U);
+    EXPECT_EQ(noContextSample.buckets[DecodeDfx::MEMORY_SIZE], 0U);
+    EXPECT_EQ(noContextSample.buckets[DecodeDfx::HARD_DECODE], 2U);
+}
+
+/**
+ * @tc.name: ClassifyColorBucketsTest001
+ * @tc.desc: Source and desired color space values map to their own buckets.
+ * @tc.type: FUNC
+ */
+HWTEST_F(DecodeAggregateTest, ClassifyColorBucketsTest001, TestSize.Level3)
+{
+    const std::vector<int32_t> sourceNames = {0, 4, 3, 2, 27, 1, 24, 25, 15, 14, 9, 10, 19, 20, 26, 5};
+    for (size_t i = 0; i < sourceNames.size(); ++i) {
+        DecodeInfoOptions options {};
+        options.sourceColorSpace = sourceNames[i];
+        EXPECT_EQ(ClassifyWithOptions(options, true, true).buckets[DecodeDfx::SOURCE_COLOR], i)
+            << sourceNames[i];
+    }
+    DecodeInfoOptions unavailable {};
+    EXPECT_EQ(ClassifyWithOptions(unavailable, true, true).buckets[DecodeDfx::SOURCE_COLOR], 16U);
+    DecodeInfoOptions otherSource {};
+    otherSource.sourceColorSpace = 99;
+    EXPECT_EQ(ClassifyWithOptions(otherSource, true, true).buckets[DecodeDfx::SOURCE_COLOR], 17U);
+
+    for (int32_t value : {0, 13}) {
+        DecodeInfoOptions options {};
+        options.desireColorSpace = value;
+        EXPECT_EQ(ClassifyWithOptions(options, true, true).buckets[DecodeDfx::DESIRED_COLOR_SPACE],
+            static_cast<uint16_t>(value)) << value;
+    }
+    for (int32_t value : {-1, 14}) {
+        DecodeInfoOptions options {};
+        options.desireColorSpace = value;
+        EXPECT_EQ(ClassifyWithOptions(options, true, true).buckets[DecodeDfx::DESIRED_COLOR_SPACE], 15U) << value;
+    }
+    DecodeInfoOptions invalid {};
+    EXPECT_EQ(ClassifyWithOptions(invalid, false, true).buckets[DecodeDfx::DESIRED_COLOR_SPACE], 14U);
+}
+
+/**
+ * @tc.name: ClassifySampleAndIndexRangesTest001
+ * @tc.desc: Sample size and index options map to their range buckets.
+ * @tc.type: FUNC
+ */
+HWTEST_F(DecodeAggregateTest, ClassifySampleAndIndexRangesTest001, TestSize.Level3)
+{
+    constexpr std::array<uint64_t, 4> sampleLimits = {1, 2, 4, 8};
+    constexpr std::array<uint64_t, 4> indexLimits = {1, 2, 10, 100};
+    for (uint32_t sampleSize : {0U, 1U, 2U, 3U, 4U, 8U, 9U, 4096U}) {
+        DecodeInfoOptions options {};
+        options.sampleSize = sampleSize;
+        EXPECT_EQ(ClassifyWithOptions(options, true, true).buckets[DecodeDfx::SAMPLE_SIZE],
+            static_cast<uint16_t>(1 + ExpectedRange(sampleSize, sampleLimits))) << sampleSize;
+    }
+    for (uint32_t index : {0U, 1U, 2U, 9U, 10U, 100U, 1000U}) {
+        DecodeInfoOptions options {};
+        options.index = index;
+        EXPECT_EQ(ClassifyWithOptions(options, true, true).buckets[DecodeDfx::INDEX],
+            static_cast<uint16_t>(1 + ExpectedRange(index, indexLimits))) << index;
+    }
+}
+
+/**
+ * @tc.name: ClassifyDensityAndRegionRangesTest001
+ * @tc.desc: Fit density and region coordinates map to their range buckets.
+ * @tc.type: FUNC
+ */
+HWTEST_F(DecodeAggregateTest, ClassifyDensityAndRegionRangesTest001, TestSize.Level3)
+{
+    constexpr std::array<uint64_t, 4> densityLimits = {160, 240, 320, 480};
+    constexpr std::array<uint64_t, 4> regionLimits = {1, 256, 1024, 4096};
+    for (int32_t density : {0, -5, 1, 159, 160, 240, 480, 1000}) {
+        DecodeInfoOptions options {};
+        options.fitDensity = density;
+        EXPECT_EQ(ClassifyWithOptions(options, true, true).buckets[DecodeDfx::FIT_DENSITY], density <= 0 ? 0 :
+            static_cast<uint16_t>(1 + ExpectedRange(static_cast<uint64_t>(density), densityLimits))) << density;
+    }
+    for (int32_t coord : {-1, 0, 1, 255, 256, 4096, 99999}) {
+        DecodeInfoOptions options {};
+        options.desireRegionX = coord;
+        options.desireRegionY = coord;
+        const auto sample = ClassifyWithOptions(options, true, true);
+        const uint16_t expected = coord < 0 ? 0 :
+            static_cast<uint16_t>(1 + ExpectedRange(static_cast<uint64_t>(coord), regionLimits));
+        EXPECT_EQ(sample.buckets[DecodeDfx::REGION_X], expected) << coord;
+        EXPECT_EQ(sample.buckets[DecodeDfx::REGION_Y], expected) << coord;
+    }
+}
+
+/**
+ * @tc.name: ClassifyDimensionRangesTest001
+ * @tc.desc: Desired size and region width/height options map to dimension buckets.
+ * @tc.type: FUNC
+ */
+HWTEST_F(DecodeAggregateTest, ClassifyDimensionRangesTest001, TestSize.Level3)
+{
+    for (int32_t dimension : {-1, 0, 255, 256, 1023, 4096, 40000}) {
+        DecodeInfoOptions options {};
+        options.desireSizeWidth = dimension;
+        options.desireSizeHeight = dimension;
+        options.desireRegionWidth = dimension;
+        options.desireRegionHeight = dimension;
+        const auto sample = ClassifyWithOptions(options, true, true);
+        const uint16_t expected = ExpectedDimension(dimension, 8);
+        EXPECT_EQ(sample.buckets[DecodeDfx::DESIRED_WIDTH], expected) << dimension;
+        EXPECT_EQ(sample.buckets[DecodeDfx::DESIRED_HEIGHT], expected) << dimension;
+        EXPECT_EQ(sample.buckets[DecodeDfx::REGION_WIDTH], expected) << dimension;
+        EXPECT_EQ(sample.buckets[DecodeDfx::REGION_HEIGHT], expected) << dimension;
+    }
+}
+
+/**
+ * @tc.name: ClassifyInvalidOptionsBucketsTest001
+ * @tc.desc: Unfilled decode options land in the reserved invalid buckets.
+ * @tc.type: FUNC
+ */
+HWTEST_F(DecodeAggregateTest, ClassifyInvalidOptionsBucketsTest001, TestSize.Level3)
+{
+    DecodeInfoOptions noOptions {};
+    noOptions.sampleSize = 4;
+    noOptions.index = 10;
+    noOptions.fitDensity = 320;
+    noOptions.desireRegionX = 16;
+    const auto invalidSample = ClassifyWithOptions(noOptions, false, true);
+    EXPECT_EQ(invalidSample.buckets[DecodeDfx::DESIRED_PIXEL_FORMAT], 22U);
+    EXPECT_EQ(invalidSample.buckets[DecodeDfx::INVOKE_TYPE], 3U);
+    EXPECT_EQ(invalidSample.buckets[DecodeDfx::EDITABLE], 2U);
+    EXPECT_EQ(invalidSample.buckets[DecodeDfx::SAMPLE_SIZE], 0U);
+    EXPECT_EQ(invalidSample.buckets[DecodeDfx::ROTATE], 5U);
+    EXPECT_EQ(invalidSample.buckets[DecodeDfx::INDEX], 0U);
+    EXPECT_EQ(invalidSample.buckets[DecodeDfx::FIT_DENSITY], 0U);
+    EXPECT_EQ(invalidSample.buckets[DecodeDfx::REGION_X], 0U);
+}
+
+/**
+ * @tc.name: ClassifyRotateTest001
+ * @tc.desc: Only 0/90/180/270 are named buckets; other angles are grouped.
+ * @tc.type: FUNC
+ */
+HWTEST_F(DecodeAggregateTest, ClassifyRotateTest001, TestSize.Level3)
+{
+    const std::vector<std::pair<double, uint16_t>> cases = {
+        {0.0, 0}, {90.0, 1}, {180.0, 2}, {270.0, 3}, {45.0, 4}, {-90.0, 4},
+        {std::numeric_limits<double>::quiet_NaN(), 5}};
+    for (const auto &item : cases) {
+        DecodeInfoOptions options {};
+        options.rotate = item.first;
+        EXPECT_EQ(ClassifyWithOptions(options, true, true).buckets[DecodeDfx::ROTATE], item.second) << item.first;
+    }
+}
+
+/**
+ * @tc.name: ClassifyErrorAndHardDecodeTest001
+ * @tc.desc: Failure errors and hard decode diagnostics land in their own buckets.
+ * @tc.type: FUNC
+ */
+HWTEST_F(DecodeAggregateTest, ClassifyErrorAndHardDecodeTest001, TestSize.Level3)
+{
+    DecodeInfoOptions options {};
+    options.mimeType = "image/jpeg";
+    for (uint8_t error = 0; error <= static_cast<uint8_t>(DecodeError::POST_PROCESS); ++error) {
+        DecodeDfx::ClassifyRequest request;
+        request.options = &options;
+        request.result = DecodeResult::FAILURE;
+        request.error = static_cast<DecodeError>(error);
+        request.optionsValid = true;
+        request.contextValid = true;
+        const auto sample = DecodeDfx::Classify(request);
+        EXPECT_EQ(sample.buckets[DecodeDfx::ERROR_CLASS], error == 0 ? 1 : static_cast<uint16_t>(error));
+    }
+    DecodeInfoOptions hard {};
+    hard.isHardDecode = true;
+    hard.hardDecodeError = "hard decode failed";
+    const auto sample = ClassifyWithOptions(hard, true, true);
+    EXPECT_EQ(sample.buckets[DecodeDfx::HARD_DECODE], 1U);
+    EXPECT_EQ(sample.buckets[DecodeDfx::HARD_ERROR_CLASS], 7U);
+    EXPECT_EQ(sample.buckets[DecodeDfx::ERROR_CLASS], DecodeDfx::NO_BUCKET);
+}
+
+/**
+ * @tc.name: ClassifyGridAndSizeBucketsTest001
+ * @tc.desc: Grid dimensions and source size boundaries map to their buckets.
+ * @tc.type: FUNC
+ */
+HWTEST_F(DecodeAggregateTest, ClassifyGridAndSizeBucketsTest001, TestSize.Level3)
+{
+    for (int32_t grid : {0, 300, 1024, 16384, 100000}) {
+        DecodeInfoOptions options {};
+        options.heifGridWidth = grid;
+        options.heifGridHeight = grid;
+        const auto sample = ClassifyWithOptions(options, true, true);
+        const uint16_t expected = ExpectedDimension(grid, 6);
+        EXPECT_EQ(sample.buckets[DecodeDfx::GRID_WIDTH], expected) << grid;
+        EXPECT_EQ(sample.buckets[DecodeDfx::GRID_HEIGHT], expected) << grid;
+    }
+    for (uint64_t size : {0ULL, 1ULL, (64ULL << 10) - 1, 64ULL << 10, 1ULL << 20, 1ULL << 30, 2ULL << 30}) {
+        DecodeInfoOptions options {};
+        options.sourceSize = size;
+        DecodeDfx::ClassifyRequest request;
+        request.options = &options;
+        request.result = DecodeResult::SUCCESS;
+        request.optionsValid = true;
+        const auto sample = DecodeDfx::Classify(request);
+        EXPECT_EQ(sample.buckets[DecodeDfx::SOURCE_SIZE], ExpectedSizeBucket(size)) << size;
+    }
+    for (int32_t width : {-1, 0, 300, 8192, 40000}) {
+        DecodeInfoOptions options {};
+        options.sourceWidth = width;
+        options.sourceHeight = width;
+        const auto sample = ClassifyWithOptions(options, true, true);
+        const uint16_t expected = ExpectedDimension(width, DecodeDfx::METRICS[DecodeDfx::SOURCE_WIDTH].size);
+        EXPECT_EQ(sample.buckets[DecodeDfx::SOURCE_WIDTH], expected) << width;
+        EXPECT_EQ(sample.buckets[DecodeDfx::SOURCE_HEIGHT], expected) << width;
+    }
+}
+
+/**
+ * @tc.name: AggregateClampsBucketsAndResultsTest001
+ * @tc.desc: Out-of-range buckets and results are counted in the clamped tail bucket.
+ * @tc.type: FUNC
+ */
+HWTEST_F(DecodeAggregateTest, AggregateClampsBucketsAndResultsTest001, TestSize.Level3)
+{
+    DecodeDfx::Aggregate aggregate(AggregateClock);
+    auto sample = SuccessfulSample();
+    sample.buckets[DecodeDfx::MIME_RESULT] = 1000;
+    sample.result = static_cast<DecodeResult>(9);
+    EXPECT_FALSE(aggregate.Record(sample));
+    g_aggregateNow.fetch_add(DecodeDfx::WINDOW_MS);
+    ASSERT_TRUE(aggregate.Record(sample));
+    AggregateWrites writes;
+    aggregate.Flush(AggregateWriter, &writes);
+    ASSERT_FALSE(writes.windows.empty());
+    const auto &window = writes.windows[0];
+    const size_t lastBucket = DecodeDfx::OFFSETS[DecodeDfx::MIME_RESULT] +
+        DecodeDfx::METRICS[DecodeDfx::MIME_RESULT].size - 1;
+    EXPECT_EQ(window.counters[lastBucket], 2U);
+    EXPECT_EQ(window.results[1], 2U);
+    EXPECT_EQ(window.results[0], 0U);
+}
+
+/**
+ * @tc.name: AggregateFlushWithoutReservationTest001
+ * @tc.desc: Flush without a reserved window writes nothing and keeps the aggregate usable.
+ * @tc.type: FUNC
+ */
+HWTEST_F(DecodeAggregateTest, AggregateFlushWithoutReservationTest001, TestSize.Level3)
+{
+    DecodeDfx::Aggregate aggregate(AggregateClock);
+    AggregateWrites writes;
+    aggregate.Flush(AggregateWriter, &writes);
+    EXPECT_TRUE(writes.parts.empty());
+    aggregate.SubmissionFailed();
+    EXPECT_FALSE(aggregate.Record(SuccessfulSample()));
+    aggregate.Flush(AggregateWriter, &writes);
+    EXPECT_TRUE(writes.parts.empty());
+}
+
+/**
+ * @tc.name: AggregateFlushWhileRunningTest001
+ * @tc.desc: Reentrant flush and submission failure during reporting are ignored.
+ * @tc.type: FUNC
+ */
+HWTEST_F(DecodeAggregateTest, AggregateFlushWhileRunningTest001, TestSize.Level3)
+{
+    DecodeDfx::Aggregate aggregate(AggregateClock);
+    aggregate.Record(SuccessfulSample());
+    g_aggregateNow.fetch_add(DecodeDfx::WINDOW_MS);
+    ASSERT_TRUE(aggregate.Record(SuccessfulSample()));
+    AggregateWrites writes;
+    writes.reentrantFlush = &aggregate;
+    aggregate.Flush(AggregateWriter, &writes);
+    EXPECT_EQ(writes.parts, (std::vector<size_t> {0, 1, 2, 3, 4}));
+}
+
+/**
+ * @tc.name: AggregateRecordWithoutCostAndSizeTest001
+ * @tc.desc: Samples without a valid cost or source size do not update the sums.
+ * @tc.type: FUNC
+ */
+HWTEST_F(DecodeAggregateTest, AggregateRecordWithoutCostAndSizeTest001, TestSize.Level3)
+{
+    DecodeDfx::Aggregate aggregate(AggregateClock);
+    auto sample = SuccessfulSample();
+    sample.costValid = false;
+    sample.sourceSize = 0;
+    aggregate.Record(sample);
+    g_aggregateNow.fetch_add(DecodeDfx::WINDOW_MS);
+    ASSERT_TRUE(aggregate.Record(sample));
+    AggregateWrites writes;
+    aggregate.Flush(AggregateWriter, &writes);
+    ASSERT_FALSE(writes.windows.empty());
+    EXPECT_EQ(writes.windows[0].costValidCount, 0U);
+    EXPECT_EQ(writes.windows[0].costSum, 0U);
+    EXPECT_EQ(writes.windows[0].sourceSizeValidCount, 0U);
+    EXPECT_EQ(writes.windows[0].results[0], 2U);
+}
+
 } // namespace Multimedia
 } // namespace OHOS

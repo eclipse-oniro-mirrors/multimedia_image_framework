@@ -13,11 +13,14 @@
  * limitations under the License.
  */
 
+#include <algorithm>
+#include <cstring>
 #include <fcntl.h>
 #include <fstream>
 #include <gtest/gtest.h>
 #include <iterator>
 #include <memory>
+#include <string>
 #include <unistd.h>
 #include <vector>
 
@@ -48,6 +51,8 @@ constexpr size_t TIFF_VALUE_FIELD_OFFSET = 8;
 constexpr uint16_t EXIF_TYPE_SHORT = 3;
 constexpr uint16_t EXIF_TYPE_LONG = 4;
 constexpr uint16_t EXIF_NEW_SUBFILE_TYPE_TAG = 0x00FE;
+// 只保留 CR3 的 ftyp 品牌头，用于验证截断的 box 结构被拒绝。
+constexpr size_t TRUNCATED_CR3_SIZE = 32;
 
 std::unique_ptr<ImageSource> CreateRawSource(const std::string &fileName, uint32_t &errorCode)
 {
@@ -335,6 +340,100 @@ HWTEST_F(ImageSourceRawPreviewOrientationTest, PreviewWithoutExifOrientationKeep
 }
 
 /**
+ * @tc.name: Cr3PreviewWithoutExifOrientation001
+ * @tc.desc: A CR3 preview located through its PRVW box without EXIF Orientation reports unsupported.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceRawPreviewOrientationTest, Cr3PreviewWithoutExifOrientation001, TestSize.Level1)
+{
+    uint32_t errorCode = 0;
+    std::unique_ptr<ImageSource> imageSource = CreateRawSource("test.cr3", errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource, nullptr);
+
+    std::string previewOrientation;
+    EXPECT_EQ(imageSource->GetRawPreviewOrientation(previewOrientation),
+        static_cast<uint32_t>(ERR_IMAGE_DECODE_EXIF_UNSUPPORT));
+    EXPECT_TRUE(previewOrientation.empty());
+}
+
+/**
+ * @tc.name: ArwSamplePreviewOrientation001
+ * @tc.desc: A Sony ARW preview JPEG carrying its own EXIF Orientation is decoded.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceRawPreviewOrientationTest, ArwSamplePreviewOrientation001, TestSize.Level1)
+{
+    uint32_t errorCode = 0;
+    std::unique_ptr<ImageSource> imageSource = CreateRawSource("sample_arw_sony_ilce7s.arw", errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource, nullptr);
+
+    std::string previewOrientation;
+    EXPECT_EQ(imageSource->GetRawPreviewOrientation(previewOrientation), SUCCESS);
+    EXPECT_EQ(previewOrientation, "Right-top");
+}
+
+/**
+ * @tc.name: Cr2SamplePreviewOrientation001
+ * @tc.desc: A Canon CR2 preview JPEG carrying its own EXIF Orientation is decoded.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceRawPreviewOrientationTest, Cr2SamplePreviewOrientation001, TestSize.Level1)
+{
+    uint32_t errorCode = 0;
+    std::unique_ptr<ImageSource> imageSource = CreateRawSource("sample_cr2_canon_eos20d.cr2", errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource, nullptr);
+
+    std::string previewOrientation;
+    EXPECT_EQ(imageSource->GetRawPreviewOrientation(previewOrientation), SUCCESS);
+    EXPECT_EQ(previewOrientation, "Left-bottom");
+}
+
+/**
+ * @tc.name: Cr3SamplePreviewOrientation001
+ * @tc.desc: A Canon CR3 preview located through its PRVW box returns its EXIF Orientation.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceRawPreviewOrientationTest, Cr3SamplePreviewOrientation001, TestSize.Level1)
+{
+    uint32_t errorCode = 0;
+    std::unique_ptr<ImageSource> imageSource = CreateRawSource("sample_cr3_canon_eos_r6.cr3", errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource, nullptr);
+
+    std::string previewOrientation;
+    EXPECT_EQ(imageSource->GetRawPreviewOrientation(previewOrientation), SUCCESS);
+    EXPECT_EQ(previewOrientation, "Right-top");
+}
+
+/**
+ * @tc.name: TruncatedSourceRejected001
+ * @tc.desc: A source truncated inside the CR3 box structure is rejected.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceRawPreviewOrientationTest, TruncatedSourceRejected001, TestSize.Level1)
+{
+    std::vector<uint8_t> data;
+    ASSERT_TRUE(ReadFileToVector("sample_cr3_canon_eos_r6.cr3", data));
+    // 保留 ftypcrx 品牌但截断 box 结构，CR3 预览定位必须失败。
+    data.resize(TRUNCATED_CR3_SIZE);
+    SourceOptions opts;
+    uint32_t errorCode = 0;
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(data.data(), static_cast<uint32_t>(data.size()), opts, errorCode);
+    if (imageSource == nullptr) {
+        EXPECT_NE(errorCode, SUCCESS);
+        return;
+    }
+
+    std::string orientation;
+    EXPECT_NE(imageSource->GetRawPreviewOrientation(orientation), SUCCESS);
+    EXPECT_TRUE(orientation.empty());
+}
+
+/**
  * @tc.name: NonRawImageUnsupported001
  * @tc.desc: Non-RAW images are rejected by the preview Orientation request.
  * @tc.type: FUNC
@@ -395,5 +494,447 @@ HWTEST_F(ImageSourceRawPreviewOrientationTest, FdSourcePreviewOrientation001, Te
     EXPECT_EQ(previewOrientation, "Left-bottom");
     close(fd);
 }
+
+namespace {
+constexpr uint8_t JPEG_MARKER_PREFIX = 0xFF;
+constexpr uint8_t JPEG_MARKER_SOI = 0xD8;
+constexpr uint8_t JPEG_MARKER_EOI = 0xD9;
+constexpr uint8_t JPEG_MARKER_SOS = 0xDA;
+constexpr uint8_t JPEG_MARKER_APP0 = 0xE0;
+constexpr uint8_t JPEG_MARKER_APP1 = 0xE1;
+constexpr uint16_t EXIF_ORIENTATION_TAG = 0x0112;
+constexpr uint16_t EXIF_SUB_IFD_TAG = 0x8769;
+constexpr uint16_t EXIF_TYPE_RATIONAL = 5;
+constexpr uint16_t EXIF_TIFF_BAD_MAGIC = 43;
+constexpr uint16_t ORIENTATION_MIN = 1;
+constexpr uint16_t ORIENTATION_MAX = 8;
+constexpr uint16_t ORIENTATION_OUT_OF_RANGE = 9;
+constexpr size_t JPEG_SEGMENT_LENGTH_OFFSET = 2;
+constexpr size_t EXIF_HEADER_SIZE = 6;
+// APP1 段内 "Exif\0\0" 起始偏移：段标记 2 字节 + 长度 2 字节。
+constexpr size_t APP1_EXIF_HEADER_OFFSET = 4;
+// APP1 段内 TIFF 起始偏移：位于 "Exif\0\0" 之后。
+constexpr size_t APP1_TIFF_OFFSET = APP1_EXIF_HEADER_OFFSET + EXIF_HEADER_SIZE;
+// 构造的预览 JPEG 必须远小于真实预览长度，避免覆盖 RAW 容器元数据。
+constexpr size_t MAX_SYNTHETIC_PREVIEW_SIZE = 512;
+
+struct TiffEntrySpec {
+    uint16_t tag;
+    uint16_t type;
+    uint32_t count;
+    uint32_t value;
+};
+
+void PutUint16(std::vector<uint8_t> &data, size_t offset, uint16_t value, bool bigEndian)
+{
+    if (bigEndian) {
+        data[offset] = static_cast<uint8_t>(value >> BYTE_SHIFT_8);
+        data[offset + 1] = static_cast<uint8_t>(value & 0xFF);
+        return;
+    }
+    data[offset] = static_cast<uint8_t>(value & 0xFF);
+    data[offset + 1] = static_cast<uint8_t>(value >> BYTE_SHIFT_8);
+}
+
+void PutUint32(std::vector<uint8_t> &data, size_t offset, uint32_t value, bool bigEndian)
+{
+    if (bigEndian) {
+        data[offset] = static_cast<uint8_t>(value >> BYTE_SHIFT_24);
+        data[offset + 1] = static_cast<uint8_t>((value >> BYTE_SHIFT_16) & 0xFF);
+        data[offset + BYTE_INDEX_2] = static_cast<uint8_t>((value >> BYTE_SHIFT_8) & 0xFF);
+        data[offset + BYTE_INDEX_3] = static_cast<uint8_t>(value & 0xFF);
+        return;
+    }
+    data[offset] = static_cast<uint8_t>(value & 0xFF);
+    data[offset + 1] = static_cast<uint8_t>((value >> BYTE_SHIFT_8) & 0xFF);
+    data[offset + BYTE_INDEX_2] = static_cast<uint8_t>((value >> BYTE_SHIFT_16) & 0xFF);
+    data[offset + BYTE_INDEX_3] = static_cast<uint8_t>(value >> BYTE_SHIFT_24);
+}
+
+uint32_t SubIfdPointer(size_t ifd0EntryCount)
+{
+    return static_cast<uint32_t>(TIFF_HEADER_SIZE + TIFF_ENTRY_COUNT_SIZE +
+        ifd0EntryCount * TIFF_IFD_ENTRY_SIZE + BYTE_INDEX_4);
+}
+
+void WriteIfd(std::vector<uint8_t> &data, size_t offset, const std::vector<TiffEntrySpec> &entries, bool bigEndian)
+{
+    PutUint16(data, offset, static_cast<uint16_t>(entries.size()), bigEndian);
+    for (size_t i = 0; i < entries.size(); ++i) {
+        const size_t entryOffset = offset + TIFF_ENTRY_COUNT_SIZE + i * TIFF_IFD_ENTRY_SIZE;
+        PutUint16(data, entryOffset, entries[i].tag, bigEndian);
+        PutUint16(data, entryOffset + BYTE_INDEX_2, entries[i].type, bigEndian);
+        PutUint32(data, entryOffset + BYTE_INDEX_4, entries[i].count, bigEndian);
+        // SHORT 值只落在值域前两个字节，其余保持 0，符合 EXIF 对齐约定。
+        if (entries[i].type == EXIF_TYPE_SHORT) {
+            PutUint16(data, entryOffset + TIFF_VALUE_FIELD_OFFSET,
+                static_cast<uint16_t>(entries[i].value), bigEndian);
+        } else {
+            PutUint32(data, entryOffset + TIFF_VALUE_FIELD_OFFSET, entries[i].value, bigEndian);
+        }
+    }
+}
+
+std::vector<uint8_t> BuildTiff(bool bigEndian, uint16_t magic, const std::vector<TiffEntrySpec> &ifd0,
+    const std::vector<TiffEntrySpec> &subIfd = {})
+{
+    const size_t ifd0Size = TIFF_ENTRY_COUNT_SIZE + ifd0.size() * TIFF_IFD_ENTRY_SIZE + BYTE_INDEX_4;
+    const size_t subIfdSize = subIfd.empty() ? 0 :
+        TIFF_ENTRY_COUNT_SIZE + subIfd.size() * TIFF_IFD_ENTRY_SIZE + BYTE_INDEX_4;
+    std::vector<uint8_t> data(TIFF_HEADER_SIZE + ifd0Size + subIfdSize, 0);
+    data[0] = bigEndian ? 'M' : 'I';
+    data[1] = data[0];
+    PutUint16(data, BYTE_INDEX_2, magic, bigEndian);
+    PutUint32(data, BYTE_INDEX_4, static_cast<uint32_t>(TIFF_HEADER_SIZE), bigEndian);
+    WriteIfd(data, TIFF_HEADER_SIZE, ifd0, bigEndian);
+    if (!subIfd.empty()) {
+        WriteIfd(data, TIFF_HEADER_SIZE + ifd0Size, subIfd, bigEndian);
+    }
+    return data;
+}
+
+std::vector<uint8_t> BuildSegment(uint8_t marker, const std::vector<uint8_t> &payload)
+{
+    const size_t length = payload.size() + JPEG_SEGMENT_LENGTH_OFFSET;
+    std::vector<uint8_t> segment { JPEG_MARKER_PREFIX, marker,
+        static_cast<uint8_t>(length >> BYTE_SHIFT_8), static_cast<uint8_t>(length & 0xFF) };
+    segment.insert(segment.end(), payload.begin(), payload.end());
+    return segment;
+}
+
+std::vector<uint8_t> BuildExifPayload(const std::vector<uint8_t> &tiff)
+{
+    std::vector<uint8_t> payload { 'E', 'x', 'i', 'f', 0, 0 };
+    payload.insert(payload.end(), tiff.begin(), tiff.end());
+    return payload;
+}
+
+std::vector<uint8_t> BuildExifSegment(const std::vector<uint8_t> &tiff)
+{
+    return BuildSegment(JPEG_MARKER_APP1, BuildExifPayload(tiff));
+}
+
+std::vector<uint8_t> BuildPreviewJpeg(const std::vector<std::vector<uint8_t>> &segments, uint8_t tailMarker)
+{
+    std::vector<uint8_t> jpeg { JPEG_MARKER_PREFIX, JPEG_MARKER_SOI };
+    for (const auto &segment : segments) {
+        jpeg.insert(jpeg.end(), segment.begin(), segment.end());
+    }
+    jpeg.push_back(JPEG_MARKER_PREFIX);
+    jpeg.push_back(tailMarker);
+    return jpeg;
+}
+
+size_t FindFirstJpegSoi(const std::vector<uint8_t> &data)
+{
+    for (size_t i = 0; i + BYTE_INDEX_3 <= data.size(); ++i) {
+        if (data[i] == JPEG_MARKER_PREFIX && data[i + 1] == JPEG_MARKER_SOI &&
+            data[i + BYTE_INDEX_2] == JPEG_MARKER_PREFIX) {
+            return i;
+        }
+    }
+    return std::string::npos;
+}
+
+bool ReplacePreviewJpeg(std::vector<uint8_t> &data, const std::vector<uint8_t> &jpeg)
+{
+    const size_t soi = FindFirstJpegSoi(data);
+    if (soi == std::string::npos || jpeg.size() > MAX_SYNTHETIC_PREVIEW_SIZE ||
+        soi + jpeg.size() > data.size()) {
+        return false;
+    }
+    std::copy(jpeg.begin(), jpeg.end(), data.begin() + soi);
+    return true;
+}
+
+uint32_t ReadBufferPreviewOrientation(std::vector<uint8_t> &data, std::string &orientation)
+{
+    SourceOptions opts;
+    uint32_t errorCode = 0;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(data.data(),
+        static_cast<uint32_t>(data.size()), opts, errorCode);
+    if (imageSource == nullptr) {
+        return errorCode;
+    }
+    return imageSource->GetRawPreviewOrientation(orientation);
+}
+
+// 在真实 RAW 资源上覆写首个 JPEG SOI 起的字节，得到可控的预览 JPEG。
+uint32_t ReadPatchedPreviewOrientation(std::vector<uint8_t> &data, const std::vector<uint8_t> &jpeg,
+    std::string &orientation, bool &patched)
+{
+    patched = ReplacePreviewJpeg(data, jpeg);
+    if (!patched) {
+        return ERR_IMAGE_SOURCE_DATA;
+    }
+    return ReadBufferPreviewOrientation(data, orientation);
+}
+
+// 定位首个 JPEG 之后的 EXIF APP1 段，用于原位改写 TIFF，避免依赖预览偏移推断。
+size_t FindPreviewExifSegment(const std::vector<uint8_t> &data)
+{
+    const size_t soi = FindFirstJpegSoi(data);
+    if (soi == std::string::npos) {
+        return std::string::npos;
+    }
+    for (size_t i = soi + BYTE_INDEX_2; i + APP1_TIFF_OFFSET <= data.size(); ++i) {
+        if (data[i] == JPEG_MARKER_PREFIX && data[i + 1] == JPEG_MARKER_APP1 &&
+            std::memcmp(&data[i + APP1_EXIF_HEADER_OFFSET], "Exif\0\0", EXIF_HEADER_SIZE) == 0) {
+            return i;
+        }
+    }
+    return std::string::npos;
+}
+
+bool RewritePreviewExifTiff(std::vector<uint8_t> &data, const std::vector<uint8_t> &tiff)
+{
+    const size_t app1 = FindPreviewExifSegment(data);
+    if (app1 == std::string::npos) {
+        return false;
+    }
+    const size_t segmentLength = (static_cast<size_t>(data[app1 + JPEG_SEGMENT_LENGTH_OFFSET]) << BYTE_SHIFT_8) |
+        data[app1 + JPEG_SEGMENT_LENGTH_OFFSET + 1];
+    if (segmentLength < JPEG_SEGMENT_LENGTH_OFFSET + EXIF_HEADER_SIZE) {
+        return false;
+    }
+    const size_t tiffSize = segmentLength - JPEG_SEGMENT_LENGTH_OFFSET - EXIF_HEADER_SIZE;
+    if (tiff.size() > tiffSize) {
+        return false;
+    }
+    std::copy(tiff.begin(), tiff.end(), data.begin() + app1 + APP1_TIFF_OFFSET);
+    return true;
+}
+
+uint32_t ReadRewrittenPreviewOrientation(std::vector<uint8_t> &data, const std::vector<uint8_t> &tiff,
+    std::string &orientation, bool &patched)
+{
+    patched = RewritePreviewExifTiff(data, tiff);
+    if (!patched) {
+        return ERR_IMAGE_SOURCE_DATA;
+    }
+    return ReadBufferPreviewOrientation(data, orientation);
+}
+} // namespace
+
+/**
+ * @tc.name: PreviewOrientationBigEndian001
+ * @tc.desc: A big-endian EXIF TIFF block of the preview JPEG is decoded.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceRawPreviewOrientationTest, PreviewOrientationBigEndian001, TestSize.Level1)
+{
+    std::vector<uint8_t> data;
+    ASSERT_TRUE(ReadFileToVector("test.raf", data));
+    const std::vector<uint8_t> tiff = BuildTiff(true, TIFF_MAGIC,
+        {{EXIF_ORIENTATION_TAG, EXIF_TYPE_SHORT, 1, 6}});
+    std::string orientation;
+    bool patched = false;
+    ASSERT_EQ(ReadRewrittenPreviewOrientation(data, tiff, orientation, patched), SUCCESS);
+    EXPECT_TRUE(patched);
+    EXPECT_EQ(orientation, "Right-top");
+}
+
+/**
+ * @tc.name: PreviewOrientationLongType001
+ * @tc.desc: An Orientation entry stored as EXIF LONG is decoded.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceRawPreviewOrientationTest, PreviewOrientationLongType001, TestSize.Level1)
+{
+    std::vector<uint8_t> data;
+    ASSERT_TRUE(ReadFileToVector("test.raf", data));
+    const std::vector<uint8_t> tiff = BuildTiff(false, TIFF_MAGIC,
+        {{EXIF_ORIENTATION_TAG, EXIF_TYPE_LONG, 1, ORIENTATION_MAX}});
+    std::string orientation;
+    bool patched = false;
+    ASSERT_EQ(ReadRewrittenPreviewOrientation(data, tiff, orientation, patched), SUCCESS);
+    EXPECT_TRUE(patched);
+    EXPECT_EQ(orientation, "Left-bottom");
+}
+
+/**
+ * @tc.name: PreviewOrientationSubIfd001
+ * @tc.desc: An Orientation stored only in the Exif SubIFD is used as the fallback.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceRawPreviewOrientationTest, PreviewOrientationSubIfd001, TestSize.Level1)
+{
+    std::vector<uint8_t> data;
+    ASSERT_TRUE(ReadFileToVector("test.raf", data));
+    const std::vector<uint8_t> tiff = BuildTiff(false, TIFF_MAGIC,
+        {{EXIF_SUB_IFD_TAG, EXIF_TYPE_LONG, 1, SubIfdPointer(1)}},
+        {{EXIF_ORIENTATION_TAG, EXIF_TYPE_SHORT, 1, 3}});
+    std::string orientation;
+    bool patched = false;
+    ASSERT_EQ(ReadRewrittenPreviewOrientation(data, tiff, orientation, patched), SUCCESS);
+    EXPECT_TRUE(patched);
+    EXPECT_EQ(orientation, "Bottom-right");
+}
+
+/**
+ * @tc.name: PreviewOrientationInvalidValue001
+ * @tc.desc: Orientation values outside 1..8 are rejected instead of being reported.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceRawPreviewOrientationTest, PreviewOrientationInvalidValue001, TestSize.Level1)
+{
+    std::vector<uint8_t> source;
+    ASSERT_TRUE(ReadFileToVector("test.raf", source));
+    for (const uint16_t invalidValue : {static_cast<uint16_t>(0), ORIENTATION_OUT_OF_RANGE}) {
+        std::vector<uint8_t> data = source;
+        const std::vector<uint8_t> tiff = BuildTiff(false, TIFF_MAGIC,
+            {{EXIF_ORIENTATION_TAG, EXIF_TYPE_SHORT, 1, invalidValue}});
+        std::string orientation;
+        bool patched = false;
+        EXPECT_EQ(ReadRewrittenPreviewOrientation(data, tiff, orientation, patched),
+            static_cast<uint32_t>(ERR_IMAGE_DECODE_EXIF_UNSUPPORT));
+        EXPECT_TRUE(patched);
+        EXPECT_TRUE(orientation.empty());
+    }
+}
+
+/**
+ * @tc.name: PreviewOrientationUnsupportedEntry001
+ * @tc.desc: An Orientation entry with an unsupported type or count is ignored.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceRawPreviewOrientationTest, PreviewOrientationUnsupportedEntry001, TestSize.Level1)
+{
+    std::vector<uint8_t> source;
+    ASSERT_TRUE(ReadFileToVector("test.raf", source));
+    const std::vector<std::vector<TiffEntrySpec>> cases = {
+        {{EXIF_ORIENTATION_TAG, EXIF_TYPE_RATIONAL, 1, ORIENTATION_MIN}},
+        {{EXIF_ORIENTATION_TAG, EXIF_TYPE_SHORT, 2, ORIENTATION_MIN}},
+    };
+    for (const auto &entries : cases) {
+        std::vector<uint8_t> data = source;
+        const std::vector<uint8_t> tiff = BuildTiff(false, TIFF_MAGIC, entries);
+        std::string orientation;
+        bool patched = false;
+        EXPECT_EQ(ReadRewrittenPreviewOrientation(data, tiff, orientation, patched),
+            static_cast<uint32_t>(ERR_IMAGE_DECODE_EXIF_UNSUPPORT));
+        EXPECT_TRUE(patched);
+    }
+}
+
+/**
+ * @tc.name: PreviewOrientationMalformedTiff001
+ * @tc.desc: Broken TIFF header, IFD offset and entry count are rejected without crashing.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceRawPreviewOrientationTest, PreviewOrientationMalformedTiff001, TestSize.Level1)
+{
+    std::vector<uint8_t> source;
+    ASSERT_TRUE(ReadFileToVector("test.raf", source));
+
+    std::vector<std::vector<uint8_t>> tiffs;
+    // 空 IFD：没有 Orientation 也没有 SubIFD 指针。
+    tiffs.push_back(BuildTiff(false, TIFF_MAGIC, {}));
+    // TIFF 魔数错误。
+    tiffs.push_back(BuildTiff(false, EXIF_TIFF_BAD_MAGIC, {{EXIF_ORIENTATION_TAG, EXIF_TYPE_SHORT, 1, 1}}));
+    // IFD 偏移落在 TIFF 头内部。
+    std::vector<uint8_t> lowIfd = BuildTiff(false, TIFF_MAGIC, {{EXIF_ORIENTATION_TAG, EXIF_TYPE_SHORT, 1, 1}});
+    PutUint32(lowIfd, BYTE_INDEX_4, static_cast<uint32_t>(BYTE_INDEX_4), false);
+    tiffs.push_back(lowIfd);
+    // IFD 偏移越过数据尾部。
+    std::vector<uint8_t> farIfd = BuildTiff(false, TIFF_MAGIC, {{EXIF_ORIENTATION_TAG, EXIF_TYPE_SHORT, 1, 1}});
+    PutUint32(farIfd, BYTE_INDEX_4, 0xFFFF, false);
+    tiffs.push_back(farIfd);
+    // 条目数远超数据可容纳的条目。
+    std::vector<uint8_t> hugeCount = BuildTiff(false, TIFF_MAGIC, {{EXIF_ORIENTATION_TAG, EXIF_TYPE_SHORT, 1, 1}});
+    PutUint16(hugeCount, TIFF_HEADER_SIZE, 0xFFFF, false);
+    tiffs.push_back(hugeCount);
+    // 非法字节序标记。
+    std::vector<uint8_t> badOrder = BuildTiff(false, TIFF_MAGIC, {{EXIF_ORIENTATION_TAG, EXIF_TYPE_SHORT, 1, 1}});
+    badOrder[0] = 'X';
+    badOrder[1] = 'X';
+    tiffs.push_back(badOrder);
+
+    for (const auto &tiff : tiffs) {
+        std::vector<uint8_t> data = source;
+        std::string orientation;
+        bool patched = false;
+        EXPECT_EQ(ReadRewrittenPreviewOrientation(data, tiff, orientation, patched),
+            static_cast<uint32_t>(ERR_IMAGE_DECODE_EXIF_UNSUPPORT));
+        EXPECT_TRUE(patched);
+        EXPECT_TRUE(orientation.empty());
+    }
+}
+
+/**
+ * @tc.name: PreviewOrientationInvalidSegments001
+ * @tc.desc: Invalid segment length, stop markers and truncated segments end the scan.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceRawPreviewOrientationTest, PreviewOrientationInvalidSegments001, TestSize.Level1)
+{
+    std::vector<uint8_t> source;
+    ASSERT_TRUE(ReadFileToVector("test.raf", source));
+    const std::vector<uint8_t> exifSegment = BuildExifSegment(BuildTiff(false, TIFF_MAGIC,
+        {{EXIF_ORIENTATION_TAG, EXIF_TYPE_SHORT, 1, 1}}));
+
+    // 段长度小于长度字段自身。
+    std::vector<uint8_t> zeroLength = exifSegment;
+    zeroLength[JPEG_SEGMENT_LENGTH_OFFSET] = 0x00;
+    zeroLength[JPEG_SEGMENT_LENGTH_OFFSET + 1] = 0x01;
+    // Exif 头不足 6 字节。
+    std::vector<uint8_t> shortExif = BuildSegment(JPEG_MARKER_APP1, { 'E', 'x', 'i', 'f' });
+    // Exif 头之后的 TIFF 数据不足 8 字节。
+    std::vector<uint8_t> shortTiff = BuildSegment(JPEG_MARKER_APP1, BuildExifPayload({ 0x49, 0x49, 0x2A, 0x00 }));
+
+    const std::vector<std::vector<std::vector<uint8_t>>> segmentCases = {
+        {zeroLength},
+        {shortExif},
+        {shortTiff},
+    };
+    for (const auto &segments : segmentCases) {
+        std::vector<uint8_t> data = source;
+        const std::vector<uint8_t> jpeg = BuildPreviewJpeg(segments, JPEG_MARKER_EOI);
+        std::string orientation;
+        bool patched = false;
+        EXPECT_EQ(ReadPatchedPreviewOrientation(data, jpeg, orientation, patched),
+            static_cast<uint32_t>(ERR_IMAGE_DECODE_EXIF_UNSUPPORT));
+        EXPECT_TRUE(patched);
+        EXPECT_TRUE(orientation.empty());
+    }
+
+    for (const uint8_t tail : { JPEG_MARKER_EOI, JPEG_MARKER_SOS }) {
+        std::vector<uint8_t> data = source;
+        const std::vector<uint8_t> jpeg = BuildPreviewJpeg({}, tail);
+        std::string orientation;
+        bool patched = false;
+        EXPECT_EQ(ReadPatchedPreviewOrientation(data, jpeg, orientation, patched),
+            static_cast<uint32_t>(ERR_IMAGE_DECODE_EXIF_UNSUPPORT));
+        EXPECT_TRUE(patched);
+    }
+}
+
+/**
+ * @tc.name: PreviewOrientationInvalidJpegSignature001
+ * @tc.desc: A preview range that is not a JPEG is rejected on the first bytes.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceRawPreviewOrientationTest, PreviewOrientationInvalidJpegSignature001, TestSize.Level1)
+{
+    std::vector<uint8_t> source;
+    ASSERT_TRUE(ReadFileToVector("test.raf", source));
+    const std::vector<std::vector<uint8_t>> jpegs = {
+        { 0x00, 0x00, 0x00, 0x00 },
+        { JPEG_MARKER_PREFIX, 0x00, JPEG_MARKER_PREFIX, 0x00 },
+        { JPEG_MARKER_PREFIX, JPEG_MARKER_SOI, 0x00, 0x00 },
+        // 段结束后游标落在非 marker 前缀字节上，扫描终止。
+        { JPEG_MARKER_PREFIX, JPEG_MARKER_SOI, JPEG_MARKER_PREFIX, JPEG_MARKER_APP0, 0x00, 0x04, 0x00, 0x00, 0x00 },
+    };
+    for (const auto &jpeg : jpegs) {
+        std::vector<uint8_t> data = source;
+        std::string orientation;
+        bool patched = false;
+        EXPECT_EQ(ReadPatchedPreviewOrientation(data, jpeg, orientation, patched),
+            static_cast<uint32_t>(ERR_IMAGE_DECODE_EXIF_UNSUPPORT));
+        EXPECT_TRUE(patched);
+        EXPECT_TRUE(orientation.empty());
+    }
+}
+
 } // namespace Multimedia
 } // namespace OHOS
