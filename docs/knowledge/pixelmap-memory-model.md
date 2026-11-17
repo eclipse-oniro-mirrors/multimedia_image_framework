@@ -276,6 +276,22 @@ TLV 传输当前要点：
 
 涉及对外接口或 API 行为时，还需要验证对应 XTS 用例。
 
+### region 读写的目标容量约束
+
+`PixelMap::ReadPixels(bufferSize, offset, stride, region, dst)` 和
+`WritePixels(source, bufferSize, offset, stride, region)` 的 `bufferSize` 是调用方真实缓冲长度，
+必须覆盖 `offset + region 字节数`，只校验 `offset` 附近的几个字节会导致堆越界读写：
+
+- YUV/P010 的 region 字节数是 `width * height + 2 * ceil(width / 2) * ceil(height / 2)`，
+  P010 再乘 2，与 `av_image_get_buffer_size(..., 1)` 一致。不要用 `width * height * 3 / 2`，
+  奇数宽高会少算色度补齐字节（例如 9x9 NV12 需要 131 字节，而不是 121 字节）。
+- 基类 `PixelMap::ReadPixels` 通过 `ImageUtils::CheckPixelsInput` 校验到最后一行的 stride；
+  `PixelYuv::ReadPixels`/`WritePixels` 有自己的 `PixelYuv::CheckPixelsInput`，两套校验必须保持
+  等价的目标容量语义，覆写时不要丢掉基类的容量不变式。
+- `PixelYuvUtils::YuvCrop` / `CropUpDataDstdata` 用 region 计算 `av_image_copy_to_buffer` 的
+  `dstSize`，真实容量需要在进入拷贝前校验；`ReadYuvConvert` 提供带 `dstCapacity` 的重载。
+- YUV 读写路径当前忽略 `stride`，目标按紧凑布局写入；新增 stride 支持时要同步修改校验公式和用例。
+
 ## ASTC PixelMap
 
 ASTC PixelMap 的主要锚点是 `interfaces/innerkits/include/pixel_astc.h` 和 `frameworks/innerkitsimpl/common/src/pixel_astc.cpp`。
@@ -442,6 +458,7 @@ prebuilts/build-tools/linux-x86/bin/ninja -C out/<product-name> image_framework 
 - 是否读过公开头文件，再读实现文件，而不是只改内部实现？
 - 是否确认 allocator 选择、释放函数和所有权？
 - 是否检查 row stride、buffer size、YUV plane、ASTC real size 是否同步变化？
+- 是否确认 region 读写的 `offset + region 字节数` 没有超过调用方 `bufferSize`（YUV/P010 用色度补齐公式）？
 - 是否确认 parcel 版本、跨进程传输和失败释放路径？
 - 是否同步 JS/NAPI、NDK/C、CJ、ANI、Taihe 等绑定层？
 - 是否同步错误码和错误码映射？

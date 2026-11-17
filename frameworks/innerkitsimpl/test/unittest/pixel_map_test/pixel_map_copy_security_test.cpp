@@ -117,6 +117,16 @@ std::unique_ptr<PixelMap> MakeWritableRgbaPixelMap(const Size &size, uint32_t ca
     pixelMap->SetEditable(true);
     return pixelMap;
 }
+
+std::unique_ptr<PixelMap> MakeHeapYuvPixelMap(const Size &size, PixelFormat format)
+{
+    InitializationOptions opts;
+    opts.size = size;
+    opts.pixelFormat = format;
+    opts.allocatorType = AllocatorType::HEAP_ALLOC;
+    opts.editable = true;
+    return PixelMap::Create(opts);
+}
 } // namespace
 
 class PixelMapCopySecurityTest : public testing::Test {};
@@ -400,6 +410,133 @@ HWTEST_F(PixelMapCopySecurityTest, WritePixelsPreservesPaddingAndAcceptsExactBou
             }
         }
     }
+}
+
+/**
+ * @tc.name: YuvReadPixelsRejectsRegionLargerThanDestination
+ * @tc.desc: A region read must be rejected when the destination cannot hold offset + region bytes. Before the fix
+ *           only offset + 4 was checked, so a 4 KiB buffer with a 256x256 region was accepted and the YUV copy
+ *           wrote 98,304 bytes past the caller's buffer.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapCopySecurityTest, YuvReadPixelsRejectsRegionLargerThanDestination, TestSize.Level3)
+{
+    constexpr int32_t width = 8;
+    constexpr int32_t height = 8;
+    // 8 * 8 luma + 2 * 4 * 4 chroma.
+    constexpr uint32_t regionBytes = 96;
+    auto pixelMap = MakeHeapYuvPixelMap({width, height}, PixelFormat::NV12);
+    ASSERT_NE(pixelMap, nullptr);
+    Rect region = {0, 0, width, height};
+
+    // Reported shape: 4 KiB buffer, offset leaves only 5 bytes for a 96 byte copy.
+    std::vector<uint8_t> reported(4096, PADDING_VALUE);
+    EXPECT_EQ(pixelMap->ReadPixels(reported.size(), 4091, width, region, reported.data()),
+        ERR_IMAGE_INVALID_PARAMETER);
+    EXPECT_EQ(reported.front(), PADDING_VALUE);
+    EXPECT_EQ(reported.back(), PADDING_VALUE);
+
+    // A 5 byte buffer is still enough to pass the legacy offset + 4 check.
+    std::vector<uint8_t> tiny(5, PADDING_VALUE);
+    EXPECT_EQ(pixelMap->ReadPixels(tiny.size(), 0, width, region, tiny.data()), ERR_IMAGE_INVALID_PARAMETER);
+    EXPECT_EQ(tiny.front(), PADDING_VALUE);
+
+    // offset + regionBytes == bufferSize + 1 must already be rejected.
+    std::vector<uint8_t> shortByOne(regionBytes, PADDING_VALUE);
+    EXPECT_EQ(pixelMap->ReadPixels(shortByOne.size(), 1, width, region, shortByOne.data()),
+        ERR_IMAGE_INVALID_PARAMETER);
+}
+
+/**
+ * @tc.name: YuvReadPixelsAcceptsExactAndOffsetBounds
+ * @tc.desc: Exact and offset plus exact capacities stay valid, and bytes before offset are left untouched.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapCopySecurityTest, YuvReadPixelsAcceptsExactAndOffsetBounds, TestSize.Level3)
+{
+    constexpr int32_t width = 8;
+    constexpr int32_t height = 8;
+    constexpr uint32_t regionBytes = 96;
+    constexpr uint32_t prefixBytes = 8;
+    auto pixelMap = MakeHeapYuvPixelMap({width, height}, PixelFormat::NV12);
+    ASSERT_NE(pixelMap, nullptr);
+    Rect region = {0, 0, width, height};
+
+    std::vector<uint8_t> exact(regionBytes, PADDING_VALUE);
+    EXPECT_EQ(pixelMap->ReadPixels(exact.size(), 0, width, region, exact.data()), SUCCESS);
+
+    std::vector<uint8_t> withOffset(regionBytes + prefixBytes, PADDING_VALUE);
+    EXPECT_EQ(pixelMap->ReadPixels(withOffset.size(), prefixBytes, width, region, withOffset.data()), SUCCESS);
+    for (uint32_t i = 0; i < prefixBytes; ++i) {
+        EXPECT_EQ(withOffset[i], PADDING_VALUE);
+    }
+}
+
+/**
+ * @tc.name: YuvReadPixelsUsesChromaRoundedRegionSize
+ * @tc.desc: A 9x9 NV12 region needs 131 bytes (81 luma + 2 * 5 * 5 chroma), not the 121 bytes implied by
+ *           width * height * 3 / 2, so the chroma rounded size must drive the capacity check.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapCopySecurityTest, YuvReadPixelsUsesChromaRoundedRegionSize, TestSize.Level3)
+{
+    constexpr int32_t width = 9;
+    constexpr int32_t height = 9;
+    constexpr uint32_t naiveRegionBytes = 121;
+    constexpr uint32_t chromaRoundedRegionBytes = 131;
+    auto pixelMap = MakeHeapYuvPixelMap({width, height}, PixelFormat::NV12);
+    ASSERT_NE(pixelMap, nullptr);
+    Rect region = {0, 0, width, height};
+
+    std::vector<uint8_t> naive(naiveRegionBytes, PADDING_VALUE);
+    EXPECT_EQ(pixelMap->ReadPixels(naive.size(), 0, width, region, naive.data()), ERR_IMAGE_INVALID_PARAMETER);
+    std::vector<uint8_t> almostEnough(chromaRoundedRegionBytes - 1, PADDING_VALUE);
+    EXPECT_EQ(pixelMap->ReadPixels(almostEnough.size(), 0, width, region, almostEnough.data()),
+        ERR_IMAGE_INVALID_PARAMETER);
+}
+
+/**
+ * @tc.name: YuvReadPixelsP010RequiresDoubledCapacity
+ * @tc.desc: P010 stores two bytes per sample, so the same region needs twice the NV12 capacity.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapCopySecurityTest, YuvReadPixelsP010RequiresDoubledCapacity, TestSize.Level3)
+{
+    constexpr int32_t width = 8;
+    constexpr int32_t height = 8;
+    constexpr uint32_t nv12RegionBytes = 96;
+    auto pixelMap = MakeHeapYuvPixelMap({width, height}, PixelFormat::YCBCR_P010);
+    ASSERT_NE(pixelMap, nullptr);
+    Rect region = {0, 0, width, height};
+
+    std::vector<uint8_t> nv12Sized(nv12RegionBytes, PADDING_VALUE);
+    EXPECT_EQ(pixelMap->ReadPixels(nv12Sized.size(), 0, width, region, nv12Sized.data()),
+        ERR_IMAGE_INVALID_PARAMETER);
+    std::vector<uint8_t> p010Short(nv12RegionBytes * 2 - 1, PADDING_VALUE);
+    EXPECT_EQ(pixelMap->ReadPixels(p010Short.size(), 0, width, region, p010Short.data()),
+        ERR_IMAGE_INVALID_PARAMETER);
+}
+
+/**
+ * @tc.name: YuvWritePixelsRejectsSourceShorterThanRegion
+ * @tc.desc: The same capacity rule protects the write source, otherwise the region copy reads past the caller's
+ *           buffer and leaks the neighboring heap content into the PixelMap.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapCopySecurityTest, YuvWritePixelsRejectsSourceShorterThanRegion, TestSize.Level3)
+{
+    constexpr int32_t width = 8;
+    constexpr int32_t height = 8;
+    constexpr uint32_t regionBytes = 96;
+    auto pixelMap = MakeHeapYuvPixelMap({width, height}, PixelFormat::NV12);
+    ASSERT_NE(pixelMap, nullptr);
+    Rect region = {0, 0, width, height};
+
+    std::vector<uint8_t> shortSource(regionBytes - 1, PIXEL_VALUE);
+    EXPECT_EQ(pixelMap->WritePixels(shortSource.data(), shortSource.size(), 0, width, region),
+        ERR_IMAGE_INVALID_PARAMETER);
+    std::vector<uint8_t> exactSource(regionBytes, PIXEL_VALUE);
+    EXPECT_EQ(pixelMap->WritePixels(exactSource.data(), exactSource.size(), 0, width, region), SUCCESS);
 }
 } // namespace Multimedia
 } // namespace OHOS

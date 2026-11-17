@@ -75,6 +75,12 @@ public:
         const Position &dstPos, const YUVDataInfo &yuvDataInfo);
     static bool ReadYuvConvert(const void *srcPixels, const Position &srcPos, YuvImageInfo &srcInfo,
         void *dstPixels, const ImageInfo &dstInfo);
+    /**
+     * @brief Crop the region and copy it to dstPixels, which must provide at least dstCapacity bytes.
+     *        The region derived size is validated against dstCapacity before any copy happens.
+     */
+    static bool ReadYuvConvert(const void *srcPixels, const Position &srcPos, YuvImageInfo &srcInfo,
+        void *dstPixels, const ImageInfo &dstInfo, uint64_t dstCapacity);
     static void SetTranslateDataDefault(uint8_t *srcPixels, int32_t width, int32_t height, PixelFormat format,
         YUVStrideInfo &dstStrides);
     static uint8_t GetYuv420Y(uint32_t x, uint32_t y, YUVDataInfo &info, const uint8_t *in);

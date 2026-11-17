@@ -48,8 +48,6 @@ static const uint8_t NUM_3 = 3;
 static const uint8_t NUM_4 = 4;
 static const uint8_t RGBA_BIT_DEPTH = 4;
 static const uint32_t TWO_SLICES = 2;
-static const uint8_t YUV420_MIN_PIXEL_UINTBYTES = 4;
-static const uint8_t YUV420P010_MIN_PIXEL_UINTBYTES = 8;
 static const int32_t DEGREES90 = 90;
 static const int32_t DEGREES180 = 180;
 static const int32_t DEGREES270 = 270;
@@ -204,6 +202,20 @@ static int32_t GetUStride(int32_t width)
 static int32_t GetUVHeight(int32_t height)
 {
     return (height + 1) / NUM_2;
+}
+
+// Byte count of one tightly packed YUV420 region, aligned with av_image_get_buffer_size(..., 1):
+// the chroma plane is rounded up to whole 2x2 samples, and P010 doubles every sample.
+static uint64_t GetYuvRegionByteCount(int32_t width, int32_t height, bool isP010)
+{
+    if (width <= 0 || height <= 0) {
+        return 0;
+    }
+    uint64_t ySize = static_cast<uint64_t>(width) * static_cast<uint64_t>(height);
+    uint64_t uvSize = static_cast<uint64_t>((static_cast<int64_t>(width) + 1) / NUM_2) *
+        static_cast<uint64_t>((static_cast<int64_t>(height) + 1) / NUM_2) * NUM_2;
+    uint64_t regionSize = ySize + uvSize;
+    return isP010 ? regionSize * NUM_2 : regionSize;
 }
 
 bool PixelYuv::YuvRotateConvert(Size &size, int32_t degrees, int32_t &dstWidth, int32_t &dstHeight,
@@ -754,7 +766,8 @@ uint32_t PixelYuv::ReadPixels(const uint64_t &bufferSize, const uint32_t &offset
     GetImageYUVInfo(yuvDataInfo);
     YuvImageInfo imageInfo = {PixelYuvUtils::ConvertFormat(imageInfo_.pixelFormat),
         imageInfo_.size.width, imageInfo_.size.height, imageInfo_.pixelFormat, yuvDataInfo};
-    if (!PixelYuvUtils::ReadYuvConvert((void *)data_, srcPosition, imageInfo, dst + offset, dstImageInfo)) {
+    if (!PixelYuvUtils::ReadYuvConvert((void *)data_, srcPosition, imageInfo, dst + offset, dstImageInfo,
+        bufferSize - static_cast<uint64_t>(offset))) {
         IMAGE_LOGE("read pixels by rect call ReadPixelsConvert fail.");
         return ERR_IMAGE_READ_PIXELMAP_FAILED;
     }
@@ -984,24 +997,20 @@ bool PixelYuv::CheckPixelsInput(const uint8_t *dst, const uint64_t &bufferSize, 
         return false;
     }
 
-    if (IsYUVP010Format(imageInfo_.pixelFormat)) {
-        if ((static_cast<uint64_t>(offset) + YUV420P010_MIN_PIXEL_UINTBYTES) >= bufferSize) {
-            IMAGE_LOGE(
-                "CheckPixelsInput fail, height(%{public}d), width(%{public}d) "
-                "offset(%{public}u), bufferSize:%{public}llu.",
-                region.height, region.width, offset,
-                static_cast<unsigned long long>(bufferSize));
-            return false;
-        }
-    } else {
-        if ((static_cast<uint64_t>(offset) + YUV420_MIN_PIXEL_UINTBYTES) >= bufferSize) {
-            IMAGE_LOGE(
-                "CheckPixelsInput fail, height(%{public}d), width(%{public}d) "
-                "offset(%{public}u), bufferSize:%{public}llu.",
-                region.height, region.width, offset,
-                static_cast<unsigned long long>(bufferSize));
-            return false;
-        }
+    // The destination must hold the whole cropped region starting at offset. The previous check only
+    // verified that a few bytes at offset fit into bufferSize, so a small buffer with a large region
+    // passed the check and av_image_copy_to_buffer() then wrote width * height * 3 / 2 bytes (P010:
+    // twice as many) past the end of the caller's buffer.
+    uint64_t regionSize = GetYuvRegionByteCount(region.width, region.height,
+        IsYUVP010Format(imageInfo_.pixelFormat));
+    if (regionSize == 0 || static_cast<uint64_t>(offset) > bufferSize ||
+        regionSize > bufferSize - static_cast<uint64_t>(offset)) {
+        IMAGE_LOGE(
+            "CheckPixelsInput fail, region(%{public}dx%{public}d) needs %{public}llu bytes, "
+            "offset(%{public}u), bufferSize:%{public}llu.",
+            region.width, region.height, static_cast<unsigned long long>(regionSize), offset,
+            static_cast<unsigned long long>(bufferSize));
+        return false;
     }
     return true;
 }
