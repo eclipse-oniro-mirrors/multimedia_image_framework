@@ -742,7 +742,7 @@ static bool YuvP010ToYuvParam(const YUVDataInfo &yDInfo, SrcConvertParam &srcPar
         dstuvStride = (destParam.width % EVEN_ODD_DIVISOR == 0) ?
             destParam.width : (destParam.width + 1);
         destParam.slice[0] = destInfo.buffer;
-        destParam.slice[1] = destInfo.buffer + dstyStride * destParam.height;
+        destParam.slice[1] = destInfo.buffer + static_cast<size_t>(dstyStride) * destParam.height;
     }
 
     destParam.stride[0] = static_cast<int>(dstyStride);

@@ -368,8 +368,11 @@ static bool I010Param(I010Info &i010Info)
     i010Info.uStride = (i010Info.width + NUM_1) / NUM_2;
     i010Info.vStride = (i010Info.width + NUM_1) / NUM_2;
     i010Info.uvHeight = ((i010Info.height + NUM_1) / NUM_2);
-    const uint32_t i010BufferSize = static_cast<size_t>(i010Info.yStride * i010Info.height +
-        i010Info.uStride * i010Info.uvHeight * NUM_2);
+    bool overflow = ImageUtils::CheckMulOverflow<uint32_t>(i010Info.yStride, i010Info.height) ||
+        ImageUtils::CheckMulOverflow<uint32_t>(i010Info.uStride, i010Info.uvHeight);
+    CHECK_ERROR_RETURN_RET_LOG(overflow, false, "I010 buffer size overflow!");
+    size_t i010BufferSize = static_cast<size_t>(i010Info.yStride) * i010Info.height +
+        static_cast<size_t>(i010Info.uStride) * i010Info.uvHeight * NUM_2;
     bool cond = i010BufferSize <= NUM_0 || i010BufferSize > PIXEL_MAP_MAX_RAM_SIZE;
     CHECK_ERROR_RETURN_RET_LOG(cond, false, "Invalid destination buffer size calculation!");
     uint16_t *i010Buffer = new (std::nothrow) uint16_t[i010BufferSize];
@@ -734,7 +737,7 @@ static bool YuvP010ToYuvParam(const YUVDataInfo &yDInfo, SrcConvertParam &srcPar
         dstuvStride = (destParam.width % EVEN_ODD_DIVISOR == 0) ?
             destParam.width : (destParam.width + 1);
         destParam.slice[0] = destInfo.buffer;
-        destParam.slice[1] = destInfo.buffer + dstyStride * destParam.height;
+        destParam.slice[1] = destInfo.buffer + static_cast<size_t>(dstyStride) * destParam.height;
     }
     destParam.stride[0] = static_cast<int>(dstyStride);
     destParam.stride[1] = static_cast<int>(dstuvStride);
@@ -895,8 +898,11 @@ static bool P010ToI010ToRGB10Param(const YUVDataInfo &yuvInfo, SrcConvertParam &
     i010Info.uStride = (yuvInfo.yWidth + NUM_1) / NUM_2;
     i010Info.vStride = (yuvInfo.yWidth + NUM_1) / NUM_2;
     i010Info.uvHeight = ((i010Info.height + NUM_1) / NUM_2);
-    const uint32_t i010BufferSize = static_cast<size_t>(i010Info.yStride * i010Info.height +
-        i010Info.uStride * i010Info.uvHeight * NUM_2);
+    bool overflow = ImageUtils::CheckMulOverflow<uint32_t>(i010Info.yStride, i010Info.height) ||
+        ImageUtils::CheckMulOverflow<uint32_t>(i010Info.uStride, i010Info.uvHeight);
+    CHECK_ERROR_RETURN_RET_LOG(overflow, false, "I010 buffer size overflow!");
+    size_t i010BufferSize = static_cast<size_t>(i010Info.yStride) * i010Info.height +
+        static_cast<size_t>(i010Info.uStride) * i010Info.uvHeight * NUM_2;
     cond = i010BufferSize <= NUM_0 || i010BufferSize > PIXEL_MAP_MAX_RAM_SIZE;
     CHECK_ERROR_RETURN_RET_LOG(cond, false, "Invalid destination buffer size calculation!");
     uint16_t *i010Buffer = new (std::nothrow) uint16_t[i010BufferSize];
