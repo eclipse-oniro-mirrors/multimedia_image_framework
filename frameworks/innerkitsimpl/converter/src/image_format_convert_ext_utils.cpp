@@ -487,7 +487,9 @@ static bool RGB10ToI420ToYuv(SrcConvertParam &srcParam, DestConvertParam &midPar
 
 static bool RGBAParam(DestConvertParam &srcParam)
 {
-    const uint32_t midBufferSize = static_cast<size_t>(srcParam.width * srcParam.height * BYTES_PER_PIXEL_RGBA);
+    bool overflow = ImageUtils::CheckMulOverflow<uint32_t>(srcParam.width, srcParam.height, BYTES_PER_PIXEL_RGBA);
+    CHECK_ERROR_RETURN_RET_LOG(overflow, false, "Invalid destination buffer size overflow!");
+    const size_t midBufferSize = static_cast<size_t>(srcParam.width) * srcParam.height * BYTES_PER_PIXEL_RGBA;
     bool cond = midBufferSize <= NUM_0 || midBufferSize > PIXEL_MAP_MAX_RAM_SIZE;
     CHECK_ERROR_RETURN_RET_LOG(cond, false, "Invalid destination buffer size calculation!");
     uint8_t *midBuffer = new (std::nothrow) uint8_t[midBufferSize];

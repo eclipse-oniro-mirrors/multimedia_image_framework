@@ -315,7 +315,8 @@ static bool YuvP010ToRGB10(const uint8_t *srcBuffer, const YUVDataInfo &yDInfo, 
         return false;
     }
     if (srcParam.format == PixelFormat::YCRCB_P010) {
-        size_t midBufferSize = static_cast<size_t>((yDInfo.uvOffset + yDInfo.uvStride * yDInfo.uvHeight) * TWO_SLICES);
+        size_t midBufferSize = (static_cast<size_t>(yDInfo.uvOffset) +
+            static_cast<size_t>(yDInfo.uvStride) * yDInfo.uvHeight) * TWO_SLICES;
         if (midBufferSize == 0 || midBufferSize > PIXEL_MAP_MAX_RAM_SIZE) {
             IMAGE_LOGE("Invalid destination buffer size is 0!");
             return false;
@@ -376,8 +377,9 @@ static bool RGBToYuvP010Param(const RGBDataInfo &rgbInfo, SrcConvertParam &srcPa
 
 static bool SwapNV21P010(DestConvertInfo &destInfo)
 {
-    size_t midBufferSize = (destInfo.yStride * destInfo.height +
-                            destInfo.uvStride * ((destInfo.height + 1) / TWO_SLICES)) * TWO_SLICES;
+    size_t uvPlaneHeight = (static_cast<size_t>(destInfo.height) + 1) / TWO_SLICES;
+    size_t midBufferSize = (static_cast<size_t>(destInfo.yStride) * destInfo.height +
+                            static_cast<size_t>(destInfo.uvStride) * uvPlaneHeight) * TWO_SLICES;
     if (midBufferSize == 0 || midBufferSize > PIXEL_MAP_MAX_RAM_SIZE) {
         IMAGE_LOGE("Invalid destination buffer size calculation!");
         return false;
@@ -413,7 +415,7 @@ static bool SwapNV21P010(DestConvertInfo &destInfo)
         dstyStride = destParam.width;
         dstuvStride = (destParam.width % EVEN_ODD_DIVISOR == 0) ? destParam.width : (destParam.width + 1);
         destParam.slice[0] = destInfo.buffer;
-        destParam.slice[1] = destInfo.buffer + dstyStride * destParam.height * TWO_SLICES;
+        destParam.slice[1] = destInfo.buffer + static_cast<size_t>(dstyStride) * destParam.height * TWO_SLICES;
     }
     destParam.stride[0] = static_cast<int>(dstyStride * TWO_SLICES);
     destParam.stride[1] = static_cast<int>(dstuvStride * TWO_SLICES);
@@ -661,6 +663,9 @@ static bool YUVToRGB10(const uint8_t *srcBuffer, const YUVDataInfo &yDInfo, Pixe
 static bool YuvToYuvP010Param(const YUVDataInfo &yDInfo, SrcConvertParam &srcParam, DestConvertParam &destParam,
                               DestConvertInfo &destInfo)
 {
+    bool overflow = destInfo.allocType != AllocatorType::DMA_ALLOC &&
+        ImageUtils::CheckMulOverflow<uint32_t>(destParam.width, destParam.height, TWO_SLICES);
+    CHECK_ERROR_RETURN_RET_LOG(overflow, false, "P010 plane offset overflow!");
     srcParam.slice[0] = srcParam.buffer + yDInfo.yOffset;
     srcParam.slice[1] = srcParam.buffer + yDInfo.uvOffset;
 
@@ -679,7 +684,7 @@ static bool YuvToYuvP010Param(const YUVDataInfo &yDInfo, SrcConvertParam &srcPar
         dstuvStride = (destParam.width % EVEN_ODD_DIVISOR == 0) ?
             destParam.width : (destParam.width + 1);
         destParam.slice[0] = destInfo.buffer;
-        destParam.slice[1] = destInfo.buffer + dstyStride * destParam.height * TWO_SLICES;
+        destParam.slice[1] = destInfo.buffer + static_cast<size_t>(dstyStride) * destParam.height * TWO_SLICES;
     }
 
     destParam.stride[0] = static_cast<int>(dstyStride * TWO_SLICES);
@@ -762,7 +767,8 @@ static bool YuvP010ToYuv(const uint8_t *srcBuffer, const YUVDataInfo &yDInfo, Pi
         return false;
     }
     if (srcParam.format == PixelFormat::YCRCB_P010) {
-        size_t midBufferSize = static_cast<size_t>((yDInfo.uvOffset + yDInfo.uvStride * yDInfo.uvHeight) * TWO_SLICES);
+        size_t midBufferSize = (static_cast<size_t>(yDInfo.uvOffset) +
+            static_cast<size_t>(yDInfo.uvStride) * yDInfo.uvHeight) * TWO_SLICES;
         if (midBufferSize == 0 || midBufferSize > PIXEL_MAP_MAX_RAM_SIZE) {
             IMAGE_LOGE("Invalid destination buffer size is 0!");
             return false;
@@ -799,6 +805,9 @@ static bool YuvP010ToYuv(const uint8_t *srcBuffer, const YUVDataInfo &yDInfo, Pi
 static bool YuvP010ToYuvP010Param(const YUVDataInfo &yDInfo, SrcConvertParam &srcParam, DestConvertParam &destParam,
                                   DestConvertInfo &destInfo)
 {
+    bool overflow = destInfo.allocType != AllocatorType::DMA_ALLOC &&
+        ImageUtils::CheckMulOverflow<uint32_t>(destParam.width, destParam.height, TWO_SLICES);
+    CHECK_ERROR_RETURN_RET_LOG(overflow, false, "P010 plane offset overflow!");
     srcParam.slice[0] = srcParam.buffer + yDInfo.yOffset;
     srcParam.slice[1] = srcParam.buffer + yDInfo.uvOffset * TWO_SLICES;
 
@@ -817,7 +826,7 @@ static bool YuvP010ToYuvP010Param(const YUVDataInfo &yDInfo, SrcConvertParam &sr
         dstuvStride = (destParam.width % EVEN_ODD_DIVISOR == 0) ?
             destParam.width : (destParam.width + 1);
         destParam.slice[0] = destInfo.buffer;
-        destParam.slice[1] = destInfo.buffer +  dstyStride * destParam.height * TWO_SLICES;
+        destParam.slice[1] = destInfo.buffer + static_cast<size_t>(dstyStride) * destParam.height * TWO_SLICES;
     }
 
     destParam.stride[0] = static_cast<int>(dstyStride * TWO_SLICES);
@@ -869,7 +878,8 @@ static bool YuvP010ToRGB(const uint8_t *srcBuffer, const YUVDataInfo &yDInfo, Pi
         return false;
     }
     if (srcParam.format == PixelFormat::YCRCB_P010) {
-        size_t midBufferSize = static_cast<size_t>((yDInfo.uvOffset + yDInfo.uvStride * yDInfo.uvHeight) * TWO_SLICES);
+        size_t midBufferSize = (static_cast<size_t>(yDInfo.uvOffset) +
+            static_cast<size_t>(yDInfo.uvStride) * yDInfo.uvHeight) * TWO_SLICES;
         if (midBufferSize == 0 || midBufferSize > PIXEL_MAP_MAX_RAM_SIZE) {
             IMAGE_LOGE("Invalid destination buffer size is 0!");
             return false;

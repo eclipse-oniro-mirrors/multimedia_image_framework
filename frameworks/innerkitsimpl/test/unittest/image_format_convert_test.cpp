@@ -2876,6 +2876,38 @@ HWTEST_F(ImageFormatConvertTest, P010PlaneOffsetOverflow, TestSize.Level3)
     EXPECT_FALSE(ImageFormatConvertUtils::RGBA1010102ToNV12P010(buffer, rgbInfo, destInfo, ColorSpace::UNKNOWN));
 }
 
+HWTEST_F(ImageFormatConvertTest, YuvToYuvP010PlaneOffsetOverflow, TestSize.Level3)
+{
+    YUVDataInfo yuvInfo;
+    yuvInfo.yWidth = 65536;
+    yuvInfo.yHeight = 32769;
+    yuvInfo.uvWidth = 32768;
+    yuvInfo.uvHeight = 16385;
+    uint8_t buffer[1] = {0};
+    DestConvertInfo destInfo;
+    destInfo.buffer = buffer;
+    destInfo.format = PixelFormat::YCBCR_P010;
+    destInfo.allocType = AllocatorType::HEAP_ALLOC;
+    EXPECT_FALSE(ImageFormatConvertUtils::NV12ToNV12P010(buffer, yuvInfo, destInfo, ColorSpace::UNKNOWN));
+    destInfo.format = PixelFormat::YCRCB_P010;
+    EXPECT_FALSE(ImageFormatConvertUtils::NV21ToNV21P010(buffer, yuvInfo, destInfo, ColorSpace::UNKNOWN));
+}
+
+HWTEST_F(ImageFormatConvertTest, YuvP010ToYuvP010PlaneOffsetOverflow, TestSize.Level3)
+{
+    YUVDataInfo yuvInfo;
+    yuvInfo.yWidth = 65536;
+    yuvInfo.yHeight = 32769;
+    yuvInfo.uvWidth = 32768;
+    yuvInfo.uvHeight = 16385;
+    uint8_t buffer[1] = {0};
+    DestConvertInfo destInfo;
+    destInfo.buffer = buffer;
+    destInfo.format = PixelFormat::YCRCB_P010;
+    destInfo.allocType = AllocatorType::SHARE_MEM_ALLOC;
+    EXPECT_FALSE(ImageFormatConvertUtils::NV12P010ToNV21P010(buffer, yuvInfo, destInfo, ColorSpace::UNKNOWN));
+}
+
 #ifdef EXT_PIXEL
 HWTEST_F(ImageFormatConvertTest, ExtP010PlaneOffsetOverflow, TestSize.Level3)
 {
