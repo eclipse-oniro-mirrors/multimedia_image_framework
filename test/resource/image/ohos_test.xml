@@ -268,6 +268,8 @@
             <option name="push" value="images/test_null.jpg -> /data/local/tmp/image" src="res"/>
             <option name="push" value="images/test-10bit-1.heic -> /data/local/tmp/image" src="res"/>
             <option name="push" value="images/test-10bit-2.heic -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/test_yuv444_8bit.heic -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/test_yuv444_10bit.heic -> /data/local/tmp/image" src="res"/>
         </preparer>
     </target>
     <target name="imagestreamtest">

@@ -102,6 +102,8 @@ public:
     void SetDstImageInfo(uint32_t dstWidth, uint32_t dstHeight);
     void GetAnimationSize(OHOS::Media::Size &animationSize);
     bool IsWithoutPrimaryImageHeifs();
+    bool IsYuv444Source();
+    bool IsYuv444TenBitSource();
 private:
     bool Reinit(HeifFrameInfo *frameInfo);
 
