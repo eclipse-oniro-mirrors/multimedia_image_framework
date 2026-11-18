@@ -896,7 +896,7 @@ napi_value SendablePixelMapNapi::CreateSendablePixelMap(napi_env env, napi_callb
     IMG_JS_ARGS(env, info, status, argCount, argValue, thisVar);
 
     // we are static method!
-    // thisVar is nullptr here
+    // thisVar is nullptr here.
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, IMAGE_LOGE("fail to napi_get_cb_info"));
     std::unique_ptr<SendablePixelMapAsyncContext> asyncContext = std::make_unique<SendablePixelMapAsyncContext>();
 
