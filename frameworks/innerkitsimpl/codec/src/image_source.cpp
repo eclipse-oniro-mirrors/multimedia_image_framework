@@ -4762,7 +4762,6 @@ static void SetContext(DecodeContext& context, sptr<SurfaceBuffer>& sb, void* fd
     context.allocatorType = AllocatorType::DMA_ALLOC;
     context.freeFunc = nullptr;
     context.pixelsBuffer.buffer = static_cast<uint8_t*>(sb->GetVirAddr());
-    context.pixelsBuffer.bufferSize = GetByteCount(context, sb->GetSize());
     context.pixelsBuffer.context = fd;
     context.info.alphaType = AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL;
     if (format == GRAPHIC_PIXEL_FMT_RGBA_1010102) {
@@ -4786,6 +4785,7 @@ static void SetContext(DecodeContext& context, sptr<SurfaceBuffer>& sb, void* fd
         context.info.pixelFormat = PixelFormat::YCBCR_P010;
         context.grColorSpaceName = ColorManager::BT2020_HLG;
     }
+    context.pixelsBuffer.bufferSize = GetByteCount(context, sb->GetSize());
 }
 
 static uint32_t AllocSurfaceBuffer(DecodeContext &context, uint32_t format)
