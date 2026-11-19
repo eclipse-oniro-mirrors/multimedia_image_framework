@@ -110,13 +110,15 @@ function main() {
     console.println("Create imageSource.createPixelMapSync success");
   }
   imageSource.createPixelMap(decodeOpt)
-    .then((pixelmap2: image.PixelMap) => {
-      if (pixelmap2 != undefined) {
+    .then((asyncPixelmap: image.PixelMap) => {
+      if (asyncPixelmap != undefined) {
         console.println("ASYNC Create imageSource PixelMap success")
+        asyncPixelmap.release()
+          .then((): void => console.println("ASYNC Release async PixelMap success"));
       }
     });
   pixelmap2.release()
-    .then((): void => console.println("ASYNC Release PixelMap success"));
+    .then((): void => console.println("ASYNC Release sync PixelMap success"));
 
   imageSource.modifyImageProperty("Orientation", "Right-top");
   const map: Record<string, string | null> = {

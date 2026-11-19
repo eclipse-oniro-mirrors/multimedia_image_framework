@@ -379,7 +379,14 @@ export namespace image {
           return this.nativeCreateAlphaPixelmap();
         };
         taskpool.execute(cb)
-          .then((e: Any) => resolve(e as PixelMap));
+          .then((e: Any) => {
+            if (e != null) {
+              resolve(e as PixelMap);
+            } else {
+              reject(new Error("createAlphaPixelmap returned null"));
+            }
+          })
+          .catch((error: Any) => reject(error as Error));
       });
     }
 
@@ -397,7 +404,14 @@ export namespace image {
           return this.nativeGetImageInfo();
         };
         taskpool.execute(cb)
-          .then((e: Any) => resolve(e as ImageInfo));
+          .then((e: Any) => {
+            if (e != null) {
+              resolve(e as ImageInfo);
+            } else {
+              reject(new Error("getImageInfo returned null"));
+            }
+          })
+          .catch((error: Any) => reject(error as Error));
       });
     }
 
@@ -416,7 +430,8 @@ export namespace image {
           return true;
         };
         taskpool.execute(cb)
-          .then((): void => resolve(Promise.resolve()));
+          .then((): void => resolve(Promise.resolve()))
+          .catch((error: Any) => reject(error as Error));
       });
     }
 
@@ -441,7 +456,8 @@ export namespace image {
           return true;
         };
         taskpool.execute(cb)
-          .then((): void => resolve(Promise.resolve()));
+          .then((): void => resolve(Promise.resolve()))
+          .catch((error: Any) => reject(error as Error));
       });
     }
 
@@ -460,7 +476,8 @@ export namespace image {
           return true;
         };
         taskpool.execute(cb)
-          .then((): void => resolve(Promise.resolve()));
+          .then((): void => resolve(Promise.resolve()))
+          .catch((error: Any) => reject(error as Error));
       });
     }
   }
@@ -533,7 +550,8 @@ export namespace image {
           return true;
         };
         taskpool.execute(cb)
-          .then((): void => resolve(Promise.resolve()));
+          .then((): void => resolve(Promise.resolve()))
+          .catch((error: Any) => reject(error as Error));
       });
     }
 
@@ -546,7 +564,14 @@ export namespace image {
           return this.nativeGetImageProperties(key);
         };
         taskpool.execute(cb)
-          .then((e: Any) => resolve(e as Record<string, string | null>));
+          .then((e: Any) => {
+            if (e != null) {
+              resolve(e as Record<string, string | null>);
+            } else {
+              reject(new Error("getImageProperties returned null"));
+            }
+          })
+          .catch((error: Any) => reject(error as Error));
       });
     }
 
@@ -562,7 +587,14 @@ export namespace image {
           return this.nativeCreatePixelMap(options);
         };
         taskpool.execute(cb)
-          .then((e: Any) => resolve(e as PixelMap));
+          .then((e: Any) => {
+            if (e != null) {
+              resolve(e as PixelMap);
+            } else {
+              reject(new Error("createPixelMap returned null"));
+            }
+          })
+          .catch((error: Any) => reject(error as Error));
       });
     }
 
@@ -581,7 +613,14 @@ export namespace image {
           return this.nativeGetImageInfo(index);
         };
         taskpool.execute(cb)
-          .then((e: Any) => resolve(e as ImageInfo));
+          .then((e: Any) => {
+            if (e != null) {
+              resolve(e as ImageInfo);
+            } else {
+              reject(new Error("getImageInfo returned null"));
+            }
+          })
+          .catch((error: Any) => reject(error as Error));
       });
     }
   }
