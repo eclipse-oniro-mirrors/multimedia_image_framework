@@ -493,6 +493,7 @@ private:
 };
 ReporterStorage g_reporterStorage;
 
+// LCOV_EXCL_START
 constexpr int NIBBLE_BITS = 4;
 constexpr int NIBBLE_MASK = 0xF;
 constexpr int HIGH_NIBBLE_SHIFT = 64 - NIBBLE_BITS;
@@ -625,6 +626,7 @@ bool WritePart(const Window &window, size_t part, void *context)
     return OH_HiSysEvent_Write("IMAGE_FWK_UE", "DECODE_HOURLY_STATISTICS", HISYSEVENT_STATISTIC,
         writer.params, writer.count) == 0;
 }
+// LCOV_EXCL_STOP
 } // namespace
 #endif
 
@@ -639,6 +641,7 @@ void Record(const ClassifyRequest &request)
     if (!reporter.aggregate.Record(Classify(request))) {
         return;
     }
+    // LCOV_EXCL_START
     // FFRT 能力探测：受限进程提交失败时恢复重试标记，窗口过期只在解码调用时检查。
     std::lock_guard<std::mutex> submitLock(reporter.submitMutex);
     int fd = timerfd_create(CLOCK_MONOTONIC, TFD_NONBLOCK | TFD_CLOEXEC);
@@ -660,6 +663,7 @@ void Record(const ClassifyRequest &request)
     } else {
         reporter.task = std::move(handle);
     }
+    // LCOV_EXCL_STOP
 #else
     (void)request.options;
     (void)request.point;

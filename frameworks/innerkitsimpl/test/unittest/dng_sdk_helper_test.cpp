@@ -16,12 +16,17 @@
 #include "image_log.h"
 #include "media_errors.h"
 
+#include "buffer_metadata_stream.h"
 #include "dng_host.h"
 #include "dng_stream.h"
 #include "metadata_stream.h"
 #include "source_stream.h"
 #include "image_source.h"
+#include <fstream>
+#include <iterator>
 #include <memory>
+#include <string>
+#include <vector>
 #include <gtest/gtest.h>
 
 #undef LOG_DOMAIN
@@ -36,6 +41,8 @@ namespace OHOS {
 namespace Media {
 
 static const std::string IMAGE_DNG_PATH = "/data/local/tmp/image/test_dng_mock.dng";
+static const std::string IMAGE_PREVIEW_DNG_PATH = "/data/local/tmp/image/test.dng";
+static const char ORIENTATION_EXIF_KEY[] = "Orientation";
 static const uint32_t MOCK_DNG_BYTES_PER_SAMPLE = 16;
 static const uint32_t MOCK_DNG_IMAGE_SIZE = 64 * 64 * 2;
 
@@ -216,6 +223,48 @@ HWTEST_F(DngSdkHelperTest, GetExifPropertyOptionsTest001, TestSize.Level3)
     EXPECT_EQ(ret, ERR_IMAGE_DECODE_EXIF_UNSUPPORT);
 
     GTEST_LOG_(INFO) << "GetExifPropertyOptionsTest001 end";
+}
+/**
+ * @tc.name: GetPreviewOrientationTest001
+ * @tc.desc: Null DngSdkInfo returns ERR_IMAGE_DECODE_EXIF_UNSUPPORT.
+ * @tc.type: FUNC
+ */
+HWTEST_F(DngSdkHelperTest, GetPreviewOrientationTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "GetPreviewOrientationTest001 start";
+    std::unique_ptr<DngSdkInfo> nullInfo = nullptr;
+    MetadataValue value;
+    value.key = ORIENTATION_EXIF_KEY;
+    EXPECT_EQ(DngSdkHelper::GetPreviewOrientation(nullInfo, value), ERR_IMAGE_DECODE_EXIF_UNSUPPORT);
+    GTEST_LOG_(INFO) << "GetPreviewOrientationTest001 end";
+}
+
+/**
+ * @tc.name: GetPreviewOrientationTest002
+ * @tc.desc: The preview IFD Orientation of a DNG file is returned as an integer array.
+ * @tc.type: FUNC
+ */
+HWTEST_F(DngSdkHelperTest, GetPreviewOrientationTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "GetPreviewOrientationTest002 start";
+    std::ifstream input(IMAGE_PREVIEW_DNG_PATH, std::ios::binary);
+    ASSERT_TRUE(input.is_open());
+    std::vector<uint8_t> data((std::istreambuf_iterator<char>(input)), std::istreambuf_iterator<char>());
+    ASSERT_FALSE(data.empty());
+    std::shared_ptr<MetadataStream> stream =
+        std::make_shared<BufferMetadataStream>(data.data(), data.size(), BufferMetadataStream::Fix);
+    ASSERT_NE(stream, nullptr);
+    auto info = DngSdkHelper::ParseInfoFromStream(stream);
+    ASSERT_NE(info, nullptr);
+
+    MetadataValue value;
+    value.key = ORIENTATION_EXIF_KEY;
+    EXPECT_EQ(DngSdkHelper::GetPreviewOrientation(info, value), SUCCESS);
+    EXPECT_EQ(value.type, PropertyValueType::INT);
+    ASSERT_FALSE(value.intArrayValue.empty());
+    EXPECT_GE(value.intArrayValue[0], 1);
+    EXPECT_LE(value.intArrayValue[0], 8);
+    GTEST_LOG_(INFO) << "GetPreviewOrientationTest002 end";
 }
 } // namespace Media
 } // namespace OHOS
