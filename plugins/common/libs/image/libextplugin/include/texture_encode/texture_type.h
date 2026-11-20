@@ -44,6 +44,7 @@ enum class TextureEncodeType {
     SDR_SUT_SUPERFAST_4X4 = 1,
     SDR_ASTC_4X4 = 2,
     HDR_ASTC_4X4 = 3,
+    SDR_ASTC_6X6 = 4,
 };
 
 struct TextureEncodeOptions {
@@ -100,6 +101,12 @@ inline static const std::map<std::string, std::map<uint8_t, QualityProfile>> AST
         "image/hdr_astc_4x4",
         {
             { 85, QualityProfile::HIGH_SPEED_PROFILE_HIGHBITS }
+        }
+    },
+    {
+        "image/sdr_astc_6x6",
+        {
+            { 92, QualityProfile::HIGH_QUALITY_PROFILE }
         }
     }
 };

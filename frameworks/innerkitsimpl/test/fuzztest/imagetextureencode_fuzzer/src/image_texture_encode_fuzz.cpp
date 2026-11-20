@@ -51,6 +51,11 @@ constexpr uint8_t MOVE_ONE_BYTE = 8;
 constexpr uint8_t NUM_TWO_BYTES = 2;
 
 constexpr uint8_t ASTC_NUM_4 = 4;   // represents ASTC_EXTEND_INFO_SIZE_DEFINITION_LENGTH
+constexpr uint8_t ASTC_6X6_DIM = 6;
+// image/sdr_astc_6x6 only maps quality 92 in ASTC_FORMAT_MAP. Pin it for the 6x6
+// format so the fuzz input actually reaches AstcSoftwareEncodeCore instead of
+// bailing out in GetAstcProfile (~0.2% hit rate otherwise).
+constexpr int32_t ASTC_6X6_QUALITY = 92;
 constexpr uint8_t TEXTURE_HEAD_BYTES = 16;
 constexpr int32_t PIXEL_VALUE_MAX = 256;
 #ifdef ENABLE_ASTC_ENCODE_BASED_GPU
@@ -71,8 +76,9 @@ struct ParamRand {
     std::string format = "";
 };
 
-std::string formatArray[4] = {"image/sdr_sut_superfast_4x4", "image/sdr_astc_4x4", "image/hdr_astc_4x4",
-    "image/astc/4*4"};
+constexpr uint8_t FORMAT_ARRAY_SIZE = 5;
+std::string g_formatArray[FORMAT_ARRAY_SIZE] = {"image/sdr_sut_superfast_4x4", "image/sdr_astc_4x4",
+    "image/hdr_astc_4x4", "image/astc/4*4", "image/sdr_astc_6x6"};
 
 struct AstcEncCheckInfo {
     uint32_t pixmapInSize = 0;
@@ -123,7 +129,12 @@ static ParamRand GetParametersRandom(const uint8_t *data, size_t size)
         paramRand.quality = static_cast<int32_t>(*dataTmp++) % MAX_QUALITY_MODULO;
         paramRand.blockX = *dataTmp++ % MAX_BLOCK_MODULO;
         paramRand.blockY = *dataTmp++ % MAX_BLOCK_MODULO;
-        paramRand.format = formatArray[*dataTmp++ % ASTC_NUM_4];
+        paramRand.format = g_formatArray[*dataTmp++ % FORMAT_ARRAY_SIZE];
+    }
+    // image/sdr_astc_6x6 only accepts quality 92; pin it so the 6x6 encode path is
+    // actually exercised regardless of the fuzzed quality byte.
+    if (paramRand.format == "image/sdr_astc_6x6") {
+        paramRand.quality = ASTC_6X6_QUALITY;
     }
     IMAGE_LOGI("GetParametersRandom success, width %{public}d height %{public}d quality %{public}d \
         blockX %{public}d blockY %{public}d",
@@ -198,37 +209,53 @@ static QualityProfile GetAstcQuality(int32_t quality)
     return privateProfile;
 }
 
-static bool InitAstcEncPara(TextureEncodeOptions &param, ParamRand paramRand, PlEncodeOptions astcOpts)
+static bool ResolveAstcFormatProfile(PlEncodeOptions astcOpts, SutProfile &sutProfile, QualityProfile &qualityProfile,
+    TextureEncodeType &encodeType)
 {
-    SutProfile sutProfile;
-    QualityProfile qualityProfile;
-
     if (astcOpts.format == "image/sdr_sut_superfast_4x4") { // sut sdr encode
         if (!GetSutSdrProfile(astcOpts, sutProfile, qualityProfile)) {
             IMAGE_LOGE("InitAstcEncPara GetSutSdrProfile failed");
             return false;
         }
-        param.textureEncodeType = TextureEncodeType::SDR_SUT_SUPERFAST_4X4;
+        encodeType = TextureEncodeType::SDR_SUT_SUPERFAST_4X4;
     } else if (astcOpts.format == "image/sdr_astc_4x4") { // astc sdr encode
         if (!GetAstcProfile(astcOpts, qualityProfile)) {
             IMAGE_LOGE("InitAstcEncPara GetAstcProfile failed");
             return false;
         }
         sutProfile = SutProfile::SKIP_SUT;
-        param.textureEncodeType = TextureEncodeType::SDR_ASTC_4X4;
+        encodeType = TextureEncodeType::SDR_ASTC_4X4;
     } else if (astcOpts.format == "image/hdr_astc_4x4") { // astc hdr encode
         if (!GetAstcProfile(astcOpts, qualityProfile)) {
             IMAGE_LOGE("InitAstcEncPara GetAstcProfile failed");
             return false;
         }
         sutProfile = SutProfile::SKIP_SUT;
-        param.textureEncodeType = TextureEncodeType::HDR_ASTC_4X4;
+        encodeType = TextureEncodeType::HDR_ASTC_4X4;
+    } else if (astcOpts.format == "image/sdr_astc_6x6") { // astc sdr 6x6 encode
+        if (!GetAstcProfile(astcOpts, qualityProfile)) {
+            IMAGE_LOGE("InitAstcEncPara GetAstcProfile failed");
+            return false;
+        }
+        sutProfile = SutProfile::SKIP_SUT;
+        encodeType = TextureEncodeType::SDR_ASTC_6X6;
     } else if (astcOpts.format.find("image/astc") == 0) { // old astc encode
         qualityProfile = GetAstcQuality(astcOpts.quality);
         sutProfile = SutProfile::SKIP_SUT;
-        param.textureEncodeType = TextureEncodeType::ASTC;
+        encodeType = TextureEncodeType::ASTC;
     } else {
-        IMAGE_LOGE("InitAstcEncPara format invalidation:%{public}s", astcOpts.format.c_str());
+        IMAGE_LOGE("InitAstcEncPara format invalidation: %{public}s", astcOpts.format.c_str());
+        return false;
+    }
+    return true;
+}
+
+static bool InitAstcEncPara(TextureEncodeOptions &param, ParamRand paramRand, PlEncodeOptions astcOpts)
+{
+    SutProfile sutProfile;
+    QualityProfile qualityProfile;
+
+    if (!ResolveAstcFormatProfile(astcOpts, sutProfile, qualityProfile, param.textureEncodeType)) {
         return false;
     }
     param.enableQualityCheck = true;
@@ -241,6 +268,10 @@ static bool InitAstcEncPara(TextureEncodeOptions &param, ParamRand paramRand, Pl
     param.outIsSut = false;
     param.blockX_ = paramRand.blockX;
     param.blockY_ = paramRand.blockY;
+    if (astcOpts.format == "image/sdr_astc_6x6") {
+        param.blockX_ = ASTC_6X6_DIM;
+        param.blockY_ = ASTC_6X6_DIM;
+    }
     if ((param.blockX_ < DEFAULT_DIM) || (param.blockY_ < DEFAULT_DIM)) { // DEFAULT_DIM = 4
         IMAGE_LOGE("InitAstcEncPara failed %{public}dx%{public}d is invalid!", param.blockX_, param.blockY_);
         return false;
