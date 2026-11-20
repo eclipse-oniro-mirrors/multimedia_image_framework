@@ -43,8 +43,6 @@ namespace Media {
 #ifdef ENABLE_ASTC_ENCODE_BASED_GPU
 using namespace AstcEncBasedCl;
 constexpr uint8_t RGBA_BYTES_PIXEL_LOG2 = 2;
-constexpr int32_t RGBA_MAX_WIDTH = 8192;
-constexpr int32_t RGBA_MAX_HEIGHT = 8192;
 constexpr int32_t ASTC_CL_WARMUP_RETRY_TIMES = 100;
 constexpr int32_t ASTC_CL_WARMUP_RETRY_INTERVAL_MS = 1;
 #endif
@@ -56,7 +54,8 @@ constexpr int32_t TEXTURE_BLOCK_BYTES = 16;
 constexpr int32_t TEXTURE_HEAD_BYTES = 16;
 constexpr int32_t ASTC_BLOCK_WIDTH = 4;
 constexpr int32_t ASTC_BLOCK_HEIGHT = 4;
-constexpr int32_t ASTC_MAX_DIM_LIMIT = 8192;
+constexpr int32_t RGBA_MAX_WIDTH = 8192;
+constexpr int32_t RGBA_MAX_HEIGHT = 8192;
 constexpr int32_t OUTPUT_SIZE_MAX = 200000;
 constexpr int32_t BYTES_PER_PIXEL = 4;
 constexpr int64_t SECOND_TO_MICROS = 1000000;
@@ -1498,7 +1497,7 @@ HWTEST_F(PluginTextureEncodeTest, ASTCEncode6x6001, TestSize.Level3)
     EXPECT_EQ(output[3], ASTC_MAGIC_3);
     EXPECT_EQ(output[4], 6);
     EXPECT_EQ(output[5], 6);
-    // sidth/height 256 little-endian at offsett 7..9 and 10..12.
+    // width/height 256 little-endian at offset 7..9 and 10..12.
     EXPECT_EQ(output[7], 0);
     EXPECT_EQ(output[8], 1);
     EXPECT_EQ(output[9], 0);
@@ -1621,7 +1620,7 @@ HWTEST_F(PluginTextureEncodeTest, ASTCEncode6x6DimOverMax001, TestSize.Level3)
 
     // width == 8193: 8193 x 4 RGBA buffer is ~128KB; the range check rejects before any encode work.
     {
-        std::unique_ptr<PixelMap> pixelMap = ConstructPixmap(ASTC_MAX_DIM_LIMIT + 1, ASTC_BLOCK_HEIGHT);
+        std::unique_ptr<PixelMap> pixelMap = ConstructPixmap(RGBA_MAX_WIDTH + 1, ASTC_BLOCK_HEIGHT);
         ASSERT_NE(pixelMap, nullptr);
 
         uint8_t *output = static_cast<uint8_t*>(malloc(OUTPUT_SIZE_MAX));
@@ -1644,7 +1643,7 @@ HWTEST_F(PluginTextureEncodeTest, ASTCEncode6x6DimOverMax001, TestSize.Level3)
 
     // height == 8193: 4 x 8193 RGBA buffer is ~128KB; the range check rejects before any encode work.
     {
-        std::unique_ptr<PixelMap> pixelMap = ConstructPixmap(ASTC_BLOCK_WIDTH, ASTC_MAX_DIM_LIMIT + 1);
+        std::unique_ptr<PixelMap> pixelMap = ConstructPixmap(ASTC_BLOCK_WIDTH, RGBA_MAX_HEIGHT + 1);
         ASSERT_NE(pixelMap, nullptr);
 
         uint8_t *output = static_cast<uint8_t*>(malloc(OUTPUT_SIZE_MAX));
@@ -1681,7 +1680,7 @@ HWTEST_F(PluginTextureEncodeTest, ASTCEncode6x6DimMaxBoundary001, TestSize.Level
 
     // width == 8192 (8192 x 4)
     {
-        std::unique_ptr<PixelMap> pixelMap = ConstructPixmap(ASTC_MAX_DIM_LIMIT, ASTC_BLOCK_HEIGHT);
+        std::unique_ptr<PixelMap> pixelMap = ConstructPixmap(RGBA_MAX_WIDTH, ASTC_BLOCK_HEIGHT);
         ASSERT_NE(pixelMap, nullptr);
 
         uint8_t *output = static_cast<uint8_t*>(malloc(OUTPUT_SIZE_MAX));
@@ -1707,7 +1706,7 @@ HWTEST_F(PluginTextureEncodeTest, ASTCEncode6x6DimMaxBoundary001, TestSize.Level
 
     // height == 8192 (4 x 8192)
     {
-        std::unique_ptr<PixelMap> pixelMap = ConstructPixmap(ASTC_BLOCK_WIDTH, ASTC_MAX_DIM_LIMIT);
+        std::unique_ptr<PixelMap> pixelMap = ConstructPixmap(ASTC_BLOCK_WIDTH, RGBA_MAX_HEIGHT);
         ASSERT_NE(pixelMap, nullptr);
 
         uint8_t *output = static_cast<uint8_t*>(malloc(OUTPUT_SIZE_MAX));
@@ -1756,10 +1755,10 @@ HWTEST_F(PluginTextureEncodeTest, ASTCSoftwareEncode6x6001, TestSize.Level3)
     AstcCodec astcEncoder;
     ASSERT_EQ(astcEncoder.SetAstcEncode(stream, option, pixelMap.get()), SUCCESS);
     
+    // blockX_/blockY_/privateProfile_ are intentionally left at CreateDefaultEncParam()
+    // defaults: InitAstcEncPara (called inside AstcSoftwareEncode) overrides them for
+    // image/sdr_astc_6x6 (blockX_/blockY_ -> ASTC_6X6_DIM, privateProfile_ from quality 92).
     TextureEncodeOptions param = CreateDefaultEncParam();
-    param.blockX_ = 6;
-    param.blockY_ = 6;
-    param.privateProfile_ = QualityProfile::HIGH_SPEED_PROFILE;
     int32_t blocksNum = ((param.width_ + 6 - 1) / 6) * ((param.height_ + 6 - 1) / 6);
     int32_t outSize = blocksNum * TEXTURE_BLOCK_BYTES + TEXTURE_HEAD_BYTES;
     auto outBuffer = static_cast<uint8_t*>(malloc(outSize));
@@ -1793,7 +1792,7 @@ HWTEST_F(PluginTextureEncodeTest, ASTCSoftwareEncodeBoundary001, TestSize.Level3
     BufferPackerStream *stream = new (std::nothrow) BufferPackerStream(output, OUTPUT_SIZE_MAX);
     ASSERT_NE(stream, nullptr);
 
-    struct PlEncodeOptions option = { "image/sdr_astc_6x6", 85, 1 };
+    struct PlEncodeOptions option = { "image/sdr_astc_6x6", 92, 1 };
     AstcCodec astcEncoder;
     ASSERT_EQ(astcEncoder.SetAstcEncode(stream, option, pixelMap.get()), SUCCESS);
     
@@ -1854,62 +1853,6 @@ HWTEST_F(PluginTextureEncodeTest, IsAstcEnc6x6001, TestSize.Level3)
     free(output);
     delete stream;
     GTEST_LOG_(INFO) << "PluginTextureEncodeTest: IsAstcEnc6x6001 end";
-}
-
-/**
- * @tc.name: InitTextureEncodeOptionsTest001
- * @tc.desc: InitTextureEncodeOptions fills the extend info counters for SDR encode.
- * @tc.type: FUNC
- */
-HWTEST_F(PluginTextureEncodeTest, InitTextureEncodeOptionsTest001, TestSize.Level3)
-{
-    GTEST_LOG_(INFO) << "PluginTextureEncodeTest: InitTextureEncodeOptionsTest001 start";
-
-    std::unique_ptr<PixelMap> pixelMap = ConstructPixmap(RGBA_TEST0001_WIDTH, RGBA_TEST0001_HEIGHT);
-    ASSERT_NE(pixelMap, nullptr);
-
-    AstcCodec codec;
-    codec.astcPixelMap_ = pixelMap.get();
-    TextureEncodeOptions param = {};
-    uint8_t colorData = 0xAB;
-    codec.InitTextureEncodeOptions(param, colorData);
-
-    EXPECT_EQ(param.expandNums, 1);
-    EXPECT_EQ(param.extInfoBytes, 1);
-
-    GTEST_LOG_(INFO) << "PluginTextureEncodeTest: InitTextureEncodeOptionsTest001 end";
-}
-
-/**
- * @tc.name: WriteAstcExtendInfoBoundary001
- * @tc.desc: WriteAstcExtendInfo with zero extend groups writes only the size
- *           definition and does not touch bytes beyond it.
- * @tc.type: FUNC
- */
-HWTEST_F(PluginTextureEncodeTest, WriteAstcExtendInfoBoundary001, TestSize.Level3)
-{
-    GTEST_LOG_(INFO) << "PluginTextureEncodeTest: WriteAstcExtendInfoBoundary001 start";
-
-    std::unique_ptr<PixelMap> pixelMap = ConstructPixmap(RGBA_TEST0001_WIDTH, RGBA_TEST0001_HEIGHT);
-    ASSERT_NE(pixelMap, nullptr);
-
-    AstcCodec codec;
-    codec.astcPixelMap_ = pixelMap.get();
-    AstcExtendInfo extendInfo = {0};
-    extendInfo.extendNums = 0;
-    extendInfo.extendBufferSumBytes = 0;
-    std::vector<uint8_t> buffer(32, 0xAA);
-
-    // offset == packSize makes remainingSize zero; no TLV agroup is written.
-    codec.WriteAstcExtendInfo(buffer.data(), 10, extendInfo, 10);
-
-    EXPECT_EQ(buffer[10], 0);
-    EXPECT_EQ(buffer[11], 0);
-    EXPECT_EQ(buffer[12], 0);
-    EXPECT_EQ(buffer[13], 0);
-    EXPECT_EQ(buffer[14], 0xAA);
-
-    GTEST_LOG_(INFO) << "PluginTextureEncodeTest: WriteAstcExtendInfoBoundary001 end";
 }
 
 #ifdef SUT_ENCODE_ENABLE

@@ -52,6 +52,10 @@ constexpr uint8_t NUM_TWO_BYTES = 2;
 
 constexpr uint8_t ASTC_NUM_4 = 4;   // represents ASTC_EXTEND_INFO_SIZE_DEFINITION_LENGTH
 constexpr uint8_t ASTC_6X6_DIM = 6;
+// image/sdr_astc_6x6 only maps quality 92 in ASTC_FORMAT_MAP. Pin it for the 6x6
+// format so the fuzz input actually reaches AstcSoftwareEncodeCore instead of
+// bailing out in GetAstcProfile (~0.2% hit rate otherwise).
+constexpr int32_t ASTC_6X6_QUALITY = 92;
 constexpr uint8_t TEXTURE_HEAD_BYTES = 16;
 constexpr int32_t PIXEL_VALUE_MAX = 256;
 #ifdef ENABLE_ASTC_ENCODE_BASED_GPU
@@ -126,6 +130,11 @@ static ParamRand GetParametersRandom(const uint8_t *data, size_t size)
         paramRand.blockX = *dataTmp++ % MAX_BLOCK_MODULO;
         paramRand.blockY = *dataTmp++ % MAX_BLOCK_MODULO;
         paramRand.format = g_formatArray[*dataTmp++ % FORMAT_ARRAY_SIZE];
+    }
+    // image/sdr_astc_6x6 only accepts quality 92; pin it so the 6x6 encode path is
+    // actually exercised regardless of the fuzzed quality byte.
+    if (paramRand.format == "image/sdr_astc_6x6") {
+        paramRand.quality = ASTC_6X6_QUALITY;
     }
     IMAGE_LOGI("GetParametersRandom success, width %{public}d height %{public}d quality %{public}d \
         blockX %{public}d blockY %{public}d",

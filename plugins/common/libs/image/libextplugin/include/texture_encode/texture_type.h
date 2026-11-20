@@ -106,7 +106,7 @@ inline static const std::map<std::string, std::map<uint8_t, QualityProfile>> AST
     {
         "image/sdr_astc_6x6",
         {
-            { 92, QualityProfile::HIGH_SPEED_PROFILE }
+            { 92, QualityProfile::HIGH_QUALITY_PROFILE }
         }
     }
 };

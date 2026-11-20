@@ -612,7 +612,7 @@ bool AstcCodec::TryTextureSuperCompress(TextureEncodeOptions &param, uint8_t *as
         case TextureEncodeType::SDR_ASTC_4X4:
         case TextureEncodeType::SDR_ASTC_6X6:
             param.sutProfile = SutProfile::SKIP_SUT;
-            IMAGE_LOGD("sdr_astc_4x4 is not suit to be compressed to sut!");
+            IMAGE_LOGD("sdr/hdr astc is not suit to be compressed to sut!");
             return true;
         case TextureEncodeType::ASTC:
             if (skipSutEnc) {
