@@ -3859,15 +3859,18 @@ uint32_t ImageSource::SetDecodeOptions(std::unique_ptr<AbsImageDecoder> &decoder
 {
     PixelDecodeOptions plOptions;
     CopyOptionsToPlugin(opts, plOptions);
+    bool isYuv444TenBitSource = (mainDecoder_ != nullptr) && mainDecoder_->IsYuv444TenBitSource();
     if (opts.desiredPixelFormat == PixelFormat::UNKNOWN) {
-        plOptions.desiredPixelFormat = ((preference_ == MemoryUsagePreference::LOW_RAM) ? PixelFormat::RGB_565 : PixelFormat::RGBA_8888);
+        plOptions.desiredPixelFormat = ((preference_ == MemoryUsagePreference::LOW_RAM) ? PixelFormat::RGB_565 :
+            (isYuv444TenBitSource ? PixelFormat::RGBA_1010102 : PixelFormat::RGBA_8888));
     } else {
         plOptions.desiredPixelFormat = opts.desiredPixelFormat;
     }
 
     if ((opts.desiredDynamicRange == DecodeDynamicRange::AUTO && (sourceHdrType_ > ImageHdrType::SDR)) ||
          opts.desiredDynamicRange == DecodeDynamicRange::HDR) {
-        plOptions.desiredPixelFormat = PixelFormat::RGBA_8888;
+        plOptions.desiredPixelFormat = isYuv444TenBitSource ? PixelFormat::RGBA_1010102 :
+            PixelFormat::RGBA_8888;
     }
     bool cond = (decoder == nullptr);
     CHECK_ERROR_RETURN_RET_LOG(cond, ERROR, "decoder is nullptr");
@@ -3883,7 +3886,7 @@ uint32_t ImageSource::SetDecodeOptions(std::unique_ptr<AbsImageDecoder> &decoder
         CHECK_ERROR_RETURN_RET_LOG(cond, COMMON_ERR_INVALID_PARAMETER,
             "Photos provided a error parameter");
         plOptions.desiredPixelFormat = opts.photoDesiredPixelFormat;
-        if (opts.photoDesiredPixelFormat == PixelFormat::YCBCR_P010) {
+        if (opts.photoDesiredPixelFormat == PixelFormat::YCBCR_P010 && !isYuv444TenBitSource) {
             // if need 10bit yuv, set plOptions to nv21
             plOptions.desiredPixelFormat = PixelFormat::NV21;
         }

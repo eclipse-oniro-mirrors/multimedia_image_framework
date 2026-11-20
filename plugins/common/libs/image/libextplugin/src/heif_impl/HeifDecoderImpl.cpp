@@ -524,7 +524,7 @@ static bool IsSupportHardwareDecode(const GridInfo &gridInfo)
 bool HeifDecoderImpl::decode(HeifFrameInfo *frameInfo)
 {
     ImageTrace trace("HeifDecoderImpl::decode");
-    if (!IsSupportHardwareDecode(gridInfo_)) {
+    if (IsYuv444Source() || !IsSupportHardwareDecode(gridInfo_)) {
         return SwDecode();
     }
     sptr<SurfaceBuffer> hwBuffer;
@@ -552,14 +552,36 @@ bool HeifDecoderImpl::decode(HeifFrameInfo *frameInfo)
     return true;
 }
 
+static bool IsYuv444Stream(const std::shared_ptr<HeifImage> &image)
+{
+    if (image == nullptr) {
+        return false;
+    }
+    int bitDepth = image->GetLumaBitNum();
+    return image->GetDefaultPixelFormat() == HeifPixelFormat::YUV444 &&
+        (bitDepth == LUMA_8_BIT || bitDepth == LUMA_10_BIT);
+}
+
 bool HeifDecoderImpl::SwDecode(bool isSharedMemory, uint32_t index, bool isAnimationDecode)
 {
+    std::shared_ptr<HeifImage> decodeImage = isAnimationDecode ? animationImage_ : primaryImage_;
+    bool isYuv444 = IsYuv444Stream(decodeImage);
+    if (isAnimationDecode && isYuv444) {
+        IMAGE_LOGE("heifs animation with yuv444 frames is not supported");
+        return false;
+    }
+
     HevcSoftDecodeParam param {
             gridInfo_, Media::PixelFormat::UNKNOWN, outPixelFormat_,
             dstMemory_, 0,
             static_cast<uint32_t>(dstRowStride_), dstHwBuffer_,
             isSharedMemory, nullptr, static_cast<uint32_t>(dstRowStride_)
     };
+    if (isYuv444) {
+        IMAGE_LOGD("yuv444 sw decode contract: outFmt%{public}d dstBuffer%{public}p dstStride%{public}u "
+            "hwBuffer%{public}p", static_cast<int32_t>(outPixelFormat_), dstMemory_,
+            static_cast<uint32_t>(dstRowStride_), dstHwBuffer_);
+    }
     if (isAnimationDecode) {
         CHECK_ERROR_RETURN_RET_LOG(!animationImage_, false, "image sequence info is nullptr.");
         param.index = index;
@@ -1291,6 +1313,16 @@ int32_t HeifDecoderImpl::GetPrimaryLumaBitNum()
 HeifPixelFormat HeifDecoderImpl::GetSourcePixelFormat() const
 {
     return primaryImage_ ? primaryImage_->GetDefaultPixelFormat() : HeifPixelFormat::UNDEFINED;
+}
+
+bool HeifDecoderImpl::IsYuv444Source()
+{
+    return IsYuv444Stream(primaryImage_);
+}
+
+bool HeifDecoderImpl::IsYuv444TenBitSource()
+{
+    return IsYuv444Stream(primaryImage_) && primaryImage_->GetLumaBitNum() == LUMA_10_BIT;
 }
 
 bool HeifDecoderImpl::IsDirectYUVDecode()

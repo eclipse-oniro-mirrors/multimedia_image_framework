@@ -870,6 +870,23 @@ bool ExtDecoder::IsProgressiveJpeg()
     return isProgressive;
 }
 
+bool ExtDecoder::IsYuv444TenBitSource()
+{
+#ifdef HEIF_HW_DECODE_ENABLE
+    bool cond = CheckCodec();
+    CHECK_ERROR_RETURN_RET_LOG(!cond, false, "%{public}s check codec fail", __func__);
+    if (codec_->getEncodedFormat() != SkEncodedImageFormat::kHEIF) {
+        return false;
+    }
+
+    auto heifContext = reinterpret_cast<HeifDecoderImpl*>(codec_->getHeifContext());
+    CHECK_ERROR_RETURN_RET_LOG(heifContext == nullptr, false, "IsYuv444TenBitSource heifContext is nullptr");
+    return heifContext->IsYuv444TenBitSource();
+#else
+    return false;
+#endif
+}
+
 uint32_t ExtDecoder::CheckDecodeOptions(uint32_t index, const PixelDecodeOptions &opts)
 {
     bool cond = ExtractHeifRegion(opts) != SUCCESS;
@@ -940,6 +957,59 @@ bool ExtDecoder::IsRegionDecodeSupported(uint32_t index, const PixelDecodeOption
     return true;
 }
 
+#ifdef HEIF_HW_DECODE_ENABLE
+static bool IsYuv444TenBitOutputFormat(Media::PixelFormat format)
+{
+    return format == Media::PixelFormat::RGBA_1010102 ||
+        format == Media::PixelFormat::YCBCR_P010 ||
+        format == Media::PixelFormat::YCRCB_P010;
+}
+
+uint32_t ExtDecoder::IsSupportedYuv444OutputFormat(Media::PixelFormat desired)
+{
+    if (IsYuv444TenBitOutputFormat(desired)) {
+        return SUCCESS;
+    }
+    switch (desired) {
+        case Media::PixelFormat::NV12:
+        case Media::PixelFormat::NV21:
+        case Media::PixelFormat::RGBA_8888:
+        case Media::PixelFormat::BGRA_8888:
+        case Media::PixelFormat::RGB_565:
+            return SUCCESS;
+        default:
+            return ERR_MEDIA_FORMAT_UNSUPPORT;
+    }
+}
+
+Media::PixelFormat ExtDecoder::AdjustYuv444OutputFormat(Media::PixelFormat desired, bool is10BitSource) const
+{
+    if (!is10BitSource && IsYuv444TenBitOutputFormat(desired)) {
+        IMAGE_LOGI("yuv444 8bit source downgrades desired pixel format:%{public}d to RGBA_8888",
+            static_cast<int>(desired));
+        return Media::PixelFormat::RGBA_8888;
+    }
+    return desired;
+}
+
+uint32_t ExtDecoder::CheckYuv444OutputFormat(const PixelDecodeOptions &opts, PlImageInfo &info)
+{
+    if (codec_ == nullptr || codec_->getEncodedFormat() != SkEncodedImageFormat::kHEIF) {
+        return SUCCESS;
+    }
+    auto heifDecoder = reinterpret_cast<HeifDecoderImpl*>(codec_->getHeifContext());
+    if (heifDecoder == nullptr || !heifDecoder->IsYuv444Source()) {
+        return SUCCESS;
+    }
+    uint32_t ret = IsSupportedYuv444OutputFormat(opts.desiredPixelFormat);
+    CHECK_ERROR_RETURN_RET_LOG(ret != SUCCESS, ret,
+        "Unsupported desired pixel format:%{public}d for yuv444 source",
+        static_cast<int>(opts.desiredPixelFormat));
+    info.pixelFormat = AdjustYuv444OutputFormat(opts.desiredPixelFormat, heifDecoder->IsYuv444TenBitSource());
+    return SUCCESS;
+}
+#endif
+
 uint32_t ExtDecoder::SetDecodeOptions(uint32_t index, const PixelDecodeOptions &opts, PlImageInfo &info)
 {
     bool cond = !CheckIndexValied(index);
@@ -966,6 +1036,10 @@ uint32_t ExtDecoder::SetDecodeOptions(uint32_t index, const PixelDecodeOptions &
         if (skEncodeFormat == SkEncodedImageFormat::kHEIF && IsYuv420Format(opts.desiredPixelFormat)) {
             info.pixelFormat = opts.desiredPixelFormat;
         }
+#ifdef HEIF_HW_DECODE_ENABLE
+        uint32_t yuv444Ret = CheckYuv444OutputFormat(opts, info);
+        CHECK_ERROR_RETURN_RET(yuv444Ret != SUCCESS, yuv444Ret);
+#endif
         if (skEncodeFormat == SkEncodedImageFormat::kAVIF) {
             auto decoder = reinterpret_cast<AvifDecoderImpl*>(codec_->getHeifContext());
             CHECK_ERROR_RETURN_RET_LOG(decoder == nullptr, ERR_IMAGE_DATA_UNSUPPORT, "Avif Decoder is nullptr.");
@@ -1431,11 +1505,11 @@ bool ExtDecoder::IsHeifRegionDecode()
         auto decoder = reinterpret_cast<HeifDecoderImpl*>(codec_->getHeifContext());
         bool cond = decoder == nullptr;
         CHECK_ERROR_RETURN_RET_LOG(cond, false, "Decode Heifdecoder is nullptr");
-        bool unsupportedHeifRegion = decoder->IsHeifHasAlphaImage() ||
+        bool unsupportedHeifRegion = decoder->IsHeifHasAlphaImage() || decoder->IsYuv444Source() ||
             !decoder->IsHeifGainmapDivisibility(info_.width(), info_.height()) ||
             decoder->IsHeifGainmapYuv400();
         CHECK_INFO_RETURN_RET_LOG(unsupportedHeifRegion, false,
-            "Heif image contains alpha channels, or the size not be an integer multiple of GainMap");
+            "Heif image contains alpha channels or yuv444 source, or the size not be an integer multiple of GainMap");
         return true;
     }
     return false;
@@ -1796,6 +1870,8 @@ bool ExtDecoder::IsSupportHeifHardwareDecode(const PixelDecodeOptions &opts)
     CHECK_DEBUG_RETURN_RET_LOG(isHeifRegionDecode, false, "HEIF regiondecode does not set samplesize");
     CHECK_DEBUG_RETURN_RET_LOG(decoder->GetPrimaryLumaBitNum() == LUMA_10_BIT, false,
         "HEIF primary image is Luma 10bit, not support set samplesize");
+    CHECK_DEBUG_RETURN_RET_LOG(decoder->IsYuv444Source(), false,
+        "HEIF yuv444 source does not support set samplesize");
     return gridInfo.tileWidth >= HEIF_HARDWARE_TILE_MIN_DIM &&
         gridInfo.tileHeight >= HEIF_HARDWARE_TILE_MIN_DIM &&
         gridInfo.tileWidth <= HEIF_HARDWARE_TILE_MAX_DIM &&

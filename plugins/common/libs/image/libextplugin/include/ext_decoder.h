@@ -76,6 +76,7 @@ public:
     bool GetHeifFragmentMetadata(Media::Rect& metadata) override;
     bool IsHeifWithoutAlpha() override;
     bool IsProgressiveJpeg() override;
+    bool IsYuv444TenBitSource() override;
 #ifdef IMAGE_COLORSPACE_FLAG
     OHOS::ColorManager::ColorSpace GetPixelMapColorSpace() override;
     bool IsSupportICCProfile() override;
@@ -228,6 +229,11 @@ private:
     bool IsHeifsDecode(DecodeContext &context);
     uint32_t DoHeifsDecode(OHOS::ImagePlugin::DecodeContext &context);
     uint32_t AvifDecode(uint32_t index, DecodeContext &context, uint64_t rowStride, uint64_t byteCount);
+#ifdef HEIF_HW_DECODE_ENABLE
+    uint32_t IsSupportedYuv444OutputFormat(Media::PixelFormat desired);
+    Media::PixelFormat AdjustYuv444OutputFormat(Media::PixelFormat desired, bool is10BitSource) const;
+    uint32_t CheckYuv444OutputFormat(const PixelDecodeOptions &opts, PlImageInfo &info);
+#endif
 
     ImagePlugin::InputDataStream *stream_ = nullptr;
     std::unique_ptr<InputDataStream> previewStream_ = nullptr;

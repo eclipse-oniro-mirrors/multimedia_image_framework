@@ -296,6 +296,11 @@ public:
         return false;
     }
 
+    virtual bool IsYuv444TenBitSource()
+    {
+        return false;
+    }
+
     virtual OHOS::Media::Size GetAnimationImageSize()
     {
         return {0, 0};
