@@ -23,6 +23,7 @@
 #include "image_kits.h"
 #include "image_receiver.h"
 #include "image_error_convert.h"
+#include "media_errors.h"
 
 struct OH_ImageReceiverNative {
     std::shared_ptr<OHOS::Media::ImageReceiver> ptrImgRcv;
@@ -1172,6 +1173,31 @@ HWTEST_F(ImageReceiverNativeTest, SetMemoryNameMakeErrMsgTest001, TestSize.Level
     EXPECT_EQ(unsupported.first, static_cast<int32_t>(IMAGE_RECEIVER_INVALID_PARAMETER));
     EXPECT_EQ(unsupported.second, "Memory format not support.");
     GTEST_LOG_(INFO) << "ImageReceiverNativeTest: SetMemoryNameMakeErrMsgTest001 end";
+}
+
+/**
+ * @tc.name: PurgeableErrorMessagesAreFixed
+ * @tc.desc: every public purgeable error code has one fixed message shared by both NAPI bindings
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageReceiverNativeTest, PurgeableErrorMessagesAreFixed, TestSize.Level3)
+{
+    const std::pair<int32_t, const char *> cases[] = {
+        {ERR_IMAGE_PIXELMAP_RELEASED, "PixelMap has been released."},
+        {ERR_IMAGE_PIXELMAP_CROSS_THREAD, "PixelMap has been passed to another thread."},
+        {ERR_IMAGE_PIXELMAP_NAPI_FAILED, "PixelMap NAPI operation failed."},
+        {ERR_IMAGE_INVALID_PARAM, "Invalid parameter."},
+        {ERR_MEDIA_UNSUPPORT_OPERATION, "Unsupported operation, e.g. on cross-platform."},
+        {ERR_IMAGE_PURGEABLE_PIN_FAILED, "Failed to pin purgeable PixelMap memory."},
+        {ERR_IMAGE_PURGEABLE_UNPIN_FAILED, "Failed to unpin purgeable PixelMap memory."},
+        {ERR_IMAGE_PURGEABLE_QUERY_FAILED, "Failed to query the purgeable association status of the PixelMap."},
+    };
+    for (const auto &testCase : cases) {
+        EXPECT_EQ(ImageErrorConvert::GetPurgeableErrorMessage(testCase.first), testCase.second);
+    }
+    EXPECT_TRUE(ImageErrorConvert::GetPurgeableErrorMessage(ERR_IMAGE_GET_IMAGE_DATA_FAILED).empty());
+    EXPECT_TRUE(ImageErrorConvert::GetPurgeableErrorMessage(IMAGE_LOCK_UNLOCK_FAILED).empty());
+    EXPECT_TRUE(ImageErrorConvert::GetPurgeableErrorMessage(IMAGE_UNKNOWN_ERROR).empty());
 }
 
 } // namespace Media

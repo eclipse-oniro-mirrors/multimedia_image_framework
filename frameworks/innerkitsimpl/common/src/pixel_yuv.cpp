@@ -29,6 +29,9 @@
 #include "image_log.h"
 #include "image_mdk_common.h"
 #include "image_system_properties.h"
+#ifdef IMAGE_PURGEABLE_PIXELMAP
+#include "pixel_map_utils.h"
+#endif
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 #include "surface_buffer.h"
 #endif
@@ -924,6 +927,12 @@ ColorYuv420 PixelYuv::GetYuv420Color(uint32_t x, uint32_t y)
 
 void PixelYuv::SetPixelsAddr(void *addr, void *context, uint32_t size, AllocatorType type, CustomFreePixelMap func)
 {
+#ifdef IMAGE_PURGEABLE_PIXELMAP
+    if (PixelMapRebuildScope::IsRebuilding(this)) {
+        IMAGE_LOGE("SetPixelsAddr rejected during rebuild of the same YUV PixelMap");
+        return;
+    }
+#endif
     if (data_ != nullptr) {
         IMAGE_LOGD("SetPixelsAddr release the existed data first");
         FreePixelMap();

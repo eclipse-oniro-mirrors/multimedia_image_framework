@@ -36,6 +36,8 @@ public:
     static std::pair<int32_t, std::string> XMPMetadataGetBlobMakeErrMsg(uint32_t errorCode);
     static std::pair<int32_t, std::string> CreateImageRawDataMakeErrMsg(uint32_t errorCode);
     static std::pair<int32_t, std::string> SetMemoryNameMakeErrMsg(uint32_t errorCode);
+    // Only the explicitly listed purgeable API error codes have a fixed message here.
+    static std::string GetPurgeableErrorMessage(int32_t errorCode);
 };
 } // namespace Media
 } // namespace OHOS

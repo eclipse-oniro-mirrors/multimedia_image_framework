@@ -14,6 +14,8 @@
  */
 
 #include "pixel_map_napi.h"
+#include "image_error_convert.h"
+#include "image_common.h"
 #include "media_errors.h"
 #include "image_log.h"
 #include "image_napi_utils.h"
@@ -554,6 +556,10 @@ void PixelMapNapi::ExtraAddNapiFunction(std::vector<napi_property_descriptor> &p
 {
     props.insert(props.end(), {
         DECLARE_NAPI_FUNCTION("setMemoryNameSync", SetMemoryNameSync),
+        DECLARE_NAPI_FUNCTION("pinPurgeableMemory", PinPurgeableMemory),
+        DECLARE_NAPI_FUNCTION("unpinPurgeableMemory", UnpinPurgeableMemory),
+        DECLARE_NAPI_FUNCTION("isPurgeable", IsPurgeable),
+        DECLARE_NAPI_FUNCTION("disablePurgeable", DisablePurgeable),
         DECLARE_NAPI_FUNCTION("cloneSync", CloneSync),
         DECLARE_NAPI_FUNCTION("clone", Clone),
         DECLARE_NAPI_FUNCTION("isReleased", IsReleased),
@@ -5781,6 +5787,109 @@ napi_value PixelMapNapi::SetMemoryNameSync(napi_env env, napi_callback_info info
     }
     return result;
 #endif
+}
+
+namespace {
+enum class PurgeableOperation { PIN, UNPIN, QUERY, DISABLE };
+
+static napi_value ThrowPurgeableError(napi_env env, int32_t code)
+{
+    return ImageNapiUtils::ThrowExceptionError(env, code, ImageErrorConvert::GetPurgeableErrorMessage(code), true);
+}
+
+static napi_value ExecutePurgeableOperation(napi_env env, napi_callback_info info, PurgeableOperation operation)
+{
+    napi_value result = nullptr;
+    napi_get_undefined(env, &result);
+    napi_status status;
+    napi_value thisVar = nullptr;
+    size_t argCount = NUM_0;
+    IMG_JS_ARGS(env, info, status, argCount, nullptr, thisVar);
+    if (!IMG_IS_OK(status)) {
+        IMAGE_LOGE("Purgeable operation failed to get call info, operation:%{public}d, status:%{public}d",
+            static_cast<int>(operation), status);
+        return ThrowPurgeableError(env, ERR_IMAGE_PIXELMAP_NAPI_FAILED);
+    }
+    if (argCount != NUM_0) {
+        IMAGE_LOGE("Purgeable operation received arguments, count:%{public}zu", argCount);
+        return ThrowPurgeableError(env, ERR_IMAGE_INVALID_PARAM);
+    }
+
+    PixelMapNapi* pixelMapNapi = nullptr;
+    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&pixelMapNapi));
+    if (!IMG_IS_OK(status) || pixelMapNapi == nullptr) {
+        IMAGE_LOGE("Purgeable operation failed to unwrap PixelMap, status:%{public}d", status);
+        return ThrowPurgeableError(env, ERR_IMAGE_PIXELMAP_NAPI_FAILED);
+    }
+    std::shared_ptr<PixelMap> nativePixelMap = pixelMapNapi->GetPixelNapiInner();
+    if (nativePixelMap == nullptr) {
+        return ThrowPurgeableError(env, ERR_IMAGE_PIXELMAP_RELEASED);
+    }
+    if (!pixelMapNapi->GetPixelNapiEditable()) {
+        return ThrowPurgeableError(env, ERR_IMAGE_PIXELMAP_CROSS_THREAD);
+    }
+
+    if (operation == PurgeableOperation::QUERY) {
+        bool associated = false;
+#ifdef IMAGE_PURGEABLE_PIXELMAP
+        if (!nativePixelMap->GetPurgeableStatus(associated)) {
+            return ThrowPurgeableError(env, ERR_IMAGE_PURGEABLE_QUERY_FAILED);
+        }
+#endif
+        napi_value queryResult = nullptr;
+        status = napi_get_boolean(env, associated, &queryResult);
+        if (!IMG_IS_OK(status)) {
+            IMAGE_LOGE("Purgeable operation failed to create query result, status:%{public}d", status);
+            return ThrowPurgeableError(env, ERR_IMAGE_PIXELMAP_NAPI_FAILED);
+        }
+        return queryResult;
+    }
+#ifdef IMAGE_PURGEABLE_PIXELMAP
+    if (operation == PurgeableOperation::DISABLE) {
+        if (!nativePixelMap->DisablePurgeable()) {
+            return ThrowPurgeableError(env, ERR_MEDIA_UNSUPPORT_OPERATION);
+        }
+        return result;
+    }
+    bool shouldPin = operation == PurgeableOperation::PIN;
+    bool unsupported = false;
+    bool success = shouldPin ? nativePixelMap->PinPurgeableMemory(unsupported) :
+        nativePixelMap->UnpinPurgeableMemory(unsupported);
+    if (!success) {
+        IMAGE_LOGE("Purgeable operation failed, operation:%{public}d, unsupported:%{public}d",
+            static_cast<int>(operation), unsupported);
+        return ThrowPurgeableError(env, unsupported ? ERR_MEDIA_UNSUPPORT_OPERATION :
+            (shouldPin ? ERR_IMAGE_PURGEABLE_PIN_FAILED : ERR_IMAGE_PURGEABLE_UNPIN_FAILED));
+    }
+    return result;
+#else
+    if (operation == PurgeableOperation::DISABLE) {
+        return result;
+    }
+    IMAGE_LOGE("Purgeable PixelMap feature is disabled, operation:%{public}d", static_cast<int>(operation));
+    return ThrowPurgeableError(env, ERR_MEDIA_UNSUPPORT_OPERATION);
+#endif
+}
+}
+
+napi_value PixelMapNapi::PinPurgeableMemory(napi_env env, napi_callback_info info)
+{
+    return ExecutePurgeableOperation(env, info, PurgeableOperation::PIN);
+}
+
+napi_value PixelMapNapi::UnpinPurgeableMemory(napi_env env, napi_callback_info info)
+{
+    return ExecutePurgeableOperation(env, info, PurgeableOperation::UNPIN);
+}
+
+napi_value PixelMapNapi::IsPurgeable(napi_env env, napi_callback_info info)
+{
+    return ExecutePurgeableOperation(env, info, PurgeableOperation::QUERY);
+}
+
+napi_value PixelMapNapi::DisablePurgeable(napi_env env, napi_callback_info info)
+{
+    return ExecutePurgeableOperation(env, info, PurgeableOperation::DISABLE);
 }
 
 static void CloneExec(napi_env env, PixelMapAsyncContext* context)

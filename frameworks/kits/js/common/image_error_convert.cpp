@@ -20,6 +20,30 @@
 
 namespace OHOS {
 namespace Media {
+std::string ImageErrorConvert::GetPurgeableErrorMessage(int32_t errorCode)
+{
+    switch (errorCode) {
+        case ERR_IMAGE_PIXELMAP_RELEASED:
+            return "PixelMap has been released.";
+        case ERR_IMAGE_PIXELMAP_CROSS_THREAD:
+            return "PixelMap has been passed to another thread.";
+        case ERR_IMAGE_PIXELMAP_NAPI_FAILED:
+            return "PixelMap NAPI operation failed.";
+        case ERR_IMAGE_INVALID_PARAM:
+            return "Invalid parameter.";
+        case ERR_MEDIA_UNSUPPORT_OPERATION:
+            return "Unsupported operation, e.g. on cross-platform.";
+        case ERR_IMAGE_PURGEABLE_PIN_FAILED:
+            return "Failed to pin purgeable PixelMap memory.";
+        case ERR_IMAGE_PURGEABLE_UNPIN_FAILED:
+            return "Failed to unpin purgeable PixelMap memory.";
+        case ERR_IMAGE_PURGEABLE_QUERY_FAILED:
+            return "Failed to query the purgeable association status of the PixelMap.";
+        default:
+            return {};
+    }
+}
+
 std::pair<int32_t, std::string> ImageErrorConvert::CreatePictureAtIndexMakeErrMsg(uint32_t errorCode)
 {
     switch (errorCode) {

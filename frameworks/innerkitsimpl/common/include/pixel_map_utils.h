@@ -16,6 +16,10 @@
 #ifndef FRAMEWORKS_INNERKITSIMPL_COMMON_INCLUDE_PIXEL_MAP_UTILS_H
 #define FRAMEWORKS_INNERKITSIMPL_COMMON_INCLUDE_PIXEL_MAP_UTILS_H
 
+#ifdef IMAGE_PURGEABLE_PIXELMAP
+#include <vector>
+#endif
+
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 #include "ashmem.h"
 #endif
@@ -29,6 +33,45 @@
 
 namespace OHOS {
 namespace Media {
+#ifdef IMAGE_PURGEABLE_PIXELMAP
+// A callback must not recursively enter purgeable execution or replace the original pixel buffer.
+// Keep a chain rather than just the innermost map so A -> B -> A is detected as well.
+class PixelMapRebuildScope {
+public:
+    explicit PixelMapRebuildScope(const PixelMap *pixelMap);
+    ~PixelMapRebuildScope();
+
+    PixelMapRebuildScope(const PixelMapRebuildScope &) = delete;
+    PixelMapRebuildScope &operator=(const PixelMapRebuildScope &) = delete;
+
+    static bool IsRebuilding(const PixelMap *pixelMap);
+
+private:
+    const PixelMap *pixelMap_;
+    const PixelMapRebuildScope *previous_;
+    static thread_local const PixelMapRebuildScope *current_;
+};
+
+// Retire nested rebuilders after the outermost guarded call releases its pixel/transform locks.
+class RebuilderReleaseScope {
+public:
+    RebuilderReleaseScope();
+    ~RebuilderReleaseScope();
+
+    RebuilderReleaseScope(const RebuilderReleaseScope &) = delete;
+    RebuilderReleaseScope &operator=(const RebuilderReleaseScope &) = delete;
+
+    static void Retire(std::unique_ptr<PixelMapRebuilder> rebuilder);
+
+private:
+    RebuilderReleaseScope *previous_;
+    std::vector<std::unique_ptr<PixelMapRebuilder>> retired_;
+    static thread_local RebuilderReleaseScope *current_;
+};
+
+bool CheckPurgeableReentry(const PixelMap *pixelMap, const char *operation);
+#endif
+
 // Define bytes per pixel
 constexpr int8_t ALPHA_8_BYTES = 1;
 constexpr int8_t ALPHA_F16_BYTES = 2;

@@ -101,6 +101,16 @@ bool ImageSystemProperties::GetDecodeDmaEnabled()
 #endif
 }
 
+bool ImageSystemProperties::GetPurgeablePixelMapEnabled()
+{
+#if !defined(CROSS_PLATFORM) && !defined(_WIN32) && !defined(_APPLE) && \
+    !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+    return system::GetBoolParameter("persist.multimedia.image.purgeable.enabled", false);
+#else
+    return false;
+#endif
+}
+
 bool ImageSystemProperties::GetAstcEnabled()
 {
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)

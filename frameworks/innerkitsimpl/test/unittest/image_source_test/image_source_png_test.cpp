@@ -72,6 +72,38 @@ void SampleDecodePngTest(int sampleSize)
     ASSERT_NE(pixelMap.get(), nullptr);
 }
 
+#ifdef IMAGE_PURGEABLE_PIXELMAP
+/**
+ * @tc.name: PurgeableSourceExceedsHalfPixelAllocation001
+ * @tc.desc: oversized encoded backups return the decoded ordinary PixelMap through both creation entries
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourcePngTest, PurgeableSourceExceedsHalfPixelAllocation001, TestSize.Level3)
+{
+    SourceOptions sourceOptions;
+    uint32_t errorCode = SUCCESS;
+    auto source = ImageSource::CreateImageSource("/data/local/tmp/image/test.png", sourceOptions, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(source, nullptr);
+
+    DecodeOptions options;
+    options.desiredSize = {1, 1};
+    options.desiredPixelFormat = PixelFormat::RGBA_8888;
+    options.allocatorType = AllocatorType::SHARE_MEM_ALLOC;
+    options.purgeableMode = PurgeableMode::REBUILD;
+    for (uint32_t entry = 0; entry < 2; ++entry) {
+        auto pixelMap = entry == 0 ? source->CreatePixelMap(options, errorCode) :
+            source->CreatePixelMapEx(0, options, errorCode);
+        ASSERT_EQ(errorCode, SUCCESS);
+        ASSERT_NE(pixelMap, nullptr);
+        ASSERT_GT(pixelMap->GetAllocationByteCount(), 0U);
+        ASSERT_GT(source->GetSourceSize(), pixelMap->GetAllocationByteCount() / 2);
+        EXPECT_FALSE(pixelMap->IsPurgeable());
+        EXPECT_NE(pixelMap->GetPixels(), nullptr);
+    }
+}
+#endif
+
 /**
  * @tc.name: PngImageDecode001
  * @tc.desc: Decode png image from file source stream

@@ -177,6 +177,7 @@ const int32_t ERR_MEDIA_NO_EXIF_DATA = 402; // no exif_data info
 const int32_t ERR_IMAGE_GET_IMAGE_DATA_FAILED = 7600104; // Failed to get image data
 const int32_t ERR_IMAGE_PIXELMAP_RELEASED = 7600105; // PixelMap has been released
 const int32_t ERR_IMAGE_PIXELMAP_CROSS_THREAD = 7600106; // PixelMap has been passed to another thread
+const int32_t ERR_IMAGE_PIXELMAP_NAPI_FAILED = 7600107; // PixelMap NAPI operation failed.
 const int32_t ERR_MEDIA_UNSUPPORT_OPERATION = 7600201; // Unsupported operation
 const int32_t ERR_IMAGE_UNSUPPORTED_CONVERSION = 7600203; // Unsupported conversion
 const int32_t ERR_MEDIA_INVALID_REGION = 7600204; // Invalid Region
@@ -188,6 +189,10 @@ const int32_t ERR_MEDIA_MEMORY_ALLOC_FAILED = 7600301; // Memory alloc failed
 const int32_t ERR_MEDIA_MEMORY_COPY_FAILED = 7600302; // Memory copy failed
 const int32_t ERR_IMAGE_CREATE_PIXELMAP_FAILED = 7600305; // Failed to create PixelMap
 const int32_t ERR_MEDIA_DATA_CONVERSION_FAILED = 7600306; // Data conversion failed
+const int32_t ERR_IMAGE_PURGEABLE_PIN_FAILED = 7600307; // Failed to pin purgeable PixelMap memory.
+const int32_t ERR_IMAGE_PURGEABLE_UNPIN_FAILED = 7600308; // Failed to unpin purgeable PixelMap memory.
+// Failed to query the purgeable association status of the PixelMap.
+const int32_t ERR_IMAGE_PURGEABLE_QUERY_FAILED = 7600309;
 const int32_t ERR_IMAGE_UNKNOWN_ERROR = 7600901; // Internal unknown error
 const int32_t ERR_IMAGE_WRITE_PROPERTY_FAILED = 7700304; // Failed to write image properties to the file
 }  // namespace Media

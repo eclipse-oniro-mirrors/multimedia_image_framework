@@ -315,6 +315,10 @@ if (use_clang_android) {
     if (memory_utils_purgeable_ashmem_enable && defined(global_parts_info) &&
         defined(global_parts_info.resourceschedule_memmgr_override)) {
       defines += [ "IMAGE_PURGEABLE_PIXELMAP" ]
+      sources += [
+        "${image_subsystem}/frameworks/innerkitsimpl/codec/src/image_purgeable_pixelmap_builder.cpp",
+        "${image_subsystem}/frameworks/innerkitsimpl/common/src/pixel_map_utils.cpp",
+      ]
       external_deps += [ 
         "memmgr:libpurgeablemem_plugin",
         "memory_utils:libpurgeablemem"

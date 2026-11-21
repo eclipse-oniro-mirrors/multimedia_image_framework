@@ -28,8 +28,7 @@
 #include "image_type.h"
 #include "parcel.h"
 #ifdef IMAGE_PURGEABLE_PIXELMAP
-#include "purgeable_mem_base.h"
-#include "purgeable_mem_builder.h"
+#include "pixel_map_rebuilder.h"
 #endif
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 #include "pixel_map_parcel.h"
@@ -43,6 +42,11 @@ class RSModifiersDraw;
 };
 
 namespace OHOS {
+#ifdef IMAGE_PURGEABLE_PIXELMAP
+namespace PurgeableMem {
+class PurgeableMemBase;
+}
+#endif
 namespace Media {
 struct HdrMetadata;
 enum class ImageHdrType : int32_t;
@@ -838,18 +842,34 @@ public:
 #ifdef IMAGE_PURGEABLE_PIXELMAP
     NATIVEEXPORT bool IsPurgeable() const
     {
-        return purgeableMemPtr_ != nullptr;
+        bool associated = false;
+        return GetPurgeableStatus(associated) && associated;
     }
+
+    NATIVEEXPORT bool GetPurgeableStatus(bool &associated) const;
 
     NATIVEEXPORT std::shared_ptr<PurgeableMem::PurgeableMemBase> GetPurgeableMemPtr() const
     {
-        return purgeableMemPtr_;
+        // Queries retain the backend without taking the lifecycle lock held across a possible rebuild.
+        return std::atomic_load(&purgeableMemPtr_);
     }
 
     NATIVEEXPORT void SetPurgeableMemPtr(std::shared_ptr<PurgeableMem::PurgeableMemBase> pmPtr)
     {
-        purgeableMemPtr_ = pmPtr;
+        SetPurgeableMemPtr(std::move(pmPtr), nullptr);
     }
+
+    NATIVEEXPORT void SetPurgeableMemPtr(std::shared_ptr<PurgeableMem::PurgeableMemBase> pmPtr,
+        std::shared_ptr<PixelMapRebuildState> rebuildState);
+
+    NATIVEEXPORT bool PinPurgeableMemory();
+    // On failure, unsupported distinguishes an ordinary/disabled map from invalid content or state.
+    NATIVEEXPORT bool PinPurgeableMemory(bool &unsupported);
+    NATIVEEXPORT bool UnpinPurgeableMemory();
+    NATIVEEXPORT bool UnpinPurgeableMemory(bool &unsupported);
+    NATIVEEXPORT bool DisablePurgeable();
+    NATIVEEXPORT bool SetPurgeableRebuilder(std::unique_ptr<PixelMapRebuilder> rebuilder);
+    NATIVEEXPORT bool SetPurgeableRebuilder(std::unique_ptr<PixelMapRebuilder> rebuilder, bool &unsupported);
 #endif
 
     NATIVEEXPORT bool IsAstc()
@@ -1101,9 +1121,12 @@ protected:
 #endif
 
 #ifdef IMAGE_PURGEABLE_PIXELMAP
+    // Both pointers use atomic shared_ptr operations; execution revalidates the pair under the state lock.
     std::shared_ptr<PurgeableMem::PurgeableMemBase> purgeableMemPtr_ = nullptr;
+    std::shared_ptr<PixelMapRebuildState> purgeableRebuildState_ = nullptr;
 #else
     std::shared_ptr<uint8_t> purgeableMemPtr_ = nullptr;
+    std::shared_ptr<uint8_t> purgeableRebuildState_ = nullptr;
 #endif
     YUVDataInfo yuvDataInfo_;
     std::shared_ptr<ExifMetadata> exifMetadata_ = nullptr;
@@ -1113,6 +1136,18 @@ protected:
     bool toSdrColorIsSRGB_ = false;
     std::shared_ptr<std::shared_mutex> pixelDataMutex_ = std::make_shared<std::shared_mutex>();
 private:
+#ifdef IMAGE_PURGEABLE_PIXELMAP
+    bool IsPurgeableReentry(const char *operation) const;
+    std::shared_ptr<PurgeableMem::PurgeableMemBase> LockPurgeableMemory(
+        std::shared_ptr<PixelMapRebuildState> &state, std::shared_lock<std::shared_mutex> &lock) const;
+    void ClearPurgeableResources(const std::shared_ptr<PixelMapRebuildState> &state,
+        const std::shared_ptr<PurgeableMem::PurgeableMemBase> &memory);
+    // Caller holds state's lifecycle lock exclusively. Never call the backend with state->mutex held.
+    void ClearPurgeableResourcesLocked(const std::shared_ptr<PixelMapRebuildState> &state,
+        const std::shared_ptr<PurgeableMem::PurgeableMemBase> &memory,
+        std::unique_ptr<PixelMapRebuilder> &retiredRebuilder,
+        std::shared_ptr<PurgeableMem::PurgeableMemBase> &retiredMemory);
+#endif
     // The caller must hold pixelDataMutex_ exclusively.
     void SetPixelsAddrLocked(void *addr, void *context, uint32_t size, AllocatorType type, CustomFreePixelMap func);
     void SetPixelsAddrAndImageInfo(void *addr, void *context, uint32_t size, AllocatorType type, ImageInfo &info);
@@ -1137,7 +1172,7 @@ private:
     // unmap方案, 减少RenderService内存占用
     bool isUnMap_ = false;
     uint64_t useCount_ = 0ULL;
-    std::shared_ptr<std::mutex> unmapMutex_ = std::make_shared<std::mutex>();
+    mutable std::shared_ptr<std::mutex> unmapMutex_ = std::make_shared<std::mutex>();
 
     // used to mark whether DMA memory should be refreshed
     mutable bool isMemoryDirty_ = false;

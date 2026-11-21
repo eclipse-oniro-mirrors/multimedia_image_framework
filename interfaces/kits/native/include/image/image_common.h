@@ -251,6 +251,21 @@ typedef enum {
      */
     IMAGE_DATA_CONVERSION_FAILED = 7600306,
     /**
+     * @error Failed to pin purgeable PixelMap memory.
+     * @since 26.1.0
+     */
+    IMAGE_PURGEABLE_PIN_FAILED = 7600307,
+    /**
+     * @error Failed to unpin purgeable PixelMap memory.
+     * @since 26.1.0
+     */
+    IMAGE_PURGEABLE_UNPIN_FAILED = 7600308,
+    /**
+     * @error Failed to query the purgeable association status of the PixelMap.
+     * @since 26.1.0
+     */
+    IMAGE_PURGEABLE_QUERY_FAILED = 7600309,
+    /**
      * @error unsupported allocator mode, e.g., use share memory to create a HDR image as only
      * DMA supported hdr metadata.
      * @since 20

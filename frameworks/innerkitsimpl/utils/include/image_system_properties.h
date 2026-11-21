@@ -23,6 +23,7 @@ public:
     static bool GetSurfaceBufferEnabled();
     static bool GetDmaEnabled();
     static bool GetDecodeDmaEnabled();
+    static bool GetPurgeablePixelMapEnabled();
     static bool GetAstcEnabled();
     static bool GetAntiAliasingEnabled();
     static bool GetDumpImageEnabled();

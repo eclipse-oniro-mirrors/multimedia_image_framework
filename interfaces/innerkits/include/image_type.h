@@ -438,6 +438,13 @@ enum class CropAndScaleStrategy : int32_t {
     CROP_FIRST = 2
 };
 
+enum class PurgeableMode : uint32_t {
+    NONE = 0,
+    REBUILD = 1,
+    SWAP = 2,
+    RESERVED = 3,
+};
+
 class PixelMap;
 struct DecodeOptions {
     int32_t fitDensity = 0;
@@ -473,6 +480,7 @@ struct DecodeOptions {
     CropAndScaleStrategy cropAndScaleStrategy = CropAndScaleStrategy::DEFAULT;
     bool isCreateWideGamutSdrPixelMap = false;
     bool isAnimationDecode = false;
+    PurgeableMode purgeableMode = PurgeableMode::NONE;
 };
 
 enum class ScaleMode : int32_t {

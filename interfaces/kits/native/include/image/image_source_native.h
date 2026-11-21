@@ -98,6 +98,42 @@ typedef enum {
 } IMAGE_DYNAMIC_RANGE;
 
 /**
+ * @brief Enumerates purgeable modes used when creating a PixelMap.
+ *
+ * @since 26.1.0
+ */
+typedef enum {
+    /**
+     * Do not request purgeable memory. When the system debugging parameter
+     * persist.multimedia.image.purgeable.enabled is true, the framework instead attempts REBUILD association
+     * under the same association conditions.
+     *
+     * @since 26.1.0
+     */
+    IMAGE_PURGEABLE_MODE_NONE = 0,
+    /**
+     * Request discard-and-rebuild memory. Association failure returns an ordinary PixelMap without failing decoding.
+     * Successful association supplies one initial pin reference to the caller.
+     * For association conditions and fallback behavior, see {@link OH_DecodingOptions_SetPurgeableMode}.
+     *
+     * @since 26.1.0
+     */
+    IMAGE_PURGEABLE_MODE_REBUILD = 1,
+    /**
+     * Reserved for a future disk swap-in mode.
+     *
+     * @since 26.1.0
+     */
+    IMAGE_PURGEABLE_MODE_SWAP = 2,
+    /**
+     * Reserved for future extension.
+     *
+     * @since 26.1.0
+     */
+    IMAGE_PURGEABLE_MODE_RESERVED = 3,
+} IMAGE_PURGEABLE_MODE;
+
+/**
  * @brief Indicates the enumeration of SVG resource restriction levels.
  * Higher levels allow fewer resources to be used when parsing and rendering SVG images.
  * System resource limits are enforced regardless of the level specified.
@@ -447,6 +483,61 @@ Image_ErrorCode OH_DecodingOptions_GetDesiredColorSpace(OH_DecodingOptions *opti
  * @since 20
  */
 Image_ErrorCode OH_DecodingOptions_SetDesiredColorSpace(OH_DecodingOptions *options, int32_t colorSpace);
+
+/**
+ * @brief Gets the requested purgeable mode stored in the decoding options.
+ *
+ * The default is {@link IMAGE_PURGEABLE_MODE_NONE}.
+ * This value does not report whether a decoded PixelMap was associated.
+ * Use {@link OH_PixelmapNative_IsPurgeable} to query the decoded PixelMap.
+ *
+ * @param options Input pointer to valid, unreleased decoding options. Must not be NULL.
+ *        This function does not take ownership of or release the options.
+ * @param mode Output pointer to a caller-provided writable IMAGE_PURGEABLE_MODE variable. Must not be NULL.
+ *        Use the output only when IMAGE_SUCCESS is returned.
+ * @return Function result code:
+ *         {@link IMAGE_SUCCESS} on success.
+ *         <br>{@link IMAGE_INVALID_PARAMETER} Invalid parameter.
+ * @since 26.1.0
+ */
+Image_ErrorCode OH_DecodingOptions_GetPurgeableMode(OH_DecodingOptions *options, IMAGE_PURGEABLE_MODE *mode);
+
+/**
+ * @brief Sets the purgeable mode requested for subsequent PixelMap decoding.
+ *
+ * This function only updates decoding options; it does not associate an existing PixelMap.
+ * For {@link IMAGE_PURGEABLE_MODE_REBUILD}, the following association conditions apply.
+ *
+ * Association is attempted only when decoding creates a new PixelMap without requesting an existing PixelMap
+ * as its output. PixelMaps decoded from an ImageSource created for incremental decoding are not associated,
+ * even after all input data has been supplied. The decoded pixels must use shared memory or a DMA buffer.
+ * This option does not change how the decoder selects the pixel memory type.
+ *
+ * The framework must be able to copy and retain the complete encoded input, such as the PNG or JPEG data
+ * before decoding, in memory for rebuilding. The encoded input size in bytes must not exceed 50% of the pixel
+ * buffer's actual allocation size; exactly 50% is allowed. This allocation is the memory allocated for pixels,
+ * including alignment padding; it is not the size of the PixelMap object.
+ *
+ * Setting this option does not guarantee association. If these conditions are not met, purgeable support is
+ * disabled, backup creation fails, or memory association fails, a successful decode still returns an ordinary
+ * PixelMap. Use {@link OH_PixelmapNative_IsPurgeable} to check the actual result.
+ * {@link IMAGE_SUCCESS} from this setter only means that the option was stored.
+ * {@link IMAGE_PURGEABLE_MODE_SWAP} and {@link IMAGE_PURGEABLE_MODE_RESERVED} are accepted but return
+ * ordinary PixelMaps.
+ *
+ * Successful association supplies one initial pin reference for the caller's first use; release it with one
+ * Unpin call after that use. The built-in rebuilder retains the encoded input and decoding options, not later
+ * pixel edits. To preserve later edits, disable purgeable memory before releasing the pin protecting that content.
+ *
+ * @param options Input pointer to valid, unreleased decoding options. Must not be NULL.
+ *        This function does not take ownership of or release the options.
+ * @param mode Input mode. Must be a value defined in {@link IMAGE_PURGEABLE_MODE}.
+ * @return Function result code:
+ *         {@link IMAGE_SUCCESS} on success.
+ *         <br>{@link IMAGE_INVALID_PARAMETER} Invalid parameter.
+ * @since 26.1.0
+ */
+Image_ErrorCode OH_DecodingOptions_SetPurgeableMode(OH_DecodingOptions *options, IMAGE_PURGEABLE_MODE mode);
 
 /**
  * @brief delete DecodingOptions pointer.

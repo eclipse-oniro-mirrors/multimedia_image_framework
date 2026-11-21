@@ -12,6 +12,7 @@
 # limitations under the License.
 
 import("//build/ohos.gni")
+import("//build/config/components/memory_utils/purgeable_mem_config.gni")
 import("//foundation/multimedia/image_framework/ide/image_decode_config.gni")
 
 SUBSYSTEM_DIR = "//foundation/multimedia/image_framework"
@@ -106,6 +107,10 @@ ohos_shared_library("pixelmap") {
     "opengles:libGLES",
     "node:node_header_notice",
   ]
+  if (memory_utils_purgeable_ashmem_enable && defined(global_parts_info) &&
+      defined(global_parts_info.resourceschedule_memmgr_override)) {
+    defines = [ "IMAGE_PURGEABLE_PIXELMAP" ]
+  }
 
   innerapi_tags = [ "ndk" ]
   subsystem_name = "multimedia"

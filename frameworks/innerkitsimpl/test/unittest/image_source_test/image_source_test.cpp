@@ -18,6 +18,7 @@
 #include <fcntl.h>
 #include <filesystem>
 #include <fstream>
+#include <sstream>
 #include <unistd.h>
 #include <cstring>
 #include <gtest/gtest.h>
@@ -1286,6 +1287,82 @@ HWTEST_F(ImageSourceTest, SetMemoryUsagePreference001, TestSize.Level3)
     MemoryUsagePreference preference = MemoryUsagePreference::LOW_RAM;
     imageSource->SetMemoryUsagePreference(preference);
 }
+
+#ifdef IMAGE_PURGEABLE_PIXELMAP
+/**
+ * @tc.name: ShouldMakePurgeableDoesNotDependOnMemoryPreference001
+ * @tc.desc: test purgeable eligibility is independent of the ImageSource memory preference
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, ShouldMakePurgeableDoesNotDependOnMemoryPreference001, TestSize.Level3)
+{
+    const uint8_t sourceData[] = { 0 };
+    auto stream = BufferSourceStream::CreateSourceStream(sourceData, sizeof(sourceData));
+    ASSERT_NE(stream, nullptr);
+
+    SourceOptions sourceOptions;
+    ImageSource imageSource(std::move(stream), sourceOptions);
+    imageSource.sourceInfo_.state = SourceInfoState::FILE_INFO_PARSED;
+    imageSource.sourceInfo_.topLevelImageNum = 1;
+
+    PixelMap pixelMap;
+    pixelMap.allocatorType_ = AllocatorType::SHARE_MEM_ALLOC;
+    pixelMap.SetEditable(false);
+
+    DecodeOptions decodeOptions;
+    decodeOptions.editable = false;
+    decodeOptions.purgeableMode = PurgeableMode::REBUILD;
+    EXPECT_EQ(imageSource.GetMemoryUsagePreference(), MemoryUsagePreference::DEFAULT);
+    EXPECT_TRUE(imageSource.ShouldMakePurgeable(decodeOptions, pixelMap, false));
+
+    imageSource.SetMemoryUsagePreference(MemoryUsagePreference::LOW_RAM);
+    EXPECT_TRUE(imageSource.ShouldMakePurgeable(decodeOptions, pixelMap, false));
+
+    decodeOptions.editable = true;
+    pixelMap.SetEditable(true);
+    EXPECT_TRUE(imageSource.ShouldMakePurgeable(decodeOptions, pixelMap, false));
+
+    decodeOptions.purgeableMode = PurgeableMode::NONE;
+    EXPECT_FALSE(imageSource.ShouldMakePurgeable(decodeOptions, pixelMap, false));
+    decodeOptions.purgeableMode = PurgeableMode::SWAP;
+    EXPECT_FALSE(imageSource.ShouldMakePurgeable(decodeOptions, pixelMap, false));
+    decodeOptions.purgeableMode = PurgeableMode::RESERVED;
+    EXPECT_FALSE(imageSource.ShouldMakePurgeable(decodeOptions, pixelMap, false));
+
+    decodeOptions.purgeableMode = PurgeableMode::REBUILD;
+    EXPECT_FALSE(imageSource.ShouldMakePurgeable(decodeOptions, pixelMap, true));
+}
+
+/**
+ * @tc.name: CreateBackupImageSourceFromIstream001
+ * @tc.desc: create an independent buffer snapshot when the original stream has no contiguous data pointer
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, CreateBackupImageSourceFromIstream001, TestSize.Level3)
+{
+    const std::string encodedData = "not-an-image-but-a-complete-source-snapshot";
+    auto input = std::make_unique<std::stringstream>(encodedData, std::ios::in | std::ios::binary);
+    std::unique_ptr<std::istream> inputStream = std::move(input);
+    SourceOptions sourceOptions;
+    uint32_t errorCode = SUCCESS;
+    auto imageSource = ImageSource::CreateImageSource(std::move(inputStream), sourceOptions, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource, nullptr);
+    ASSERT_NE(imageSource->sourceStreamPtr_, nullptr);
+    EXPECT_EQ(imageSource->sourceStreamPtr_->GetStreamType(), ImagePlugin::INPUT_STREAM_TYPE);
+    EXPECT_EQ(imageSource->sourceStreamPtr_->GetDataPtr(), nullptr);
+    ASSERT_TRUE(imageSource->sourceStreamPtr_->Seek(3));
+
+    auto backup = imageSource->CreateBackupImageSource();
+    ASSERT_NE(backup, nullptr);
+    EXPECT_EQ(imageSource->sourceStreamPtr_->Tell(), 3U);
+    ASSERT_NE(backup->sourceStreamPtr_, nullptr);
+    EXPECT_EQ(backup->sourceStreamPtr_->GetStreamType(), ImagePlugin::BUFFER_SOURCE_TYPE);
+    ASSERT_EQ(backup->sourceStreamPtr_->GetStreamSize(), encodedData.size());
+    ASSERT_NE(backup->sourceStreamPtr_->GetDataPtr(), nullptr);
+    EXPECT_EQ(std::memcmp(backup->sourceStreamPtr_->GetDataPtr(), encodedData.data(), encodedData.size()), 0);
+}
+#endif
 
 /**
  * @tc.name: GetMemoryUsagePreference001

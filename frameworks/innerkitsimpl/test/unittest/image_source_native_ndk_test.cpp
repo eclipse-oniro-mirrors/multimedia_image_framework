@@ -157,6 +157,39 @@ HWTEST_F(ImagSourceNdk2Test, OH_DecodingOptions_Create, TestSize.Level3)
 }
 
 /**
+ * @tc.name: OH_ImageSource_DecodingOptionsSetGetPurgeableMode
+ * @tc.desc: test purgeable mode defaults, valid values, and invalid parameters
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagSourceNdk2Test, OH_ImageSource_DecodingOptionsSetGetPurgeableMode, TestSize.Level3)
+{
+    OH_DecodingOptions *ops = nullptr;
+    ASSERT_EQ(OH_DecodingOptions_Create(&ops), IMAGE_SUCCESS);
+
+    IMAGE_PURGEABLE_MODE mode = IMAGE_PURGEABLE_MODE_RESERVED;
+    EXPECT_EQ(OH_DecodingOptions_GetPurgeableMode(ops, &mode), IMAGE_SUCCESS);
+    EXPECT_EQ(mode, IMAGE_PURGEABLE_MODE_NONE);
+
+    const IMAGE_PURGEABLE_MODE validModes[] = {
+        IMAGE_PURGEABLE_MODE_REBUILD,
+        IMAGE_PURGEABLE_MODE_SWAP,
+        IMAGE_PURGEABLE_MODE_RESERVED,
+    };
+    for (auto validMode : validModes) {
+        EXPECT_EQ(OH_DecodingOptions_SetPurgeableMode(ops, validMode), IMAGE_SUCCESS);
+        EXPECT_EQ(OH_DecodingOptions_GetPurgeableMode(ops, &mode), IMAGE_SUCCESS);
+        EXPECT_EQ(mode, validMode);
+    }
+
+    EXPECT_EQ(OH_DecodingOptions_GetPurgeableMode(nullptr, &mode), IMAGE_INVALID_PARAMETER);
+    EXPECT_EQ(OH_DecodingOptions_GetPurgeableMode(ops, nullptr), IMAGE_INVALID_PARAMETER);
+    EXPECT_EQ(OH_DecodingOptions_SetPurgeableMode(nullptr, IMAGE_PURGEABLE_MODE_REBUILD), IMAGE_INVALID_PARAMETER);
+    EXPECT_EQ(OH_DecodingOptions_SetPurgeableMode(ops, static_cast<IMAGE_PURGEABLE_MODE>(-1)), IMAGE_INVALID_PARAMETER);
+    EXPECT_EQ(OH_DecodingOptions_SetPurgeableMode(ops, static_cast<IMAGE_PURGEABLE_MODE>(4)), IMAGE_INVALID_PARAMETER);
+    EXPECT_EQ(OH_DecodingOptions_Release(ops), IMAGE_SUCCESS);
+}
+
+/**
  * @tc.name: OH_ImageSource_DecodingOptionsSetGetPixelFormat
  * @tc.desc: test OH_ImageSource_DecodingOptionsSetGetPixelFormat
  * @tc.type: FUNC
