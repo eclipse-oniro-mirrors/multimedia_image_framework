@@ -47,7 +47,7 @@ struct OH_Pixelmap_ImageInfo {
 namespace OHOS {
 namespace Media {
 
-constexpr int8_t ARGB_8888_BYTES = 4;
+constexpr int8_t NATIVE_TEST_ARGB_8888_BYTES = 4;
 
 class PixelMapNdk2Test : public testing::Test {
 public:
@@ -408,7 +408,7 @@ HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_Destroy, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_Destroy start";
 
-    size_t dataSize = ARGB_8888_BYTES;
+    size_t dataSize = NATIVE_TEST_ARGB_8888_BYTES;
     uint8_t data[] = {0x01, 0x02, 0x03, 0xFF}; // Example ARGB data
     OH_Pixelmap_InitializationOptions *createOpts;
     OH_PixelmapInitializationOptions_Create(&createOpts);
@@ -634,7 +634,7 @@ HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_GetArgbPixels_Test001, TestSize.Lev
 {
     GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_GetArgbPixels_Test001 start";
 
-    size_t dataSize = ARGB_8888_BYTES;
+    size_t dataSize = NATIVE_TEST_ARGB_8888_BYTES;
     uint8_t data[] = {0x01, 0x02, 0x03, 0xFF}; // Example ARGB data
     OH_Pixelmap_InitializationOptions *createOpts;
     OH_PixelmapInitializationOptions_Create(&createOpts);
@@ -645,7 +645,7 @@ HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_GetArgbPixels_Test001, TestSize.Lev
     Image_ErrorCode errCode = OH_PixelmapNative_CreatePixelmap(data, dataSize, createOpts, &pixelMap);
     ASSERT_EQ(errCode, IMAGE_SUCCESS);
 
-    uint8_t result[ARGB_8888_BYTES];
+    uint8_t result[NATIVE_TEST_ARGB_8888_BYTES];
     errCode = OH_PixelmapNative_GetArgbPixels(pixelMap, result, &dataSize);
     ASSERT_EQ(errCode, IMAGE_SUCCESS);
     ASSERT_EQ(result[0], data[3]);
@@ -1139,7 +1139,7 @@ HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_GetByteCount, TestSize.Level3)
     uint32_t allocByteCount = 0; // Initialize allocByteCount to 0
     ret = OH_PixelmapNative_GetAllocationByteCount(pixelmap, &allocByteCount);
     ASSERT_EQ(ret, IMAGE_SUCCESS);
-    ASSERT_TRUE(byteCount == ARGB_8888_BYTES && allocByteCount >= byteCount);
+    ASSERT_TRUE(byteCount == NATIVE_TEST_ARGB_8888_BYTES && allocByteCount >= byteCount);
 
     GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_GetByteCount end";
 }
@@ -2500,7 +2500,7 @@ HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_CreatePixelMap_Success, TestSize.Le
 {
     GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_CreatePixelMap_Success start";
 
-    size_t dataSize = ARGB_8888_BYTES;
+    size_t dataSize = NATIVE_TEST_ARGB_8888_BYTES;
     uint8_t data[] = {0xFF, 0x00, 0x00, 0xFF};
 
     OH_Pixelmap_InitializationOptions* opts = nullptr;
@@ -2646,7 +2646,7 @@ HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_WritePixels_Success, TestSize.Level
 {
     GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_WritePixels_Success start";
 
-    size_t dataSize = ARGB_8888_BYTES;
+    size_t dataSize = NATIVE_TEST_ARGB_8888_BYTES;
     uint8_t data[] = {0xFF, 0x00, 0x00, 0xFF};
 
     OH_Pixelmap_InitializationOptions* opts = nullptr;
@@ -2677,7 +2677,7 @@ HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_WritePixelsWithPixelFormat_Success,
 {
     GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_WritePixelsWithPixelFormat_Success start";
 
-    size_t dataSize = ARGB_8888_BYTES;
+    size_t dataSize = NATIVE_TEST_ARGB_8888_BYTES;
     uint8_t initData[] = {0x00, 0x00, 0x00, 0xFF};
 
     OH_Pixelmap_InitializationOptions* opts = nullptr;
@@ -3688,7 +3688,7 @@ HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_ImageRegionOverflow_Failure, TestSi
     uint32_t heightBefore = 0;
     ASSERT_TRUE(GetPixelmapNativeImageInfoForTest(pixelmap, widthBefore, heightBefore));
 
-    uint8_t pixels[ARGB_8888_BYTES] = {};
+    uint8_t pixels[NATIVE_TEST_ARGB_8888_BYTES] = {};
     Image_PositionArea area = {
         .pixels = pixels,
         .pixelsSize = sizeof(pixels),
