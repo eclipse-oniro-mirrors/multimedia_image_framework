@@ -38,7 +38,6 @@
 #include "securec.h"
 #ifdef IMAGE_PURGEABLE_PIXELMAP
 #include "image_purgeable_pixelmap_builder.h"
-#include "pixel_map_utils.h"
 #include "purgeable_mem_base.h"
 #include "purgeable_mem_builder.h"
 #endif
@@ -3194,7 +3193,10 @@ HWTEST_F(PixelMapTest, PurgeableBuilderRejectsCallbackReentry, TestSize.Level3)
     EXPECT_FALSE(builder.Build(destination, pixelMap->GetAllocationByteCount()));
     EXPECT_TRUE(checked);
     EXPECT_EQ(memory->pinCount_.load(), 1);
-    EXPECT_FALSE(PixelMapRebuildScope::IsRebuilding(pixelMap.get()));
+    ASSERT_TRUE(pixelMap->PinPurgeableMemory());
+    EXPECT_EQ(memory->pinCount_.load(), 2);
+    EXPECT_TRUE(pixelMap->UnpinPurgeableMemory());
+    EXPECT_EQ(memory->pinCount_.load(), 1);
     pixelMap->SetPurgeableMemPtr(nullptr);
 }
 
