@@ -26,7 +26,7 @@
 #include "native_color_space_manager.h"
 #include "image_mime_type.h"
 #ifdef IMAGE_PURGEABLE_PIXELMAP
-#include "pixel_map_utils.h"
+#include "image_purgeable_pixelmap_builder.h"
 #include "purgeable_mem_base.h"
 #include "purgeable_mem_builder.h"
 #endif
@@ -2225,20 +2225,50 @@ HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_PurgeableErrorMapping, TestSize.Lev
  */
 HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_PurgeableReentry, TestSize.Level3)
 {
-    auto inner = std::make_shared<PixelMap>();
+    class ReentryRebuilder final : public PixelMapRebuilder {
+    public:
+        ReentryRebuilder(OH_PixelmapNative &pixelmap, int &pinCount) : pixelmap_(pixelmap), pinCount_(pinCount) {}
+
+        bool Rebuild(std::shared_ptr<PixelMap> &) override
+        {
+            ++calls;
+            EXPECT_EQ(OH_PixelmapNative_PinPurgeableMemory(&pixelmap_), IMAGE_UNSUPPORTED_OPERATION);
+            EXPECT_EQ(OH_PixelmapNative_UnpinPurgeableMemory(&pixelmap_), IMAGE_UNSUPPORTED_OPERATION);
+            EXPECT_EQ(OH_PixelmapNative_DisablePurgeable(&pixelmap_), IMAGE_UNSUPPORTED_OPERATION);
+            bool associated = false;
+            EXPECT_EQ(OH_PixelmapNative_IsPurgeable(&pixelmap_, &associated), IMAGE_SUCCESS);
+            EXPECT_TRUE(associated);
+            EXPECT_EQ(pinCount_, 1);
+            // Only callback execution is under test; no restored PixelMap is returned.
+            return false;
+        }
+
+        int calls = 0;
+
+    private:
+        OH_PixelmapNative &pixelmap_;
+        int &pinCount_;
+    };
+
+    InitializationOptions options;
+    options.size = {1, 1};
+    options.pixelFormat = PixelFormat::RGBA_8888;
+    options.allocatorType = AllocatorType::HEAP_ALLOC;
+    std::shared_ptr<PixelMap> inner = PixelMap::Create(options);
+    ASSERT_NE(inner, nullptr);
     auto memory = std::make_shared<NativeTestPurgeableMemory>(1);
-    inner->SetPurgeableMemPtr(memory);
     OH_PixelmapNative pixelmap(inner);
-    {
-        PixelMapRebuildScope rebuildScope(inner.get());
-        EXPECT_EQ(OH_PixelmapNative_PinPurgeableMemory(&pixelmap), IMAGE_UNSUPPORTED_OPERATION);
-        EXPECT_EQ(OH_PixelmapNative_UnpinPurgeableMemory(&pixelmap), IMAGE_UNSUPPORTED_OPERATION);
-        EXPECT_EQ(OH_PixelmapNative_DisablePurgeable(&pixelmap), IMAGE_UNSUPPORTED_OPERATION);
-        bool associated = false;
-        EXPECT_EQ(OH_PixelmapNative_IsPurgeable(&pixelmap, &associated), IMAGE_SUCCESS);
-        EXPECT_TRUE(associated);
-        EXPECT_EQ(memory->pinCount_, 1);
-    }
+    auto state = std::make_shared<PixelMapRebuildState>();
+    auto rebuilder = std::make_unique<ReentryRebuilder>(pixelmap, memory->pinCount_);
+    auto *callback = rebuilder.get();
+    state->current = std::move(rebuilder);
+    inner->SetPurgeableMemPtr(memory, state);
+    PurgeablePixelMapBuilder builder(state, *inner);
+    EXPECT_FALSE(builder.Build(inner->GetWritablePixels(), inner->GetAllocationByteCount()));
+    EXPECT_EQ(callback->calls, 1);
+    EXPECT_EQ(OH_PixelmapNative_PinPurgeableMemory(&pixelmap), IMAGE_SUCCESS);
+    EXPECT_EQ(OH_PixelmapNative_UnpinPurgeableMemory(&pixelmap), IMAGE_SUCCESS);
+    EXPECT_EQ(memory->pinCount_, 1);
     inner->SetPurgeableMemPtr(nullptr);
 }
 

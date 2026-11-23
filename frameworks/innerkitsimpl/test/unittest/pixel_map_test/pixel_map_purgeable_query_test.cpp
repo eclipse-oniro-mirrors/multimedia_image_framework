@@ -28,7 +28,7 @@
 #include "purgeable_mem_base.h"
 
 #ifdef IMAGE_PURGEABLE_PIXELMAP
-#include "pixel_map_utils.h"
+#include "image_purgeable_pixelmap_builder.h"
 
 using namespace testing::ext;
 
@@ -114,6 +114,32 @@ public:
 private:
     std::function<void()> cleanup_;
 };
+
+class CallbackRebuilder final : public PixelMapRebuilder {
+public:
+    explicit CallbackRebuilder(std::function<void()> callback) : callback_(std::move(callback)) {}
+
+    bool Rebuild(std::shared_ptr<PixelMap> &) override
+    {
+        callback_();
+        // These tests exercise callback execution, not pixel restoration or output-layout validation.
+        return false;
+    }
+
+private:
+    std::function<void()> callback_;
+};
+
+bool AllocateRebuildPixels(PixelMap &pixelMap)
+{
+    constexpr uint32_t size = 4;
+    auto data = static_cast<uint8_t *>(std::malloc(size));
+    if (data == nullptr) {
+        return false;
+    }
+    pixelMap.SetPixelsAddr(data, nullptr, size, AllocatorType::HEAP_ALLOC, nullptr);
+    return true;
+}
 
 constexpr auto QUERY_TIMEOUT = std::chrono::seconds(1);
 } // namespace
@@ -377,19 +403,18 @@ HWTEST_F(PixelMapPurgeableQueryTest, LockOnlyStateDoesNotEnableRebuilderRegistra
 
 /**
  * @tc.name: RebuildReentryRejectsExecutionButAllowsQuery
- * @tc.desc: same-map execution fails before taking locks, including A -> B -> A callback chains
+ * @tc.desc: a real Build callback rejects same-map execution before locking, but still allows queries
  * @tc.type: FUNC
  */
 HWTEST_F(PixelMapPurgeableQueryTest, RebuildReentryRejectsExecutionButAllowsQuery, TestSize.Level3)
 {
     PixelMap pixelMap;
-    PixelMap temporary;
+    ASSERT_TRUE(AllocateRebuildPixels(pixelMap));
     auto memory = std::make_shared<QueryablePurgeableMemory>();
     auto state = std::make_shared<PixelMapRebuildState>();
-    pixelMap.SetPurgeableMemPtr(memory, state);
-    {
-        PixelMapRebuildScope originalScope(&pixelMap);
-        PixelMapRebuildScope temporaryScope(&temporary);
+    int callbacks = 0;
+    state->current = std::make_unique<CallbackRebuilder>([&] {
+        ++callbacks;
         std::unique_lock<std::shared_mutex> writer(state->purgeableMutex);
         bool unsupported = true;
         EXPECT_FALSE(pixelMap.PinPurgeableMemory(unsupported));
@@ -405,36 +430,80 @@ HWTEST_F(PixelMapPurgeableQueryTest, RebuildReentryRejectsExecutionButAllowsQuer
         pixelMap.SetPurgeableMemPtr(nullptr);
         pixelMap.FreePixelMap();
         EXPECT_EQ(pixelMap.GetPurgeableMemPtr(), memory);
-    }
-    EXPECT_FALSE(PixelMapRebuildScope::IsRebuilding(&pixelMap));
+    });
+    pixelMap.SetPurgeableMemPtr(memory, state);
+    PurgeablePixelMapBuilder builder(state, pixelMap);
+    EXPECT_FALSE(builder.Build(pixelMap.GetWritablePixels(), pixelMap.GetAllocationByteCount()));
+    EXPECT_EQ(callbacks, 1);
     pixelMap.SetPurgeableMemPtr(nullptr);
+    EXPECT_EQ(pixelMap.GetPurgeableMemPtr(), nullptr);
 }
 
 /**
  * @tc.name: RebuildScopeRestoresOuterChainAndIsThreadLocal
- * @tc.desc: utils share the current thread's nested chain without marking another thread
+ * @tc.desc: nested real Build callbacks preserve the outer guard without blocking another thread
  * @tc.type: FUNC
  */
 HWTEST_F(PixelMapPurgeableQueryTest, RebuildScopeRestoresOuterChainAndIsThreadLocal, TestSize.Level3)
 {
     PixelMap original;
     PixelMap temporary;
-    EXPECT_FALSE(PixelMapRebuildScope::IsRebuilding(&original));
-    {
-        PixelMapRebuildScope outer(&original);
-        auto otherThread = std::async(std::launch::async, [&original]() {
-            return PixelMapRebuildScope::IsRebuilding(&original);
+    ASSERT_TRUE(AllocateRebuildPixels(original));
+    ASSERT_TRUE(AllocateRebuildPixels(temporary));
+    auto originalMemory = std::make_shared<BlockingPurgeableMemory>();
+    auto temporaryMemory = std::make_shared<BlockingPurgeableMemory>();
+    auto originalState = std::make_shared<PixelMapRebuildState>();
+    auto temporaryState = std::make_shared<PixelMapRebuildState>();
+    PurgeablePixelMapBuilder outer(originalState, original);
+    PurgeablePixelMapBuilder inner(temporaryState, temporary);
+    int outerCallbacks = 0;
+    int innerCallbacks = 0;
+    temporaryState->current = std::make_unique<CallbackRebuilder>([&] {
+        ++innerCallbacks;
+        bool unsupported = false;
+        EXPECT_FALSE(original.PinPurgeableMemory(unsupported));
+        EXPECT_TRUE(unsupported);
+        unsupported = false;
+        EXPECT_FALSE(temporary.PinPurgeableMemory(unsupported));
+        EXPECT_TRUE(unsupported);
+        // A -> B -> A must fail before trying to take A's already-held rebuilder mutex.
+        EXPECT_FALSE(outer.Build(original.GetWritablePixels(), original.GetAllocationByteCount()));
+    });
+    originalState->current = std::make_unique<CallbackRebuilder>([&] {
+        ++outerCallbacks;
+        auto otherThread = std::async(std::launch::async, [&] {
+            bool unsupported = true;
+            bool pinned = original.PinPurgeableMemory(unsupported);
+            bool unpinned = pinned && original.UnpinPurgeableMemory();
+            return pinned && unpinned && !unsupported;
         });
-        EXPECT_FALSE(otherThread.get());
-        {
-            PixelMapRebuildScope inner(&temporary);
-            EXPECT_TRUE(PixelMapRebuildScope::IsRebuilding(&original));
-            EXPECT_TRUE(PixelMapRebuildScope::IsRebuilding(&temporary));
+        EXPECT_TRUE(otherThread.get());
+        EXPECT_FALSE(inner.Build(temporary.GetWritablePixels(), temporary.GetAllocationByteCount()));
+        bool unsupported = false;
+        EXPECT_FALSE(original.PinPurgeableMemory(unsupported));
+        EXPECT_TRUE(unsupported);
+        // Returning from B must clear B's guard while retaining A's guard.
+        bool pinned = temporary.PinPurgeableMemory();
+        EXPECT_TRUE(pinned);
+        if (pinned) {
+            EXPECT_TRUE(temporary.UnpinPurgeableMemory());
         }
-        EXPECT_TRUE(PixelMapRebuildScope::IsRebuilding(&original));
-        EXPECT_FALSE(PixelMapRebuildScope::IsRebuilding(&temporary));
+    });
+    original.SetPurgeableMemPtr(originalMemory, originalState);
+    temporary.SetPurgeableMemPtr(temporaryMemory, temporaryState);
+    EXPECT_FALSE(outer.Build(original.GetWritablePixels(), original.GetAllocationByteCount()));
+    EXPECT_EQ(outerCallbacks, 1);
+    EXPECT_EQ(innerCallbacks, 1);
+    // Returning from A must also clear A's guard on the calling thread.
+    bool pinned = original.PinPurgeableMemory();
+    EXPECT_TRUE(pinned);
+    if (pinned) {
+        EXPECT_TRUE(original.UnpinPurgeableMemory());
     }
-    EXPECT_FALSE(PixelMapRebuildScope::IsRebuilding(&original));
+    EXPECT_EQ(originalMemory->status.load(), 1);
+    EXPECT_EQ(temporaryMemory->status.load(), 1);
+    original.SetPurgeableMemPtr(nullptr);
+    temporary.SetPurgeableMemPtr(nullptr);
 }
 
 /**
