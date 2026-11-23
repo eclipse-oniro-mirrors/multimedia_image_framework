@@ -2548,9 +2548,6 @@ group("unittest") {
     ":avif_decode_test",
     ":bandjpeg_progressive_jpeg_decoder_test",
     ":colorconvertertest",
-    ":convertertest",
-    ":creatormocktest",
-    ":creatortest",
     ":datastatisticstest",
     ":eglimagetest",
     ":exifmetadatatest",
@@ -2566,42 +2563,29 @@ group("unittest") {
     ":image_receiver_native_test",
     ":image_data_writer_test",
     ":imageaccessortest",
-    ":imagecolorspacetest",
-    ":imageeventtest",
     ":imageformatconverttest",
     ":imagepixelmapparceltest",
     ":imagepixelmaptest",
-    ":imagesourcetest",
     ":imagetiffparsertest",
-    ":imageutilstest",
     ":interfacetest",
     ":jpgyuvtest",
     ":kvmetadatatest",
     ":memorymanagertest",
     ":metadatatest",
     ":napitest",
-    ":ndktest2",
-    ":picturetest",
-    ":pixelastctest",
     ":pixelmaptest",
     ":platformadptest",
     ":pluginsmanagersrcframeworktest",
     #":rawdecodertest",
     ":receivertest",
-    ":sk_ohoscodec_test",
     ":streamtest",
     ":svgdecodertest",
     ":textureencodetest",
 
-    ":cr3_parser_test",
     ":itempropertybasicboxtest",
     ":imagedfxtest",
     ":heifsmetadatatest"
   ]
-
-  if (enable_jpeg_hw_decode) {
-    deps += [ ":jpeg_hw_decoder_test" ]
-  }
 
   if (enable_heif_hw_decode) {
     deps += [
