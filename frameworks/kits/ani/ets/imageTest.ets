@@ -71,10 +71,14 @@ function main() {
   }
   const alphaImageInfo = alphaPixelMap.getImageInfoSync();
   console.println(`Alpha get image info: ${alphaImageInfo.size.width}, ${alphaImageInfo.size.height}, ${alphaImageInfo.pixelFormat}, ${alphaImageInfo.alphaType}`);
+  alphaPixelMap.release()
+    .then((): void => console.println('ASYNC Release alpha PixelMap success'));
   pixelMap.createAlphaPixelmap()
     .then((alphaPixelMap: image.PixelMap) => {
       const alphaImageInfo = alphaPixelMap.getImageInfoSync();
       console.println(`ASYNC Alpha get image info: ${alphaImageInfo.size.width}, ${alphaImageInfo.size.height}, ${alphaImageInfo.pixelFormat}, ${alphaImageInfo.alphaType}`);
+      alphaPixelMap.release()
+        .then((): void => console.println('ASYNC Release async alpha PixelMap success'));
     })
 
   let imageSource: image.ImageSource = image.createImageSource("/data/local/tmp/test.png");
@@ -107,7 +111,9 @@ function main() {
   };
   let pixelmap2: image.PixelMap = imageSource.createPixelMapSync(decodeOpt);
   if (pixelmap2 != undefined) {
-    console.println("Create imageSource.createPixelMapSync success");
+    console.println('ASYNC Create imageSource.createPixelMapSync success')
+    pixelmap2.release()
+      .then((): void => console.println('ASYNC Release async PixelMap success'));
   }
   imageSource.createPixelMap(decodeOpt)
     .then((asyncPixelmap: image.PixelMap) => {
@@ -135,9 +141,13 @@ function main() {
       array[3] = "Gamma";
       imageSource.getImageProperties(array)
         .then((properties: Record<string, string | null>): void => {
-          console.println("ASYNC Get image properties: " + properties);
+          console.println('ASYNC Get image properties: ' + properties);
         });
     })
+    .then((): void => {
+      imageSource.release();
+      console.println('ASYNC Release ImageSource success');
+    });
 
   console.println("TEST ImagePacker begin");
   const imagePacker = image.createImagePacker();
@@ -174,6 +184,8 @@ function main() {
     .then((): void => {
       const croppedInfo = pixelMap.getImageInfoSync();
       console.println(`ASYNC Cropped image info: ${croppedInfo.size.width}, ${croppedInfo.size.height}`);
+      pixelMap.release()
+        .then((): void => console.println('ASYNC Release PixelMap success'));
     });
 
   console.println("====== Sync methods completed ======")

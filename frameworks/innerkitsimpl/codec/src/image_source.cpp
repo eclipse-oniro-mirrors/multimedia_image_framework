@@ -3622,14 +3622,12 @@ uint32_t ImageSource::GetEncodedFormat(const string &formatHint, string &format)
     auto hintIter = formatAgentMap_.end();
     if (!formatHint.empty()) {
         ret = CheckFormatHint(formatHint, hintIter);
-        if (ret == SUCCESS) {
-            format = hintIter->first;
-            IMAGE_LOGD("[ImageSource]check input image format success, format:%{public}s.", format.c_str());
-            return SUCCESS;
-        } else {
-            IMAGE_LOGE("[ImageSource]checkFormatHint error, type: %{public}d", ret);
-            return ret;
-        }
+        CHECK_ERROR_RETURN_RET_LOG(ret != SUCCESS, ret, "[ImageSource]checkFormatHint error, type: %{public}d", ret);
+        CHECK_ERROR_RETURN_RET_LOG(hintIter == formatAgentMap_.end(), ERR_MEDIA_UNKNOWN,
+            "[ImageSource]check format hint succeeded but iterator is invalid.");
+        format = hintIter->first;
+        IMAGE_LOGD("[ImageSource]check input image format success, format:%{public}s.", format.c_str());
+        return SUCCESS;
     }
 
     if (GetFormatExtended(format) == SUCCESS) {
