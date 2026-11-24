@@ -952,6 +952,7 @@ bool ExifMetadatFormatter::IsValidValue(const TagDetails *array, const size_t &s
 bool ExifMetadatFormatter::ValidRegex(const std::string &value, const std::string &regex)
 {
     IMAGE_LOGD("Validating against regex: %{public}s", regex.c_str());
+#ifndef CROSS_PLATFORM
     try {
         std::regex ratPattern(regex);
         CHECK_DEBUG_RETURN_RET_LOG(!std::regex_match(value, ratPattern), false,
@@ -960,6 +961,11 @@ bool ExifMetadatFormatter::ValidRegex(const std::string &value, const std::strin
         IMAGE_LOGE("Invalid regex: %{public}s, error: %{public}s", regex.c_str(), e.what());
         return false;
     }
+#else
+    std::regex ratPattern(regex);
+    CHECK_DEBUG_RETURN_RET_LOG(!std::regex_match(value, ratPattern), false,
+        "Validation failed.Regex: %{public}s", regex.c_str());
+#endif
     return true;
 }
 
