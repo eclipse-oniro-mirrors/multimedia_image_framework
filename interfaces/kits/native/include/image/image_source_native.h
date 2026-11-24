@@ -98,42 +98,6 @@ typedef enum {
 } IMAGE_DYNAMIC_RANGE;
 
 /**
- * @brief Enumerates purgeable modes used when creating a PixelMap.
- *
- * @since 26.1.0
- */
-typedef enum {
-    /**
-     * Do not request purgeable memory. When the system debugging parameter
-     * persist.multimedia.image.purgeable.enabled is true, the framework instead attempts REBUILD association
-     * under the same association conditions.
-     *
-     * @since 26.1.0
-     */
-    IMAGE_PURGEABLE_MODE_NONE = 0,
-    /**
-     * Request discard-and-rebuild memory. Association failure returns an ordinary PixelMap without failing decoding.
-     * Successful association supplies one initial pin reference to the caller.
-     * For association conditions and fallback behavior, see {@link OH_DecodingOptions_SetPurgeableMode}.
-     *
-     * @since 26.1.0
-     */
-    IMAGE_PURGEABLE_MODE_REBUILD = 1,
-    /**
-     * Reserved for a future disk swap-in mode.
-     *
-     * @since 26.1.0
-     */
-    IMAGE_PURGEABLE_MODE_SWAP = 2,
-    /**
-     * Reserved for future extension.
-     *
-     * @since 26.1.0
-     */
-    IMAGE_PURGEABLE_MODE_RESERVED = 3,
-} IMAGE_PURGEABLE_MODE;
-
-/**
  * @brief Indicates the enumeration of SVG resource restriction levels.
  * Higher levels allow fewer resources to be used when parsing and rendering SVG images.
  * System resource limits are enforced regardless of the level specified.
