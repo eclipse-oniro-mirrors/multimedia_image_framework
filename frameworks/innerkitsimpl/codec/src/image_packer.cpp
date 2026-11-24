@@ -142,13 +142,12 @@ uint32_t ImagePacker::StartPackingImpl(const PackOption &option)
         (option.format != IMAGE_JPEG_FORMAT && option.format != IMAGE_HEIF_FORMAT &&
             option.format != IMAGE_HEIC_FORMAT));
     format_ = option.format;
+    quality_ = option.quality;
     PlEncodeOptions plOpts;
     CopyOptionsToPlugin(option, plOpts);
     uint32_t ret = DoEncodingFunc([this, &plOpts](ImagePlugin::AbsImageEncoder* encoder) {
         return encoder->StartEncode(*packerStream_.get(), plOpts);
     });
-    IMAGE_LOGI("[ImagePacker]StartPacking format:%{public}s, quality:%{public}u, sdr:%{public}d, ret:%{public}u",
-        option.format.c_str(), option.quality, encodeToSdr_ ? 1 : 0, ret);
     return ret;
 }
 
@@ -319,8 +318,9 @@ uint32_t ImagePacker::FinalizePacking(int64_t &packedSize)
         packerStream_->Flush();
     }
     packedSize = (packerStream_ != nullptr) ? packerStream_->BytesWritten() : 0;
-    IMAGE_LOGI("[ImagePacker]FinalizePacking format:%{public}s, packedSize:%{public}lld, ret:%{public}u",
-        format_.c_str(), static_cast<long long>(packedSize), ret);
+    IMAGE_LOGI("Packing format:%{public}s, quality:%{public}u, sdr:%{public}d, "
+        "Size:%{public}lld, ret:%{public}u", format_.c_str(), quality_, encodeToSdr_ ? 1 : 0,
+        static_cast<long long>(packedSize), ret);
     return ret;
 }
 

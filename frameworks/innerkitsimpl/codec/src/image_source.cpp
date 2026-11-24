@@ -1187,16 +1187,27 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index, const D
     if (!context.ifPartialOutput) {
         NotifyDecodeEvent(decodeListeners_, DecodeEvent::EVENT_COMPLETE_DECODE, nullptr);
     }
-    if ("image/gif" != sourceInfo_.encodedFormat && "image/webp" != sourceInfo_.encodedFormat) {
-        IMAGE_LOGI("CreatePixelMap success, id:%{public}lu,dSize:(%{public}d,%{public}d),srcSize: "
-            "(%{public}d,%{public}d),dHdr:%{public}d,sHdr:%{public}d,memType: %{public}d,"
-            "cost %{public}lu us", static_cast<unsigned long>(imageId_), opts.desiredSize.width,
-            opts.desiredSize.height, info.size.width, info.size.height, opts.desiredDynamicRange, context.hdrType,
-            pixelMap->GetAllocatorType(), static_cast<unsigned long>(GetNowTimeMicroSeconds() - decodeStartTime));
+    const bool isAnimationFormat = "image/gif" == sourceInfo_.encodedFormat ||
+        "image/webp" == sourceInfo_.encodedFormat;
+    if (!isAnimationFormat) {
+        // 成功日志合并源流大小、读取完整性与最终输出色域，避免与 PrintDecodeSourceState 重复输出。
+        const size_t streamSize = GetDfxStreamSize(sourceStreamPtr_.get());
+        const int complete = sourceStreamPtr_ == nullptr ? -1 :
+            static_cast<int>(sourceStreamPtr_->GetReadState());
+        const int32_t colorSpace = static_cast<int32_t>(pixelMap->InnerGetGrColorSpace().GetColorSpaceName());
+        IMAGE_LOGI("CreatePixelMap success, id:%{public}lu,format:%{public}s, dSize:(%{public}d,%{public}d),"
+            "sSize:(%{public}d,%{public}d),hard:%{public}d,dHdr:%{public}d,sHdr:%{public}d,memType:%{public}d,"
+            "pixelFormat:%{public}d,srcSize:%{public}zu,complete:%{public}d,CS:%{public}d,cost %{public}lu us",
+            static_cast<unsigned long>(imageId_), sourceInfo_.encodedFormat.c_str(), opts.desiredSize.width,
+            opts.desiredSize.height, info.size.width, info.size.height, context.isHardDecode,
+            opts.desiredDynamicRange, context.hdrType, pixelMap->GetAllocatorType(),
+            static_cast<int32_t>(pixelMap->GetPixelFormat()), streamSize, complete, colorSpace,
+            static_cast<unsigned long>(GetNowTimeMicroSeconds() - decodeStartTime));
         ImageUtils::SampleAndPrintPixelMap(pixelMap);
     }
-    // DFX: 解码完成时统一输出源流状态、解码上下文色域与 PixelMap 实际携带色域。
-    PrintDecodeSourceState("decode_done", SUCCESS, imageEvent, context.grColorSpaceName, pixelMap.get());
+    // 成功信息已在上方合并输出（动画格式按既有约定不输出成功日志），此处仅保留 DEBUG 诊断字段。
+    PrintDecodeSourceState("decode_done", SUCCESS, imageEvent, static_cast<int32_t>(context.grColorSpaceName),
+        pixelMap.get(), true);
 
     {
         std::unique_lock<std::recursive_mutex> guard(decodingMutex_);
@@ -1511,9 +1522,11 @@ void ImageSource::SetDecodeInfoSourceInfo(DecodeInfoOptions &options, AbsImageDe
 }
 
 void ImageSource::PrintDecodeSourceState(const char *stage, uint32_t errorCode, ImageEvent &imageEvent,
-    int32_t grColorSpace, PixelMap *pixelMap)
+    int32_t grColorSpace, PixelMap *pixelMap, bool successInfoLogged)
 {
-    if (!HiLogIsLoggable(LOG_DOMAIN, LOG_TAG, LOG_INFO)) {
+    const bool infoLoggable = HiLogIsLoggable(LOG_DOMAIN, LOG_TAG, LOG_INFO);
+    const bool debugLoggable = HiLogIsLoggable(LOG_DOMAIN, LOG_TAG, LOG_DEBUG);
+    if (!infoLoggable && !debugLoggable) {
         return;
     }
     const DecodeInfoOptions &options = imageEvent.GetDecodeInfoOptions();
@@ -1525,30 +1538,37 @@ void ImageSource::PrintDecodeSourceState(const char *stage, uint32_t errorCode, 
         return;
     }
     const size_t streamSize = GetDfxStreamSize(sourceStreamPtr_.get());
-    const uint32_t tell = sourceStreamPtr_->Tell();
     // 读取完整性由流自报：1 输入已全部提供（顺序读到达流尾、直接访问整段源流或内存缓冲），
     // 0 顺序读提前停止或空源，-1 大小未知（增量流 1 仅表示数据已全部喂入）。
     const int complete = static_cast<int>(sourceStreamPtr_->GetReadState());
-    const std::string readMode = sourceStreamPtr_->GetReadMode();
-    // 源形态：data 为内存缓冲，fd/path 为文件源，其余为输入流源。
-    const char *src = "stream";
-    if (sourceStreamPtr_->GetStreamType() == ImagePlugin::BUFFER_SOURCE_TYPE) {
-        src = "data";
-    } else if (sourceStreamPtr_->GetOriginalFd() >= 0) {
-        src = "fd";
-    } else if (!sourceStreamPtr_->GetOriginalPath().empty()) {
-        src = "path";
+    // INFO 仅保留文件大小、读取完整性与最终输出色域，其余诊断字段走 DEBUG；
+    // 调用点已合并输出成功信息时（successInfoLogged）跳过 INFO，避免重复。
+    if (!successInfoLogged) {
+        const int32_t pixelMapColorSpace = pixelMap == nullptr ? -1 :
+            static_cast<int32_t>(pixelMap->InnerGetGrColorSpace().GetColorSpaceName());
+        IMAGE_LOGI("state, size:%{public}zu, complete:%{public}d, ColorSpace:%{public}d",
+            streamSize, complete, pixelMapColorSpace);
     }
-    const int32_t pixelMapColorSpace = pixelMap == nullptr ? -1 :
-        static_cast<int32_t>(pixelMap->InnerGetGrColorSpace().GetColorSpaceName());
-    IMAGE_LOGI("[ImageSource]decode source state, stage:%{public}s, ret:%{public}u, size:%{public}zu, "
-        "tell:%{public}u, complete:%{public}d, readMode:%{public}s, src:%{public}s, "
-        "srcColorSpace:%{public}d(%{public}s), srcYuvSampling:%{public}s, "
-        "grColorSpace:%{public}d(%{public}s), pixelMapColorSpace:%{public}d(%{public}s)",
-        stage, errorCode, streamSize, tell, complete, readMode.c_str(), src, options.sourceColorSpace,
-        ColorSpaceNameStr(options.sourceColorSpace), options.sourceYuvSampling.c_str(),
-        grColorSpace, ColorSpaceNameStr(grColorSpace), pixelMapColorSpace,
-        ColorSpaceNameStr(pixelMapColorSpace));
+
+    if (debugLoggable) {
+        const uint32_t tell = sourceStreamPtr_->Tell();
+        const std::string readMode = sourceStreamPtr_->GetReadMode();
+        // 源形态：data 为内存缓冲，fd/path 为文件源，其余为输入流源。
+        const char *src = "stream";
+        if (sourceStreamPtr_->GetStreamType() == ImagePlugin::BUFFER_SOURCE_TYPE) {
+            src = "data";
+        } else if (sourceStreamPtr_->GetOriginalFd() >= 0) {
+            src = "fd";
+        } else if (!sourceStreamPtr_->GetOriginalPath().empty()) {
+            src = "path";
+        }
+        IMAGE_LOGD("[ImageSource]decode source state, stage:%{public}s, ret:%{public}u, tell:%{public}u, "
+            "readMode:%{public}s, src:%{public}s, srcColorSpace:%{public}d(%{public}s), "
+            "grColorSpace:%{public}d(%{public}s), srcYuvSampling:%{public}s",
+            stage, errorCode, tell, readMode.c_str(), src, options.sourceColorSpace,
+            ColorSpaceNameStr(options.sourceColorSpace), grColorSpace, ColorSpaceNameStr(grColorSpace),
+            options.sourceYuvSampling.c_str());
+    }
 }
 
 void ImageSource::SetImageEventHeifParseErr(ImageEvent &event)
@@ -1751,7 +1771,7 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMap(uint32_t index, const DecodeOpt
     }
     // DFX: 解码完成时统一输出源流状态、解码器输出色域与 PixelMap 实际携带色域。
     PrintDecodeSourceState("decode_done", SUCCESS, imageEvent,
-        mainDecoder_->GetPixelMapColorSpace().GetColorSpaceName(), pixelMap.get());
+        static_cast<int32_t>(mainDecoder_->GetPixelMapColorSpace().GetColorSpaceName()), pixelMap.get());
 
     if (CreatExifMetadataByImageSource() == SUCCESS) {
         auto metadataPtr = exifMetadata_->Clone();
@@ -4074,7 +4094,7 @@ uint32_t ImageSource::DoIncrementalDecoding(uint32_t index, const DecodeOptions 
         recordContext.IncrementalState = ImageDecodingState::IMAGE_DECODED;
         IMAGE_LOGD("[ImageSource]do incremental decoding success.");
         LogIncrementalDecodeDone(context.totalProcessProgress,
-            recordContext.decoder->GetPixelMapColorSpace().GetColorSpaceName());
+            static_cast<int32_t>(recordContext.decoder->GetPixelMapColorSpace().GetColorSpaceName()));
     } else {
         LogIncrementalDecodeIncomplete(context.totalProcessProgress);
     }
@@ -4470,7 +4490,7 @@ void *ImageSource::AllocateYuvBuffer(PixelMap &pixelMap, size_t &bufferSize, Ima
 
 void ImageSource::LogYuvDecodeSuccess(const ImageInfo &info, size_t bufferSize) const
 {
-    IMAGE_LOGI("[ImageSource]YUV decode success, sourceFormat:%{public}d, size:(%{public}d,%{public}d), "
+    IMAGE_LOGD("[ImageSource]YUV decode success, sourceFormat:%{public}d, size:(%{public}d,%{public}d), "
         "bufferSize:%{public}zu, srcSize:%{public}zu", sourceOptions_.pixelFormat, info.size.width,
         info.size.height, bufferSize, GetDfxStreamSize(sourceStreamPtr_.get()));
 }
@@ -6366,7 +6386,7 @@ void ImageSource::LogThumbnailDecode(const char *path, const std::string &format
     PixelMap *pixelMap) const
 {
     // 三条缩略图解码路径共用一条结果日志，避免各路径维护格式不同的重复日志。
-    IMAGE_LOGI("[ImageSource]thumbnail decode, path:%{public}s, format:%{public}s, ret:%{public}u, "
+    IMAGE_LOGD("[ImageSource]thumbnail decode, path:%{public}s, format:%{public}s, ret:%{public}u, "
         "size:(%{public}d,%{public}d)", path, format.c_str(), errorCode,
         pixelMap == nullptr ? 0 : pixelMap->GetWidth(), pixelMap == nullptr ? 0 : pixelMap->GetHeight());
 }

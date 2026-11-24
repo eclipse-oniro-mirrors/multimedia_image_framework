@@ -216,6 +216,7 @@ private:
 #endif
     bool encodeToSdr_ = true;
     std::string format_;
+    uint8_t quality_ = 100;
 };
 } // namespace Media
 } // namespace OHOS

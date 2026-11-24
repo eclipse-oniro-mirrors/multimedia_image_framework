@@ -364,7 +364,7 @@ Sample Classify(const ClassifyRequest &request)
     if (mime == MIME_INDEX_UNKNOWN || !o.sourceFileExtension.empty()) {
         b[SOURCE_EXTENSION] = Dictionary(o.sourceFileExtension, SUFFIX_NAMES);
     }
-    b[SOURCE_SIZE] = SizeBucket(o.sourceSize);
+    b[SOURCE_SIZE] = SizeBucket(s.sourceSize);
     b[SOURCE_WIDTH] = Dimension(o.sourceWidth, METRICS[SOURCE_WIDTH].size);
     b[SOURCE_HEIGHT] = Dimension(o.sourceHeight, METRICS[SOURCE_HEIGHT].size);
     b[COST_TIME] = request.costValid ? 1 + Range(request.costMs, COST_LIMITS_MS) : 0;

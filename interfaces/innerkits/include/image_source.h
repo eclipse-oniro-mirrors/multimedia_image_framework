@@ -467,7 +467,7 @@ private:
     void SetDecodeInfoSourceInfo(DecodeInfoOptions &options, ImagePlugin::AbsImageDecoder *decoder,
         uint32_t index);
     void PrintDecodeSourceState(const char *stage, uint32_t errorCode, ImageEvent &imageEvent,
-        int32_t grColorSpace = -1, PixelMap *pixelMap = nullptr);
+        int32_t grColorSpace = -1, PixelMap *pixelMap = nullptr, bool successInfoLogged = false);
     void LogThumbnailDecode(const char *path, const std::string &format, uint32_t errorCode,
         PixelMap *pixelMap) const;
     void LogIncrementalDecodeDone(uint32_t progress, int32_t srcColorSpace);
