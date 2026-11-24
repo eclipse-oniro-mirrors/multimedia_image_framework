@@ -14,11 +14,9 @@
  */
 
 #include "sendable_pixel_map_napi.h"
-#include "image_error_convert.h"
 #include <climits>
 #include <cstdint>
 #include <mutex>
-#include "image_common.h"
 #include "media_errors.h"
 #include "image_log.h"
 #include "image_napi_utils.h"
@@ -490,10 +488,6 @@ napi_value SendablePixelMapNapi::Init(napi_env env, napi_value exports)
         DECLARE_NAPI_FUNCTION("opacity", SetAlpha),
         DECLARE_NAPI_FUNCTION("opacitySync", SetAlphaSync),
         DECLARE_NAPI_FUNCTION("release", Release),
-        DECLARE_NAPI_FUNCTION("pinPurgeableMemory", PinPurgeableMemory),
-        DECLARE_NAPI_FUNCTION("unpinPurgeableMemory", UnpinPurgeableMemory),
-        DECLARE_NAPI_FUNCTION("isPurgeable", IsPurgeable),
-        DECLARE_NAPI_FUNCTION("disablePurgeable", DisablePurgeable),
         DECLARE_NAPI_FUNCTION("scale", Scale),
         DECLARE_NAPI_FUNCTION("scaleSync", ScaleSync),
         DECLARE_NAPI_FUNCTION("translate", Translate),
@@ -587,107 +581,6 @@ std::shared_ptr<PixelMap> SendablePixelMapNapi::GetSendablePixelMap(napi_env env
     }
     std::shared_lock<std::shared_mutex> lock(mutex_);
     return pixelmapNapiPtr->nativePixelMap_;
-}
-
-static napi_value ThrowPurgeableError(napi_env env, int32_t code)
-{
-    return ImageNapiUtils::ThrowExceptionError(env, code, ImageErrorConvert::GetPurgeableErrorMessage(code), true);
-}
-
-napi_value SendablePixelMapNapi::ExecutePurgeableOperation(napi_env env, napi_callback_info info,
-    PurgeableOperation operation)
-{
-    napi_value result = nullptr;
-    napi_get_undefined(env, &result);
-    napi_status status;
-    napi_value thisVar = nullptr;
-    size_t argCount = NUM_0;
-    IMG_JS_ARGS(env, info, status, argCount, nullptr, thisVar);
-    if (!IMG_IS_OK(status)) {
-        IMAGE_LOGE("Purgeable operation failed to get call info, operation:%{public}d, status:%{public}d",
-            static_cast<int>(operation), status);
-        return ThrowPurgeableError(env, ERR_IMAGE_PIXELMAP_NAPI_FAILED);
-    }
-    if (argCount != NUM_0) {
-        IMAGE_LOGE("Purgeable operation received arguments, count:%{public}zu", argCount);
-        return ThrowPurgeableError(env, ERR_IMAGE_INVALID_PARAM);
-    }
-
-    SendablePixelMapNapi *pixelMapNapi = nullptr;
-    status = NapiUnwrap(env, thisVar, reinterpret_cast<void**>(&pixelMapNapi));
-    if (!IMG_IS_OK(status) || pixelMapNapi == nullptr) {
-        IMAGE_LOGE("Purgeable operation failed to unwrap SendablePixelMap, status:%{public}d", status);
-        return ThrowPurgeableError(env, ERR_IMAGE_PIXELMAP_NAPI_FAILED);
-    }
-    std::shared_ptr<PixelMap> nativePixelMap;
-    {
-        std::shared_lock<std::shared_mutex> lock(mutex_);
-        nativePixelMap = pixelMapNapi->nativePixelMap_;
-    }
-    if (nativePixelMap == nullptr) {
-        return ThrowPurgeableError(env, ERR_IMAGE_PIXELMAP_RELEASED);
-    }
-
-    if (operation == PurgeableOperation::QUERY) {
-        bool associated = false;
-#ifdef IMAGE_PURGEABLE_PIXELMAP
-        if (!nativePixelMap->GetPurgeableStatus(associated)) {
-            return ThrowPurgeableError(env, ERR_IMAGE_PURGEABLE_QUERY_FAILED);
-        }
-#endif
-        napi_value queryResult = nullptr;
-        status = napi_get_boolean(env, associated, &queryResult);
-        if (!IMG_IS_OK(status)) {
-            IMAGE_LOGE("Purgeable operation failed to create query result, status:%{public}d", status);
-            return ThrowPurgeableError(env, ERR_IMAGE_PIXELMAP_NAPI_FAILED);
-        }
-        return queryResult;
-    }
-#ifdef IMAGE_PURGEABLE_PIXELMAP
-    if (operation == PurgeableOperation::DISABLE) {
-        if (!nativePixelMap->DisablePurgeable()) {
-            return ThrowPurgeableError(env, ERR_MEDIA_UNSUPPORT_OPERATION);
-        }
-        return result;
-    }
-    bool shouldPin = operation == PurgeableOperation::PIN;
-    bool unsupported = false;
-    bool success = shouldPin ? nativePixelMap->PinPurgeableMemory(unsupported) :
-        nativePixelMap->UnpinPurgeableMemory(unsupported);
-    if (!success) {
-        IMAGE_LOGE("Purgeable operation failed, operation:%{public}d, unsupported:%{public}d",
-            static_cast<int>(operation), unsupported);
-        return ThrowPurgeableError(env, unsupported ? ERR_MEDIA_UNSUPPORT_OPERATION :
-            (shouldPin ? ERR_IMAGE_PURGEABLE_PIN_FAILED : ERR_IMAGE_PURGEABLE_UNPIN_FAILED));
-    }
-    return result;
-#else
-    if (operation == PurgeableOperation::DISABLE) {
-        return result;
-    }
-    IMAGE_LOGE("Purgeable PixelMap feature is disabled, operation:%{public}d", static_cast<int>(operation));
-    return ThrowPurgeableError(env, ERR_MEDIA_UNSUPPORT_OPERATION);
-#endif
-}
-
-napi_value SendablePixelMapNapi::PinPurgeableMemory(napi_env env, napi_callback_info info)
-{
-    return ExecutePurgeableOperation(env, info, PurgeableOperation::PIN);
-}
-
-napi_value SendablePixelMapNapi::UnpinPurgeableMemory(napi_env env, napi_callback_info info)
-{
-    return ExecutePurgeableOperation(env, info, PurgeableOperation::UNPIN);
-}
-
-napi_value SendablePixelMapNapi::IsPurgeable(napi_env env, napi_callback_info info)
-{
-    return ExecutePurgeableOperation(env, info, PurgeableOperation::QUERY);
-}
-
-napi_value SendablePixelMapNapi::DisablePurgeable(napi_env env, napi_callback_info info)
-{
-    return ExecutePurgeableOperation(env, info, PurgeableOperation::DISABLE);
 }
 
 bool SendablePixelMapNapi::IsLockPixelMap()
@@ -1065,6 +958,16 @@ napi_value SendablePixelMapNapi::ConvertFromPixelMap(napi_env env, napi_callback
     }
 
     std::shared_ptr<PixelMap> nativePixelMap = pixelMapNapi->GetPixelNapiInner();
+#ifdef IMAGE_PURGEABLE_PIXELMAP
+    bool associated = false;
+    bool querySucceeded = nativePixelMap->GetPurgeableStatus(associated);
+    if (!querySucceeded || associated) {
+        IMAGE_LOGE("ConvertFromPixelMap rejects purgeable or unknown association, id:%{public}u, "
+            "querySucceeded:%{public}d, associated:%{public}d", nativePixelMap->GetUniqueId(), querySucceeded, associated);
+        return ImageNapiUtils::ThrowExceptionError(env,
+            ERR_IMAGE_INIT_ABNORMAL, "Failed to initialize the internal object.");
+    }
+#endif
     pixelMapNapi->ReleasePixelNapiInner();
     result = CreateSendablePixelMap(env, nativePixelMap);
     if (!IMG_NOT_NULL(result)) {

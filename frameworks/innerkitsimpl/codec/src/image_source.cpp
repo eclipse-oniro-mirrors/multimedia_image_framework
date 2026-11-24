@@ -584,6 +584,12 @@ void ImageSource::Reset()
 
 unique_ptr<PixelMap> ImageSource::CreatePixelMapEx(uint32_t index, const DecodeOptions &opts, uint32_t &errorCode)
 {
+    return CreatePixelMapEx(index, opts, errorCode, true);
+}
+
+unique_ptr<PixelMap> ImageSource::CreatePixelMapEx(uint32_t index, const DecodeOptions &opts, uint32_t &errorCode,
+    bool allowPurgeable)
+{
     if (opts.desiredSize.width < 0 || opts.desiredSize.height < 0) {
         IMAGE_LOGE("desiredSize is invalid");
         errorCode = ERR_IMAGE_INVALID_PARAMETER;
@@ -595,15 +601,16 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapEx(uint32_t index, const DecodeO
         "desiredSize: (%{public}d, %{public}d)",
         static_cast<unsigned long>(imageId_), opts.desiredPixelFormat, opts.desiredSize.width, opts.desiredSize.height);
 
-    auto finalizePixelMap = [this, index, &opts](std::unique_ptr<PixelMap> pixelMap,
+    auto finalizePixelMap = [&](std::unique_ptr<PixelMap> pixelMap,
         bool isPartialOutput) -> std::unique_ptr<PixelMap> {
 #ifdef IMAGE_PURGEABLE_PIXELMAP
-        if (pixelMap != nullptr && IsPurgeableRequested(opts)) {
+        if (allowPurgeable && pixelMap != nullptr && IsPurgeableRequested(opts)) {
             std::lock_guard<std::recursive_mutex> decodeLock(decodingMutex_);
             (void)TryMakePurgeable(index, opts, pixelMap, isPartialOutput);
         }
 #else
         (void)isPartialOutput;
+        (void)allowPurgeable;
 #endif
         return pixelMap;
     };

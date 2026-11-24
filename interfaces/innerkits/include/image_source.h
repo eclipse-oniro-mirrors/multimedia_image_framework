@@ -202,6 +202,9 @@ public:
     NATIVEEXPORT AllocatorType ConvertAutoAllocatorType(const DecodeOptions &opts);
     NATIVEEXPORT std::unique_ptr<PixelMap> CreatePixelMapEx(uint32_t index, const DecodeOptions &opts,
                                                             uint32_t &errorCode);
+    // Sendable decoding must bypass both explicit requests and the purgeable debugging parameter.
+    NATIVEEXPORT std::unique_ptr<PixelMap> CreatePixelMapEx(uint32_t index, const DecodeOptions &opts,
+        uint32_t &errorCode, bool allowPurgeable);
     NATIVEEXPORT std::unique_ptr<PixelMap> CreatePixelMap(uint32_t index, const DecodeOptions &opts,
                                                           uint32_t &errorCode);
     NATIVEEXPORT std::unique_ptr<IncrementalPixelMap> CreateIncrementalPixelMap(uint32_t index,

@@ -384,26 +384,8 @@ static DecodeDynamicRange ParseDynamicRange(napi_env env, napi_value root)
     return DecodeDynamicRange::SDR;
 }
 
-static bool ParsePurgeableMode(napi_env env, napi_value root, DecodeOptions *opts, std::string &error)
-{
-    uint32_t mode = static_cast<uint32_t>(PurgeableMode::NONE);
-    if (!GET_UINT32_BY_NAME(root, "purgeableMode", mode)) {
-        return true;
-    }
-    if (mode > static_cast<uint32_t>(PurgeableMode::RESERVED)) {
-        IMAGE_LOGE("Invalid purgeableMode %{public}u", mode);
-        error = "DecodeOptions mismatch";
-        return false;
-    }
-    opts->purgeableMode = static_cast<PurgeableMode>(mode);
-    return true;
-}
-
 static bool ParseDecodeOptions2(napi_env env, napi_value root, DecodeOptions* opts, std::string &error)
 {
-    if (!ParsePurgeableMode(env, root, opts, error)) {
-        return false;
-    }
     uint32_t tmpNumber = 0;
     if (!GET_UINT32_BY_NAME(root, "desiredPixelFormat", tmpNumber)) {
         IMAGE_LOGD("no desiredPixelFormat");
@@ -572,7 +554,7 @@ static std::shared_ptr<PixelMap> CreatePixelMapInner(SendableImageSourceNapi *th
 #endif
     {
         decodeOpts.invokeType = JS_INTERFACE;
-        pixelMap = imageSource->CreatePixelMapEx(index, decodeOpts, status);
+        pixelMap = imageSource->CreatePixelMapEx(index, decodeOpts, status, false);
     }
 
     if (status != SUCCESS || !IMG_NOT_NULL(pixelMap)) {

@@ -108,12 +108,6 @@ private:
     static napi_value GetDensity(napi_env env, napi_callback_info info);
     static napi_value SetDensity(napi_env env, napi_callback_info info);
     static napi_value Release(napi_env env, napi_callback_info info);
-    enum class PurgeableOperation { PIN, UNPIN, QUERY, DISABLE };
-    static napi_value ExecutePurgeableOperation(napi_env env, napi_callback_info info, PurgeableOperation operation);
-    static napi_value PinPurgeableMemory(napi_env env, napi_callback_info info);
-    static napi_value UnpinPurgeableMemory(napi_env env, napi_callback_info info);
-    static napi_value IsPurgeable(napi_env env, napi_callback_info info);
-    static napi_value DisablePurgeable(napi_env env, napi_callback_info info);
     static napi_value SetAlpha(napi_env env, napi_callback_info info);
     static napi_value SetAlphaSync(napi_env env, napi_callback_info info);
 

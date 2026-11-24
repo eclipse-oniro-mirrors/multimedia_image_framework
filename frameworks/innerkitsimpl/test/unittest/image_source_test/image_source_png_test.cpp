@@ -105,6 +105,38 @@ HWTEST_F(ImageSourcePngTest, PurgeableSourceExceedsHalfPixelAllocation001, TestS
 #endif
 
 /**
+ * @tc.name: CreatePixelMapExDisallowsPurgeable001
+ * @tc.desc: Sendable decoding bypasses purgeable association for every mode without changing decoded pixels
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourcePngTest, CreatePixelMapExDisallowsPurgeable001, TestSize.Level3)
+{
+    SourceOptions sourceOptions;
+    uint32_t errorCode = SUCCESS;
+    auto source = ImageSource::CreateImageSource("/data/local/tmp/image/test.png", sourceOptions, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(source, nullptr);
+
+    DecodeOptions options;
+    options.desiredSize = {32, 32};
+    options.desiredPixelFormat = PixelFormat::RGBA_8888;
+    options.allocatorType = AllocatorType::SHARE_MEM_ALLOC;
+    for (auto mode : {PurgeableMode::NONE, PurgeableMode::REBUILD, PurgeableMode::SWAP, PurgeableMode::RESERVED}) {
+        options.purgeableMode = mode;
+        auto pixelMap = source->CreatePixelMapEx(0, options, errorCode, false);
+        ASSERT_EQ(errorCode, SUCCESS);
+        ASSERT_NE(pixelMap, nullptr);
+        EXPECT_EQ(pixelMap->GetWidth(), options.desiredSize.width);
+        EXPECT_EQ(pixelMap->GetHeight(), options.desiredSize.height);
+        EXPECT_NE(pixelMap->GetPixels(), nullptr);
+#ifdef IMAGE_PURGEABLE_PIXELMAP
+        EXPECT_FALSE(pixelMap->IsPurgeable());
+        EXPECT_EQ(pixelMap->GetPurgeableMemPtr(), nullptr);
+#endif
+    }
+}
+
+/**
  * @tc.name: PngImageDecode001
  * @tc.desc: Decode png image from file source stream
  * @tc.type: FUNC
