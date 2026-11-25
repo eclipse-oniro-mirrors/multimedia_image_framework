@@ -352,18 +352,6 @@ typedef enum {
      * @since 26.1.0
      */
     IMAGE_PURGEABLE_MODE_REBUILD = 1,
-    /**
-     * Reserved for a future disk swap-in mode.
-     *
-     * @since 26.1.0
-     */
-    IMAGE_PURGEABLE_MODE_SWAP = 2,
-    /**
-     * Reserved for future extension.
-     *
-     * @since 26.1.0
-     */
-    IMAGE_PURGEABLE_MODE_RESERVED = 3,
 } IMAGE_PURGEABLE_MODE;
 
 /**

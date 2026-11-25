@@ -1324,10 +1324,6 @@ HWTEST_F(ImageSourceTest, ShouldMakePurgeableDoesNotDependOnMemoryPreference001,
 
     decodeOptions.purgeableMode = PurgeableMode::NONE;
     EXPECT_FALSE(imageSource.ShouldMakePurgeable(decodeOptions, pixelMap, false));
-    decodeOptions.purgeableMode = PurgeableMode::SWAP;
-    EXPECT_FALSE(imageSource.ShouldMakePurgeable(decodeOptions, pixelMap, false));
-    decodeOptions.purgeableMode = PurgeableMode::RESERVED;
-    EXPECT_FALSE(imageSource.ShouldMakePurgeable(decodeOptions, pixelMap, false));
 
     decodeOptions.purgeableMode = PurgeableMode::REBUILD;
     EXPECT_FALSE(imageSource.ShouldMakePurgeable(decodeOptions, pixelMap, true));

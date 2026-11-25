@@ -582,6 +582,11 @@ void ImageSource::Reset()
     mainDecoder_ = nullptr;
 }
 
+static bool IsPurgeableModeValid(PurgeableMode mode)
+{
+    return mode == PurgeableMode::NONE || mode == PurgeableMode::REBUILD;
+}
+
 unique_ptr<PixelMap> ImageSource::CreatePixelMapEx(uint32_t index, const DecodeOptions &opts, uint32_t &errorCode)
 {
     return CreatePixelMapEx(index, opts, errorCode, true);
@@ -590,6 +595,11 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapEx(uint32_t index, const DecodeO
 unique_ptr<PixelMap> ImageSource::CreatePixelMapEx(uint32_t index, const DecodeOptions &opts, uint32_t &errorCode,
     bool allowPurgeable)
 {
+    if (!IsPurgeableModeValid(opts.purgeableMode)) {
+        IMAGE_LOGE("purgeableMode is invalid");
+        errorCode = ERR_IMAGE_INVALID_PARAMETER;
+        return nullptr;
+    }
     if (opts.desiredSize.width < 0 || opts.desiredSize.height < 0) {
         IMAGE_LOGE("desiredSize is invalid");
         errorCode = ERR_IMAGE_INVALID_PARAMETER;
@@ -1770,6 +1780,11 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMap(uint32_t index, const DecodeOpt
 unique_ptr<PixelMap> ImageSource::DecodePixelMap(uint32_t index, const DecodeOptions &opts, uint32_t &errorCode,
     bool *isPartialOutput)
 {
+    if (!IsPurgeableModeValid(opts.purgeableMode)) {
+        IMAGE_LOGE("purgeableMode is invalid");
+        errorCode = ERR_IMAGE_INVALID_PARAMETER;
+        return nullptr;
+    }
     std::unique_lock<std::recursive_mutex> guard(decodingMutex_);
     if (isPartialOutput != nullptr) {
         *isPartialOutput = false;
@@ -4752,6 +4767,11 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapForYUV(uint32_t &errorCode)
 
 unique_ptr<vector<unique_ptr<PixelMap>>> ImageSource::CreatePixelMapList(const DecodeOptions &opts, uint32_t &errorCode)
 {
+    if (!IsPurgeableModeValid(opts.purgeableMode)) {
+        IMAGE_LOGE("purgeableMode is invalid");
+        errorCode = ERR_IMAGE_INVALID_PARAMETER;
+        return nullptr;
+    }
     ImageDataStatistics imageDataStatistics("[ImageSource]CreatePixelMapList.");
     DumpInputData();
     auto frameCount = GetFrameCount(errorCode);

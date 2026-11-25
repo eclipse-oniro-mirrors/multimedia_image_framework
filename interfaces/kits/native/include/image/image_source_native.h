@@ -486,8 +486,8 @@ Image_ErrorCode OH_DecodingOptions_GetPurgeableMode(OH_DecodingOptions *options,
  * disabled, backup creation fails, or memory association fails, a successful decode still returns an ordinary
  * PixelMap. Use {@link OH_PixelmapNative_IsPurgeable} to check the actual result.
  * {@link IMAGE_SUCCESS} from this setter only means that the option was stored.
- * {@link IMAGE_PURGEABLE_MODE_SWAP} and {@link IMAGE_PURGEABLE_MODE_RESERVED} are accepted, but subsequent
- * decoding returns ordinary PixelMaps.
+ * Only {@link IMAGE_PURGEABLE_MODE_NONE} and {@link IMAGE_PURGEABLE_MODE_REBUILD} are accepted.
+ * Any other value returns {@link IMAGE_INVALID_PARAMETER} without changing the stored mode.
  *
  * Successful association supplies one initial pin reference for the caller's first use; release it with one
  * Unpin call after that use. The built-in rebuilder retains the encoded input and decoding options, not later

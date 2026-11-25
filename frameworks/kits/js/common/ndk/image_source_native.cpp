@@ -437,9 +437,12 @@ Image_ErrorCode OH_DecodingOptions_GetPurgeableMode(OH_DecodingOptions *options,
 MIDK_EXPORT
 Image_ErrorCode OH_DecodingOptions_SetPurgeableMode(OH_DecodingOptions *options, IMAGE_PURGEABLE_MODE mode)
 {
-    int32_t modeValue = static_cast<int32_t>(mode);
-    if (options == nullptr || modeValue < static_cast<int32_t>(IMAGE_PURGEABLE_MODE_NONE) ||
-        modeValue > static_cast<int32_t>(IMAGE_PURGEABLE_MODE_RESERVED)) {
+    // Read the C enum representation without loading an out-of-range C++ enum value.
+    int32_t modeValue = 0;
+    if (options == nullptr || sizeof(mode) != sizeof(modeValue) ||
+        memcpy_s(&modeValue, sizeof(modeValue), &mode, sizeof(mode)) != EOK ||
+        (modeValue != static_cast<int32_t>(IMAGE_PURGEABLE_MODE_NONE) &&
+        modeValue != static_cast<int32_t>(IMAGE_PURGEABLE_MODE_REBUILD))) {
         return IMAGE_INVALID_PARAMETER;
     }
     options->purgeableMode = modeValue;

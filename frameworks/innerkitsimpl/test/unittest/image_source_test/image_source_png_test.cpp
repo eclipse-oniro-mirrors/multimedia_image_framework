@@ -121,7 +121,7 @@ HWTEST_F(ImageSourcePngTest, CreatePixelMapExDisallowsPurgeable001, TestSize.Lev
     options.desiredSize = {32, 32};
     options.desiredPixelFormat = PixelFormat::RGBA_8888;
     options.allocatorType = AllocatorType::SHARE_MEM_ALLOC;
-    for (auto mode : {PurgeableMode::NONE, PurgeableMode::REBUILD, PurgeableMode::SWAP, PurgeableMode::RESERVED}) {
+    for (auto mode : {PurgeableMode::NONE, PurgeableMode::REBUILD}) {
         options.purgeableMode = mode;
         auto pixelMap = source->CreatePixelMapEx(0, options, errorCode, false);
         ASSERT_EQ(errorCode, SUCCESS);
@@ -133,6 +133,37 @@ HWTEST_F(ImageSourcePngTest, CreatePixelMapExDisallowsPurgeable001, TestSize.Lev
         EXPECT_FALSE(pixelMap->IsPurgeable());
         EXPECT_EQ(pixelMap->GetPurgeableMemPtr(), nullptr);
 #endif
+    }
+}
+
+/**
+ * @tc.name: CreatePixelMapRejectsInvalidPurgeableMode001
+ * @tc.desc: reject invalid purgeable modes before decoding, including when association is disabled
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourcePngTest, CreatePixelMapRejectsInvalidPurgeableMode001, TestSize.Level3)
+{
+    SourceOptions sourceOptions;
+    uint32_t errorCode = SUCCESS;
+    auto source = ImageSource::CreateImageSource("/data/local/tmp/image/test.png", sourceOptions, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(source, nullptr);
+
+    DecodeOptions options;
+    for (uint32_t mode : {2U, 3U, 4U, UINT32_MAX}) {
+        options.purgeableMode = static_cast<PurgeableMode>(mode);
+        errorCode = SUCCESS;
+        EXPECT_EQ(source->CreatePixelMap(options, errorCode), nullptr);
+        EXPECT_EQ(errorCode, ERR_IMAGE_INVALID_PARAMETER);
+        errorCode = SUCCESS;
+        EXPECT_EQ(source->CreatePixelMapEx(0, options, errorCode), nullptr);
+        EXPECT_EQ(errorCode, ERR_IMAGE_INVALID_PARAMETER);
+        errorCode = SUCCESS;
+        EXPECT_EQ(source->CreatePixelMapEx(0, options, errorCode, false), nullptr);
+        EXPECT_EQ(errorCode, ERR_IMAGE_INVALID_PARAMETER);
+        errorCode = SUCCESS;
+        EXPECT_EQ(source->CreatePixelMapList(options, errorCode), nullptr);
+        EXPECT_EQ(errorCode, ERR_IMAGE_INVALID_PARAMETER);
     }
 }
 

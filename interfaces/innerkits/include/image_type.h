@@ -441,8 +441,6 @@ enum class CropAndScaleStrategy : int32_t {
 enum class PurgeableMode : uint32_t {
     NONE = 0,
     REBUILD = 1,
-    SWAP = 2,
-    RESERVED = 3,
 };
 
 class PixelMap;
