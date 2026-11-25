@@ -478,16 +478,16 @@ Image_ErrorCode OH_DecodingOptions_GetPurgeableMode(OH_DecodingOptions *options,
  * This option does not change how the decoder selects the pixel memory type.
  *
  * The framework must be able to copy and retain the complete encoded input, such as the PNG or JPEG data
- * before decoding, in memory for rebuilding. The encoded input size in bytes must not exceed 50% of the pixel
- * buffer's actual allocation size; exactly 50% is allowed. This allocation is the memory allocated for pixels,
+ * before decoding, in memory for rebuilding. Association is rejected if the encoded input size in bytes exceeds
+ * 50% of the pixel buffer's actual allocation size. This allocation is the memory allocated for pixels,
  * including alignment padding; it is not the size of the PixelMap object.
  *
  * Setting this option does not guarantee association. If these conditions are not met, purgeable support is
  * disabled, backup creation fails, or memory association fails, a successful decode still returns an ordinary
  * PixelMap. Use {@link OH_PixelmapNative_IsPurgeable} to check the actual result.
  * {@link IMAGE_SUCCESS} from this setter only means that the option was stored.
- * {@link IMAGE_PURGEABLE_MODE_SWAP} and {@link IMAGE_PURGEABLE_MODE_RESERVED} are accepted but return
- * ordinary PixelMaps.
+ * {@link IMAGE_PURGEABLE_MODE_SWAP} and {@link IMAGE_PURGEABLE_MODE_RESERVED} are accepted, but subsequent
+ * decoding returns ordinary PixelMaps.
  *
  * Successful association supplies one initial pin reference for the caller's first use; release it with one
  * Unpin call after that use. The built-in rebuilder retains the encoded input and decoding options, not later
