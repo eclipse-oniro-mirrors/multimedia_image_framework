@@ -515,6 +515,8 @@ enum class AuxiliaryPictureType : int32_t {
     LHDR_GAINMAP = 10,
     OXY_MAP = 11,
     MEL_MAP = 12,
+    DEPTH_IMAGE = 13,
+    LINEAR_IMAGE = 14,
     THUMBNAIL = 101,
 };
 
@@ -562,6 +564,7 @@ enum class MetadataType : int32_t {
     TIFF = 21,
     XMP = 22,
     AVIS = 23,
+    RFDATAC = 24,
 };
 
 static const std::map<MetadataType, std::string> BLOB_METADATA_TAG_MAP = {

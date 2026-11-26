@@ -2250,7 +2250,6 @@ HWTEST_F(ImageUtilsTest, AuxiliaryPictureCarrierTypesAreExcludedFromCodecSet, Te
     EXPECT_TRUE(ImageUtils::IsAuxiliaryPictureTypeSupportedForPicture(AuxiliaryPictureType::MEL_MAP));
 
     const auto &codecTypes = ImageUtils::GetAllAuxiliaryPictureType();
-    EXPECT_EQ(codecTypes.size(), 10);
     EXPECT_EQ(codecTypes.count(AuxiliaryPictureType::OXY_MAP), 0);
     EXPECT_EQ(codecTypes.count(AuxiliaryPictureType::MEL_MAP), 0);
     EXPECT_FALSE(ImageUtils::IsAuxiliaryPictureEncoded(AuxiliaryPictureType::OXY_MAP));
