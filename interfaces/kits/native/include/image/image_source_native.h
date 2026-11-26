@@ -482,8 +482,6 @@ Image_ErrorCode OH_DecodingOptions_GetPurgeableMode(OH_DecodingOptions *options,
  * 50% of the pixel buffer's actual allocation size. This allocation is the memory allocated for pixels,
  * including alignment padding; it is not the size of the PixelMap object.
  *
- * If association supplies no initial pin, the framework attempts to disable it. If disabling also fails,
- * decoding returns IMAGE_PURGEABLE_PIN_FAILED (7600307) without returning a PixelMap.
  * Setting this option does not guarantee association. If these conditions are not met, purgeable support is
  * disabled, backup creation fails, or memory association fails, a successful decode still returns an ordinary
  * PixelMap. Use {@link OH_PixelmapNative_IsPurgeable} to check the actual result.
@@ -609,15 +607,11 @@ Image_ErrorCode OH_ImageSourceNative_GetSvgResourceLimitLevel(OH_ImageSourceNati
  * @brief Decodes an void pointer
  * based on the specified {@link OH_DecodingOptions} struct.
  *
- * If purgeable association supplies no initial pin and cannot be disabled, this function returns
- * IMAGE_PURGEABLE_PIN_FAILED without returning a PixelMap.
- *
  * @param source Indicates a void pointer(from ImageSource pointer convert).
  * @param  options Indicates a pointer to the options for decoding the image source.
  * For details, see {@link OH_DecodingOptions}.
  * @param resPixMap Indicates a void pointer to the <b>Pixelmap</b> object obtained at the C++ native layer.
  * @return Returns {@link Image_ErrorCode}
- *     <br>{@link IMAGE_PURGEABLE_PIN_FAILED} Failed to pin purgeable PixelMap memory.
  * @since 12
  */
 Image_ErrorCode OH_ImageSourceNative_CreatePixelmap(OH_ImageSourceNative *source, OH_DecodingOptions *options,
@@ -627,9 +621,6 @@ Image_ErrorCode OH_ImageSourceNative_CreatePixelmap(OH_ImageSourceNative *source
  * @brief Decodes an void pointer
  * based on the specified {@link OH_DecodingOptions} struct, with support for specifying an optional allocator type.
  *
- * If purgeable association supplies no initial pin and cannot be disabled, this function returns
- * IMAGE_PURGEABLE_PIN_FAILED without returning a PixelMap.
- *
  * @param source Indicates a void pointer(from ImageSource pointer convert).
  * @param options Indicates a pointer to the options for decoding the image source.
  * For details, see {@link OH_DecodingOptions}.
@@ -637,7 +628,6 @@ Image_ErrorCode OH_ImageSourceNative_CreatePixelmap(OH_ImageSourceNative *source
  * For details, see {@link IMAGE_ALLOCATOR_TYPE}.
  * @param pixelmap Indicates a void pointer to the <b>Pixelmap</b> object obtained at the C++ native layer.
  * @return Returns {@link Image_ErrorCode}
- *     <br>{@link IMAGE_PURGEABLE_PIN_FAILED} Failed to pin purgeable PixelMap memory.
  * @since 16
  */
 Image_ErrorCode OH_ImageSourceNative_CreatePixelmapUsingAllocator(OH_ImageSourceNative *source,
@@ -648,9 +638,6 @@ Image_ErrorCode OH_ImageSourceNative_CreatePixelmapUsingAllocator(OH_ImageSource
  * the <b>Pixelmap</b> objects at the C++ native layer
  * based on the specified {@link OH_DecodingOptions} struct.
  *
- * If purgeable association supplies no initial pin and cannot be disabled, this function returns
- * IMAGE_PURGEABLE_PIN_FAILED without returning a PixelMap.
- *
  * @param source Indicates a void pointer(from ImageSource pointer convert).
  * @param  options Indicates a pointer to the options for decoding the image source.
  * For details, see {@link OH_DecodingOptions}.
@@ -658,7 +645,6 @@ Image_ErrorCode OH_ImageSourceNative_CreatePixelmapUsingAllocator(OH_ImageSource
  * It cannot be a null pointer.
  * @param outSize Indicates a size of resVecPixMap. User can get size from {@link OH_ImageSourceNative_GetFrameCount}.
  * @return Returns {@link Image_ErrorCode}
- *     <br>{@link IMAGE_PURGEABLE_PIN_FAILED} Failed to pin purgeable PixelMap memory.
  * @since 12
  */
 Image_ErrorCode OH_ImageSourceNative_CreatePixelmapList(OH_ImageSourceNative *source, OH_DecodingOptions *options,

@@ -409,8 +409,7 @@ private:
     bool IsPurgeableRequested(const DecodeOptions &opts) const;
     bool ShouldMakePurgeable(const DecodeOptions &opts, PixelMap &pixelMap, bool isPartialOutput) const;
     std::unique_ptr<ImageSource> CreateBackupImageSource();
-    // SUCCESS includes safe fallback; a failure means the PixelMap must not be delivered.
-    uint32_t TryMakePurgeable(uint32_t index, const DecodeOptions &opts, std::unique_ptr<PixelMap> &pixelMap,
+    bool TryMakePurgeable(uint32_t index, const DecodeOptions &opts, std::unique_ptr<PixelMap> &pixelMap,
         bool isPartialOutput);
 #endif
     void Reset();

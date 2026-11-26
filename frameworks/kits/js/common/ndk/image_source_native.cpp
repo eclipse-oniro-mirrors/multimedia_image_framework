@@ -109,7 +109,6 @@ struct OH_ImageSource_Info {
 };
 
 static const std::map<int32_t, Image_ErrorCode> ERROR_CODE_MAP = {
-    {ERR_IMAGE_PURGEABLE_PIN_FAILED, Image_ErrorCode::IMAGE_PURGEABLE_PIN_FAILED},
     {ERR_IMAGE_INVALID_PARAMETER, Image_ErrorCode::IMAGE_BAD_PARAMETER},
     {COMMON_ERR_INVALID_PARAMETER, Image_ErrorCode::IMAGE_BAD_PARAMETER},
     {JpegYuvDecodeError::JpegYuvDecodeError_InvalidParameter, Image_ErrorCode::IMAGE_BAD_PARAMETER},
@@ -777,7 +776,7 @@ Image_ErrorCode OH_ImageSourceNative_CreatePixelmap(OH_ImageSourceNative *source
     }
     std::unique_ptr<PixelMap> tmpPixelmap = source->GetInnerImageSource()->CreatePixelMapEx(index, decOps, errorCode);
     if (tmpPixelmap == nullptr || errorCode != IMAGE_SUCCESS) {
-        return errorCode == ERR_IMAGE_PURGEABLE_PIN_FAILED ? IMAGE_PURGEABLE_PIN_FAILED : IMAGE_UNSUPPORTED_OPERATION;
+        return IMAGE_UNSUPPORTED_OPERATION;
     }
     std::shared_ptr<PixelMap> nativePixelmap = std::move(tmpPixelmap);
     OH_PixelmapNative *stPixMap = new OH_PixelmapNative(nativePixelmap);
@@ -831,7 +830,7 @@ Image_ErrorCode OH_ImageSourceNative_CreatePixelmapList(OH_ImageSourceNative *so
     }
     auto pixelmapList = source->GetInnerImageSource()->CreatePixelMapList(decOps, errorCode);
     if (pixelmapList == nullptr || errorCode != IMAGE_SUCCESS) {
-        return errorCode == ERR_IMAGE_PURGEABLE_PIN_FAILED ? IMAGE_PURGEABLE_PIN_FAILED : IMAGE_BAD_PARAMETER;
+        return IMAGE_BAD_PARAMETER;
     }
     if (outSize < (*pixelmapList).size()) {
         return IMAGE_BAD_PARAMETER;

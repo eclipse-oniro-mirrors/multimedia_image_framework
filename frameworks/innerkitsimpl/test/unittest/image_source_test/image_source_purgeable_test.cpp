@@ -138,7 +138,7 @@ public:
     void ExpectNoSnapshot(bool partial = false)
     {
         EXPECT_FALSE(source_->ShouldMakePurgeable(options_, *pixelMap_, partial));
-        EXPECT_EQ(source_->TryMakePurgeable(0, options_, pixelMap_, partial), SUCCESS);
+        EXPECT_FALSE(source_->TryMakePurgeable(0, options_, pixelMap_, partial));
         if (stream_ != nullptr) {
             EXPECT_EQ(stream_->dataCalls, 0U);
             EXPECT_EQ(stream_->readCalls, 0U);
@@ -277,7 +277,7 @@ HWTEST_F(ImageSourcePurgeableTest, NoneModeFollowsDebugSetting001, TestSize.Leve
     options_.purgeableMode = PurgeableMode::NONE;
     const bool debugEnabled = ImageSystemProperties::GetPurgeablePixelMapEnabled();
     EXPECT_EQ(source_->ShouldMakePurgeable(options_, *pixelMap_, false), debugEnabled);
-    EXPECT_EQ(source_->TryMakePurgeable(0, options_, pixelMap_, false), SUCCESS);
+    EXPECT_FALSE(source_->TryMakePurgeable(0, options_, pixelMap_, false));
     EXPECT_EQ(stream_->dataCalls, debugEnabled ? 1U : 0U);
     EXPECT_EQ(pixels_->fdCalls, debugEnabled ? 1U : 0U);
     EXPECT_FALSE(pixelMap_->IsPurgeable());
@@ -389,7 +389,7 @@ HWTEST_F(ImageSourcePurgeableTest, SourceSizeGate001, TestSize.Level3)
 HWTEST_F(ImageSourcePurgeableTest, NullPixelMapRejected001, TestSize.Level3)
 {
     pixelMap_.reset();
-    EXPECT_EQ(source_->TryMakePurgeable(0, options_, pixelMap_, false), SUCCESS);
+    EXPECT_FALSE(source_->TryMakePurgeable(0, options_, pixelMap_, false));
     EXPECT_EQ(pixelMap_, nullptr);
     EXPECT_EQ(stream_->dataCalls, 0U);
 }
@@ -403,11 +403,11 @@ HWTEST_F(ImageSourcePurgeableTest, PixelMemoryGate001, TestSize.Level3)
 {
     pixels_->hasPixels = false;
     ASSERT_TRUE(source_->ShouldMakePurgeable(options_, *pixelMap_, false));
-    EXPECT_EQ(source_->TryMakePurgeable(0, options_, pixelMap_, false), SUCCESS);
+    EXPECT_FALSE(source_->TryMakePurgeable(0, options_, pixelMap_, false));
     EXPECT_EQ(stream_->dataCalls, 0U);
     pixels_->hasPixels = true;
     pixels_->allocationSize = 0;
-    EXPECT_EQ(source_->TryMakePurgeable(0, options_, pixelMap_, false), SUCCESS);
+    EXPECT_FALSE(source_->TryMakePurgeable(0, options_, pixelMap_, false));
     EXPECT_EQ(stream_->dataCalls, 0U);
     EXPECT_EQ(pixels_->fdCalls, 0U);
     EXPECT_FALSE(pixelMap_->IsPurgeable());
@@ -435,7 +435,7 @@ HWTEST_F(ImageSourcePurgeableTest, HalfAllocationBoundary001, TestSize.Level3)
         pixels_->fdCalls = 0;
         ASSERT_TRUE(source_->ShouldMakePurgeable(options_, *pixelMap_, false));
         // A null handle stops accepted sizes before any real kernel operation.
-        ASSERT_EQ(source_->TryMakePurgeable(0, options_, pixelMap_, false), SUCCESS);
+        ASSERT_FALSE(source_->TryMakePurgeable(0, options_, pixelMap_, false));
         EXPECT_EQ(stream_->dataCalls, boundary.passes ? 1U : 0U);
         EXPECT_EQ(pixels_->fdCalls, boundary.passes ? 1U : 0U);
         EXPECT_FALSE(pixelMap_->IsPurgeable());
@@ -480,7 +480,7 @@ HWTEST_F(ImageSourcePurgeableTest, InvalidHandlesRejected001, TestSize.Level3)
             pixels_->handle = missing ? nullptr : allocator == AllocatorType::SHARE_MEM_ALLOC ?
                 static_cast<void *>(&invalidFd) : static_cast<void *>(surface.GetRefPtr());
             pixels_->fdCalls = 0;
-            EXPECT_EQ(source_->TryMakePurgeable(0, options_, pixelMap_, false), SUCCESS);
+            EXPECT_FALSE(source_->TryMakePurgeable(0, options_, pixelMap_, false));
             EXPECT_EQ(pixels_->fdCalls, 1U);
             EXPECT_FALSE(pixelMap_->IsPurgeable());
             EXPECT_EQ(pixelMap_->GetPurgeableMemPtr(), nullptr);
@@ -555,7 +555,7 @@ HWTEST_F(ImageSourcePurgeableTest, UnreplayableStreamRejected001, TestSize.Level
         stream_->readCalls = 0;
         stream_->dataCalls = 0;
         ASSERT_TRUE(source_->ShouldMakePurgeable(options_, *pixelMap_, false));
-        EXPECT_EQ(source_->TryMakePurgeable(0, options_, pixelMap_, false), SUCCESS);
+        EXPECT_FALSE(source_->TryMakePurgeable(0, options_, pixelMap_, false));
         EXPECT_EQ(stream_->dataCalls, 1U);
         EXPECT_EQ(stream_->readCalls, failure < 2 ? 0U : 1U);
         EXPECT_EQ(pixels_->fdCalls, 0U);
@@ -577,7 +577,7 @@ HWTEST_F(ImageSourcePurgeableTest, BackupFactorySizeLimitRejected001, TestSize.L
     stream_->size = 300U * 1024 * 1024 + 1;
     pixels_->allocationSize = static_cast<uint32_t>(stream_->size * 2);
     ASSERT_TRUE(source_->ShouldMakePurgeable(options_, *pixelMap_, false));
-    EXPECT_EQ(source_->TryMakePurgeable(0, options_, pixelMap_, false), SUCCESS);
+    EXPECT_FALSE(source_->TryMakePurgeable(0, options_, pixelMap_, false));
     EXPECT_EQ(stream_->dataCalls, 1U);
     EXPECT_EQ(stream_->readCalls, 0U);
     EXPECT_EQ(pixels_->fdCalls, 0U);
