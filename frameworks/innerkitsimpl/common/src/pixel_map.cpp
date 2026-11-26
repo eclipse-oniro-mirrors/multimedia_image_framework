@@ -2545,11 +2545,6 @@ bool PixelMap::IsSameImage(const PixelMap &other)
 
 uint32_t PixelMap::ReadPixels(const uint64_t &bufferSize, uint8_t *dst)
 {
-#ifdef IMAGE_PURGEABLE_PIXELMAP
-    if (IsPurgeableReentry(__func__)) {
-        return ERR_IMAGE_READ_PIXELMAP_FAILED;
-    }
-#endif
     ImageTrace imageTrace("ReadPixels by bufferSize");
     std::shared_lock<std::shared_mutex> lock(*pixelDataMutex_);
     CHECK_ERROR_RETURN_RET_LOG(IsYUV(imageInfo_.pixelFormat), ERR_IMAGE_INVALID_PARAMETER,
@@ -3635,11 +3630,6 @@ bool PixelMap::WriteAstcInfoToParcel(Parcel &parcel) const
 
 bool PixelMap::Marshalling(Parcel &parcel) const
 {
-#ifdef IMAGE_PURGEABLE_PIXELMAP
-    if (IsPurgeableReentry(__func__)) {
-        return false;
-    }
-#endif
     std::shared_lock<std::shared_mutex> lock(*pixelDataMutex_);
     int32_t PIXEL_MAP_INFO_MAX_LENGTH = 128;
     if (ImageUtils::CheckMulOverflow(imageInfo_.size.height, rowDataSize_)) {

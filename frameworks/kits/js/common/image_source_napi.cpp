@@ -1849,12 +1849,6 @@ static DecodeDynamicRange ParseDynamicRange(napi_env env, napi_value root)
     return DecodeDynamicRange::SDR;
 }
 
-static bool HasPendingException(napi_env env)
-{
-    bool pending = false;
-    return napi_is_exception_pending(env, &pending) == napi_ok && pending;
-}
-
 static bool ParsePurgeableMode(napi_env env, napi_value root, DecodeOptions *opts, std::string &error)
 {
     napi_value value = nullptr;
@@ -1871,10 +1865,7 @@ static bool ParsePurgeableMode(napi_env env, napi_value root, DecodeOptions *opt
         }
     }
     IMAGE_LOGE("Invalid purgeableMode");
-    error = "Invalid parameter.";
-    if (!HasPendingException(env)) {
-        ImageNapiUtils::ThrowExceptionError(env, ERR_IMAGE_INVALID_PARAM, error, true);
-    }
+    error = "DecodeOptions mismatch";
     return false;
 }
 
@@ -1959,7 +1950,7 @@ static bool ParseDecodeOptions2(napi_env env, napi_value root, DecodeOptions* op
 }
 
 static bool ParseDecodeOptions(napi_env env, napi_value root, DecodeOptions* opts,
-    uint32_t* pIndex, std::string &error)
+    uint32_t* pIndex, std::string &error, bool parsePurgeable = true)
 {
     napi_value tmpValue = nullptr;
 
@@ -1972,7 +1963,7 @@ static bool ParseDecodeOptions(napi_env env, napi_value root, DecodeOptions* opt
         return false;
     }
 
-    if (!ParsePurgeableMode(env, root, opts, error)) {
+    if (parsePurgeable && !ParsePurgeableMode(env, root, opts, error)) {
         return false;
     }
 
@@ -2676,9 +2667,6 @@ napi_value ImageSourceNapi::CreatePixelMap(napi_env env, napi_callback_info info
             if (!ParseDecodeOptions(env, argValue[NUM_0], &(asyncContext->decodeOpts),
                                     &(asyncContext->index), asyncContext->errMsg)) {
                 IMAGE_LOGE("DecodeOptions mismatch");
-                if (HasPendingException(env)) {
-                    return nullptr;
-                }
             }
         }
         if (ImageNapiUtils::getType(env, argValue[argCount - 1]) == napi_function) {
@@ -2732,9 +2720,6 @@ napi_value ImageSourceNapi::CreatePixelMapSync(napi_env env, napi_callback_info 
             if (!ParseDecodeOptions(env, argValue[NUM_0], &(syncContext->decodeOpts),
                                     &(syncContext->index), syncContext->errMsg)) {
                 IMAGE_LOGE("DecodeOptions mismatch");
-                if (HasPendingException(env)) {
-                    return nullptr;
-                }
                 syncContext->errMsg = "DecodeOptions mismatch";
                 return result;
             }
@@ -2842,9 +2827,6 @@ napi_value ImageSourceNapi::CreatePixelMapUsingAllocator(napi_env env, napi_call
             if (!ParseDecodeOptions(env, argValue[DECODE_OPTS_INDEX_0], &(asyncContext->decodeOpts),
                 &(asyncContext->index), asyncContext->errMsg)) {
                 IMAGE_LOGE("DecodeOptions mismatch");
-                if (HasPendingException(env)) {
-                    return nullptr;
-                }
                 return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER,
                     "DecodeOptions mismatch.");
             }
@@ -2900,9 +2882,6 @@ napi_value ImageSourceNapi::CreatePixelMapUsingAllocatorSync(napi_env env, napi_
             if (!ParseDecodeOptions(env, argValue[DECODE_OPTS_INDEX_0], &(syncContext->decodeOpts),
                 &(syncContext->index), syncContext->errMsg)) {
                 IMAGE_LOGE("DecodeOptions mismatch");
-                if (HasPendingException(env)) {
-                    return nullptr;
-                }
                 return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER,
                     "DecodeOptions mismatch.");
             }
@@ -4805,7 +4784,8 @@ void ImageSourceNapi::release()
     }
 }
 
-static std::unique_ptr<ImageSourceAsyncContext> UnwrapContextForList(napi_env env, napi_callback_info info)
+static std::unique_ptr<ImageSourceAsyncContext> UnwrapContextForList(napi_env env, napi_callback_info info,
+    bool parsePurgeable = false)
 {
     int32_t refCount = 1;
     napi_status status;
@@ -4839,11 +4819,8 @@ static std::unique_ptr<ImageSourceAsyncContext> UnwrapContextForList(napi_env en
         if (ImageNapiUtils::getType(env, argValue[NUM_0]) == napi_object) {
             IMAGE_LOGD("UnwrapContextForList object");
             if (!ParseDecodeOptions(env, argValue[NUM_0], &(context->decodeOpts),
-                                    &(context->index), context->errMsg)) {
+                                    &(context->index), context->errMsg, parsePurgeable)) {
                 IMAGE_LOGE("DecodeOptions mismatch");
-                if (HasPendingException(env)) {
-                    return nullptr;
-                }
             }
         }
 
@@ -4958,10 +4935,7 @@ napi_value ImageSourceNapi::CreatePixelMapList(napi_env env, napi_callback_info 
 {
     ImageTrace imageTrace("ImageSourceNapi::CreatePixelMapList");
 
-    auto asyncContext = UnwrapContextForList(env, info);
-    if (HasPendingException(env)) {
-        return nullptr;
-    }
+    auto asyncContext = UnwrapContextForList(env, info, true);
     if (asyncContext == nullptr) {
         return ImageNapiUtils::ThrowExceptionError(env, ERR_IMAGE_DATA_ABNORMAL,
             "async context unwrap failed");
@@ -5050,9 +5024,6 @@ napi_value ImageSourceNapi::GetDelayTime(napi_env env, napi_callback_info info)
     ImageTrace imageTrace("ImageSourceNapi::GetDelayTime");
 
     auto asyncContext = UnwrapContextForList(env, info);
-    if (HasPendingException(env)) {
-        return nullptr;
-    }
     if (asyncContext == nullptr) {
         return ImageNapiUtils::ThrowExceptionError(env, ERR_IMAGE_DATA_ABNORMAL,
             "async context unwrap failed");
@@ -5139,9 +5110,6 @@ napi_value ImageSourceNapi::GetDisposalType(napi_env env, napi_callback_info inf
     ImageTrace imageTrace("ImageSourceNapi::GetDisposalType");
 
     auto asyncContext = UnwrapContextForList(env, info);
-    if (HasPendingException(env)) {
-        return nullptr;
-    }
     if (asyncContext == nullptr) {
         return ImageNapiUtils::ThrowExceptionError(env, ERR_IMAGE_DATA_ABNORMAL,
             "async context unwrap failed");
@@ -5221,9 +5189,6 @@ napi_value ImageSourceNapi::GetFrameCount(napi_env env, napi_callback_info info)
     ImageTrace imageTrace("ImageSourceNapi::GetFrameCount");
 
     auto asyncContext = UnwrapContextForList(env, info);
-    if (HasPendingException(env)) {
-        return nullptr;
-    }
     if (asyncContext == nullptr) {
         return ImageNapiUtils::ThrowExceptionError(env, ERR_IMAGE_DATA_ABNORMAL,
             "async context unwrap failed");
@@ -5352,9 +5317,6 @@ napi_value ImageSourceNapi::IsJpegProgressive(napi_env env, napi_callback_info i
 
     napi_status status;
     auto asyncContext = UnwrapContextForList(env, info);
-    if (HasPendingException(env)) {
-        return nullptr;
-    }
     if (asyncContext == nullptr) {
         return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_SOURCE, "async context unwrap failed");
     }

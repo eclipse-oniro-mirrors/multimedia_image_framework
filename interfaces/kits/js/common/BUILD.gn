@@ -355,10 +355,6 @@ if (use_clang_ios) {
     if (memory_utils_purgeable_ashmem_enable && defined(global_parts_info) &&
         defined(global_parts_info.resourceschedule_memmgr_override)) {
       defines += [ "IMAGE_PURGEABLE_PIXELMAP" ]
-      external_deps += [
-        "memmgr:libpurgeablemem_plugin",
-        "memory_utils:libpurgeablemem",
-      ]
     }
 
     output_name = "libimage_napi"

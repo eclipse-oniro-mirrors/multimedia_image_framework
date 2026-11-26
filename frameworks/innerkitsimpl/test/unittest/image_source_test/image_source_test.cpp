@@ -18,7 +18,6 @@
 #include <fcntl.h>
 #include <filesystem>
 #include <fstream>
-#include <sstream>
 #include <unistd.h>
 #include <cstring>
 #include <gtest/gtest.h>
