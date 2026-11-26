@@ -616,7 +616,11 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapEx(uint32_t index, const DecodeO
 #ifdef IMAGE_PURGEABLE_PIXELMAP
         if (allowPurgeable && pixelMap != nullptr && IsPurgeableRequested(opts)) {
             std::lock_guard<std::recursive_mutex> decodeLock(decodingMutex_);
-            (void)TryMakePurgeable(index, opts, pixelMap, isPartialOutput);
+            uint32_t associationError = TryMakePurgeable(index, opts, pixelMap, isPartialOutput);
+            if (associationError != SUCCESS) {
+                errorCode = associationError;
+                return nullptr;
+            }
         }
 #else
         (void)isPartialOutput;
@@ -720,18 +724,18 @@ std::unique_ptr<ImageSource> ImageSource::CreateBackupImageSource()
     return backup;
 }
 
-bool ImageSource::TryMakePurgeable(uint32_t index, const DecodeOptions &opts, std::unique_ptr<PixelMap> &pixelMap,
+uint32_t ImageSource::TryMakePurgeable(uint32_t index, const DecodeOptions &opts, std::unique_ptr<PixelMap> &pixelMap,
     bool isPartialOutput)
 {
     if (pixelMap == nullptr || !ShouldMakePurgeable(opts, *pixelMap, isPartialOutput)) {
-        return false;
+        return SUCCESS;
     }
 
     uint32_t allocationSize = pixelMap->GetAllocationByteCount();
     void *pixelData = const_cast<uint8_t *>(pixelMap->GetPixels());
     if (pixelData == nullptr || allocationSize == 0) {
         IMAGE_LOGE("TryMakePurgeable failed: invalid pixel memory layout");
-        return false;
+        return SUCCESS;
     }
 
     const size_t sourceSize = GetSourceSize();
@@ -739,12 +743,12 @@ bool ImageSource::TryMakePurgeable(uint32_t index, const DecodeOptions &opts, st
     if (sourceSize > allocationSize / 2) {
         IMAGE_LOGD("Skip purgeable: source size %{public}zu exceeds half of pixel allocation %{public}u",
             sourceSize, allocationSize);
-        return false;
+        return SUCCESS;
     }
 
     auto backup = CreateBackupImageSource();
     if (backup == nullptr) {
-        return false;
+        return SUCCESS;
     }
     const size_t rebuildBytes = backup->GetSourceSize();
 
@@ -758,46 +762,51 @@ bool ImageSource::TryMakePurgeable(uint32_t index, const DecodeOptions &opts, st
         int *ashmemFd = static_cast<int *>(pixelMap->GetFd());
         if (ashmemFd == nullptr || *ashmemFd < 0) {
             IMAGE_LOGE("TryMakePurgeable failed: invalid ashmem fd");
-            return false;
+            return SUCCESS;
         }
         auto ashmem = std::make_shared<PurgeableMem::PurgeableAshMem>(std::move(builder));
         if (!ashmem->ChangeAshmemData(allocationSize, *ashmemFd, pixelData)) {
             IMAGE_LOGE("TryMakePurgeable failed to attach shared memory");
-            return false;
+            return SUCCESS;
         }
         purgeableMemory = std::move(ashmem);
     } else if (allocatorType == AllocatorType::DMA_ALLOC) {
         auto *surfaceBuffer = static_cast<SurfaceBuffer *>(pixelMap->GetFd());
         if (surfaceBuffer == nullptr) {
             IMAGE_LOGE("TryMakePurgeable failed: invalid DMA surface buffer");
-            return false;
+            return SUCCESS;
         }
         int dmaBufFd = surfaceBuffer->GetFileDescriptor();
         if (dmaBufFd < 0) {
             IMAGE_LOGE("TryMakePurgeable failed: invalid DMA buffer fd");
-            return false;
+            return SUCCESS;
         }
         auto dmaBuf = std::make_shared<PurgeableMem::PurgeableDmaBuf>(std::move(builder));
         if (!dmaBuf->ChangeDmaBufData(allocationSize, dmaBufFd, pixelData)) {
             IMAGE_LOGE("TryMakePurgeable failed to attach DMA buffer");
-            return false;
+            return SUCCESS;
         }
         purgeableMemory = std::move(dmaBuf);
     }
     if (purgeableMemory == nullptr) {
-        return false;
+        return SUCCESS;
     }
 
     int pinStatus = purgeableMemory->GetPinStatus();
     if (pinStatus == 0) {
         IMAGE_LOGE("TryMakePurgeable failed: initial pin status is zero");
         // Keep the rebuilder alive until the backend restores and converts the buffer to ordinary memory.
-        purgeableMemory->DisablePurgeable();
-        return false;
+        if (!purgeableMemory->DisablePurgeable()) {
+            IMAGE_LOGE("TryMakePurgeable failed: cannot disable the unprotected pixel memory");
+            // Retain backend and rebuilder until the failed PixelMap is destroyed; do not publish it.
+            pixelMap->SetPurgeableMemPtr(std::move(purgeableMemory), std::move(rebuildState));
+            return ERR_IMAGE_PURGEABLE_PIN_FAILED;
+        }
+        return SUCCESS;
     }
     if (pinStatus < 0) {
         IMAGE_LOGE("TryMakePurgeable failed: negative initial pin status %{public}d", pinStatus);
-        return false;
+        return SUCCESS;
     }
 
     pixelMap->SetPurgeableMemPtr(std::move(purgeableMemory), std::move(rebuildState));
@@ -809,7 +818,7 @@ bool ImageSource::TryMakePurgeable(uint32_t index, const DecodeOptions &opts, st
             PurgeableMem::PurgeableResourceManager::GetInstance().AddResource(purgeablePtr);
         }
     }
-    return true;
+    return SUCCESS;
 }
 #endif
 
@@ -1769,7 +1778,11 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMap(uint32_t index, const DecodeOpt
     auto pixelMap = DecodePixelMap(index, opts, errorCode, &isPartialOutput);
     if (pixelMap != nullptr && IsPurgeableRequested(opts)) {
         std::lock_guard<std::recursive_mutex> decodeLock(decodingMutex_);
-        (void)TryMakePurgeable(index, opts, pixelMap, isPartialOutput);
+        uint32_t associationError = TryMakePurgeable(index, opts, pixelMap, isPartialOutput);
+        if (associationError != SUCCESS) {
+            errorCode = associationError;
+            return nullptr;
+        }
     }
     return pixelMap;
 #else

@@ -115,6 +115,53 @@ private:
     std::function<void()> cleanup_;
 };
 
+class FailingPurgeableBuilder final : public PurgeableMem::PurgeableMemBuilder {
+public:
+    bool Build(void *, size_t) override
+    {
+        return false;
+    }
+};
+
+class RecoverablePurgeableMemory final : public PurgeableMem::PurgeableMemBase {
+public:
+    RecoverablePurgeableMemory()
+    {
+        dataPtr_ = &data_;
+        dataSizeInput_ = sizeof(data_);
+        builder_ = std::make_unique<FailingPurgeableBuilder>();
+        buildDataCount_ = 1;
+    }
+
+    int GetPinStatus() const override
+    {
+        return disabled_ ? -1 : pinCount;
+    }
+
+    bool Pin() override
+    {
+        ++pinCount;
+        return true;
+    }
+
+    bool Unpin() override
+    {
+        --pinCount;
+        return true;
+    }
+
+    bool IsPurged() override
+    {
+        return purged;
+    }
+
+    bool purged = true;
+    int pinCount = 0;
+
+private:
+    uint8_t data_ = 0;
+};
+
 class CallbackRebuilder final : public PixelMapRebuilder {
 public:
     explicit CallbackRebuilder(std::function<void()> callback) : callback_(std::move(callback)) {}
@@ -145,6 +192,46 @@ constexpr auto QUERY_TIMEOUT = std::chrono::seconds(1);
 } // namespace
 
 class PixelMapPurgeableQueryTest : public testing::Test {};
+
+/**
+ * @tc.name: DisableFailureRetainsRebuilderForRetry
+ * @tc.desc: backend restoration failure preserves the association and releases resources only after success
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapPurgeableQueryTest, DisableFailureRetainsRebuilderForRetry, TestSize.Level3)
+{
+    int destructions = 0;
+    PixelMap pixelMap;
+    auto memory = std::make_shared<RecoverablePurgeableMemory>();
+    auto state = std::make_shared<PixelMapRebuildState>();
+    state->current = std::make_unique<CleanupRebuilder>([&destructions]() { ++destructions; });
+    auto *rebuilder = state->current.get();
+    pixelMap.SetPurgeableMemPtr(memory, state);
+
+    bool unsupported = true;
+    for (int attempt = 0; attempt < 2; ++attempt) {
+        EXPECT_FALSE(pixelMap.DisablePurgeable(unsupported));
+        EXPECT_FALSE(unsupported);
+        EXPECT_EQ(pixelMap.GetPurgeableMemPtr(), memory);
+        EXPECT_EQ(pixelMap.purgeableRebuildState_, state);
+        EXPECT_EQ(state->current.get(), rebuilder);
+        EXPECT_EQ(destructions, 0);
+        EXPECT_EQ(memory->pinCount, 0);
+        bool associated = false;
+        EXPECT_TRUE(pixelMap.GetPurgeableStatus(associated));
+        EXPECT_TRUE(associated);
+    }
+
+    memory->purged = false;
+    EXPECT_TRUE(pixelMap.DisablePurgeable(unsupported));
+    EXPECT_FALSE(unsupported);
+    EXPECT_EQ(pixelMap.GetPurgeableMemPtr(), nullptr);
+    EXPECT_EQ(pixelMap.purgeableRebuildState_, nullptr);
+    EXPECT_EQ(state->current, nullptr);
+    EXPECT_EQ(destructions, 1);
+    EXPECT_TRUE(pixelMap.DisablePurgeable());
+    EXPECT_EQ(destructions, 1);
+}
 
 /**
  * @tc.name: QueryDoesNotWaitForOperationLock

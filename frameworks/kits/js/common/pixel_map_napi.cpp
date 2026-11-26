@@ -5846,8 +5846,10 @@ static napi_value ExecutePurgeableOperation(napi_env env, napi_callback_info inf
     }
 #ifdef IMAGE_PURGEABLE_PIXELMAP
     if (operation == PurgeableOperation::DISABLE) {
-        if (!nativePixelMap->DisablePurgeable()) {
-            return ThrowPurgeableError(env, ERR_MEDIA_UNSUPPORT_OPERATION);
+        bool unsupported = false;
+        if (!nativePixelMap->DisablePurgeable(unsupported)) {
+            return ThrowPurgeableError(env, unsupported ? ERR_MEDIA_UNSUPPORT_OPERATION :
+                ERR_IMAGE_PURGEABLE_PIN_FAILED);
         }
         return result;
     }

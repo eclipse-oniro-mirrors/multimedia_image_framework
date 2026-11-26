@@ -1998,7 +1998,11 @@ Image_ErrorCode OH_PixelmapNative_DisablePurgeable(OH_PixelmapNative *pixelmap)
         return IMAGE_INVALID_PARAMETER;
     }
 #ifdef IMAGE_PURGEABLE_PIXELMAP
-    return pixelmap->GetInnerPixelmap()->DisablePurgeable() ? IMAGE_SUCCESS : IMAGE_UNSUPPORTED_OPERATION;
+    bool unsupported = false;
+    if (!pixelmap->GetInnerPixelmap()->DisablePurgeable(unsupported)) {
+        return unsupported ? IMAGE_UNSUPPORTED_OPERATION : IMAGE_PURGEABLE_PIN_FAILED;
+    }
+    return IMAGE_SUCCESS;
 #else
     return IMAGE_SUCCESS;
 #endif

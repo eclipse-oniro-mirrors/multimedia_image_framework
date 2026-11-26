@@ -504,7 +504,15 @@ void PixelMap::ClearPurgeableResourcesLocked(const std::shared_ptr<PixelMapRebui
 
 bool PixelMap::DisablePurgeable()
 {
+    bool unsupported = false;
+    return DisablePurgeable(unsupported);
+}
+
+bool PixelMap::DisablePurgeable(bool &unsupported)
+{
+    unsupported = false;
     if (IsPurgeableReentry(__func__)) {
+        unsupported = true;
         return false;
     }
     RebuilderReleaseScope releaseScope;
@@ -515,7 +523,10 @@ bool PixelMap::DisablePurgeable()
         return true;
     }
     // The backend restores and converts this buffer itself, and supports concurrent execution.
-    purgeableMemory->DisablePurgeable();
+    if (!purgeableMemory->DisablePurgeable()) {
+        IMAGE_LOGE("DisablePurgeable failed to protect or restore PixelMap %{public}u", GetUniqueId());
+        return false;
+    }
     lock.unlock();
     ClearPurgeableResources(state, purgeableMemory);
     return true;

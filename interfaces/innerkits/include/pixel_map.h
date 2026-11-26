@@ -868,6 +868,7 @@ public:
     NATIVEEXPORT bool UnpinPurgeableMemory();
     NATIVEEXPORT bool UnpinPurgeableMemory(bool &unsupported);
     NATIVEEXPORT bool DisablePurgeable();
+    NATIVEEXPORT bool DisablePurgeable(bool &unsupported);
     NATIVEEXPORT bool SetPurgeableRebuilder(std::unique_ptr<PixelMapRebuilder> rebuilder);
     NATIVEEXPORT bool SetPurgeableRebuilder(std::unique_ptr<PixelMapRebuilder> rebuilder, bool &unsupported);
 #endif

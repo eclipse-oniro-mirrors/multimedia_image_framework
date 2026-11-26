@@ -132,6 +132,9 @@ public:
 
     bool Pin() override
     {
+        if (pinFails_) {
+            return false;
+        }
         ++pinCount_;
         return true;
     }
@@ -152,6 +155,7 @@ public:
     int pinCount_ = 0;
     bool queryFails_ = false;
     bool invalidStatus_ = false;
+    bool pinFails_ = false;
 
 private:
     uint8_t data_ = 0;
@@ -2216,6 +2220,44 @@ HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_PurgeableErrorMapping, TestSize.Lev
     EXPECT_EQ(OH_PixelmapNative_UnpinPurgeableMemory(&pixelmap), IMAGE_PURGEABLE_UNPIN_FAILED);
     EXPECT_EQ(memory->pinCount_, 0);
     inner->SetPurgeableMemPtr(nullptr);
+}
+
+/**
+ * @tc.name: OH_PixelmapNative_DisableFailure
+ * @tc.desc: failed backend protection maps to pin failure without deleting the rebuilder, and can be retried
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_DisableFailure, TestSize.Level3)
+{
+    auto inner = std::make_shared<PixelMap>();
+    auto memory = std::make_shared<NativeTestPurgeableMemory>(1);
+    auto state = std::make_shared<PixelMapRebuildState>();
+    NativeRebuilderCounters counters;
+    auto rebuilder = std::make_unique<NativeTestInternalRebuilder>(counters);
+    rebuilder->OnRegistered();
+    auto *registered = rebuilder.get();
+    state->current = std::move(rebuilder);
+    inner->SetPurgeableMemPtr(memory, state);
+    OH_PixelmapNative pixelmap(inner);
+    memory->pinFails_ = true;
+    EXPECT_EQ(OH_PixelmapNative_DisablePurgeable(&pixelmap), IMAGE_PURGEABLE_PIN_FAILED);
+    EXPECT_EQ(inner->GetPurgeableMemPtr(), memory);
+    EXPECT_EQ(state->current.get(), registered);
+    EXPECT_EQ(counters.destructions, 0);
+    EXPECT_EQ(memory->pinCount_, 1);
+    bool associated = false;
+    EXPECT_EQ(OH_PixelmapNative_IsPurgeable(&pixelmap, &associated), IMAGE_SUCCESS);
+    EXPECT_TRUE(associated);
+
+    memory->pinFails_ = false;
+    EXPECT_EQ(OH_PixelmapNative_DisablePurgeable(&pixelmap), IMAGE_SUCCESS);
+    EXPECT_EQ(inner->GetPurgeableMemPtr(), nullptr);
+    EXPECT_EQ(state->current, nullptr);
+    EXPECT_EQ(counters.destructions, 1);
+    EXPECT_EQ(OH_PixelmapNative_IsPurgeable(&pixelmap, &associated), IMAGE_SUCCESS);
+    EXPECT_FALSE(associated);
+    EXPECT_EQ(OH_PixelmapNative_DisablePurgeable(&pixelmap), IMAGE_SUCCESS);
+    EXPECT_EQ(counters.destructions, 1);
 }
 
 /**

@@ -666,6 +666,7 @@ static std::vector<struct ImageEnum> sXmageColorModeMap = {
 };
 
 static const std::map<int32_t, Image_ErrorCode> ERROR_CODE_MAP = {
+    {ERR_IMAGE_PURGEABLE_PIN_FAILED, Image_ErrorCode::IMAGE_PURGEABLE_PIN_FAILED},
     {ERR_IMAGE_INVALID_PARAMETER, Image_ErrorCode::IMAGE_BAD_PARAMETER},
     {COMMON_ERR_INVALID_PARAMETER, Image_ErrorCode::IMAGE_BAD_PARAMETER},
     {JpegYuvDecodeError::JpegYuvDecodeError_InvalidParameter, Image_ErrorCode::IMAGE_BAD_PARAMETER},
@@ -698,6 +699,7 @@ static const std::map<int32_t, Image_ErrorCode> ERROR_CODE_MAP = {
 };
 
 static const std::map<Image_ErrorCode, std::string> ERROR_CODE_MESSAGE_MAP = {
+    {Image_ErrorCode::IMAGE_PURGEABLE_PIN_FAILED, "Failed to pin purgeable PixelMap memory."},
     {Image_ErrorCode::IMAGE_BAD_PARAMETER, "Parameter error. Possible causes:"
         "1.Mandatory parameters are left unspecified. 2.Incorrect parameter types. 3.Parameter verification failed."},
     {Image_ErrorCode::IMAGE_BAD_SOURCE, "Bad source. e.g.,1.Image has invalid width or height."
@@ -1013,6 +1015,9 @@ static void ImageSourceCallbackRoutine(napi_env env, ImageSourceAsyncContext* &c
 
     if (context->status == SUCCESS) {
         result[NUM_1] = valueParam;
+    } else if (context->status == ERR_IMAGE_PURGEABLE_PIN_FAILED) {
+        ImageNapiUtils::CreateErrorObj(env, result[NUM_0], IMAGE_PURGEABLE_PIN_FAILED,
+            GetErrorCodeMsg(IMAGE_PURGEABLE_PIN_FAILED), true);
     } else if (context->errMsgArray.size() > 0) {
         for (const auto &[errorCode, errMsg] : context->errMsgArray) {
             ImageNapiUtils::CreateErrorObj(env, result[NUM_0], errorCode, errMsg, codeAsNumber);
@@ -1062,7 +1067,8 @@ static void ImageSourceCallbackWithErrorObj(napi_env env,
         std::string errMsg = (context->errMsg.size() > 0) ? context->errMsg : "error status, no message";
         IMAGE_LOGD("Operation failed code:%{public}d, msg:%{public}s",
             context->status, errMsg.c_str());
-        ImageNapiUtils::CreateErrorObj(env, result[NUM_0], context->status, errMsg);
+        ImageNapiUtils::CreateErrorObj(env, result[NUM_0], context->status, errMsg,
+            context->status == ERR_IMAGE_PURGEABLE_PIN_FAILED);
         napi_get_undefined(env, &result[NUM_1]);
     }
 
@@ -2601,6 +2607,11 @@ static napi_value CreatePixelMapCompleteSync(napi_env env, napi_status status, I
     IMAGE_LOGD("CreatePixelMapCompleteSync IN");
     napi_value result = nullptr;
 
+    if (context->status == ERR_IMAGE_PURGEABLE_PIN_FAILED) {
+        ImageNapiUtils::ThrowExceptionError(env, IMAGE_PURGEABLE_PIN_FAILED,
+            GetErrorCodeMsg(IMAGE_PURGEABLE_PIN_FAILED), true);
+        return nullptr;
+    }
     if (context->status == SUCCESS) {
         result = PixelMapNapi::CreatePixelMap(env, context->rPixelMap);
     } else {
@@ -2615,7 +2626,7 @@ static napi_value CreatePixelMapThrowErrorCompleteSync(napi_env env, napi_status
 {
     napi_value result = nullptr;
     for (const auto &[errorCode, errMsg] : context->errMsgArray) {
-        ImageNapiUtils::ThrowExceptionError(env, errorCode, errMsg);
+        ImageNapiUtils::ThrowExceptionError(env, errorCode, errMsg, errorCode == IMAGE_PURGEABLE_PIN_FAILED);
     }
     if (context->status == SUCCESS) {
         result = PixelMapNapi::CreatePixelMap(env, context->rPixelMap);
@@ -4914,7 +4925,8 @@ STATIC_EXEC_FUNC(CreatePixelMapList)
         context->status = (errorCode != SUCCESS) ? errorCode : ERROR;
         std::string mappedErrorMsg;
         GenerateErrMsg(context, mappedErrorMsg);
-        context->errMsg = "Create PixelMap List error: " + mappedErrorMsg;
+        context->errMsg = context->status == ERR_IMAGE_PURGEABLE_PIN_FAILED ?
+            GetErrorCodeMsg(IMAGE_PURGEABLE_PIN_FAILED) : "Create PixelMap List error: " + mappedErrorMsg;
         IMAGE_LOGE("CreatePixelMapList failed: ret=%{public}u, index=%{public}u.",
             context->status, context->index);
     }

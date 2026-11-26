@@ -22,6 +22,7 @@
 
 #include "image_log.h"
 #include "image_trace.h"
+#include "image_utils.h"
 #include "media_errors.h"
 #include "pixel_map_utils.h"
 #include "securec.h"
@@ -144,6 +145,7 @@ bool PurgeablePixelMapBuilder::Build(void *data, size_t size)
         IMAGE_LOGE("PurgeablePixelMapBuilder failed to restore pixel buffer");
         return false;
     }
+    ImageUtils::FlushSurfaceBuffer(&pixelMap_);
     return true;
 }
 

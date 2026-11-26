@@ -1631,7 +1631,7 @@ Image_ErrorCode OH_PixelmapNative_IsPurgeable(OH_PixelmapNative *pixelmap, bool 
  * and releases the resources used for rebuilding.
  * Pixel content is restored as needed. The caller does not need to Pin first or release existing pin references.
  * This operation does not release the PixelMap object or its pixel memory.
- * After disabling, this PixelMap cannot be re-associated with purgeable memory.
+ * After successful disabling, this PixelMap cannot be re-associated with purgeable memory.
  * A query through {@link OH_PixelmapNative_IsPurgeable} outputs false, and Pin or Unpin returns
  * IMAGE_UNSUPPORTED_OPERATION. Calling this API on an ordinary or already disabled PixelMap returns IMAGE_SUCCESS.
  * The PixelMap must still be released through {@link OH_PixelmapNative_Release} when no longer needed.
@@ -1639,7 +1639,8 @@ Image_ErrorCode OH_PixelmapNative_IsPurgeable(OH_PixelmapNative *pixelmap, bool 
  *
  * During a rebuild callback, the same thread must not call Pin, Unpin, or DisablePurgeable on the PixelMap
  * being rebuilt; such calls return IMAGE_UNSUPPORTED_OPERATION.
- * The backend Disable function has no return value, so backend restoration failures cannot be reported by this API.
+ * If the internal Pin or pixel restoration fails, this API returns IMAGE_PURGEABLE_PIN_FAILED (7600307).
+ * The purgeable association and rebuilding resources are retained, allowing the caller to retry.
  *
  * @param pixelmap Input pointer to a valid, unreleased PixelMap. Must not be NULL.
  *        This function does not take ownership of or release the PixelMap.
@@ -1647,6 +1648,7 @@ Image_ErrorCode OH_PixelmapNative_IsPurgeable(OH_PixelmapNative *pixelmap, bool 
  *         {@link IMAGE_SUCCESS} on success.
  *         <br>{@link IMAGE_INVALID_PARAMETER} Invalid parameter.
  *         <br>{@link IMAGE_UNSUPPORTED_OPERATION} Unsupported operation, e.g. on cross-platform.
+ *         <br>{@link IMAGE_PURGEABLE_PIN_FAILED} Failed to pin purgeable PixelMap memory.
  * @since 26.1.0
  */
 Image_ErrorCode OH_PixelmapNative_DisablePurgeable(OH_PixelmapNative *pixelmap);
