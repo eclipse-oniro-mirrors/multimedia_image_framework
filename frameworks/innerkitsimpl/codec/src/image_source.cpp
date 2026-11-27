@@ -77,6 +77,12 @@
 #include "image_handle.h"
 #include "xmp_metadata_accessor_factory.h"
 #include "image_memory_limit_constants.h"
+#ifdef IMAGE_PURGEABLE_PIXELMAP
+#include "purgeable_ashmem.h"
+#include "purgeable_dmabuf.h"
+#include "purgeable_resource_manager.h"
+#include "image_purgeable_pixelmap_builder.h"
+#endif
 #if defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM)
 #include "include/jpeg_decoder.h"
 #else
@@ -576,8 +582,24 @@ void ImageSource::Reset()
     mainDecoder_ = nullptr;
 }
 
+static bool IsPurgeableModeValid(PurgeableMode mode)
+{
+    return mode == PurgeableMode::NONE || mode == PurgeableMode::REBUILD;
+}
+
 unique_ptr<PixelMap> ImageSource::CreatePixelMapEx(uint32_t index, const DecodeOptions &opts, uint32_t &errorCode)
 {
+    return CreatePixelMapEx(index, opts, errorCode, true);
+}
+
+unique_ptr<PixelMap> ImageSource::CreatePixelMapEx(uint32_t index, const DecodeOptions &opts, uint32_t &errorCode,
+    bool allowPurgeable)
+{
+    if (!IsPurgeableModeValid(opts.purgeableMode)) {
+        IMAGE_LOGE("purgeableMode is invalid");
+        errorCode = ERR_IMAGE_INVALID_PARAMETER;
+        return nullptr;
+    }
     if (opts.desiredSize.width < 0 || opts.desiredSize.height < 0) {
         IMAGE_LOGE("desiredSize is invalid");
         errorCode = ERR_IMAGE_INVALID_PARAMETER;
@@ -589,6 +611,20 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapEx(uint32_t index, const DecodeO
         "desiredSize: (%{public}d, %{public}d)",
         static_cast<unsigned long>(imageId_), opts.desiredPixelFormat, opts.desiredSize.width, opts.desiredSize.height);
 
+    auto finalizePixelMap = [&](std::unique_ptr<PixelMap> pixelMap,
+        bool isPartialOutput) -> std::unique_ptr<PixelMap> {
+#ifdef IMAGE_PURGEABLE_PIXELMAP
+        if (allowPurgeable && pixelMap != nullptr && IsPurgeableRequested(opts)) {
+            std::lock_guard<std::recursive_mutex> decodeLock(decodingMutex_);
+            (void)TryMakePurgeable(index, opts, pixelMap, isPartialOutput);
+        }
+#else
+        (void)isPartialOutput;
+        (void)allowPurgeable;
+#endif
+        return pixelMap;
+    };
+
 #if !defined(ANDROID_PLATFORM) && !defined(IOS_PLATFORM)
     {
         std::unique_lock<std::recursive_mutex> guard(decodingMutex_);
@@ -596,24 +632,186 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapEx(uint32_t index, const DecodeO
             (void)OnSourceUnresolved();
         }
         if (sourceInfo_.encodedFormat == InnerFormat::ASTC_FORMAT) {
-            return CreatePixelMapForASTC(errorCode, opts);
+            return finalizePixelMap(CreatePixelMapForASTC(errorCode, opts), false);
         }
     }
 #endif
 
     if (opts.desiredPixelFormat == PixelFormat::ASTC_4x4) {
-        return CreatePixelAstcFromImageFile(index, opts, errorCode);
+        return finalizePixelMap(CreatePixelAstcFromImageFile(index, opts, errorCode), false);
     }
 
     if (IsSpecialYUV()) {
         std::unique_lock<std::recursive_mutex> guard(decodingMutex_);
         opts_ = opts;
-        return CreatePixelMapForYUV(errorCode);
+        return finalizePixelMap(CreatePixelMapForYUV(errorCode), false);
     }
 
     DumpInputData();
-    return CreatePixelMap(index, opts, errorCode);
+    bool isPartialOutput = false;
+    auto pixelMap = DecodePixelMap(index, opts, errorCode, &isPartialOutput);
+    return finalizePixelMap(std::move(pixelMap), isPartialOutput);
 }
+
+#ifdef IMAGE_PURGEABLE_PIXELMAP
+bool ImageSource::IsPurgeableRequested(const DecodeOptions &opts) const
+{
+    return !isPurgeableBackup_ && (opts.purgeableMode == PurgeableMode::REBUILD ||
+        (opts.purgeableMode == PurgeableMode::NONE && ImageSystemProperties::GetPurgeablePixelMapEnabled()));
+}
+
+bool ImageSource::ShouldMakePurgeable(const DecodeOptions &opts, PixelMap &pixelMap, bool isPartialOutput) const
+{
+    AllocatorType allocatorType = pixelMap.GetAllocatorType();
+    size_t sourceSize = sourceStreamPtr_ == nullptr ? 0 : sourceStreamPtr_->GetStreamSize();
+    return IsPurgeableRequested(opts) && opts.reusePixelmap == nullptr &&
+        !isIncrementalSource_ && !isPartialOutput && !pixelMap.IsPurgeable() &&
+        (allocatorType == AllocatorType::SHARE_MEM_ALLOC || allocatorType == AllocatorType::DMA_ALLOC) &&
+        sourceSize > 0 && sourceSize <= UINT32_MAX;
+}
+
+std::unique_ptr<ImageSource> ImageSource::CreateBackupImageSource()
+{
+    if (sourceStreamPtr_ == nullptr) {
+        return nullptr;
+    }
+    size_t sourceSize = sourceStreamPtr_->GetStreamSize();
+    if (sourceSize == 0 || sourceSize > UINT32_MAX) {
+        IMAGE_LOGE("CreateBackupImageSource failed: source is not replayable");
+        return nullptr;
+    }
+
+    uint8_t *sourceData = sourceStreamPtr_->GetDataPtr();
+    std::unique_ptr<uint8_t[]> sourceCopy;
+    if (sourceData == nullptr) {
+        sourceCopy = std::unique_ptr<uint8_t[]>(new (std::nothrow) uint8_t[sourceSize]);
+        if (sourceCopy == nullptr) {
+            IMAGE_LOGE("CreateBackupImageSource failed to allocate source snapshot");
+            return nullptr;
+        }
+        uint32_t savedPosition = sourceStreamPtr_->Tell();
+        if (savedPosition > sourceSize) {
+            IMAGE_LOGE("CreateBackupImageSource failed: invalid source stream position");
+            return nullptr;
+        }
+        if (!sourceStreamPtr_->Seek(0)) {
+            IMAGE_LOGE("CreateBackupImageSource failed to seek to stream start");
+            return nullptr;
+        }
+        uint32_t readSize = 0;
+        bool readResult = sourceStreamPtr_->Read(static_cast<uint32_t>(sourceSize), sourceCopy.get(),
+            static_cast<uint32_t>(sourceSize), readSize);
+        bool restoreResult = sourceStreamPtr_->Seek(savedPosition);
+        if (!readResult || readSize != sourceSize || !restoreResult) {
+            IMAGE_LOGE("CreateBackupImageSource failed to copy source stream");
+            return nullptr;
+        }
+        sourceData = sourceCopy.get();
+    }
+
+    uint32_t errorCode = SUCCESS;
+    auto backup = CreateImageSource(sourceData, static_cast<uint32_t>(sourceSize), sourceOptions_, errorCode, false);
+    if (backup == nullptr || errorCode != SUCCESS) {
+        IMAGE_LOGE("CreateBackupImageSource failed: %{public}u", errorCode);
+        return nullptr;
+    }
+    backup->isPurgeableBackup_ = true;
+    backup->SetMemoryUsagePreference(preference_);
+    return backup;
+}
+
+bool ImageSource::TryMakePurgeable(uint32_t index, const DecodeOptions &opts, std::unique_ptr<PixelMap> &pixelMap,
+    bool isPartialOutput)
+{
+    if (pixelMap == nullptr || !ShouldMakePurgeable(opts, *pixelMap, isPartialOutput)) {
+        return false;
+    }
+
+    uint32_t allocationSize = pixelMap->GetAllocationByteCount();
+    void *pixelData = const_cast<uint8_t *>(pixelMap->GetPixels());
+    if (pixelData == nullptr || allocationSize == 0) {
+        IMAGE_LOGE("TryMakePurgeable failed: invalid pixel memory layout");
+        return false;
+    }
+
+    const size_t sourceSize = GetSourceSize();
+    // Reject before copying the encoded source; exactly half the pixel allocation is allowed.
+    if (sourceSize > allocationSize / 2) {
+        IMAGE_LOGD("Skip purgeable: source size %{public}zu exceeds half of pixel allocation %{public}u",
+            sourceSize, allocationSize);
+        return false;
+    }
+
+    auto backup = CreateBackupImageSource();
+    if (backup == nullptr) {
+        return false;
+    }
+    const size_t rebuildBytes = backup->GetSourceSize();
+
+    auto rebuildState = std::make_shared<PixelMapRebuildState>();
+    rebuildState->current = std::make_unique<DecodeRebuilder>(std::move(backup), index, opts);
+    auto builder = std::make_unique<PurgeablePixelMapBuilder>(rebuildState, *pixelMap);
+
+    std::shared_ptr<PurgeableMem::PurgeableMemBase> purgeableMemory;
+    AllocatorType allocatorType = pixelMap->GetAllocatorType();
+    if (allocatorType == AllocatorType::SHARE_MEM_ALLOC) {
+        int *ashmemFd = static_cast<int *>(pixelMap->GetFd());
+        if (ashmemFd == nullptr || *ashmemFd < 0) {
+            IMAGE_LOGE("TryMakePurgeable failed: invalid ashmem fd");
+            return false;
+        }
+        auto ashmem = std::make_shared<PurgeableMem::PurgeableAshMem>(std::move(builder));
+        if (!ashmem->ChangeAshmemData(allocationSize, *ashmemFd, pixelData)) {
+            IMAGE_LOGE("TryMakePurgeable failed to attach shared memory");
+            return false;
+        }
+        purgeableMemory = std::move(ashmem);
+    } else if (allocatorType == AllocatorType::DMA_ALLOC) {
+        auto *surfaceBuffer = static_cast<SurfaceBuffer *>(pixelMap->GetFd());
+        if (surfaceBuffer == nullptr) {
+            IMAGE_LOGE("TryMakePurgeable failed: invalid DMA surface buffer");
+            return false;
+        }
+        int dmaBufFd = surfaceBuffer->GetFileDescriptor();
+        if (dmaBufFd < 0) {
+            IMAGE_LOGE("TryMakePurgeable failed: invalid DMA buffer fd");
+            return false;
+        }
+        auto dmaBuf = std::make_shared<PurgeableMem::PurgeableDmaBuf>(std::move(builder));
+        if (!dmaBuf->ChangeDmaBufData(allocationSize, dmaBufFd, pixelData)) {
+            IMAGE_LOGE("TryMakePurgeable failed to attach DMA buffer");
+            return false;
+        }
+        purgeableMemory = std::move(dmaBuf);
+    }
+    if (purgeableMemory == nullptr) {
+        return false;
+    }
+
+    int pinStatus = purgeableMemory->GetPinStatus();
+    if (pinStatus == 0) {
+        IMAGE_LOGE("TryMakePurgeable failed: initial pin status is zero");
+        // Keep the rebuilder alive until the backend restores and converts the buffer to ordinary memory.
+        purgeableMemory->DisablePurgeable();
+        return false;
+    }
+    if (pinStatus < 0) {
+        IMAGE_LOGE("TryMakePurgeable failed: negative initial pin status %{public}d", pinStatus);
+        return false;
+    }
+
+    pixelMap->SetPurgeableMemPtr(std::move(purgeableMemory), std::move(rebuildState));
+    (void)pixelMap->SetMemoryName(GetPixelMapName(pixelMap.get()) + "-rebuildBytes-" +
+        std::to_string(rebuildBytes));
+    if (ImageSystemProperties::GetPurgeablePixelMapEnabled()) {
+        auto purgeablePtr = pixelMap->GetPurgeableMemPtr();
+        if (purgeablePtr != nullptr) {
+            PurgeableMem::PurgeableResourceManager::GetInstance().AddResource(purgeablePtr);
+        }
+    }
+    return true;
+}
+#endif
 
 namespace {
 class QosGuard {
@@ -1107,7 +1305,8 @@ void ImageSource::SetAnimationSize(uint32_t index, const DecodeOptions &opts, Im
     }
 }
 
-unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index, const DecodeOptions &opts, uint32_t &errorCode)
+unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index, const DecodeOptions &opts,
+    uint32_t &errorCode, bool *isPartialOutput)
 {
     ImageEvent imageEvent;
     imageEvent.SetDecodePoint(DecodePoint::EXTENDED);
@@ -1154,6 +1353,9 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index, const D
     }
     ImagePlugin::PlImageInfo plInfo;
     DecodeContext context = DecodeImageDataToContextExtended(index, info, plInfo, imageEvent, errorCode);
+    if (isPartialOutput != nullptr) {
+        *isPartialOutput = context.ifPartialOutput;
+    }
     imageDataStatistics.AddTitle("imageSize: [%d, %d], desireSize: [%d, %d], imageFormat: %s, desirePixelFormat: %d,"
         "memorySize: %d, memoryType: %d", info.size.width, info.size.height, opts.desiredSize.width,
         opts.desiredSize.height, sourceInfo_.encodedFormat.c_str(), opts.desiredPixelFormat,
@@ -1582,7 +1784,31 @@ void ImageSource::SetImageEventHeifParseErr(ImageEvent &event)
 
 unique_ptr<PixelMap> ImageSource::CreatePixelMap(uint32_t index, const DecodeOptions &opts, uint32_t &errorCode)
 {
+#ifdef IMAGE_PURGEABLE_PIXELMAP
+    bool isPartialOutput = false;
+    auto pixelMap = DecodePixelMap(index, opts, errorCode, &isPartialOutput);
+    if (pixelMap != nullptr && IsPurgeableRequested(opts)) {
+        std::lock_guard<std::recursive_mutex> decodeLock(decodingMutex_);
+        (void)TryMakePurgeable(index, opts, pixelMap, isPartialOutput);
+    }
+    return pixelMap;
+#else
+    return DecodePixelMap(index, opts, errorCode);
+#endif
+}
+
+unique_ptr<PixelMap> ImageSource::DecodePixelMap(uint32_t index, const DecodeOptions &opts, uint32_t &errorCode,
+    bool *isPartialOutput)
+{
+    if (!IsPurgeableModeValid(opts.purgeableMode)) {
+        IMAGE_LOGE("purgeableMode is invalid");
+        errorCode = ERR_IMAGE_INVALID_PARAMETER;
+        return nullptr;
+    }
     std::unique_lock<std::recursive_mutex> guard(decodingMutex_);
+    if (isPartialOutput != nullptr) {
+        *isPartialOutput = false;
+    }
     opts_ = opts;
     bool useSkia = opts_.sampleSize != 1;
     if (useSkia) {
@@ -1606,7 +1832,7 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMap(uint32_t index, const DecodeOpt
     if (ImageSystemProperties::GetSkiaEnabled()) {
         if (IsExtendedCodec(mainDecoder_.get())) {
             InitDecoderForJpeg();
-            return CreatePixelMapExtended(index, opts, errorCode);
+            return CreatePixelMapExtended(index, opts, errorCode, isPartialOutput);
         }
     }
 
@@ -1701,6 +1927,9 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMap(uint32_t index, const DecodeOpt
     context.allocatorType = AllocatorType::HEAP_ALLOC;
 #endif
     errorCode = mainDecoder_->Decode(index, context);
+    if (isPartialOutput != nullptr) {
+        *isPartialOutput = context.ifPartialOutput;
+    }
     if (context.ifPartialOutput) {
         for (auto partialListener : decodeListeners_) {
             guard.unlock();
@@ -4556,6 +4785,11 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapForYUV(uint32_t &errorCode)
 
 unique_ptr<vector<unique_ptr<PixelMap>>> ImageSource::CreatePixelMapList(const DecodeOptions &opts, uint32_t &errorCode)
 {
+    if (!IsPurgeableModeValid(opts.purgeableMode)) {
+        IMAGE_LOGE("purgeableMode is invalid");
+        errorCode = ERR_IMAGE_INVALID_PARAMETER;
+        return nullptr;
+    }
     ImageDataStatistics imageDataStatistics("[ImageSource]CreatePixelMapList.");
     DumpInputData();
     auto frameCount = GetFrameCount(errorCode);

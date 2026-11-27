@@ -202,6 +202,9 @@ public:
     NATIVEEXPORT AllocatorType ConvertAutoAllocatorType(const DecodeOptions &opts);
     NATIVEEXPORT std::unique_ptr<PixelMap> CreatePixelMapEx(uint32_t index, const DecodeOptions &opts,
                                                             uint32_t &errorCode);
+    // Sendable decoding must bypass both explicit requests and the purgeable debugging parameter.
+    NATIVEEXPORT std::unique_ptr<PixelMap> CreatePixelMapEx(uint32_t index, const DecodeOptions &opts,
+        uint32_t &errorCode, bool allowPurgeable);
     NATIVEEXPORT std::unique_ptr<PixelMap> CreatePixelMap(uint32_t index, const DecodeOptions &opts,
                                                           uint32_t &errorCode);
     NATIVEEXPORT std::unique_ptr<IncrementalPixelMap> CreateIncrementalPixelMap(uint32_t index,
@@ -399,6 +402,16 @@ private:
     bool HasDensityChange(const DecodeOptions &opts, ImageInfo &srcImageInfo, bool hasNinePatch);
     bool ImageSizeChange(int32_t width, int32_t height, int32_t desiredWidth, int32_t desiredHeight);
     bool ImageConverChange(const Rect &cropRect, ImageInfo &dstImageInfo, ImageInfo &srcImageInfo);
+    std::unique_ptr<PixelMap> DecodePixelMap(uint32_t index, const DecodeOptions &opts, uint32_t &errorCode,
+        bool *isPartialOutput = nullptr);
+#ifdef IMAGE_PURGEABLE_PIXELMAP
+    friend class PurgeablePixelMapBuilder;
+    bool IsPurgeableRequested(const DecodeOptions &opts) const;
+    bool ShouldMakePurgeable(const DecodeOptions &opts, PixelMap &pixelMap, bool isPartialOutput) const;
+    std::unique_ptr<ImageSource> CreateBackupImageSource();
+    bool TryMakePurgeable(uint32_t index, const DecodeOptions &opts, std::unique_ptr<PixelMap> &pixelMap,
+        bool isPartialOutput);
+#endif
     void Reset();
     static std::unique_ptr<SourceStream> DecodeBase64(const uint8_t *data, uint32_t size);
     static std::unique_ptr<SourceStream> DecodeBase64(const std::string &data);
@@ -418,7 +431,7 @@ private:
         const SourceOptions &opts, uint32_t &errorCode, const std::string traceName = "",
         const std::string &sourcePath = "", int sourceFd = -1);
     std::unique_ptr<PixelMap> CreatePixelMapExtended(uint32_t index, const DecodeOptions &opts,
-                                                     uint32_t &errorCode);
+                                                     uint32_t &errorCode, bool *isPartialOutput = nullptr);
     std::unique_ptr<PixelMap> CreatePixelMapByInfos(ImagePlugin::PlImageInfo &plInfo,
                                                     ImagePlugin::DecodeContext& context, uint32_t &errorCode);
     bool ApplyGainMap(ImageHdrType hdrType, ImagePlugin::DecodeContext& baseCtx,
@@ -603,6 +616,8 @@ private:
     bool isHdrCanvas_ = false;
     std::shared_ptr<XMPMetadata> xmpMetadata_ = nullptr;
     bool isSystemApi_ = false;
+    // Internal rebuild sources must not inherit the debug default for purgeable attachment.
+    bool isPurgeableBackup_ = false;
 };
 } // namespace Media
 } // namespace OHOS

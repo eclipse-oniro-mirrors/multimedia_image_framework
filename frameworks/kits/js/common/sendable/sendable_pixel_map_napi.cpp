@@ -958,6 +958,16 @@ napi_value SendablePixelMapNapi::ConvertFromPixelMap(napi_env env, napi_callback
     }
 
     std::shared_ptr<PixelMap> nativePixelMap = pixelMapNapi->GetPixelNapiInner();
+#ifdef IMAGE_PURGEABLE_PIXELMAP
+    bool associated = false;
+    bool querySucceeded = nativePixelMap->GetPurgeableStatus(associated);
+    if (!querySucceeded || associated) {
+        IMAGE_LOGE("ConvertFromPixelMap rejects purgeable or unknown association, id:%{public}u, "
+            "querySucceeded:%{public}d, associated:%{public}d", nativePixelMap->GetUniqueId(), querySucceeded, associated);
+        return ImageNapiUtils::ThrowExceptionError(env,
+            ERR_IMAGE_INIT_ABNORMAL, "Failed to initialize the internal object.");
+    }
+#endif
     pixelMapNapi->ReleasePixelNapiInner();
     result = CreateSendablePixelMap(env, nativePixelMap);
     if (!IMG_NOT_NULL(result)) {

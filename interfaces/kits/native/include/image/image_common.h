@@ -251,6 +251,21 @@ typedef enum {
      */
     IMAGE_DATA_CONVERSION_FAILED = 7600306,
     /**
+     * @error Failed to pin purgeable PixelMap memory.
+     * @since 26.1.0
+     */
+    IMAGE_PURGEABLE_PIN_FAILED = 7600307,
+    /**
+     * @error Failed to unpin purgeable PixelMap memory.
+     * @since 26.1.0
+     */
+    IMAGE_PURGEABLE_UNPIN_FAILED = 7600308,
+    /**
+     * @error Failed to query the purgeable association status of the PixelMap.
+     * @since 26.1.0
+     */
+    IMAGE_PURGEABLE_QUERY_FAILED = 7600309,
+    /**
      * @error unsupported allocator mode, e.g., use share memory to create a HDR image as only
      * DMA supported hdr metadata.
      * @since 20
@@ -316,6 +331,29 @@ typedef enum {
      */
     IMAGE_ALLOCATOR_MODE_SHARED_MEMORY = 2,
 } IMAGE_ALLOCATOR_MODE;
+
+/**
+ * @brief Enumerates purgeable modes used when creating a PixelMap.
+ *
+ * @since 26.1.0
+ */
+typedef enum {
+    /**
+     * Do not request purgeable memory.
+     *
+     * @since 26.1.0
+     */
+    IMAGE_PURGEABLE_MODE_NONE = 0,
+    /**
+     * Request discard-and-rebuild memory. Association failure returns a PixelMap not associated with purgeable memory
+     * without failing decoding.
+     * Successful association supplies one initial pin reference to the caller.
+     * For association conditions and fallback behavior, see {@link OH_DecodingOptions_SetPurgeableMode}.
+     *
+     * @since 26.1.0
+     */
+    IMAGE_PURGEABLE_MODE_REBUILD = 1,
+} IMAGE_PURGEABLE_MODE;
 
 /**
  * @brief Define the metadata type.

@@ -1546,6 +1546,113 @@ Image_ErrorCode OH_PixelmapNative_AccessPixels(OH_PixelmapNative *pixelmap, void
 Image_ErrorCode OH_PixelmapNative_UnaccessPixels(OH_PixelmapNative *pixelmap);
 
 /**
+ * @brief Pins purgeable PixelMap memory to ensure valid pixel content and prevent reclamation during use.
+ * Success means that the content is valid and protected from reclamation. Reclaimed content is rebuilt before
+ * success is reported. If this call fails, do not access the unprotected pixel content.
+ * Each successful Pin adds one reference. After use, the caller must release that reference with one
+ * {@link OH_PixelmapNative_UnpinPurgeableMemory} call.
+ * Pin/Unpin do not provide an exclusive pixel access lock and do not replace {@link OH_PixelmapNative_Release}.
+ * For decoding-time association conditions, see {@link OH_DecodingOptions_SetPurgeableMode}.
+ * This synchronous operation can block the UI thread during rebuilding; use it with care.
+ *
+ * Calling this API on a PixelMap not associated with purgeable memory, or when purgeable support is disabled, returns
+ * IMAGE_UNSUPPORTED_OPERATION. During a rebuild callback, the same thread must not call Pin, Unpin, or
+ * DisablePurgeable on the PixelMap being rebuilt; such calls return IMAGE_UNSUPPORTED_OPERATION.
+ * Other pin failures return IMAGE_PURGEABLE_PIN_FAILED.
+ *
+ * @param pixelmap Input pointer to a valid, unreleased PixelMap. Must not be NULL.
+ *        This function does not take ownership of or release the PixelMap.
+ * @return Function result code:
+ *         {@link IMAGE_SUCCESS} on success.
+ *         <br>{@link IMAGE_INVALID_PARAMETER} Invalid parameter.
+ *         <br>{@link IMAGE_UNSUPPORTED_OPERATION} Unsupported operation, e.g. on cross-platform.
+ *         <br>{@link IMAGE_PURGEABLE_PIN_FAILED} Failed to pin purgeable PixelMap memory.
+ * @see OH_PixelmapNative
+ * @since 26.1.0
+ */
+Image_ErrorCode OH_PixelmapNative_PinPurgeableMemory(OH_PixelmapNative *pixelmap);
+
+/**
+ * @brief Unpins purgeable PixelMap memory by releasing one pin reference held by the caller.
+ * Call this API after the caller stops reading or writing the pixel content.
+ * This operation is synchronous.
+ * Each successful call decreases the pin count by exactly one.
+ * The first Unpin after decoding can release the initial reference without a preceding explicit Pin.
+ * If the total count is already zero, this call fails with IMAGE_PURGEABLE_UNPIN_FAILED (7600308).
+ * The count is not decremented.
+ * When the pin count reaches zero, the system can reclaim pixel memory under memory pressure;
+ * this does not mean that the memory will be reclaimed immediately.
+ * Do not read or write unprotected pixel content. This operation does not release the PixelMap object.
+ *
+ * Calling this API on a PixelMap not associated with purgeable memory, or when purgeable support is disabled, returns
+ * IMAGE_UNSUPPORTED_OPERATION. During a rebuild callback, the same thread must not call Pin, Unpin, or
+ * DisablePurgeable on the PixelMap being rebuilt; such calls return IMAGE_UNSUPPORTED_OPERATION.
+ * An invalid or zero pin count returns IMAGE_PURGEABLE_UNPIN_FAILED.
+ *
+ * @param pixelmap Input pointer to a valid, unreleased PixelMap. Must not be NULL.
+ *        This function does not take ownership of or release the PixelMap.
+ * @return Function result code:
+ *         {@link IMAGE_SUCCESS} on success.
+ *         <br>{@link IMAGE_INVALID_PARAMETER} Invalid parameter.
+ *         <br>{@link IMAGE_UNSUPPORTED_OPERATION} Unsupported operation, e.g. on cross-platform.
+ *         <br>{@link IMAGE_PURGEABLE_UNPIN_FAILED} Failed to unpin purgeable PixelMap memory.
+ * @see OH_PixelmapNative
+ * @since 26.1.0
+ */
+Image_ErrorCode OH_PixelmapNative_UnpinPurgeableMemory(OH_PixelmapNative *pixelmap);
+
+/**
+ * @brief Queries whether the PixelMap is associated with purgeable memory and outputs the result in isPurgeable.
+ * On IMAGE_SUCCESS, isPurgeable is true for an associated PixelMap, regardless of the pin count or whether
+ * the pixel content has been reclaimed. It is also true while the content is being rebuilt.
+ * It is false for a PixelMap not associated with purgeable memory, or when purgeable support is disabled.
+ * This query does not acquire a pin, rebuild content, or report whether reclamation has occurred.
+ * The result only describes the association at the time of the query and does not replace a Pin call.
+ *
+ * Failure to query the association status returns IMAGE_PURGEABLE_QUERY_FAILED.
+ *
+ * @param pixelmap Input pointer to a valid, unreleased PixelMap. Must not be NULL.
+ *        This function does not take ownership of or release the PixelMap.
+ * @param isPurgeable Output pointer to a caller-provided writable bool. Must not be NULL.
+ *        Use the output only when IMAGE_SUCCESS is returned: true for an associated PixelMap;
+ *        false for a PixelMap not associated with purgeable memory, or when the feature is disabled.
+ * @return Function result code:
+ *         {@link IMAGE_SUCCESS} on success.
+ *         <br>{@link IMAGE_INVALID_PARAMETER} Invalid parameter.
+ *         <br>{@link IMAGE_PURGEABLE_QUERY_FAILED} Failed to query the purgeable association status of the PixelMap.
+ * @since 26.1.0
+ */
+Image_ErrorCode OH_PixelmapNative_IsPurgeable(OH_PixelmapNative *pixelmap, bool *isPurgeable);
+
+/**
+ * @brief Disables the PixelMap's purgeable association, converts pixel memory to non-purgeable memory,
+ * and releases the resources used for rebuilding.
+ * Pixel content is restored as needed. The caller does not need to Pin first or release existing pin references.
+ * This operation does not release the PixelMap object or its pixel memory.
+ * After successful disabling, this PixelMap cannot be re-associated with purgeable memory.
+ * A query through {@link OH_PixelmapNative_IsPurgeable} outputs false, and Pin or Unpin returns
+ * IMAGE_UNSUPPORTED_OPERATION. Calling this API on a PixelMap not associated with purgeable memory returns
+ * IMAGE_SUCCESS.
+ * The PixelMap must still be released through {@link OH_PixelmapNative_Release} when no longer needed.
+ * This synchronous operation can block the UI thread during restoration; use it with care.
+ *
+ * During a rebuild callback, the same thread must not call Pin, Unpin, or DisablePurgeable on the PixelMap
+ * being rebuilt; such calls return IMAGE_UNSUPPORTED_OPERATION.
+ * If the internal Pin or pixel restoration fails, this API returns IMAGE_PURGEABLE_PIN_FAILED (7600307).
+ * The purgeable association and rebuilding resources are retained, allowing the caller to retry.
+ *
+ * @param pixelmap Input pointer to a valid, unreleased PixelMap. Must not be NULL.
+ *        This function does not take ownership of or release the PixelMap.
+ * @return Function result code:
+ *         {@link IMAGE_SUCCESS} on success.
+ *         <br>{@link IMAGE_INVALID_PARAMETER} Invalid parameter.
+ *         <br>{@link IMAGE_UNSUPPORTED_OPERATION} Unsupported operation, e.g. on cross-platform.
+ *         <br>{@link IMAGE_PURGEABLE_PIN_FAILED} Failed to pin purgeable PixelMap memory.
+ * @since 26.1.0
+ */
+Image_ErrorCode OH_PixelmapNative_DisablePurgeable(OH_PixelmapNative *pixelmap);
+
+/**
  * @brief Gets the unique ID of a PixelMap.
  *
  * @param pixelmap The PixelMap to retrieve the unique ID.

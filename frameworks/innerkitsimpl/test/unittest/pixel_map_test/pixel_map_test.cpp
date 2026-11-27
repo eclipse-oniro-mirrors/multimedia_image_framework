@@ -36,6 +36,11 @@
 #include "pixel_map_gl_scope.h"
 #include "pixel_convert_adapter.h"
 #include "securec.h"
+#ifdef IMAGE_PURGEABLE_PIXELMAP
+#include "image_purgeable_pixelmap_builder.h"
+#include "purgeable_mem_base.h"
+#include "purgeable_mem_builder.h"
+#endif
 
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 #include <fcntl.h>
@@ -111,6 +116,103 @@ public:
     PixelMapTest() {}
     ~PixelMapTest() {}
 };
+
+#ifdef IMAGE_PURGEABLE_PIXELMAP
+class TestPurgeableBuilder final : public PurgeableMem::PurgeableMemBuilder {
+public:
+    bool Build(void *data, size_t size) override
+    {
+        return data != nullptr && size > 0;
+    }
+};
+
+class TestPixelMapRebuilder final : public PixelMapRebuilder {
+public:
+    TestPixelMapRebuilder(int &registrations, int &destructions)
+        : registrations_(registrations), destructions_(destructions)
+    {}
+
+    ~TestPixelMapRebuilder() override
+    {
+        ++destructions_;
+    }
+
+    bool Rebuild(std::shared_ptr<PixelMap> &temporaryPixelmap) override
+    {
+        (void)temporaryPixelmap;
+        return false;
+    }
+
+    void OnRegistered() override
+    {
+        ++registrations_;
+    }
+
+private:
+    int &registrations_;
+    int &destructions_;
+};
+
+class StoredPixelMapRebuilder final : public PixelMapRebuilder {
+public:
+    explicit StoredPixelMapRebuilder(std::shared_ptr<PixelMap> pixelMap) : pixelMap_(std::move(pixelMap)) {}
+
+    bool Rebuild(std::shared_ptr<PixelMap> &temporaryPixelmap) override
+    {
+        temporaryPixelmap = pixelMap_;
+        return temporaryPixelmap != nullptr;
+    }
+
+private:
+    std::shared_ptr<PixelMap> pixelMap_;
+};
+
+class TestPurgeableMemory final : public PurgeableMem::PurgeableMemBase {
+public:
+    explicit TestPurgeableMemory(int pinCount) : pinCount_(pinCount)
+    {
+        dataPtr_ = &data_;
+        dataSizeInput_ = sizeof(data_);
+        builder_ = std::make_unique<TestPurgeableBuilder>();
+        buildDataCount_ = 1;
+    }
+
+    int GetPinStatus() const override
+    {
+        return queryFails_.load() ? -1 : pinCount_.load();
+    }
+
+    bool Pin() override
+    {
+        ++pinCount_;
+        return true;
+    }
+
+    bool Unpin() override
+    {
+        if (!unpinStalls_ && pinCount_ > 0) {
+            --pinCount_;
+        }
+        if (queryFailsAfterUnpin_) {
+            queryFails_ = true;
+        }
+        return true;
+    }
+
+    bool IsPurged() override
+    {
+        return false;
+    }
+
+    std::atomic<int> pinCount_ {0};
+    std::atomic<bool> queryFails_ {false};
+    std::atomic<bool> queryFailsAfterUnpin_ {false};
+    std::atomic<bool> unpinStalls_ {false};
+
+private:
+    uint8_t data_ = 0;
+};
+#endif
 
 std::unique_ptr<PixelMap> ConstructPixmap(AllocatorType type)
 {
@@ -2944,6 +3046,303 @@ HWTEST_F(PixelMapTest, SetPurgeableMemPtrTest, TestSize.Level3)
     std::shared_ptr<PurgeableMem::PurgeableMemBase> ptr = pixelMap.GetPurgeableMemPtr();
     ASSERT_EQ(ptr, nullptr);
     GTEST_LOG_(INFO) << "ImagePixelMapTest: SetPurgeableMemPtrTest SetPurgeableMemPtr end";
+}
+
+/**
+ * @tc.name: PurgeableAssociationQuery
+ * @tc.desc: association follows GetPinStatus, not the presence of a backend object
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, PurgeableAssociationQueryTest, TestSize.Level3)
+{
+    PixelMap pixelMap;
+    auto memory = std::make_shared<TestPurgeableMemory>(0);
+    pixelMap.SetPurgeableMemPtr(memory);
+    EXPECT_TRUE(pixelMap.IsPurgeable());
+    EXPECT_EQ(memory->pinCount_, 0);
+    memory->pinCount_ = 3;
+    EXPECT_TRUE(pixelMap.IsPurgeable());
+    EXPECT_EQ(memory->pinCount_, 3);
+    memory->queryFails_ = true; // -1 is the backend's unassociated state.
+    EXPECT_FALSE(pixelMap.IsPurgeable());
+    pixelMap.SetPurgeableMemPtr(nullptr);
+}
+
+/**
+ * @tc.name: PurgeableRebuilderReplacement
+ * @tc.desc: replacement adopts only on commit, releases the old state and preserves pin count
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, PurgeableRebuilderReplacementTest, TestSize.Level3)
+{
+    int registrations = 0;
+    int destructions = 0;
+    PixelMap pixelMap;
+    auto memory = std::make_shared<TestPurgeableMemory>(2);
+    auto state = std::make_shared<PixelMapRebuildState>();
+    state->current = std::make_unique<TestPixelMapRebuilder>(registrations, destructions);
+    auto *original = state->current.get();
+    pixelMap.SetPurgeableMemPtr(memory, state);
+
+    memory->SetDataValid(false);
+    EXPECT_FALSE(pixelMap.SetPurgeableRebuilder(
+        std::make_unique<TestPixelMapRebuilder>(registrations, destructions)));
+    EXPECT_EQ(registrations, 0);
+    EXPECT_EQ(destructions, 1); // The unadopted candidate was destroyed, not the original rebuilder.
+    EXPECT_EQ(state->current.get(), original);
+    EXPECT_EQ(memory->pinCount_, 2);
+
+    memory->SetDataValid(true);
+    EXPECT_TRUE(pixelMap.SetPurgeableRebuilder(
+        std::make_unique<TestPixelMapRebuilder>(registrations, destructions)));
+    EXPECT_EQ(registrations, 1);
+    EXPECT_EQ(destructions, 2);
+    EXPECT_EQ(memory->pinCount_, 2);
+    pixelMap.FreePixelMap();
+    EXPECT_EQ(destructions, 3);
+    EXPECT_EQ(state->current, nullptr);
+    EXPECT_FALSE(pixelMap.IsPurgeable());
+}
+
+/**
+ * @tc.name: PurgeableRebuilderOnOrdinaryPixelMap
+ * @tc.desc: ordinary images cannot be enabled by registration, and repeated disabling is harmless
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, PurgeableRebuilderOnOrdinaryPixelMapTest, TestSize.Level3)
+{
+    int registrations = 0;
+    int destructions = 0;
+    PixelMap pixelMap;
+    EXPECT_FALSE(pixelMap.SetPurgeableRebuilder(
+        std::make_unique<TestPixelMapRebuilder>(registrations, destructions)));
+    EXPECT_EQ(registrations, 0);
+    EXPECT_EQ(destructions, 1);
+    EXPECT_TRUE(pixelMap.DisablePurgeable());
+    EXPECT_TRUE(pixelMap.DisablePurgeable());
+    EXPECT_FALSE(pixelMap.IsPurgeable());
+}
+
+/**
+ * @tc.name: PurgeableBuilderStrictLayout
+ * @tc.desc: matching results restore the original allocation; mismatched layouts never write it
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, PurgeableBuilderStrictLayoutTest, TestSize.Level3)
+{
+    auto original = ConstructPixmap(AllocatorType::HEAP_ALLOC);
+    std::shared_ptr<PixelMap> temporary = ConstructPixmap(AllocatorType::HEAP_ALLOC);
+    ASSERT_NE(original, nullptr);
+    ASSERT_NE(temporary, nullptr);
+    auto state = std::make_shared<PixelMapRebuildState>();
+    state->current = std::make_unique<StoredPixelMapRebuilder>(temporary);
+    PurgeablePixelMapBuilder builder(state, *original);
+    auto *destination = static_cast<uint8_t *>(original->GetWritablePixels());
+    uint32_t capacity = original->GetAllocationByteCount();
+    ASSERT_NE(destination, nullptr);
+    EXPECT_FALSE(builder.Build(nullptr, capacity));
+    EXPECT_FALSE(builder.Build(destination, capacity - 1));
+    EXPECT_TRUE(builder.Build(destination, capacity));
+    EXPECT_EQ(memcmp(destination, temporary->GetPixels(), capacity), 0);
+
+    ASSERT_EQ(memset_s(destination, capacity, 0, capacity), EOK);
+    temporary->SetRowStride(temporary->GetRowStride() + 1);
+    EXPECT_FALSE(builder.Build(destination, capacity));
+    for (uint32_t i = 0; i < capacity; ++i) {
+        EXPECT_EQ(destination[i], 0);
+    }
+    state->current.reset();
+    EXPECT_FALSE(builder.Build(destination, capacity));
+}
+
+/**
+ * @tc.name: PurgeableBuilderRejectsCallbackReentry
+ * @tc.desc: a real Build installs the same-map guard before invoking a developer rebuilder
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, PurgeableBuilderRejectsCallbackReentry, TestSize.Level3)
+{
+    class ReentrantRebuilder final : public PixelMapRebuilder {
+    public:
+        ReentrantRebuilder(PixelMap &pixelMap, bool &checked) : pixelMap_(pixelMap), checked_(checked) {}
+
+        bool Rebuild(std::shared_ptr<PixelMap> &) override
+        {
+            bool unsupported = true;
+            bool pinRejected = !pixelMap_.PinPurgeableMemory(unsupported) && unsupported;
+            checked_ = pinRejected && !pixelMap_.UnpinPurgeableMemory() &&
+                !pixelMap_.DisablePurgeable() && pixelMap_.IsPurgeable();
+            return false;
+        }
+
+    private:
+        PixelMap &pixelMap_;
+        bool &checked_;
+    };
+
+    auto pixelMap = ConstructPixmap(AllocatorType::HEAP_ALLOC);
+    ASSERT_NE(pixelMap, nullptr);
+    auto memory = std::make_shared<TestPurgeableMemory>(1);
+    auto state = std::make_shared<PixelMapRebuildState>();
+    bool checked = false;
+    state->current = std::make_unique<ReentrantRebuilder>(*pixelMap, checked);
+    pixelMap->SetPurgeableMemPtr(memory, state);
+    PurgeablePixelMapBuilder builder(state, *pixelMap);
+    auto destination = pixelMap->GetWritablePixels();
+    ASSERT_NE(destination, nullptr);
+    EXPECT_FALSE(builder.Build(destination, pixelMap->GetAllocationByteCount()));
+    EXPECT_TRUE(checked);
+    EXPECT_EQ(memory->pinCount_.load(), 1);
+    ASSERT_TRUE(pixelMap->PinPurgeableMemory());
+    EXPECT_EQ(memory->pinCount_.load(), 2);
+    EXPECT_TRUE(pixelMap->UnpinPurgeableMemory());
+    EXPECT_EQ(memory->pinCount_.load(), 1);
+    pixelMap->SetPurgeableMemPtr(nullptr);
+}
+
+/**
+ * @tc.name: PinPurgeableMemory
+ * @tc.desc: each pin adds one read reference to a purgeable PixelMap
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, PinPurgeableMemoryTest, TestSize.Level3)
+{
+    PixelMap pixelMap;
+    auto memory = std::make_shared<TestPurgeableMemory>(0);
+    pixelMap.SetPurgeableMemPtr(memory);
+
+    EXPECT_TRUE(pixelMap.PinPurgeableMemory());
+    EXPECT_EQ(memory->pinCount_, 1);
+    EXPECT_TRUE(pixelMap.PinPurgeableMemory());
+    EXPECT_EQ(memory->pinCount_, 2);
+
+    pixelMap.SetPurgeableMemPtr(nullptr);
+}
+
+/**
+ * @tc.name: UnpinPurgeableMemory
+ * @tc.desc: each unpin releases one read reference and rejects an underflow
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, UnpinPurgeableMemoryTest, TestSize.Level3)
+{
+    PixelMap pixelMap;
+    auto memory = std::make_shared<TestPurgeableMemory>(3);
+    pixelMap.SetPurgeableMemPtr(memory);
+
+    EXPECT_TRUE(pixelMap.UnpinPurgeableMemory());
+    EXPECT_EQ(memory->pinCount_, 2);
+    EXPECT_TRUE(pixelMap.UnpinPurgeableMemory());
+    EXPECT_EQ(memory->pinCount_, 1);
+    EXPECT_TRUE(pixelMap.UnpinPurgeableMemory());
+    EXPECT_EQ(memory->pinCount_, 0);
+    EXPECT_FALSE(pixelMap.UnpinPurgeableMemory());
+    EXPECT_EQ(memory->pinCount_, 0);
+
+    pixelMap.SetPurgeableMemPtr(nullptr);
+}
+
+/**
+ * @tc.name: PurgeableMemoryFailure
+ * @tc.desc: pin uses BeginRead and unpin uses EndRead, without inferring success from count differences
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, PurgeableMemoryFailureTest, TestSize.Level3)
+{
+    PixelMap pixelMap;
+    auto memory = std::make_shared<TestPurgeableMemory>(1);
+    pixelMap.SetPurgeableMemPtr(memory);
+
+    memory->SetDataValid(false);
+    EXPECT_FALSE(pixelMap.PinPurgeableMemory());
+    EXPECT_EQ(memory->pinCount_, 1);
+    memory->SetDataValid(true);
+
+    memory->queryFails_ = true;
+    bool unsupported = false;
+    EXPECT_FALSE(pixelMap.PinPurgeableMemory(unsupported));
+    EXPECT_TRUE(unsupported);
+    EXPECT_FALSE(pixelMap.UnpinPurgeableMemory());
+    EXPECT_EQ(pixelMap.GetPurgeableMemPtr(), nullptr);
+
+    memory->queryFails_ = false;
+    pixelMap.SetPurgeableMemPtr(memory);
+    memory->unpinStalls_ = true;
+    // The backend reports success; a count snapshot cannot override that result.
+    EXPECT_TRUE(pixelMap.UnpinPurgeableMemory());
+
+    memory->unpinStalls_ = false;
+    memory->queryFailsAfterUnpin_ = true;
+    EXPECT_TRUE(pixelMap.UnpinPurgeableMemory());
+    EXPECT_EQ(pixelMap.GetPurgeableMemPtr(), nullptr);
+    memory->queryFailsAfterUnpin_ = false;
+    memory->queryFails_ = false;
+
+    memory->pinCount_ = 0;
+    pixelMap.SetPurgeableMemPtr(memory);
+    EXPECT_FALSE(pixelMap.UnpinPurgeableMemory());
+    EXPECT_EQ(memory->pinCount_, 0);
+
+    pixelMap.SetPurgeableMemPtr(nullptr);
+}
+
+/**
+ * @tc.name: PurgeableMemoryConcurrent
+ * @tc.desc: concurrent operations preserve reference-counted semantics with a thread-safe backend
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, PurgeableMemoryConcurrentTest, TestSize.Level3)
+{
+    PixelMap pixelMap;
+    auto memory = std::make_shared<TestPurgeableMemory>(0);
+    pixelMap.SetPurgeableMemPtr(memory);
+
+    std::vector<std::future<bool>> pinTasks;
+    constexpr int taskCount = 8;
+    for (int i = 0; i < taskCount; ++i) {
+        pinTasks.emplace_back(std::async(std::launch::async, [&pixelMap]() {
+            return pixelMap.PinPurgeableMemory();
+        }));
+    }
+    for (auto &task : pinTasks) {
+        EXPECT_TRUE(task.get());
+    }
+    EXPECT_EQ(memory->pinCount_, taskCount);
+
+    std::vector<std::future<bool>> unpinTasks;
+    for (int i = 0; i < taskCount; ++i) {
+        unpinTasks.emplace_back(std::async(std::launch::async, [&pixelMap]() {
+            return pixelMap.UnpinPurgeableMemory();
+        }));
+    }
+    for (auto &task : unpinTasks) {
+        EXPECT_TRUE(task.get());
+    }
+    EXPECT_EQ(memory->pinCount_, 0);
+
+    pixelMap.SetPurgeableMemPtr(nullptr);
+}
+
+/**
+ * @tc.name: PurgeableMemoryRejectsUnmap
+ * @tc.desc: an attached purgeable buffer cannot be unmapped behind PurgeableMemBase
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, PurgeableMemoryRejectsUnmapTest, TestSize.Level3)
+{
+    auto pixelMap =
+        ConstructPixmap(PixelFormat::RGBA_8888, AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN, AllocatorType::SHARE_MEM_ALLOC);
+    ASSERT_NE(pixelMap, nullptr);
+    ASSERT_EQ(pixelMap->GetAllocatorType(), AllocatorType::SHARE_MEM_ALLOC);
+    auto memory = std::make_shared<TestPurgeableMemory>(1);
+    pixelMap->SetPurgeableMemPtr(memory);
+    pixelMap->IncreaseUseCount();
+
+    EXPECT_FALSE(pixelMap->UnMap());
+    EXPECT_TRUE(pixelMap->ReMap());
+    EXPECT_FALSE(pixelMap->IsUnMap());
+
+    pixelMap->SetPurgeableMemPtr(nullptr);
 }
 #endif
 

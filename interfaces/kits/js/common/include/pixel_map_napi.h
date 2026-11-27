@@ -186,6 +186,10 @@ private:
     static napi_value SetMetadata(napi_env env, napi_callback_info info);
     static napi_value SetMetadataSync(napi_env env, napi_callback_info info);
     static napi_value SetMemoryNameSync(napi_env env, napi_callback_info info);
+    static napi_value PinPurgeableMemory(napi_env env, napi_callback_info info);
+    static napi_value UnpinPurgeableMemory(napi_env env, napi_callback_info info);
+    static napi_value IsPurgeable(napi_env env, napi_callback_info info);
+    static napi_value DisablePurgeable(napi_env env, napi_callback_info info);
     static napi_value CloneSync(napi_env env, napi_callback_info info);
     static napi_value Clone(napi_env env, napi_callback_info info);
     static void ExtraAddNapiFunction(std::vector<napi_property_descriptor> &props);

@@ -25,6 +25,11 @@
 #include "image_utils.h"
 #include "native_color_space_manager.h"
 #include "image_mime_type.h"
+#ifdef IMAGE_PURGEABLE_PIXELMAP
+#include "image_purgeable_pixelmap_builder.h"
+#include "purgeable_mem_base.h"
+#include "purgeable_mem_builder.h"
+#endif
 
 using namespace testing::ext;
 using namespace OHOS::Media;
@@ -42,7 +47,7 @@ struct OH_Pixelmap_ImageInfo {
 namespace OHOS {
 namespace Media {
 
-constexpr int8_t ARGB_8888_BYTES = 4;
+constexpr int8_t NATIVE_TEST_ARGB_8888_BYTES = 4;
 
 class PixelMapNdk2Test : public testing::Test {
 public:
@@ -65,6 +70,97 @@ public:
 
     AntiAliasingOption lastOption_ = AntiAliasingOption::HIGH;
 };
+
+#ifdef IMAGE_PURGEABLE_PIXELMAP
+class NativeTestPurgeableBuilder final : public PurgeableMem::PurgeableMemBuilder {
+public:
+    bool Build(void *data, size_t size) override
+    {
+        return data != nullptr && size > 0;
+    }
+};
+
+struct NativeRebuilderCounters {
+    int rebuilds = 0;
+    int destructions = 0;
+};
+
+class NativeTestInternalRebuilder final : public PixelMapRebuilder {
+public:
+    explicit NativeTestInternalRebuilder(NativeRebuilderCounters &counters) : counters_(counters) {}
+
+    ~NativeTestInternalRebuilder() override
+    {
+        if (registered_) {
+            ++counters_.destructions;
+        }
+    }
+
+    void OnRegistered() override
+    {
+        registered_ = true;
+    }
+
+    bool Rebuild(std::shared_ptr<PixelMap> &) override
+    {
+        ++counters_.rebuilds;
+        return false;
+    }
+
+private:
+    NativeRebuilderCounters &counters_;
+    bool registered_ = false;
+};
+
+class NativeTestPurgeableMemory final : public PurgeableMem::PurgeableMemBase {
+public:
+    explicit NativeTestPurgeableMemory(int pinCount) : pinCount_(pinCount)
+    {
+        dataPtr_ = &data_;
+        dataSizeInput_ = sizeof(data_);
+        builder_ = std::make_unique<NativeTestPurgeableBuilder>();
+        buildDataCount_ = 1;
+    }
+
+    int GetPinStatus() const override
+    {
+        if (invalidStatus_) {
+            return -2;
+        }
+        return queryFails_ ? -1 : pinCount_;
+    }
+
+    bool Pin() override
+    {
+        if (pinFails_) {
+            return false;
+        }
+        ++pinCount_;
+        return true;
+    }
+
+    bool Unpin() override
+    {
+        if (pinCount_ > 0) {
+            --pinCount_;
+        }
+        return true;
+    }
+
+    bool IsPurged() override
+    {
+        return false;
+    }
+
+    int pinCount_ = 0;
+    bool queryFails_ = false;
+    bool invalidStatus_ = false;
+    bool pinFails_ = false;
+
+private:
+    uint8_t data_ = 0;
+};
+#endif
 
 const int32_t ZERO = 0;
 const int32_t ONE = 1;
@@ -316,7 +412,7 @@ HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_Destroy, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_Destroy start";
 
-    size_t dataSize = ARGB_8888_BYTES;
+    size_t dataSize = NATIVE_TEST_ARGB_8888_BYTES;
     uint8_t data[] = {0x01, 0x02, 0x03, 0xFF}; // Example ARGB data
     OH_Pixelmap_InitializationOptions *createOpts;
     OH_PixelmapInitializationOptions_Create(&createOpts);
@@ -542,7 +638,7 @@ HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_GetArgbPixels_Test001, TestSize.Lev
 {
     GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_GetArgbPixels_Test001 start";
 
-    size_t dataSize = ARGB_8888_BYTES;
+    size_t dataSize = NATIVE_TEST_ARGB_8888_BYTES;
     uint8_t data[] = {0x01, 0x02, 0x03, 0xFF}; // Example ARGB data
     OH_Pixelmap_InitializationOptions *createOpts;
     OH_PixelmapInitializationOptions_Create(&createOpts);
@@ -553,7 +649,7 @@ HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_GetArgbPixels_Test001, TestSize.Lev
     Image_ErrorCode errCode = OH_PixelmapNative_CreatePixelmap(data, dataSize, createOpts, &pixelMap);
     ASSERT_EQ(errCode, IMAGE_SUCCESS);
 
-    uint8_t result[ARGB_8888_BYTES];
+    uint8_t result[NATIVE_TEST_ARGB_8888_BYTES];
     errCode = OH_PixelmapNative_GetArgbPixels(pixelMap, result, &dataSize);
     ASSERT_EQ(errCode, IMAGE_SUCCESS);
     ASSERT_EQ(result[0], data[3]);
@@ -1047,7 +1143,7 @@ HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_GetByteCount, TestSize.Level3)
     uint32_t allocByteCount = 0; // Initialize allocByteCount to 0
     ret = OH_PixelmapNative_GetAllocationByteCount(pixelmap, &allocByteCount);
     ASSERT_EQ(ret, IMAGE_SUCCESS);
-    ASSERT_TRUE(byteCount == ARGB_8888_BYTES && allocByteCount >= byteCount);
+    ASSERT_TRUE(byteCount == NATIVE_TEST_ARGB_8888_BYTES && allocByteCount >= byteCount);
 
     GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_GetByteCount end";
 }
@@ -2028,6 +2124,237 @@ HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_CreateCroppedAndScaledPixelMap, Tes
 }
 
 /**
+ * @tc.name: OH_PixelmapNative_PurgeableMemory001
+ * @tc.desc: test bad parameters and non-purgeable PixelMap error mapping
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_PurgeableMemory001, TestSize.Level3)
+{
+    EXPECT_EQ(OH_PixelmapNative_PinPurgeableMemory(nullptr), IMAGE_INVALID_PARAMETER);
+    EXPECT_EQ(OH_PixelmapNative_UnpinPurgeableMemory(nullptr), IMAGE_INVALID_PARAMETER);
+
+    OH_PixelmapNative emptyPixelmap { std::shared_ptr<PixelMap>() };
+    EXPECT_EQ(OH_PixelmapNative_PinPurgeableMemory(&emptyPixelmap), IMAGE_INVALID_PARAMETER);
+    EXPECT_EQ(OH_PixelmapNative_UnpinPurgeableMemory(&emptyPixelmap), IMAGE_INVALID_PARAMETER);
+
+    auto inner = std::make_shared<PixelMap>();
+    OH_PixelmapNative pixelmap(inner);
+    EXPECT_EQ(OH_PixelmapNative_PinPurgeableMemory(&pixelmap), IMAGE_UNSUPPORTED_OPERATION);
+    EXPECT_EQ(OH_PixelmapNative_UnpinPurgeableMemory(&pixelmap), IMAGE_UNSUPPORTED_OPERATION);
+}
+
+/**
+ * @tc.name: OH_PixelmapNative_PurgeableLifecycleParameters
+ * @tc.desc: query/disable remain available for ordinary objects and validate required arguments
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_PurgeableLifecycleParameters, TestSize.Level3)
+{
+    bool associated = true;
+    EXPECT_EQ(OH_PixelmapNative_IsPurgeable(nullptr, &associated), IMAGE_INVALID_PARAMETER);
+    EXPECT_EQ(OH_PixelmapNative_DisablePurgeable(nullptr), IMAGE_INVALID_PARAMETER);
+    OH_PixelmapNative emptyPixelmap { std::shared_ptr<PixelMap>() };
+    EXPECT_EQ(OH_PixelmapNative_IsPurgeable(&emptyPixelmap, &associated), IMAGE_INVALID_PARAMETER);
+    EXPECT_EQ(OH_PixelmapNative_DisablePurgeable(&emptyPixelmap), IMAGE_INVALID_PARAMETER);
+    auto inner = std::make_shared<PixelMap>();
+    OH_PixelmapNative pixelmap(inner);
+    EXPECT_EQ(OH_PixelmapNative_IsPurgeable(&pixelmap, nullptr), IMAGE_INVALID_PARAMETER);
+    EXPECT_EQ(OH_PixelmapNative_IsPurgeable(&pixelmap, &associated), IMAGE_SUCCESS);
+    EXPECT_FALSE(associated);
+    EXPECT_EQ(OH_PixelmapNative_DisablePurgeable(&pixelmap), IMAGE_SUCCESS);
+    EXPECT_EQ(OH_PixelmapNative_DisablePurgeable(&pixelmap), IMAGE_SUCCESS);
+}
+
+#ifdef IMAGE_PURGEABLE_PIXELMAP
+/**
+ * @tc.name: OH_PixelmapNative_PurgeableMemory002
+ * @tc.desc: test successful pin/unpin and bottom-layer failure mapping
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_PurgeableMemory002, TestSize.Level3)
+{
+    auto inner = std::make_shared<PixelMap>();
+    auto memory = std::make_shared<NativeTestPurgeableMemory>(0);
+    inner->SetPurgeableMemPtr(memory);
+    OH_PixelmapNative pixelmap(inner);
+
+    bool associated = false;
+    EXPECT_EQ(OH_PixelmapNative_IsPurgeable(&pixelmap, &associated), IMAGE_SUCCESS);
+    EXPECT_TRUE(associated);
+    EXPECT_EQ(memory->pinCount_, 0);
+    EXPECT_EQ(OH_PixelmapNative_PinPurgeableMemory(&pixelmap), IMAGE_SUCCESS);
+    EXPECT_EQ(memory->pinCount_, 1);
+    EXPECT_EQ(OH_PixelmapNative_UnpinPurgeableMemory(&pixelmap), IMAGE_SUCCESS);
+    EXPECT_EQ(memory->pinCount_, 0);
+
+    memory->queryFails_ = true;
+    EXPECT_EQ(OH_PixelmapNative_IsPurgeable(&pixelmap, &associated), IMAGE_SUCCESS);
+    EXPECT_FALSE(associated);
+    EXPECT_EQ(OH_PixelmapNative_PinPurgeableMemory(&pixelmap), IMAGE_UNSUPPORTED_OPERATION);
+    EXPECT_EQ(OH_PixelmapNative_UnpinPurgeableMemory(&pixelmap), IMAGE_UNSUPPORTED_OPERATION);
+    inner->SetPurgeableMemPtr(nullptr);
+}
+
+/**
+ * @tc.name: OH_PixelmapNative_PurgeableErrorMapping
+ * @tc.desc: distinguish association-query, pin and unpin failures
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_PurgeableErrorMapping, TestSize.Level3)
+{
+    auto inner = std::make_shared<PixelMap>();
+    auto memory = std::make_shared<NativeTestPurgeableMemory>(1);
+    inner->SetPurgeableMemPtr(memory);
+    OH_PixelmapNative pixelmap(inner);
+    bool associated = false;
+
+    memory->invalidStatus_ = true;
+    EXPECT_EQ(OH_PixelmapNative_IsPurgeable(&pixelmap, &associated), IMAGE_PURGEABLE_QUERY_FAILED);
+    EXPECT_EQ(OH_PixelmapNative_PinPurgeableMemory(&pixelmap), IMAGE_PURGEABLE_PIN_FAILED);
+    EXPECT_EQ(OH_PixelmapNative_UnpinPurgeableMemory(&pixelmap), IMAGE_PURGEABLE_UNPIN_FAILED);
+
+    memory->invalidStatus_ = false;
+    EXPECT_EQ(OH_PixelmapNative_IsPurgeable(&pixelmap, &associated), IMAGE_SUCCESS);
+    EXPECT_TRUE(associated);
+    EXPECT_EQ(OH_PixelmapNative_UnpinPurgeableMemory(&pixelmap), IMAGE_SUCCESS);
+    EXPECT_EQ(OH_PixelmapNative_UnpinPurgeableMemory(&pixelmap), IMAGE_PURGEABLE_UNPIN_FAILED);
+    EXPECT_EQ(memory->pinCount_, 0);
+    inner->SetPurgeableMemPtr(nullptr);
+}
+
+/**
+ * @tc.name: OH_PixelmapNative_DisableFailure
+ * @tc.desc: failed backend protection maps to pin failure without deleting the rebuilder, and can be retried
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_DisableFailure, TestSize.Level3)
+{
+    auto inner = std::make_shared<PixelMap>();
+    auto memory = std::make_shared<NativeTestPurgeableMemory>(1);
+    auto state = std::make_shared<PixelMapRebuildState>();
+    NativeRebuilderCounters counters;
+    auto rebuilder = std::make_unique<NativeTestInternalRebuilder>(counters);
+    rebuilder->OnRegistered();
+    auto *registered = rebuilder.get();
+    state->current = std::move(rebuilder);
+    inner->SetPurgeableMemPtr(memory, state);
+    OH_PixelmapNative pixelmap(inner);
+    memory->pinFails_ = true;
+    EXPECT_EQ(OH_PixelmapNative_DisablePurgeable(&pixelmap), IMAGE_PURGEABLE_PIN_FAILED);
+    EXPECT_EQ(inner->GetPurgeableMemPtr(), memory);
+    EXPECT_EQ(state->current.get(), registered);
+    EXPECT_EQ(counters.destructions, 0);
+    EXPECT_EQ(memory->pinCount_, 1);
+    bool associated = false;
+    EXPECT_EQ(OH_PixelmapNative_IsPurgeable(&pixelmap, &associated), IMAGE_SUCCESS);
+    EXPECT_TRUE(associated);
+
+    memory->pinFails_ = false;
+    EXPECT_EQ(OH_PixelmapNative_DisablePurgeable(&pixelmap), IMAGE_SUCCESS);
+    EXPECT_EQ(inner->GetPurgeableMemPtr(), nullptr);
+    EXPECT_EQ(state->current, nullptr);
+    EXPECT_EQ(counters.destructions, 1);
+    EXPECT_EQ(OH_PixelmapNative_IsPurgeable(&pixelmap, &associated), IMAGE_SUCCESS);
+    EXPECT_FALSE(associated);
+    EXPECT_EQ(OH_PixelmapNative_DisablePurgeable(&pixelmap), IMAGE_SUCCESS);
+    EXPECT_EQ(counters.destructions, 1);
+}
+
+/**
+ * @tc.name: OH_PixelmapNative_PurgeableReentry
+ * @tc.desc: reentrant execution is unsupported without changing association or pin count
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_PurgeableReentry, TestSize.Level3)
+{
+    class ReentryRebuilder final : public PixelMapRebuilder {
+    public:
+        ReentryRebuilder(OH_PixelmapNative &pixelmap, int &pinCount) : pixelmap_(pixelmap), pinCount_(pinCount) {}
+
+        bool Rebuild(std::shared_ptr<PixelMap> &) override
+        {
+            ++calls;
+            EXPECT_EQ(OH_PixelmapNative_PinPurgeableMemory(&pixelmap_), IMAGE_UNSUPPORTED_OPERATION);
+            EXPECT_EQ(OH_PixelmapNative_UnpinPurgeableMemory(&pixelmap_), IMAGE_UNSUPPORTED_OPERATION);
+            EXPECT_EQ(OH_PixelmapNative_DisablePurgeable(&pixelmap_), IMAGE_UNSUPPORTED_OPERATION);
+            bool associated = false;
+            EXPECT_EQ(OH_PixelmapNative_IsPurgeable(&pixelmap_, &associated), IMAGE_SUCCESS);
+            EXPECT_TRUE(associated);
+            EXPECT_EQ(pinCount_, 1);
+            // Only callback execution is under test; no restored PixelMap is returned.
+            return false;
+        }
+
+        int calls = 0;
+
+    private:
+        OH_PixelmapNative &pixelmap_;
+        int &pinCount_;
+    };
+
+    InitializationOptions options;
+    options.size = {1, 1};
+    options.pixelFormat = PixelFormat::RGBA_8888;
+    options.allocatorType = AllocatorType::HEAP_ALLOC;
+    std::shared_ptr<PixelMap> inner = PixelMap::Create(options);
+    ASSERT_NE(inner, nullptr);
+    auto memory = std::make_shared<NativeTestPurgeableMemory>(1);
+    OH_PixelmapNative pixelmap(inner);
+    auto state = std::make_shared<PixelMapRebuildState>();
+    auto rebuilder = std::make_unique<ReentryRebuilder>(pixelmap, memory->pinCount_);
+    auto *callback = rebuilder.get();
+    state->current = std::move(rebuilder);
+    inner->SetPurgeableMemPtr(memory, state);
+    PurgeablePixelMapBuilder builder(state, *inner);
+    EXPECT_FALSE(builder.Build(inner->GetWritablePixels(), inner->GetAllocationByteCount()));
+    EXPECT_EQ(callback->calls, 1);
+    EXPECT_EQ(OH_PixelmapNative_PinPurgeableMemory(&pixelmap), IMAGE_SUCCESS);
+    EXPECT_EQ(OH_PixelmapNative_UnpinPurgeableMemory(&pixelmap), IMAGE_SUCCESS);
+    EXPECT_EQ(memory->pinCount_, 1);
+    inner->SetPurgeableMemPtr(nullptr);
+}
+
+/**
+ * @tc.name: PurgeableInnerRebuilderOwnership
+ * @tc.desc: inner replacement remains available without exposing an application C registration interface
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapNdk2Test, PurgeableInnerRebuilderOwnership, TestSize.Level3)
+{
+    NativeRebuilderCounters first;
+    NativeRebuilderCounters second;
+    auto inner = std::make_shared<PixelMap>();
+    bool unsupported = false;
+    EXPECT_FALSE(inner->SetPurgeableRebuilder(std::make_unique<NativeTestInternalRebuilder>(first), unsupported));
+    EXPECT_TRUE(unsupported);
+    auto memory = std::make_shared<NativeTestPurgeableMemory>(3);
+    auto state = std::make_shared<PixelMapRebuildState>();
+    inner->SetPurgeableMemPtr(memory, state);
+
+    memory->SetDataValid(false);
+    EXPECT_FALSE(inner->SetPurgeableRebuilder(std::make_unique<NativeTestInternalRebuilder>(first), unsupported));
+    EXPECT_FALSE(unsupported);
+    EXPECT_EQ(first.destructions, 0);
+    EXPECT_EQ(first.rebuilds, 0);
+    EXPECT_EQ(memory->pinCount_, 3);
+
+    memory->SetDataValid(true);
+    EXPECT_TRUE(inner->SetPurgeableRebuilder(std::make_unique<NativeTestInternalRebuilder>(first), unsupported));
+    EXPECT_FALSE(unsupported);
+    EXPECT_EQ(memory->pinCount_, 3);
+    EXPECT_EQ(first.rebuilds, 0);
+    EXPECT_TRUE(inner->SetPurgeableRebuilder(std::make_unique<NativeTestInternalRebuilder>(second), unsupported));
+    EXPECT_FALSE(unsupported);
+    EXPECT_EQ(first.destructions, 1);
+    EXPECT_EQ(first.rebuilds, 0);
+    EXPECT_EQ(memory->pinCount_, 3);
+    inner.reset();
+    EXPECT_EQ(second.destructions, 1);
+    EXPECT_EQ(state->current, nullptr);
+}
+#endif
+
+/**
  * @tc.name: OH_PixelmapNative_GetUniqueId
  * @tc.desc: OH_PixelmapNative_GetUniqueId
  * @tc.type: FUNC
@@ -2245,7 +2572,7 @@ HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_CreatePixelMap_Success, TestSize.Le
 {
     GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_CreatePixelMap_Success start";
 
-    size_t dataSize = ARGB_8888_BYTES;
+    size_t dataSize = NATIVE_TEST_ARGB_8888_BYTES;
     uint8_t data[] = {0xFF, 0x00, 0x00, 0xFF};
 
     OH_Pixelmap_InitializationOptions* opts = nullptr;
@@ -2391,7 +2718,7 @@ HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_WritePixels_Success, TestSize.Level
 {
     GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_WritePixels_Success start";
 
-    size_t dataSize = ARGB_8888_BYTES;
+    size_t dataSize = NATIVE_TEST_ARGB_8888_BYTES;
     uint8_t data[] = {0xFF, 0x00, 0x00, 0xFF};
 
     OH_Pixelmap_InitializationOptions* opts = nullptr;
@@ -2422,7 +2749,7 @@ HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_WritePixelsWithPixelFormat_Success,
 {
     GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_WritePixelsWithPixelFormat_Success start";
 
-    size_t dataSize = ARGB_8888_BYTES;
+    size_t dataSize = NATIVE_TEST_ARGB_8888_BYTES;
     uint8_t initData[] = {0x00, 0x00, 0x00, 0xFF};
 
     OH_Pixelmap_InitializationOptions* opts = nullptr;
@@ -3433,7 +3760,7 @@ HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_ImageRegionOverflow_Failure, TestSi
     uint32_t heightBefore = 0;
     ASSERT_TRUE(GetPixelmapNativeImageInfoForTest(pixelmap, widthBefore, heightBefore));
 
-    uint8_t pixels[ARGB_8888_BYTES] = {};
+    uint8_t pixels[NATIVE_TEST_ARGB_8888_BYTES] = {};
     Image_PositionArea area = {
         .pixels = pixels,
         .pixelsSize = sizeof(pixels),

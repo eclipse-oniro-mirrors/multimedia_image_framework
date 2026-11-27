@@ -13,6 +13,7 @@
 
 import("//build/ohos.gni")
 import("//build/ohos/ace/ace.gni")
+import("//build/config/components/memory_utils/purgeable_mem_config.gni")
 import("//foundation/multimedia/image_framework/ide/image_decode_config.gni")
 
 config("image_external_config") {
@@ -349,6 +350,11 @@ if (use_clang_ios) {
         defined(global_parts_info.hiviewdfx_hichecker)) {
       external_deps += [ "hichecker:libhichecker" ]
       defines += [ "HICHECKER_ENABLE" ]
+    }
+
+    if (memory_utils_purgeable_ashmem_enable && defined(global_parts_info) &&
+        defined(global_parts_info.resourceschedule_memmgr_override)) {
+      defines += [ "IMAGE_PURGEABLE_PIXELMAP" ]
     }
 
     output_name = "libimage_napi"

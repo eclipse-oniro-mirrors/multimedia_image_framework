@@ -553,6 +553,10 @@ static std::vector<struct ImageEnum> sDecodingResolutionQualityMap = {
     {"MEDIUM", 2, ""},
     {"HIGH", 3, ""},
 };
+static std::vector<struct ImageEnum> sPurgeableModeMap = {
+    {"NONE", static_cast<int32_t>(PurgeableMode::NONE), ""},
+    {"REBUILD", static_cast<int32_t>(PurgeableMode::REBUILD), ""},
+};
 static std::vector<struct ImageEnum> sAllocatorType = {
     {"AUTO", 0, ""},
     {"DMA", 1, ""},
@@ -1546,6 +1550,8 @@ napi_value ImageSourceNapi::Init(napi_env env, napi_value exports)
             ImageNapiUtils::CreateEnumTypeObject(env, napi_number, sDecodingDynamicRangeMap)),
         DECLARE_NAPI_PROPERTY("ResolutionQuality",
             ImageNapiUtils::CreateEnumTypeObject(env, napi_number, sDecodingResolutionQualityMap)),
+        DECLARE_NAPI_PROPERTY("PurgeableMode",
+            ImageNapiUtils::CreateEnumTypeObject(env, napi_number, sPurgeableModeMap)),
         DECLARE_NAPI_PROPERTY("AllocatorType",
             ImageNapiUtils::CreateEnumTypeObject(env, napi_number, sAllocatorType)),
         DECLARE_NAPI_PROPERTY("CropAndScaleStrategy",
@@ -1845,6 +1851,26 @@ static DecodeDynamicRange ParseDynamicRange(napi_env env, napi_value root)
     return DecodeDynamicRange::SDR;
 }
 
+static bool ParsePurgeableMode(napi_env env, napi_value root, DecodeOptions *opts, std::string &error)
+{
+    napi_value value = nullptr;
+    double mode = 0;
+    if (napi_get_named_property(env, root, "purgeableMode", &value) == napi_ok) {
+        if (ImageNapiUtils::getType(env, value) == napi_undefined) {
+            return true;
+        }
+        if (napi_get_value_double(env, value, &mode) == napi_ok &&
+            (mode == static_cast<double>(PurgeableMode::NONE) ||
+            mode == static_cast<double>(PurgeableMode::REBUILD))) {
+            opts->purgeableMode = static_cast<PurgeableMode>(mode);
+            return true;
+        }
+    }
+    IMAGE_LOGE("Invalid purgeableMode");
+    error = "DecodeOptions mismatch";
+    return false;
+}
+
 static bool ParsePixelFormat(napi_env env, napi_value root, const char* name,
                              DecodeOptions* opts, std::string &error)
 {
@@ -1926,7 +1952,7 @@ static bool ParseDecodeOptions2(napi_env env, napi_value root, DecodeOptions* op
 }
 
 static bool ParseDecodeOptions(napi_env env, napi_value root, DecodeOptions* opts,
-    uint32_t* pIndex, std::string &error)
+    uint32_t* pIndex, std::string &error, bool parsePurgeable = true)
 {
     napi_value tmpValue = nullptr;
 
@@ -1936,6 +1962,10 @@ static bool ParseDecodeOptions(napi_env env, napi_value root, DecodeOptions* opt
 
     if (opts == nullptr) {
         IMAGE_LOGE("opts is nullptr");
+        return false;
+    }
+
+    if (parsePurgeable && !ParsePurgeableMode(env, root, opts, error)) {
         return false;
     }
 
@@ -4756,7 +4786,8 @@ void ImageSourceNapi::release()
     }
 }
 
-static std::unique_ptr<ImageSourceAsyncContext> UnwrapContextForList(napi_env env, napi_callback_info info)
+static std::unique_ptr<ImageSourceAsyncContext> UnwrapContextForList(napi_env env, napi_callback_info info,
+    bool parsePurgeable = false)
 {
     int32_t refCount = 1;
     napi_status status;
@@ -4790,7 +4821,7 @@ static std::unique_ptr<ImageSourceAsyncContext> UnwrapContextForList(napi_env en
         if (ImageNapiUtils::getType(env, argValue[NUM_0]) == napi_object) {
             IMAGE_LOGD("UnwrapContextForList object");
             if (!ParseDecodeOptions(env, argValue[NUM_0], &(context->decodeOpts),
-                                    &(context->index), context->errMsg)) {
+                                    &(context->index), context->errMsg, parsePurgeable)) {
                 IMAGE_LOGE("DecodeOptions mismatch");
             }
         }
@@ -4906,7 +4937,7 @@ napi_value ImageSourceNapi::CreatePixelMapList(napi_env env, napi_callback_info 
 {
     ImageTrace imageTrace("ImageSourceNapi::CreatePixelMapList");
 
-    auto asyncContext = UnwrapContextForList(env, info);
+    auto asyncContext = UnwrapContextForList(env, info, true);
     if (asyncContext == nullptr) {
         return ImageNapiUtils::ThrowExceptionError(env, ERR_IMAGE_DATA_ABNORMAL,
             "async context unwrap failed");

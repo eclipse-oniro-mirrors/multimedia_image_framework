@@ -90,6 +90,7 @@ struct OH_DecodingOptions {
     struct Image_Size desiredSize;
     struct Image_Region desiredRegion;
     int32_t desiredDynamicRange = IMAGE_DYNAMIC_RANGE_SDR;
+    int32_t purgeableMode = IMAGE_PURGEABLE_MODE_NONE;
     int32_t cropAndScaleStrategy;
     int32_t desiredColorSpace = 0;
     struct Image_Region cropRegion;
@@ -424,6 +425,31 @@ Image_ErrorCode OH_DecodingOptions_SetDesiredColorSpace(OH_DecodingOptions *opti
 }
 
 MIDK_EXPORT
+Image_ErrorCode OH_DecodingOptions_GetPurgeableMode(OH_DecodingOptions *options, IMAGE_PURGEABLE_MODE *mode)
+{
+    if (options == nullptr || mode == nullptr) {
+        return IMAGE_INVALID_PARAMETER;
+    }
+    *mode = static_cast<IMAGE_PURGEABLE_MODE>(options->purgeableMode);
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_DecodingOptions_SetPurgeableMode(OH_DecodingOptions *options, IMAGE_PURGEABLE_MODE mode)
+{
+    // Read the C enum representation without loading an out-of-range C++ enum value.
+    int32_t modeValue = 0;
+    if (options == nullptr || sizeof(mode) != sizeof(modeValue) ||
+        memcpy_s(&modeValue, sizeof(modeValue), &mode, sizeof(mode)) != EOK ||
+        (modeValue != static_cast<int32_t>(IMAGE_PURGEABLE_MODE_NONE) &&
+        modeValue != static_cast<int32_t>(IMAGE_PURGEABLE_MODE_REBUILD))) {
+        return IMAGE_INVALID_PARAMETER;
+    }
+    options->purgeableMode = modeValue;
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
 Image_ErrorCode OH_DecodingOptions_Release(OH_DecodingOptions *options)
 {
     if (options == nullptr) {
@@ -534,6 +560,7 @@ static void ParseDecodingOps(DecodeOptions &decOps, struct OH_DecodingOptions *o
         decOps.desiredRegion.width = static_cast<int32_t>(ops->desiredRegion.width);
         decOps.desiredRegion.height = static_cast<int32_t>(ops->desiredRegion.height);
     }
+    decOps.purgeableMode = static_cast<PurgeableMode>(ops->purgeableMode);
     decOps.desiredDynamicRange = ParseImageDynamicRange(ops->desiredDynamicRange);
     switch (static_cast<int32_t>(ops->pixelFormat)) {
         case FORMAT_0:

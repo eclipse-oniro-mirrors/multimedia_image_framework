@@ -25,6 +25,7 @@
 #include <iostream>
 #include <limits>
 #include <unistd.h>
+#include <vector>
 #if !defined(IOS_PLATFORM) &&!defined(ANDROID_PLATFORM)
 #include <linux/dma-buf.h>
 #endif
@@ -62,6 +63,7 @@
 #endif
 
 #ifdef IMAGE_PURGEABLE_PIXELMAP
+#include "purgeable_mem_base.h"
 #include "purgeable_resource_manager.h"
 #endif
 
@@ -215,10 +217,14 @@ void PixelMap::FreePixelMap() __attribute__((no_sanitize("cfi")))
 {
     // remove PixelMap from purgeable LRU if it is purgeable PixelMap
 #ifdef IMAGE_PURGEABLE_PIXELMAP
-    if (purgeableMemPtr_) {
-        PurgeableMem::PurgeableResourceManager::GetInstance().RemoveResource(purgeableMemPtr_);
-        purgeableMemPtr_.reset();
-        purgeableMemPtr_ = nullptr;
+    if (IsPurgeableReentry(__func__)) {
+        return;
+    }
+    RebuilderReleaseScope releaseScope;
+    {
+        auto state = std::atomic_load(&purgeableRebuildState_);
+        auto memory = GetPurgeableMemPtr();
+        ClearPurgeableResources(state, memory);
     }
 #endif
 
@@ -278,6 +284,332 @@ void PixelMap::FreePixelMap() __attribute__((no_sanitize("cfi")))
     }
 }
 
+#ifdef IMAGE_PURGEABLE_PIXELMAP
+void PixelMap::SetPurgeableMemPtr(std::shared_ptr<PurgeableMem::PurgeableMemBase> pmPtr,
+    std::shared_ptr<PixelMapRebuildState> rebuildState)
+{
+    if (IsPurgeableReentry(__func__)) {
+        return;
+    }
+    RebuilderReleaseScope releaseScope;
+    auto state = std::atomic_load(&purgeableRebuildState_);
+    auto memory = GetPurgeableMemPtr();
+    if (memory != nullptr && memory == pmPtr) {
+        if (rebuildState != nullptr && rebuildState != state) {
+            IMAGE_LOGE("SetPurgeableMemPtr cannot replace the state of a live association, id:%{public}u",
+                GetUniqueId());
+        }
+        return;
+    }
+    // The privileged setter may replace a backend, but must fully retire its old association first.
+    // Public registration/Disable never uses this path to re-enable purgeable memory.
+    ClearPurgeableResources(state, memory);
+    if (pmPtr == nullptr) {
+        return;
+    }
+    if (rebuildState == nullptr) {
+        rebuildState = std::make_shared<PixelMapRebuildState>();
+        rebuildState->hasFrameworkBuilder = false;
+    }
+    // Only initial publication shares the short mapping lock. No backend call or rebuild runs under it.
+    std::lock_guard<std::mutex> lock(*unmapMutex_);
+    if (std::atomic_load(&purgeableRebuildState_) != nullptr || GetPurgeableMemPtr() != nullptr) {
+        IMAGE_LOGE("SetPurgeableMemPtr association changed before publication, id:%{public}u", GetUniqueId());
+        return;
+    }
+    std::atomic_store(&purgeableRebuildState_, std::move(rebuildState));
+    std::atomic_store(&purgeableMemPtr_, std::move(pmPtr));
+}
+
+bool PixelMap::IsPurgeableReentry(const char *operation) const
+{
+    return CheckPurgeableReentry(this, operation);
+}
+
+std::shared_ptr<PurgeableMem::PurgeableMemBase> PixelMap::LockPurgeableMemory(
+    std::shared_ptr<PixelMapRebuildState> &state, std::shared_lock<std::shared_mutex> &lock) const
+{
+    state = std::atomic_load(&purgeableRebuildState_);
+    if (state == nullptr) {
+        return nullptr;
+    }
+    lock = std::shared_lock<std::shared_mutex>(state->purgeableMutex);
+    // A caller can have retained the old state while a writer retired it. Never use that association.
+    if (std::atomic_load(&purgeableRebuildState_) != state) {
+        return nullptr;
+    }
+    return GetPurgeableMemPtr();
+}
+
+bool PixelMap::GetPurgeableStatus(bool &associated) const
+{
+    associated = false;
+    auto purgeableMemory = GetPurgeableMemPtr();
+    if (purgeableMemory == nullptr) {
+        return true;
+    }
+    // No framework operation lock is held here. Backend query latency remains its own contract.
+    int status = purgeableMemory->GetPinStatus();
+    if (status < -1) {
+        IMAGE_LOGE("GetPurgeableStatus got invalid status, id:%{public}u, status:%{public}d", GetUniqueId(), status);
+        return false;
+    }
+    associated = status >= 0;
+    return true;
+}
+
+bool PixelMap::PinPurgeableMemory()
+{
+    bool unsupported = false;
+    return PinPurgeableMemory(unsupported);
+}
+
+bool PixelMap::PinPurgeableMemory(bool &unsupported)
+{
+    unsupported = false;
+    if (IsPurgeableReentry(__func__)) {
+        unsupported = true;
+        return false;
+    }
+    RebuilderReleaseScope releaseScope;
+    std::shared_ptr<PixelMapRebuildState> state;
+    std::shared_lock<std::shared_mutex> lock;
+    auto purgeableMemory = LockPurgeableMemory(state, lock);
+    if (purgeableMemory == nullptr) {
+        unsupported = true;
+        return false;
+    }
+    int status = purgeableMemory->GetPinStatus();
+    if (status == -1) {
+        unsupported = true;
+        lock.unlock();
+        ClearPurgeableResources(state, purgeableMemory);
+        return false;
+    }
+    if (status < -1) {
+        IMAGE_LOGE("PinPurgeableMemory got invalid status, id:%{public}u, status:%{public}d", GetUniqueId(), status);
+        return false;
+    }
+    if (!purgeableMemory->BeginRead()) {
+        IMAGE_LOGE("PinPurgeableMemory failed to pin or rebuild PixelMap %{public}u", GetUniqueId());
+        return false;
+    }
+    status = purgeableMemory->GetPinStatus();
+    lock.unlock();
+    if (status == -1) {
+        ClearPurgeableResources(state, purgeableMemory);
+    } else if (status < -1) {
+        IMAGE_LOGE("PinPurgeableMemory got invalid status after BeginRead, id:%{public}u, status:%{public}d",
+            GetUniqueId(), status);
+    }
+    // BeginRead already guaranteed valid content, including a concurrent conversion to ordinary memory.
+    return true;
+}
+
+bool PixelMap::UnpinPurgeableMemory()
+{
+    bool unsupported = false;
+    return UnpinPurgeableMemory(unsupported);
+}
+
+bool PixelMap::UnpinPurgeableMemory(bool &unsupported)
+{
+    unsupported = false;
+    if (IsPurgeableReentry(__func__)) {
+        unsupported = true;
+        return false;
+    }
+    RebuilderReleaseScope releaseScope;
+    std::shared_ptr<PixelMapRebuildState> state;
+    std::shared_lock<std::shared_mutex> lock;
+    auto purgeableMemory = LockPurgeableMemory(state, lock);
+    if (purgeableMemory == nullptr) {
+        unsupported = true;
+        return false;
+    }
+
+    int before = purgeableMemory->GetPinStatus();
+    if (before == -1) {
+        unsupported = true;
+        lock.unlock();
+        ClearPurgeableResources(state, purgeableMemory);
+        return false;
+    }
+    if (before < -1) {
+        IMAGE_LOGE("UnpinPurgeableMemory got invalid pin count, id:%{public}u, before:%{public}d",
+            GetUniqueId(), before);
+        return false;
+    }
+    if (before == 0) {
+        IMAGE_LOGE("UnpinPurgeableMemory would underflow pin count, id:%{public}u, before:%{public}d",
+            GetUniqueId(), before);
+        return false;
+    }
+
+    if (!purgeableMemory->EndRead()) {
+        unsupported = true;
+        lock.unlock();
+        ClearPurgeableResources(state, purgeableMemory);
+        return false;
+    }
+    int after = purgeableMemory->GetPinStatus();
+    lock.unlock();
+    if (after == -1) {
+        ClearPurgeableResources(state, purgeableMemory);
+    } else if (after < -1) {
+        IMAGE_LOGE("UnpinPurgeableMemory got invalid pin count, id:%{public}u, before:%{public}d, "
+            "after:%{public}d", GetUniqueId(), before, after);
+    }
+    // Other backend callers may change the count; EndRead's result is authoritative for this decrement.
+    return true;
+}
+
+void PixelMap::ClearPurgeableResources(const std::shared_ptr<PixelMapRebuildState> &state,
+    const std::shared_ptr<PurgeableMem::PurgeableMemBase> &memory)
+{
+    if (state == nullptr) {
+        return;
+    }
+    RebuilderReleaseScope releaseScope;
+    std::unique_ptr<PixelMapRebuilder> retiredRebuilder;
+    std::shared_ptr<PurgeableMem::PurgeableMemBase> retiredMemory;
+    {
+        std::unique_lock<std::shared_mutex> lock(state->purgeableMutex);
+        ClearPurgeableResourcesLocked(state, memory, retiredRebuilder, retiredMemory);
+    }
+    if (retiredMemory != nullptr) {
+        PurgeableMem::PurgeableResourceManager::GetInstance().RemoveResource(retiredMemory);
+    }
+    RebuilderReleaseScope::Retire(std::move(retiredRebuilder));
+}
+
+void PixelMap::ClearPurgeableResourcesLocked(const std::shared_ptr<PixelMapRebuildState> &state,
+    const std::shared_ptr<PurgeableMem::PurgeableMemBase> &memory,
+    std::unique_ptr<PixelMapRebuilder> &retiredRebuilder,
+    std::shared_ptr<PurgeableMem::PurgeableMemBase> &retiredMemory)
+{
+    if (std::atomic_load(&purgeableRebuildState_) != state || GetPurgeableMemPtr() != memory) {
+        return;
+    }
+    {
+        // Also joins a Build entered directly through a backend/LRU reference rather than our Pin API.
+        std::lock_guard<std::mutex> stateLock(state->mutex);
+        retiredRebuilder = std::move(state->current);
+    }
+    retiredMemory = std::atomic_exchange(&purgeableMemPtr_,
+        std::shared_ptr<PurgeableMem::PurgeableMemBase>());
+    // In-flight operations retain their own state snapshot; new operations see an ordinary PixelMap.
+    std::atomic_store(&purgeableRebuildState_, std::shared_ptr<PixelMapRebuildState>());
+}
+
+bool PixelMap::DisablePurgeable()
+{
+    bool unsupported = false;
+    return DisablePurgeable(unsupported);
+}
+
+bool PixelMap::DisablePurgeable(bool &unsupported)
+{
+    unsupported = false;
+    if (IsPurgeableReentry(__func__)) {
+        unsupported = true;
+        return false;
+    }
+    RebuilderReleaseScope releaseScope;
+    std::shared_ptr<PixelMapRebuildState> state;
+    std::shared_lock<std::shared_mutex> lock;
+    auto purgeableMemory = LockPurgeableMemory(state, lock);
+    if (purgeableMemory == nullptr) {
+        return true;
+    }
+    // The backend restores and converts this buffer itself, and supports concurrent execution.
+    if (!purgeableMemory->DisablePurgeable()) {
+        IMAGE_LOGE("DisablePurgeable failed to protect or restore PixelMap %{public}u", GetUniqueId());
+        return false;
+    }
+    lock.unlock();
+    ClearPurgeableResources(state, purgeableMemory);
+    return true;
+}
+
+bool PixelMap::SetPurgeableRebuilder(std::unique_ptr<PixelMapRebuilder> rebuilder)
+{
+    bool unsupported = false;
+    return SetPurgeableRebuilder(std::move(rebuilder), unsupported);
+}
+
+bool PixelMap::SetPurgeableRebuilder(std::unique_ptr<PixelMapRebuilder> rebuilder, bool &unsupported)
+{
+    unsupported = false;
+    if (IsPurgeableReentry(__func__) || rebuilder == nullptr) {
+        return false;
+    }
+    RebuilderReleaseScope releaseScope;
+    auto state = std::atomic_load(&purgeableRebuildState_);
+    if (state == nullptr) {
+        unsupported = true;
+        return false;
+    }
+    std::unique_lock<std::shared_mutex> lock(state->purgeableMutex);
+    auto purgeableMemory = GetPurgeableMemPtr();
+    if (std::atomic_load(&purgeableRebuildState_) != state || purgeableMemory == nullptr) {
+        unsupported = true;
+        return false;
+    }
+    int status = purgeableMemory->GetPinStatus();
+    if (status == -1) {
+        unsupported = true;
+        lock.unlock();
+        ClearPurgeableResources(state, purgeableMemory);
+        return false;
+    }
+    if (status < -1) {
+        IMAGE_LOGE("SetPurgeableRebuilder got invalid state, id:%{public}u, status:%{public}d",
+            GetUniqueId(), status);
+        return false;
+    }
+    if (!state->hasFrameworkBuilder) {
+        // Preserve the old failure mapping for a backend installed without a framework rebuild state.
+        IMAGE_LOGE("SetPurgeableRebuilder has no framework rebuild state, id:%{public}u", GetUniqueId());
+        return false;
+    }
+    // Restore with the OLD rebuilder without holding state->mutex: Build acquires that mutex itself.
+    if (!purgeableMemory->BeginRead()) {
+        IMAGE_LOGE("SetPurgeableRebuilder failed to restore PixelMap %{public}u", GetUniqueId());
+        return false;
+    }
+    // Preserve the existing temporary pin balance and adoption semantics.
+    if (!purgeableMemory->EndRead()) {
+        unsupported = true;
+        lock.unlock();
+        ClearPurgeableResources(state, purgeableMemory);
+        return false;
+    }
+    status = purgeableMemory->GetPinStatus();
+    if (status == -1) {
+        unsupported = true;
+        lock.unlock();
+        ClearPurgeableResources(state, purgeableMemory);
+        return false;
+    }
+    if (status < -1) {
+        IMAGE_LOGE("SetPurgeableRebuilder got invalid status before commit, id:%{public}u, status:%{public}d",
+            GetUniqueId(), status);
+        return false;
+    }
+    std::unique_ptr<PixelMapRebuilder> retiredRebuilder;
+    {
+        std::lock_guard<std::mutex> stateLock(state->mutex);
+        rebuilder->OnRegistered();
+        retiredRebuilder = std::move(state->current);
+        state->current = std::move(rebuilder);
+    }
+    lock.unlock();
+    RebuilderReleaseScope::Retire(std::move(retiredRebuilder));
+    return true;
+}
+#endif
+
 void PixelMap::ReleaseSharedMemory(void *addr, void *context, uint32_t size)
 {
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) &&!defined(ANDROID_PLATFORM)
@@ -305,6 +637,12 @@ void PixelMap::SetTransformered(bool isTransformered)
 
 void PixelMap::SetPixelsAddr(void *addr, void *context, uint32_t size, AllocatorType type, CustomFreePixelMap func)
 {
+#ifdef IMAGE_PURGEABLE_PIXELMAP
+    if (IsPurgeableReentry(__func__)) {
+        return;
+    }
+    RebuilderReleaseScope releaseScope;
+#endif
     std::unique_lock<std::shared_mutex> lock(*pixelDataMutex_);
     SetPixelsAddrLocked(addr, context, size, type, func);
 }
@@ -344,6 +682,12 @@ void PixelMap::SetPixelsAddrLocked(void *addr, void *context, uint32_t size, All
 void PixelMap::SetPixelsAddrAndImageInfo(void *addr, void *context, uint32_t size, AllocatorType type,
     ImageInfo &info)
 {
+#ifdef IMAGE_PURGEABLE_PIXELMAP
+    if (IsPurgeableReentry(__func__)) {
+        return;
+    }
+    RebuilderReleaseScope releaseScope;
+#endif
     std::unique_lock<std::shared_mutex> lock(*pixelDataMutex_);
     SetPixelsAddrLocked(addr, context, size, type, nullptr);
     SetImageInfo(info, true);
@@ -351,6 +695,12 @@ void PixelMap::SetPixelsAddrAndImageInfo(void *addr, void *context, uint32_t siz
 
 void PixelMap::SetPixelsAddr(void *addr, void *context, uint32_t size, AllocatorType type, bool displayOnly)
 {
+#ifdef IMAGE_PURGEABLE_PIXELMAP
+    if (IsPurgeableReentry(__func__)) {
+        return;
+    }
+    RebuilderReleaseScope releaseScope;
+#endif
     if (type < AllocatorType::DEFAULT || type > AllocatorType::DMA_ALLOC) {
         IMAGE_LOGE("Unmarshalling setPixelsAddr error invalid allocatorType");
         return;
@@ -1704,6 +2054,12 @@ uint32_t PixelMap::SetRowDataSizeForImageInfo(ImageInfo info)
 
 uint32_t PixelMap::SetImageInfo(ImageInfo &info, bool isReused)
 {
+#ifdef IMAGE_PURGEABLE_PIXELMAP
+    if (IsPurgeableReentry(__func__)) {
+        return ERR_MEDIA_INVALID_OPERATION;
+    }
+    RebuilderReleaseScope releaseScope;
+#endif
     if (info.size.width <= 0 || info.size.height <= 0) {
         IMAGE_LOGE("PixelMap width (%{public}d) or height (%{public}d) invalid.", info.size.width, info.size.height);
         return ERR_IMAGE_DATA_ABNORMAL;
@@ -4915,6 +5271,12 @@ void DrawImage(bool rectStaysRect, const AntiAliasingOption &option, SkCanvas &c
 
 uint32_t PixelMap::ApplyAffineTransform(TransInfos &infos, AntiAliasingOption option)
 {
+#ifdef IMAGE_PURGEABLE_PIXELMAP
+    if (IsPurgeableReentry(__func__)) {
+        return ERR_MEDIA_INVALID_OPERATION;
+    }
+    RebuilderReleaseScope releaseScope;
+#endif
     if (!IsModifiable()) {
         IMAGE_LOGE("[ApplyAffineTransform] PixelMap is not modifiable");
         return ERR_IMAGE_PIXELMAP_NOT_ALLOW_MODIFY;
@@ -5030,6 +5392,12 @@ void PixelMap::scale(float xAxis, float yAxis, const AntiAliasingOption &option)
 
 uint32_t PixelMap::Scale(float xAxis, float yAxis, AntiAliasingOption option)
 {
+#ifdef IMAGE_PURGEABLE_PIXELMAP
+    if (IsPurgeableReentry(__func__)) {
+        return ERR_MEDIA_INVALID_OPERATION;
+    }
+    RebuilderReleaseScope releaseScope;
+#endif
     if (xAxis == 0.0f || yAxis == 0.0f) {
         IMAGE_LOGE("Invalid scale ratio: 0");
         return ERR_IMAGE_INVALID_PARAMETER;
@@ -5111,6 +5479,12 @@ uint32_t PixelMap::ScaleWithSLR(float xAxis, float yAxis)
 
 bool PixelMap::resize(float xAxis, float yAxis)
 {
+#ifdef IMAGE_PURGEABLE_PIXELMAP
+    if (IsPurgeableReentry(__func__)) {
+        return false;
+    }
+    RebuilderReleaseScope releaseScope;
+#endif
     std::unique_lock<std::mutex> lock(*translationMutex_);
     Size scaledSize;
     if (!GetScaledSize(imageInfo_.size, xAxis, yAxis, scaledSize)) {
@@ -5179,6 +5553,12 @@ void PixelMap::rotate(float degrees)
 
 uint32_t PixelMap::Rotate(float degrees)
 {
+#ifdef IMAGE_PURGEABLE_PIXELMAP
+    if (IsPurgeableReentry(__func__)) {
+        return ERR_MEDIA_INVALID_OPERATION;
+    }
+    RebuilderReleaseScope releaseScope;
+#endif
     if (!std::isfinite(degrees)) {
         IMAGE_LOGE("Invalid rotate degrees");
         return ERR_IMAGE_INVALID_PARAMETER;
@@ -5256,6 +5636,12 @@ uint32_t PixelMap::crop(const Rect &rect)
 
 uint32_t PixelMap::Crop(const Rect &rect)
 {
+#ifdef IMAGE_PURGEABLE_PIXELMAP
+    if (IsPurgeableReentry(__func__)) {
+        return ERR_MEDIA_INVALID_OPERATION;
+    }
+    RebuilderReleaseScope releaseScope;
+#endif
     if (!IsModifiable()) {
         IMAGE_LOGE("[PixelMap] crop can't be performed: PixelMap is not modifiable");
         return ERR_IMAGE_PIXELMAP_NOT_ALLOW_MODIFY;
@@ -5432,11 +5818,22 @@ std::unique_ptr<AbsMemory> PixelMap::CreateSdrMemory(ImageInfo &imageInfo, Pixel
 
 bool PixelMap::UnMap()
 {
+#ifdef IMAGE_PURGEABLE_PIXELMAP
+    if (IsPurgeableReentry(__func__)) {
+        return false;
+    }
+#endif
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) &&!defined(ANDROID_PLATFORM)
     if (allocatorType_ != AllocatorType::SHARE_MEM_ALLOC) {
         return false;
     }
     std::lock_guard<std::mutex> lock(*unmapMutex_);
+#ifdef IMAGE_PURGEABLE_PIXELMAP
+    // PurgeableMemBase keeps the attached address. Unmapping it would leave the rebuild target dangling.
+    if (GetPurgeableMemPtr() != nullptr) {
+        return false;
+    }
+#endif
     if (!isUnMap_ && useCount_ == 1) {
         isUnMap_ = true;
         if (data_ != nullptr) {
@@ -5452,6 +5849,11 @@ bool PixelMap::UnMap()
 
 bool PixelMap::ReMap()
 {
+#ifdef IMAGE_PURGEABLE_PIXELMAP
+    if (IsPurgeableReentry(__func__)) {
+        return false;
+    }
+#endif
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) &&!defined(ANDROID_PLATFORM)
     if (allocatorType_ != AllocatorType::SHARE_MEM_ALLOC) {
         return false;
@@ -5460,6 +5862,11 @@ bool PixelMap::ReMap()
     if (!isUnMap_) {
         return true;
     }
+#ifdef IMAGE_PURGEABLE_PIXELMAP
+    if (GetPurgeableMemPtr() != nullptr) {
+        return false;
+    }
+#endif
 
     int *fd = static_cast<int *>(context_);
     if (fd == nullptr) {

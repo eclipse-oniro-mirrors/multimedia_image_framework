@@ -16,6 +16,8 @@
 #include "pixelmap_native.h"
 
 #include <climits>
+#include <memory>
+#include <utility>
 #include <cstdint>
 #ifndef CROSS_PLATFORM
 #include <charconv>
@@ -47,6 +49,7 @@
 #endif
 
 using namespace OHOS::Media;
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -1934,6 +1937,75 @@ Image_ErrorCode OH_PixelmapNative_UnaccessPixels(OH_PixelmapNative *pixelmap)
     pixelmap->GetInnerPixelmap()->SetModifiable(true);
     ImageUtils::FlushSurfaceBuffer(pixelmap->GetInnerPixelmap().get());
     return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_PixelmapNative_PinPurgeableMemory(OH_PixelmapNative *pixelmap)
+{
+    if (pixelmap == nullptr || pixelmap->GetInnerPixelmap() == nullptr) {
+        return IMAGE_INVALID_PARAMETER;
+    }
+#ifdef IMAGE_PURGEABLE_PIXELMAP
+    auto innerPixelmap = pixelmap->GetInnerPixelmap();
+    bool unsupported = false;
+    if (innerPixelmap->PinPurgeableMemory(unsupported)) {
+        return IMAGE_SUCCESS;
+    }
+    return unsupported ? IMAGE_UNSUPPORTED_OPERATION : IMAGE_PURGEABLE_PIN_FAILED;
+#else
+    return IMAGE_UNSUPPORTED_OPERATION;
+#endif
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_PixelmapNative_UnpinPurgeableMemory(OH_PixelmapNative *pixelmap)
+{
+    if (pixelmap == nullptr || pixelmap->GetInnerPixelmap() == nullptr) {
+        return IMAGE_INVALID_PARAMETER;
+    }
+#ifdef IMAGE_PURGEABLE_PIXELMAP
+    auto innerPixelmap = pixelmap->GetInnerPixelmap();
+    bool unsupported = false;
+    if (innerPixelmap->UnpinPurgeableMemory(unsupported)) {
+        return IMAGE_SUCCESS;
+    }
+    return unsupported ? IMAGE_UNSUPPORTED_OPERATION : IMAGE_PURGEABLE_UNPIN_FAILED;
+#else
+    return IMAGE_UNSUPPORTED_OPERATION;
+#endif
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_PixelmapNative_IsPurgeable(OH_PixelmapNative *pixelmap, bool *isPurgeable)
+{
+    if (pixelmap == nullptr || pixelmap->GetInnerPixelmap() == nullptr || isPurgeable == nullptr) {
+        return IMAGE_INVALID_PARAMETER;
+    }
+#ifdef IMAGE_PURGEABLE_PIXELMAP
+    if (!pixelmap->GetInnerPixelmap()->GetPurgeableStatus(*isPurgeable)) {
+        return IMAGE_PURGEABLE_QUERY_FAILED;
+    }
+#else
+    *isPurgeable = false;
+#endif
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_PixelmapNative_DisablePurgeable(OH_PixelmapNative *pixelmap)
+{
+    if (pixelmap == nullptr || pixelmap->GetInnerPixelmap() == nullptr) {
+        return IMAGE_INVALID_PARAMETER;
+    }
+#ifdef IMAGE_PURGEABLE_PIXELMAP
+    bool unsupported = false;
+    if (!pixelmap->GetInnerPixelmap()->DisablePurgeable(unsupported)) {
+        return unsupported ? IMAGE_UNSUPPORTED_OPERATION : IMAGE_PURGEABLE_PIN_FAILED;
+    }
+    return IMAGE_SUCCESS;
+#else
+    return IMAGE_SUCCESS;
+#endif
 }
 
 MIDK_EXPORT

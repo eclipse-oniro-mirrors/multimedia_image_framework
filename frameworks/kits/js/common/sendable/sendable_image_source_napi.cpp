@@ -554,7 +554,7 @@ static std::shared_ptr<PixelMap> CreatePixelMapInner(SendableImageSourceNapi *th
 #endif
     {
         decodeOpts.invokeType = JS_INTERFACE;
-        pixelMap = imageSource->CreatePixelMapEx(index, decodeOpts, status);
+        pixelMap = imageSource->CreatePixelMapEx(index, decodeOpts, status, false);
     }
 
     if (status != SUCCESS || !IMG_NOT_NULL(pixelMap)) {
