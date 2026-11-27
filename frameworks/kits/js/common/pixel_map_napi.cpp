@@ -5810,11 +5810,6 @@ static napi_value ExecutePurgeableOperation(napi_env env, napi_callback_info inf
             static_cast<int>(operation), status);
         return ThrowPurgeableError(env, ERR_IMAGE_PIXELMAP_NAPI_FAILED);
     }
-    if (argCount != NUM_0) {
-        IMAGE_LOGE("Purgeable operation received arguments, count:%{public}zu", argCount);
-        return ThrowPurgeableError(env, ERR_IMAGE_INVALID_PARAM);
-    }
-
     PixelMapNapi* pixelMapNapi = nullptr;
     status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&pixelMapNapi));
     if (!IMG_IS_OK(status) || pixelMapNapi == nullptr) {

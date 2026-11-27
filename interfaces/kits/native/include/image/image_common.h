@@ -345,7 +345,8 @@ typedef enum {
      */
     IMAGE_PURGEABLE_MODE_NONE = 0,
     /**
-     * Request discard-and-rebuild memory. Association failure returns an ordinary PixelMap without failing decoding.
+     * Request discard-and-rebuild memory. Association failure returns a PixelMap not associated with purgeable memory
+     * without failing decoding.
      * Successful association supplies one initial pin reference to the caller.
      * For association conditions and fallback behavior, see {@link OH_DecodingOptions_SetPurgeableMode}.
      *
