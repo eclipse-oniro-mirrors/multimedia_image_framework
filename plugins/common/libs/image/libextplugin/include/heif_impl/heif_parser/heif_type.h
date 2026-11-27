@@ -37,6 +37,7 @@ static const uint32_t BOX_TYPE_IPCO = fourcc_to_code("ipco");
 static const uint32_t BOX_TYPE_IPMA = fourcc_to_code("ipma");
 static const uint32_t BOX_TYPE_ISPE = fourcc_to_code("ispe");
 static const uint32_t BOX_TYPE_PIXI = fourcc_to_code("pixi");
+static const uint32_t BOX_TYPE_CCST = fourcc_to_code("ccst");
 static const uint32_t BOX_TYPE_COLR = fourcc_to_code("colr");
 static const uint32_t BOX_TYPE_NCLX = fourcc_to_code("nclx");
 static const uint32_t BOX_TYPE_HVCC = fourcc_to_code("hvcC");
@@ -72,6 +73,12 @@ static const uint32_t BOX_TYPE_STSS = fourcc_to_code("stss");
 static const uint32_t BOX_TYPE_CLLI = fourcc_to_code("clli");
 static const uint32_t BOX_TYPE_MDCV = fourcc_to_code("mdcv");
 static const uint32_t BOX_TYPE_IT35 = fourcc_to_code("it35");
+
+static const uint32_t BOX_TYPE_FREE = fourcc_to_code("free");
+static const uint32_t BOX_TYPE_URL = fourcc_to_code("url ");
+static const uint32_t BOX_TYPE_EDTS = fourcc_to_code("edts");
+static const uint32_t BOX_TYPE_ELST = fourcc_to_code("elst");
+static const uint32_t BOX_TYPE_TREF = fourcc_to_code("tref");
 
 static const uint32_t BOX_TYPE_RLOC = fourcc_to_code("rloc");
 static const uint32_t BOX_TYPE_GRPL = fourcc_to_code("grpl");

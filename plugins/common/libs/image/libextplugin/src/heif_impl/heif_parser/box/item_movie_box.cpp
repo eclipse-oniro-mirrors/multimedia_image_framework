@@ -17,6 +17,7 @@
 #include "image_log.h"
 
 #include <algorithm>
+#include <limits>
 #include <numeric>
 #include <string>
 
@@ -81,6 +82,19 @@ static bool isStrictlyIncreasing(const std::vector<uint32_t>& vec)
     return std::is_sorted(vec.begin(), vec.end(), [](uint32_t a, uint32_t b) {
         return a < b;
     });
+}
+
+// ISO/IEC 14496-12 strings are null terminated. A box that omits the terminator is truncated, so
+// bytes are consumed one by one and the end of the box simply ends the string.
+static void ReadCString(HeifStreamReader &reader, std::string &out)
+{
+    while (reader.GetRemainSize() > 0) {
+        uint8_t ch = reader.Read8();
+        if (ch == 0) {
+            return;
+        }
+        out.push_back(static_cast<char>(ch));
+    }
 }
 
 heif_error HeifMoovBox::ParseContentChildren(HeifStreamReader &reader, uint32_t &recursionCount)
@@ -316,6 +330,192 @@ heif_error HeifDrefBox::Write(HeifStreamWriter &writer) const
     }
     WriteCalculatedHeader(writer, boxStart);
     return heif_error_ok;
+}
+
+heif_error HeifDataEntryUrlBox::ParseContent(HeifStreamReader &reader)
+{
+    // A dref entry shorter than a full box is non-conformant. Keep the box so that the dref entry
+    // count stays consistent instead of rejecting the whole file.
+    if (reader.GetRemainSize() < UINT32_BYTES_NUM) {
+        IMAGE_LOGW("Truncated url box, remain size: %{public}zu", reader.GetRemainSize());
+        return heif_error_ok;
+    }
+    ParseFullHeader(reader);
+    // A self-contained entry carries no location, and a truncated entry may miss it as well.
+    if (!IsSelfContained()) {
+        ReadCString(reader, location_);
+    }
+    return reader.GetError();
+}
+
+heif_error HeifDataEntryUrlBox::Write(HeifStreamWriter &writer) const
+{
+    size_t boxStart = ReserveHeader(writer);
+    if (!IsSelfContained()) {
+        writer.Write(location_);
+    }
+    WriteCalculatedHeader(writer, boxStart);
+    return heif_error_ok;
+}
+
+heif_error HeifEdtsBox::ParseContentChildren(HeifStreamReader &reader, uint32_t &recursionCount)
+{
+    return ParseContentChildrenByReadChildren(reader, recursionCount);
+}
+
+void HeifElstBox::InferFullBoxVersion()
+{
+    const uint64_t maxUint32 = std::numeric_limits<uint32_t>::max();
+    const int64_t minInt32 = std::numeric_limits<int32_t>::min();
+    const int64_t maxInt32 = std::numeric_limits<int32_t>::max();
+    bool needVersionOne = false;
+    for (const EditEntry &entry : entries_) {
+        if (entry.segmentDuration > maxUint32 || entry.mediaTime < minInt32 || entry.mediaTime > maxInt32) {
+            needVersionOne = true;
+            break;
+        }
+    }
+    // version 1 is kept as parsed so an untouched edit list round-trips byte for byte.
+    const bool isVersionOne = GetVersion() == HEIF_BOX_VERSION_ONE || needVersionOne;
+    SetVersion(static_cast<uint8_t>(isVersionOne ? HEIF_BOX_VERSION_ONE : HEIF_BOX_VERSION_ZERO));
+}
+
+heif_error HeifElstBox::ParseContent(HeifStreamReader &reader)
+{
+    // Keep a malformed edit list instead of rejecting the whole file: the edit list only shifts the
+    // presentation of the samples and is not required to decode them.
+    if (reader.GetRemainSize() < UINT32_BYTES_NUM) {
+        IMAGE_LOGW("Truncated elst box, remain size: %{public}zu", reader.GetRemainSize());
+        return heif_error_ok;
+    }
+    ParseFullHeader(reader);
+    if (reader.GetRemainSize() < UINT32_BYTES_NUM) {
+        IMAGE_LOGW("Truncated elst box, the entry count is missing");
+        return heif_error_ok;
+    }
+    const bool isVersionOne = GetVersion() == HEIF_BOX_VERSION_ONE;
+    const size_t entrySize = isVersionOne ?
+        (UINT64_BYTES_NUM * 2 + UINT16_BYTES_NUM * 2) : (UINT32_BYTES_NUM * 2 + UINT16_BYTES_NUM * 2);
+
+    uint32_t entryCount = reader.Read32();
+    if (entryCount > MAX_ELST_ENTRY_COUNT) {
+        IMAGE_LOGW("elst entry count exceeds the structural parse limit");
+        entryCount = MAX_ELST_ENTRY_COUNT;
+    }
+    // A truncated edit list is non-conformant: keep the complete entries and normalize the entry
+    // count on write instead of failing the whole file.
+    for (uint32_t i = 0; i < entryCount && reader.GetRemainSize() >= entrySize; i++) {
+        EditEntry entry;
+        if (isVersionOne) {
+            entry.segmentDuration = reader.Read64();
+            entry.mediaTime = static_cast<int64_t>(reader.Read64());
+        } else {
+            entry.segmentDuration = reader.Read32();
+            entry.mediaTime = static_cast<int64_t>(static_cast<int32_t>(reader.Read32()));
+        }
+        entry.mediaRateInteger = static_cast<int16_t>(reader.Read16());
+        entry.mediaRateFraction = static_cast<int16_t>(reader.Read16());
+        entries_.push_back(entry);
+    }
+    return reader.GetError();
+}
+
+heif_error HeifElstBox::Write(HeifStreamWriter &writer) const
+{
+    size_t boxStart = ReserveHeader(writer);
+    writer.Write32(static_cast<uint32_t>(entries_.size()));
+    const bool isVersionOne = GetVersion() == HEIF_BOX_VERSION_ONE;
+    for (const EditEntry &entry : entries_) {
+        if (isVersionOne) {
+            writer.Write64(entry.segmentDuration);
+            writer.Write64(static_cast<uint64_t>(entry.mediaTime));
+        } else {
+            writer.Write32(static_cast<uint32_t>(entry.segmentDuration));
+            writer.Write32(static_cast<uint32_t>(entry.mediaTime));
+        }
+        writer.Write16(static_cast<uint16_t>(entry.mediaRateInteger));
+        writer.Write16(static_cast<uint16_t>(entry.mediaRateFraction));
+    }
+    WriteCalculatedHeader(writer, boxStart);
+    return heif_error_ok;
+}
+
+heif_error HeifTrackReferenceTypeBox::Write(HeifStreamWriter &writer) const
+{
+    size_t boxStart = ReserveHeader(writer);
+    for (uint32_t trackId : trackIds_) {
+        writer.Write32(trackId);
+    }
+    WriteCalculatedHeader(writer, boxStart);
+    return heif_error_ok;
+}
+
+std::vector<uint32_t> HeifTrefBox::GetReferenceTypes() const
+{
+    std::vector<uint32_t> referenceTypes;
+    for (const auto &reference : children_) {
+        if (reference != nullptr) {
+            referenceTypes.push_back(reference->GetBoxType());
+        }
+    }
+    return referenceTypes;
+}
+
+std::vector<uint32_t> HeifTrefBox::GetTrackIds(uint32_t referenceType) const
+{
+    for (const auto &reference : children_) {
+        if (reference == nullptr || reference->GetBoxType() != referenceType) {
+            continue;
+        }
+        auto typedReference = std::dynamic_pointer_cast<HeifTrackReferenceTypeBox>(reference);
+        if (typedReference != nullptr) {
+            return typedReference->GetTrackIds();
+        }
+    }
+    return {};
+}
+
+heif_error HeifTrefBox::ParseContentChildren(HeifStreamReader &reader, uint32_t &recursionCount)
+{
+    recursionCount++;
+    CHECK_ERROR_RETURN_RET(recursionCount > MAX_RECURSION_COUNT, heif_error_too_many_recursion);
+    while (!reader.IsAtEnd() && !reader.HasError()) {
+        CHECK_ERROR_RETURN_RET(children_.size() >= MAX_REFERENCE_COUNT, heif_error_too_many_boxes);
+
+        // The child box type is the reference type, so the header is read here instead of going
+        // through HeifBox::MakeBox.
+        HeifBox headerBox;
+        heif_error error = headerBox.ParseHeader(reader);
+        if (error != heif_error_ok) {
+            // Track references are ancillary metadata, so a malformed one stops the parse of this
+            // box instead of rejecting the whole file.
+            IMAGE_LOGW("Truncated track reference box, remain size: %{public}zu", reader.GetRemainSize());
+            return heif_error_ok;
+        }
+        if (headerBox.GetBoxSize() < headerBox.GetHeaderSize() || !reader.CheckSize(
+            headerBox.GetBoxSize() - headerBox.GetHeaderSize())) {
+            IMAGE_LOGW("Track reference box is larger than its parent box");
+            return heif_error_ok;
+        }
+
+        uint64_t contentSize = headerBox.GetBoxSize() - headerBox.GetHeaderSize();
+        auto reference = std::make_shared<HeifTrackReferenceTypeBox>(headerBox.GetBoxType());
+        reference->SetHeaderInfo(headerBox);
+        uint64_t trackIdCount = contentSize / UINT32_BYTES_NUM;
+        CHECK_ERROR_RETURN_RET(trackIdCount > MAX_TRACK_ID_COUNT, heif_error_too_many_boxes);
+        for (uint64_t i = 0; i < trackIdCount; i++) {
+            reference->AddTrackId(reader.Read32());
+        }
+        // Consume a trailing partial track id so that the next sibling starts at the box boundary.
+        for (uint64_t i = trackIdCount * UINT32_BYTES_NUM; i < contentSize; i++) {
+            reader.Read8();
+        }
+        if (reader.HasError()) {
+            return reader.GetError();
+        }
+        children_.push_back(reference);
+    }
+    return reader.GetError();
 }
 
 heif_error HeifStblBox::ParseContentChildren(HeifStreamReader &reader, uint32_t &recursionCount)

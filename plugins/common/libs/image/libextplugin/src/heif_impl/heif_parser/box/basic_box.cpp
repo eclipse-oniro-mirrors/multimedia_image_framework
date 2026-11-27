@@ -85,5 +85,34 @@ heif_error HeifHdlrBox::Write(HeifStreamWriter &writer) const
     WriteCalculatedHeader(writer, boxStart);
     return heif_error_ok;
 }
+
+heif_error HeifFreeSpaceBox::ParseContent(HeifStreamReader &reader)
+{
+    size_t remainSize = reader.GetRemainSize();
+    if (remainSize == 0) {
+        return heif_error_ok;
+    }
+    // Only the common small padding boxes are buffered; a crafted oversized one is skipped and
+    // rewritten as an empty padding box so that its content cannot blow up the parser.
+    if (remainSize > MAX_PRESERVED_SIZE) {
+        IMAGE_LOGW("free space box is too large to preserve, size: %{public}zu", remainSize);
+        return heif_error_ok;
+    }
+    data_.resize(remainSize);
+    CHECK_ERROR_RETURN_RET(!reader.ReadData(data_.data(), remainSize), heif_error_eof);
+    return heif_error_ok;
+}
+
+heif_error HeifFreeSpaceBox::Write(HeifStreamWriter &writer) const
+{
+    size_t boxStart = ReserveHeader(writer);
+
+    if (!data_.empty()) {
+        writer.Write(data_);
+    }
+
+    WriteCalculatedHeader(writer, boxStart);
+    return heif_error_ok;
+}
 } // namespace ImagePlugin
 } // namespace OHOS

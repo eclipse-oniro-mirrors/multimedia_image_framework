@@ -89,6 +89,42 @@ private:
     uint32_t horizontalOffset_ = 0;
     uint32_t verticalOffset_ = 0;
 };
+
+// ISO/IEC 23000-22 CodingConstraintsBox. The three fields share a single 32 bit word, so the raw
+// value is kept as well and the reserved bits are written back untouched.
+class HeifCcstBox : public HeifFullBox {
+public:
+    HeifCcstBox() : HeifFullBox(BOX_TYPE_CCST) {}
+
+    bool GetAllRefPicsIntra() const { return (codingConstraints_ & ALL_REF_PICS_INTRA_FLAG) != 0; }
+
+    bool GetIntraPredUsed() const { return (codingConstraints_ & INTRA_PRED_USED_FLAG) != 0; }
+
+    uint8_t GetMaxRefPerPic() const
+    {
+        return static_cast<uint8_t>((codingConstraints_ >> MAX_REF_PER_PIC_SHIFT) & MAX_REF_PER_PIC_MASK);
+    }
+
+    uint32_t GetCodingConstraints() const { return codingConstraints_; }
+
+    void SetCodingConstraints(uint32_t codingConstraints) { codingConstraints_ = codingConstraints; }
+
+    void SetCodingConstraints(bool allRefPicsIntra, bool intraPredUsed, uint8_t maxRefPerPic);
+
+    heif_error Write(HeifStreamWriter &writer) const override;
+
+protected:
+    heif_error ParseContent(HeifStreamReader &reader) override;
+
+private:
+    static constexpr uint32_t ALL_REF_PICS_INTRA_FLAG = 0x80000000;
+    static constexpr uint32_t INTRA_PRED_USED_FLAG = 0x40000000;
+    static constexpr uint8_t MAX_REF_PER_PIC_SHIFT = 2;
+    static constexpr uint32_t MAX_REF_PER_PIC_MASK = 0x0F;
+    static constexpr uint8_t MAX_REF_PER_PIC_LIMIT = 15;
+
+    uint32_t codingConstraints_ = 0;
+};
 } // namespace ImagePlugin
 } // namespace OHOS
 
