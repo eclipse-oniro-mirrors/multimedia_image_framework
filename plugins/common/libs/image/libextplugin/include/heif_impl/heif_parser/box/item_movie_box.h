@@ -18,6 +18,8 @@
 
 #include "box/heif_box.h"
 
+#include <cstdint>
+
 namespace OHOS {
 namespace ImagePlugin {
 class HeifMoovBox : public HeifBox {
@@ -150,6 +152,97 @@ protected:
 private:
     uint32_t entryCount_ = 0;
     std::vector<std::shared_ptr<HeifBox>> entries_;
+};
+
+// ISO/IEC 14496-12 DataEntryUrlBox. It is a full box even when the reference is self-contained,
+// which is the only form HEIF writers emit, so the flags carry all of the payload in that case.
+class HeifDataEntryUrlBox : public HeifFullBox {
+public:
+    HeifDataEntryUrlBox() : HeifFullBox(BOX_TYPE_URL) {}
+
+    bool IsSelfContained() const { return (GetFlags() & SELF_CONTAINED_FLAG) != 0; }
+
+    const std::string &GetLocation() const { return location_; }
+
+    void SetLocation(const std::string &location) { location_ = location; }
+
+    heif_error Write(HeifStreamWriter &writer) const override;
+protected:
+    heif_error ParseContent(HeifStreamReader &reader) override;
+private:
+    static constexpr uint32_t SELF_CONTAINED_FLAG = 1;
+
+    std::string location_;
+};
+
+// ISO/IEC 14496-12 EditBox. Image sequences carry their initial presentation delay in
+// edts/elst, so the payload is required for the animation timing of a rewritten file.
+class HeifEdtsBox : public HeifBox {
+public:
+    HeifEdtsBox() : HeifBox(BOX_TYPE_EDTS) {}
+
+protected:
+    heif_error ParseContentChildren(HeifStreamReader &reader, uint32_t &recursionCount) override;
+};
+
+class HeifElstBox : public HeifFullBox {
+public:
+    struct EditEntry {
+        uint64_t segmentDuration = 0;
+        int64_t mediaTime = 0;
+        int16_t mediaRateInteger = 0;
+        int16_t mediaRateFraction = 0;
+    };
+
+    HeifElstBox() : HeifFullBox(BOX_TYPE_ELST) {}
+
+    // media_time is signed and -1 means an empty edit, so the version depends on the values and
+    // the parsed version is kept instead of being reset to zero by HeifFullBox.
+    void InferFullBoxVersion() override;
+
+    const std::vector<EditEntry> &GetEntries() const { return entries_; }
+
+    void SetEntries(const std::vector<EditEntry> &entries) { entries_ = entries; }
+
+    heif_error Write(HeifStreamWriter &writer) const override;
+protected:
+    heif_error ParseContent(HeifStreamReader &reader) override;
+private:
+    static constexpr uint32_t MAX_ELST_ENTRY_COUNT = 65536;
+
+    std::vector<EditEntry> entries_;
+};
+
+// ISO/IEC 14496-12 TrackReferenceBox. Its children are TrackReferenceTypeBoxes, whose box type is
+// the reference type itself ('thmb' for a thumbnail track for example), so they are parsed here
+// instead of through the global box factory.
+class HeifTrackReferenceTypeBox : public HeifBox {
+public:
+    explicit HeifTrackReferenceTypeBox(uint32_t boxType) : HeifBox(boxType) {}
+
+    const std::vector<uint32_t> &GetTrackIds() const { return trackIds_; }
+
+    void AddTrackId(uint32_t trackId) { trackIds_.push_back(trackId); }
+
+    heif_error Write(HeifStreamWriter &writer) const override;
+private:
+    std::vector<uint32_t> trackIds_;
+};
+
+class HeifTrefBox : public HeifBox {
+public:
+    // Upper bound of parsed track references, matching the other structural box limits.
+    static constexpr uint32_t MAX_REFERENCE_COUNT = 64;
+    static constexpr uint32_t MAX_TRACK_ID_COUNT = 1024;
+
+    HeifTrefBox() : HeifBox(BOX_TYPE_TREF) {}
+
+    std::vector<uint32_t> GetReferenceTypes() const;
+
+    std::vector<uint32_t> GetTrackIds(uint32_t referenceType) const;
+
+protected:
+    heif_error ParseContentChildren(HeifStreamReader &reader, uint32_t &recursionCount) override;
 };
 
 class HeifStblBox : public HeifBox {

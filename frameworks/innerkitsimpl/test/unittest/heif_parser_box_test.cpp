@@ -27,6 +27,7 @@
 #include "item_property_hvcc_box.h"
 #include "item_property_aux_box.h"
 #include "item_property_transform_box.h"
+#include "item_movie_box.h"
 #include "item_ref_box.h"
 
 #define TEST_FROM_ITEM_ID 1
@@ -1889,6 +1890,586 @@ HWTEST_F(HeifParserBoxTest, MetaWriteGrplTest001, TestSize.Level3)
     ASSERT_EQ(children[0]->GetBoxType(), BOX_TYPE_GRPL);
     ASSERT_EQ(children[0]->GetBoxSize(), grplData.size());
     GTEST_LOG_(INFO) << "HeifParserBoxTest: MetaWriteGrplTest001 end";
+}
+
+static void AppendUint64(std::vector<uint8_t> &data, uint64_t value)
+{
+    AppendUint32(data, static_cast<uint32_t>((value >> FOUR_BYTES_SHIFT) & 0xFFFFFFFF));
+    AppendUint32(data, static_cast<uint32_t>(value & 0xFFFFFFFF));
+}
+
+static void AppendString(std::vector<uint8_t> &data, const std::string &value)
+{
+    for (char ch : value) {
+        data.push_back(static_cast<uint8_t>(ch));
+    }
+    data.push_back(0);
+}
+
+static std::vector<uint8_t> MakeBoxData(uint32_t boxType, const std::vector<uint8_t> &content)
+{
+    std::vector<uint8_t> data;
+    AppendUint32(data, static_cast<uint32_t>(UINT64_BYTES_NUM + content.size()));
+    AppendUint32(data, boxType);
+    data.insert(data.end(), content.begin(), content.end());
+    return data;
+}
+
+static std::vector<uint8_t> MakeFullBoxData(uint32_t boxType, uint8_t version, uint32_t flags,
+    const std::vector<uint8_t> &content)
+{
+    std::vector<uint8_t> fullContent;
+    AppendUint32(fullContent, (static_cast<uint32_t>(version) << THREE_BYTES_SHIFT) | flags);
+    fullContent.insert(fullContent.end(), content.begin(), content.end());
+    return MakeBoxData(boxType, fullContent);
+}
+
+/**
+ * @tc.name: MakeBoxCcstTest001
+ * @tc.desc: ccst must be created by the box factory instead of falling back to the generic HeifBox,
+ *           otherwise its payload is dropped when the file is rewritten
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserBoxTest, MakeBoxCcstTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: MakeBoxCcstTest001 start";
+    std::shared_ptr<HeifBox> ccst = HeifBox::MakeBox(BOX_TYPE_CCST);
+    ASSERT_NE(ccst, nullptr);
+    // A generic HeifBox keeps boxType_ == 0, so this also proves the factory mapping.
+    ASSERT_EQ(ccst->GetBoxType(), BOX_TYPE_CCST);
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: MakeBoxCcstTest001 end";
+}
+
+/**
+ * @tc.name: ParseAndWriteCcstBoxTest001
+ * @tc.desc: coding constraints are a 32 bit word whose reserved bits must be kept on rewrite
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserBoxTest, ParseAndWriteCcstBoxTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: ParseAndWriteCcstBoxTest001 start";
+    // 0x84000000 is the value written by a real HEIC writer: all_ref_pics_intra == 1.
+    for (uint32_t constraints : {0x84000000U, 0x7C000003U}) {
+        std::vector<uint8_t> content;
+        AppendUint32(content, constraints);
+        std::vector<uint8_t> data = MakeFullBoxData(BOX_TYPE_CCST, 0, 0, content);
+
+        heif_error error = heif_error_ok;
+        auto box = MakeBoxFromData(data, error);
+        ASSERT_EQ(error, heif_error_ok);
+        ASSERT_NE(box, nullptr);
+        ASSERT_EQ(box->GetBoxType(), BOX_TYPE_CCST);
+        ASSERT_EQ(box->GetBoxSize(), data.size());
+
+        HeifStreamWriter writer;
+        ASSERT_EQ(box->Write(writer), heif_error_ok);
+        ASSERT_EQ(writer.GetData(), data);
+
+        // HeifParser::Write re-infers the full box version first; that must not clear the flags or
+        // the reserved bits of the coding constraints word.
+        box->InferAllFullBoxVersion();
+        HeifStreamWriter inferredWriter;
+        ASSERT_EQ(box->Write(inferredWriter), heif_error_ok);
+        ASSERT_EQ(inferredWriter.GetData(), data);
+
+        auto ccstBox = std::static_pointer_cast<HeifCcstBox>(box);
+        ASSERT_EQ(ccstBox->GetCodingConstraints(), constraints);
+        ASSERT_EQ(ccstBox->GetMaxRefPerPic(), static_cast<uint8_t>((constraints >> 2) & 0x0F));
+    }
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: ParseAndWriteCcstBoxTest001 end";
+}
+
+/**
+ * @tc.name: SetCcstCodingConstraintsTest001
+ * @tc.desc: max_ref_per_pic is a 4 bit field, a larger input must be clamped instead of overflowing
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserBoxTest, SetCcstCodingConstraintsTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: SetCcstCodingConstraintsTest001 start";
+    HeifCcstBox ccstBox;
+    ccstBox.SetCodingConstraints(true, false, 3);
+    ASSERT_TRUE(ccstBox.GetAllRefPicsIntra());
+    ASSERT_FALSE(ccstBox.GetIntraPredUsed());
+    ASSERT_EQ(ccstBox.GetMaxRefPerPic(), 3);
+    ASSERT_EQ(ccstBox.GetCodingConstraints(), 0x8000000CU);
+
+    ccstBox.SetCodingConstraints(false, true, 200);
+    ASSERT_FALSE(ccstBox.GetAllRefPicsIntra());
+    ASSERT_TRUE(ccstBox.GetIntraPredUsed());
+    ASSERT_EQ(ccstBox.GetMaxRefPerPic(), 15);
+    ASSERT_EQ(ccstBox.GetCodingConstraints(), 0x4000003CU);
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: SetCcstCodingConstraintsTest001 end";
+}
+
+/**
+ * @tc.name: IpcoCcstPropertyRoundTripTest001
+ * @tc.desc: ccst is an ipco property and must be written back by the container path
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserBoxTest, IpcoCcstPropertyRoundTripTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: IpcoCcstPropertyRoundTripTest001 start";
+    std::vector<uint8_t> ccstContent;
+    AppendUint32(ccstContent, 0x84000000);
+
+    std::vector<uint8_t> content;
+    std::vector<uint8_t> ccstData = MakeFullBoxData(BOX_TYPE_CCST, 0, 0, ccstContent);
+    content.insert(content.end(), ccstData.begin(), ccstData.end());
+    std::vector<uint8_t> data = MakeBoxData(BOX_TYPE_IPCO, content);
+
+    heif_error error = heif_error_ok;
+    auto box = MakeBoxFromData(data, error);
+    ASSERT_EQ(error, heif_error_ok);
+    ASSERT_NE(box, nullptr);
+
+    HeifStreamWriter writer;
+    ASSERT_EQ(box->Write(writer), heif_error_ok);
+    ASSERT_EQ(writer.GetDataSize(), data.size());
+    ASSERT_EQ(writer.GetData(), data);
+
+    const auto &children = box->GetChildren();
+    ASSERT_EQ(children.size(), static_cast<size_t>(1));
+    ASSERT_EQ(children[0]->GetBoxType(), BOX_TYPE_CCST);
+    ASSERT_EQ(children[0]->GetBoxSize(), ccstData.size());
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: IpcoCcstPropertyRoundTripTest001 end";
+}
+
+/**
+ * @tc.name: ParseTruncatedCcstTest001
+ * @tc.desc: a truncated ccst keeps the box so the ipma indices stay aligned, and the box is
+ *           normalized to its fixed payload size when it is written back
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserBoxTest, ParseTruncatedCcstTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: ParseTruncatedCcstTest001 start";
+    // A ccst without the version/flags word plus payload.
+    std::vector<uint8_t> ccstData;
+    AppendUint32(ccstData, 10);
+    AppendUint32(ccstData, BOX_TYPE_CCST);
+    AppendUint16(ccstData, 0);
+    heif_error error = heif_error_ok;
+    auto ccstBox = MakeBoxFromData(ccstData, error);
+    ASSERT_EQ(error, heif_error_ok);
+    ASSERT_EQ(ccstBox->GetBoxType(), BOX_TYPE_CCST);
+    HeifStreamWriter ccstWriter;
+    ASSERT_EQ(ccstBox->Write(ccstWriter), heif_error_ok);
+    ASSERT_EQ(ccstWriter.GetDataSize(), static_cast<size_t>(16));
+    ASSERT_EQ(std::static_pointer_cast<HeifCcstBox>(ccstBox)->GetCodingConstraints(), 0);
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: ParseTruncatedCcstTest001 end";
+}
+
+/**
+ * @tc.name: MakeBoxDataEntryUrlTest001
+ * @tc.desc: url is a dref entry and must be created by the box factory
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserBoxTest, MakeBoxDataEntryUrlTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: MakeBoxDataEntryUrlTest001 start";
+    std::shared_ptr<HeifBox> urlBox = HeifBox::MakeBox(BOX_TYPE_URL);
+    ASSERT_NE(urlBox, nullptr);
+    ASSERT_EQ(urlBox->GetBoxType(), BOX_TYPE_URL);
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: MakeBoxDataEntryUrlTest001 end";
+}
+
+/**
+ * @tc.name: ParseAndWriteDataEntryUrlTest001
+ * @tc.desc: a self-contained url entry is a 12 byte full box; its flags word must not be dropped
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserBoxTest, ParseAndWriteDataEntryUrlTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: ParseAndWriteDataEntryUrlTest001 start";
+    // Bytes emitted by real HEIC and AVIF writers: size = 12, flags = 1 (self-contained).
+    std::vector<uint8_t> selfContained;
+    AppendUint32(selfContained, 12);
+    AppendUint32(selfContained, BOX_TYPE_URL);
+    AppendUint32(selfContained, 1);
+
+    heif_error error = heif_error_ok;
+    auto box = MakeBoxFromData(selfContained, error);
+    ASSERT_EQ(error, heif_error_ok);
+    ASSERT_NE(box, nullptr);
+    // HeifParser::Write re-infers the full box version before writing, and the self-contained flag
+    // has to survive that.
+    box->InferAllFullBoxVersion();
+    HeifStreamWriter writer;
+    ASSERT_EQ(box->Write(writer), heif_error_ok);
+    ASSERT_EQ(writer.GetDataSize(), static_cast<size_t>(12));
+    ASSERT_EQ(writer.GetData(), selfContained);
+    ASSERT_TRUE(std::static_pointer_cast<HeifDataEntryUrlBox>(box)->IsSelfContained());
+
+    // A non self-contained entry keeps the null terminated location string.
+    const std::string location = "http";
+    std::vector<uint8_t> withLocation;
+    AppendUint32(withLocation, static_cast<uint32_t>(12 + location.size() + 1));
+    AppendUint32(withLocation, BOX_TYPE_URL);
+    AppendUint32(withLocation, 0);
+    AppendString(withLocation, location);
+
+    auto locatedBox = MakeBoxFromData(withLocation, error);
+    ASSERT_EQ(error, heif_error_ok);
+    HeifStreamWriter locatedWriter;
+    ASSERT_EQ(locatedBox->Write(locatedWriter), heif_error_ok);
+    ASSERT_EQ(locatedWriter.GetData(), withLocation);
+    auto urlBox = std::static_pointer_cast<HeifDataEntryUrlBox>(locatedBox);
+    ASSERT_FALSE(urlBox->IsSelfContained());
+    ASSERT_EQ(urlBox->GetLocation(), location);
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: ParseAndWriteDataEntryUrlTest001 end";
+}
+
+/**
+ * @tc.name: DrefUrlEntryRoundTripTest001
+ * @tc.desc: a dref whose only entry is url must round-trip byte for byte, which fails when the
+ *           entry falls back to the generic HeifBox and loses its flags word
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserBoxTest, DrefUrlEntryRoundTripTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: DrefUrlEntryRoundTripTest001 start";
+    std::vector<uint8_t> urlEntry;
+    AppendUint32(urlEntry, 12);
+    AppendUint32(urlEntry, BOX_TYPE_URL);
+    AppendUint32(urlEntry, 1);
+
+    std::vector<uint8_t> drefContent;
+    AppendUint32(drefContent, 1);  // entry count
+    drefContent.insert(drefContent.end(), urlEntry.begin(), urlEntry.end());
+    std::vector<uint8_t> data = MakeFullBoxData(BOX_TYPE_DREF, 0, 0, drefContent);
+
+    heif_error error = heif_error_ok;
+    auto box = MakeBoxFromData(data, error);
+    ASSERT_EQ(error, heif_error_ok);
+    ASSERT_NE(box, nullptr);
+
+    HeifStreamWriter writer;
+    ASSERT_EQ(box->Write(writer), heif_error_ok);
+    ASSERT_EQ(writer.GetDataSize(), data.size());
+    ASSERT_EQ(writer.GetData(), data);
+
+    const auto &children = box->GetChildren();
+    // dref keeps its entries in an internal list instead of children_, so only the byte layout is
+    // asserted here; the entry type is covered by ParseAndWriteDataEntryUrlTest001.
+    ASSERT_TRUE(children.empty());
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: DrefUrlEntryRoundTripTest001 end";
+}
+
+static std::vector<uint8_t> MakeElstBoxData(uint8_t version, uint32_t flags,
+    const std::vector<HeifElstBox::EditEntry> &entries)
+{
+    std::vector<uint8_t> content;
+    AppendUint32(content, static_cast<uint32_t>(entries.size()));
+    for (const auto &entry : entries) {
+        if (version == HEIF_BOX_VERSION_ONE) {
+            AppendUint64(content, entry.segmentDuration);
+            AppendUint64(content, static_cast<uint64_t>(entry.mediaTime));
+        } else {
+            AppendUint32(content, static_cast<uint32_t>(entry.segmentDuration));
+            AppendUint32(content, static_cast<uint32_t>(entry.mediaTime));
+        }
+        AppendUint16(content, static_cast<uint16_t>(entry.mediaRateInteger));
+        AppendUint16(content, static_cast<uint16_t>(entry.mediaRateFraction));
+    }
+    return MakeFullBoxData(BOX_TYPE_ELST, version, flags, content);
+}
+
+/**
+ * @tc.name: MakeBoxMovieStructureTest001
+ * @tc.desc: edts, elst, tref and the free space boxes must be created by the box factory
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserBoxTest, MakeBoxMovieStructureTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: MakeBoxMovieStructureTest001 start";
+    std::shared_ptr<HeifBox> edtsBox = HeifBox::MakeBox(BOX_TYPE_EDTS);
+    ASSERT_NE(edtsBox, nullptr);
+    ASSERT_EQ(edtsBox->GetBoxType(), BOX_TYPE_EDTS);
+
+    std::shared_ptr<HeifBox> elstBox = HeifBox::MakeBox(BOX_TYPE_ELST);
+    ASSERT_NE(elstBox, nullptr);
+    ASSERT_EQ(elstBox->GetBoxType(), BOX_TYPE_ELST);
+
+    std::shared_ptr<HeifBox> trefBox = HeifBox::MakeBox(BOX_TYPE_TREF);
+    ASSERT_NE(trefBox, nullptr);
+    ASSERT_EQ(trefBox->GetBoxType(), BOX_TYPE_TREF);
+
+    std::shared_ptr<HeifBox> freeBox = HeifBox::MakeBox(BOX_TYPE_FREE);
+    ASSERT_NE(freeBox, nullptr);
+    ASSERT_EQ(freeBox->GetBoxType(), BOX_TYPE_FREE);
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: MakeBoxMovieStructureTest001 end";
+}
+
+/**
+ * @tc.name: EdtsElstVersionOneRoundTripTest001
+ * @tc.desc: an AVIF style version 1 edit list must survive parse + write byte for byte, including
+ *           the parsed flags and the 64 bit segment duration
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserBoxTest, EdtsElstVersionOneRoundTripTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: EdtsElstVersionOneRoundTripTest001 start";
+    HeifElstBox::EditEntry entry;
+    entry.segmentDuration = 90;
+    entry.mediaTime = 0;
+    entry.mediaRateInteger = 1;
+    entry.mediaRateFraction = 0;
+    std::vector<uint8_t> elstData = MakeElstBoxData(HEIF_BOX_VERSION_ONE, 1, {entry});
+    std::vector<uint8_t> data = MakeBoxData(BOX_TYPE_EDTS, elstData);
+
+    heif_error error = heif_error_ok;
+    auto box = MakeBoxFromData(data, error);
+    ASSERT_EQ(error, heif_error_ok);
+    ASSERT_NE(box, nullptr);
+    ASSERT_EQ(box->GetBoxType(), BOX_TYPE_EDTS);
+
+    // HeifParser::Write re-infers every full box version before writing, and that must not
+    // downgrade the parsed version 1 box.
+    box->InferAllFullBoxVersion();
+
+    HeifStreamWriter writer;
+    ASSERT_EQ(box->Write(writer), heif_error_ok);
+    ASSERT_EQ(writer.GetDataSize(), data.size());
+    ASSERT_EQ(writer.GetData(), data);
+
+    const auto &children = box->GetChildren();
+    ASSERT_EQ(children.size(), static_cast<size_t>(1));
+    auto elstBox = std::static_pointer_cast<HeifElstBox>(children[0]);
+    ASSERT_EQ(elstBox->GetVersion(), HEIF_BOX_VERSION_ONE);
+    ASSERT_EQ(elstBox->GetEntries().size(), static_cast<size_t>(1));
+    ASSERT_EQ(elstBox->GetEntries()[0].segmentDuration, static_cast<uint64_t>(90));
+    ASSERT_EQ(elstBox->GetEntries()[0].mediaRateInteger, 1);
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: EdtsElstVersionOneRoundTripTest001 end";
+}
+
+/**
+ * @tc.name: ElstSignedMediaTimeTest001
+ * @tc.desc: media_time is signed and -1 marks an empty edit; it must be parsed and written as such
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserBoxTest, ElstSignedMediaTimeTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: ElstSignedMediaTimeTest001 start";
+    HeifElstBox::EditEntry emptyEdit;
+    emptyEdit.segmentDuration = 1000;
+    emptyEdit.mediaTime = -1;
+    emptyEdit.mediaRateInteger = 1;
+    emptyEdit.mediaRateFraction = 0;
+    std::vector<uint8_t> data = MakeElstBoxData(HEIF_BOX_VERSION_ZERO, 0, {emptyEdit});
+
+    heif_error error = heif_error_ok;
+    auto box = MakeBoxFromData(data, error);
+    ASSERT_EQ(error, heif_error_ok);
+    ASSERT_NE(box, nullptr);
+
+    HeifStreamWriter writer;
+    ASSERT_EQ(box->Write(writer), heif_error_ok);
+    ASSERT_EQ(writer.GetData(), data);
+
+    auto elstBox = std::static_pointer_cast<HeifElstBox>(box);
+    ASSERT_EQ(elstBox->GetEntries().size(), static_cast<size_t>(1));
+    ASSERT_EQ(elstBox->GetEntries()[0].mediaTime, static_cast<int64_t>(-1));
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: ElstSignedMediaTimeTest001 end";
+}
+
+/**
+ * @tc.name: ElstInferVersionTest001
+ * @tc.desc: a version 0 edit list whose segment duration does not fit 32 bits must be upgraded to
+ *           version 1 by InferFullBoxVersion, and a fitting one must stay version 0
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserBoxTest, ElstInferVersionTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: ElstInferVersionTest001 start";
+    // A segment duration that does not fit 32 bits cannot be described by the version 0 layout.
+    HeifElstBox::EditEntry largeEntry;
+    largeEntry.segmentDuration = 0x100000000ULL;
+    largeEntry.mediaTime = 0;
+    largeEntry.mediaRateInteger = 1;
+    HeifElstBox largeElst;
+    largeElst.SetEntries({largeEntry});
+    largeElst.InferFullBoxVersion();
+    ASSERT_EQ(largeElst.GetVersion(), HEIF_BOX_VERSION_ONE);
+    HeifStreamWriter largeWriter;
+    ASSERT_EQ(largeElst.Write(largeWriter), heif_error_ok);
+    // header + version/flags + entry count + 64 bit duration + 64 bit media time + 2 x 16 bit rate
+    ASSERT_EQ(largeWriter.GetDataSize(), static_cast<size_t>(36));
+
+    HeifElstBox::EditEntry smallEntry;
+    smallEntry.segmentDuration = 90;
+    smallEntry.mediaTime = 0;
+    smallEntry.mediaRateInteger = 1;
+    std::vector<uint8_t> smallData = MakeElstBoxData(HEIF_BOX_VERSION_ZERO, 0, {smallEntry});
+    heif_error error = heif_error_ok;
+    auto smallBox = MakeBoxFromData(smallData, error);
+    ASSERT_EQ(error, heif_error_ok);
+    smallBox->InferAllFullBoxVersion();
+    ASSERT_EQ(std::static_pointer_cast<HeifElstBox>(smallBox)->GetVersion(), HEIF_BOX_VERSION_ZERO);
+    HeifStreamWriter smallWriter;
+    ASSERT_EQ(smallBox->Write(smallWriter), heif_error_ok);
+    ASSERT_EQ(smallWriter.GetData(), smallData);
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: ElstInferVersionTest001 end";
+}
+
+/**
+ * @tc.name: ParseTruncatedElstTest001
+ * @tc.desc: an edit list that claims more entries than it carries keeps the complete ones and the
+ *           entry count is normalized on write instead of failing the whole file
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserBoxTest, ParseTruncatedElstTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: ParseTruncatedElstTest001 start";
+    HeifElstBox::EditEntry entry;
+    entry.segmentDuration = 90;
+    entry.mediaTime = 0;
+    entry.mediaRateInteger = 1;
+    std::vector<uint8_t> content;
+    AppendUint32(content, 2);  // claims two entries
+    AppendUint32(content, static_cast<uint32_t>(entry.segmentDuration));
+    AppendUint32(content, static_cast<uint32_t>(entry.mediaTime));
+    AppendUint16(content, static_cast<uint16_t>(entry.mediaRateInteger));
+    AppendUint16(content, static_cast<uint16_t>(entry.mediaRateFraction));
+    std::vector<uint8_t> data = MakeFullBoxData(BOX_TYPE_ELST, 0, 0, content);
+
+    heif_error error = heif_error_ok;
+    auto box = MakeBoxFromData(data, error);
+    ASSERT_EQ(error, heif_error_ok);
+    ASSERT_NE(box, nullptr);
+
+    auto elstBox = std::static_pointer_cast<HeifElstBox>(box);
+    ASSERT_EQ(elstBox->GetEntries().size(), static_cast<size_t>(1));
+
+    HeifStreamWriter writer;
+    ASSERT_EQ(box->Write(writer), heif_error_ok);
+    // header + version/flags + normalized entry count + one entry
+    ASSERT_EQ(writer.GetDataSize(), static_cast<size_t>(24));
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: ParseTruncatedElstTest001 end";
+}
+
+/**
+ * @tc.name: ParseAndWriteTrefBoxTest001
+ * @tc.desc: a tref box holds one child per reference type and must round-trip byte for byte
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserBoxTest, ParseAndWriteTrefBoxTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: ParseAndWriteTrefBoxTest001 start";
+    std::vector<uint8_t> thmbContent;
+    AppendUint32(thmbContent, 2);
+    std::vector<uint8_t> cdscContent;
+    AppendUint32(cdscContent, 3);
+    AppendUint32(cdscContent, 4);
+
+    std::vector<uint8_t> content;
+    std::vector<uint8_t> thmbData = MakeBoxData(fourcc_to_code("thmb"), thmbContent);
+    std::vector<uint8_t> cdscData = MakeBoxData(fourcc_to_code("cdsc"), cdscContent);
+    content.insert(content.end(), thmbData.begin(), thmbData.end());
+    content.insert(content.end(), cdscData.begin(), cdscData.end());
+    std::vector<uint8_t> data = MakeBoxData(BOX_TYPE_TREF, content);
+
+    heif_error error = heif_error_ok;
+    auto box = MakeBoxFromData(data, error);
+    ASSERT_EQ(error, heif_error_ok);
+    ASSERT_NE(box, nullptr);
+    ASSERT_EQ(box->GetBoxType(), BOX_TYPE_TREF);
+
+    HeifStreamWriter writer;
+    ASSERT_EQ(box->Write(writer), heif_error_ok);
+    ASSERT_EQ(writer.GetDataSize(), data.size());
+    ASSERT_EQ(writer.GetData(), data);
+
+    auto trefBox = std::static_pointer_cast<HeifTrefBox>(box);
+    ASSERT_EQ(trefBox->GetReferenceTypes(),
+        std::vector<uint32_t>({fourcc_to_code("thmb"), fourcc_to_code("cdsc")}));
+    ASSERT_EQ(trefBox->GetTrackIds(fourcc_to_code("thmb")), std::vector<uint32_t>({2}));
+    ASSERT_EQ(trefBox->GetTrackIds(fourcc_to_code("cdsc")), std::vector<uint32_t>({3, 4}));
+    ASSERT_TRUE(trefBox->GetTrackIds(fourcc_to_code("hint")).empty());
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: ParseAndWriteTrefBoxTest001 end";
+}
+
+/**
+ * @tc.name: TrefReferenceCountLimitTest001
+ * @tc.desc: a crafted tref with more children than the parse bound is rejected instead of growing
+ *           the parsed object list without bound
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserBoxTest, TrefReferenceCountLimitTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: TrefReferenceCountLimitTest001 start";
+    std::vector<uint8_t> thmbContent;
+    AppendUint32(thmbContent, 2);
+    std::vector<uint8_t> childData = MakeBoxData(fourcc_to_code("thmb"), thmbContent);
+    std::vector<uint8_t> content;
+    for (uint32_t index = 0; index <= HeifTrefBox::MAX_REFERENCE_COUNT; ++index) {
+        content.insert(content.end(), childData.begin(), childData.end());
+    }
+    std::vector<uint8_t> data = MakeBoxData(BOX_TYPE_TREF, content);
+
+    heif_error error = heif_error_ok;
+    auto box = MakeBoxFromData(data, error);
+    ASSERT_EQ(error, heif_error_too_many_boxes);
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: TrefReferenceCountLimitTest001 end";
+}
+
+/**
+ * @tc.name: ParseAndWriteFreeSpaceTest001
+ * @tc.desc: the free space payload is opaque padding that vendors also use for data, so it must be
+ *           written back unchanged
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserBoxTest, ParseAndWriteFreeSpaceTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: ParseAndWriteFreeSpaceTest001 start";
+    std::vector<uint8_t> content = {0x01, 0x02, 0x03, 0x04};
+    std::vector<uint8_t> data = MakeBoxData(BOX_TYPE_FREE, content);
+    heif_error error = heif_error_ok;
+    auto box = MakeBoxFromData(data, error);
+    ASSERT_EQ(error, heif_error_ok);
+    ASSERT_NE(box, nullptr);
+    ASSERT_EQ(box->GetBoxType(), BOX_TYPE_FREE);
+
+    HeifStreamWriter writer;
+    ASSERT_EQ(box->Write(writer), heif_error_ok);
+    ASSERT_EQ(writer.GetData(), data);
+    ASSERT_EQ(std::static_pointer_cast<HeifFreeSpaceBox>(box)->GetData(), content);
+
+    // An empty free box stays an empty box.
+    std::vector<uint8_t> emptyData = MakeBoxData(BOX_TYPE_FREE, {});
+    auto emptyBox = MakeBoxFromData(emptyData, error);
+    ASSERT_EQ(error, heif_error_ok);
+    HeifStreamWriter emptyWriter;
+    ASSERT_EQ(emptyBox->Write(emptyWriter), heif_error_ok);
+    ASSERT_EQ(emptyWriter.GetData(), emptyData);
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: ParseAndWriteFreeSpaceTest001 end";
+}
+
+/**
+ * @tc.name: OversizedFreeSpaceTest001
+ * @tc.desc: a free box larger than the preserve bound is parsed without buffering the payload and
+ *           rewritten as an empty padding box
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserBoxTest, OversizedFreeSpaceTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: OversizedFreeSpaceTest001 start";
+    const size_t payloadSize = HeifFreeSpaceBox::MAX_PRESERVED_SIZE + 4;
+    std::vector<uint8_t> data;
+    AppendUint32(data, static_cast<uint32_t>(UINT64_BYTES_NUM + payloadSize));
+    AppendUint32(data, BOX_TYPE_FREE);
+    data.resize(data.size() + payloadSize, 0xFF);
+
+    heif_error error = heif_error_ok;
+    auto box = MakeBoxFromData(data, error);
+    ASSERT_EQ(error, heif_error_ok);
+    ASSERT_NE(box, nullptr);
+    ASSERT_TRUE(std::static_pointer_cast<HeifFreeSpaceBox>(box)->GetData().empty());
+
+    HeifStreamWriter writer;
+    ASSERT_EQ(box->Write(writer), heif_error_ok);
+    ASSERT_EQ(writer.GetDataSize(), static_cast<size_t>(UINT64_BYTES_NUM));
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: OversizedFreeSpaceTest001 end";
 }
 
 }

@@ -62,6 +62,29 @@ private:
     uint32_t reserved_[HDLR_BOX_RESERVED_SIZE] = {0};
     std::string name_;
 };
+
+// ISO/IEC 14496-12 FreeSpaceBox ('free'). The payload is opaque padding, but vendor writers also
+// store data in it, so it is kept verbatim (within a bound) and written back instead of being
+// collapsed to an empty box by the generic HeifBox.
+class HeifFreeSpaceBox : public HeifBox {
+public:
+    // Guards the parser against buffering a huge crafted padding box.
+    static constexpr size_t MAX_PRESERVED_SIZE = 64 * 1024;
+
+    HeifFreeSpaceBox() : HeifBox(BOX_TYPE_FREE) {}
+
+    const std::vector<uint8_t> &GetData() const { return data_; }
+
+    void SetData(const std::vector<uint8_t> &data) { data_ = data; }
+
+    heif_error Write(HeifStreamWriter &writer) const override;
+
+protected:
+    heif_error ParseContent(HeifStreamReader &reader) override;
+
+private:
+    std::vector<uint8_t> data_;
+};
 } // namespace ImagePlugin
 } // namespace OHOS
 

@@ -191,6 +191,7 @@ std::shared_ptr<HeifBox> HeifBox::MakeBox(uint32_t boxType)
         MAKE_BOX_CASE("colr", HeifColrBox);
         MAKE_BOX_CASE("hvcC", HeifHvccBox);
         MAKE_BOX_CASE("ispe", HeifIspeBox);
+        MAKE_BOX_CASE("ccst", HeifCcstBox);
         MAKE_BOX_CASE("irot", HeifIrotBox);
         MAKE_BOX_CASE("imir", HeifImirBox);
         MAKE_BOX_CASE("pixi", HeifPixiBox);
@@ -201,16 +202,21 @@ std::shared_ptr<HeifBox> HeifBox::MakeBox(uint32_t boxType)
         MAKE_BOX_CASE("clli", HeifClliBox);
         MAKE_BOX_CASE("mdcv", HeifMdcvBox);
         MAKE_BOX_CASE("grpl", HeifGrplBox);
+        MAKE_BOX_CASE("free", HeifFreeSpaceBox);
         MAKE_BOX_CASE("moov", HeifMoovBox);
         MAKE_BOX_CASE("mvhd", HeifMvhdBox);
         MAKE_BOX_CASE("trak", HeifTrakBox);
         MAKE_BOX_CASE("tkhd", HeifTkhdBox);
+        MAKE_BOX_CASE("tref", HeifTrefBox);
+        MAKE_BOX_CASE("edts", HeifEdtsBox);
+        MAKE_BOX_CASE("elst", HeifElstBox);
         MAKE_BOX_CASE("mdia", HeifMdiaBox);
         MAKE_BOX_CASE("mdhd", HeifMdhdBox);
         MAKE_BOX_CASE("minf", HeifMinfBox);
         MAKE_BOX_CASE("vmhd", HeifVmhdBox);
         MAKE_BOX_CASE("dinf", HeifDinfBox);
         MAKE_BOX_CASE("dref", HeifDrefBox);
+        MAKE_BOX_CASE("url ", HeifDataEntryUrlBox);
         MAKE_BOX_CASE("stbl", HeifStblBox);
         MAKE_BOX_CASE("stsd", HeifStsdBox);
         MAKE_BOX_CASE("hvc1", HeifHvc1Box);
@@ -234,7 +240,8 @@ bool BoxContentChildren(std::shared_ptr<HeifBox> box)
         box->GetBoxType() == BOX_TYPE_META || box->GetBoxType() == BOX_TYPE_IINF ||
         box->GetBoxType() == BOX_TYPE_MOOV || box->GetBoxType() == BOX_TYPE_TRAK ||
         box->GetBoxType() == BOX_TYPE_MDIA || box->GetBoxType() == BOX_TYPE_DINF ||
-        box->GetBoxType() == BOX_TYPE_STBL || box->GetBoxType() == BOX_TYPE_MINF;
+        box->GetBoxType() == BOX_TYPE_STBL || box->GetBoxType() == BOX_TYPE_MINF ||
+        box->GetBoxType() == BOX_TYPE_EDTS || box->GetBoxType() == BOX_TYPE_TREF;
 }
 
 heif_error HeifBox::MakeFromReader(HeifStreamReader &reader,
