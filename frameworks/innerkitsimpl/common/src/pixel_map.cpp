@@ -3503,13 +3503,9 @@ bool ReadDmaMemInfoFromParcel(Parcel &parcel, const ImageInfo &imgInfo, PixelMem
         return false;
     }
     if (!pixelMemInfo.displayOnly) {
-        pixelMemInfo.base = static_cast<uint8_t *>(surfaceBuffer->GetVirAddr());
-        if (pixelMemInfo.base == nullptr) {
-            IMAGE_LOGE("ReadDmaMemInfoFromParcel GetVirAddr is nullptr for non-displayOnly");
-            ImageUtils::SurfaceBuffer_Unreference(nativeBuffer);
-            pixelMemInfo.context = nullptr;
-            return false;
-        }
+        pixelMemInfo.base = surfaceBuffer->GetVirAddr() == nullptr
+            ? nullptr
+            : static_cast<uint8_t *>(surfaceBuffer->GetVirAddr());
     }
     pixelMemInfo.context = nativeBuffer;
     return true;
