@@ -784,8 +784,28 @@ bool PixelYuvUtils::YuvRotate(uint8_t *srcData, YuvImageInfo &srcInfo,
     }
 }
 
+// Byte count of one tightly packed YUV420 region, aligned with av_image_get_buffer_size(..., 1):
+// the chroma plane is rounded up to whole 2x2 samples, and P010 doubles every sample.
+static uint64_t GetYuvRegionByteCount(int32_t width, int32_t height, PixelFormat format)
+{
+    if (width <= 0 || height <= 0) {
+        return 0;
+    }
+    uint64_t ySize = static_cast<uint64_t>(width) * static_cast<uint64_t>(height);
+    uint64_t uvSize = static_cast<uint64_t>((static_cast<int64_t>(width) + 1) / NUM_2) *
+        static_cast<uint64_t>((static_cast<int64_t>(height) + 1) / NUM_2) * NUM_2;
+    uint64_t regionSize = ySize + uvSize;
+    return IsYUVP010Format(format) ? regionSize * NUM_2 : regionSize;
+}
+
 bool PixelYuvUtils::ReadYuvConvert(const void *srcPixels, const Position &srcPos, YuvImageInfo &info,
     void *dstPixels, const ImageInfo &dstInfo)
+{
+    return ReadYuvConvert(srcPixels, srcPos, info, dstPixels, dstInfo, UINT64_MAX);
+}
+
+bool PixelYuvUtils::ReadYuvConvert(const void *srcPixels, const Position &srcPos, YuvImageInfo &info,
+    void *dstPixels, const ImageInfo &dstInfo, uint64_t dstCapacity)
 {
     if (srcPixels == nullptr || dstPixels == nullptr) {
         IMAGE_LOGE("src or dst pixels invalid.");
@@ -796,6 +816,13 @@ bool PixelYuvUtils::ReadYuvConvert(const void *srcPixels, const Position &srcPos
     rect.top = srcPos.y;
     rect.width = dstInfo.size.width;
     rect.height = dstInfo.size.height;
+    uint64_t regionSize = GetYuvRegionByteCount(rect.width, rect.height, info.yuvFormat);
+    if (regionSize == 0 || regionSize > dstCapacity) {
+        IMAGE_LOGE("ReadYuvConvert dst buffer too small, region(%{public}dx%{public}d) needs %{public}llu bytes, "
+            "capacity %{public}llu.", rect.width, rect.height, static_cast<unsigned long long>(regionSize),
+            static_cast<unsigned long long>(dstCapacity));
+        return false;
+    }
     YUVStrideInfo dstStrides = {rect.width, rect.width, 0, rect.width * rect.height};
     if (!YuvCrop((uint8_t *)srcPixels, info, static_cast<uint8_t *>(dstPixels), rect, dstStrides)) {
         return false;
